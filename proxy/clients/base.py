@@ -1,7 +1,14 @@
 import requests
 from typing import Dict, Any, Optional, Tuple
-from rest_framework import status
 from django.conf import settings
+from proxy.errors import (
+    build_error_response,
+    get_http_status,
+    TIMEOUT,
+    CONNECTION_ERROR,
+    RESPONSE_NOT_JSON,
+    INTERNAL_SERVER_ERROR
+)
 
 class BaseAPIClient:
     def __init__(self, base_url: str):
@@ -21,9 +28,6 @@ class BaseAPIClient:
         endpoint = endpoint.lstrip('/')
         return f"{self.base_url}/{endpoint}"
 
-    def build_error_response_data(self, error: str, message: str) -> Dict[str, Any]:
-        return { 'error': error, 'message': message }
-
     def request(
         self,
         method: str,
@@ -33,7 +37,6 @@ class BaseAPIClient:
         headers: Optional[Dict[str, str]] = None
     ) -> Tuple[Dict[str, Any], int]:
         url = self.build_url(endpoint)
-
         final_headers = self.get_headers()
         if headers: final_headers.update(headers)
 
@@ -50,21 +53,24 @@ class BaseAPIClient:
             try:
                 response_data = response.json()
             except ValueError:
-                response_data = self.build_error_response_data('RESPONSE_NOT_JSON', response.text)
+                response_data = build_error_response(
+                    RESPONSE_NOT_JSON,
+                    custom_message=f'Non-JSON response: {response.text}'
+                )
 
             return response_data, response.status_code
 
         except requests.exceptions.Timeout:
-            response_data = self.build_error_response_data('TIMEOUT', 'Request timeout')
-            return response_data, status.HTTP_504_GATEWAY_TIMEOUT
+            return build_error_response(TIMEOUT), get_http_status(TIMEOUT)
 
         except requests.exceptions.ConnectionError:
-            response_data = self.build_error_response_data('CONNECTION_ERROR', 'Connection error')
-            return response_data, status.HTTP_503_SERVICE_UNAVAILABLE
+            return build_error_response(CONNECTION_ERROR), get_http_status(CONNECTION_ERROR)
 
         except Exception as e:
-            response_data = self.build_error_response_data('INTERNAL_SERVER_ERROR', str(e))
-            return response_data, status.HTTP_500_INTERNAL_SERVER_ERROR
+            return (
+                build_error_response(INTERNAL_SERVER_ERROR, custom_message=str(e)),
+                get_http_status(INTERNAL_SERVER_ERROR)
+            )
 
     def get(self, endpoint: str, params: Optional[Dict[str, Any]] = None) -> Tuple[Dict[str, Any], int]:
         return self.request('GET', endpoint, params=params)

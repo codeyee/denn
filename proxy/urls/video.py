@@ -1,7 +1,3 @@
-"""
-TMDB API proxy URL patterns.
-All TMDB-related endpoints are defined here.
-"""
 from django.urls import path
 from proxy.views.tmdb import (
     TMDBSearchView,
@@ -10,8 +6,7 @@ from proxy.views.tmdb import (
     TMDBSeasonDetailView
 )
 
-
-app_name = 'tmdb'
+app_name = 'video'
 
 urlpatterns = [
     path(
@@ -35,4 +30,3 @@ urlpatterns = [
         name='season-detail'
     ),
 ]
-

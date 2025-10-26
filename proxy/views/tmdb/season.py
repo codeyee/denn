@@ -3,10 +3,8 @@ from .utils import normalize_season
 
 
 class TMDBSeasonDetailView(TMDBBaseView):
-
     def get(self, request, tv_id, season_number):
         client = self.get_client()
-
         return self.handle_api_call(
             client.get_season_details,
             transformer=normalize_season,

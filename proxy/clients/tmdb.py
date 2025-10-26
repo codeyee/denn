@@ -3,7 +3,6 @@ from django.conf import settings
 from .base import BaseAPIClient
 
 class TMDBClient(BaseAPIClient):
-
     def __init__(self):
         config = settings.PROXY_API['TMDB']
         super().__init__(base_url=config['BASE_URL'])

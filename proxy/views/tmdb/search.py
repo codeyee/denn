@@ -1,10 +1,9 @@
-from rest_framework import status as http_status
 from .base import TMDBBaseView
 from .utils import normalize_search_item
+from proxy.errors import build_error_response, get_http_status, MISSING_QUERY
 
 
 class TMDBSearchView(TMDBBaseView):
-
     def filter_and_transform_results(self, data):
         if 'results' not in data: return data
         results = []
@@ -26,12 +25,12 @@ class TMDBSearchView(TMDBBaseView):
         query = request.query_params.get('query')
 
         if not query:
-            error = {'error': 'MISSING_QUERY', 'message': 'Query parameter is required'}
-            return self.transform_response(error, http_status.HTTP_400_BAD_REQUEST)
+            error_response = build_error_response(MISSING_QUERY)
+            return self.transform_response(error_response, get_http_status(MISSING_QUERY))
 
         page = int(request.query_params.get('page', 1))
-        client = self.get_client()
 
+        client = self.get_client()
         return self.handle_api_call(
             client.search,
             transformer=self.filter_and_transform_results,
