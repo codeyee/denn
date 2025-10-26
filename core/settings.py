@@ -133,4 +133,9 @@ PROXY_API = {
         "BASE_URL": "https://api.spotify.com/v1",
         "TOKEN_BUFFER_TIME": 60,
     },
+    "OPENLIBRARY": {
+        "USER_AGENT": os.getenv('OPENLIBRARY_USER_AGENT'),
+        "BASE_URL": "https://openlibrary.org",
+        "COVERS_BASE_URL": "https://covers.openlibrary.org",
+    },
 }
