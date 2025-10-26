@@ -139,6 +139,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+denn-api-env/
 
 # Spyder project settings
 .spyderproject
