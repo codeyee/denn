@@ -1,0 +1,113 @@
+from rest_framework import serializers
+from content.models import ListItem, ContentItem
+from .content_item import ContentItemSerializer
+from .user import UserSerializer
+
+class ListItemSerializer(serializers.ModelSerializer):
+    content_item = ContentItemSerializer(read_only=True)
+    added_by = UserSerializer(read_only=True)
+
+    class Meta:
+        model = ListItem
+
+        fields = [
+            'id',
+            'user_list',
+            'content_item',
+            'added_by',
+            'status',
+            'added_at',
+            'completed_at',
+            'notes',
+        ]
+
+        read_only_fields = [
+            'id',
+            'user_list',
+            'content_item',
+            'added_by',
+            'added_at',
+            'completed_at'
+        ]
+
+class ListItemCreateSerializer(serializers.ModelSerializer):
+    source_api = serializers.ChoiceField(
+        choices=ContentItem.SourceAPI.choices,
+        write_only=True
+    )
+
+    external_id = serializers.CharField(
+        max_length=255,
+        write_only=True
+    )
+
+    content_type = serializers.ChoiceField(
+        choices=ContentItem.ContentType.choices,
+        write_only=True
+    )
+
+    content_item = ContentItemSerializer(read_only=True)
+    added_by = UserSerializer(read_only=True)
+
+    class Meta:
+        model = ListItem
+
+        fields = [
+            'id',
+            'source_api',
+            'external_id',
+            'content_type',
+            'content_item',
+            'added_by',
+            'status',
+            'notes',
+            'added_at',
+            'completed_at',
+        ]
+
+        read_only_fields = [
+            'id',
+            'content_item',
+            'added_by',
+            'added_at',
+            'completed_at'
+        ]
+
+    def validate(self, attrs):
+        source_api = attrs.get('source_api')
+        content_type = attrs.get('content_type')
+
+        valid_combinations = {
+            ContentItem.ContentType.MOVIE: [ContentItem.SourceAPI.TMDB],
+            ContentItem.ContentType.TV_SHOW: [ContentItem.SourceAPI.TMDB],
+            ContentItem.ContentType.GAME: [ContentItem.SourceAPI.IGDB],
+            ContentItem.ContentType.ALBUM: [ContentItem.SourceAPI.SPOTIFY],
+            ContentItem.ContentType.BOOK: [ContentItem.SourceAPI.OPENLIBRARY],
+        }
+
+        if content_type and source_api:
+            valid_apis = valid_combinations.get(content_type, [])
+
+            if source_api not in valid_apis:
+                raise serializers.ValidationError({'source_api': f"'{source_api}' is not valid for content_type '{content_type}'"})
+
+        return attrs
+
+    def create(self, validated_data):
+        source_api = validated_data.pop('source_api')
+        external_id = validated_data.pop('external_id')
+        content_type = validated_data.pop('content_type')
+
+        content_item, created = ContentItem.objects.get_or_create(
+            source_api=source_api,
+            external_id=external_id,
+            defaults={'content_type': content_type}
+        )
+
+        list_item = ListItem.objects.create(
+            content_item=content_item,
+            **validated_data
+        )
+
+        return list_item
+

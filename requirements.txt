@@ -1,10 +1,13 @@
 asgiref==3.10.0
 certifi==2025.10.5
 charset-normalizer==3.4.4
+dj-rest-auth==7.0.1
 Django==5.2.7
 django-cors-headers==4.9.0
 djangorestframework==3.16.1
+djangorestframework_simplejwt==5.5.1
 idna==3.11
+PyJWT==2.10.1
 python-dateutil==2.9.0.post0
 python-dotenv==1.1.1
 requests==2.32.5
