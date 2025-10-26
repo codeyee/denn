@@ -119,4 +119,9 @@ PROXY_API = {
         "BASE_URL": "https://api.themoviedb.org/3",
         "IMAGES_BASE_URL": "https://image.tmdb.org/t/p/",
     },
+    "IGDB": {
+        "CLIENT_ID": os.getenv('IGDB_CLIENT_ID'),
+        "CLIENT_SECRET": os.getenv('IGDB_CLIENT_SECRET'),
+        "BASE_URL": "https://api.igdb.com/v4",
+    },
 }

@@ -7,10 +7,10 @@ def build_image_url(path: Optional[str], size: str = 'w500') -> Optional[str]:
     base_url = base_url.rsplit('/', 1)[0]
     return f'{base_url}/{size}{path}'
 
-def build_poster_url(path: Optional[str]) -> Optional[str]:
+def build_image_url(path: Optional[str]) -> Optional[str]:
     return build_image_url(path, size='w500')
 
-def build_backdrop_url(path: Optional[str]) -> Optional[str]:
+def build_alt_image_url(path: Optional[str]) -> Optional[str]:
     return build_image_url(path, size='original')
 
 def build_still_url(path: Optional[str]) -> Optional[str]:
@@ -30,21 +30,20 @@ def normalize_search_item(item: Dict[str, Any], media_type: Optional[str] = None
         'original_title': original_title,
         'original_language': item.get('original_language'),
         'description': item.get('overview'),
-        'poster_url': build_poster_url(item.get('poster_path')),
-        'backdrop_url': build_backdrop_url(item.get('backdrop_path')),
+        'image_url': build_image_url(item.get('poster_path')),
+        'alt_image_url': build_alt_image_url(item.get('backdrop_path')),
         'release_date': release_date,
     }
 
 def normalize_movie(data: Dict[str, Any]) -> Dict[str, Any]:
     return {
         'id': data.get('id'),
-        'imdb_id': data.get('imdb_id'),
         'title': data.get('title'),
         'original_title': data.get('original_title'),
         'original_language': data.get('original_language'),
         'description': data.get('overview'),
-        'poster_url': build_poster_url(data.get('poster_path')),
-        'backdrop_url': build_backdrop_url(data.get('backdrop_path')),
+        'image_url': build_image_url(data.get('poster_path')),
+        'alt_image_url': build_alt_image_url(data.get('backdrop_path')),
         'release_date': data.get('release_date'),
         'duration_minutes': data.get('runtime'),
         'status': data.get('status')
@@ -70,7 +69,7 @@ def normalize_season(season: Dict[str, Any]) -> Dict[str, Any]:
         'name': season.get('name'),
         'description': season.get('overview'),
         'release_date': season.get('air_date'),
-        'poster_url': build_poster_url(season.get('poster_path'))
+        'image_url': build_image_url(season.get('poster_path'))
     }
 
     episodes = season.get('episodes', [])
@@ -94,8 +93,8 @@ def normalize_tv(data: Dict[str, Any]) -> Dict[str, Any]:
         'original_title': data.get('original_name'),
         'original_language': data.get('original_language'),
         'description': data.get('overview'),
-        'poster_url': build_poster_url(data.get('poster_path')),
-        'backdrop_url': build_backdrop_url(data.get('backdrop_path')),
+        'image_url': build_image_url(data.get('poster_path')),
+        'alt_image_url': build_alt_image_url(data.get('backdrop_path')),
         'release_date': data.get('first_air_date'),
         'status': data.get('status'),
         'number_of_seasons': data.get('number_of_seasons'),
