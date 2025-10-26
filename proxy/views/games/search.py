@@ -4,14 +4,21 @@ from proxy.errors import build_error_response, get_http_status, MISSING_QUERY
 from typing import Dict, Any, List
 
 class GamesSearchView(IGDBBaseView):
-    def filter_and_transform_results(self, data: Any) -> Dict[str, Any]:
+    def filter_and_transform_results(self, data: Any, limit: int = 50, page: int = 1) -> Dict[str, Any]:
         if not isinstance(data, list):
             return data
 
         results = [normalize_search_item(item) for item in data]
 
+        # Note: IGDB doesn't provide total count in response, so we estimate based on results
+        # If we get exactly 'limit' results, there might be more pages
+        has_more = len(results) == limit
+
         metadata = {
-            'total_results': len(results)
+            'page': page,
+            'page_results': len(results),
+            'total_pages': page + 1 if has_more else page,
+            'total_results': len(results) if not has_more else None  # Unknown total
         }
 
         return {'metadata': metadata, 'results': results}
@@ -28,9 +35,13 @@ class GamesSearchView(IGDBBaseView):
         offset = (page - 1) * limit
 
         client = self.get_client()
+
+        def transform_with_context(data):
+            return self.filter_and_transform_results(data, limit=limit, page=page)
+
         return self.handle_api_call(
             client.search_games,
-            transformer=self.filter_and_transform_results,
+            transformer=transform_with_context,
             query=query,
             limit=limit,
             offset=offset

@@ -115,7 +115,9 @@ class IGDBClient(BaseAPIClient):
             'cover.url',
             'first_release_date',
             'platforms.name',
-            'game_type'
+            'game_type',
+            'involved_companies.company.name',
+            'involved_companies.developer'
         ])
 
     def get_included_game_types(self) -> str:
@@ -126,11 +128,5 @@ class IGDBClient(BaseAPIClient):
         fields = self.get_fields()
         included_game_types = self.get_included_game_types()
         body = f'search "{query}"; fields {fields}; where game_type = ({included_game_types}); limit {limit}; offset {offset};'
-        return self.request_igdb(endpoint, body)
-
-    def get_game_details(self, game_id: int) -> Tuple[Dict[str, Any], int]:
-        endpoint = 'games'
-        fields = self.get_fields()
-        body = f'fields {fields}; where id = {game_id};'
         return self.request_igdb(endpoint, body)
 

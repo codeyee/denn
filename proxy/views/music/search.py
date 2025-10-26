@@ -27,14 +27,21 @@ class MusicSearchView(SpotifyBaseView):
                 album['album_type'] = 'ep'
                 filtered_albums.append(normalize_album_search(album))
 
+        total_results = albums_data.get('total', 0)
+        limit = albums_data.get('limit', 20)
+        offset = albums_data.get('offset', 0)
+        
+        current_page = (offset // limit) + 1 if limit > 0 else 1
+        total_pages = (total_results // limit) + (1 if total_results % limit > 0 else 0) if limit > 0 else 1
+        
         metadata = {
-            'total': albums_data.get('total', 0),
-            'limit': albums_data.get('limit', 0),
-            'offset': albums_data.get('offset', 0),
-            'results_count': len(filtered_albums)
+            'page': current_page,
+            'page_results': len(filtered_albums),
+            'total_pages': total_pages,
+            'total_results': total_results
         }
 
-        return {'metadata': metadata, 'albums': filtered_albums}
+        return {'metadata': metadata, 'results': filtered_albums}
 
     def get(self, request):
         query = request.query_params.get('query')

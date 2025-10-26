@@ -24,18 +24,14 @@ def parse_publish_date(publish_dates: Optional[List[str]], first_publish_year: O
     if first_publish_year: return str(first_publish_year)
     return None
 
-def extract_description(item: Dict[str, Any]) -> Optional[str]:
-    first_sentence = item.get('first_sentence', [None])
-    if first_sentence: return first_sentence[0]
-    return "No description available"
 
 def normalize_search_item(item: Dict[str, Any]) -> Dict[str, Any]:
     return {
         'id': extract_id_from_key(item.get('key')),
-        'name': item.get('title'),
-        'authors': item.get('author_name', []),
+        'title': item.get('title'),
+        'authors': item.get('author_name', []) if item.get('author_name') else None,
         'image_url': build_image_url(item.get('cover_i')),
         'release_date': parse_publish_date(item.get('publish_date'), item.get('first_publish_year')),
         'pages': item.get('number_of_pages_median'),
-        'description': extract_description(item),
+        'description': item.get('first_sentence', [None])[0] if item.get('first_sentence') else None,
     }

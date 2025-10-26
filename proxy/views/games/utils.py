@@ -27,8 +27,19 @@ def format_release_date(timestamp: Optional[int]) -> Optional[str]:
         return None
 
 def extract_platforms(platforms: Optional[List[Dict[str, Any]]]) -> Optional[List[str]]:
-    if not platforms: return []
-    return [platform.get('name') for platform in platforms if platform.get('name')]
+    if not platforms: return None
+    names = [platform.get('name') for platform in platforms if platform.get('name')]
+    return names if names else None
+
+def extract_authors(involved_companies: Optional[List[Dict[str, Any]]]) -> Optional[List[str]]:
+    if not involved_companies: return None
+
+    authors = []
+    for company in involved_companies:
+        if company.get('developer') and company.get('company', {}).get('name'):
+            authors.append(company['company']['name'])
+
+    return authors if authors else None
 
 def format_game_type(game_type: Optional[int]) -> Optional[str]:
     game_type_map = {
@@ -41,9 +52,9 @@ def format_game_type(game_type: Optional[int]) -> Optional[str]:
     return game_type_map.get(game_type, "Unknown")
 
 def build_description(summary: Optional[str], storyline: Optional[str]) -> Optional[str]:
-    if not summary and not storyline: return "No description available"
-    if storyline: return summary + '\n\n' + storyline
-    return summary
+    if not summary and not storyline: return None
+    if summary and storyline: return summary + '\n\n' + storyline
+    return summary if summary else storyline
 
 def normalize_item(item: Dict[str, Any]) -> Dict[str, Any]:
     if isinstance(item, list) and len(item) > 0:
@@ -56,16 +67,14 @@ def normalize_item(item: Dict[str, Any]) -> Dict[str, Any]:
 
     return {
         'id': item.get('id'),
-        'name': item.get('name'),
+        'title': item.get('name'),
         'type': format_game_type(item.get('game_type')),
         'release_date': format_release_date(item.get('first_release_date')),
         'description': build_description(item.get('summary'), item.get('storyline')),
         'image_url': cover_url,
+        'authors': extract_authors(item.get('involved_companies')),
         'platforms': extract_platforms(item.get('platforms')),
     }
 
 def normalize_search_item(item: Dict[str, Any]) -> Dict[str, Any]:
     return normalize_item(item)
-
-def normalize_game(data: Dict[str, Any]) -> Dict[str, Any]:
-    return normalize_item(data)
