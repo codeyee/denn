@@ -6,16 +6,11 @@ class TMDBClient(BaseAPIClient):
 
     def __init__(self):
         config = settings.PROXY_API['TMDB']
-
-        super().__init__(
-            base_url=config['BASE_URL'],
-            timeout=settings.REST_FRAMEWORK.get('TIMEOUT', 30)
-        )
-
+        super().__init__(base_url=config['BASE_URL'])
         self.api_key = config['API_KEY']
 
     def get_headers(self) -> Dict[str, str]:
-        headers = super().get_headers()
+        headers = super().get_default_headers()
         headers['Authorization'] = f'Bearer {self.api_key}'
         return headers
 

@@ -117,7 +117,6 @@ PROXY_API = {
     "TMDB": {
         "API_KEY": os.getenv('TMDB_API_KEY'),
         "BASE_URL": "https://api.themoviedb.org/3",
-        "IMAGES_BASE_URL": "https://image.tmdb.org/t/p/w500",
-        "BACKDROP_BASE_URL": "https://image.tmdb.org/t/p/original",
+        "IMAGES_BASE_URL": "https://image.tmdb.org/t/p/",
     },
 }

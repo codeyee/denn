@@ -1,14 +1,12 @@
 import requests
-import logging
 from typing import Dict, Any, Optional, Tuple
 from rest_framework import status
-
-logger = logging.getLogger(__name__)
+from django.conf import settings
 
 class BaseAPIClient:
-    def __init__(self, base_url: str, timeout: int = 30, headers: Optional[Dict[str, str]] = None):
+    def __init__(self, base_url: str):
         self.base_url = base_url.rstrip('/')
-        self.timeout = timeout
+        self.timeout = settings.REST_FRAMEWORK.get('TIMEOUT', 30)
 
     def get_default_headers(self) -> Dict[str, str]:
         return {
@@ -39,9 +37,6 @@ class BaseAPIClient:
         final_headers = self.get_headers()
         if headers: final_headers.update(headers)
 
-        logger.info(f"{method} {url}")
-        logger.debug(f"Params: {params}")
-
         try:
             response = requests.request(
                 method=method,
@@ -52,8 +47,6 @@ class BaseAPIClient:
                 timeout=self.timeout
             )
 
-            logger.info(f"Response status: {response.status_code}")
-
             try:
                 response_data = response.json()
             except ValueError:
@@ -62,17 +55,14 @@ class BaseAPIClient:
             return response_data, response.status_code
 
         except requests.exceptions.Timeout:
-            logger.error("Request timeout")
             response_data = self.build_error_response_data('TIMEOUT', 'Request timeout')
             return response_data, status.HTTP_504_GATEWAY_TIMEOUT
 
         except requests.exceptions.ConnectionError:
-            logger.error("Connection error")
             response_data = self.build_error_response_data('CONNECTION_ERROR', 'Connection error')
             return response_data, status.HTTP_503_SERVICE_UNAVAILABLE
 
         except Exception as e:
-            logger.exception(f"Unexpected error: {str(e)}")
             response_data = self.build_error_response_data('INTERNAL_SERVER_ERROR', str(e))
             return response_data, status.HTTP_500_INTERNAL_SERVER_ERROR
 
