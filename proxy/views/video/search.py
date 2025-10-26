@@ -3,7 +3,7 @@ from .utils import normalize_search_item
 from proxy.errors import build_error_response, get_http_status, MISSING_QUERY
 
 
-class TMDBSearchView(TMDBBaseView):
+class VideoSearchView(TMDBBaseView):
     def filter_and_transform_results(self, data):
         if 'results' not in data: return data
         results = []

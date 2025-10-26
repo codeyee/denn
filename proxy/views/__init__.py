@@ -1,13 +1,13 @@
-from .tmdb import (
-    TMDBSearchView,
-    TMDBMovieDetailView,
-    TMDBTVDetailView,
-    TMDBSeasonDetailView
+from .video import (
+    VideoSearchView,
+    VideoMovieDetailView,
+    VideoTvDetailView,
+    VideoTvSeasonDetailView
 )
 
 __all__ = [
-    'TMDBSearchView',
-    'TMDBMovieDetailView',
-    'TMDBTVDetailView',
-    'TMDBSeasonDetailView'
+    'VideoSearchView',
+    'VideoMovieDetailView',
+    'VideoTvDetailView',
+    'VideoTvSeasonDetailView'
 ]

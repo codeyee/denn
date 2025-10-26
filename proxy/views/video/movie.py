@@ -2,7 +2,7 @@ from .base import TMDBBaseView
 from .utils import normalize_movie
 
 
-class TMDBMovieDetailView(TMDBBaseView):
+class VideoMovieDetailView(TMDBBaseView):
     def get(self, request, movie_id):
         client = self.get_client()
         return self.handle_api_call(
