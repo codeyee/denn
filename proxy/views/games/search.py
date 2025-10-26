@@ -23,7 +23,7 @@ class GamesSearchView(IGDBBaseView):
             error_response = build_error_response(MISSING_QUERY)
             return self.transform_response(error_response, get_http_status(MISSING_QUERY))
 
-        limit = int(request.query_params.get('limit', 10))
+        limit = int(request.query_params.get('limit', 50))
         page = int(request.query_params.get('page', 1))
         offset = (page - 1) * limit
 

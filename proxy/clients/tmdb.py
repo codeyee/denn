@@ -6,6 +6,7 @@ class TMDBClient(BaseAPIClient):
     def __init__(self):
         config = settings.PROXY_API['TMDB']
         super().__init__(base_url=config['BASE_URL'])
+
         self.api_key = config['API_KEY']
 
     def get_headers(self) -> Dict[str, str]:

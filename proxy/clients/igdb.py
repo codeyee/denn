@@ -11,28 +11,49 @@ from proxy.errors import (
     INTERNAL_SERVER_ERROR,
     UNAUTHORIZED
 )
+from time import time
 
 class IGDBClient(BaseAPIClient):
+    _access_token: Optional[str] = None
+    _token_expires_at: Optional[float] = None
+
     def __init__(self):
         config = settings.PROXY_API['IGDB']
         super().__init__(base_url=config['BASE_URL'])
+
         self.client_id = config['CLIENT_ID']
         self.client_secret = config['CLIENT_SECRET']
-        self.access_token = self._get_access_token()
+        self.access_token = self._get_or_refresh_token()
 
-    def _get_access_token(self) -> str:
-        url = 'https://id.twitch.tv/oauth2/token'
+    def _is_token_valid(self) -> bool:
+        if not IGDBClient._access_token or not IGDBClient._token_expires_at: return False
+
+        buffer_time = settings.PROXY_API['IGDB']['TOKEN_BUFFER_TIME']
+        return time() < (IGDBClient._token_expires_at - buffer_time)
+
+    def _fetch_new_token(self) -> str:
+        url = settings.PROXY_API['IGDB']['AUTH_URL']
         params = {
             'client_id': self.client_id,
             'client_secret': self.client_secret,
             'grant_type': 'client_credentials'
         }
+
         try:
             response = requests.post(url, params=params, timeout=self.timeout)
             response.raise_for_status()
-            return response.json()['access_token']
+            data = response.json()
+
+            IGDBClient._access_token = data['access_token']
+            IGDBClient._token_expires_at = time() + data['expires_in']
+
+            return IGDBClient._access_token
         except Exception:
             return ''
+
+    def _get_or_refresh_token(self) -> str:
+        if self._is_token_valid(): return IGDBClient._access_token
+        return self._fetch_new_token()
 
     def get_headers(self) -> Dict[str, str]:
         return {
@@ -85,15 +106,31 @@ class IGDBClient(BaseAPIClient):
                 get_http_status(INTERNAL_SERVER_ERROR)
             )
 
-    def search_games(self, query: str, limit: int = 10, offset: int = 0) -> Tuple[Dict[str, Any], int]:
+    def get_fields(self) -> str:
+        return ','.join([
+            'id',
+            'name',
+            'summary',
+            'storyline',
+            'cover.url',
+            'first_release_date',
+            'platforms.name',
+            'game_type'
+        ])
+
+    def get_included_game_types(self) -> str:
+        return ','.join(['0', '6', '8', '9'])
+
+    def search_games(self, query: str, limit: int = 50, offset: int = 0) -> Tuple[Dict[str, Any], int]:
         endpoint = 'games'
-        fields = 'id,name,summary,storyline,cover.url,first_release_date,platforms.name,game_type'
-        body = f'search "{query}"; fields {fields}; where game_type = (0,6,8,9); limit {limit}; offset {offset};'
+        fields = self.get_fields()
+        included_game_types = self.get_included_game_types()
+        body = f'search "{query}"; fields {fields}; where game_type = ({included_game_types}); limit {limit}; offset {offset};'
         return self.request_igdb(endpoint, body)
 
     def get_game_details(self, game_id: int) -> Tuple[Dict[str, Any], int]:
         endpoint = 'games'
-        fields = 'id,name,summary,storyline,cover.url,first_release_date,platforms.name,game_type'
+        fields = self.get_fields()
         body = f'fields {fields}; where id = {game_id};'
         return self.request_igdb(endpoint, body)
 
