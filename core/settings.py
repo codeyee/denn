@@ -19,11 +19,16 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    # Third party apps
+    "rest_framework",
+    "corsheaders",
+    # Local apps
     "proxy",
 ]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "corsheaders.middleware.CorsMiddleware",  # CORS debe ir temprano
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -85,9 +90,34 @@ STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# Environment variables
-TMDB_API_KEY = os.getenv('TMDB_API_KEY')
-IGDB_CLIENT_ID = os.getenv("IGDB_CLIENT_ID")
-IGDB_CLIENT_SECRET = os.getenv("IGDB_CLIENT_SECRET")
-SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID")
-SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")
+# Django REST Framework Configuration
+REST_FRAMEWORK = {
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+    ],
+    'DEFAULT_PARSER_CLASSES': [
+        'rest_framework.parsers.JSONParser',
+    ],
+    # Timeout por defecto para las peticiones al proxy
+    'TIMEOUT': 30,
+}
+
+# CORS Configuration (permitir peticiones desde el frontend)
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:5173",
+]
+
+CORS_ALLOW_CREDENTIALS = True
+
+# Proxy API configuration
+PROXY_API = {
+    "TMDB": {
+        "API_KEY": os.getenv('TMDB_API_KEY'),
+        "BASE_URL": "https://api.themoviedb.org/3",
+        "IMAGES_BASE_URL": "https://image.tmdb.org/t/p/w500",
+        "BACKDROP_BASE_URL": "https://image.tmdb.org/t/p/original",
+    },
+}
