@@ -603,7 +603,211 @@ curl -X DELETE "${API_URL}/api/lists/2/members/2/" \
 
 ---
 
+## 📨 INVITACIONES A LISTAS (`/api/content/invitations/`)
+
+El nuevo sistema de invitaciones permite a los propietarios de listas compartidas enviar invitaciones que los usuarios deben aceptar o rechazar, en lugar de añadirlos directamente.
+
+### 1. Enviar Invitación a Lista
+
+```bash
+curl -X POST "${API_URL}/api/content/lists/2/invitations/" \
+  -H "Authorization: Bearer ${TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "maria"
+  }'
+```
+
+**O por email:**
+```bash
+curl -X POST "${API_URL}/api/content/lists/2/invitations/" \
+  -H "Authorization: Bearer ${TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "maria@example.com"
+  }'
+```
+
+**Respuesta:**
+```json
+{
+  "id": 1,
+  "user_list": {
+    "id": 2,
+    "name": "Películas de Acción",
+    "description": "Las mejores películas de acción",
+    "list_type": "SHARED",
+    "owner": {
+      "id": 1,
+      "username": "john",
+      "email": "john@example.com",
+      "first_name": "John",
+      "last_name": "Doe"
+    },
+    "created_at": "2024-10-26T10:00:00Z",
+    "updated_at": "2024-10-26T10:00:00Z"
+  },
+  "inviter": {
+    "id": 1,
+    "username": "john",
+    "email": "john@example.com",
+    "first_name": "John",
+    "last_name": "Doe"
+  },
+  "invitee": {
+    "id": 2,
+    "username": "maria",
+    "email": "maria@example.com",
+    "first_name": "María",
+    "last_name": "García"
+  },
+  "status": "PENDING",
+  "created_at": "2024-10-26T12:00:00Z",
+  "responded_at": null
+}
+```
+
+### 2. Ver Invitaciones Recibidas
+
+```bash
+curl -X GET "${API_URL}/api/content/invitations/" \
+  -H "Authorization: Bearer ${TOKEN}"
+```
+
+**Respuesta:**
+```json
+[
+  {
+    "id": 1,
+    "user_list": {
+      "id": 2,
+      "name": "Películas de Acción",
+      "list_type": "SHARED",
+      "owner": {...}
+    },
+    "inviter": {
+      "id": 1,
+      "username": "john"
+    },
+    "invitee": {
+      "id": 2,
+      "username": "maria"
+    },
+    "status": "PENDING",
+    "created_at": "2024-10-26T12:00:00Z",
+    "responded_at": null
+  }
+]
+```
+
+### 3. Ver Invitaciones Enviadas
+
+```bash
+curl -X GET "${API_URL}/api/content/invitations/?sent=true" \
+  -H "Authorization: Bearer ${TOKEN}"
+```
+
+### 4. Filtrar Invitaciones por Estado
+
+```bash
+# Solo pendientes (único estado que existe, ya que las invitaciones se eliminan al aceptar/rechazar)
+curl -X GET "${API_URL}/api/content/invitations/?status=PENDING" \
+  -H "Authorization: Bearer ${TOKEN}"
+```
+
+> **Nota:** Las invitaciones solo tienen estado `PENDING` porque se eliminan automáticamente cuando son aceptadas o rechazadas.
+
+### 5. Ver Invitaciones de una Lista (solo propietario)
+
+```bash
+curl -X GET "${API_URL}/api/content/invitations/?list_id=2" \
+  -H "Authorization: Bearer ${TOKEN}"
+```
+
+### 6. Aceptar Invitación
+
+```bash
+curl -X POST "${API_URL}/api/content/invitations/1/respond/" \
+  -H "Authorization: Bearer ${TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "action": "accept"
+  }'
+```
+
+**Respuesta:**
+```json
+{
+  "detail": "Invitation accepted. You are now a member of \"Películas de Acción\"."
+}
+```
+
+> **Nota:** La invitación se elimina automáticamente después de ser aceptada.
+
+### 7. Rechazar Invitación
+
+```bash
+curl -X POST "${API_URL}/api/content/invitations/1/respond/" \
+  -H "Authorization: Bearer ${TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "action": "reject"
+  }'
+```
+
+**Respuesta:**
+```json
+{
+  "detail": "Invitation rejected."
+}
+```
+
+> **Nota:** La invitación se elimina automáticamente después de ser rechazada.
+
+### 8. Cancelar Invitación Pendiente (solo quien invitó o propietario)
+
+```bash
+curl -X DELETE "${API_URL}/api/content/invitations/1/" \
+  -H "Authorization: Bearer ${TOKEN}"
+```
+
+**Respuesta:**
+```json
+{
+  "detail": "Invitation cancelled."
+}
+```
+
+### 9. Ver Detalles de una Invitación
+
+```bash
+curl -X GET "${API_URL}/api/content/invitations/1/" \
+  -H "Authorization: Bearer ${TOKEN}"
+```
+
+---
+
 ## ⭐ CALIFICACIONES (`/api/ratings/`)
+
+### Campos Cacheados en ContentItem
+
+Los `ContentItem` ahora incluyen campos cacheados de calificaciones que se actualizan automáticamente:
+- `rating_count`: Número total de calificaciones
+- `average_rating`: Calificación promedio (de 0.5 a 10.0)
+
+Estos campos aparecen en todas las respuestas de ContentItem:
+
+```json
+{
+  "id": 1,
+  "source_api": "tmdb",
+  "external_id": "550",
+  "content_type": "MOVIE",
+  "rating_count": 15,
+  "average_rating": 8.73,
+  "created_at": "2024-10-26T10:40:00Z"
+}
+```
 
 ### 1. Crear Calificación
 

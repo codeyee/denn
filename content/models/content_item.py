@@ -31,6 +31,19 @@ class ContentItem(models.Model):
         help_text='Content type'
     )
 
+    rating_count = models.IntegerField(
+        default=0,
+        help_text='Total number of ratings (cached)'
+    )
+
+    average_rating = models.DecimalField(
+        max_digits=3,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text='Average rating score (cached)'
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

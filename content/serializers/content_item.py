@@ -10,11 +10,15 @@ class ContentItemSerializer(serializers.ModelSerializer):
             'source_api',
             'external_id',
             'content_type',
+            'rating_count',
+            'average_rating',
             'created_at',
         ]
 
         read_only_fields = [
             'id',
+            'rating_count',
+            'average_rating',
             'created_at',
         ]
 

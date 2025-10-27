@@ -5,6 +5,7 @@ from content.views import (
     UserListViewSet,
     ListItemViewSet,
     ListMemberViewSet,
+    ListInvitationViewSet,
 )
 
 app_name = 'lists'
@@ -25,12 +26,16 @@ list_item_detail = ListItemViewSet.as_view({
 })
 
 list_member_list = ListMemberViewSet.as_view({
-    'get': 'list',
-    'post': 'create'
+    'get': 'list'
 })
 
 list_member_detail = ListMemberViewSet.as_view({
     'delete': 'destroy'
+})
+
+list_invitation_list = ListInvitationViewSet.as_view({
+    'get': 'list',
+    'post': 'create'
 })
 
 urlpatterns = [
@@ -55,5 +60,10 @@ urlpatterns = [
         '<int:list_pk>/members/<int:pk>/',
         list_member_detail,
         name='members-detail'
+    ),
+    path(
+        '<int:list_pk>/invitations/',
+        list_invitation_list,
+        name='invitations-list'
     ),
 ]
