@@ -151,7 +151,7 @@ REST_AUTH = {
     'JWT_AUTH_REFRESH_COOKIE': 'refresh-token',
     'JWT_AUTH_HTTPONLY': False,
     'USER_DETAILS_SERIALIZER': 'authentication.serializers.UserSerializer',
-    'LOGIN_SERIALIZER': 'dj_rest_auth.serializers.LoginSerializer',
+    'LOGIN_SERIALIZER': 'authentication.serializers.EmailLoginSerializer',
     'SESSION_LOGIN': False,
 }
 
