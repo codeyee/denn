@@ -1,101 +1,88 @@
 "use client";
-import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import { Button } from "@/app/_components/ui/button";
 import { Card } from "@/app/_components/ui/card";
+import { Input } from "@/app/_components/ui/input";
 
-export default function RegisterForm() {
-  const [formData, setFormData] = useState({
-    username: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
+// Define validation schema
+const registerSchema = z
+  .object({
+    username: z
+      .string()
+      .min(1, "Username is required")
+      .min(3, "Username must be at least 3 characters")
+      .trim(),
+    email: z
+      .string()
+      .min(1, "Email is required")
+      .email("Please enter a valid email address"),
+    password: z
+      .string()
+      .min(1, "Password is required")
+      .min(8, "Password must be at least 8 characters"),
+    confirmPassword: z.string().min(1, "Please confirm your password"),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
+type RegisterFormData = z.infer<typeof registerSchema>;
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+export default function RegisterForm() {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<RegisterFormData>({
+    resolver: zodResolver(registerSchema),
+    mode: "onTouched",
+  });
+
+  const onSubmit = (data: RegisterFormData) => {
+    console.log("Form submitted successfully:", data);
     // Add your authentication register logic here
-    console.log("Form submitted:", formData);
   };
 
   return (
     <Card className="w-full max-w-md mx-auto p-8">
       <h2 className="text-2xl font-bold text-center mb-6">Create Account</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="username" className="block text-sm font-medium mb-2">
-            Username
-          </label>
-          <input
-            type="text"
-            id="username"
-            name="username"
-            value={formData.username}
-            onChange={handleChange}
-            required
-            className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-            placeholder="Enter your username"
-          />
-        </div>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <Input
+          label="Username"
+          type="text"
+          placeholder="Enter your username"
+          error={errors.username?.message}
+          {...register("username")}
+        />
 
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium mb-2">
-            Email
-          </label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-            className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-            placeholder="Enter your email"
-          />
-        </div>
+        <Input
+          label="Email"
+          type="email"
+          placeholder="Enter your email"
+          error={errors.email?.message}
+          {...register("email")}
+        />
 
-        <div>
-          <label htmlFor="password" className="block text-sm font-medium mb-2">
-            Password
-          </label>
-          <input
-            type="password"
-            id="password"
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            required
-            className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-            placeholder="Enter your password"
-          />
-        </div>
+        <Input
+          label="Password"
+          type="password"
+          placeholder="Enter your password"
+          error={errors.password?.message}
+          {...register("password")}
+        />
 
-        <div>
-          <label
-            htmlFor="confirmPassword"
-            className="block text-sm font-medium mb-2"
-          >
-            Confirm Password
-          </label>
-          <input
-            type="password"
-            id="confirmPassword"
-            name="confirmPassword"
-            value={formData.confirmPassword}
-            onChange={handleChange}
-            required
-            className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-            placeholder="Confirm your password"
-          />
-        </div>
+        <Input
+          label="Confirm Password"
+          type="password"
+          placeholder="Confirm your password"
+          error={errors.confirmPassword?.message}
+          {...register("confirmPassword")}
+        />
 
-        <Button type="submit" className="w-full cursor-pointer">
+        <Button type="submit" className="w-full cursor-pointer mt-4">
           Register
         </Button>
       </form>
