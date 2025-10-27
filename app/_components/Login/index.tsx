@@ -10,39 +10,25 @@ import { useEffect } from "react";
 import Link from "next/link";
 
 // Define validation schema
-const registerSchema = z
-  .object({
-    username: z
-      .string()
-      .min(1, "Username is required")
-      .min(3, "Username must be at least 3 characters")
-      .trim(),
-    email: z
-      .string()
-      .min(1, "Email is required")
-      .email("Please enter a valid email address"),
-    password: z
-      .string()
-      .min(1, "Password is required")
-      .min(8, "Password must be at least 8 characters"),
-    confirmPassword: z.string().min(1, "Please confirm your password"),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords do not match",
-    path: ["confirmPassword"],
-  });
+const loginSchema = z.object({
+  email: z
+    .string()
+    .min(1, "Email is required")
+    .email("Please enter a valid email address"),
+  password: z.string().min(1, "Password is required"),
+});
 
-type RegisterFormData = z.infer<typeof registerSchema>;
+type LoginFormData = z.infer<typeof loginSchema>;
 
-export default function RegisterForm() {
-  const { register: registerUser, isLoading, error, clearError } = useAuth();
+export default function LoginForm() {
+  const { login, isLoading, error, clearError } = useAuth();
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<RegisterFormData>({
-    resolver: zodResolver(registerSchema),
+  } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
     mode: "onTouched",
   });
 
@@ -53,19 +39,19 @@ export default function RegisterForm() {
     };
   }, [clearError]);
 
-  const onSubmit = async (data: RegisterFormData) => {
+  const onSubmit = async (data: LoginFormData) => {
     try {
-      await registerUser(data.username, data.email, data.password);
+      await login(data.email, data.password);
       // Redirect is handled in useAuth hook
     } catch (err) {
       // Error is already set in the store
-      console.error("Registration failed:", err);
+      console.error("Login failed:", err);
     }
   };
 
   return (
     <Card className="w-full max-w-md mx-auto p-8">
-      <h2 className="text-2xl font-bold text-center mb-6">Create Account</h2>
+      <h2 className="text-2xl font-bold text-center mb-6">Sign In</h2>
       
       {error && (
         <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/20 border border-red-400 dark:border-red-800 text-red-700 dark:text-red-400 rounded">
@@ -74,14 +60,6 @@ export default function RegisterForm() {
       )}
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        <Input
-          label="Username"
-          type="text"
-          placeholder="Enter your username"
-          error={errors.username?.message}
-          {...register("username")}
-        />
-
         <Input
           label="Email"
           type="email"
@@ -98,32 +76,24 @@ export default function RegisterForm() {
           {...register("password")}
         />
 
-        <Input
-          label="Confirm Password"
-          type="password"
-          placeholder="Confirm your password"
-          error={errors.confirmPassword?.message}
-          {...register("confirmPassword")}
-        />
-
         <Button 
           type="submit" 
           className="w-full cursor-pointer mt-4"
           disabled={isLoading}
         >
-          {isLoading ? "Registering..." : "Register"}
+          {isLoading ? "Signing in..." : "Sign In"}
         </Button>
       </form>
 
       <div className="mt-4 text-center text-sm">
         <span className="text-gray-600 dark:text-gray-400">
-          Already have an account?{" "}
+          Don&apos;t have an account?{" "}
         </span>
         <Link 
-          href="/login" 
+          href="/register" 
           className="text-blue-600 dark:text-blue-400 hover:underline"
         >
-          Sign in
+          Sign up
         </Link>
       </div>
     </Card>

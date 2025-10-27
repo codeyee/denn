@@ -1,4 +1,5 @@
 import { ThemeProvider } from "@/app/_components/ThemeProvider";
+import { StoreProvider } from "@/app/_providers/StoreProvider";
 
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
@@ -35,7 +36,9 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {children}
+          <StoreProvider>
+            {children}
+          </StoreProvider>
         </ThemeProvider>
       </body>
     </html>
