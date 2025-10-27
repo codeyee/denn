@@ -6,8 +6,11 @@ import {
   NavigationMenuList,
 } from "@/app/_components/ui/navigation-menu";
 import { Button } from "../ui/button";
+import { useAuth } from "@/app/_hooks/useAuth";
 
 export default function TopMenu() {
+  const { user, isAuthenticated, logout } = useAuth();
+
   return (
     <div className="fixed top-0 left-0 right-0 z-50 bg-background border-b shadow-sm">
       <div className="w-full max-w-screen-2xl mx-auto px-4 py-3">
@@ -23,15 +26,35 @@ export default function TopMenu() {
               </NavigationMenuItem>
             </NavigationMenuList>
           </NavigationMenu>
+          
           <div className="flex items-center gap-2">
-            <Link href="/login">
-              <Button variant="link" className="cursor-pointer">
-                Login
-              </Button>
-            </Link>
-            <Link href="/register">
-              <Button className="cursor-pointer">Register</Button>
-            </Link>
+            {isAuthenticated && user ? (
+              <>
+                <Link href="/profile">
+                  <Button variant="link" className="cursor-pointer">
+                    Welcome, {user.username}
+                  </Button>
+                </Link>
+                <Button 
+                  variant="outline" 
+                  className="cursor-pointer"
+                  onClick={logout}
+                >
+                  Logout
+                </Button>
+              </>
+            ) : (
+              <>
+                <Link href="/login">
+                  <Button variant="link" className="cursor-pointer">
+                    Login
+                  </Button>
+                </Link>
+                <Link href="/register">
+                  <Button className="cursor-pointer">Register</Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>
