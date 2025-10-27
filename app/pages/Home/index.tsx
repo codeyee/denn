@@ -1,0 +1,28 @@
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/app/components/ui/card";
+
+export default function Home() {
+  return (
+    <div className="flex min-h-screen items-center justify-center p-8">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>Hello World</CardTitle>
+          <CardDescription>
+            Welcome to your shadcn/ui application
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-center text-lg">
+            This is a simple Hello World example using the Card component from
+            shadcn/ui.
+          </p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
