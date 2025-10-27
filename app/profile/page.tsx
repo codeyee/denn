@@ -4,13 +4,15 @@ import { ProtectedRoute } from "@/app/_components/ProtectedRoute";
 import { useAuth } from "@/app/_hooks/useAuth";
 import { Button } from "@/app/_components/ui/button";
 import { Card } from "@/app/_components/ui/card";
+import TopMenu from "@/app/_components/TopMenu";
 
 export default function ProfilePage() {
   const { user, logout } = useAuth();
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen p-8">
+      <TopMenu />
+      <div className="min-h-screen p-8 pt-24">
         <Card className="max-w-2xl mx-auto p-8">
           <h1 className="text-3xl font-bold mb-6">Profile</h1>
           
