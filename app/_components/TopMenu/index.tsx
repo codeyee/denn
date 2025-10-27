@@ -4,7 +4,7 @@ import {
   NavigationMenu,
   NavigationMenuItem,
   NavigationMenuList,
-} from "@/app/components/ui/navigation-menu";
+} from "@/app/_components/ui/navigation-menu";
 import { Button } from "../ui/button";
 
 export default function TopMenu() {
