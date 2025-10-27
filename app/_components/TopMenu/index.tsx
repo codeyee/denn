@@ -16,7 +16,7 @@ export default function TopMenu() {
             <NavigationMenuList>
               <NavigationMenuItem>
                 <Link href="/">
-                  <Button variant="link" className="text-white cursor-pointer">
+                  <Button variant="link" className="cursor-pointer">
                     Home
                   </Button>
                 </Link>
@@ -25,7 +25,7 @@ export default function TopMenu() {
           </NavigationMenu>
           <div className="flex items-center gap-2">
             <Link href="/login">
-              <Button variant="link" className="text-white cursor-pointer">
+              <Button variant="link" className="cursor-pointer">
                 Login
               </Button>
             </Link>

@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/app/_components/ui/button";
 import { Card } from "@/app/_components/ui/card";
-import { Input } from "@/app/_components/ui/input";
+import Input from "@/app/_components/Input";
 
 // Define validation schema
 const registerSchema = z

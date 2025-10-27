@@ -13,10 +13,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="relative">
         {label && (
-          <label
-            htmlFor={inputId}
-            className="block text-sm font-medium mb-2"
-          >
+          <label htmlFor={inputId} className="block text-sm font-medium mb-2">
             {label}
           </label>
         )}
@@ -40,4 +37,4 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
 
 Input.displayName = "Input";
 
-export { Input };
+export default Input;
