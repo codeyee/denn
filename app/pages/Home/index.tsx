@@ -5,10 +5,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/app/components/ui/card";
+import TopMenu from "@/app/components/TopMenu";
 
 export default function Home() {
   return (
     <div className="flex min-h-screen items-center justify-center p-8">
+      <TopMenu />
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Hello World</CardTitle>
