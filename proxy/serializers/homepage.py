@@ -20,11 +20,8 @@ class BooksSuggestionsResponseSerializer(serializers.Serializer):
     results = BookSearchItemSerializer(many=True, help_text="List of suggested books")
     count = serializers.IntegerField(help_text="Number of suggestions returned")
 
-class HomepageCategorySerializer(serializers.Serializer):
+class HomepageResponseSerializer(serializers.Serializer):
     video = VideoSearchItemSerializer(many=True, help_text="Suggested movies and TV shows")
     games = GameSearchItemSerializer(many=True, help_text="Suggested games")
     music = MusicSearchItemSerializer(many=True, help_text="Suggested albums")
     books = BookSearchItemSerializer(many=True, help_text="Suggested books")
-
-class HomepageResponseSerializer(serializers.Serializer):
-    suggestions = HomepageCategorySerializer(help_text="Suggestions for each category")

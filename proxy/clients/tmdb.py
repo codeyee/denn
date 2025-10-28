@@ -81,22 +81,7 @@ class TMDBClient(BaseAPIClient):
         params = {'page': page}
         return self.get(endpoint, params=params)
 
-    def get_now_playing_movies(self, page: int = 1) -> Tuple[Dict[str, Any], int]:
-        endpoint = 'movie/now_playing'
-        params = {'page': page}
-        return self.get(endpoint, params=params)
-
-    def get_top_rated_movies(self, page: int = 1) -> Tuple[Dict[str, Any], int]:
-        endpoint = 'movie/top_rated'
-        params = {'page': page}
-        return self.get(endpoint, params=params)
-
     def get_popular_tv(self, page: int = 1) -> Tuple[Dict[str, Any], int]:
         endpoint = 'tv/popular'
-        params = {'page': page}
-        return self.get(endpoint, params=params)
-
-    def get_top_rated_tv(self, page: int = 1) -> Tuple[Dict[str, Any], int]:
-        endpoint = 'tv/top_rated'
         params = {'page': page}
         return self.get(endpoint, params=params)

@@ -99,12 +99,10 @@ class HomepageView(APIView):
             print(f"Error fetching books suggestions: {e}")
 
         response_data = {
-            'suggestions': {
-                'video': video_results,
-                'games': games_results,
-                'music': music_results,
-                'books': books_results
-            }
+            'video': video_results,
+            'games': games_results,
+            'music': music_results,
+            'books': books_results
         }
 
         return Response(response_data, status=http_status.HTTP_200_OK)
