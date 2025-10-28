@@ -92,7 +92,12 @@ export const useAuthStore = create<AuthStore>()(
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({ username, email, password }),
+            body: JSON.stringify({
+              username,
+              email,
+              password,
+              password_confirm: password,
+            }),
           });
 
           if (!response.ok) {
