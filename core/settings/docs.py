@@ -81,7 +81,7 @@ SPECTACULAR_SETTINGS = {
     },
     "SWAGGER_UI_SETTINGS": SWAGGER_UI_SETTINGS,
     "REDOC_UI_SETTINGS": REDOC_UI_SETTINGS,
-    "PREPROCESSING_HOOKS": ["core.schema_hooks.preprocess_authentication_tags"],
-    "POSTPROCESSING_HOOKS": ["core.schema_hooks.preprocess_spectacular_schema"],
+    "PREPROCESSING_HOOKS": ["core.hooks.preprocess_authentication_tags"],
+    "POSTPROCESSING_HOOKS": ["core.hooks.preprocess_spectacular_schema"],
     "ENUM_NAME_OVERRIDES": ENUM_NAME_OVERRIDES,
 }

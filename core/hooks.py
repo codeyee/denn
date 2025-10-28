@@ -31,7 +31,7 @@ def preprocess_spectacular_schema(result, generator, request, public):
 
     if "tags" in result:
         result["tags"] = [
-            tag for tag in result["tags"] 
+            tag for tag in result["tags"]
             if tag.get("name") not in ["auth", "schema"]
         ]
 
