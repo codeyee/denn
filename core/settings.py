@@ -12,7 +12,14 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 
 DEBUG = os.getenv("DEBUG", "False") == "True"
 
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+allowed_hosts_env = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1")
+ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_env.split(",")]
+
+if os.getenv("RAILWAY_PUBLIC_DOMAIN"):
+    ALLOWED_HOSTS.append(os.getenv("RAILWAY_PUBLIC_DOMAIN"))
+
+if os.getenv("RAILWAY_ENVIRONMENT"):
+    ALLOWED_HOSTS.append(".railway.app")
 
 DJANGO_APPS = [
     "django.contrib.admin",

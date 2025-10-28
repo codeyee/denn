@@ -128,16 +128,31 @@ The API will be available at `http://localhost:8000`
 
 For detailed API endpoints, request/response examples, and integration guides, see [API_REFERENCE.md](./API_REFERENCE.md).
 
-### Quick Example
+### Health Check
+
+**Check API status:**
+```bash
+GET http://localhost:8000/
+```
+Response:
+```json
+{
+  "status": "healthy",
+  "service": "Denn API",
+  "version": "2.0"
+}
+```
+
+### Quick Examples
 
 **Search for movies:**
 ```bash
-GET http://localhost:8000/proxy/video/search?query=Kimetsu
+GET http://localhost:8000/api/proxy/video/search?query=Kimetsu
 ```
 
 **Get album details:**
 ```bash
-GET http://localhost:8000/proxy/music/7ycBtnsMtyVbbwTfJwRjSP
+GET http://localhost:8000/api/proxy/music/7ycBtnsMtyVbbwTfJwRjSP
 ```
 
 ## 🔐 Security Features
