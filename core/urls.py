@@ -9,8 +9,10 @@ from drf_spectacular.views import (
 urlpatterns = [
     path("api/admin/", admin.site.urls),
 
+
     path('api/docs/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
     path('api/swagger/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
 
     path("api/auth/", include('authentication.urls', namespace='authentication')),
     path("api/content/", include('content.urls', namespace='content')),
