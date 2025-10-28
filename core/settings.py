@@ -158,6 +158,20 @@ CORS_ALLOWED_ORIGINS = [origin.strip() for origin in cors_origins.split(",") if 
 
 CORS_ALLOW_CREDENTIALS = True
 
+CSRF_TRUSTED_ORIGINS = []
+
+if os.getenv("RAILWAY_PUBLIC_DOMAIN"):
+    railway_domain = os.getenv("RAILWAY_PUBLIC_DOMAIN")
+    CSRF_TRUSTED_ORIGINS.append(f"https://{railway_domain}")
+
+if os.getenv("RAILWAY_ENVIRONMENT"):
+    CSRF_TRUSTED_ORIGINS.append("https://*.railway.app")
+    CSRF_TRUSTED_ORIGINS.append("https://*.up.railway.app")
+
+csrf_origins_env = os.getenv("CSRF_TRUSTED_ORIGINS", "")
+if csrf_origins_env:
+    CSRF_TRUSTED_ORIGINS.extend([origin.strip() for origin in csrf_origins_env.split(",") if origin.strip()])
+
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(hours=5),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
