@@ -14,7 +14,12 @@ class UserListViewSet(viewsets.ModelViewSet):
         user = self.request.user
         return UserList.objects.filter(
             Q(owner=user) | Q(members=user)
-        ).distinct().prefetch_related('members', 'items')
+        ).distinct().prefetch_related(
+            'members',
+            'items__content_item',
+            'items__added_by',
+            'items__content_item__ratings__user'
+        )
 
     def get_serializer_class(self):
         if self.action == 'retrieve':

@@ -1,11 +1,22 @@
 from rest_framework import serializers
-from content.models import ListItem, ContentItem
+from content.models import ListItem, ContentItem, Rating
 from .content_item import ContentItemSerializer
 from .user import UserSerializer
+
+class MemberRatingSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+
+    class Meta:
+        model = Rating
+        fields = ['user', 'score', 'comment', 'created_at', 'updated_at']
+        read_only_fields = fields
 
 class ListItemSerializer(serializers.ModelSerializer):
     content_item = ContentItemSerializer(read_only=True)
     added_by = UserSerializer(read_only=True)
+    member_ratings = serializers.SerializerMethodField()
+    list_rating = serializers.SerializerMethodField()
+    member_rating_count = serializers.SerializerMethodField()
 
     class Meta:
         model = ListItem
@@ -19,6 +30,9 @@ class ListItemSerializer(serializers.ModelSerializer):
             'added_at',
             'completed_at',
             'notes',
+            'member_ratings',
+            'list_rating',
+            'member_rating_count',
         ]
 
         read_only_fields = [
@@ -27,8 +41,50 @@ class ListItemSerializer(serializers.ModelSerializer):
             'content_item',
             'added_by',
             'added_at',
-            'completed_at'
+            'completed_at',
+            'member_ratings',
+            'list_rating',
+            'member_rating_count',
         ]
+
+    def get_member_ratings(self, obj):
+        if obj.status != ListItem.Status.COMPLETED: return []
+
+        list_members = obj.user_list.members.all()
+
+        member_ratings = Rating.objects.filter(
+            content_item=obj.content_item,
+            user__in=list_members
+        ).select_related('user')
+
+        return MemberRatingSerializer(member_ratings, many=True).data
+
+    def get_list_rating(self, obj):
+        if obj.status != ListItem.Status.COMPLETED: return None
+
+        list_members = obj.user_list.members.all()
+
+        member_ratings = Rating.objects.filter(
+            content_item=obj.content_item,
+            user__in=list_members
+        )
+
+        if not member_ratings.exists(): return None
+
+        total_score = sum(float(rating.score) for rating in member_ratings)
+        count = member_ratings.count()
+
+        return round(total_score / count, 1) if count > 0 else None
+
+    def get_member_rating_count(self, obj):
+        if obj.status != ListItem.Status.COMPLETED: return 0
+
+        list_members = obj.user_list.members.all()
+
+        return Rating.objects.filter(
+            content_item=obj.content_item,
+            user__in=list_members
+        ).count()
 
 class ListItemCreateSerializer(serializers.ModelSerializer):
     source_api = serializers.ChoiceField(

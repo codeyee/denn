@@ -16,6 +16,9 @@ class ListItemViewSet(viewsets.ModelViewSet):
             'content_item',
             'added_by',
             'user_list'
+        ).prefetch_related(
+            'user_list__members',
+            'content_item__ratings__user'
         ).order_by('-added_at')
 
     def get_serializer_class(self):
