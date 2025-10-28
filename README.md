@@ -85,22 +85,24 @@ pip install -r requirements.txt
 
 Create a `.env` file in the project root:
 ```env
-# Django Configuration
-SECRET_KEY=your-super-secret-key-here
+SECRET_KEY=tu-clave-secreta-super-segura-aqui
+DEBUG=False
+ALLOWED_HOSTS=tu-app.railway.app,tu-dominio-personalizado.com
 
-# TMDB Configuration
-TMDB_API_KEY=your_tmdb_api_key
+PGDATABASE=${{Postgres.PGDATABASE}}
+PGUSER=${{Postgres.PGUSER}}
+PGPASSWORD=${{Postgres.PGPASSWORD}}
+PGHOST=${{Postgres.PGHOST}}
+PGPORT=${{Postgres.PGPORT}}
 
-# IGDB Configuration
-IGDB_CLIENT_ID=your_igdb_client_id
-IGDB_CLIENT_SECRET=your_igdb_client_secret
+CORS_ALLOWED_ORIGINS=https://tu-frontend.vercel.app,https://otro-dominio.com
 
-# Spotify Configuration
-SPOTIFY_CLIENT_ID=your_spotify_client_id
-SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
-
-# OpenLibrary Configuration
-OPENLIBRARY_USER_AGENT=YourAppName/1.0 (your-email@example.com)
+TMDB_API_KEY=tu_tmdb_api_key
+IGDB_CLIENT_ID=tu_igdb_client_id
+IGDB_CLIENT_SECRET=tu_igdb_client_secret
+SPOTIFY_CLIENT_ID=tu_spotify_client_id
+SPOTIFY_CLIENT_SECRET=tu_spotify_client_secret
+OPENLIBRARY_USER_AGENT=DennAPI/1.0 (tu-email@example.com)
 ```
 
 5. **Run migrations**
@@ -173,9 +175,41 @@ GET http://localhost:8000/proxy/music/7ycBtnsMtyVbbwTfJwRjSP
 
 ---
 
-## 👤 Author
+## 🚀 Despliegue en Producción
+
+### Railway (Recomendado)
+
+Este proyecto está completamente preparado para desplegarse en [Railway](https://railway.app/) con PostgreSQL.
+
+**Inicio Rápido (5 minutos):**
+1. Sube tu código a GitHub
+2. Crea un proyecto en Railway desde tu repositorio
+3. Agrega PostgreSQL al proyecto
+4. Configura las variables de entorno (ver `ENV_VARIABLES.md`)
+5. ¡Listo! Railway desplegará automáticamente
+
+📖 **Guías detalladas:**
+- [🚀 Inicio Rápido (5 pasos)](./DEPLOY_QUICK_START.md)
+- [📚 Guía Completa de Despliegue](./RAILWAY_DEPLOYMENT_GUIDE.md)
+- [🔐 Variables de Entorno](./ENV_VARIABLES.md)
+
+### Características de Producción
+
+✅ **Listo para producción:**
+- Servidor Gunicorn
+- Archivos estáticos con Whitenoise
+- Base de datos PostgreSQL
+- Configuración dual (desarrollo/producción)
+- Migraciones automáticas
+- Health checks configurados
+- Variables de entorno seguras
+
+---
+
+## 👤 Authors
 
 [Emmanuel López - @emlopezr](https://github.com/emlopezr)
+[Emmanuel Arizabaleta - @imEag](https://github.com/imEag)
 
 ---
 
