@@ -26,3 +26,35 @@ class OpenLibraryClient(BaseAPIClient):
         }
         return self.get(endpoint, params=params)
 
+    def get_book_by_key(self, book_key: str) -> Tuple[Dict[str, Any], int]:
+        book_key = book_key.lstrip('/')
+        endpoint = f'{book_key}.json'
+        return self.get(endpoint)
+
+    def search_by_key(self, key: str) -> Tuple[Dict[str, Any], int]:
+        endpoint = 'search.json'
+        params = {
+            'q': key,
+            'limit': 1,
+            'fields': '*'
+        }
+        return self.get(endpoint, params=params)
+
+    def get_bulk_books(self, book_keys: list[str]) -> Tuple[list[Dict[str, Any]], int]:
+        results = []
+
+        for book_key in book_keys:
+            data, status_code = self.search_by_key(book_key)
+
+            book_data = None
+            if status_code == 200 and 'docs' in data and len(data['docs']) > 0:
+                book_data = data['docs'][0]
+
+            results.append({
+                'key': book_key,
+                'data': book_data if book_data else None,
+                'status_code': status_code if book_data else 404,
+                'error': None if book_data else {'error': 'RESOURCE_NOT_FOUND', 'message': 'Book not found'}
+            })
+
+        return results, 200

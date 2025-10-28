@@ -24,7 +24,11 @@ def preprocess_spectacular_schema(result, generator, request, public):
                     new_tags = ['Authentication' if tag == 'auth' else tag for tag in tags]
                     operation['tags'] = new_tags
 
+                if 'schema' in tags:
+                    new_tags = ['API Schema' if tag == 'schema' else tag for tag in tags]
+                    operation['tags'] = new_tags
+
     if 'tags' in result:
-        result['tags'] = [tag for tag in result['tags'] if tag.get('name') != 'auth']
+        result['tags'] = [tag for tag in result['tags'] if tag.get('name') not in ['auth', 'schema']]
 
     return result

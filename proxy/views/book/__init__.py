@@ -1,4 +1,7 @@
 from .search import BookSearchView
+from .bulk import BookBulkView
 
-__all__ = ['BookSearchView']
-
+__all__ = [
+  'BookSearchView',
+  'BookBulkView'
+]

@@ -130,3 +130,11 @@ class IGDBClient(BaseAPIClient):
         body = f'search "{query}"; fields {fields}; where game_type = ({included_game_types}); limit {limit}; offset {offset};'
         return self.request_igdb(endpoint, body)
 
+    def get_bulk_games(self, game_ids: list[int]) -> Tuple[Dict[str, Any], int]:
+        if not game_ids: return [], 200
+
+        endpoint = 'games'
+        fields = self.get_fields()
+        ids_str = ','.join(str(id) for id in game_ids)
+        body = f'fields {fields}; where id = ({ids_str}); limit {len(game_ids)};'
+        return self.request_igdb(endpoint, body)

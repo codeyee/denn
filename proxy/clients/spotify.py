@@ -70,3 +70,10 @@ class SpotifyClient(BaseAPIClient):
     def get_album(self, album_id: str) -> Tuple[Dict[str, Any], int]:
         endpoint = f'albums/{album_id}'
         return self.get(endpoint)
+
+    def get_bulk_albums(self, album_ids: list[str]) -> Tuple[Dict[str, Any], int]:
+        if not album_ids: return {'albums': []}, 200
+
+        endpoint = 'albums'
+        params = {'ids': ','.join(album_ids[:20])}
+        return self.get(endpoint, params=params)
