@@ -153,12 +153,22 @@ REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
-cors_origins = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:5173")
+cors_origins = os.getenv("CORS_ALLOWED_ORIGINS")
 CORS_ALLOWED_ORIGINS = [origin.strip() for origin in cors_origins.split(",") if origin.strip()]
+
+CORS_ALLOWED_ORIGINS.append("http://localhost:3000")
+CORS_ALLOWED_ORIGINS.append("http://localhost:5173")
+CORS_ALLOWED_ORIGINS.append("http://127.0.0.1:3000")
+CORS_ALLOWED_ORIGINS.append("http://127.0.0.1:5173")
 
 CORS_ALLOW_CREDENTIALS = True
 
 CSRF_TRUSTED_ORIGINS = []
+
+CSRF_TRUSTED_ORIGINS.append("http://localhost:3000")
+CSRF_TRUSTED_ORIGINS.append("http://localhost:5173")
+CSRF_TRUSTED_ORIGINS.append("http://127.0.0.1:3000")
+CSRF_TRUSTED_ORIGINS.append("http://127.0.0.1:5173")
 
 if os.getenv("RAILWAY_PUBLIC_DOMAIN"):
     railway_domain = os.getenv("RAILWAY_PUBLIC_DOMAIN")
