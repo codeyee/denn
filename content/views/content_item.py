@@ -13,19 +13,33 @@ from content.permissions import IsAdminOrReadOnly
     list=extend_schema(
         tags=['Content Items'],
         summary='List content items',
-        description='Get all content items with optional filtering by source API, content type, or search.',
+        description='''
+        Get all content items with optional filtering by source API, content type, or search.
+
+        **Optional Header:**
+        - `X-Render-Content`: When present, includes detailed information from external APIs (TMDB, IGDB, Spotify, OpenLibrary) in the `source_data` field of each content item.
+        ''',
         parameters=[
-            OpenApiParameter('source_api', OpenApiTypes.STR, description='Filter by source API (tmdb, igdb, spotify, openlibrary)'),
-            OpenApiParameter('content_type', OpenApiTypes.STR, description='Filter by content type (MOVIE, TV_SHOW, GAME, ALBUM, BOOK)'),
-            OpenApiParameter('external_id', OpenApiTypes.STR, description='Filter by external ID'),
-            OpenApiParameter('ordering', OpenApiTypes.STR, description='Order by field (e.g., "-created_at", "rating_count", "-average_rating")'),
+            OpenApiParameter('source_api', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Filter by source API (tmdb, igdb, spotify, openlibrary)'),
+            OpenApiParameter('content_type', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Filter by content type (MOVIE, TV_SHOW, GAME, ALBUM, BOOK)'),
+            OpenApiParameter('external_id', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Filter by external ID'),
+            OpenApiParameter('ordering', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Order by field (e.g., "-created_at", "rating_count", "-average_rating")'),
+            OpenApiParameter('X-Render-Content', OpenApiTypes.STR, OpenApiParameter.HEADER, required=False, description='Include external API data in response'),
         ],
         responses={200: ContentItemSerializer(many=True)}
     ),
     retrieve=extend_schema(
         tags=['Content Items'],
         summary='Get content item details',
-        description='Get detailed information about a specific content item.',
+        description='''
+        Get detailed information about a specific content item.
+
+        **Optional Header:**
+        - `X-Render-Content`: When present, includes detailed information from external APIs (TMDB, IGDB, Spotify, OpenLibrary) in the `source_data` field.
+        ''',
+        parameters=[
+            OpenApiParameter('X-Render-Content', OpenApiTypes.STR, OpenApiParameter.HEADER, required=False, description='Include external API data in response')
+        ],
         responses={
             200: ContentItemSerializer,
             404: OpenApiExample('Not Found', value={'detail': 'Content item not found.'})
@@ -131,10 +145,6 @@ class ContentItemViewSet(viewsets.ModelViewSet):
     )
     @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
     def get_or_create(self, request):
-        """
-        Get or create a content item. Returns the content item with a 200 status if it exists,
-        or creates it and returns 201 if it doesn't.
-        """
         source_api = request.data.get('source_api')
         external_id = request.data.get('external_id')
         content_type = request.data.get('content_type')
@@ -145,7 +155,6 @@ class ContentItemViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Use get_or_create to atomically get or create the item
         content_item, created = ContentItem.objects.get_or_create(
             source_api=source_api,
             external_id=external_id,

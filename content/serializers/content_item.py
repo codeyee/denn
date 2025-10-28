@@ -2,6 +2,8 @@ from rest_framework import serializers
 from content.models import ContentItem
 
 class ContentItemSerializer(serializers.ModelSerializer):
+    source_data = serializers.SerializerMethodField()
+
     class Meta:
         model = ContentItem
 
@@ -13,6 +15,7 @@ class ContentItemSerializer(serializers.ModelSerializer):
             'rating_count',
             'average_rating',
             'created_at',
+            'source_data',
         ]
 
         read_only_fields = [
@@ -20,7 +23,17 @@ class ContentItemSerializer(serializers.ModelSerializer):
             'rating_count',
             'average_rating',
             'created_at',
+            'source_data',
         ]
+
+    def get_source_data(self, obj):
+        request = self.context.get('request')
+
+        if request and request.headers.get('X-Render-Content'):
+            from content.utils import fetch_source_data
+            return fetch_source_data(obj)
+
+        return None
 
     def validate(self, attrs):
         source_api = attrs.get('source_api')

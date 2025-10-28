@@ -12,7 +12,7 @@ class MemberRatingSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 class ListItemSerializer(serializers.ModelSerializer):
-    content_item = ContentItemSerializer(read_only=True)
+    content_item = serializers.SerializerMethodField()
     added_by = UserSerializer(read_only=True)
     member_ratings = serializers.SerializerMethodField()
     list_rating = serializers.SerializerMethodField()
@@ -46,6 +46,9 @@ class ListItemSerializer(serializers.ModelSerializer):
             'list_rating',
             'member_rating_count',
         ]
+
+    def get_content_item(self, obj):
+        return ContentItemSerializer(obj.content_item, context=self.context).data
 
     def get_member_ratings(self, obj):
         if obj.status != ListItem.Status.COMPLETED: return []
@@ -102,7 +105,7 @@ class ListItemCreateSerializer(serializers.ModelSerializer):
         write_only=True
     )
 
-    content_item = ContentItemSerializer(read_only=True)
+    content_item = serializers.SerializerMethodField()
     added_by = UserSerializer(read_only=True)
 
     class Meta:
@@ -128,6 +131,9 @@ class ListItemCreateSerializer(serializers.ModelSerializer):
             'added_at',
             'completed_at'
         ]
+
+    def get_content_item(self, obj):
+        return ContentItemSerializer(obj.content_item, context=self.context).data
 
     def validate(self, attrs):
         source_api = attrs.get('source_api')

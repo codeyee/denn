@@ -1,7 +1,8 @@
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiExample
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiExample, OpenApiParameter
+from drf_spectacular.types import OpenApiTypes
 from content.models import ListItem, UserList
 from content.serializers import ListItemSerializer, ListItemCreateSerializer
 from content.permissions import IsMemberOfList
@@ -10,7 +11,15 @@ from content.permissions import IsMemberOfList
     list=extend_schema(
         tags=['List Items'],
         summary='List all items in a list',
-        description='Get all items in a specific list. Only members of the list can view its items.',
+        description='''
+        Get all items in a specific list. Only members of the list can view its items.
+        
+        **Optional Header:**
+        - `X-Render-Content`: When present, includes detailed information from external APIs (TMDB, IGDB, Spotify, OpenLibrary) in the `source_data` field of each content item.
+        ''',
+        parameters=[
+            OpenApiParameter('X-Render-Content', OpenApiTypes.STR, OpenApiParameter.HEADER, required=False, description='Include external API data in response')
+        ],
         responses={
             200: ListItemSerializer(many=True),
             403: OpenApiExample('Forbidden', value={'detail': 'You do not have access to this list.'}),
@@ -20,7 +29,15 @@ from content.permissions import IsMemberOfList
     retrieve=extend_schema(
         tags=['List Items'],
         summary='Get item details',
-        description='Get detailed information about a specific item in a list.',
+        description='''
+        Get detailed information about a specific item in a list.
+        
+        **Optional Header:**
+        - `X-Render-Content`: When present, includes detailed information from external APIs (TMDB, IGDB, Spotify, OpenLibrary) in the `source_data` field of the content item.
+        ''',
+        parameters=[
+            OpenApiParameter('X-Render-Content', OpenApiTypes.STR, OpenApiParameter.HEADER, required=False, description='Include external API data in response')
+        ],
         responses={200: ListItemSerializer}
     ),
     create=extend_schema(
@@ -148,7 +165,7 @@ class ListItemViewSet(viewsets.ModelViewSet):
         )
 
         return Response(
-            ListItemSerializer(serializer.instance).data,
+            ListItemSerializer(serializer.instance, context={'request': request}).data,
             status=status.HTTP_201_CREATED
         )
 
