@@ -1,7 +1,8 @@
 from .base import SpotifyBaseView
 from .utils import normalize_album_search
 from proxy.errors import build_error_response, get_http_status, MISSING_QUERY
-from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiParameter
+from proxy.serializers import MusicSearchResponseSerializer, ErrorResponseSerializer
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 from typing import Dict, Any
 
@@ -61,31 +62,8 @@ class MusicSearchView(SpotifyBaseView):
             OpenApiParameter('min_tracks', OpenApiTypes.INT, description='Minimum number of tracks to include (default: 4)')
         ],
         responses={
-            200: OpenApiExample(
-                'Search Results',
-                value={
-                    'metadata': {
-                        'page': 1,
-                        'page_results': 10,
-                        'total_pages': 15,
-                        'total_results': 296
-                    },
-                    'results': [
-                        {
-                            'id': '7ycBtnsMtyVbbwTfJwRjSP',
-                            'type': 'album',
-                            'title': 'Graduation',
-                            'authors': ['Kanye West'],
-                            'image_url': 'https://i.scdn.co/image/ab67616d0000b2732c6ce1cbb235c45f8ded730b',
-                            'release_date': '2007-09-11',
-                            'total_tracks': 13,
-                            'album_type': 'album',
-                            'external_url': 'https://open.spotify.com/album/7ycBtnsMtyVbbwTfJwRjSP'
-                        }
-                    ]
-                }
-            ),
-            400: OpenApiExample('Missing Query', value={'error': 'MISSING_QUERY', 'message': 'Query parameter is required'})
+            200: MusicSearchResponseSerializer,
+            400: ErrorResponseSerializer
         }
     )
     def get(self, request):

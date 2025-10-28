@@ -1,7 +1,8 @@
 from rest_framework import status as http_status
 from rest_framework.response import Response
-from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
+from proxy.serializers import BulkAlbumsResponseSerializer, ErrorResponseSerializer
 from .base import SpotifyBaseView
 from .utils import normalize_album
 
@@ -20,28 +21,8 @@ class MusicBulkAlbumsView(SpotifyBaseView):
             )
         ],
         responses={
-            200: OpenApiExample(
-                'Bulk Album Details',
-                value={
-                    'albums': [
-                        {
-                            'id': '7ycBtnsMtyVbbwTfJwRjSP',
-                            'title': 'Graduation',
-                            'authors': ['Kanye West'],
-                            'image_url': 'https://i.scdn.co/image/ab67616d0000b2732c6ce1cbb235c45f8ded730b',
-                            'release_date': '2007-09-11',
-                            'total_tracks': 13,
-                            'album_type': 'album',
-                            'external_url': 'https://open.spotify.com/album/7ycBtnsMtyVbbwTfJwRjSP',
-                            'tracks': []
-                        }
-                    ]
-                }
-            ),
-            400: OpenApiExample(
-                'Bad Request',
-                value={'error': 'INVALID_REQUEST', 'message': 'Missing or invalid ids parameter'}
-            )
+            200: BulkAlbumsResponseSerializer,
+            400: ErrorResponseSerializer
         }
     )
     def get(self, request):

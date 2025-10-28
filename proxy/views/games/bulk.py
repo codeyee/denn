@@ -1,7 +1,8 @@
 from rest_framework import status as http_status
 from rest_framework.response import Response
-from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
+from proxy.serializers import GameDetailSerializer, ErrorResponseSerializer
 from .base import IGDBBaseView
 from .utils import normalize_item
 
@@ -20,25 +21,8 @@ class GamesBulkView(IGDBBaseView):
             )
         ],
         responses={
-            200: OpenApiExample(
-                'Bulk Game Details',
-                value=[
-                    {
-                        'id': 25076,
-                        'title': 'Red Dead Redemption 2',
-                        'type': 'Main game',
-                        'release_date': '2018-10-26',
-                        'description': 'America, 1899. The end of the Wild West era has begun...',
-                        'image_url': 'https://images.igdb.com/igdb/image/upload/t_720p/co1q1f.jpg',
-                        'authors': ['Rockstar Games'],
-                        'platforms': ['PC (Microsoft Windows)', 'PlayStation 4', 'Xbox One']
-                    }
-                ]
-            ),
-            400: OpenApiExample(
-                'Bad Request',
-                value={'error': 'INVALID_REQUEST', 'message': 'Missing or invalid ids parameter'}
-            )
+            200: GameDetailSerializer(many=True),
+            400: ErrorResponseSerializer
         }
     )
     def get(self, request):

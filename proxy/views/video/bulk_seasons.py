@@ -1,7 +1,8 @@
 from rest_framework import status as http_status
 from rest_framework.response import Response
-from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
+from proxy.serializers import BulkSeasonItemSerializer, ErrorResponseSerializer
 from .base import TMDBBaseView
 from .utils import normalize_season
 
@@ -20,31 +21,8 @@ class VideoBulkSeasonsView(TMDBBaseView):
             )
         ],
         responses={
-            200: OpenApiExample(
-                'Bulk Season Details',
-                value=[
-                    {
-                        'tv_id': 1396,
-                        'season_number': 1,
-                        'data': {
-                            'id': 3572,
-                            'season_number': 1,
-                            'title': 'Season 1',
-                            'description': 'High school chemistry teacher Walter White...',
-                            'release_date': '2008-01-20',
-                            'image_url': 'https://image.tmdb.org/t/p/w500/1BP4xYv9ZG4ZVHkL7ocOziBbSYH.jpg',
-                            'number_of_episodes': 7,
-                            'episodes': []
-                        },
-                        'status_code': 200,
-                        'error': None
-                    }
-                ]
-            ),
-            400: OpenApiExample(
-                'Bad Request',
-                value={'error': 'INVALID_REQUEST', 'message': 'Missing or invalid seasons parameter'}
-            )
+            200: BulkSeasonItemSerializer(many=True),
+            400: ErrorResponseSerializer
         }
     )
     def get(self, request):

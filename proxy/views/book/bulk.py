@@ -1,7 +1,8 @@
 from rest_framework import status as http_status
 from rest_framework.response import Response
-from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
+from proxy.serializers import BulkBookItemSerializer, ErrorResponseSerializer
 from .base import OpenLibraryBaseView
 from .utils import normalize_search_item
 
@@ -20,29 +21,8 @@ class BookBulkView(OpenLibraryBaseView):
             )
         ],
         responses={
-            200: OpenApiExample(
-                'Bulk Book Details',
-                value=[
-                    {
-                        'key': 'OL28346580W',
-                        'data': {
-                            'id': 'OL28346580W',
-                            'title': 'Chainsaw Man, Vol. 1',
-                            'authors': ['Tatsuki Fujimoto'],
-                            'image_url': 'https://covers.openlibrary.org/b/id/10401782-L.jpg',
-                            'release_date': '2020',
-                            'pages': 192,
-                            'description': "Denji's a poor young man who'll do anything for a bit of cash..."
-                        },
-                        'status_code': 200,
-                        'error': None
-                    }
-                ]
-            ),
-            400: OpenApiExample(
-                'Bad Request',
-                value={'error': 'INVALID_REQUEST', 'message': 'Missing or invalid keys parameter'}
-            )
+            200: BulkBookItemSerializer(many=True),
+            400: ErrorResponseSerializer
         }
     )
     def get(self, request):

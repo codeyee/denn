@@ -1,7 +1,8 @@
 from rest_framework import status as http_status
 from rest_framework.response import Response
-from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
+from drf_spectacular.utils import extend_schema, OpenApiParameter, inline_serializer
 from drf_spectacular.types import OpenApiTypes
+from proxy.serializers import BulkMovieItemSerializer, BulkTVShowItemSerializer, ErrorResponseSerializer
 from .base import TMDBBaseView
 from .utils import normalize_movie, normalize_tv
 
@@ -20,30 +21,8 @@ class VideoBulkMoviesView(TMDBBaseView):
             )
         ],
         responses={
-            200: OpenApiExample(
-                'Bulk Movie Details',
-                value=[
-                    {
-                        'id': 550,
-                        'data': {
-                            'id': 550,
-                            'title': 'Fight Club',
-                            'original_title': 'Fight Club',
-                            'description': 'A ticking-time-bomb insomniac...',
-                            'image_url': 'https://image.tmdb.org/t/p/w500/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg',
-                            'release_date': '1999-10-15',
-                            'duration_minutes': 139,
-                            'status': 'Released'
-                        },
-                        'status_code': 200,
-                        'error': None
-                    }
-                ]
-            ),
-            400: OpenApiExample(
-                'Bad Request',
-                value={'error': 'INVALID_REQUEST', 'message': 'Missing or invalid ids parameter'}
-            )
+            200: BulkMovieItemSerializer(many=True),
+            400: ErrorResponseSerializer
         }
     )
     def get(self, request):
@@ -99,32 +78,8 @@ class VideoBulkTvShowsView(TMDBBaseView):
             )
         ],
         responses={
-            200: OpenApiExample(
-                'Bulk TV Show Details',
-                value=[
-                    {
-                        'id': 1396,
-                        'data': {
-                            'id': 1396,
-                            'title': 'Breaking Bad',
-                            'original_title': 'Breaking Bad',
-                            'description': 'When Walter White, a New Mexico chemistry teacher...',
-                            'image_url': 'https://image.tmdb.org/t/p/w500/ggFHVNu6YYI5L9pCfOacjizRGt.jpg',
-                            'release_date': '2008-01-20',
-                            'status': 'Ended',
-                            'number_of_seasons': 5,
-                            'number_of_episodes': 62,
-                            'seasons': []
-                        },
-                        'status_code': 200,
-                        'error': None
-                    }
-                ]
-            ),
-            400: OpenApiExample(
-                'Bad Request',
-                value={'error': 'INVALID_REQUEST', 'message': 'Missing or invalid ids parameter'}
-            )
+            200: BulkTVShowItemSerializer(many=True),
+            400: ErrorResponseSerializer
         }
     )
     def get(self, request):
