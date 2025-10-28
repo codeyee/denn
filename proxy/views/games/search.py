@@ -1,6 +1,8 @@
 from .base import IGDBBaseView
 from .utils import normalize_search_item
 from proxy.errors import build_error_response, get_http_status, MISSING_QUERY
+from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiParameter
+from drf_spectacular.types import OpenApiTypes
 from typing import Dict, Any, List
 
 class GamesSearchView(IGDBBaseView):
@@ -23,6 +25,46 @@ class GamesSearchView(IGDBBaseView):
 
         return {'metadata': metadata, 'results': results}
 
+    @extend_schema(
+        tags=['Proxy - Games'],
+        summary='Search video games',
+        description='''
+        Search for video games by title using IGDB.
+
+        Note: IGDB doesn't provide total result counts, so total_results may be null.
+        ''',
+        parameters=[
+            OpenApiParameter('query', OpenApiTypes.STR, required=True, description='Search query'),
+            OpenApiParameter('limit', OpenApiTypes.INT, description='Results per page (1-500, default: 50)'),
+            OpenApiParameter('page', OpenApiTypes.INT, description='Page number (default: 1)')
+        ],
+        responses={
+            200: OpenApiExample(
+                'Search Results',
+                value={
+                    'metadata': {
+                        'page': 1,
+                        'page_results': 5,
+                        'total_pages': 2,
+                        'total_results': None
+                    },
+                    'results': [
+                        {
+                            'id': 25076,
+                            'title': 'Red Dead Redemption 2',
+                            'type': 'Main game',
+                            'release_date': '2018-10-26',
+                            'description': 'America, 1899. The end of the Wild West era has begun...',
+                            'image_url': 'https://images.igdb.com/igdb/image/upload/t_720p/co1q1f.jpg',
+                            'authors': ['Rockstar Games'],
+                            'platforms': ['PC (Microsoft Windows)', 'PlayStation 4', 'Xbox One', 'PlayStation 5', 'Xbox Series X|S']
+                        }
+                    ]
+                }
+            ),
+            400: OpenApiExample('Missing Query', value={'error': 'MISSING_QUERY', 'message': 'Query parameter is required'})
+        }
+    )
     def get(self, request):
         query = request.query_params.get('query')
 

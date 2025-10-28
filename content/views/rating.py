@@ -2,10 +2,109 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.db.models import Avg, Count
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiExample, OpenApiParameter
+from drf_spectacular.types import OpenApiTypes
 from content.models import Rating, ContentItem
 from content.serializers import RatingSerializer, RatingCreateSerializer
 from content.permissions import IsOwnerOfRating
 
+@extend_schema_view(
+    list=extend_schema(
+        tags=['Ratings'],
+        summary='List ratings',
+        description='''
+        List all ratings with optional filtering.
+
+        Query Parameters:
+        - `content_item_id`: Filter by content item ID
+        - `user_id`: Filter by user ID
+        - `source_api` + `external_id`: Filter by external content
+        - `stats_only=true`: Return only statistics instead of ratings list
+        ''',
+        parameters=[
+            OpenApiParameter('content_item_id', OpenApiTypes.INT, description='Filter by content item'),
+            OpenApiParameter('user_id', OpenApiTypes.INT, description='Filter by user'),
+            OpenApiParameter('source_api', OpenApiTypes.STR, description='External API source', enum=['tmdb', 'spotify', 'igdb', 'openlibrary']),
+            OpenApiParameter('external_id', OpenApiTypes.STR, description='External ID'),
+            OpenApiParameter('stats_only', OpenApiTypes.BOOL, description='Return only statistics')
+        ],
+        responses={
+            200: RatingSerializer(many=True),
+        }
+    ),
+    retrieve=extend_schema(
+        tags=['Ratings'],
+        summary='Get rating details',
+        description='Get details of a specific rating.',
+        responses={200: RatingSerializer}
+    ),
+    create=extend_schema(
+        tags=['Ratings'],
+        summary='Create a rating',
+        description='''
+        Create a new rating for a content item.
+
+        Score must be between 0.5 and 10.0 (in 0.5 increments).
+        A user can only have one rating per content item.
+        ''',
+        request=RatingCreateSerializer,
+        responses={
+            201: RatingSerializer,
+            400: OpenApiExample('Bad Request', value={'score': ['Score must be between 0.5 and 10.0']})
+        },
+        examples=[
+            OpenApiExample(
+                'Rate Movie',
+                value={
+                    'source_api': 'tmdb',
+                    'external_id': '550',
+                    'content_type': 'MOVIE',
+                    'score': 9.5,
+                    'comment': 'An absolute masterpiece!'
+                },
+                request_only=True
+            ),
+            OpenApiExample(
+                'Rate Album',
+                value={
+                    'source_api': 'spotify',
+                    'external_id': '7ycBtnsMtyVbbwTfJwRjSP',
+                    'content_type': 'ALBUM',
+                    'score': 8.0,
+                    'comment': 'Great album, very nostalgic'
+                },
+                request_only=True
+            )
+        ]
+    ),
+    update=extend_schema(
+        tags=['Ratings'],
+        summary='Update rating',
+        description='Update an existing rating. Only the rating owner can update it.',
+        request=RatingCreateSerializer,
+        responses={200: RatingSerializer}
+    ),
+    partial_update=extend_schema(
+        tags=['Ratings'],
+        summary='Partially update rating',
+        description='Update specific fields of a rating.',
+        request=RatingCreateSerializer,
+        responses={200: RatingSerializer},
+        examples=[
+            OpenApiExample(
+                'Update Score',
+                value={'score': 10.0, 'comment': 'Changed my mind, its perfect!'},
+                request_only=True
+            )
+        ]
+    ),
+    destroy=extend_schema(
+        tags=['Ratings'],
+        summary='Delete rating',
+        description='Delete a rating. Only the rating owner can delete it.',
+        responses={204: None}
+    )
+)
 class RatingViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 

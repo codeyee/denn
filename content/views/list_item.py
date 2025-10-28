@@ -1,10 +1,103 @@
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiExample
 from content.models import ListItem, UserList
 from content.serializers import ListItemSerializer, ListItemCreateSerializer
 from content.permissions import IsMemberOfList
 
+@extend_schema_view(
+    list=extend_schema(
+        tags=['List Items'],
+        summary='List all items in a list',
+        description='Get all items in a specific list. Only members of the list can view its items.',
+        responses={
+            200: ListItemSerializer(many=True),
+            403: OpenApiExample('Forbidden', value={'detail': 'You do not have access to this list.'}),
+            404: OpenApiExample('Not Found', value={'detail': 'Lista no encontrada o no tienes acceso a ella.'})
+        }
+    ),
+    retrieve=extend_schema(
+        tags=['List Items'],
+        summary='Get item details',
+        description='Get detailed information about a specific item in a list.',
+        responses={200: ListItemSerializer}
+    ),
+    create=extend_schema(
+        tags=['List Items'],
+        summary='Add item to list',
+        description='''
+        Add a new content item to the list.
+
+        The content item is identified by:
+        - `source_api`: The external API source (tmdb, spotify, igdb, openlibrary)
+        - `external_id`: The ID from the external API
+        - `content_type`: The type of content (MOVIE, TV_SHOW, ALBUM, GAME, BOOK)
+
+        If the content item doesn't exist in the database, it will be created automatically.
+        ''',
+        request=ListItemCreateSerializer,
+        responses={
+            201: ListItemSerializer,
+            404: OpenApiExample('Not Found', value={'detail': 'Lista no encontrada o no tienes acceso a ella.'})
+        },
+        examples=[
+            OpenApiExample(
+                'Add Movie',
+                value={
+                    'source_api': 'tmdb',
+                    'external_id': '550',
+                    'content_type': 'MOVIE',
+                    'status': 'PENDING',
+                    'notes': 'Fight Club - Must watch!'
+                },
+                request_only=True
+            ),
+            OpenApiExample(
+                'Add Album',
+                value={
+                    'source_api': 'spotify',
+                    'external_id': '7ycBtnsMtyVbbwTfJwRjSP',
+                    'content_type': 'ALBUM',
+                    'status': 'PENDING'
+                },
+                request_only=True
+            )
+        ]
+    ),
+    update=extend_schema(
+        tags=['List Items'],
+        summary='Update list item',
+        description='Update a list item. Can change status (PENDING/COMPLETED) and notes.',
+        request=ListItemSerializer,
+        responses={200: ListItemSerializer}
+    ),
+    partial_update=extend_schema(
+        tags=['List Items'],
+        summary='Partially update list item',
+        description='Update specific fields of a list item.',
+        request=ListItemSerializer,
+        responses={200: ListItemSerializer},
+        examples=[
+            OpenApiExample(
+                'Mark as Completed',
+                value={'status': 'COMPLETED'},
+                request_only=True
+            ),
+            OpenApiExample(
+                'Update Notes',
+                value={'notes': 'Watched it yesterday, amazing!'},
+                request_only=True
+            )
+        ]
+    ),
+    destroy=extend_schema(
+        tags=['List Items'],
+        summary='Remove item from list',
+        description='Remove an item from the list.',
+        responses={204: None}
+    )
+)
 class ListItemViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, IsMemberOfList]
 

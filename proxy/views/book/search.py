@@ -1,6 +1,8 @@
 from .base import OpenLibraryBaseView
 from .utils import normalize_search_item
 from proxy.errors import build_error_response, get_http_status, MISSING_QUERY
+from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiParameter
+from drf_spectacular.types import OpenApiTypes
 from typing import Dict, Any
 
 class BookSearchView(OpenLibraryBaseView):
@@ -26,6 +28,41 @@ class BookSearchView(OpenLibraryBaseView):
             'results': results,
         }
 
+    @extend_schema(
+        tags=['Proxy - Books'],
+        summary='Search books',
+        description='Search for books by title, author, or ISBN using OpenLibrary.',
+        parameters=[
+            OpenApiParameter('query', OpenApiTypes.STR, required=True, description='Search query (title, author, or ISBN)'),
+            OpenApiParameter('limit', OpenApiTypes.INT, description='Results per page (default: 50)'),
+            OpenApiParameter('page', OpenApiTypes.INT, description='Page number (default: 1)')
+        ],
+        responses={
+            200: OpenApiExample(
+                'Search Results',
+                value={
+                    'metadata': {
+                        'page': 1,
+                        'page_results': 5,
+                        'total_pages': 32,
+                        'total_results': 157
+                    },
+                    'results': [
+                        {
+                            'id': 'OL28346580W',
+                            'title': 'Chainsaw Man, Vol. 1',
+                            'authors': ['Tatsuki Fujimoto'],
+                            'image_url': 'https://covers.openlibrary.org/b/id/10401782-L.jpg',
+                            'release_date': '2020',
+                            'pages': 192,
+                            'description': "Denji's a poor young man who'll do anything for a bit of cash..."
+                        }
+                    ]
+                }
+            ),
+            400: OpenApiExample('Missing Query', value={'error': 'MISSING_QUERY', 'message': 'Query parameter is required'})
+        }
+    )
     def get(self, request):
         query = request.query_params.get('query')
 

@@ -3,6 +3,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiExample, OpenApiParameter
+from drf_spectacular.types import OpenApiTypes
 from content.models import ListInvitation, UserList
 from content.serializers import (
     ListInvitationSerializer,
@@ -10,6 +12,69 @@ from content.serializers import (
     ListInvitationResponseSerializer
 )
 
+@extend_schema_view(
+    list=extend_schema(
+        tags=['List Invitations'],
+        summary='List invitations',
+        description='''
+        List invitations received or sent by the current user.
+
+        Query Parameters:
+        - `sent=true`: Show invitations sent by the user
+        - `list_id`: Filter by specific list (owner only)
+        - `status`: Filter by invitation status (PENDING)
+        ''',
+        parameters=[
+            OpenApiParameter('sent', OpenApiTypes.BOOL, description='Show sent invitations instead of received'),
+            OpenApiParameter('list_id', OpenApiTypes.INT, description='Filter by list ID'),
+            OpenApiParameter('status', OpenApiTypes.STR, description='Filter by status', enum=['PENDING'])
+        ],
+        responses={200: ListInvitationSerializer(many=True)}
+    ),
+    retrieve=extend_schema(
+        tags=['List Invitations'],
+        summary='Get invitation details',
+        description='Get details of a specific invitation.',
+        responses={200: ListInvitationSerializer}
+    ),
+    create=extend_schema(
+        tags=['List Invitations'],
+        summary='Send invitation',
+        description='''
+        Send an invitation to a user to join a shared list.
+
+        Only the list owner can send invitations. The user can be specified by username or email.
+        ''',
+        request=ListInvitationCreateSerializer,
+        responses={
+            201: ListInvitationSerializer,
+            400: OpenApiExample('Bad Request', value={'detail': 'Only shared lists can have invitations.'}),
+            403: OpenApiExample('Forbidden', value={'detail': 'Only the list owner can send invitations.'}),
+            404: OpenApiExample('Not Found', value={'detail': 'List not found.'})
+        },
+        examples=[
+            OpenApiExample(
+                'Invite by Username',
+                value={'username': 'maria'},
+                request_only=True
+            ),
+            OpenApiExample(
+                'Invite by Email',
+                value={'email': 'maria@example.com'},
+                request_only=True
+            )
+        ]
+    ),
+    destroy=extend_schema(
+        tags=['List Invitations'],
+        summary='Cancel invitation',
+        description='Cancel a pending invitation. Only the inviter or list owner can cancel.',
+        responses={
+            204: OpenApiExample('Success', value={'detail': 'Invitation cancelled.'}),
+            403: OpenApiExample('Forbidden', value={'detail': 'Only the inviter or list owner can delete this invitation.'})
+        }
+    )
+)
 class ListInvitationViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
@@ -93,6 +158,37 @@ class ListInvitationViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED
         )
 
+    @extend_schema(
+        tags=['List Invitations'],
+        summary='Respond to invitation',
+        description='''
+        Accept or reject a list invitation.
+
+        Only the invitee can respond to their own invitations.
+        After responding, the invitation is automatically deleted.
+        ''',
+        request=ListInvitationResponseSerializer,
+        responses={
+            200: OpenApiExample(
+                'Accepted',
+                value={'detail': 'Invitation accepted. You are now a member of "Family Movies".'}
+            ),
+            400: OpenApiExample('Already Responded', value={'detail': 'This invitation has already been responded to.'}),
+            403: OpenApiExample('Forbidden', value={'detail': 'You can only respond to your own invitations.'})
+        },
+        examples=[
+            OpenApiExample(
+                'Accept Invitation',
+                value={'action': 'accept'},
+                request_only=True
+            ),
+            OpenApiExample(
+                'Reject Invitation',
+                value={'action': 'reject'},
+                request_only=True
+            )
+        ]
+    )
     @action(detail=True, methods=['post'])
     def respond(self, request, pk=None):
         invitation = self.get_object()

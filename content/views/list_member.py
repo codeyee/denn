@@ -2,6 +2,7 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth.models import User
+from drf_spectacular.utils import extend_schema, OpenApiExample
 from content.models import UserList
 from content.serializers import UserSerializer
 from content.permissions import IsOwnerOfSharedList
@@ -16,6 +17,43 @@ class ListMemberViewSet(viewsets.ViewSet):
         except UserList.DoesNotExist:
             return None
 
+    @extend_schema(
+        tags=['List Members'],
+        summary='List all members of a list',
+        description='Get all members of a shared list including the owner.',
+        responses={
+            200: OpenApiExample(
+                'Members List',
+                value={
+                    'owner': {
+                        'id': 1,
+                        'username': 'john',
+                        'email': 'john@example.com',
+                        'first_name': 'John',
+                        'last_name': 'Doe'
+                    },
+                    'members': [
+                        {
+                            'id': 1,
+                            'username': 'john',
+                            'email': 'john@example.com',
+                            'first_name': 'John',
+                            'last_name': 'Doe'
+                        },
+                        {
+                            'id': 2,
+                            'username': 'maria',
+                            'email': 'maria@example.com',
+                            'first_name': 'Maria',
+                            'last_name': 'Garcia'
+                        }
+                    ]
+                }
+            ),
+            403: OpenApiExample('Forbidden', value={'detail': 'No tienes acceso a esta lista.'}),
+            404: OpenApiExample('Not Found', value={'detail': 'Lista no encontrada.'})
+        }
+    )
     def list(self, request, list_pk=None):
         user_list = self.get_list(list_pk)
 
@@ -39,6 +77,21 @@ class ListMemberViewSet(viewsets.ViewSet):
             'members': serializer.data
         })
 
+    @extend_schema(
+        tags=['List Members'],
+        summary='Remove member from list',
+        description='''
+        Remove a member from a shared list.
+
+        Only the list owner can remove members. The owner cannot remove themselves.
+        ''',
+        responses={
+            204: OpenApiExample('Success', value={'detail': 'Usuario maria eliminado de la lista.'}),
+            400: OpenApiExample('Bad Request', value={'detail': 'Solo se pueden eliminar miembros de listas compartidas.'}),
+            403: OpenApiExample('Forbidden', value={'detail': 'Solo el propietario puede eliminar miembros.'}),
+            404: OpenApiExample('Not Found', value={'detail': 'Usuario no encontrado.'})
+        }
+    )
     def destroy(self, request, list_pk=None, pk=None):
         user_list = self.get_list(list_pk)
 
