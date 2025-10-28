@@ -223,8 +223,8 @@ Este proyecto está completamente preparado para desplegarse en [Railway](https:
 
 ## 👤 Authors
 
-[Emmanuel López - @emlopezr](https://github.com/emlopezr)
-[Emmanuel Arizabaleta - @imEag](https://github.com/imEag)
+- [Emmanuel López - @emlopezr](https://github.com/emlopezr)
+- [Emmanuel Arizabaleta - @imEag](https://github.com/imEag)
 
 ---
 
