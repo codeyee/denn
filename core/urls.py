@@ -1,22 +1,16 @@
 from django.contrib import admin
 from django.urls import path, include
 from django.http import JsonResponse
+from core.healthcheck import healthcheck
 from drf_spectacular.views import (
     SpectacularAPIView,
     SpectacularSwaggerView,
     SpectacularRedocView
 )
 
-def healthcheck(request):
-    return JsonResponse({
-        "status": "healthy",
-        "service": "Denn API",
-        "version": "1.0.0"
-    })
-
 urlpatterns = [
     # Healthcheck
-    path("", healthcheck, name="healthcheck"),
+    path("api", healthcheck, name="healthcheck"),
 
     # Admin
     path("api/admin/", admin.site.urls),
