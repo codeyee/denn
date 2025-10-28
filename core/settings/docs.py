@@ -1,3 +1,23 @@
+API_NAME = "Denn API"
+API_VERSION = "1.0.0"
+
+# Tags
+SPECTACULAR_TAGS = [
+    {"name": "Authentication", "description": "User authentication and registration"},
+    {"name": "Lists", "description": "User lists management"},
+    {"name": "List Items", "description": "Items within lists"},
+    {"name": "List Members", "description": "Manage list members for shared lists"},
+    {"name": "List Invitations", "description": "Invite users to shared lists"},
+    {"name": "Ratings", "description": "Rate and review content"},
+    {"name": "Content Items", "description": "Content items management"},
+    {"name": "Proxy - Homepage", "description": "Homepage suggestions"},
+    {"name": "Proxy - Video", "description": "Movies and TV Shows (TMDB)"},
+    {"name": "Proxy - Music", "description": "Music albums and tracks (Spotify)"},
+    {"name": "Proxy - Games", "description": "Video games (IGDB)"},
+    {"name": "Proxy - Books", "description": "Books (OpenLibrary)"},
+    {"name": "API Schema", "description": "OpenAPI schema endpoints"},
+]
+
 # Swagger UI Configuration
 SWAGGER_UI_SETTINGS = {
     "deepLinking": True,
@@ -51,37 +71,33 @@ ENUM_NAME_OVERRIDES = {
     "SourceAPIEnum": "content.models.content_item.ContentItem.SourceAPI",
 }
 
-# drf-spectacular main configuration
-SPECTACULAR_SETTINGS = {
-    "TITLE": "Denn API",
-    "VERSION": "1.0.0",
-    "TAGS": [
-        {"name": "Authentication", "description": "User authentication and registration"},
-        {"name": "Lists", "description": "User lists management"},
-        {"name": "List Items", "description": "Items within lists"},
-        {"name": "List Members", "description": "Manage list members for shared lists"},
-        {"name": "List Invitations", "description": "Invite users to shared lists"},
-        {"name": "Ratings", "description": "Rate and review content"},
-        {"name": "Proxy - Video", "description": "Movies and TV Shows (TMDB)"},
-        {"name": "Proxy - Music", "description": "Music albums and tracks (Spotify)"},
-        {"name": "Proxy - Games", "description": "Video games (IGDB)"},
-        {"name": "Proxy - Books", "description": "Books (OpenLibrary)"},
-        {"name": "Content Items", "description": "Content items management"},
-        {"name": "API Schema", "description": "OpenAPI schema endpoints"},
-    ],
-    "SECURITY": [{"bearerAuth": []}],
-    "COMPONENTS": {
-        "securitySchemes": {
-            "bearerAuth": {
-                "type": "http",
-                "scheme": "bearer",
-                "bearerFormat": "JWT",
-            }
+# Hooks
+PREPROCESSING_HOOKS = ["core.hooks.preprocess_authentication_tags"]
+POSTPROCESSING_HOOKS = ["core.hooks.preprocess_spectacular_schema"]
+
+# Security configuration
+SECURITY_DEFINITIONS = [{"bearerAuth": []}]
+
+SECURITY_COMPONENTS = {
+    "securitySchemes": {
+        "bearerAuth": {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "JWT",
         }
-    },
+    }
+}
+
+# Spectacular main configuration
+SPECTACULAR_SETTINGS = {
+    "TITLE": API_NAME,
+    "VERSION": API_VERSION,
+    "TAGS": SPECTACULAR_TAGS,
+    "SECURITY": SECURITY_DEFINITIONS,
+    "COMPONENTS": SECURITY_COMPONENTS,
     "SWAGGER_UI_SETTINGS": SWAGGER_UI_SETTINGS,
     "REDOC_UI_SETTINGS": REDOC_UI_SETTINGS,
-    "PREPROCESSING_HOOKS": ["core.hooks.preprocess_authentication_tags"],
-    "POSTPROCESSING_HOOKS": ["core.hooks.preprocess_spectacular_schema"],
+    "PREPROCESSING_HOOKS": PREPROCESSING_HOOKS,
+    "POSTPROCESSING_HOOKS": POSTPROCESSING_HOOKS,
     "ENUM_NAME_OVERRIDES": ENUM_NAME_OVERRIDES,
 }
