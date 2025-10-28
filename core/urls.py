@@ -10,7 +10,7 @@ from drf_spectacular.views import (
 
 urlpatterns = [
     # Healthcheck
-    path("api", healthcheck, name="healthcheck"),
+    path("api/", healthcheck, name="healthcheck"),
 
     # Admin
     path("api/admin/", admin.site.urls),
