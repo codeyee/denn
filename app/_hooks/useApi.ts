@@ -13,7 +13,10 @@ interface UseApiOptions {
  * Custom hook for making API requests with automatic auth token handling
  * Provides loading and error states
  */
-export function useApi<T = unknown>(endpoint: string, options: UseApiOptions = {}) {
+export function useApi<T = unknown>(
+  endpoint: string,
+  options: UseApiOptions = {}
+) {
   const { requiresAuth = false, onSuccess, onError } = options;
   const [data, setData] = useState<T | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -34,7 +37,8 @@ export function useApi<T = unknown>(endpoint: string, options: UseApiOptions = {
           headers["Authorization"] = `Bearer ${token}`;
         }
 
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+        const apiUrl =
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
         const response = await fetch(`${apiUrl}${endpoint}`, {
           method,
           headers,
@@ -43,7 +47,9 @@ export function useApi<T = unknown>(endpoint: string, options: UseApiOptions = {
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.message || `Request failed: ${response.statusText}`);
+          throw new Error(
+            errorData.message || `Request failed: ${response.statusText}`
+          );
         }
 
         const responseData = await response.json();
@@ -51,7 +57,8 @@ export function useApi<T = unknown>(endpoint: string, options: UseApiOptions = {
         onSuccess?.(responseData);
         return responseData;
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : "An error occurred";
+        const errorMessage =
+          err instanceof Error ? err.message : "An error occurred";
         setError(errorMessage);
         onError?.(err instanceof Error ? err : new Error(errorMessage));
         throw err;
@@ -65,7 +72,10 @@ export function useApi<T = unknown>(endpoint: string, options: UseApiOptions = {
   const get = useCallback(() => execute("GET"), [execute]);
   const post = useCallback((body: unknown) => execute("POST", body), [execute]);
   const put = useCallback((body: unknown) => execute("PUT", body), [execute]);
-  const patch = useCallback((body: unknown) => execute("PATCH", body), [execute]);
+  const patch = useCallback(
+    (body: unknown) => execute("PATCH", body),
+    [execute]
+  );
   const del = useCallback(() => execute("DELETE"), [execute]);
 
   return {

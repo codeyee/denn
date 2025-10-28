@@ -1,5 +1,5 @@
-import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
 
 export interface User {
   id: string;
@@ -17,7 +17,11 @@ interface AuthState {
 
 interface AuthActions {
   login: (email: string, password: string) => Promise<void>;
-  register: (username: string, email: string, password: string) => Promise<void>;
+  register: (
+    username: string,
+    email: string,
+    password: string
+  ) => Promise<void>;
   logout: () => void;
   setUser: (user: User | null) => void;
   setToken: (token: string | null) => void;
@@ -34,6 +38,8 @@ const initialState: AuthState = {
   error: null,
 };
 
+const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+
 export const useAuthStore = create<AuthStore>()(
   persist(
     (set) => ({
@@ -43,21 +49,21 @@ export const useAuthStore = create<AuthStore>()(
         set({ isLoading: true, error: null });
         try {
           // Replace with your actual API endpoint
-          const response = await fetch('http://localhost:8000/api/auth/login/', {
-            method: 'POST',
+          const response = await fetch(`${apiUrl}/auth/login/`, {
+            method: "POST",
             headers: {
-              'Content-Type': 'application/json',
+              "Content-Type": "application/json",
             },
             body: JSON.stringify({ email, password }),
           });
 
           if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || 'Login failed');
+            throw new Error(errorData.message || "Login failed");
           }
 
           const data = await response.json();
-          
+
           set({
             user: data.user,
             token: data.token,
@@ -67,7 +73,10 @@ export const useAuthStore = create<AuthStore>()(
           });
         } catch (error) {
           set({
-            error: error instanceof Error ? error.message : 'An error occurred during login',
+            error:
+              error instanceof Error
+                ? error.message
+                : "An error occurred during login",
             isLoading: false,
           });
           throw error;
@@ -78,21 +87,21 @@ export const useAuthStore = create<AuthStore>()(
         set({ isLoading: true, error: null });
         try {
           // Replace with your actual API endpoint
-          const response = await fetch('http://localhost:8000/api/auth/register/', {
-            method: 'POST',
+          const response = await fetch(`${apiUrl}/auth/register/`, {
+            method: "POST",
             headers: {
-              'Content-Type': 'application/json',
+              "Content-Type": "application/json",
             },
             body: JSON.stringify({ username, email, password }),
           });
 
           if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || 'Registration failed');
+            throw new Error(errorData.message || "Registration failed");
           }
 
           const data = await response.json();
-          
+
           set({
             user: data.user,
             token: data.token,
@@ -102,7 +111,10 @@ export const useAuthStore = create<AuthStore>()(
           });
         } catch (error) {
           set({
-            error: error instanceof Error ? error.message : 'An error occurred during registration',
+            error:
+              error instanceof Error
+                ? error.message
+                : "An error occurred during registration",
             isLoading: false,
           });
           throw error;
@@ -114,9 +126,9 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       setUser: (user: User | null) => {
-        set({ 
-          user, 
-          isAuthenticated: !!user 
+        set({
+          user,
+          isAuthenticated: !!user,
         });
       },
 
@@ -129,7 +141,7 @@ export const useAuthStore = create<AuthStore>()(
       },
     }),
     {
-      name: 'auth-storage',
+      name: "auth-storage",
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         user: state.user,
