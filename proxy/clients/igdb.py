@@ -138,3 +138,10 @@ class IGDBClient(BaseAPIClient):
         ids_str = ','.join(str(id) for id in game_ids)
         body = f'fields {fields}; where id = ({ids_str}); limit {len(game_ids)};'
         return self.request_igdb(endpoint, body)
+
+    def get_popular_games(self, limit: int = 50, offset: int = 0) -> Tuple[Dict[str, Any], int]:
+        endpoint = 'games'
+        fields = self.get_fields()
+        included_game_types = self.get_included_game_types()
+        body = f'fields {fields}; where game_type = ({included_game_types}) & aggregated_rating != null; sort aggregated_rating desc; limit {limit}; offset {offset};'
+        return self.request_igdb(endpoint, body)

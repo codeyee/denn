@@ -77,3 +77,19 @@ class SpotifyClient(BaseAPIClient):
         endpoint = 'albums'
         params = {'ids': ','.join(album_ids[:20])}
         return self.get(endpoint, params=params)
+
+    def get_new_releases(self, limit: int = 20, offset: int = 0) -> Tuple[Dict[str, Any], int]:
+        endpoint = 'browse/new-releases'
+        params = {
+            'limit': limit,
+            'offset': offset
+        }
+        return self.get(endpoint, params=params)
+
+    def get_featured_playlists(self, limit: int = 20, offset: int = 0) -> Tuple[Dict[str, Any], int]:
+        endpoint = 'browse/featured-playlists'
+        params = {
+            'limit': limit,
+            'offset': offset
+        }
+        return self.get(endpoint, params=params)

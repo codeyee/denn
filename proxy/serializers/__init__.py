@@ -38,6 +38,14 @@ from .books import (
     BulkBookItemSerializer,
 )
 
+from .homepage import (
+    VideoSuggestionsResponseSerializer,
+    GamesSuggestionsResponseSerializer,
+    MusicSuggestionsResponseSerializer,
+    BooksSuggestionsResponseSerializer,
+    HomepageResponseSerializer,
+)
+
 __all__ = [
     'PaginationMetadataSerializer',
     'ErrorResponseSerializer',
@@ -68,4 +76,10 @@ __all__ = [
     'BookSearchResponseSerializer',
     'BookDetailSerializer',
     'BulkBookItemSerializer',
+
+    'VideoSuggestionsResponseSerializer',
+    'GamesSuggestionsResponseSerializer',
+    'MusicSuggestionsResponseSerializer',
+    'BooksSuggestionsResponseSerializer',
+    'HomepageResponseSerializer',
 ]

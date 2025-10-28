@@ -58,3 +58,14 @@ class OpenLibraryClient(BaseAPIClient):
             })
 
         return results, 200
+
+    def get_trending_books(self, limit: int = 50) -> Tuple[Dict[str, Any], int]:
+        endpoint = 'search.json'
+        params = {
+            'q': '*',
+            'sort': 'rating',
+            'limit': limit,
+            'has_fulltext': 'true',
+            'fields': '*'
+        }
+        return self.get(endpoint, params=params)
