@@ -12,6 +12,7 @@ from proxy.views.book.utils import normalize_search_item as normalize_book
 from proxy.serializers import HomepageResponseSerializer, ErrorResponseSerializer
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
+from concurrent.futures import ThreadPoolExecutor
 
 class HomepageView(APIView):
 
@@ -45,61 +46,109 @@ class HomepageView(APIView):
         limit = int(request.query_params.get('limit', 10))
         limit = min(limit, 50)
 
-        video_results = []
+        movie_results = []
+        tv_results = []
         games_results = []
         music_results = []
         books_results = []
 
+        # Initialize clients
         try:
             tmdb_client = TMDBClient()
-
-            movies_data, movies_status = tmdb_client.get_popular_movies(page=1)
-            if movies_status == 200 and 'results' in movies_data:
-                for item in movies_data['results'][:limit // 2]:
-                    if item.get('media_type') != 'person':
-                        video_results.append(normalize_video(item, 'movie'))
-
-            tv_data, tv_status = tmdb_client.get_popular_tv(page=1)
-            if tv_status == 200 and 'results' in tv_data:
-                for item in tv_data['results'][:limit // 2]:
-                    if item.get('media_type') != 'person':
-                        video_results.append(normalize_video(item, 'tv'))
-
-            video_results = video_results[:limit]
         except Exception as e:
-            print(f"Error fetching video suggestions: {e}")
+            tmdb_client = None
+            print(f"Error initializing TMDB client: {e}")
 
         try:
             igdb_client = IGDBClient()
-            games_data, games_status = igdb_client.get_popular_games(limit=limit, offset=0)
-
-            if games_status == 200 and isinstance(games_data, list):
-                games_results = [normalize_game(item) for item in games_data[:limit]]
         except Exception as e:
-            print(f"Error fetching games suggestions: {e}")
+            igdb_client = None
+            print(f"Error initializing IGDB client: {e}")
 
         try:
             spotify_client = SpotifyClient()
-            music_data, music_status = spotify_client.get_new_releases(limit=limit, offset=0)
-
-            if music_status == 200 and 'albums' in music_data:
-                albums = music_data['albums'].get('items', [])
-                music_results = [normalize_music(album) for album in albums[:limit] if album]
         except Exception as e:
-            print(f"Error fetching music suggestions: {e}")
+            spotify_client = None
+            print(f"Error initializing Spotify client: {e}")
 
         try:
             openlibrary_client = OpenLibraryClient()
-            books_data, books_status = openlibrary_client.get_trending_books(limit=limit)
-
-            if books_status == 200 and 'docs' in books_data:
-                docs = books_data.get('docs', [])
-                books_results = [normalize_book(doc) for doc in docs[:limit]]
         except Exception as e:
-            print(f"Error fetching books suggestions: {e}")
+            openlibrary_client = None
+            print(f"Error initializing OpenLibrary client: {e}")
+
+        # Execute external API requests concurrently
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            futures = {}
+
+            if tmdb_client:
+                futures['movies'] = executor.submit(tmdb_client.get_popular_movies, 1)
+                futures['tv'] = executor.submit(tmdb_client.get_popular_tv, 1)
+
+            if igdb_client:
+                futures['games'] = executor.submit(igdb_client.get_popular_games, limit, 0)
+
+            if spotify_client:
+                futures['music'] = executor.submit(spotify_client.get_new_releases, limit, 0)
+
+            if openlibrary_client:
+                futures['books'] = executor.submit(openlibrary_client.get_trending_books, limit)
+
+            # Collect TMDB results
+            try:
+                if 'movies' in futures:
+                    movies_data, movies_status = futures['movies'].result()
+                    if movies_status == 200 and 'results' in movies_data:
+                        for item in movies_data['results'][:max(1, limit // 2)]:
+                            if item.get('media_type') != 'person':
+                                movie_results.append(normalize_video(item, 'movie'))
+            except Exception as e:
+                print(f"Error fetching video (movies) suggestions: {e}")
+
+            try:
+                if 'tv' in futures:
+                    tv_data, tv_status = futures['tv'].result()
+                    if tv_status == 200 and 'results' in tv_data:
+                        for item in tv_data['results'][:max(1, limit // 2)]:
+                            if item.get('media_type') != 'person':
+                                tv_results.append(normalize_video(item, 'tv'))
+                movie_results = movie_results[:limit]
+                tv_results = tv_results[:limit]
+            except Exception as e:
+                print(f"Error fetching video (tv) suggestions: {e}")
+
+            # Collect IGDB results
+            try:
+                if 'games' in futures:
+                    games_data, games_status = futures['games'].result()
+                    if games_status == 200 and isinstance(games_data, list):
+                        games_results = [normalize_game(item) for item in games_data[:limit]]
+            except Exception as e:
+                print(f"Error fetching games suggestions: {e}")
+
+            # Collect Spotify results
+            try:
+                if 'music' in futures:
+                    music_data, music_status = futures['music'].result()
+                    if music_status == 200 and 'albums' in music_data:
+                        albums = music_data['albums'].get('items', [])
+                        music_results = [normalize_music(album) for album in albums[:limit] if album]
+            except Exception as e:
+                print(f"Error fetching music suggestions: {e}")
+
+            # Collect OpenLibrary results
+            try:
+                if 'books' in futures:
+                    books_data, books_status = futures['books'].result()
+                    if books_status == 200 and 'docs' in books_data:
+                        docs = books_data.get('docs', [])
+                        books_results = [normalize_book(doc) for doc in docs[:limit]]
+            except Exception as e:
+                print(f"Error fetching books suggestions: {e}")
 
         response_data = {
-            'video': video_results,
+            'movies': movie_results,
+            'tv': tv_results,
             'games': games_results,
             'music': music_results,
             'books': books_results
