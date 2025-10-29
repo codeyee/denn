@@ -2,6 +2,7 @@ import requests
 from typing import Dict, Any, Tuple, Optional
 from django.conf import settings
 from .base import BaseAPIClient
+from concurrent.futures import ThreadPoolExecutor
 from proxy.errors import (
     build_error_response,
     get_http_status,
@@ -133,11 +134,35 @@ class IGDBClient(BaseAPIClient):
     def get_bulk_games(self, game_ids: list[int]) -> Tuple[Dict[str, Any], int]:
         if not game_ids: return [], 200
 
-        endpoint = 'games'
-        fields = self.get_fields()
-        ids_str = ','.join(str(id) for id in game_ids)
-        body = f'fields {fields}; where id = ({ids_str}); limit {len(game_ids)};'
-        return self.request_igdb(endpoint, body)
+        # IGDB has a limit on the number of IDs in a single query
+        # Split into batches of 50 for parallel processing
+        batch_size = 50
+        if len(game_ids) <= batch_size:
+            endpoint = 'games'
+            fields = self.get_fields()
+            ids_str = ','.join(str(id) for id in game_ids)
+            body = f'fields {fields}; where id = ({ids_str}); limit {len(game_ids)};'
+            return self.request_igdb(endpoint, body)
+
+        def fetch_games_batch(batch_ids: list[int]) -> Tuple[list[Dict[str, Any]], int]:
+            endpoint = 'games'
+            fields = self.get_fields()
+            ids_str = ','.join(str(id) for id in batch_ids)
+            body = f'fields {fields}; where id = ({ids_str}); limit {len(batch_ids)};'
+            data, status_code = self.request_igdb(endpoint, body)
+            return data if isinstance(data, list) else [], status_code
+
+        batches = [game_ids[i:i + batch_size] for i in range(0, len(game_ids), batch_size)]
+        all_games = []
+
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            futures = [executor.submit(fetch_games_batch, batch) for batch in batches]
+            for future in futures:
+                games, status_code = future.result()
+                if status_code == 200:
+                    all_games.extend(games)
+
+        return all_games, 200
 
     def get_popular_games(self, limit: int = 50, offset: int = 0) -> Tuple[Dict[str, Any], int]:
         endpoint = 'games'

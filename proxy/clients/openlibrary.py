@@ -1,6 +1,7 @@
 from proxy.clients.base import BaseAPIClient
 from django.conf import settings
 from typing import Dict, Any, Tuple
+from concurrent.futures import ThreadPoolExecutor
 
 
 class OpenLibraryClient(BaseAPIClient):
@@ -43,19 +44,23 @@ class OpenLibraryClient(BaseAPIClient):
     def get_bulk_books(self, book_keys: list[str]) -> Tuple[list[Dict[str, Any]], int]:
         results = []
 
-        for book_key in book_keys:
+        def fetch_book(book_key: str) -> Dict[str, Any]:
             data, status_code = self.search_by_key(book_key)
 
             book_data = None
             if status_code == 200 and 'docs' in data and len(data['docs']) > 0:
                 book_data = data['docs'][0]
 
-            results.append({
+            return {
                 'key': book_key,
                 'data': book_data if book_data else None,
                 'status_code': status_code if book_data else 404,
                 'error': None if book_data else {'error': 'RESOURCE_NOT_FOUND', 'message': 'Book not found'}
-            })
+            }
+
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            futures = [executor.submit(fetch_book, book_key) for book_key in book_keys]
+            results = [future.result() for future in futures]
 
         return results, 200
 
@@ -65,7 +70,6 @@ class OpenLibraryClient(BaseAPIClient):
             'q': '*',
             'sort': 'rating',
             'limit': limit,
-            'has_fulltext': 'true',
             'fields': '*'
         }
         return self.get(endpoint, params=params)

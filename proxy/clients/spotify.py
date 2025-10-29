@@ -5,6 +5,7 @@ import base64
 from time import time
 from .base import BaseAPIClient
 from proxy.errors import build_error_response, get_http_status, UNAUTHORIZED
+from concurrent.futures import ThreadPoolExecutor
 
 class SpotifyClient(BaseAPIClient):
     _access_token: Optional[str] = None
@@ -74,9 +75,31 @@ class SpotifyClient(BaseAPIClient):
     def get_bulk_albums(self, album_ids: list[str]) -> Tuple[Dict[str, Any], int]:
         if not album_ids: return {'albums': []}, 200
 
-        endpoint = 'albums'
-        params = {'ids': ','.join(album_ids[:20])}
-        return self.get(endpoint, params=params)
+        # Spotify has a limit of 20 albums per request
+        # Split into batches of 20 for parallel processing
+        batch_size = 20
+        if len(album_ids) <= batch_size:
+            endpoint = 'albums'
+            params = {'ids': ','.join(album_ids)}
+            return self.get(endpoint, params=params)
+
+        def fetch_albums_batch(batch_ids: list[str]) -> Tuple[list[Dict[str, Any]], int]:
+            endpoint = 'albums'
+            params = {'ids': ','.join(batch_ids)}
+            data, status_code = self.get(endpoint, params=params)
+            return data.get('albums', []) if status_code == 200 else [], status_code
+
+        batches = [album_ids[i:i + batch_size] for i in range(0, len(album_ids), batch_size)]
+        all_albums = []
+
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            futures = [executor.submit(fetch_albums_batch, batch) for batch in batches]
+            for future in futures:
+                albums, status_code = future.result()
+                if status_code == 200:
+                    all_albums.extend(albums)
+
+        return {'albums': all_albums}, 200
 
     def get_new_releases(self, limit: int = 20, offset: int = 0) -> Tuple[Dict[str, Any], int]:
         endpoint = 'browse/new-releases'

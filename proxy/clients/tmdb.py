@@ -1,6 +1,7 @@
 from typing import Dict, Any, Optional, Tuple
 from django.conf import settings
 from .base import BaseAPIClient
+from concurrent.futures import ThreadPoolExecutor
 
 class TMDBClient(BaseAPIClient):
     def __init__(self):
@@ -34,45 +35,57 @@ class TMDBClient(BaseAPIClient):
     def get_bulk_movies(self, movie_ids: list[int]) -> Tuple[list[Dict[str, Any]], int]:
         results = []
 
-        for movie_id in movie_ids:
+        def fetch_movie(movie_id: int) -> Dict[str, Any]:
             data, status_code = self.get_movie_details(movie_id)
-            results.append({
+            return {
                 'id': movie_id,
                 'data': data if status_code == 200 else None,
                 'status_code': status_code,
                 'error': data if status_code != 200 else None
-            })
+            }
+
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            futures = [executor.submit(fetch_movie, movie_id) for movie_id in movie_ids]
+            results = [future.result() for future in futures]
 
         return results, 200
 
     def get_bulk_tv_shows(self, tv_ids: list[int]) -> Tuple[list[Dict[str, Any]], int]:
         results = []
 
-        for tv_id in tv_ids:
+        def fetch_tv_show(tv_id: int) -> Dict[str, Any]:
             data, status_code = self.get_tv_details(tv_id)
-            results.append({
+            return {
                 'id': tv_id,
                 'data': data if status_code == 200 else None,
                 'status_code': status_code,
                 'error': data if status_code != 200 else None
-            })
+            }
+
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            futures = [executor.submit(fetch_tv_show, tv_id) for tv_id in tv_ids]
+            results = [future.result() for future in futures]
 
         return results, 200
 
     def get_bulk_seasons(self, season_requests: list[dict]) -> Tuple[list[Dict[str, Any]], int]:
         results = []
 
-        for request in season_requests:
+        def fetch_season(request: dict) -> Dict[str, Any]:
             tv_id = request.get('tv_id')
             season_number = request.get('season_number')
             data, status_code = self.get_season_details(tv_id, season_number)
-            results.append({
+            return {
                 'tv_id': tv_id,
                 'season_number': season_number,
                 'data': data if status_code == 200 else None,
                 'status_code': status_code,
                 'error': data if status_code != 200 else None
-            })
+            }
+
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            futures = [executor.submit(fetch_season, request) for request in season_requests]
+            results = [future.result() for future in futures]
 
         return results, 200
 
