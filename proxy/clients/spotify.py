@@ -3,28 +3,34 @@ from django.conf import settings
 import requests
 import base64
 from time import time
-from .base import BaseAPIClient
+from .cached_base import CachedAPIClient
 from proxy.errors import build_error_response, get_http_status, UNAUTHORIZED
 from concurrent.futures import ThreadPoolExecutor
 
-class SpotifyClient(BaseAPIClient):
-    _access_token: Optional[str] = None
-    _token_expires_at: Optional[float] = None
-
+class SpotifyClient(CachedAPIClient):
     def __init__(self):
         config = settings.PROXY_API['SPOTIFY']
-        super().__init__(base_url=config['BASE_URL'])
+        super().__init__(base_url=config['BASE_URL'], api_name='spotify')
 
-        self.client_id = config['CLIENT_ID']
-        self.client_secret = config['CLIENT_SECRET']
+        self.client_id = settings.API_KEYS_CACHE['spotify']['client_id'] or config['CLIENT_ID']
+        self.client_secret = settings.API_KEYS_CACHE['spotify']['client_secret'] or config['CLIENT_SECRET']
         self.auth_url = config['AUTH_URL']
+
+        settings.API_KEYS_CACHE['spotify']['client_id'] = self.client_id
+        settings.API_KEYS_CACHE['spotify']['client_secret'] = self.client_secret
+        self._save_api_keys()
+
         self.access_token = self._get_or_refresh_token()
 
     def _is_token_valid(self) -> bool:
-        if not SpotifyClient._access_token or not SpotifyClient._token_expires_at: return False
+        access_token = settings.API_KEYS_CACHE['spotify']['access_token']
+        token_expires_at = settings.API_KEYS_CACHE['spotify']['token_expires_at']
+
+        if not access_token or not token_expires_at: 
+            return False
 
         buffer_time = settings.PROXY_API['SPOTIFY']['TOKEN_BUFFER_TIME']
-        return time() < (SpotifyClient._token_expires_at - buffer_time)
+        return time() < (token_expires_at - buffer_time)
 
     def _fetch_new_token(self) -> str:
         credentials = f"{self.client_id}:{self.client_secret}"
@@ -38,19 +44,22 @@ class SpotifyClient(BaseAPIClient):
         data = {'grant_type': 'client_credentials'}
 
         try:
-            response = requests.post(self.auth_url, headers=headers, data=data, timeout=self.timeout)
+            timeout = self._get_timeout('auth')
+            response = requests.post(self.auth_url, headers=headers, data=data, timeout=timeout)
             response.raise_for_status()
             token_data = response.json()
 
-            SpotifyClient._access_token = token_data['access_token']
-            SpotifyClient._token_expires_at = time() + token_data['expires_in']
+            settings.API_KEYS_CACHE['spotify']['access_token'] = token_data['access_token']
+            settings.API_KEYS_CACHE['spotify']['token_expires_at'] = time() + token_data['expires_in']
+            self._save_api_keys()
 
-            return SpotifyClient._access_token
+            return token_data['access_token']
         except Exception:
             return ''
 
     def _get_or_refresh_token(self) -> str:
-        if self._is_token_valid(): return SpotifyClient._access_token
+        if self._is_token_valid(): 
+            return settings.API_KEYS_CACHE['spotify']['access_token']
         return self._fetch_new_token()
 
     def get_headers(self) -> Dict[str, str]:
@@ -66,14 +75,33 @@ class SpotifyClient(BaseAPIClient):
             'limit': limit,
             'offset': offset
         }
-        return self.get(endpoint, params=params)
+        return self.cached_get(
+            endpoint=endpoint,
+            cache_type='api_spotify_search',
+            params=params,
+            operation='search',
+            query=query,
+            search_type=search_type,
+            limit=limit,
+            offset=offset
+        )
 
     def get_album(self, album_id: str) -> Tuple[Dict[str, Any], int]:
         endpoint = f'albums/{album_id}'
-        return self.get(endpoint)
+        return self.cached_get(
+            endpoint=endpoint,
+            cache_type='api_spotify_details',
+            operation='details',
+            album_id=album_id
+        )
 
     def get_bulk_albums(self, album_ids: list[str]) -> Tuple[Dict[str, Any], int]:
         if not album_ids: return {'albums': []}, 200
+
+        cache_key = self._generate_cache_key('api_spotify_bulk', album_ids=album_ids)
+        cached_response = self._get_cached_response(cache_key)
+        if cached_response is not None:
+            return cached_response
 
         # Spotify has a limit of 20 albums per request
         # Split into batches of 20 for parallel processing
@@ -81,7 +109,13 @@ class SpotifyClient(BaseAPIClient):
         if len(album_ids) <= batch_size:
             endpoint = 'albums'
             params = {'ids': ','.join(album_ids)}
-            return self.get(endpoint, params=params)
+            data, status_code = self.get(endpoint, params=params, operation='bulk')
+
+            if status_code == 200:
+                cache_timeout = self._get_cache_timeout('api_spotify_details')
+                self._cache_response(cache_key, data, status_code, cache_timeout)
+
+            return data, status_code
 
         def fetch_albums_batch(batch_ids: list[str]) -> Tuple[list[Dict[str, Any]], int]:
             endpoint = 'albums'
@@ -107,7 +141,14 @@ class SpotifyClient(BaseAPIClient):
             'limit': limit,
             'offset': offset
         }
-        return self.get(endpoint, params=params)
+        return self.cached_get(
+            endpoint=endpoint,
+            cache_type='api_spotify_new_releases',
+            params=params,
+            operation='search',
+            limit=limit,
+            offset=offset
+        )
 
     def get_featured_playlists(self, limit: int = 20, offset: int = 0) -> Tuple[Dict[str, Any], int]:
         endpoint = 'browse/featured-playlists'
@@ -115,4 +156,11 @@ class SpotifyClient(BaseAPIClient):
             'limit': limit,
             'offset': offset
         }
-        return self.get(endpoint, params=params)
+        return self.cached_get(
+            endpoint=endpoint,
+            cache_type='api_spotify_new_releases',
+            params=params,
+            operation='search',
+            limit=limit,
+            offset=offset
+        )

@@ -47,8 +47,10 @@ __all__ = [
     "SPECTACULAR_SETTINGS",
     # Proxy APIs
     "PROXY_API",
+    "API_TIMEOUTS",
     # Cache
     "CACHES",
     "CACHE_TIMEOUTS",
     "CACHE_KEYS",
+    "API_KEYS_CACHE",
 ]

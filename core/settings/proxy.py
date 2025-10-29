@@ -32,6 +32,32 @@ OPENLIBRARY_CONFIG = {
     "COVERS_BASE_URL": "https://covers.openlibrary.org",
 }
 
+# API-specific timeout configurations (in seconds)
+API_TIMEOUTS = {
+    'igdb': {
+        'search': 15,
+        'details': 20,
+        'bulk': 30,
+        'auth': 10,
+    },
+    'spotify': {
+        'search': 10,
+        'details': 15,
+        'bulk': 25,
+        'auth': 8,
+    },
+    'tmdb': {
+        'search': 12,
+        'details': 15,
+        'bulk': 30,
+    },
+    'openlibrary': {
+        'search': 15,
+        'details': 20,
+        'bulk': 25,
+    },
+}
+
 # Consolidated proxy API configuration
 PROXY_API = {
     "TMDB": TMDB_CONFIG,

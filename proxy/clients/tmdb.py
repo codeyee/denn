@@ -1,14 +1,16 @@
 from typing import Dict, Any, Optional, Tuple
 from django.conf import settings
-from .base import BaseAPIClient
+from .cached_base import CachedAPIClient
 from concurrent.futures import ThreadPoolExecutor
 
-class TMDBClient(BaseAPIClient):
+class TMDBClient(CachedAPIClient):
     def __init__(self):
         config = settings.PROXY_API['TMDB']
-        super().__init__(base_url=config['BASE_URL'])
+        super().__init__(base_url=config['BASE_URL'], api_name='tmdb')
 
-        self.api_key = config['API_KEY']
+        self.api_key = settings.API_KEYS_CACHE['tmdb']['api_key'] or config['API_KEY']
+        settings.API_KEYS_CACHE['tmdb']['api_key'] = self.api_key
+        self._save_api_keys()
 
     def get_headers(self) -> Dict[str, str]:
         headers = super().get_default_headers()
@@ -18,21 +20,49 @@ class TMDBClient(BaseAPIClient):
     def search(self, query: str, page: int = 1) -> Tuple[Dict[str, Any], int]:
         endpoint = 'search/multi'
         params = {'query': query, 'page': page}
-        return self.get(endpoint, params=params)
+        return self.cached_get(
+            endpoint=endpoint,
+            cache_type='api_tmdb_search',
+            params=params,
+            operation='search',
+            query=query,
+            page=page
+        )
 
     def get_movie_details(self, movie_id: int) -> Tuple[Dict[str, Any], int]:
         endpoint = f'movie/{movie_id}'
-        return self.get(endpoint)
+        return self.cached_get(
+            endpoint=endpoint,
+            cache_type='api_tmdb_details',
+            operation='details',
+            movie_id=movie_id
+        )
 
     def get_tv_details(self, tv_id: int) -> Tuple[Dict[str, Any], int]:
         endpoint = f'tv/{tv_id}'
-        return self.get(endpoint)
+        return self.cached_get(
+            endpoint=endpoint,
+            cache_type='api_tmdb_details',
+            operation='details',
+            tv_id=tv_id
+        )
 
     def get_season_details(self, tv_id: int, season_number: int) -> Tuple[Dict[str, Any], int]:
         endpoint = f'tv/{tv_id}/season/{season_number}'
-        return self.get(endpoint)
+        return self.cached_get(
+            endpoint=endpoint,
+            cache_type='api_tmdb_details',
+            operation='details',
+            tv_id=tv_id,
+            season_number=season_number
+        )
 
     def get_bulk_movies(self, movie_ids: list[int]) -> Tuple[list[Dict[str, Any]], int]:
+        cache_key = self._generate_cache_key('api_tmdb_bulk', movie_ids=movie_ids)
+        cached_response = self._get_cached_response(cache_key)
+        if cached_response is not None:
+            return cached_response
+
         results = []
 
         def fetch_movie(movie_id: int) -> Dict[str, Any]:
@@ -47,6 +77,9 @@ class TMDBClient(BaseAPIClient):
         with ThreadPoolExecutor(max_workers=10) as executor:
             futures = [executor.submit(fetch_movie, movie_id) for movie_id in movie_ids]
             results = [future.result() for future in futures]
+
+        cache_timeout = self._get_cache_timeout('api_tmdb_details')
+        self._cache_response(cache_key, results, 200, cache_timeout)
 
         return results, 200
 
@@ -92,9 +125,21 @@ class TMDBClient(BaseAPIClient):
     def get_popular_movies(self, page: int = 1) -> Tuple[Dict[str, Any], int]:
         endpoint = 'movie/popular'
         params = {'page': page}
-        return self.get(endpoint, params=params)
+        return self.cached_get(
+            endpoint=endpoint,
+            cache_type='api_tmdb_popular',
+            params=params,
+            operation='search',
+            page=page
+        )
 
     def get_popular_tv(self, page: int = 1) -> Tuple[Dict[str, Any], int]:
         endpoint = 'tv/popular'
         params = {'page': page}
-        return self.get(endpoint, params=params)
+        return self.cached_get(
+            endpoint=endpoint,
+            cache_type='api_tmdb_popular',
+            params=params,
+            operation='search',
+            page=page
+        )
