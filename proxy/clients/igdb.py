@@ -1,7 +1,7 @@
 import requests
 from typing import Dict, Any, Tuple, Optional
 from django.conf import settings
-from .cached_base import CachedAPIClient
+from .cached import CachedAPIClient
 from concurrent.futures import ThreadPoolExecutor
 from proxy.errors import (
     build_error_response,

@@ -56,7 +56,6 @@ class HomepageView(APIView):
         music_results = []
         books_results = []
 
-        # Initialize clients
         try:
             tmdb_client = TMDBClient()
         except Exception as e:
@@ -81,7 +80,6 @@ class HomepageView(APIView):
             openlibrary_client = None
             print(f"Error initializing OpenLibrary client: {e}")
 
-        # Execute external API requests concurrently
         with ThreadPoolExecutor(max_workers=5) as executor:
             futures = {}
 
@@ -98,7 +96,6 @@ class HomepageView(APIView):
             if openlibrary_client:
                 futures['books'] = executor.submit(openlibrary_client.get_trending_books, limit)
 
-            # Collect TMDB results
             try:
                 if 'movies' in futures:
                     movies_data, movies_status = futures['movies'].result()
@@ -121,7 +118,6 @@ class HomepageView(APIView):
             except Exception as e:
                 print(f"Error fetching video (tv) suggestions: {e}")
 
-            # Collect IGDB results
             try:
                 if 'games' in futures:
                     games_data, games_status = futures['games'].result()
@@ -130,7 +126,6 @@ class HomepageView(APIView):
             except Exception as e:
                 print(f"Error fetching games suggestions: {e}")
 
-            # Collect Spotify results
             try:
                 if 'music' in futures:
                     music_data, music_status = futures['music'].result()
@@ -140,7 +135,6 @@ class HomepageView(APIView):
             except Exception as e:
                 print(f"Error fetching music suggestions: {e}")
 
-            # Collect OpenLibrary results
             try:
                 if 'books' in futures:
                     books_data, books_status = futures['books'].result()

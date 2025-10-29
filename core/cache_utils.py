@@ -5,15 +5,17 @@ import hashlib
 import json
 from typing import Any, Callable, Optional
 
-
 def cache_key_generator(*args, **kwargs) -> str:
-    key_data = {'args': args, 'kwargs': kwargs}
+    key_data = {
+        'args': args,
+        'kwargs': kwargs
+    }
+
     key_string = json.dumps(key_data, sort_keys=True, default=str)
     return hashlib.md5(key_string.encode()).hexdigest()
 
-
 def cached_view(
-    cache_type: str = 'homepage',
+    cache_type: str = None,
     timeout: Optional[int] = None,
     key_prefix: Optional[str] = None
 ):
