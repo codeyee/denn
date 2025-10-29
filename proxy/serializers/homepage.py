@@ -22,7 +22,7 @@ class BooksSuggestionsResponseSerializer(serializers.Serializer):
 
 class HomepageResponseSerializer(serializers.Serializer):
     movies = VideoSearchItemSerializer(many=True, help_text="Suggested movies")
-    tv = VideoSearchItemSerializer(many=True, help_text="Suggested TV shows")
+    tv_shows = VideoSearchItemSerializer(many=True, help_text="Suggested TV shows")
     games = GameSearchItemSerializer(many=True, help_text="Suggested games")
     music = MusicSearchItemSerializer(many=True, help_text="Suggested albums")
     books = BookSearchItemSerializer(many=True, help_text="Suggested books")

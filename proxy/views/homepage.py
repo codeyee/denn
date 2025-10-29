@@ -13,6 +13,7 @@ from proxy.serializers import HomepageResponseSerializer, ErrorResponseSerialize
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 from concurrent.futures import ThreadPoolExecutor
+from core.cache_utils import cached_view
 
 class HomepageView(APIView):
 
@@ -29,6 +30,8 @@ class HomepageView(APIView):
         - Books from Open Library
 
         Returns a limited number of items per category, ideal for homepage recommendations.
+
+        **Caching:** This endpoint is cached for 6 hours to improve performance and reduce external API calls.
         ''',
         parameters=[
             OpenApiParameter(
@@ -42,8 +45,9 @@ class HomepageView(APIView):
             500: ErrorResponseSerializer
         }
     )
+    @cached_view(cache_type='homepage', timeout=21600)
     def get(self, request):
-        limit = int(request.query_params.get('limit', 10))
+        limit = int(request.GET.get('limit', 10))
         limit = min(limit, 50)
 
         movie_results = []
@@ -148,7 +152,7 @@ class HomepageView(APIView):
 
         response_data = {
             'movies': movie_results,
-            'tv': tv_results,
+            'tv_shows': tv_results,
             'games': games_results,
             'music': music_results,
             'books': books_results

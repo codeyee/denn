@@ -7,6 +7,7 @@ from .jwt import *
 from .cors import *
 from .docs import *
 from .proxy import *
+from .cache import *
 
 # Make settings available
 __all__ = [
@@ -46,4 +47,8 @@ __all__ = [
     "SPECTACULAR_SETTINGS",
     # Proxy APIs
     "PROXY_API",
+    # Cache
+    "CACHES",
+    "CACHE_TIMEOUTS",
+    "CACHE_KEYS",
 ]

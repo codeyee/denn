@@ -36,7 +36,7 @@ def normalize_album_search(item: Dict[str, Any]) -> Dict[str, Any]:
         'type': 'album',
         'title': item.get('name'),
         'authors': get_artist_names_array(item.get('artists')),
-        'image_url': get_image_url(item.get('images')),
+        'image_url': get_image_url(item.get('images'), 'large'),
         'release_date': normalize_release_date(item.get('release_date')),
         'total_tracks': item.get('total_tracks'),
         'album_type': item.get('album_type'),
