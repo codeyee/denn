@@ -7,7 +7,7 @@ from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiExam
 from drf_spectacular.types import OpenApiTypes
 from content.models import UserList
 from content.serializers import UserListSerializer, UserListDetailSerializer
-from content.permissions import IsOwnerOrReadOnly, IsMemberOfList
+from content.permissions import IsOwnerOrReadOnly
 
 @extend_schema_view(
     list=extend_schema(
@@ -19,7 +19,15 @@ from content.permissions import IsOwnerOrReadOnly, IsMemberOfList
     retrieve=extend_schema(
         tags=['Lists'],
         summary='Get list details',
-        description='Get detailed information about a specific list including all items and members.',
+        description='''
+        Get detailed information about a specific list including all items and members.
+
+        **Optional Header:**
+        - `X-Render-Content`: When present, includes detailed information from external APIs (TMDB, IGDB, Spotify, OpenLibrary) in the `source_data` field of each content item.
+        ''',
+        parameters=[
+            OpenApiParameter('X-Render-Content', OpenApiTypes.STR, OpenApiParameter.HEADER, required=False, description='Include external API data in response')
+        ],
         responses={
             200: UserListDetailSerializer,
             403: OpenApiExample('Forbidden', value={'detail': 'You do not have permission to view this list.'}),
@@ -104,7 +112,7 @@ class UserListViewSet(viewsets.ModelViewSet):
             return [IsAuthenticated(), IsOwnerOrReadOnly()]
 
         elif self.action == 'retrieve':
-            return [IsAuthenticated(), IsMemberOfList()]
+            return [IsAuthenticated(), IsOwnerOrReadOnly()]
 
         return [IsAuthenticated()]
 

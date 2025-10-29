@@ -72,4 +72,4 @@ class UserListDetailSerializer(serializers.ModelSerializer):
 
     def get_items(self, obj):
         from .list_item import ListItemSerializer
-        return ListItemSerializer(obj.items.all(), many=True).data
+        return ListItemSerializer(obj.items.all(), many=True, context=self.context).data

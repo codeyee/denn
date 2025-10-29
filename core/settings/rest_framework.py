@@ -18,7 +18,7 @@ REST_AUTH = {
     "JWT_AUTH_COOKIE": "auth-token",
     "JWT_AUTH_REFRESH_COOKIE": "refresh-token",
     "JWT_AUTH_HTTPONLY": False,
-    "USER_DETAILS_SERIALIZER": "authentication.serializers.UserSerializer",
+    "USER_DETAILS_SERIALIZER": "authentication.serializers.ProfileSerializer",
     "LOGIN_SERIALIZER": "authentication.serializers.EmailLoginSerializer",
     "SESSION_LOGIN": False,
 }

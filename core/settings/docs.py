@@ -10,7 +10,7 @@ SPECTACULAR_TAGS = [
     {"name": "List Invitations", "description": "Invite users to shared lists"},
     {"name": "Ratings", "description": "Rate and review content"},
     {"name": "Content Items", "description": "Content items management"},
-    {"name": "Proxy - Homepage", "description": "Homepage suggestions"},
+    {"name": "Proxy - Suggestions", "description": "Homepage suggestions"},
     {"name": "Proxy - Video", "description": "Movies and TV Shows (TMDB)"},
     {"name": "Proxy - Music", "description": "Music albums and tracks (Spotify)"},
     {"name": "Proxy - Games", "description": "Video games (IGDB)"},

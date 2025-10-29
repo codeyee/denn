@@ -17,7 +17,7 @@ from concurrent.futures import ThreadPoolExecutor
 class HomepageView(APIView):
 
     @extend_schema(
-        tags=['Proxy - Homepage'],
+        tags=['Proxy - Suggestions'],
         summary='Get homepage suggestions',
         description='''
         Get aggregated suggestions from all categories for homepage display.
