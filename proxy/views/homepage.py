@@ -45,7 +45,7 @@ class HomepageView(APIView):
             500: ErrorResponseSerializer
         }
     )
-    @cached_view(cache_type='homepage', timeout=21600)
+    @cached_view(cache_type='homepage', timeout= 3600 * 12)
     def get(self, request):
         limit = int(request.GET.get('limit', 10))
         limit = min(limit, 50)
