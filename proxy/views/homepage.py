@@ -51,7 +51,7 @@ class HomepageView(APIView):
         limit = min(limit, 50)
 
         movie_results = []
-        tv_results = []
+        tv_show_results = []
         games_results = []
         music_results = []
         books_results = []
@@ -112,9 +112,9 @@ class HomepageView(APIView):
                     if tv_status == 200 and 'results' in tv_data:
                         for item in tv_data['results'][:max(1, limit // 2)]:
                             if item.get('media_type') != 'person':
-                                tv_results.append(normalize_video(item, 'tv'))
+                                tv_show_results.append(normalize_video(item, 'tv'))
                 movie_results = movie_results[:limit]
-                tv_results = tv_results[:limit]
+                tv_show_results = tv_show_results[:limit]
             except Exception as e:
                 print(f"Error fetching video (tv) suggestions: {e}")
 
@@ -146,7 +146,7 @@ class HomepageView(APIView):
 
         response_data = {
             'movies': movie_results,
-            'tv_shows': tv_results,
+            'tv_shows': tv_show_results,
             'games': games_results,
             'music': music_results,
             'books': books_results
