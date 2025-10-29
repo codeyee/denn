@@ -6,7 +6,50 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import AccessToken
+from drf_spectacular.utils import extend_schema, OpenApiExample
 
+@extend_schema(
+    tags=['Authentication'],
+    summary='Logout user',
+    description='''
+    Logout the current user and blacklist their tokens.
+
+    This will invalidate both the access and refresh tokens,
+    requiring the user to log in again to access protected endpoints.
+    ''',
+    request={
+        'type': 'object',
+        'properties': {
+            'refresh': {
+                'type': 'string',
+                'description': 'Refresh token to blacklist'
+            }
+        }
+    },
+    responses={
+        200: OpenApiExample(
+            'Logout Success',
+            value={'detail': 'Successfully logged out.'}
+        ),
+        400: OpenApiExample(
+            'Bad Request',
+            value={'detail': 'Invalid token.'}
+        ),
+        401: OpenApiExample(
+            'Unauthorized',
+            value={'detail': 'Authentication credentials were not provided.'}
+        )
+    },
+    examples=[
+        OpenApiExample(
+            'Logout Request',
+            value={
+                'refresh': 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...'
+            },
+            request_only=True
+        )
+    ]
+)
 class LogoutView(DjRestAuthLogoutView):
     permission_classes = [IsAuthenticated]
 

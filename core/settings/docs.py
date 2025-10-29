@@ -15,7 +15,7 @@ SPECTACULAR_TAGS = [
     {"name": "Proxy - Music", "description": "Music albums and tracks (Spotify)"},
     {"name": "Proxy - Games", "description": "Video games (IGDB)"},
     {"name": "Proxy - Books", "description": "Books (OpenLibrary)"},
-    {"name": "API Schema", "description": "OpenAPI schema endpoints"},
+    {"name": "API Schema", "description": "OpenAPI schema endpoints"}
 ]
 
 # Swagger UI Configuration
