@@ -1,9 +1,12 @@
+"use client";
+
 import { motion, Transition, Easing } from 'motion/react';
 import { useEffect, useRef, useState, useMemo } from 'react';
 
 type BlurTextProps = {
   text?: string;
   delay?: number;
+  initialDelay?: number;
   className?: string;
   animateBy?: 'words' | 'letters';
   direction?: 'top' | 'bottom';
@@ -32,6 +35,7 @@ const buildKeyframes = (
 const BlurText: React.FC<BlurTextProps> = ({
   text = '',
   delay = 200,
+  initialDelay = 0,
   className = '',
   animateBy = 'words',
   direction = 'top',
@@ -95,7 +99,7 @@ const BlurText: React.FC<BlurTextProps> = ({
         const spanTransition: Transition = {
           duration: totalDuration,
           times,
-          delay: (index * delay) / 1000,
+          delay: (initialDelay + index * delay) / 1000,
           ease: easing
         };
 
