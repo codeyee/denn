@@ -1,3 +1,5 @@
+"use client";
+
 import TopMenu from "@/app/_components/TopMenu";
 import BlurText from "@/app/_components/ui/TextAnimations/BlurText";
 import GradientText from "@/app/_components/ui/TextAnimations/GradientText";
@@ -6,6 +8,7 @@ import { Button } from "@/app/_components/ui/button";
 import SpotlightCard from "@/app/_components/ui/SpotlightCard";
 import { Separator } from "@/app/_components/ui/separator";
 import DomeGalleryBackground from "@/app/_components/Backgrounds/DomeGallery";
+import { motion } from "motion/react";
 import {
   Film,
   Tv,
@@ -88,6 +91,34 @@ const features = [
     description: "Never forget what you want to watch, play, or read next",
   },
 ];
+
+// Animation variants
+const fadeInUp = {
+  hidden: { opacity: 0, y: 60 },
+  visible: { 
+    opacity: 1, 
+    y: 0
+  }
+};
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.2
+    }
+  }
+};
+
+const scaleIn = {
+  hidden: { opacity: 0, scale: 0.8 },
+  visible: { 
+    opacity: 1, 
+    scale: 1
+  }
+};
 
 export default function Home() {
   return (
@@ -176,62 +207,90 @@ export default function Home() {
         {/* Content Types Section */}
         <div className="w-full max-w-7xl mx-auto px-4 py-32">
           <div className="space-y-12">
-            <div className="text-center space-y-4">
+            <motion.div 
+              className="text-center space-y-4"
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-100px" }}
+              variants={fadeInUp}
+            >
               <h2 className="text-3xl md:text-5xl font-bold text-white">
                 Everything in One Place
               </h2>
               <p className="text-lg text-gray-300 max-w-2xl mx-auto">
                 Manage all your entertainment content across multiple platforms and formats
               </p>
-            </div>
+            </motion.div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-4">
+            <motion.div 
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-4"
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-100px" }}
+              variants={staggerContainer}
+            >
               {contentTypes.map((type, index) => (
-                <SpotlightCard
-                  key={index}
-                  className="p-6 bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl"
-                  spotlightColor="rgba(255, 255, 255, 0.15)"
-                >
-                  <div className="space-y-4">
-                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${type.color} flex items-center justify-center`}>
-                      <type.icon className="w-6 h-6 text-white" />
+                <motion.div key={index} variants={scaleIn}>
+                  <SpotlightCard
+                    className="p-6 bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl h-full"
+                    spotlightColor="rgba(255, 255, 255, 0.15)"
+                  >
+                    <div className="space-y-4">
+                      <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${type.color} flex items-center justify-center`}>
+                        <type.icon className="w-6 h-6 text-white" />
+                      </div>
+                      <h3 className="text-xl font-bold text-white">{type.title}</h3>
+                      <p className="text-gray-300">{type.description}</p>
                     </div>
-                    <h3 className="text-xl font-bold text-white">{type.title}</h3>
-                    <p className="text-gray-300">{type.description}</p>
-                  </div>
-                </SpotlightCard>
+                  </SpotlightCard>
+                </motion.div>
               ))}
               
               {/* Empty card for visual balance */}
-              <SpotlightCard
-                className="p-6 bg-gradient-to-br from-purple-500/20 to-pink-500/20 backdrop-blur-md border border-white/20 rounded-2xl flex items-center justify-center"
-                spotlightColor="rgba(168, 85, 247, 0.3)"
-              >
-                <div className="text-center space-y-2">
-                  <p className="text-2xl font-bold text-white">And More!</p>
-                  <p className="text-gray-300">Continuously expanding</p>
-                </div>
-              </SpotlightCard>
-            </div>
+              <motion.div variants={scaleIn}>
+                <SpotlightCard
+                  className="p-6 bg-gradient-to-br from-purple-500/20 to-pink-500/20 backdrop-blur-md border border-white/20 rounded-2xl flex items-center justify-center h-full"
+                  spotlightColor="rgba(168, 85, 247, 0.3)"
+                >
+                  <div className="text-center space-y-2">
+                    <p className="text-2xl font-bold text-white">And More!</p>
+                    <p className="text-gray-300">Continuously expanding</p>
+                  </div>
+                </SpotlightCard>
+              </motion.div>
+            </motion.div>
           </div>
         </div>
 
         {/* Features Section */}
         <div className="w-full max-w-7xl mx-auto px-4 py-20">
           <div className="space-y-12">
-            <div className="text-center space-y-4">
+            <motion.div 
+              className="text-center space-y-4"
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-100px" }}
+              variants={fadeInUp}
+            >
               <h2 className="text-3xl md:text-5xl font-bold text-white">
                 Powerful Features
               </h2>
               <p className="text-lg text-gray-300 max-w-2xl mx-auto">
                 Everything you need to organize, share, and enjoy your content
               </p>
-            </div>
+            </motion.div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <motion.div 
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-100px" }}
+              variants={staggerContainer}
+            >
               {features.map((feature, index) => (
-                <div
+                <motion.div
                   key={index}
+                  variants={scaleIn}
                   className="p-6 bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl hover:border-white/30 transition-all duration-300 group"
                 >
                   <div className="space-y-4">
@@ -241,47 +300,59 @@ export default function Home() {
                     <h3 className="text-xl font-bold text-white">{feature.title}</h3>
                     <p className="text-gray-300">{feature.description}</p>
                   </div>
-                </div>
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
           </div>
         </div>
 
         {/* Stats Section */}
         <div className="w-full max-w-5xl mx-auto px-4 py-20">
-            <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-3xl p-8 md:p-12">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div className="text-center space-y-2">
-                  <div className="text-4xl md:text-5xl font-bold text-white">
-                    <GradientText colors={["#60a5fa", "#a78bfa"]}>
-                      5+
-                    </GradientText>
-                  </div>
-                  <p className="text-gray-300 text-lg">Content Types</p>
+          <motion.div 
+            className="bg-black/40 backdrop-blur-md border border-white/10 rounded-3xl p-8 md:p-12"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={scaleIn}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="text-center space-y-2">
+                <div className="text-4xl md:text-5xl font-bold text-white">
+                  <GradientText colors={["#60a5fa", "#a78bfa"]}>
+                    5+
+                  </GradientText>
                 </div>
-                <div className="text-center space-y-2">
-                  <div className="text-4xl md:text-5xl font-bold text-white">
-                    <GradientText colors={["#a78bfa", "#ec4899"]}>
-                      ∞
-                    </GradientText>
-                  </div>
-                  <p className="text-gray-300 text-lg">Lists to Create</p>
+                <p className="text-gray-300 text-lg">Content Types</p>
+              </div>
+              <div className="text-center space-y-2">
+                <div className="text-4xl md:text-5xl font-bold text-white">
+                  <GradientText colors={["#a78bfa", "#ec4899"]}>
+                    ∞
+                  </GradientText>
                 </div>
-                <div className="text-center space-y-2">
-                  <div className="text-4xl md:text-5xl font-bold text-white">
-                    <GradientText colors={["#ec4899", "#f97316"]}>
-                      100%
-                    </GradientText>
-                  </div>
-                  <p className="text-gray-300 text-lg">Free to Use</p>
+                <p className="text-gray-300 text-lg">Lists to Create</p>
+              </div>
+              <div className="text-center space-y-2">
+                <div className="text-4xl md:text-5xl font-bold text-white">
+                  <GradientText colors={["#ec4899", "#f97316"]}>
+                    100%
+                  </GradientText>
                 </div>
+                <p className="text-gray-300 text-lg">Free to Use</p>
               </div>
             </div>
+          </motion.div>
         </div>
 
         {/* CTA Section */}
         <div className="w-full max-w-4xl mx-auto px-4 py-20">
-          <div className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 backdrop-blur-md border border-white/20 rounded-3xl p-8 md:p-12 text-center space-y-6">
+          <motion.div 
+            className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 backdrop-blur-md border border-white/20 rounded-3xl p-8 md:p-12 text-center space-y-6"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={fadeInUp}
+          >
             <h2 className="text-3xl md:text-5xl font-bold text-white">
               Ready to Get Started?
             </h2>
@@ -297,11 +368,17 @@ export default function Home() {
                 </Button>
               </Link>
             </div>
-          </div>
+          </motion.div>
         </div>
 
         {/* Footer */}
-        <div className="w-full max-w-7xl mx-auto px-4 pb-8">
+        <motion.div 
+          className="w-full max-w-7xl mx-auto px-4 pb-8"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          variants={fadeInUp}
+        >
           <Separator className="bg-white/10 mb-8" />
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-gray-400">
             <p>&copy; 2025 Denn. All rights reserved.</p>
@@ -312,7 +389,7 @@ export default function Home() {
               <a href="#" className="hover:text-white transition-colors">Contact</a>
             </div>
           </div>
-        </div>
+        </motion.div>
       </DomeGalleryBackground>
     </div>
   );
