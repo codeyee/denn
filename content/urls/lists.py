@@ -25,6 +25,14 @@ list_item_detail = ListItemViewSet.as_view({
     'delete': 'destroy'
 })
 
+list_item_reorder = ListItemViewSet.as_view({
+    'post': 'reorder'
+})
+
+list_item_move = ListItemViewSet.as_view({
+    'post': 'move'
+})
+
 list_member_list = ListMemberViewSet.as_view({
     'get': 'list'
 })
@@ -50,6 +58,16 @@ urlpatterns = [
         '<int:list_pk>/items/<int:pk>/',
         list_item_detail,
         name='items-detail'
+    ),
+    path(
+        '<int:list_pk>/items/reorder/',
+        list_item_reorder,
+        name='items-reorder'
+    ),
+    path(
+        '<int:list_pk>/items/<int:pk>/move/',
+        list_item_move,
+        name='items-move'
     ),
     path(
         '<int:list_pk>/members/',

@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from .user_list import UserList
 from .content_item import ContentItem
+from django.db.models import Max
 
 class ListItem(models.Model):
     class Status(models.TextChoices):
@@ -53,15 +54,28 @@ class ListItem(models.Model):
         help_text='Personal notes about this item'
     )
 
+    list_order = models.IntegerField(
+        default=0,
+        help_text='Order position within the list (1-based)'
+    )
+
     class Meta:
         db_table = 'list_items'
-        ordering = ['-added_at']
+        ordering = ['list_order', '-added_at']
 
         # TODO: Ajustar, ahora mismo un contenido puede aparecer varias veces en la misma lista
         indexes = [
             models.Index(fields=['user_list', 'status']),
             models.Index(fields=['content_item']),
             models.Index(fields=['-added_at']),
+            models.Index(fields=['user_list', 'list_order']),
+        ]
+
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user_list', 'list_order'],
+                name='unique_list_order_per_list'
+            )
         ]
 
     def __str__(self):
@@ -74,5 +88,13 @@ class ListItem(models.Model):
 
         elif self.status == self.Status.PENDING:
             self.completed_at = None
+
+        if (self.list_order or 0) <= 0 and self.user_list_id:
+            max_position = (
+                ListItem.objects.filter(user_list_id=self.user_list_id)
+                .aggregate(max_pos=Max('list_order'))
+                .get('max_pos') or 0
+            )
+            self.list_order = max_position + 1
 
         super().save(*args, **kwargs)

@@ -24,6 +24,7 @@ class ListItemSerializer(serializers.ModelSerializer):
         fields = [
             'id',
             'user_list',
+            'list_order',
             'content_item',
             'added_by',
             'status',
@@ -38,6 +39,7 @@ class ListItemSerializer(serializers.ModelSerializer):
         read_only_fields = [
             'id',
             'user_list',
+            'list_order',
             'content_item',
             'added_by',
             'added_at',
@@ -113,6 +115,7 @@ class ListItemCreateSerializer(serializers.ModelSerializer):
 
         fields = [
             'id',
+            'list_order',
             'source_api',
             'external_id',
             'content_type',
@@ -126,6 +129,7 @@ class ListItemCreateSerializer(serializers.ModelSerializer):
 
         read_only_fields = [
             'id',
+            'list_order',
             'content_item',
             'added_by',
             'added_at',
