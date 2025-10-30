@@ -116,13 +116,15 @@ export default function DomeGallery({
       rotationYRef.current = rotationYRef.current % 360;
 
       // Find and rotate the sphere element directly
-      const sphereElement = containerRef.current?.querySelector('.sphere') as HTMLElement;
+      const sphereElement = containerRef.current?.querySelector(
+        ".sphere"
+      ) as HTMLElement;
       if (sphereElement) {
-        const currentTransform = sphereElement.style.transform || '';
+        const currentTransform = sphereElement.style.transform || "";
         // Extract rotateX value if exists, otherwise use 0
         const rotateXMatch = currentTransform.match(/rotateX\(([^)]+)\)/);
-        const rotateX = rotateXMatch ? rotateXMatch[1] : '0deg';
-        
+        const rotateX = rotateXMatch ? rotateXMatch[1] : "0deg";
+
         sphereElement.style.transform = `translateZ(calc(var(--radius) * -1)) rotateX(${rotateX}) rotateY(${rotationYRef.current}deg)`;
       }
 
@@ -139,27 +141,31 @@ export default function DomeGallery({
   }, [autoRotate, autoRotateSpeed]);
 
   return (
-    <div ref={containerRef} className="relative w-full h-screen">
-      <DomeGalleryBase
-        images={backgroundImages}
-        fit={0.6}
-        fitBasis="auto"
-        minRadius={600}
-        maxRadius={Infinity}
-        padFactor={0.25}
-        overlayBlurColor="#060010"
-        maxVerticalRotationDeg={5}
-        dragSensitivity={20}
-        enlargeTransitionMs={300}
-        segments={35}
-        dragDampening={2}
-        openedImageWidth="600px"
-        openedImageHeight="600px"
-        imageBorderRadius="20px"
-        openedImageBorderRadius="20px"
-        grayscale={false}
-      />
-      {/* Overlay layer */}
+    <div className="relative w-screen h-screen overflow-hidden">
+      <div
+        ref={containerRef}
+        className="absolute w-[140vw] h-screen -left-[20vw]"
+      >
+        <DomeGalleryBase
+          images={backgroundImages}
+          fit={0.6}
+          fitBasis="auto"
+          minRadius={600}
+          maxRadius={Infinity}
+          padFactor={0.25}
+          overlayBlurColor="#060010"
+          maxVerticalRotationDeg={5}
+          dragSensitivity={20}
+          enlargeTransitionMs={300}
+          segments={35}
+          dragDampening={2}
+          openedImageWidth="600px"
+          openedImageHeight="600px"
+          imageBorderRadius="20px"
+          openedImageBorderRadius="20px"
+          grayscale={false}
+        />
+      </div>
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
@@ -167,7 +173,7 @@ export default function DomeGallery({
           opacity: overlayOpacity,
         }}
       />
-      {/* Noise layer */}
+      {/* Noise layer - stays at screen width */}
       {showNoise && (
         <div className="absolute inset-0 pointer-events-none z-[5]">
           <Noise
@@ -177,9 +183,7 @@ export default function DomeGallery({
         </div>
       )}
       {/* Custom content layer */}
-      {children && (
-        <div className="absolute inset-0 z-10">{children}</div>
-      )}
+      {children && <div className="absolute inset-0 z-10">{children}</div>}
     </div>
   );
 }
