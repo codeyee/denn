@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useEffect, useRef } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import DomeGalleryBase from "@/app/_components/ui/DomeGallery/DomeGallery";
 import Noise from "@/app/_components/ui/Animations/Noise";
 
@@ -101,6 +101,34 @@ export default function DomeGallery({
   const animationFrameRef = useRef<number | null>(null);
   const lastTimeRef = useRef<number>(0);
   const rotationYRef = useRef<number>(0);
+  const [currentOpacity, setCurrentOpacity] = useState<number>(overlayOpacity);
+
+  // Handle scroll-based opacity
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+      console.log({ scrollY, windowHeight: window.innerHeight });
+      const viewportHeight = window.innerHeight - 500;
+
+      if (scrollY >= viewportHeight) {
+        // Below 100vh, set opacity to 1
+        setCurrentOpacity(1);
+      } else {
+        // Above 100vh, use the original opacity
+        setCurrentOpacity(overlayOpacity);
+      }
+    };
+
+    // Add scroll listener
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    // Check initial state
+    handleScroll();
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, [overlayOpacity]);
 
   useEffect(() => {
     if (!autoRotate) return;
@@ -141,49 +169,52 @@ export default function DomeGallery({
   }, [autoRotate, autoRotateSpeed]);
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden">
-      <div
-        ref={containerRef}
-        className="absolute w-[140vw] h-screen -left-[20vw]"
-      >
-        <DomeGalleryBase
-          images={backgroundImages}
-          fit={0.6}
-          fitBasis="auto"
-          minRadius={600}
-          maxRadius={Infinity}
-          padFactor={0.25}
-          overlayBlurColor="#060010"
-          maxVerticalRotationDeg={5}
-          dragSensitivity={20}
-          enlargeTransitionMs={300}
-          segments={35}
-          dragDampening={2}
-          openedImageWidth="600px"
-          openedImageHeight="600px"
-          imageBorderRadius="20px"
-          openedImageBorderRadius="20px"
-          grayscale={false}
-        />
-      </div>
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          backgroundColor: overlayColor,
-          opacity: overlayOpacity,
-        }}
-      />
-      {/* Noise layer - stays at screen width */}
-      {showNoise && (
-        <div className="absolute inset-0 pointer-events-none z-[5]">
-          <Noise
-            patternAlpha={noiseAlpha}
-            patternRefreshInterval={noiseRefreshInterval}
+    <div className="relative w-full min-h-screen">
+      {/* Fixed background container */}
+      <div className="fixed inset-0 w-full h-screen overflow-hidden -z-10">
+        <div
+          ref={containerRef}
+          className="absolute w-[140vw] h-screen -left-[20vw]"
+        >
+          <DomeGalleryBase
+            images={backgroundImages}
+            fit={0.6}
+            fitBasis="auto"
+            minRadius={600}
+            maxRadius={Infinity}
+            padFactor={0.25}
+            overlayBlurColor="#060010"
+            maxVerticalRotationDeg={5}
+            dragSensitivity={20}
+            enlargeTransitionMs={300}
+            segments={35}
+            dragDampening={2}
+            openedImageWidth="600px"
+            openedImageHeight="600px"
+            imageBorderRadius="20px"
+            openedImageBorderRadius="20px"
+            grayscale={false}
           />
         </div>
-      )}
-      {/* Custom content layer */}
-      {children && <div className="absolute inset-0 z-10">{children}</div>}
+        <div
+          className="absolute inset-0 pointer-events-none transition-opacity duration-500"
+          style={{
+            backgroundColor: overlayColor,
+            opacity: currentOpacity,
+          }}
+        />
+        {/* Noise layer */}
+        {showNoise && (
+          <div className="absolute inset-0 pointer-events-none z-[5]">
+            <Noise
+              patternAlpha={noiseAlpha}
+              patternRefreshInterval={noiseRefreshInterval}
+            />
+          </div>
+        )}
+      </div>
+      {/* Scrollable content layer */}
+      {children && <div className="relative z-10">{children}</div>}
     </div>
   );
 }
