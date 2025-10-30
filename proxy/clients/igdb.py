@@ -21,17 +21,17 @@ class IGDBClient(CachedAPIClient):
 
         self.client_id = settings.API_KEYS_CACHE['igdb']['client_id'] or config['CLIENT_ID']
         self.client_secret = settings.API_KEYS_CACHE['igdb']['client_secret'] or config['CLIENT_SECRET']
-        
+
         settings.API_KEYS_CACHE['igdb']['client_id'] = self.client_id
         settings.API_KEYS_CACHE['igdb']['client_secret'] = self.client_secret
         self._save_api_keys()
-        
+
         self.access_token = self._get_or_refresh_token()
 
     def _is_token_valid(self) -> bool:
         access_token = settings.API_KEYS_CACHE['igdb']['access_token']
         token_expires_at = settings.API_KEYS_CACHE['igdb']['token_expires_at']
-        
+
         if not access_token or not token_expires_at: 
             return False
 
@@ -118,6 +118,36 @@ class IGDBClient(CachedAPIClient):
                 get_http_status(INTERNAL_SERVER_ERROR)
             )
 
+    def cached_igdb_post(
+        self,
+        endpoint: str,
+        cache_type: str,
+        body: str,
+        params: Optional[Dict[str, Any]] = None,
+        operation: str = 'search',
+        **cache_kwargs
+    ) -> Tuple[Dict[str, Any], int]:
+        cache_key = self._generate_cache_key(cache_type, **cache_kwargs)
+        cached_response = self._get_cached_response(cache_key)
+        if cached_response is not None:
+            return cached_response
+
+        original_timeout = self.timeout
+        self.timeout = self._get_timeout(operation)
+        try:
+            data, status_code = self.request_igdb(
+                endpoint=endpoint,
+                body=body,
+                params=params,
+                operation=operation
+            )
+            if status_code == 200:
+                cache_timeout = self._get_cache_timeout(cache_type)
+                self._cache_response(cache_key, data, status_code, cache_timeout)
+            return data, status_code
+        finally:
+            self.timeout = original_timeout
+
     def get_fields(self) -> str:
         return ','.join([
             'id',
@@ -140,11 +170,10 @@ class IGDBClient(CachedAPIClient):
         fields = self.get_fields()
         included_game_types = self.get_included_game_types()
         body = f'search "{query}"; fields {fields}; where game_type = ({included_game_types}); limit {limit}; offset {offset};'
-
-        return self.cached_post(
+        return self.cached_igdb_post(
             endpoint=endpoint,
             cache_type='api_igdb_search',
-            data=body,
+            body=body,
             operation='search',
             query=query,
             limit=limit,
@@ -201,11 +230,10 @@ class IGDBClient(CachedAPIClient):
         fields = self.get_fields()
         included_game_types = self.get_included_game_types()
         body = f'fields {fields}; where game_type = ({included_game_types}) & aggregated_rating != null; sort aggregated_rating desc; limit {limit}; offset {offset};'
-
-        return self.cached_post(
+        return self.cached_igdb_post(
             endpoint=endpoint,
             cache_type='api_igdb_popular',
-            data=body,
+            body=body,
             operation='search',
             limit=limit,
             offset=offset
