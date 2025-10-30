@@ -12,7 +12,7 @@ export default function TopMenu() {
   const { user, isAuthenticated, logout } = useAuth();
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 bg-background border-b shadow-sm">
+    <div className="fixed top-0 left-0 right-0 z-50 bg-transparent">
       <div className="w-full max-w-screen-2xl mx-auto px-4 py-3">
         <div className="flex justify-between items-center w-full">
           <NavigationMenu>

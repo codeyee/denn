@@ -2,6 +2,7 @@
 
 import { ReactNode, useEffect, useRef } from "react";
 import DomeGalleryBase from "@/app/_components/ui/DomeGallery/DomeGallery";
+import Noise from "@/app/_components/ui/Animations/Noise";
 
 type DomeGalleryProps = {
   overlayOpacity?: number; // Value between 0 and 1
@@ -9,6 +10,9 @@ type DomeGalleryProps = {
   children?: ReactNode; // Custom content to display on top
   autoRotate?: boolean; // Enable automatic rotation
   autoRotateSpeed?: number; // Rotation speed (degrees per second)
+  showNoise?: boolean; // Enable noise effect
+  noiseAlpha?: number; // Noise opacity (0-255)
+  noiseRefreshInterval?: number; // Frames between noise updates
 };
 
 // Import all background card images
@@ -89,6 +93,9 @@ export default function DomeGallery({
   children,
   autoRotate = true,
   autoRotateSpeed = 5,
+  showNoise = true,
+  noiseAlpha = 15,
+  noiseRefreshInterval = 2,
 }: DomeGalleryProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const animationFrameRef = useRef<number | null>(null);
@@ -160,6 +167,15 @@ export default function DomeGallery({
           opacity: overlayOpacity,
         }}
       />
+      {/* Noise layer */}
+      {showNoise && (
+        <div className="absolute inset-0 pointer-events-none z-[5]">
+          <Noise
+            patternAlpha={noiseAlpha}
+            patternRefreshInterval={noiseRefreshInterval}
+          />
+        </div>
+      )}
       {/* Custom content layer */}
       {children && (
         <div className="absolute inset-0 z-10">{children}</div>

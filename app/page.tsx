@@ -10,6 +10,9 @@ export default function Home() {
         overlayColor="#000000"
         autoRotate={true}
         autoRotateSpeed={5}
+        showNoise={true}
+        noiseAlpha={25}
+        noiseRefreshInterval={2}
       >
         <div className="flex items-center justify-center h-full">
           <div className="text-center text-white">
