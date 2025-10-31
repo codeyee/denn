@@ -49,14 +49,16 @@ export default function HeroSection() {
 
             <div className="space-y-4">
               <GradientText
-                colors={["#60a5fa", "#a78bfa", "#ec4899", "#60a5fa"]}
+                colors={["#fb7185", "#ef4444", "#f97316"]}
                 animationSpeed={6}
-                className="text-xl md:text-3xl"
+                animationDelayMs={500}
+                backdropBlur={false}
+                className="text-2xl md:text-4xl font-extrabold tracking-tight leading-[1.25] pb-1"
               >
-                Track Everything You Love
+                Track and rate everything you love
               </GradientText>
 
-              <p className="text-lg md:text-xl text-gray-300 max-w-2xl mx-auto">
+              <p className="text-base md:text-lg text-gray-200 max-w-2xl mx-auto font-semibold">
                 Your personal hub for movies, TV shows, games, books, and music.
                 Create lists, share with friends, and never lose track of
                 what&apos;s next.
@@ -64,22 +66,21 @@ export default function HeroSection() {
             </div>
 
             <div className="flex flex-wrap gap-4 justify-center items-center pt-4">
-              <Link href="/register">
-                <Button
-                  size="lg"
-                  className="bg-white text-black hover:bg-gray-200 text-lg px-8"
-                >
-                  Get Started
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
               <Link href="/login">
                 <Button
                   size="lg"
-                  variant="outline"
-                  className="text-white border-white hover:bg-white/10 text-lg px-8"
+                  className="bg-white text-black hover:bg-gray-200 text-lg px-8 cursor-pointer"
                 >
                   Sign In
+                </Button>
+              </Link>
+              <Link href="/register">
+                <Button
+                  size="lg"
+                  className="bg-gradient-to-r from-rose-500 via-red-500 to-orange-500 text-white hover:opacity-90 text-lg px-8 cursor-pointer"
+                >
+                  Get Started
+                  <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
             </div>
@@ -87,33 +88,33 @@ export default function HeroSection() {
             <div className="flex flex-wrap gap-3 justify-center pt-6">
               <Badge
                 variant="outline"
-                className="text-white border-white/30 bg-white/5 backdrop-blur-sm"
+                className="text-white border-white/30 bg-white/5 backdrop-blur-sm px-3 py-1.5 rounded-full text-sm"
               >
-                <Film className="w-3 h-3" /> Movies
+                <Film className="w-3.5 h-3.5" /> Movies
               </Badge>
               <Badge
                 variant="outline"
-                className="text-white border-white/30 bg-white/5 backdrop-blur-sm"
+                className="text-white border-white/30 bg-white/5 backdrop-blur-sm px-3 py-1.5 rounded-full text-sm"
               >
-                <Tv className="w-3 h-3" /> TV Shows
+                <Tv className="w-3.5 h-3.5" /> TV Shows
               </Badge>
               <Badge
                 variant="outline"
-                className="text-white border-white/30 bg-white/5 backdrop-blur-sm"
+                className="text-white border-white/30 bg-white/5 backdrop-blur-sm px-3 py-1.5 rounded-full text-sm"
               >
-                <Gamepad2 className="w-3 h-3" /> Games
+                <Gamepad2 className="w-3.5 h-3.5" /> Games
               </Badge>
               <Badge
                 variant="outline"
-                className="text-white border-white/30 bg-white/5 backdrop-blur-sm"
+                className="text-white border-white/30 bg-white/5 backdrop-blur-sm px-3 py-1.5 rounded-full text-sm"
               >
-                <Book className="w-3 h-3" /> Books
+                <Music className="w-3.5 h-3.5" /> Music
               </Badge>
               <Badge
                 variant="outline"
-                className="text-white border-white/30 bg-white/5 backdrop-blur-sm"
+                className="text-white border-white/30 bg-white/5 backdrop-blur-sm px-3 py-1.5 rounded-full text-sm"
               >
-                <Music className="w-3 h-3" /> Music
+                <Book className="w-3.5 h-3.5" /> Books
               </Badge>
             </div>
           </div>

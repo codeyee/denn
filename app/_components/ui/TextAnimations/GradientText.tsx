@@ -6,6 +6,8 @@ interface GradientTextProps {
   colors?: string[];
   animationSpeed?: number;
   showBorder?: boolean;
+  animationDelayMs?: number;
+  backdropBlur?: boolean;
 }
 
 export default function GradientText({
@@ -13,16 +15,19 @@ export default function GradientText({
   className = '',
   colors = ['#ffaa40', '#9c40ff', '#ffaa40'],
   animationSpeed = 8,
-  showBorder = false
+  showBorder = false,
+  animationDelayMs,
+  backdropBlur = false
 }: GradientTextProps) {
   const gradientStyle = {
     backgroundImage: `linear-gradient(to right, ${colors.join(', ')})`,
-    animationDuration: `${animationSpeed}s`
+    animationDuration: `${animationSpeed}s`,
+    animationDelay: animationDelayMs ? `${animationDelayMs}ms` : undefined
   };
 
   return (
     <div
-      className={`relative mx-auto flex max-w-fit flex-row items-center justify-center rounded-[1.25rem] font-medium backdrop-blur transition-shadow duration-500 overflow-hidden cursor-pointer ${className}`}
+      className={`relative mx-auto flex max-w-fit flex-row items-center justify-center rounded-[1.25rem] font-medium ${backdropBlur ? 'backdrop-blur' : ''} transition-shadow duration-500 overflow-visible cursor-pointer ${className}`}
     >
       {showBorder && (
         <div
@@ -50,7 +55,8 @@ export default function GradientText({
           ...gradientStyle,
           backgroundClip: 'text',
           WebkitBackgroundClip: 'text',
-          backgroundSize: '300% 100%'
+          backgroundSize: '300% 100%',
+          paddingBottom: '0.2em'
         }}
       >
         {children}
@@ -58,22 +64,3 @@ export default function GradientText({
     </div>
   );
 }
-
-// tailwind.config.js
-// module.exports = {
-//   theme: {
-//     extend: {
-//       keyframes: {
-//         gradient: {
-//           '0%': { backgroundPosition: '0% 50%' },
-//           '50%': { backgroundPosition: '100% 50%' },
-//           '100%': { backgroundPosition: '0% 50%' },
-//         },
-//       },
-//       animation: {
-//         gradient: 'gradient 8s linear infinite'
-//       },
-//     },
-//   },
-//   plugins: [],
-// };
