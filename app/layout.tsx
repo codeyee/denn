@@ -44,7 +44,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${azeretMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${azeretMono.variable} font-[family-name:var(--font-azeret-mono)] antialiased`}
       >
         <ThemeProvider
           attribute="class"
