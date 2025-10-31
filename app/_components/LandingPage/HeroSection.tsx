@@ -47,7 +47,7 @@ export default function HeroSection() {
               initialDelay={250}
               animateBy="words"
               direction="bottom"
-              className="text-5xl md:text-7xl font-bold mb-3 md:mb-4 font-[family-name:var(--font-azeret-mono)] justify-center drop-shadow-[0_4px_16px_rgba(0,0,0,0.6)]"
+              className="text-5xl md:text-7xl font-bold mb-1 font-mono justify-center drop-shadow-[0_4px_16px_rgba(0,0,0,0.6)]"
               stepDuration={0.25}
               onAnimationComplete={() => setIntroDone(true)}
             />

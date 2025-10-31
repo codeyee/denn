@@ -7,7 +7,7 @@ import { fadeInUp } from "./data";
 export default function Footer() {
   return (
     <motion.div
-      className="w-full max-w-7xl mx-auto px-4 pb-8 pt-10"
+      className="w-full max-w-8xl mx-auto px-8 pb-8 pt-10"
       initial="hidden"
       whileInView="visible"
       viewport={{ once: true }}

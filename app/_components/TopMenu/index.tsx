@@ -13,20 +13,20 @@ export default function TopMenu() {
 
   return (
     <div className="fixed top-0 left-0 right-0 z-50 bg-transparent">
-      <div className="w-full max-w-screen-2xl mx-auto px-4 py-3">
+      <div className="w-full max-w-screen-2xl mx-auto px-6 py-8">
         <div className="flex justify-between items-center w-full">
           <NavigationMenu>
             <NavigationMenuList>
               <NavigationMenuItem>
                 <Link href="/">
-                  <Button variant="link" className="cursor-pointer">
-                    Home
+                  <Button variant="link" className="cursor-pointer text-2xl font-bold font-mono">
+                    Denn
                   </Button>
                 </Link>
               </NavigationMenuItem>
             </NavigationMenuList>
           </NavigationMenu>
-          
+
           <div className="flex items-center gap-2">
             {isAuthenticated && user ? (
               <>
