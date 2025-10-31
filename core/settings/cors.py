@@ -1,33 +1,41 @@
 import os
+import re
 
-# CORS Configuration
 CORS_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "")
 CORS_ALLOWED_ORIGINS = [
     origin.strip() for origin in CORS_ORIGINS.split(",") if origin.strip()
 ]
 
-# Local development origins
-CORS_ALLOWED_ORIGINS.extend([
-    "http://localhost:3000",
-    "http://localhost:5173",
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:5173",
-])
+if os.getenv("DISABLE_LOCALHOST_CORS", "False").lower() != "true":
+    CORS_ALLOWED_ORIGIN_REGEXES = [
+        re.compile(r"^http://localhost:\d+$"),
+        re.compile(r"^http://127\.0\.0\.1:\d+$"),
+        re.compile(r"^http://\[::1\]:\d+$"),
+    ]
+else:
+    CORS_ALLOWED_ORIGIN_REGEXES = []
 
 CORS_ALLOW_CREDENTIALS = True
 
 # CSRF Configuration
 CSRF_TRUSTED_ORIGINS = []
 
-# Local development CSRF trusted origins
-CSRF_TRUSTED_ORIGINS.extend([
-    "http://localhost:3000",
-    "http://localhost:5173",
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:5173",
-])
+if os.getenv("DISABLE_LOCALHOST_CSRF", "False").lower() != "true":
+    common_dev_ports = (
+        list(range(3000, 3010)) +
+        list(range(5173, 5180)) +
+        list(range(8000, 8010)) +
+        list(range(8080, 8090)) +
+        list(range(5000, 5010)) +
+        list(range(4000, 4010)) +
+        list(range(9000, 9010))
+    )
+    for port in common_dev_ports:
+        CSRF_TRUSTED_ORIGINS.extend([
+            f"http://localhost:{port}",
+            f"http://127.0.0.1:{port}",
+        ])
 
-# Railway platform CSRF trusted origins
 if os.getenv("RAILWAY_PUBLIC_DOMAIN"):
     railway_domain = os.getenv("RAILWAY_PUBLIC_DOMAIN")
     CSRF_TRUSTED_ORIGINS.append(f"https://{railway_domain}")
@@ -38,7 +46,6 @@ if os.getenv("RAILWAY_ENVIRONMENT"):
         "https://*.up.railway.app",
     ])
 
-# Additional CSRF trusted origins from environment
 csrf_origins_env = os.getenv("CSRF_TRUSTED_ORIGINS", "")
 if csrf_origins_env:
     CSRF_TRUSTED_ORIGINS.extend([
