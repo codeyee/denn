@@ -4,6 +4,11 @@ import { ReactNode, useEffect, useRef, useState } from "react";
 import DomeGalleryBase from "@/app/_components/ui/DomeGallery/DomeGallery";
 import Noise from "@/app/_components/ui/Animations/Noise";
 
+export type BackgroundCardImage = {
+  src: string;
+  alt: string;
+};
+
 type DomeGalleryProps = {
   overlayOpacity?: number; // Value between 0 and 1
   overlayColor?: string; // CSS color value
@@ -14,78 +19,6 @@ type DomeGalleryProps = {
   noiseAlpha?: number; // Noise opacity (0-255)
   noiseRefreshInterval?: number; // Frames between noise updates
 };
-
-// Import all background card images
-const backgroundImages = [
-  {
-    src: "/images/background_cards/image1.webp",
-    alt: "Background card 1",
-  },
-  {
-    src: "/images/background_cards/image2.webp",
-    alt: "Background card 2",
-  },
-  {
-    src: "/images/background_cards/image3.webp",
-    alt: "Background card 3",
-  },
-  {
-    src: "/images/background_cards/image4.webp",
-    alt: "Background card 4",
-  },
-  {
-    src: "/images/background_cards/image5.webp",
-    alt: "Background card 5",
-  },
-  {
-    src: "/images/background_cards/image6.webp",
-    alt: "Background card 6",
-  },
-  {
-    src: "/images/background_cards/image7.webp",
-    alt: "Background card 7",
-  },
-  {
-    src: "/images/background_cards/image8.webp",
-    alt: "Background card 8",
-  },
-  {
-    src: "/images/background_cards/image9.webp",
-    alt: "Background card 9",
-  },
-  {
-    src: "/images/background_cards/image10.webp",
-    alt: "Background card 10",
-  },
-  {
-    src: "/images/background_cards/image11.webp",
-    alt: "Background card 11",
-  },
-  {
-    src: "/images/background_cards/image12.webp",
-    alt: "Background card 12",
-  },
-  {
-    src: "/images/background_cards/image13.jpeg",
-    alt: "Background card 13",
-  },
-  {
-    src: "/images/background_cards/image14.jpeg",
-    alt: "Background card 14",
-  },
-  {
-    src: "/images/background_cards/image15.jpeg",
-    alt: "Background card 15",
-  },
-  {
-    src: "/images/background_cards/image16.jpeg",
-    alt: "Background card 16",
-  },
-  {
-    src: "/images/background_cards/image17.jpeg",
-    alt: "Background card 17",
-  },
-];
 
 export default function DomeGallery({
   overlayOpacity = 0.3,
@@ -102,13 +35,32 @@ export default function DomeGallery({
   const lastTimeRef = useRef<number>(0);
   const rotationYRef = useRef<number>(0);
   const [currentOpacity, setCurrentOpacity] = useState<number>(overlayOpacity);
+  const [backgroundImages, setBackgroundImages] = useState<BackgroundCardImage[]>([]);
+
+  useEffect(() => {
+    const fetchImages = async () => {
+      try {
+        const response = await fetch("/api/background-cards");
+        if (response.ok) {
+          const images = await response.json();
+          setBackgroundImages(images);
+        } else {
+          console.error("Failed to fetch background card images");
+        }
+      } catch (error) {
+        console.error("Error fetching background card images:", error);
+      }
+    };
+
+    fetchImages();
+  }, []);
 
   // Handle scroll-based opacity
   useEffect(() => {
     const handleScroll = () => {
       const scrollY = window.scrollY;
       console.log({ scrollY, windowHeight: window.innerHeight });
-      const viewportHeight = window.innerHeight - 500;
+      const viewportHeight = window.innerHeight / 2;
 
       if (scrollY >= viewportHeight) {
         // Below 100vh, set opacity to 1
@@ -176,8 +128,9 @@ export default function DomeGallery({
           ref={containerRef}
           className="absolute w-[140vw] h-screen -left-[20vw]"
         >
-          <DomeGalleryBase
-            images={backgroundImages}
+          {backgroundImages.length > 0 && (
+            <DomeGalleryBase
+              images={backgroundImages}
             fit={0.6}
             fitBasis="auto"
             minRadius={600}
@@ -191,10 +144,11 @@ export default function DomeGallery({
             dragDampening={2}
             openedImageWidth="600px"
             openedImageHeight="600px"
-            imageBorderRadius="20px"
-            openedImageBorderRadius="20px"
-            grayscale={false}
-          />
+              imageBorderRadius="20px"
+              openedImageBorderRadius="20px"
+              grayscale={false}
+            />
+          )}
         </div>
         <div
           className="absolute inset-0 pointer-events-none transition-opacity duration-500"
@@ -205,7 +159,7 @@ export default function DomeGallery({
         />
         {/* Noise layer */}
         {showNoise && (
-          <div className="absolute inset-0 pointer-events-none z-[5]">
+          <div className="absolute inset-0 pointer-events-none z-5">
             <Noise
               patternAlpha={noiseAlpha}
               patternRefreshInterval={noiseRefreshInterval}
