@@ -46,7 +46,7 @@ export default function ContentTypesSection() {
           <h2 className="text-3xl md:text-5xl font-bold text-white">
             Everything in One Place
           </h2>
-          <p className="text-lg text-gray-300 max-w-2xl mx-auto">
+          <p className="text-lg text-gray-300 max-w-2xl mx-auto font-sans">
             Manage all your entertainment content across multiple platforms and
             formats
           </p>
@@ -84,7 +84,7 @@ export default function ContentTypesSection() {
                     </div>
 
                     {/* Provider attribution */}
-                    <div className="flex items-center gap-1.5 text-xs text-white/80">
+                    <div className="flex items-center gap-1.5 text-xs text-white/80 font-sans">
                       <span>Powered by</span>
                       {type.provider.href ? (
                         <a

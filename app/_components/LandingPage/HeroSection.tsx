@@ -23,7 +23,7 @@ export default function HeroSection() {
   return (
     <div className="snap-start snap-always relative h-screen w-full">
       <DomeGalleryBackground
-        overlayOpacity={0.6}
+        overlayOpacity={0.7}
         overlayColor="#12040fff"
         autoRotate={true}
         autoRotateSpeed={2}
@@ -63,7 +63,7 @@ export default function HeroSection() {
                 Track and rate everything you love
               </GradientText>
 
-              <p className="text-base md:text-lg text-gray-200 max-w-2xl mx-auto font-semibold drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]">
+              <p className="text-base md:text-lg text-gray-200 max-w-2xl mx-auto font-semibold drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)] font-sans">
                 Your personal hub for movies, TV shows, games, books, and music.
                 Create lists, share with friends, and never lose track of
                 what&apos;s next.
@@ -74,7 +74,7 @@ export default function HeroSection() {
               <Link href="/login">
                 <Button
                   size="lg"
-                  className="bg-white text-black hover:bg-gray-200 text-base md:text-lg px-6 md:px-8 cursor-pointer shadow-lg shadow-black/30 hover:shadow-xl"
+                  className="bg-white text-black hover:bg-gray-200 text-base md:text-lg px-6 md:px-8 cursor-pointer shadow-lg shadow-black/30 hover:shadow-xl py-6"
                 >
                   Sign In
                 </Button>
@@ -82,7 +82,7 @@ export default function HeroSection() {
               <Link href="/register">
                 <Button
                   size="lg"
-                  className="bg-gradient-to-r from-rose-500 via-red-500 to-orange-500 text-white hover:opacity-90 text-base md:text-lg px-6 md:px-8 cursor-pointer shadow-lg shadow-black/30 hover:shadow-xl"
+                  className="bg-gradient-to-r from-rose-500 via-red-500 to-orange-500 text-white hover:opacity-90 text-base md:text-lg px-6 md:px-8 cursor-pointer shadow-lg shadow-black/30 hover:shadow-xl py-6"
                 >
                   Get Started
                   <ArrowRight className="ml-2 h-5 w-5" />

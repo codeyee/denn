@@ -19,7 +19,7 @@ export default function CallToActionSection() {
         <h2 className="text-3xl md:text-5xl font-bold text-white">
           Ready to Get Started?
         </h2>
-        <p className="text-lg text-gray-300 max-w-2xl mx-auto">
+        <p className="text-lg text-gray-300 max-w-2xl mx-auto font-sans">
           Join Denn today and start organizing your entertainment life. Create
           your first list in seconds.
         </p>
@@ -27,7 +27,7 @@ export default function CallToActionSection() {
           <Link href="/register">
             <Button
               size="lg"
-              className="bg-white text-black hover:bg-gray-200 text-lg px-8"
+              className="bg-white text-black hover:bg-gray-200 text-lg px-8 py-6"
             >
               Create Free Account
               <ArrowRight className="ml-2 h-5 w-5" />

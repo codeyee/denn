@@ -7,7 +7,7 @@ export default function HomePage() {
         <h1 className="text-4xl font-bold text-white mb-4">
           Welcome to Denn
         </h1>
-        <p className="text-gray-300">
+        <p className="text-gray-300 font-sans">
           Your dashboard is coming soon...
         </p>
       </div>

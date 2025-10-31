@@ -17,7 +17,7 @@ export default function FeaturesSection() {
           <h2 className="text-3xl md:text-5xl font-bold text-white">
             Powerful Features
           </h2>
-          <p className="text-lg text-gray-300 max-w-2xl mx-auto">
+          <p className="text-lg text-gray-300 max-w-2xl mx-auto font-sans">
             Everything you need to organize, share, and enjoy your content
           </p>
         </motion.div>
@@ -40,7 +40,7 @@ export default function FeaturesSection() {
                   <feature.icon className="w-6 h-6 text-white" />
                 </div>
                 <h3 className="text-xl font-bold text-white">{feature.title}</h3>
-                <p className="text-gray-300">{feature.description}</p>
+                <p className="text-gray-300 font-sans">{feature.description}</p>
               </div>
             </motion.div>
           ))}

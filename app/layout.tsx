@@ -19,11 +19,11 @@ const geistMono = Geist_Mono({
 const azeretMono = localFont({
   src: [
     {
-      path: "../public/fonts/AzeretMono-VariableFont_wght.ttf",
+      path: "../public/fonts/azeret_mono.ttf",
       style: "normal",
     },
     {
-      path: "../public/fonts/AzeretMono-Italic-VariableFont_wght.ttf",
+      path: "../public/fonts/azeret_mono_italic.ttf",
       style: "italic",
     },
   ],
