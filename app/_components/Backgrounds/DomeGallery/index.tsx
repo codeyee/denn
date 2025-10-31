@@ -39,7 +39,7 @@ export default function DomeGallery({
   useEffect(() => {
     const fetchImages = async () => {
       try {
-        const response = await fetch("/api/background-cards");
+        const response = await fetch("/api/cards");
         if (response.ok) {
           const images = await response.json();
           setBackgroundImages(images);

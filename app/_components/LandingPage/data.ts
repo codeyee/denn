@@ -44,7 +44,7 @@ export type Feature = {
   description: string;
 };
 
-const CONTENT_TYPES_ENDPOINT = "/api/background-cards?variant=content-types";
+const CONTENT_TYPES_ENDPOINT = "/api/cards?variant=content-types";
 
 const fallbackAltFromTitle = (title: string) => `${title} background`;
 
