@@ -50,7 +50,7 @@ export function useAuth() {
 
   const handleLogout = useCallback(() => {
     logout();
-    router.push("/login"); // Redirect to login page after logout
+    router.push("/");
   }, [logout, router]);
 
   return {
