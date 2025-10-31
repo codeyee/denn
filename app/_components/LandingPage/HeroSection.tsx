@@ -82,7 +82,7 @@ export default function HeroSection() {
               <Link href="/register">
                 <Button
                   size="lg"
-                  className="bg-gradient-to-r from-rose-500 via-red-500 to-orange-500 text-white hover:opacity-90 text-base md:text-lg px-6 md:px-8 cursor-pointer shadow-lg shadow-black/30 hover:shadow-xl py-6"
+                  className="bg-gradient-to-r from-rose-500 via-red-500 to-orange-500 text-white hover:opacity-90 text-base md:text-lg px-8 md:px-10 cursor-pointer shadow-lg shadow-black/30 hover:shadow-xl py-6"
                 >
                   Get Started
                   <ArrowRight className="ml-2 h-5 w-5" />
