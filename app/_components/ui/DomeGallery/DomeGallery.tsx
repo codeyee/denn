@@ -690,10 +690,10 @@ export default function DomeGallery({
       --item-width: calc(var(--circ) / var(--segments-x));
       --item-height: calc(var(--circ) / var(--segments-y));
     }
-    
+
     .sphere-root * { box-sizing: border-box; }
     .sphere, .sphere-item, .item__image { transform-style: preserve-3d; }
-    
+
     .stage {
       width: 100%;
       height: 100%;
@@ -705,13 +705,13 @@ export default function DomeGallery({
       perspective: calc(var(--radius) * 2);
       perspective-origin: 50% 50%;
     }
-    
+
     .sphere {
       transform: translateZ(calc(var(--radius) * -1));
       will-change: transform;
       position: absolute;
     }
-    
+
     .sphere-item {
       width: calc(var(--item-width) * var(--item-size-x));
       height: calc(var(--item-height) * var(--item-size-y));
@@ -725,22 +725,33 @@ export default function DomeGallery({
       backface-visibility: hidden;
       transition: transform 300ms;
       transform: rotateY(calc(var(--rot-y) * (var(--offset-x) + ((var(--item-size-x) - 1) / 2)) + var(--rot-y-delta, 0deg))) 
-                 rotateX(calc(var(--rot-x) * (var(--offset-y) - ((var(--item-size-y) - 1) / 2)) + var(--rot-x-delta, 0deg))) 
-                 translateZ(var(--radius));
+                rotateX(calc(var(--rot-x) * (var(--offset-y) - ((var(--item-size-y) - 1) / 2)) + var(--rot-x-delta, 0deg))) 
+                translateZ(var(--radius));
     }
-    
+
     .sphere-root[data-enlarging="true"] .scrim {
       opacity: 1 !important;
       pointer-events: all !important;
     }
-    
+
     @media (max-aspect-ratio: 1/1) {
       .viewer-frame {
         height: auto !important;
         width: 100% !important;
       }
     }
-    
+
+    .sphere-root {
+      --item-inset: 12px;
+    }
+
+    @media (max-width: 768px) {
+      .sphere-root {
+        --tile-radius: 12px;
+        --item-inset: 6px;
+      }
+    }
+
     // body.dg-scroll-lock {
     //   position: fixed !important;
     //   top: 0;
@@ -753,7 +764,7 @@ export default function DomeGallery({
     // }
     .item__image {
       position: absolute;
-      inset: 10px;
+      inset: var(--item-inset, 10px);
       border-radius: var(--tile-radius, 12px);
       overflow: hidden;
       cursor: pointer;
@@ -766,7 +777,7 @@ export default function DomeGallery({
     }
     .item__image--reference {
       position: absolute;
-      inset: 10px;
+      inset: var(--item-inset, 10px);
       pointer-events: none;
     }
   `;
@@ -842,7 +853,7 @@ export default function DomeGallery({
                       openItemFromElement(e.currentTarget as HTMLElement);
                     }}
                     style={{
-                      inset: '10px',
+                      inset: 'var(--item-inset, 10px)',
                       borderRadius: `var(--tile-radius, ${imageBorderRadius})`,
                       backfaceVisibility: 'hidden'
                     }}
@@ -864,14 +875,14 @@ export default function DomeGallery({
           </div>
 
           <div
-            className="absolute inset-0 m-auto z-[3] pointer-events-none"
+            className="absolute inset-0 m-auto z-3 pointer-events-none"
             style={{
               backgroundImage: `radial-gradient(rgba(235, 235, 235, 0) 65%, var(--overlay-blur-color, ${overlayBlurColor}) 100%)`
             }}
           />
 
           <div
-            className="absolute inset-0 m-auto z-[3] pointer-events-none"
+            className="absolute inset-0 m-auto z-3 pointer-events-none"
             style={{
               WebkitMaskImage: `radial-gradient(rgba(235, 235, 235, 0) 70%, var(--overlay-blur-color, ${overlayBlurColor}) 90%)`,
               maskImage: `radial-gradient(rgba(235, 235, 235, 0) 70%, var(--overlay-blur-color, ${overlayBlurColor}) 90%)`,
@@ -880,13 +891,13 @@ export default function DomeGallery({
           />
 
           <div
-            className="absolute left-0 right-0 top-0 h-[120px] z-[5] pointer-events-none rotate-180"
+            className="absolute left-0 right-0 top-0 h-[120px] z-5 pointer-events-none rotate-180"
             style={{
               background: `linear-gradient(to bottom, transparent, var(--overlay-blur-color, ${overlayBlurColor}))`
             }}
           />
           <div
-            className="absolute left-0 right-0 bottom-0 h-[120px] z-[5] pointer-events-none"
+            className="absolute left-0 right-0 bottom-0 h-[120px] z-5 pointer-events-none"
             style={{
               background: `linear-gradient(to bottom, transparent, var(--overlay-blur-color, ${overlayBlurColor}))`
             }}
