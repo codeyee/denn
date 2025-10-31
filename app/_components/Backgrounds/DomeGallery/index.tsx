@@ -34,7 +34,6 @@ export default function DomeGallery({
   const animationFrameRef = useRef<number | null>(null);
   const lastTimeRef = useRef<number>(0);
   const rotationYRef = useRef<number>(0);
-  const [currentOpacity, setCurrentOpacity] = useState<number>(overlayOpacity);
   const [backgroundImages, setBackgroundImages] = useState<BackgroundCardImage[]>([]);
 
   useEffect(() => {
@@ -54,33 +53,6 @@ export default function DomeGallery({
 
     fetchImages();
   }, []);
-
-  // Handle scroll-based opacity
-  useEffect(() => {
-    const handleScroll = () => {
-      const scrollY = window.scrollY;
-      console.log({ scrollY, windowHeight: window.innerHeight });
-      const viewportHeight = window.innerHeight / 2;
-
-      if (scrollY >= viewportHeight) {
-        // Below 100vh, set opacity to 1
-        setCurrentOpacity(1);
-      } else {
-        // Above 100vh, use the original opacity
-        setCurrentOpacity(overlayOpacity);
-      }
-    };
-
-    // Add scroll listener
-    window.addEventListener("scroll", handleScroll, { passive: true });
-
-    // Check initial state
-    handleScroll();
-
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-    };
-  }, [overlayOpacity]);
 
   useEffect(() => {
     if (!autoRotate) return;
@@ -151,10 +123,10 @@ export default function DomeGallery({
           )}
         </div>
         <div
-          className="absolute inset-0 pointer-events-none transition-opacity duration-500"
+          className="absolute inset-0 pointer-events-none"
           style={{
             backgroundColor: overlayColor,
-            opacity: currentOpacity,
+            opacity: overlayOpacity,
           }}
         />
         {/* Noise layer */}

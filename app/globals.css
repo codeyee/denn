@@ -120,3 +120,15 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Smooth snap-scroll styling */
+.snap-scroll-container {
+  scroll-snap-type: y mandatory;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+.snap-screen {
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
