@@ -23,7 +23,7 @@ export default function HeroSection() {
   const { settings } = useSettings();
 
   return (
-    <div className="snap-start snap-always relative h-screen w-full">
+    <div className="snap-start snap-always relative h-screen w-full overflow-hidden">
       <DomeGalleryBackground
         overlayOpacity={0.7}
         overlayColor="#12040fff"

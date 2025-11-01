@@ -149,3 +149,78 @@
   scroll-snap-align: start;
   scroll-snap-stop: always;
 }
+
+/* Custom Scrollbar Styling */
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.3) #12040f;
+}
+
+/* Webkit browsers (Chrome, Safari, Edge) */
+*::-webkit-scrollbar {
+  width: 10px;
+  z-index: 9999;
+  position: relative;
+}
+
+*::-webkit-scrollbar-track {
+  background: #12040f;
+  border-radius: 5px;
+  z-index: 9999;
+  position: relative;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 5px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  transition: background 0.2s ease;
+  z-index: 9999;
+  position: relative;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.4);
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:active {
+  background: rgba(255, 255, 255, 0.5);
+  background-clip: padding-box;
+}
+
+/* Ensure scrollbar appears above top menu shadow */
+.snap-y {
+  scrollbar-gutter: stable;
+  position: relative;
+  z-index: 1;
+  isolation: isolate;
+}
+
+/* Force scrollbar to be on top of everything */
+.snap-y::-webkit-scrollbar,
+.snap-y::-webkit-scrollbar-track,
+.snap-y::-webkit-scrollbar-thumb {
+  z-index: 99999 !important;
+  position: relative;
+}
+
+/* Make scrollbar track use the same color as second section background */
+.snap-y::-webkit-scrollbar-track {
+  background: #12040f;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+/* Ensure scrollbar thumb is visible above any overlays */
+.snap-y::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.35);
+  border: 2px solid rgba(0, 0, 0, 0.2);
+}
+
+.snap-y::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.45);
+  border-color: rgba(0, 0, 0, 0.3);
+}

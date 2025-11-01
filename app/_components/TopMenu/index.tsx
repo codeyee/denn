@@ -23,7 +23,7 @@ export default function TopMenu() {
   return (
     <div className="fixed top-0 left-0 right-0 z-50">
       <div className="relative w-full">
-        <div className="pointer-events-none absolute inset-0 bg-navbar-gradient" />
+        <div className="pointer-events-none absolute inset-0 bg-navbar-gradient" style={{ zIndex: 1 }} />
         <div className="relative z-10 w-full max-w-screen-2xl mx-auto px-6 py-8">
           <div className="flex justify-between items-center w-full">
           <NavigationMenu>

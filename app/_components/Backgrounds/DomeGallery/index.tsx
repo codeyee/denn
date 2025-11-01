@@ -93,12 +93,12 @@ export default function DomeGallery({
   }, [autoRotate, autoRotateSpeed]);
 
   return (
-    <div className="relative w-full min-h-screen">
-      {/* Fixed background container */}
-      <div className="fixed inset-0 w-full h-screen overflow-hidden -z-10">
+    <div className="relative w-full min-h-screen overflow-hidden">
+      {/* Absolute background container - contained within parent */}
+      <div className="absolute inset-0 w-full h-full overflow-hidden -z-10">
         <div
           ref={containerRef}
-          className="absolute w-[140vw] h-screen -left-[20vw]"
+          className="absolute w-[140vw] h-full -left-[20vw]"
         >
           {backgroundImages.length > 0 && (
             <DomeGalleryBase

@@ -11,12 +11,12 @@ export default function LandingPage() {
   return (
     <>
       {/* Snap-scroll container */}
-      <div className="snap-y snap-mandatory h-screen overflow-y-scroll overflow-x-hidden scroll-smooth">
+      <div className="snap-y snap-mandatory h-screen overflow-y-scroll overflow-x-hidden scroll-smooth relative" style={{ scrollbarGutter: 'stable', zIndex: 1 }}>
         {/* Hero Screen - First Screen */}
         <HeroSection />
 
         {/* Features Screen - Second Screen */}
-        <div className="snap-start snap-always relative min-h-screen w-full bg-[#12040fff]">
+        <div className="snap-start snap-always relative min-h-screen w-full bg-[#12040fff] overflow-hidden">
           {/* Fade-in gradient at top of features screen - creates seamless blend */}
           <div
             className="absolute top-0 left-0 right-0 h-80 pointer-events-none z-10"
