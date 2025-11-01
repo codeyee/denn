@@ -24,21 +24,32 @@ export default function ContentTypesSection() {
 
   useEffect(() => {
     const controller = new AbortController();
+    let isMounted = true;
 
     const loadContentTypes = async () => {
-      const types = await fetchContentTypes({ signal: controller.signal });
-      setContentTypes(types);
+      try {
+        const types = await fetchContentTypes({ signal: controller.signal });
+        if (isMounted) {
+          setContentTypes(types);
+        }
+      } catch (error) {
+        if ((error as Error).name === "AbortError") {
+          return;
+        }
+
+        console.error("Failed to fetch content types:", error);
+      }
     };
 
-    loadContentTypes().catch((error) => {
-      if ((error as Error).name === "AbortError") {
-        return;
+    loadContentTypes();
+
+    return () => {
+      isMounted = false;
+      // Only abort if not already aborted
+      if (!controller.signal.aborted) {
+        controller.abort();
       }
-
-      console.error("Failed to fetch content types:", error);
-    });
-
-    return () => controller.abort();
+    };
   }, []);
 
   return (

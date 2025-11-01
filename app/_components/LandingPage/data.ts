@@ -206,7 +206,10 @@ export async function fetchContentTypes(
       };
     });
   } catch (error) {
-    console.error("Failed to load content type backgrounds:", error);
+    // Don't log AbortError as it's expected when component unmounts
+    if ((error as Error).name !== "AbortError") {
+      console.error("Failed to load content type backgrounds:", error);
+    }
     return defaultContentTypes.map(cloneContentType);
   }
 }
