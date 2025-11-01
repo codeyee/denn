@@ -1,4 +1,4 @@
-import LoginForm from "@/app/_components/Login";
+import LoginForm from "@/app/_components/forms/LoginForm";
 import TopMenu from "@/app/_components/TopMenu";
 
 export default function LoginPage() {

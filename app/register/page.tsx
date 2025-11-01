@@ -1,4 +1,4 @@
-import RegisterForm from "@/app/_components/Register";
+import RegisterForm from "@/app/_components/forms/RegisterForm";
 import TopMenu from "@/app/_components/TopMenu";
 
 export default function RegisterPage() {
