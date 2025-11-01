@@ -44,9 +44,7 @@ def extract_authors(involved_companies: Optional[List[Dict[str, Any]]]) -> Optio
 def format_game_type(game_type: Optional[int]) -> Optional[str]:
     game_type_map = {
         0: "Main game",
-        6: "Episode",
         8: "Remake",
-        9: "Remaster"
     }
 
     return game_type_map.get(game_type, "Unknown")

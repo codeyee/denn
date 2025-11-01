@@ -163,7 +163,9 @@ class IGDBClient(CachedAPIClient):
         ])
 
     def get_included_game_types(self) -> str:
-        return ','.join(['0', '6', '8', '9'])
+        # 0 = Main game
+        # 8 = Remake
+        return ','.join(['0', '8'])
 
     def search_games(self, query: str, limit: int = 50, offset: int = 0) -> Tuple[Dict[str, Any], int]:
         endpoint = 'games'
