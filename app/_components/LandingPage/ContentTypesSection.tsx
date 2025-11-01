@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import SpotlightCard from "@/app/_components/ui/SpotlightCard";
+import SpotlightCard from "@/app/_components/ui/SpotlightCard/SpotlightCard";
 import {
   defaultContentTypes,
   fetchContentTypes,

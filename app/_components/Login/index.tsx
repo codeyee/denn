@@ -85,7 +85,7 @@ export default function LoginForm() {
         </Button>
       </form>
 
-      <div className="mt-4 text-center text-sm">
+      <div className="mt-4 text-center text-sm font-sans">
         <span className="text-gray-600 dark:text-gray-400">
           Don&apos;t have an account?{" "}
         </span>

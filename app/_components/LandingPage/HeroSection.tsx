@@ -60,7 +60,7 @@ export default function HeroSection() {
                 animationSpeed={6}
                 animationDelayMs={250}
                 backdropBlur={false}
-                className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight leading-[1.25] pb-1 drop-shadow-[0_4px_16px_rgba(0,0,0,0.5)]"
+                className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight leading-tight pb-1 drop-shadow-[0_4px_16px_rgba(0,0,0,0.5)]"
               >
                 Track and rate everything you love
               </GradientText>
@@ -84,7 +84,7 @@ export default function HeroSection() {
               <Link href="/register">
                 <Button
                   size="lg"
-                  className="bg-gradient-to-r from-rose-500 via-red-500 to-orange-500 text-white hover:opacity-90 text-base md:text-lg px-8 md:px-10 cursor-pointer shadow-lg shadow-black/30 hover:shadow-xl py-6"
+                  className="bg-linear-to-r from-rose-500 via-red-500 to-orange-500 text-white hover:opacity-90 text-base md:text-lg px-8 md:px-10 cursor-pointer shadow-lg shadow-black/30 hover:shadow-xl py-6"
                 >
                   Get Started
                   <ArrowRight className="ml-2 h-5 w-5" />
