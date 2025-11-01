@@ -85,7 +85,7 @@ export default function ContentTypesSection() {
               className={`w-full md:basis-1/2 md:max-w-[360px] ${layoutClasses[index] ?? ""}`}
             >
               <SpotlightCard
-                className="relative overflow-hidden rounded-2xl h-[480px] md:h-[480px] bg-transparent backdrop-blur-lg p-0! border-none!"
+                className="relative overflow-hidden rounded-2xl h-[240px] md:h-[480px] bg-transparent backdrop-blur-lg p-0! border-none!"
                 spotlightColor="rgba(255, 255, 255, 0.1)"
               >
                 {/* Background image */}
