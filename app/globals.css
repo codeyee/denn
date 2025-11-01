@@ -8,6 +8,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-azeret-mono);
+  --color-hero-gradient: #12040f;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -45,6 +46,8 @@
 
 :root {
   --radius: 0.625rem;
+  --hero-gradient-rgb: 18 4 15;
+  --color-hero-gradient: #12040f;
   --background: oklch(1 0 0);
   --foreground: oklch(0.129 0.042 264.695);
   --card: oklch(1 0 0);
@@ -79,6 +82,8 @@
 }
 
 .dark {
+  --hero-gradient-rgb: 18 4 15;
+  --color-hero-gradient: #12040f;
   --background: oklch(0 0 0);
   --foreground: oklch(0.98 0 0);
   --card: oklch(0.1 0 0);
@@ -110,6 +115,18 @@
   --sidebar-accent-foreground: oklch(0.98 0 0);
   --sidebar-border: oklch(0.2 0 0);
   --sidebar-ring: oklch(0.8 0 0);
+}
+
+@layer utilities {
+  .bg-navbar-gradient {
+    background: linear-gradient(
+      to bottom,
+      var(--color-hero-gradient) 0%,
+      rgb(var(--hero-gradient-rgb) / 0.7) 40%,
+      rgb(var(--hero-gradient-rgb) / 0.4) 80%,
+      transparent 100%
+    );
+  }
 }
 
 @layer base {
