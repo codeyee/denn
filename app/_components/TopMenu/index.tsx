@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-} from "@/app/_components/DropdownMenu/DropdownMenu";
+} from "@/app/_components/DropdownMenu";
 import { useSettings } from "@/app/_hooks/useSettings";
 
 export default function TopMenu() {
