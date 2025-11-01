@@ -40,7 +40,7 @@ export default function HeroSection() {
             }}
           />
 
-          <div className="text-center text-white w-full max-w-6xl space-y-6">
+          <div className="text-center text-white w-full max-w-6xl space-y-6 z-50">
             <BlurText
               text="Welcome to Denn"
               delay={70}
