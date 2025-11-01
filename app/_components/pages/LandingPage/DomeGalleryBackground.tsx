@@ -9,7 +9,7 @@ export type BackgroundCardImage = {
   alt: string;
 };
 
-type DomeGalleryProps = {
+type DomeGalleryBackgroundProps = {
   overlayOpacity?: number; // Value between 0 and 1
   overlayColor?: string; // CSS color value
   children?: ReactNode; // Custom content to display on top
@@ -20,7 +20,7 @@ type DomeGalleryProps = {
   noiseRefreshInterval?: number; // Frames between noise updates
 };
 
-export default function DomeGallery({
+export default function DomeGalleryBackground({
   overlayOpacity = 0.3,
   overlayColor = "#000000",
   children,
@@ -29,7 +29,7 @@ export default function DomeGallery({
   showNoise = true,
   noiseAlpha = 15,
   noiseRefreshInterval = 2,
-}: DomeGalleryProps) {
+}: DomeGalleryBackgroundProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const animationFrameRef = useRef<number | null>(null);
   const lastTimeRef = useRef<number>(0);

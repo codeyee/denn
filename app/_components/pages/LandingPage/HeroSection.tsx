@@ -4,7 +4,6 @@ import BlurText from "@/app/_components/ui/TextAnimations/BlurText";
 import GradientText from "@/app/_components/ui/TextAnimations/GradientText";
 import { Badge } from "@/app/_components/ui/badge";
 import { Button } from "@/app/_components/ui/button";
-import DomeGalleryBackground from "@/app/_components/Backgrounds/DomeGallery";
 import { useState } from "react";
 import {
   Film,
@@ -17,6 +16,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useSettings } from "@/app/_hooks/useSettings";
+import DomeGalleryBackground from "./DomeGalleryBackground";
 
 export default function HeroSection() {
   const [introDone, setIntroDone] = useState(false);

@@ -1,6 +1,6 @@
 import path from "path";
 
-import { contentTypeDefinitions } from "@/app/_components/LandingPage/data";
+import { contentTypeDefinitions } from "@/app/_components/pages/LandingPage/data";
 
 import { createAltFromRelativePath } from "./formatters";
 import { getCategoryFromFileName } from "./fileSystem";

@@ -1,8 +1,8 @@
 "use client";
 
 import TopMenu from "@/app/_components/TopMenu";
-import LandingPage from "@/app/_components/LandingPage";
-import HomePage from "@/app/_components/HomePage";
+import LandingPage from "@/app/_components/pages/LandingPage";
+import HomePage from "@/app/_components/pages/HomePage";
 import { useAuth } from "@/app/_hooks/useAuth";
 
 export default function Home() {
