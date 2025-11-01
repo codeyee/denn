@@ -59,7 +59,7 @@ function DropdownMenu({ children }: { children: React.ReactNode }) {
         {open && (
           <div
             ref={menuRef}
-            className={cn("absolute z-50 mt-2", alignClasses[contentAlign as keyof typeof alignClasses])}
+            className={cn("absolute z-50 mt-3", alignClasses[contentAlign as keyof typeof alignClasses])}
           >
             {content}
           </div>
@@ -113,17 +113,10 @@ function DropdownMenuContent({
 }: React.ComponentProps<"div"> & {
   align?: "start" | "center" | "end"
 }) {
-  const alignClasses = {
-    start: "left-0",
-    center: "left-1/2 -translate-x-1/2",
-    end: "right-0"
-  }
-
   return (
     <div
       className={cn(
         "min-w-56 overflow-hidden rounded-md border bg-popover p-2 text-popover-foreground shadow-lg",
-        alignClasses[align],
         className
       )}
       {...props}

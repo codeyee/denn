@@ -39,28 +39,6 @@ export default function TopMenu() {
           </NavigationMenu>
 
           <div className="flex items-center gap-3">
-            {/* Settings Button */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="cursor-pointer">
-                  <Settings className="h-5 w-5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onSelect={toggleAnimations}>
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="checkbox"
-                      checked={settings.animationsEnabled}
-                      onChange={() => {}}
-                      className="cursor-pointer"
-                    />
-                    <span>Enable Animations</span>
-                  </div>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
             {isAuthenticated && user ? (
               <>
                 <Link href="/profile">
@@ -88,6 +66,28 @@ export default function TopMenu() {
                 </Link>
               </>
             )}
+
+            {/* Settings Button */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="cursor-pointer">
+                  <Settings className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={toggleAnimations}>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      checked={settings.animationsEnabled}
+                      onChange={() => {}}
+                      className="cursor-pointer"
+                    />
+                    <span>Enable Animations</span>
+                  </div>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
           </div>
         </div>
