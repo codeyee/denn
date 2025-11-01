@@ -16,18 +16,20 @@ import {
   ChevronDown,
 } from "lucide-react";
 import Link from "next/link";
+import { useSettings } from "@/app/_hooks/useSettings";
 
 export default function HeroSection() {
   const [introDone, setIntroDone] = useState(false);
+  const { settings } = useSettings();
 
   return (
     <div className="snap-start snap-always relative h-screen w-full">
       <DomeGalleryBackground
         overlayOpacity={0.7}
         overlayColor="#12040fff"
-        autoRotate={true}
-        autoRotateSpeed={2}
-        showNoise={true}
+        autoRotate={settings.animationsEnabled}
+        autoRotateSpeed={settings.animationsEnabled ? 2 : 0}
+        showNoise={settings.animationsEnabled}
         noiseAlpha={18}
         noiseRefreshInterval={2}
       >
