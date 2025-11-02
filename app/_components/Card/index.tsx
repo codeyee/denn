@@ -28,7 +28,7 @@ interface FooterProp {
 function Footer({ children, className }: FooterProp) {
   return (
     <div
-      className={`flex items-center gap-1.5 text-xs text-white/80 font-sans drop-shadow-[0_3px_10px_rgba(0,0,0,0.6)] ${className}`}
+      className={`flex items-center gap-1 text-[10px] md:text-xs text-white/80 font-sans drop-shadow-[0_3px_10px_rgba(0,0,0,0.6)] ${className}`}
     >
       {children}
     </div>
@@ -62,10 +62,10 @@ function Card({
   return (
     <motion.div
       key={id}
-      className={`w-full md:basis-1/2 md:max-w-[360px] ${className}`}
+      className={`w-full md:basis-1/2 md:max-w-[240px] ${className}`}
     >
       <SpotlightCard
-        className="relative overflow-hidden rounded-2xl h-[240px] md:h-[480px] bg-transparent backdrop-blur-lg p-0! border-none!"
+        className="relative overflow-hidden rounded-2xl h-[180px] md:h-[320px] bg-transparent backdrop-blur-lg p-0! border-none!"
         spotlightColor="rgba(255, 255, 255, 0.1)"
       >
         {/* Background image or empty state */}
@@ -76,7 +76,7 @@ function Card({
             aria-label={backgroundImageAlt || "Empty list"}
           >
             {EmptyIcon && (
-              <EmptyIcon className="w-24 h-24 md:w-32 md:h-32 text-gray-400 opacity-50" />
+              <EmptyIcon className="w-16 h-16 md:w-20 md:h-20 text-gray-400 opacity-50" />
             )}
           </div>
         ) : (
@@ -98,10 +98,10 @@ function Card({
 
         {/* Foreground content */}
         <div className="relative z-10 h-full flex flex-col">
-          <div className="mt-auto w-full px-6 pb-6 pt-5 space-y-4">
-            <div className="flex items-center gap-3 text-white mb-2">
-              <Icon className="w-6 h-6 shrink-0 drop-shadow-[0_4px_12px_rgba(0,0,0,0.45)]" />
-              <span className="text-xl font-bold drop-shadow-[0_4px_16px_rgba(0,0,0,0.55)]">
+          <div className="mt-auto w-full px-4 pb-4 pt-3 space-y-2">
+            <div className="flex items-center gap-2 text-white mb-1">
+              <Icon className="w-5 h-5 shrink-0 drop-shadow-[0_4px_12px_rgba(0,0,0,0.45)]" />
+              <span className="text-base md:text-lg font-bold drop-shadow-[0_4px_16px_rgba(0,0,0,0.55)] line-clamp-2">
                 {title}
               </span>
             </div>

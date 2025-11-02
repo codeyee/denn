@@ -8,7 +8,7 @@ import CreateListCard from "../../Card/CreateListCard";
 import { useContentStore } from "@/app/_stores/content-store";
 import { useListsStore } from "@/app/_stores/lists-store";
 
-const ITEMS_PER_VIEW = 5;
+const ITEMS_PER_VIEW = 6;
 
 export default function HomePage() {
   const {
