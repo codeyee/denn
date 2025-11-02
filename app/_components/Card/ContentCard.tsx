@@ -70,6 +70,7 @@ export default function ContentCard({ item, className }: ContentCardProps) {
       backgroundImage={imageUrl || "/images/placeholder.jpg"}
       backgroundImageAlt={`${title} cover image`}
       className={className}
+      isEmpty={!imageUrl}
     >
       <Card.Footer>
         {authors && <div>{authors}</div>}

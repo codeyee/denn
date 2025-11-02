@@ -57,7 +57,7 @@ function Card({
   };
 
   const Icon = icon || (type ? iconMap[type] : Film);
-  const EmptyIcon = emptyIcon;
+  const EmptyIcon = emptyIcon || Icon;
 
   return (
     <motion.div
