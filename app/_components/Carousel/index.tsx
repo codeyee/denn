@@ -95,7 +95,7 @@ export default function Carousel({
       >
         {/* Left Navigation Button */}
         <AnimatePresence>
-          {showNavigation && isHovered && currentIndex > 0 && (
+          {showNavigation && isHovered && (
             <motion.button
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -111,7 +111,7 @@ export default function Carousel({
 
         {/* Right Navigation Button */}
         <AnimatePresence>
-          {showNavigation && isHovered && currentIndex < maxIndex && (
+          {showNavigation && isHovered && (
             <motion.button
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
