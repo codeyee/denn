@@ -2,14 +2,17 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
 export interface User {
-  id: string;
+  id: number;
   username: string;
   email: string;
+  first_name?: string;
+  last_name?: string;
 }
 
 interface AuthState {
   user: User | null;
-  token: string | null;
+  accessToken: string | null;
+  refreshToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
@@ -22,9 +25,10 @@ interface AuthActions {
     email: string,
     password: string
   ) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   setUser: (user: User | null) => void;
-  setToken: (token: string | null) => void;
+  setAccessToken: (accessToken: string | null) => void;
+  setRefreshToken: (refreshToken: string | null) => void;
   clearError: () => void;
 }
 
@@ -32,7 +36,8 @@ export type AuthStore = AuthState & AuthActions;
 
 const initialState: AuthState = {
   user: null,
-  token: null,
+  accessToken: null,
+  refreshToken: null,
   isAuthenticated: false,
   isLoading: false,
   error: null,
@@ -48,7 +53,6 @@ export const useAuthStore = create<AuthStore>()(
       login: async (email: string, password: string) => {
         set({ isLoading: true, error: null });
         try {
-          // Replace with your actual API endpoint
           const response = await fetch(`${apiUrl}/auth/login/`, {
             method: "POST",
             headers: {
@@ -59,14 +63,15 @@ export const useAuthStore = create<AuthStore>()(
 
           if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || "Login failed");
+            throw new Error(errorData.detail || errorData.message || "Login failed");
           }
 
           const data = await response.json();
 
           set({
             user: data.user,
-            token: data.token,
+            accessToken: data.access,
+            refreshToken: data.refresh,
             isAuthenticated: true,
             isLoading: false,
             error: null,
@@ -86,7 +91,6 @@ export const useAuthStore = create<AuthStore>()(
       register: async (username: string, email: string, password: string) => {
         set({ isLoading: true, error: null });
         try {
-          // Replace with your actual API endpoint
           const response = await fetch(`${apiUrl}/auth/register/`, {
             method: "POST",
             headers: {
@@ -104,7 +108,9 @@ export const useAuthStore = create<AuthStore>()(
             const errorData = await response.json();
 
             const errorMessage =
-              errorData.message || Object.values(errorData).flat().join(" ");
+              errorData.detail ||
+              errorData.message ||
+              Object.values(errorData).flat().join(" ");
 
             throw new Error(errorMessage);
           }
@@ -113,7 +119,8 @@ export const useAuthStore = create<AuthStore>()(
 
           set({
             user: data.user,
-            token: data.token,
+            accessToken: data.access,
+            refreshToken: data.refresh,
             isAuthenticated: true,
             isLoading: false,
             error: null,
@@ -130,8 +137,24 @@ export const useAuthStore = create<AuthStore>()(
         }
       },
 
-      logout: () => {
-        set(initialState);
+      logout: async () => {
+        try {
+          const state = useAuthStore.getState();
+          if (state.accessToken) {
+            // Call the logout endpoint to invalidate the token
+            await fetch(`${apiUrl}/auth/logout/`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${state.accessToken}`,
+              },
+            });
+          }
+        } catch (error) {
+          console.error("Logout error:", error);
+        } finally {
+          set(initialState);
+        }
       },
 
       setUser: (user: User | null) => {
@@ -141,8 +164,12 @@ export const useAuthStore = create<AuthStore>()(
         });
       },
 
-      setToken: (token: string | null) => {
-        set({ token });
+      setAccessToken: (accessToken: string | null) => {
+        set({ accessToken });
+      },
+
+      setRefreshToken: (refreshToken: string | null) => {
+        set({ refreshToken });
       },
 
       clearError: () => {
@@ -154,7 +181,8 @@ export const useAuthStore = create<AuthStore>()(
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         user: state.user,
-        token: state.token,
+        accessToken: state.accessToken,
+        refreshToken: state.refreshToken,
         isAuthenticated: state.isAuthenticated,
       }),
     }

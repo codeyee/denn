@@ -30,9 +30,9 @@ export async function apiRequest<T = unknown>(
 
   // Add auth token if required
   if (requiresAuth) {
-    const token = useAuthStore.getState().token;
-    if (token) {
-      requestHeaders["Authorization"] = `Bearer ${token}`;
+    const accessToken = useAuthStore.getState().accessToken;
+    if (accessToken) {
+      requestHeaders["Authorization"] = `Bearer ${accessToken}`;
     }
   }
 

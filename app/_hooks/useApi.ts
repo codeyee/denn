@@ -21,7 +21,7 @@ export function useApi<T = unknown>(
   const [data, setData] = useState<T | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const token = useAuthStore((state) => state.token);
+  const accessToken = useAuthStore((state) => state.accessToken);
 
   const execute = useCallback(
     async (method: string = "GET", body?: unknown) => {
@@ -33,8 +33,8 @@ export function useApi<T = unknown>(
           "Content-Type": "application/json",
         };
 
-        if (requiresAuth && token) {
-          headers["Authorization"] = `Bearer ${token}`;
+        if (requiresAuth && accessToken) {
+          headers["Authorization"] = `Bearer ${accessToken}`;
         }
 
         const apiUrl =
@@ -66,7 +66,7 @@ export function useApi<T = unknown>(
         setIsLoading(false);
       }
     },
-    [endpoint, requiresAuth, token, onSuccess, onError]
+    [endpoint, requiresAuth, accessToken, onSuccess, onError]
   );
 
   const get = useCallback(() => execute("GET"), [execute]);

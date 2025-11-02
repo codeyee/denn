@@ -12,7 +12,8 @@ export function useAuth() {
   const router = useRouter();
   const {
     user,
-    token,
+    accessToken,
+    refreshToken,
     isAuthenticated,
     isLoading,
     error,
@@ -48,14 +49,15 @@ export function useAuth() {
     [register, router]
   );
 
-  const handleLogout = useCallback(() => {
-    logout();
+  const handleLogout = useCallback(async () => {
+    await logout();
     router.push("/");
   }, [logout, router]);
 
   return {
     user,
-    token,
+    accessToken,
+    refreshToken,
     isAuthenticated,
     isLoading,
     error,
