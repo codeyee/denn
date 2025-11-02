@@ -3,8 +3,11 @@
 import { useEffect } from "react";
 import ContentCard from "../../Card/ContentCard";
 import ListCard from "../../Card/ListCard";
+import Carousel from "../../Carousel";
 import { useContentStore } from "@/app/_stores/content-store";
 import { useListsStore } from "@/app/_stores/lists-store";
+
+const ITEMS_PER_VIEW = 5;
 
 export default function HomePage() {
   const {
@@ -87,10 +90,10 @@ export default function HomePage() {
 
   return (
     <div className="relative w-full min-h-screen bg-[#12040fff]">
-      <div className="container mx-auto px-4 py-30">
+      <div className="px-4 md:px-12 mb-12 py-30">
         {/* Lists Section */}
         {lists.length > 0 && (
-          <section className="mb-12">
+          <section className="mb-12 pl-4 md:pl-12 pr-4 md:pr-12 py-4">
             <h2 className="text-2xl font-bold text-white mb-6">Your Lists</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {lists.map((list) => (
@@ -102,61 +105,56 @@ export default function HomePage() {
 
         {/* Movies Section */}
         {suggestions.movies.length > 0 && (
-          <section className="mb-12">
-            <h2 className="text-2xl font-bold text-white mb-6">Movies</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <section className="mb-16">
+            <Carousel title="Popular Movies" itemsPerView={ITEMS_PER_VIEW}>
               {suggestions.movies.map((movie) => (
                 <ContentCard key={`movie-${movie.id}`} item={movie} />
               ))}
-            </div>
+            </Carousel>
           </section>
         )}
 
         {/* TV Shows Section */}
         {suggestions.tvShows.length > 0 && (
-          <section className="mb-12">
-            <h2 className="text-2xl font-bold text-white mb-6">TV Shows</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <section className="mb-16">
+            <Carousel title="Popular TV Shows" itemsPerView={ITEMS_PER_VIEW}>
               {suggestions.tvShows.map((show) => (
                 <ContentCard key={`tv-${show.id}`} item={show} />
               ))}
-            </div>
+            </Carousel>
           </section>
         )}
 
         {/* Games Section */}
         {suggestions.games.length > 0 && (
-          <section className="mb-12">
-            <h2 className="text-2xl font-bold text-white mb-6">Games</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <section className="mb-16">
+            <Carousel title="Popular Games" itemsPerView={ITEMS_PER_VIEW}>
               {suggestions.games.map((game) => (
                 <ContentCard key={`game-${game.id}`} item={game} />
               ))}
-            </div>
+            </Carousel>
           </section>
         )}
 
         {/* Music Section */}
         {suggestions.music.length > 0 && (
-          <section className="mb-12">
-            <h2 className="text-2xl font-bold text-white mb-6">Music</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <section className="mb-16">
+            <Carousel title="Popular Music" itemsPerView={ITEMS_PER_VIEW}>
               {suggestions.music.map((album) => (
                 <ContentCard key={`music-${album.id}`} item={album} />
               ))}
-            </div>
+            </Carousel>
           </section>
         )}
 
         {/* Books Section */}
         {suggestions.books.length > 0 && (
-          <section className="mb-12">
-            <h2 className="text-2xl font-bold text-white mb-6">Books</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <section className="mb-16">
+            <Carousel title="Popular Books" itemsPerView={ITEMS_PER_VIEW}>
               {suggestions.books.map((book) => (
                 <ContentCard key={`book-${book.id}`} item={book} />
               ))}
-            </div>
+            </Carousel>
           </section>
         )}
 
@@ -167,7 +165,9 @@ export default function HomePage() {
           suggestions.music.length === 0 &&
           suggestions.books.length === 0 && (
             <div className="flex items-center justify-center min-h-[400px]">
-              <p className="text-gray-400 text-lg">No suggestions available at the moment</p>
+              <p className="text-gray-400 text-lg">
+                No suggestions available at the moment
+              </p>
             </div>
           )}
       </div>
