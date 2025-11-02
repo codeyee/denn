@@ -72,4 +72,14 @@ class UserListDetailSerializer(serializers.ModelSerializer):
 
     def get_items(self, obj):
         from .list_item import ListItemSerializer
-        return ListItemSerializer(obj.items.all(), many=True, context=self.context).data
+        items = obj.items.all().order_by('list_order', '-added_at')
+
+        max_items = self.context.get('max_items')
+        if max_items is not None:
+            try:
+                max_items = int(max_items)
+                items = items[:max_items]
+            except (ValueError, TypeError):
+                pass
+
+        return ListItemSerializer(items, many=True, context=self.context).data

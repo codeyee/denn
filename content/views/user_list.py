@@ -13,7 +13,19 @@ from content.permissions import IsOwnerOrReadOnly
     list=extend_schema(
         tags=['Lists'],
         summary='List all user lists',
-        description='Get all lists where the user is the owner or a member.',
+        description='''
+        Get all lists where the user is the owner or a member.
+
+        **Optional Query Parameters:**
+        - `render_items`: Set to `true` to include items list for all lists (default: false)
+        - `max_items`: If `render_items` is true, limit the number of items per list (default: 10)
+        - `render_source`: Set to `true` to include detailed information from external APIs (TMDB, IGDB, Spotify, OpenLibrary) in the `source_data` field of each content item (default: false)
+        ''',
+        parameters=[
+            OpenApiParameter('render_items', OpenApiTypes.BOOL, OpenApiParameter.QUERY, required=False, description='Include items list in response (set to true/false, default: false)'),
+            OpenApiParameter('max_items', OpenApiTypes.INT, OpenApiParameter.QUERY, required=False, description='Maximum number of items per list when render_items is true (default: 10)'),
+            OpenApiParameter('render_source', OpenApiTypes.BOOL, OpenApiParameter.QUERY, required=False, description='Include external API data in response (set to true/false, default: false)')
+        ],
         responses={200: UserListSerializer(many=True)}
     ),
     retrieve=extend_schema(
@@ -105,7 +117,47 @@ class UserListViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == 'retrieve':
             return UserListDetailSerializer
+
+        elif self.action == 'list':
+            render_items = self.request.query_params.get('render_items', '').lower()
+
+            if render_items == 'true':
+                return UserListDetailSerializer
+
         return UserListSerializer
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+
+        if self.action == 'list':
+            render_items = self.request.query_params.get('render_items', '').lower()
+
+            if render_items == 'true':
+                max_items = self.request.query_params.get('max_items', '10')
+
+                try:
+                    max_items = int(max_items)
+
+                    if max_items <= 0:
+                        max_items = 10
+
+                except (ValueError, TypeError):
+                    max_items = 10
+
+                context['max_items'] = max_items
+
+        return context
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
     def get_permissions(self):
         if self.action in ['update', 'partial_update', 'destroy']:
