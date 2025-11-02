@@ -127,7 +127,7 @@ class TMDBClient(CachedAPIClient):
         params = {'page': page}
         return self.cached_get(
             endpoint=endpoint,
-            cache_type='api_tmdb_popular',
+            cache_type='api_tmdb_popular_movies',
             params=params,
             operation='search',
             page=page
@@ -138,7 +138,7 @@ class TMDBClient(CachedAPIClient):
         params = {'page': page}
         return self.cached_get(
             endpoint=endpoint,
-            cache_type='api_tmdb_popular',
+            cache_type='api_tmdb_popular_tv',
             params=params,
             operation='search',
             page=page

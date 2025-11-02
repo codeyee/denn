@@ -1,5 +1,5 @@
 from .base import SpotifyBaseView
-from .utils import normalize_album_search
+from .utils import normalize_album_search, should_include_album
 from proxy.serializers import MusicSuggestionsResponseSerializer, ErrorResponseSerializer
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
@@ -7,31 +7,6 @@ from typing import Dict, Any, List, Tuple
 
 class MusicSuggestionsView(SpotifyBaseView):
     MIN_TRACKS = 4
-
-    def filter_album(self, album: Dict[str, Any]) -> bool:
-        album_type = album.get('album_type', '').lower()
-        total_tracks = album.get('total_tracks', 0)
-
-        if total_tracks < self.MIN_TRACKS:
-            return False
-
-        if album_type == 'album' or album_type == 'ep':
-            return True
-
-        if album_type == 'single' and total_tracks >= self.MIN_TRACKS:
-            return True
-
-        return False
-
-    def normalize_and_filter_album(self, album: Dict[str, Any]) -> Dict[str, Any]:
-        album_type = album.get('album_type', '').lower()
-        total_tracks = album.get('total_tracks', 0)
-
-        if album_type == 'single' and total_tracks >= self.MIN_TRACKS:
-            album = album.copy()
-            album['album_type'] = 'ep'
-
-        return normalize_album_search(album)
 
     def fetch_and_filter_new_releases(
         self, client, target_limit: int
@@ -63,9 +38,9 @@ class MusicSuggestionsView(SpotifyBaseView):
                 if album_id in seen_ids:
                     continue
 
-                if self.filter_album(album):
+                if should_include_album(album, self.MIN_TRACKS):
                     seen_ids.add(album_id)
-                    normalized = self.normalize_and_filter_album(album)
+                    normalized = normalize_album_search(album)
                     filtered_results.append(normalized)
 
                     if len(filtered_results) >= target_limit:
@@ -89,8 +64,8 @@ class MusicSuggestionsView(SpotifyBaseView):
             if not album:
                 continue
 
-            if self.filter_album(album):
-                normalized = self.normalize_and_filter_album(album)
+            if should_include_album(album, self.MIN_TRACKS):
+                normalized = normalize_album_search(album)
                 filtered_results.append(normalized)
 
         return {

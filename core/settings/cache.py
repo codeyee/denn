@@ -62,7 +62,8 @@ CACHE_TIMEOUTS = {
 
     'api_tmdb_search': 3600 * 3,
     'api_tmdb_details': 3600 * 12,
-    'api_tmdb_popular': 3600 * 12,
+    'api_tmdb_popular_movies': 3600 * 12,
+    'api_tmdb_popular_tv': 3600 * 12,
 
     'api_openlibrary_search': 3600 * 3,
     'api_openlibrary_details': 3600 * 12,
@@ -87,7 +88,8 @@ CACHE_KEYS = {
 
     'api_tmdb_search': 'api:tmdb:search:{query}:{page}',
     'api_tmdb_details': 'api:tmdb:details:{movie_id}',
-    'api_tmdb_popular': 'api:tmdb:popular:{page}',
+    'api_tmdb_popular_movies': 'api:tmdb:popular:movies:{page}',
+    'api_tmdb_popular_tv': 'api:tmdb:popular:tv:{page}',
     'api_tmdb_bulk': 'api:tmdb:bulk:{movie_ids}',
 
     'api_openlibrary_search': 'api:openlibrary:search:{query}:{page}:{limit}',

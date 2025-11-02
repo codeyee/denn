@@ -30,17 +30,40 @@ def normalize_release_date(date_str: Optional[str]) -> Optional[str]:
 
     return None
 
+def should_include_album(album: Dict[str, Any], min_tracks: int = 4) -> bool:
+    album_type = album.get('album_type', '').lower()
+    total_tracks = album.get('total_tracks', 0)
+
+    if total_tracks < min_tracks:
+        return False
+
+    if album_type == 'album' or album_type == 'ep':
+        return True
+
+    if album_type == 'single' and total_tracks >= min_tracks:
+        return True
+
+    return False
+
 def normalize_album_search(item: Dict[str, Any]) -> Dict[str, Any]:
+    album_type = item.get('album_type', '').lower()
+    total_tracks = item.get('total_tracks', 0)
+
+    normalized_item = item.copy() if isinstance(item, dict) else item
+
+    if album_type == 'single' and total_tracks >= 4:
+        normalized_item['album_type'] = 'ep'
+
     return {
-        'id': item.get('id'),
+        'id': normalized_item.get('id'),
         'type': 'album',
-        'title': item.get('name'),
-        'authors': get_artist_names_array(item.get('artists')),
-        'image_url': get_image_url(item.get('images'), 'large'),
-        'release_date': normalize_release_date(item.get('release_date')),
-        'total_tracks': item.get('total_tracks'),
-        'album_type': item.get('album_type'),
-        'external_url': item.get('external_urls', {}).get('spotify')
+        'title': normalized_item.get('name'),
+        'authors': get_artist_names_array(normalized_item.get('artists')),
+        'image_url': get_image_url(normalized_item.get('images'), 'large'),
+        'release_date': normalize_release_date(normalized_item.get('release_date')),
+        'total_tracks': normalized_item.get('total_tracks'),
+        'album_type': normalized_item.get('album_type'),
+        'external_url': normalized_item.get('external_urls', {}).get('spotify')
     }
 
 def normalize_track_simple(track: Dict[str, Any]) -> Dict[str, Any]:

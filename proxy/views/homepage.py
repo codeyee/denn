@@ -7,7 +7,7 @@ from proxy.clients.spotify import SpotifyClient
 from proxy.clients.openlibrary import OpenLibraryClient
 from proxy.views.video.utils import normalize_search_item as normalize_video
 from proxy.views.games.utils import normalize_search_item as normalize_game
-from proxy.views.music.utils import normalize_album_search as normalize_music
+from proxy.views.music.utils import normalize_album_search as normalize_music, should_include_album
 from proxy.views.book.utils import normalize_search_item as normalize_book
 from proxy.serializers import HomepageResponseSerializer, ErrorResponseSerializer
 from drf_spectacular.utils import extend_schema, OpenApiParameter
@@ -129,7 +129,53 @@ class HomepageView(APIView):
                     music_data, music_status = futures['music'].result()
                     if music_status == 200 and 'albums' in music_data:
                         albums = music_data['albums'].get('items', [])
-                        music_results = [normalize_music(album) for album in albums[:limit] if album]
+                        filtered_albums = []
+                        seen_ids = set()
+
+                        for album in albums:
+                            if not album or not album.get('id'):
+                                continue
+                            if should_include_album(album):
+                                album_id = album.get('id')
+                                if album_id not in seen_ids:
+                                    seen_ids.add(album_id)
+                                    filtered_albums.append(normalize_music(album))
+
+                        offset = len(albums)
+                        max_per_request = 50
+                        fetch_multiplier = 2
+
+                        while len(filtered_albums) < limit and spotify_client:
+                            remaining = limit - len(filtered_albums)
+                            request_limit = min(remaining * fetch_multiplier, max_per_request)
+
+                            more_data, more_status = spotify_client.get_new_releases(
+                                limit=request_limit, offset=offset
+                            )
+
+                            if more_status != 200 or 'albums' not in more_data:
+                                break
+
+                            more_albums = more_data['albums'].get('items', [])
+                            if not more_albums:
+                                break
+
+                            for album in more_albums:
+                                if not album or not album.get('id'):
+                                    continue
+                                if should_include_album(album):
+                                    album_id = album.get('id')
+                                    if album_id not in seen_ids:
+                                        seen_ids.add(album_id)
+                                        filtered_albums.append(normalize_music(album))
+                                        if len(filtered_albums) >= limit:
+                                            break
+
+                            offset += len(more_albums)
+                            if len(more_albums) < request_limit:
+                                break
+
+                        music_results = filtered_albums[:limit]
             except Exception as e:
                 print(f"Error fetching music suggestions: {e}")
 
