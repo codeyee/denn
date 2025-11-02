@@ -21,6 +21,7 @@ export default function Carousel({
 }: CarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Convert children to array for easier manipulation
@@ -34,8 +35,9 @@ export default function Carousel({
   useEffect(() => {
     const handleResize = () => {
       const width = window.innerWidth;
+      setIsMobile(width < 768);
       if (width < 640) {
-        setVisibleItems(1);
+        setVisibleItems(2);
       } else if (width < 768) {
         setVisibleItems(2);
       } else if (width < 1024) {
@@ -95,7 +97,7 @@ export default function Carousel({
       >
         {/* Left Navigation Button */}
         <AnimatePresence>
-          {showNavigation && isHovered && (
+          {showNavigation && (isMobile || isHovered) && (
             <motion.button
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -111,7 +113,7 @@ export default function Carousel({
 
         {/* Right Navigation Button */}
         <AnimatePresence>
-          {showNavigation && isHovered && (
+          {showNavigation && (isMobile || isHovered) && (
             <motion.button
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
