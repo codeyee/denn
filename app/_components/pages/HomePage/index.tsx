@@ -93,7 +93,7 @@ export default function HomePage() {
 
   return (
     <div className="relative w-full min-h-screen bg-[#0d030b]">
-      <div className="py-30">
+      <div className="pt-30 pb-20">
         {/* Lists Section */}
         {(lists.length > 0 || !listsLoading) && (
           <section className="mb-4 md:mb-8">
