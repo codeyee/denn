@@ -10,14 +10,16 @@ interface CarouselProps {
   className?: string;
   itemsPerView?: number;
   gap?: number;
+  targetCardWidth?: number;
 }
 
 export default function Carousel({
   children,
   title,
   className = "",
-  itemsPerView = 4,
+  itemsPerView,
   gap = 16,
+  targetCardWidth = 200,
 }: CarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
@@ -29,28 +31,53 @@ export default function Carousel({
   const totalItems = items.length;
 
   // Calculate how many items can be displayed at once
-  const [visibleItems, setVisibleItems] = useState(itemsPerView);
+  const [visibleItems, setVisibleItems] = useState(itemsPerView || 4);
 
   // Responsive adjustment
   useEffect(() => {
     const handleResize = () => {
       const width = window.innerWidth;
       setIsMobile(width < 768);
-      if (width < 640) {
-        setVisibleItems(2);
-      } else if (width < 768) {
-        setVisibleItems(2);
-      } else if (width < 1024) {
-        setVisibleItems(3);
+
+      // If itemsPerView is explicitly set, use breakpoint logic
+      if (itemsPerView !== undefined) {
+        if (width < 640) {
+          setVisibleItems(2);
+        } else if (width < 768) {
+          setVisibleItems(2);
+        } else if (width < 1024) {
+          setVisibleItems(3);
+        } else {
+          setVisibleItems(itemsPerView);
+        }
       } else {
-        setVisibleItems(itemsPerView);
+        // Calculate based on available width and target card width
+        // Account for padding (12px * 2 on each side = 48px on mobile, 96px on desktop)
+        const horizontalPadding = width < 768 ? 32 : 96;
+        const availableWidth = width - horizontalPadding;
+
+        // Calculate how many cards can fit: (availableWidth + gap) / (targetCardWidth + gap)
+        const calculatedItems = Math.floor(
+          (availableWidth + gap) / (targetCardWidth + gap)
+        );
+
+        // Ensure at least 2 items on mobile, at least 3 on tablet, and reasonable max
+        if (width < 640) {
+          setVisibleItems(Math.max(2, Math.min(calculatedItems, 3)));
+        } else if (width < 768) {
+          setVisibleItems(Math.max(2, Math.min(calculatedItems, 4)));
+        } else if (width < 1024) {
+          setVisibleItems(Math.max(3, Math.min(calculatedItems, 6)));
+        } else {
+          setVisibleItems(Math.max(4, Math.min(calculatedItems, 10)));
+        }
       }
     };
 
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, [itemsPerView]);
+  }, [itemsPerView, targetCardWidth, gap]);
 
   // Calculate the maximum index for scrolling
   const maxIndex = Math.max(0, totalItems - visibleItems);
@@ -150,7 +177,7 @@ export default function Carousel({
                 className="flex-shrink-0"
                 style={{
                   width: `calc((100% - ${
-                    gap * (visibleItems - 1)
+                    gap * visibleItems
                   }px) / ${visibleItems})`,
                 }}
                 whileHover={{ scale: 1.05, zIndex: 10 }}

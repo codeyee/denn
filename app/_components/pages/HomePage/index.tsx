@@ -8,8 +8,6 @@ import CreateListCard from "../../Card/CreateListCard";
 import { useContentStore } from "@/app/_stores/content-store";
 import { useListsStore } from "@/app/_stores/lists-store";
 
-const ITEMS_PER_VIEW = 6;
-
 export default function HomePage() {
   const {
     suggestions,
@@ -99,7 +97,7 @@ export default function HomePage() {
         {/* Lists Section */}
         {(lists.length > 0 || !listsLoading) && (
           <section className="mb-16">
-            <Carousel title="Your Lists" itemsPerView={ITEMS_PER_VIEW}>
+            <Carousel title="Your Lists">
               {[
                 ...lists.map((list) => (
                   <ListCard key={`list-${list.id}`} list={list} />
@@ -117,7 +115,7 @@ export default function HomePage() {
         {/* Movies Section */}
         {suggestions.movies.length > 0 && (
           <section className="mb-16">
-            <Carousel title="Popular Movies" itemsPerView={ITEMS_PER_VIEW}>
+            <Carousel title="Popular Movies">
               {suggestions.movies.map((movie) => (
                 <ContentCard key={`movie-${movie.id}`} item={movie} />
               ))}
@@ -128,7 +126,7 @@ export default function HomePage() {
         {/* TV Shows Section */}
         {suggestions.tvShows.length > 0 && (
           <section className="mb-16">
-            <Carousel title="Popular TV Shows" itemsPerView={ITEMS_PER_VIEW}>
+            <Carousel title="Popular TV Shows">
               {suggestions.tvShows.map((show) => (
                 <ContentCard key={`tv-${show.id}`} item={show} />
               ))}
@@ -139,7 +137,7 @@ export default function HomePage() {
         {/* Games Section */}
         {suggestions.games.length > 0 && (
           <section className="mb-16">
-            <Carousel title="Popular Games" itemsPerView={ITEMS_PER_VIEW}>
+            <Carousel title="Popular Games">
               {suggestions.games.map((game) => (
                 <ContentCard key={`game-${game.id}`} item={game} />
               ))}
@@ -150,7 +148,7 @@ export default function HomePage() {
         {/* Music Section */}
         {suggestions.music.length > 0 && (
           <section className="mb-16">
-            <Carousel title="Popular Music" itemsPerView={ITEMS_PER_VIEW}>
+            <Carousel title="Popular Music">
               {suggestions.music.map((album) => (
                 <ContentCard key={`music-${album.id}`} item={album} />
               ))}
@@ -161,7 +159,7 @@ export default function HomePage() {
         {/* Books Section */}
         {suggestions.books.length > 0 && (
           <section className="mb-16">
-            <Carousel title="Popular Books" itemsPerView={ITEMS_PER_VIEW}>
+            <Carousel title="Popular Books">
               {suggestions.books.map((book) => (
                 <ContentCard key={`book-${book.id}`} item={book} />
               ))}
