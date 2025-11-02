@@ -62,10 +62,11 @@ function Card({
   return (
     <motion.div
       key={id}
-      className={`w-full md:basis-1/2 md:max-w-[240px] ${className}`}
+      className={`w-full ${className}`}
+      style={{ aspectRatio: '5 / 8' }}
     >
       <SpotlightCard
-        className="relative overflow-hidden rounded-2xl h-[180px] md:h-[320px] bg-transparent backdrop-blur-lg p-0! border-none!"
+        className="relative overflow-hidden rounded-2xl h-full bg-transparent backdrop-blur-lg p-0! border-none!"
         spotlightColor="rgba(255, 255, 255, 0.1)"
       >
         {/* Background image or empty state */}

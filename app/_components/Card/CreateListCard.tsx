@@ -23,11 +23,11 @@ export default function CreateListCard({ onCreateList, isLoading }: CreateListCa
 
   return (
     <>
-      <div className="w-full md:basis-1/2 md:max-w-[240px]">
+      <div className="w-full" style={{ aspectRatio: '5 / 8' }}>
         <button
           onClick={handleClick}
           disabled={isLoading}
-          className="relative overflow-hidden rounded-2xl h-[180px] md:h-[320px] w-full backdrop-blur-lg border-4 border-dashed border-gray-600 hover:border-gray-500 transition-all cursor-pointer group disabled:opacity-50 disabled:cursor-not-allowed"
+          className="relative overflow-hidden rounded-2xl h-full w-full backdrop-blur-lg border-4 border-dashed border-gray-600 hover:border-gray-500 transition-all cursor-pointer group disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400 group-hover:text-white transition-colors">
             <Plus className="w-12 h-12 md:w-16 md:h-16 mb-2 md:mb-3" />
