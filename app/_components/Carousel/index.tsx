@@ -4,17 +4,6 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
-/**
- * Carousel component that displays items in a horizontal scrollable view with navigation controls.
- *
- * @prop {React.ReactNode} children - The items to display in the carousel
- * @prop {string} [title] - Optional title displayed above the carousel
- * @prop {string} [className] - Additional CSS classes to apply to the container
- * @prop {number} [itemsPerView] - If provided, adjusts the size of each item to fit exactly this many items in the viewport.
- *                                  If not provided, the carousel will fit as many items as possible based on the targetCardWidth.
- * @prop {number} [gap=16] - Space between items in pixels
- * @prop {number} [targetCardWidth=200] - Target width for each card in pixels (used when itemsPerView is not specified)
- */
 interface CarouselProps {
   children: React.ReactNode;
   title?: string;

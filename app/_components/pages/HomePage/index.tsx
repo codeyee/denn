@@ -41,7 +41,7 @@ export default function HomePage() {
 
   if (isLoadingAny) {
     return (
-      <div className="relative w-full min-h-screen bg-[#12040fff]">
+      <div className="relative w-full min-h-screen bg-[#0d030b]">
         <div className="container mx-auto px-4 py-20">
           <div className="flex items-center justify-center min-h-[400px]">
             <p className="text-white text-xl">Loading...</p>
@@ -53,7 +53,7 @@ export default function HomePage() {
 
   if (hasAnyError) {
     return (
-      <div className="relative w-full min-h-screen bg-[#12040fff]">
+      <div className="relative w-full min-h-screen bg-[#0d030b]">
         <div className="container mx-auto px-4 py-20">
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center">
@@ -88,7 +88,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="relative w-full min-h-screen bg-[#12040fff]">
+    <div className="relative w-full min-h-screen bg-[#0d030b]">
       <div className="py-30">
         {/* Lists Section */}
         {(lists.length > 0 || !listsLoading) && (
