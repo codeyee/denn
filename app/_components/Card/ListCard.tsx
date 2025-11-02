@@ -12,7 +12,6 @@ interface ListCardProps {
 export default function ListCard({ list, className }: ListCardProps) {
   const id = String(list.id);
   const title = list.name;
-  const description = list.description;
 
   const imageUrls = useMemo(() => {
     return list.items
@@ -20,7 +19,7 @@ export default function ListCard({ list, className }: ListCardProps) {
       .filter((url): url is string => Boolean(url)) || [];
   }, [list.items]);
 
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [_, setCurrentImageIndex] = useState(0);
   const [currentImage, setCurrentImage] = useState<string>("/images/placeholder.jpg");
   const isEmpty = imageUrls.length === 0;
 
@@ -63,7 +62,7 @@ export default function ListCard({ list, className }: ListCardProps) {
       icon={ListIcon}
       backgroundImage={isEmpty ? undefined : currentImage}
       backgroundImageAlt={`${title} list background`}
-      className={className}
+      className={`${className} cursor-pointer`}
       isEmpty={isEmpty}
       emptyIcon={Package}
       emptyBackgroundColor="#374151"
