@@ -52,7 +52,9 @@ export default function ListCard({ list, className }: ListCardProps) {
   const ListTypeIcon = isShared ? Users : User;
   const listTypeLabel = isShared ? "Shared" : "Personal";
 
-  const footerInfo = isShared ? memberInfo + ' - ' + itemInfo : itemInfo;
+  const footerInfo = isShared
+    ? memberInfo + ' - ' + itemInfo
+    : itemInfo;
 
   return (
     <Card

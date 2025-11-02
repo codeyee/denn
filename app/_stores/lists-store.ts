@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { api, apiRequest } from "@/lib/api";
-import { ListsApiResponse, List, ListItemsApiResponse } from "@/types/contentTypes";
+import { ListsApiResponse, List, ListItemsApiResponse, ListType } from "@/types/contentTypes";
 
 interface ListsState {
   lists: List[];
@@ -12,6 +12,7 @@ interface ListsState {
 interface ListsActions {
   fetchLists: () => Promise<void>;
   fetchListItems: (listId: number, pageSize: number) => Promise<void>;
+  createList: (name: string, description?: string, listType?: ListType) => Promise<List>;
   clearError: () => void;
   resetLists: () => void;
 }
@@ -82,6 +83,42 @@ export const useListsStore = create<ListsStore>((set, get) => ({
       set({ lists: updatedLists });
     } catch (error) {
       console.error(`Failed to fetch items for list ${listId}:`, error);
+    }
+  },
+
+  createList: async (name: string, description?: string, listType: ListType = ListType.PERSONAL) => {
+    set({ isLoading: true, error: null });
+
+    try {
+      const response = await api.post<List>(
+        `/content/lists/`,
+        {
+          name,
+          description: description || null,
+          list_type: listType,
+        },
+        true
+      );
+
+      const { lists } = get();
+      set({
+        lists: [response, ...lists],
+        isLoading: false,
+        error: null,
+      });
+
+      return response;
+    } catch (error) {
+      const errorMessage = error instanceof Error
+        ? error.message
+        : "Failed to create list";
+
+      set({
+        error: errorMessage,
+        isLoading: false,
+      });
+
+      throw error;
     }
   },
 

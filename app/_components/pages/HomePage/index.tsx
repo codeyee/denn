@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import ContentCard from "../../Card/ContentCard";
 import ListCard from "../../Card/ListCard";
 import Carousel from "../../Carousel";
+import CreateListCard from "../../Card/CreateListCard";
 import { useContentStore } from "@/app/_stores/content-store";
 import { useListsStore } from "@/app/_stores/lists-store";
 
@@ -23,6 +24,7 @@ export default function HomePage() {
     error: listsError,
     fetchLists,
     fetchListItems,
+    createList,
   } = useListsStore();
 
   useEffect(() => {
@@ -92,13 +94,14 @@ export default function HomePage() {
     <div className="relative w-full min-h-screen bg-[#12040fff]">
       <div className="px-4 md:px-12 mb-12 py-30">
         {/* Lists Section */}
-        {lists.length > 0 && (
+        {(lists.length > 0 || !listsLoading) && (
           <section className="mb-12 pl-4 md:pl-12 pr-4 md:pr-12 py-4">
             <h2 className="text-2xl font-bold text-white mb-6">Your Lists</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {lists.map((list) => (
                 <ListCard key={`list-${list.id}`} list={list} />
               ))}
+              <CreateListCard onCreateList={createList} isLoading={listsLoading} />
             </div>
           </section>
         )}
