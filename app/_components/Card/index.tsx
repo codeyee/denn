@@ -100,7 +100,7 @@ function Card({
         <div className="relative z-10 h-full flex flex-col">
           <div className="mt-auto w-full px-6 pb-6 pt-5 space-y-4">
             <div className="flex items-center gap-3 text-white mb-2">
-              <Icon className="w-6 h-6 drop-shadow-[0_4px_12px_rgba(0,0,0,0.45)]" />
+              <Icon className="w-6 h-6 shrink-0 drop-shadow-[0_4px_12px_rgba(0,0,0,0.45)]" />
               <span className="text-xl font-bold drop-shadow-[0_4px_16px_rgba(0,0,0,0.55)]">
                 {title}
               </span>

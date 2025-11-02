@@ -59,8 +59,19 @@ export default function ContentCard({ item, className }: ContentCardProps) {
     return "";
   };
 
+  // Get original title for movies and TV shows
+  const getOriginalTitle = (): string => {
+    if ("original_title" in item && item.original_title) {
+      return item.original_title;
+    }
+    return "";
+  };
+
   const footerInfo = getFooterInfo();
   const authors = getAuthors();
+  const originalTitle = getOriginalTitle();
+
+  const originalTitleIsSameAsTitle = originalTitle.toLowerCase() === title.toLowerCase();
 
   return (
     <Card
@@ -73,8 +84,11 @@ export default function ContentCard({ item, className }: ContentCardProps) {
       isEmpty={!imageUrl}
     >
       <Card.Footer>
-        {authors && <div>{authors}</div>}
-        {footerInfo && <div>{footerInfo}</div>}
+        <div className="flex flex-col gap-1.5">
+          {originalTitle && !originalTitleIsSameAsTitle && <div>{originalTitle}</div>}
+          {!originalTitle && authors && <div>{authors}</div>}
+          {footerInfo && <div>{footerInfo}</div>}
+        </div>
       </Card.Footer>
     </Card>
   );
