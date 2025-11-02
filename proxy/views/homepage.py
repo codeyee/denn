@@ -100,7 +100,7 @@ class HomepageView(APIView):
                 if 'movies' in futures:
                     movies_data, movies_status = futures['movies'].result()
                     if movies_status == 200 and 'results' in movies_data:
-                        for item in movies_data['results'][:max(1, limit // 2)]:
+                        for item in movies_data['results'][:limit]:
                             if item.get('media_type') != 'person':
                                 movie_results.append(normalize_video(item, 'movie'))
             except Exception as e:
@@ -110,11 +110,9 @@ class HomepageView(APIView):
                 if 'tv' in futures:
                     tv_data, tv_status = futures['tv'].result()
                     if tv_status == 200 and 'results' in tv_data:
-                        for item in tv_data['results'][:max(1, limit // 2)]:
+                        for item in tv_data['results'][:limit]:
                             if item.get('media_type') != 'person':
                                 tv_show_results.append(normalize_video(item, 'tv'))
-                movie_results = movie_results[:limit]
-                tv_show_results = tv_show_results[:limit]
             except Exception as e:
                 print(f"Error fetching video (tv) suggestions: {e}")
 

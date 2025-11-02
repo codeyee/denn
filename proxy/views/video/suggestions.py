@@ -51,12 +51,10 @@ class VideoSuggestionsView(TMDBBaseView):
         all_results = []
 
         if movies_status == 200 and 'results' in movies_data:
-            all_results.extend(movies_data['results'])
+            all_results.extend(movies_data['results'][:limit])
 
         if tv_status == 200 and 'results' in tv_data:
-            all_results.extend(tv_data['results'])
-
-        all_results = all_results[:limit]
+            all_results.extend(tv_data['results'][:limit])
 
         transformed_data = self.transform_results({'results': all_results})
 

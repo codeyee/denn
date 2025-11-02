@@ -3,17 +3,99 @@ from .utils import normalize_album_search
 from proxy.serializers import MusicSuggestionsResponseSerializer, ErrorResponseSerializer
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
+from typing import Dict, Any, List, Tuple
 
 class MusicSuggestionsView(SpotifyBaseView):
+    MIN_TRACKS = 4
+
+    def filter_album(self, album: Dict[str, Any]) -> bool:
+        album_type = album.get('album_type', '').lower()
+        total_tracks = album.get('total_tracks', 0)
+
+        if total_tracks < self.MIN_TRACKS:
+            return False
+
+        if album_type == 'album' or album_type == 'ep':
+            return True
+
+        if album_type == 'single' and total_tracks >= self.MIN_TRACKS:
+            return True
+
+        return False
+
+    def normalize_and_filter_album(self, album: Dict[str, Any]) -> Dict[str, Any]:
+        album_type = album.get('album_type', '').lower()
+        total_tracks = album.get('total_tracks', 0)
+
+        if album_type == 'single' and total_tracks >= self.MIN_TRACKS:
+            album = album.copy()
+            album['album_type'] = 'ep'
+
+        return normalize_album_search(album)
+
+    def fetch_and_filter_new_releases(
+        self, client, target_limit: int
+    ) -> Tuple[List[Dict[str, Any]], int]:
+        filtered_results = []
+        seen_ids = set()
+        offset = 0
+        max_per_request = 50
+        fetch_multiplier = 2
+
+        while len(filtered_results) < target_limit:
+            remaining = target_limit - len(filtered_results)
+            request_limit = min(remaining * fetch_multiplier, max_per_request)
+
+            data, status_code = client.get_new_releases(limit=request_limit, offset=offset)
+
+            if status_code != 200 or 'albums' not in data:
+                break
+
+            albums = data['albums'].get('items', [])
+            if not albums:
+                break
+
+            for album in albums:
+                if not album or not album.get('id'):
+                    continue
+
+                album_id = album.get('id')
+                if album_id in seen_ids:
+                    continue
+
+                if self.filter_album(album):
+                    seen_ids.add(album_id)
+                    normalized = self.normalize_and_filter_album(album)
+                    filtered_results.append(normalized)
+
+                    if len(filtered_results) >= target_limit:
+                        break
+
+            offset += len(albums)
+
+            if len(albums) < request_limit:
+                break
+
+        return filtered_results, status_code
+
     def transform_results(self, data):
-        if 'albums' not in data: return {'results': [], 'count': 0}
+        if 'albums' not in data:
+            return {'results': [], 'count': 0}
 
         albums = data['albums'].get('items', [])
-        results = [normalize_album_search(album) for album in albums if album]
+        filtered_results = []
+
+        for album in albums:
+            if not album:
+                continue
+
+            if self.filter_album(album):
+                normalized = self.normalize_and_filter_album(album)
+                filtered_results.append(normalized)
 
         return {
-            'results': results,
-            'count': len(results)
+            'results': filtered_results,
+            'count': len(filtered_results)
         }
 
     @extend_schema(
@@ -23,7 +105,8 @@ class MusicSuggestionsView(SpotifyBaseView):
         Get new release albums for homepage suggestions.
 
         This endpoint fetches recently released albums from Spotify,
-        ideal for displaying as recommendations on a homepage or discovery section.
+        filtered to show only albums and EPs (4+ tracks) and singles with 4+ tracks.
+        Singles with less than 4 tracks are excluded.
         ''',
         parameters=[
             OpenApiParameter(
@@ -43,9 +126,10 @@ class MusicSuggestionsView(SpotifyBaseView):
 
         client = self.get_client()
 
-        data, status_code = client.get_new_releases(limit=limit, offset=0)
+        # Fetch and filter with automatic pagination
+        filtered_results, status_code = self.fetch_and_filter_new_releases(client, limit)
 
-        return self.handle_api_call(
-            lambda: (data, status_code),
-            transformer=self.transform_results
+        return self.transform_response(
+            {'results': filtered_results, 'count': len(filtered_results)},
+            status_code
         )
