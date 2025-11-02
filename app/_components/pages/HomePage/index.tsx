@@ -66,21 +66,24 @@ export default function HomePage() {
               <p className="text-red-400 text-xl mb-4">Error loading data</p>
               {suggestionsError && (
                 <p className="text-gray-400 mb-2">
-                  Content:{' '}
-                  {typeof suggestionsError === 'string'
+                  Content:{" "}
+                  {typeof suggestionsError === "string"
                     ? suggestionsError
-                    : (suggestionsError && typeof (suggestionsError as any).message === 'string')
-                      ? (suggestionsError as any).message
-                      : 'Unknown error'}
+                    : suggestionsError &&
+                      typeof (suggestionsError as any).message === "string"
+                    ? (suggestionsError as any).message
+                    : "Unknown error"}
                 </p>
               )}
               {listsError && (
                 <p className="text-gray-400 mb-2">
-                  Lists: {typeof listsError === 'string'
+                  Lists:{" "}
+                  {typeof listsError === "string"
                     ? listsError
-                    : (listsError && typeof (listsError as any).message === 'string')
-                      ? (listsError as any).message
-                      : 'Unknown error'}
+                    : listsError &&
+                      typeof (listsError as any).message === "string"
+                    ? (listsError as any).message
+                    : "Unknown error"}
                 </p>
               )}
             </div>
@@ -95,14 +98,19 @@ export default function HomePage() {
       <div className="px-4 md:px-12 mb-12 py-30">
         {/* Lists Section */}
         {(lists.length > 0 || !listsLoading) && (
-          <section className="mb-12 pl-4 md:pl-12 pr-4 md:pr-12 py-4">
-            <h2 className="text-2xl font-bold text-white mb-6">Your Lists</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {lists.map((list) => (
-                <ListCard key={`list-${list.id}`} list={list} />
-              ))}
-              <CreateListCard onCreateList={createList} isLoading={listsLoading} />
-            </div>
+          <section className="mb-16">
+            <Carousel title="Your Lists" itemsPerView={ITEMS_PER_VIEW}>
+              {[
+                ...lists.map((list) => (
+                  <ListCard key={`list-${list.id}`} list={list} />
+                )),
+                <CreateListCard
+                  key="create-list"
+                  onCreateList={createList}
+                  isLoading={listsLoading}
+                />,
+              ]}
+            </Carousel>
           </section>
         )}
 
