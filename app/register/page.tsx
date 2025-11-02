@@ -1,5 +1,6 @@
 import RegisterForm from "@/app/_components/forms/RegisterForm";
 import TopMenu from "@/app/_components/TopMenu";
+import Footer from "@/app/_components/Footer";
 
 export default function RegisterPage() {
   return (
@@ -8,6 +9,7 @@ export default function RegisterPage() {
       <div className="flex-1 flex items-center justify-center px-4 pt-20">
         <RegisterForm />
       </div>
+      <Footer />
     </div>
   );
 }

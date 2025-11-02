@@ -5,3 +5,8 @@ export enum contentTypeEnum {
   book = "book",
   music = "music",
 }
+
+export type ProviderAttribution = {
+  name: string;
+  href?: string;
+};

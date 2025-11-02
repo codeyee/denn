@@ -12,7 +12,10 @@ export default function Home() {
     return (
       <div className="relative w-full overflow-x-hidden">
         <TopMenu />
-        <div className="flex items-center justify-center min-h-screen bg-[#12040fff]">
+        <div
+          className="flex items-center justify-center min-h-screen"
+          style={{ backgroundColor: "var(--color-hero-gradient)" }}
+        >
           <p className="text-white">Loading...</p>
         </div>
       </div>

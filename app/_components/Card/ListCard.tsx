@@ -70,7 +70,7 @@ export default function ListCard({ list, className }: ListCardProps) {
       className={`${className} cursor-pointer`}
       isEmpty={isEmpty}
       emptyIcon={Package}
-      emptyBackgroundColor="#374151"
+      emptyBackgroundColor="var(--color-empty-card)"
     >
       <Card.Footer>
         <div className="flex items-center gap-1.5">

@@ -1,11 +1,9 @@
 "use client";
 
 import HeroSection from "./HeroSection";
-import ContentTypesSection from "./ContentTypesSection";
+import TypesSection from "./TypesSection";
 import FeaturesSection from "./FeaturesSection";
-import StatsSection from "./StatsSection";
-import CallToActionSection from "./CallToActionSection";
-import Footer from "./Footer";
+import Footer from "../../Footer";
 
 export default function LandingPage() {
   return (
@@ -16,20 +14,18 @@ export default function LandingPage() {
         <HeroSection />
 
         {/* Features Screen - Second Screen */}
-        <div className="snap-start snap-always relative min-h-screen w-full bg-[#12040fff] overflow-hidden">
+        <div className="snap-start snap-always relative min-h-screen w-full overflow-hidden" style={{ backgroundColor: 'var(--color-hero-gradient)' }}>
           {/* Fade-in gradient at top of features screen - creates seamless blend */}
           <div
             className="absolute top-0 left-0 right-0 h-80 pointer-events-none z-10"
             style={{
-              background: `linear-gradient(to bottom, rgba(18, 4, 15, 0) 0%, rgba(18, 4, 15, 0.2) 25%, rgba(18, 4, 15, 0.6) 50%, rgba(18, 4, 15, 0.9) 75%, #12040fff 100%)`,
+              background: `linear-gradient(to bottom, var(--color-hero-gradient-0) 0%, var(--color-hero-gradient-20) 25%, var(--color-hero-gradient-60) 50%, var(--color-hero-gradient-90) 75%, var(--color-hero-gradient) 100%)`,
             }}
           />
 
           <div className="relative min-h-screen w-full pt-30 md:pt-40 pb-5 z-20">
-            <ContentTypesSection />
+            <TypesSection />
             <FeaturesSection />
-            <StatsSection />
-            <CallToActionSection />
             <Footer />
           </div>
         </div>

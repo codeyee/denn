@@ -9,14 +9,19 @@ export async function GET(request: NextRequest) {
     const mode = request.nextUrl.searchParams.get("mode");
 
     if (variant === "content-types" || mode === "content-types") {
-      const contentTypeBackgrounds = getRandomContentTypeBackgrounds();
-      return NextResponse.json(contentTypeBackgrounds);
+      try {
+        const contentTypeBackgrounds = getRandomContentTypeBackgrounds();
+        return NextResponse.json(contentTypeBackgrounds);
+      } catch (error) {
+        console.error("Error loading content type backgrounds:", error);
+        return NextResponse.json([]);
+      }
     }
 
     const images = getBackgroundCardImages();
     return NextResponse.json(images);
   } catch (error) {
     console.error("Error loading background card images:", error);
-    return NextResponse.json([], { status: 500 });
+    return NextResponse.json([]);
   }
 }

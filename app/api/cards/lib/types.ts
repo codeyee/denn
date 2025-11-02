@@ -1,4 +1,4 @@
-import type { ProviderAttribution } from "@/app/_components/pages/LandingPage/data";
+import type { ProviderAttribution } from "@/types/types";
 
 export type BackgroundCardImage = {
   src: string;

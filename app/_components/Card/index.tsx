@@ -6,7 +6,7 @@ import SpotlightCard from "@/app/_components/ui/SpotlightCard/SpotlightCard";
 
 import { contentTypeEnum } from "@/types/types";
 
-interface Prop {
+interface CardProps {
   className?: string;
   backgroundImage?: string;
   backgroundImageAlt?: string;
@@ -18,14 +18,15 @@ interface Prop {
   isEmpty?: boolean;
   emptyIcon?: LucideIcon;
   emptyBackgroundColor?: string;
+  noAspectRatio?: boolean;
 }
 
-interface FooterProp {
+interface CardFooterProps {
   children?: React.ReactNode;
   className?: string;
 }
 
-function Footer({ children, className }: FooterProp) {
+function Footer({ children, className }: CardFooterProps) {
   return (
     <div
       className={`flex items-center gap-1 text-[10px] md:text-xs text-white/80 font-sans drop-shadow-[0_3px_10px_rgba(0,0,0,0.6)] ${className}`}
@@ -46,8 +47,9 @@ function Card({
   children,
   isEmpty = false,
   emptyIcon,
-  emptyBackgroundColor = "#374151",
-}: Prop) {
+  emptyBackgroundColor = "var(--color-empty-card)",
+  noAspectRatio = false,
+}: CardProps) {
   const iconMap = {
     movie: Film,
     tv: Tv,
@@ -63,11 +65,11 @@ function Card({
     <motion.div
       key={id}
       className={`w-full ${className}`}
-      style={{ aspectRatio: '5 / 8' }}
+      style={noAspectRatio ? undefined : { aspectRatio: '5 / 8' }}
     >
       <SpotlightCard
         className="relative overflow-hidden rounded-2xl h-full bg-transparent backdrop-blur-lg p-0! border-none!"
-        spotlightColor="rgba(255, 255, 255, 0.1)"
+        spotlightColor="var(--color-spotlight)"
       >
         {/* Background image or empty state */}
         {isEmpty ? (
@@ -99,10 +101,10 @@ function Card({
 
         {/* Foreground content */}
         <div className="relative z-10 h-full flex flex-col">
-          <div className="mt-auto w-full px-4 pb-4 pt-3 space-y-2">
-            <div className="flex items-center gap-2 text-white mb-1">
-              <Icon className="w-5 h-5 shrink-0 drop-shadow-[0_4px_12px_rgba(0,0,0,0.45)]" />
-              <span className="text-base md:text-lg font-bold drop-shadow-[0_4px_16px_rgba(0,0,0,0.55)] line-clamp-2">
+          <div className="mt-auto w-full px-4 md:px-6 pb-4 md:pb-6 pt-3 md:pt-5 space-y-2 md:space-y-4">
+            <div className="flex items-center gap-2 md:gap-3 text-white mb-1 md:mb-2">
+              <Icon className="w-5 h-5 md:w-6 md:h-6 shrink-0 drop-shadow-[0_4px_12px_rgba(0,0,0,0.45)]" />
+              <span className="text-base md:text-xl font-bold drop-shadow-[0_4px_16px_rgba(0,0,0,0.55)] line-clamp-2">
                 {title}
               </span>
             </div>

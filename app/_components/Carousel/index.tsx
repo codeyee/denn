@@ -174,7 +174,7 @@ export default function Carousel({
             {items.map((child, index) => (
               <motion.div
                 key={index}
-                className="flex-shrink-0"
+                className="shrink-0"
                 style={{
                   width: `calc((100% - ${
                     gap * visibleItems

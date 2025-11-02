@@ -5,6 +5,7 @@ import ContentCard from "../../Card/ContentCard";
 import ListCard from "../../Card/ListCard";
 import Carousel from "../../Carousel";
 import CreateListCard from "../../Card/CreateListCard";
+import Footer from "../../Footer";
 import { useContentStore } from "@/app/_stores/content-store";
 import { useListsStore } from "@/app/_stores/lists-store";
 
@@ -41,7 +42,10 @@ export default function HomePage() {
 
   if (isLoadingAny) {
     return (
-      <div className="relative w-full min-h-screen bg-[#0d030b]">
+      <div
+        className="relative w-full min-h-screen"
+        style={{ backgroundColor: "var(--color-background-logged-in)" }}
+      >
         <div className="container mx-auto px-4 py-20">
           <div className="flex items-center justify-center min-h-[400px]">
             <p className="text-white text-xl">Loading...</p>
@@ -53,7 +57,7 @@ export default function HomePage() {
 
   if (hasAnyError) {
     return (
-      <div className="relative w-full min-h-screen bg-[#0d030b]">
+      <div className="relative w-full min-h-screen" style={{ backgroundColor: 'var(--color-background-logged-in)' }}>
         <div className="container mx-auto px-4 py-20">
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center">
@@ -199,6 +203,8 @@ export default function HomePage() {
               </p>
             </div>
           )}
+
+        <Footer />
       </div>
     </div>
   );

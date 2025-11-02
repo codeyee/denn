@@ -1,7 +1,83 @@
 "use client";
 
 import { motion } from "motion/react";
-import { features, fadeInUp, staggerContainer, scaleIn } from "./data";
+import {
+  List,
+  Share2,
+  Star,
+  Users,
+  TrendingUp,
+  CheckCircle2,
+  LucideIcon,
+} from "lucide-react";
+
+// Types
+type Feature = {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+};
+
+// Features data
+const features: Feature[] = [
+  {
+    icon: List,
+    title: "Create Custom Lists",
+    description: "Organize your content exactly how you want it",
+  },
+  {
+    icon: Share2,
+    title: "Collaborative Lists",
+    description: "Invite friends to build and manage lists together",
+  },
+  {
+    icon: Star,
+    title: "Rate & Review",
+    description: "Share your thoughts with personalized ratings and comments",
+  },
+  {
+    icon: Users,
+    title: "Social Features",
+    description: "Connect with others who share your taste",
+  },
+  {
+    icon: TrendingUp,
+    title: "Track Progress",
+    description: "See your watching, reading, and playing statistics",
+  },
+  {
+    icon: CheckCircle2,
+    title: "Stay Organized",
+    description: "Never forget what you want to watch, play, or read next",
+  },
+];
+
+const fadeInUp = {
+  hidden: { opacity: 0, y: 60 },
+  visible: {
+    opacity: 1,
+    y: 0,
+  },
+};
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.2,
+    },
+  },
+};
+
+const scaleIn = {
+  hidden: { opacity: 0, scale: 0.8 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+  },
+};
 
 export default function FeaturesSection() {
   return (

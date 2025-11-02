@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useSettings } from "@/app/_hooks/useSettings";
-import DomeGalleryBackground from "./DomeGalleryBackground";
+import Background from "./Background";
 
 export default function HeroSection() {
   const [introDone, setIntroDone] = useState(false);
@@ -24,9 +24,9 @@ export default function HeroSection() {
 
   return (
     <div className="snap-start snap-always relative h-screen w-full overflow-hidden">
-      <DomeGalleryBackground
+      <Background
         overlayOpacity={0.7}
-        overlayColor="#12040fff"
+        overlayColor="var(--color-hero-gradient)"
         autoRotate={settings.animationsEnabled}
         autoRotateSpeed={settings.animationsEnabled ? 2 : 0}
         showNoise={settings.animationsEnabled}
@@ -38,7 +38,7 @@ export default function HeroSection() {
           <div
             className="absolute top-0 left-0 right-0 h-80 pointer-events-none z-30"
             style={{
-              background: `linear-gradient(to bottom, #12040fff 0%, rgba(18, 4, 15, 0.95) 25%, rgba(18, 4, 15, 0.75) 50%, rgba(18, 4, 15, 0.4) 75%, transparent 100%)`,
+              background: `linear-gradient(to bottom, var(--color-hero-gradient) 0%, var(--color-hero-gradient-95) 25%, var(--color-hero-gradient-75) 50%, var(--color-hero-gradient-40) 75%, transparent 100%)`,
             }}
           />
 
@@ -136,11 +136,11 @@ export default function HeroSection() {
           <div
             className="absolute bottom-0 left-0 right-0 h-80 pointer-events-none z-30"
             style={{
-              background: `linear-gradient(to bottom, transparent 0%, rgba(18, 4, 15, 0.4) 25%, rgba(18, 4, 15, 0.75) 50%, rgba(18, 4, 15, 0.95) 75%, #12040fff 100%)`,
+              background: `linear-gradient(to bottom, transparent 0%, var(--color-hero-gradient-40) 25%, var(--color-hero-gradient-75) 50%, var(--color-hero-gradient-95) 75%, var(--color-hero-gradient) 100%)`,
             }}
           />
         </div>
-      </DomeGalleryBackground>
+      </Background>
     </div>
   );
 }

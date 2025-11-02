@@ -2,7 +2,14 @@
 
 import { motion } from "motion/react";
 import { Separator } from "@/app/_components/ui/separator";
-import { fadeInUp } from "./data";
+
+const fadeInUp = {
+  hidden: { opacity: 0, y: 60 },
+  visible: {
+    opacity: 1,
+    y: 0,
+  },
+};
 
 export default function Footer() {
   return (
