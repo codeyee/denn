@@ -22,11 +22,11 @@ from content.permissions import IsOwnerOrReadOnly
         description='''
         Get detailed information about a specific list including all items and members.
 
-        **Optional Header:**
-        - `X-Render-Content`: When present, includes detailed information from external APIs (TMDB, IGDB, Spotify, OpenLibrary) in the `source_data` field of each content item.
+        **Optional Query Parameter:**
+        - `render_source`: Set to `true` to include detailed information from external APIs (TMDB, IGDB, Spotify, OpenLibrary) in the `source_data` field of each content item.
         ''',
         parameters=[
-            OpenApiParameter('X-Render-Content', OpenApiTypes.STR, OpenApiParameter.HEADER, required=False, description='Include external API data in response')
+            OpenApiParameter('render_source', OpenApiTypes.BOOL, OpenApiParameter.QUERY, required=False, description='Include external API data in response (set to true/false)')
         ],
         responses={
             200: UserListDetailSerializer,

@@ -15,12 +15,12 @@ from content.permissions import IsMemberOfList
         summary='List all items in a list',
         description='''
         Get all items in a specific list. Only members of the list can view its items.
-        
-        **Optional Header:**
-        - `X-Render-Content`: When present, includes detailed information from external APIs (TMDB, IGDB, Spotify, OpenLibrary) in the `source_data` field of each content item.
+
+        **Optional Query Parameter:**
+        - `render_source`: Set to `true` to include detailed information from external APIs (TMDB, IGDB, Spotify, OpenLibrary) in the `source_data` field of each content item.
         ''',
         parameters=[
-            OpenApiParameter('X-Render-Content', OpenApiTypes.STR, OpenApiParameter.HEADER, required=False, description='Include external API data in response')
+            OpenApiParameter('render_source', OpenApiTypes.BOOL, OpenApiParameter.QUERY, required=False, description='Include external API data in response (set to true/false)')
         ],
         responses={
             200: ListItemSerializer(many=True),
@@ -34,11 +34,11 @@ from content.permissions import IsMemberOfList
         description='''
         Get detailed information about a specific item in a list.
 
-        **Optional Header:**
-        - `X-Render-Content`: When present, includes detailed information from external APIs (TMDB, IGDB, Spotify, OpenLibrary) in the `source_data` field of the content item.
+        **Optional Query Parameter:**
+        - `render_source`: Set to `true` to include detailed information from external APIs (TMDB, IGDB, Spotify, OpenLibrary) in the `source_data` field of the content item.
         ''',
         parameters=[
-            OpenApiParameter('X-Render-Content', OpenApiTypes.STR, OpenApiParameter.HEADER, required=False, description='Include external API data in response')
+            OpenApiParameter('render_source', OpenApiTypes.BOOL, OpenApiParameter.QUERY, required=False, description='Include external API data in response (set to true/false)')
         ],
         responses={200: ListItemSerializer}
     ),

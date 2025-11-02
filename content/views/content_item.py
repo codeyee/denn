@@ -16,15 +16,15 @@ from content.permissions import IsAdminOrReadOnly
         description='''
         Get all content items with optional filtering by source API, content type, or search.
 
-        **Optional Header:**
-        - `X-Render-Content`: When present, includes detailed information from external APIs (TMDB, IGDB, Spotify, OpenLibrary) in the `source_data` field of each content item.
+        **Optional Query Parameter:**
+        - `render_source`: Set to `true` to include detailed information from external APIs (TMDB, IGDB, Spotify, OpenLibrary) in the `source_data` field of each content item.
         ''',
         parameters=[
             OpenApiParameter('source_api', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Filter by source API (tmdb, igdb, spotify, openlibrary)'),
             OpenApiParameter('content_type', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Filter by content type (MOVIE, TV_SHOW, GAME, ALBUM, BOOK)'),
             OpenApiParameter('external_id', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Filter by external ID'),
             OpenApiParameter('ordering', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Order by field (e.g., "-created_at", "rating_count", "-average_rating")'),
-            OpenApiParameter('X-Render-Content', OpenApiTypes.STR, OpenApiParameter.HEADER, required=False, description='Include external API data in response'),
+            OpenApiParameter('render_source', OpenApiTypes.BOOL, OpenApiParameter.QUERY, required=False, description='Include external API data in response (set to true/false)'),
         ],
         responses={200: ContentItemSerializer(many=True)}
     ),
@@ -34,11 +34,11 @@ from content.permissions import IsAdminOrReadOnly
         description='''
         Get detailed information about a specific content item.
 
-        **Optional Header:**
-        - `X-Render-Content`: When present, includes detailed information from external APIs (TMDB, IGDB, Spotify, OpenLibrary) in the `source_data` field.
+        **Optional Query Parameter:**
+        - `render_source`: Set to `true` to include detailed information from external APIs (TMDB, IGDB, Spotify, OpenLibrary) in the `source_data` field.
         ''',
         parameters=[
-            OpenApiParameter('X-Render-Content', OpenApiTypes.STR, OpenApiParameter.HEADER, required=False, description='Include external API data in response')
+            OpenApiParameter('render_source', OpenApiTypes.BOOL, OpenApiParameter.QUERY, required=False, description='Include external API data in response (set to true/false)')
         ],
         responses={
             200: ContentItemSerializer,

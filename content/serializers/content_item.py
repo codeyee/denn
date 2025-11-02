@@ -29,9 +29,12 @@ class ContentItemSerializer(serializers.ModelSerializer):
     def get_source_data(self, obj):
         request = self.context.get('request')
 
-        if request and request.headers.get('X-Render-Content'):
-            from content.utils import fetch_source_data
-            return fetch_source_data(obj)
+        if request:
+            render_source = request.query_params.get('render_source', '').lower()
+
+            if render_source == 'true':
+                from content.utils import fetch_source_data
+                return fetch_source_data(obj)
 
         return None
 
