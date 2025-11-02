@@ -144,7 +144,11 @@ class UserListViewSet(viewsets.ModelViewSet):
     def stats(self, request, pk=None):
         user_list = self.get_object()
 
-        if not user_list.members.filter(id=request.user.id).exists():
+        # Check if user is owner or member
+        is_owner = user_list.owner == request.user
+        is_member = user_list.members.filter(id=request.user.id).exists()
+
+        if not (is_owner or is_member):
             return Response(
                 {'detail': 'No tienes permiso para ver las estadísticas de esta lista.'},
                 status=status.HTTP_403_FORBIDDEN
