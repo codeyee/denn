@@ -82,11 +82,20 @@ export interface List {
   description: string
   list_type: ListType
   owner: ListOwner
-  member_count: string
-  item_count: string
+  members?: ListMember[]
+  member_count?: string
+  items?: ListItem[]
+  item_count?: string
   created_at: string
   updated_at: string
-  items?: ListItem[] // Items are fetched separately
+}
+
+export interface ListMember {
+  id: number
+  username: string
+  email: string
+  first_name: string
+  last_name: string
 }
 
 export interface ApiMetadata {

@@ -39,19 +39,19 @@ export default function ContentCard({ item, className }: ContentCardProps) {
 
   // Get additional info for footer
   const getFooterInfo = (): string => {
-    if ("release_date" in item && item.release_date) {
-      return item.release_date;
-    }
-    if ("total_tracks" in item && item.total_tracks) {
-      return `${item.total_tracks} tracks`;
-    }
+    const footerInfo: string[] = [];
+
     if ("pages" in item && item.pages) {
-      return `${item.pages} pages`;
+      footerInfo.push(`${item.pages} pages`);
     }
-    return "";
+
+    if ("total_tracks" in item && item.total_tracks) {
+      footerInfo.push(`${item.total_tracks} ${item.total_tracks === 1 ? 'track' : 'tracks'}`);
+    }
+
+    return footerInfo.join(" - ");
   };
 
-  // Get authors/creators if available
   const getAuthors = (): string => {
     if ("authors" in item && item.authors && item.authors.length > 0) {
       return item.authors.join(", ");
@@ -59,7 +59,13 @@ export default function ContentCard({ item, className }: ContentCardProps) {
     return "";
   };
 
-  // Get original title for movies and TV shows
+  const getReleaseDate = (): string => {
+    if ("release_date" in item && item.release_date) {
+      return item.release_date;
+    }
+    return "";
+  };
+
   const getOriginalTitle = (): string => {
     if ("original_title" in item && item.original_title) {
       return item.original_title;
@@ -70,6 +76,7 @@ export default function ContentCard({ item, className }: ContentCardProps) {
   const footerInfo = getFooterInfo();
   const authors = getAuthors();
   const originalTitle = getOriginalTitle();
+  const releaseDate = getReleaseDate();
 
   const originalTitleIsSameAsTitle = originalTitle.toLowerCase() === title.toLowerCase();
 
@@ -78,7 +85,7 @@ export default function ContentCard({ item, className }: ContentCardProps) {
       type={type}
       id={id}
       title={title}
-      backgroundImage={imageUrl || "/images/placeholder.jpg"}
+      backgroundImage={imageUrl || ""}
       backgroundImageAlt={`${title} cover image`}
       className={className}
       isEmpty={!imageUrl}
@@ -86,7 +93,8 @@ export default function ContentCard({ item, className }: ContentCardProps) {
       <Card.Footer>
         <div className="flex flex-col gap-1.5">
           {originalTitle && !originalTitleIsSameAsTitle && <div>{originalTitle}</div>}
-          {!originalTitle && authors && <div>{authors}</div>}
+          {authors && <div>{authors}</div>}
+          {releaseDate && <div>{releaseDate}</div>}
           {footerInfo && <div>{footerInfo}</div>}
         </div>
       </Card.Footer>

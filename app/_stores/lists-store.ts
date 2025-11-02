@@ -10,7 +10,11 @@ interface ListsState {
 }
 
 interface ListsActions {
-  fetchLists: () => Promise<void>;
+  fetchLists: (options?: {
+    render_items?: boolean;
+    max_items?: number;
+    render_source?: boolean;
+  }) => Promise<void>;
   fetchListItems: (listId: number, pageSize: number) => Promise<void>;
   createList: (name: string, description?: string, listType?: ListType) => Promise<List>;
   clearError: () => void;
@@ -29,7 +33,11 @@ const initialState: ListsState = {
 export const useListsStore = create<ListsStore>((set, get) => ({
   ...initialState,
 
-  fetchLists: async () => {
+  fetchLists: async (options?: {
+    render_items?: boolean;
+    max_items?: number;
+    render_source?: boolean;
+  }) => {
     const { lastFetched } = get();
     const fiveMinutesInMs = 5 * 60 * 1000;
 
@@ -40,8 +48,23 @@ export const useListsStore = create<ListsStore>((set, get) => ({
     set({ isLoading: true, error: null });
 
     try {
+      const queryParams = new URLSearchParams();
+
+      if (options?.render_items !== undefined) {
+        queryParams.append("render_items", options.render_items.toString());
+      }
+      if (options?.max_items !== undefined) {
+        queryParams.append("max_items", options.max_items.toString());
+      }
+      if (options?.render_source !== undefined) {
+        queryParams.append("render_source", options.render_source.toString());
+      }
+
+      const queryString = queryParams.toString();
+      const endpoint = `/content/lists/${queryString ? `?${queryString}` : ""}`;
+
       const response = await api.get<ListsApiResponse>(
-        `/content/lists/`,
+        endpoint,
         true
       );
 

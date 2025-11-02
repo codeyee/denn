@@ -24,24 +24,17 @@ export default function HomePage() {
     isLoading: listsLoading,
     error: listsError,
     fetchLists,
-    fetchListItems,
     createList,
   } = useListsStore();
 
   useEffect(() => {
     fetchSuggestions(20);
-    fetchLists();
+    fetchLists({
+      render_items: true,
+      max_items: 4,
+      render_source: true,
+    });
   }, [fetchSuggestions, fetchLists]);
-
-  useEffect(() => {
-    if (lists.length > 0) {
-      lists.forEach((list) => {
-        if (!list.items) {
-          fetchListItems(list.id, 4);
-        }
-      });
-    }
-  }, [lists, fetchListItems]);
 
   const isLoadingAny = suggestionsLoading || listsLoading;
   const hasAnyError = suggestionsError || listsError;
@@ -99,7 +92,7 @@ export default function HomePage() {
       <div className="py-30">
         {/* Lists Section */}
         {(lists.length > 0 || !listsLoading) && (
-          <section className="mb-16">
+          <section className="mb-4 md:mb-8">
             <Carousel
               title="Your Lists"
               itemsPerView={ITEMS_PER_CAROUSEL}
@@ -121,7 +114,7 @@ export default function HomePage() {
 
         {/* Movies Section */}
         {suggestions.movies.length > 0 && (
-          <section className="mb-16">
+          <section className="mb-4 md:mb-8">
             <Carousel
               title="Popular Movies"
               itemsPerView={ITEMS_PER_CAROUSEL}
@@ -136,7 +129,7 @@ export default function HomePage() {
 
         {/* TV Shows Section */}
         {suggestions.tvShows.length > 0 && (
-          <section className="mb-16">
+          <section className="mb-4 md:mb-8">
             <Carousel
               title="Popular TV Shows"
               itemsPerView={ITEMS_PER_CAROUSEL}
@@ -151,7 +144,7 @@ export default function HomePage() {
 
         {/* Games Section */}
         {suggestions.games.length > 0 && (
-          <section className="mb-16">
+          <section className="mb-4 md:mb-8">
             <Carousel
               title="Popular Games"
               itemsPerView={ITEMS_PER_CAROUSEL}
@@ -166,7 +159,7 @@ export default function HomePage() {
 
         {/* Music Section */}
         {suggestions.music.length > 0 && (
-          <section className="mb-16">
+          <section className="mb-4 md:mb-8">
             <Carousel
               title="Popular Music"
               itemsPerView={ITEMS_PER_CAROUSEL}
@@ -181,7 +174,7 @@ export default function HomePage() {
 
         {/* Books Section */}
         {suggestions.books.length > 0 && (
-          <section className="mb-16">
+          <section className="mb-4 md:mb-8">
             <Carousel
               title="Popular Books"
               itemsPerView={ITEMS_PER_CAROUSEL}

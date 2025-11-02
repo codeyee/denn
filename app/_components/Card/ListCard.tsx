@@ -20,7 +20,7 @@ export default function ListCard({ list, className }: ListCardProps) {
   }, [list.items]);
 
   const [_, setCurrentImageIndex] = useState(0);
-  const [currentImage, setCurrentImage] = useState<string>("/images/placeholder.jpg");
+  const [currentImage, setCurrentImage] = useState<string>("");
   const isEmpty = imageUrls.length === 0;
 
   useEffect(() => {
@@ -42,9 +42,14 @@ export default function ListCard({ list, className }: ListCardProps) {
     return () => clearInterval(interval);
   }, [imageUrls]);
 
-  // Format member and item counts
-  const memberInfo = `${list.member_count} ${parseInt(list.member_count) === 1 ? 'member' : 'members'}`;
-  const itemInfo = `${list.item_count} ${parseInt(list.item_count) === 1 ? 'item' : 'items'}`;
+  const memberListCount = list.members ? list.members.length : 0;
+  const itemListCount = list.items ? list.items.length : 0;
+
+  const itemCount = list.item_count ?? String(itemListCount);
+  const memberCount = list.member_count ?? String(memberListCount);
+
+  const memberInfo = `${memberCount} ${parseInt(memberCount) === 1 ? 'member' : 'members'}`;
+  const itemInfo = `${itemCount} ${parseInt(itemCount) === 1 ? 'item' : 'items'}`;
 
   // Determine list type and icon
   const isShared = list.list_type === ListType.SHARED;

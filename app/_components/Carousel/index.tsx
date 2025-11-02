@@ -122,7 +122,7 @@ export default function Carousel({
     <div className={`relative group ${className}`}>
       {/* Title */}
       {title && (
-        <h2 className="text-2xl md:text-3xl font-bold text-white mb-4 pl-4 md:pl-12">
+        <h2 className="text-2xl md:text-3xl font-bold text-white pl-4 md:pl-12">
           {title}
         </h2>
       )}
