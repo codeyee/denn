@@ -1,6 +1,6 @@
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 
-import { Film, Tv, Gamepad2, Book, Music } from "lucide-react";
+import { Film, Tv, Gamepad2, Book, Music, LucideIcon } from "lucide-react";
 
 import SpotlightCard from "@/app/_components/ui/SpotlightCard/SpotlightCard";
 
@@ -11,9 +11,13 @@ interface Prop {
   backgroundImage?: string;
   backgroundImageAlt?: string;
   id: string | number;
-  type: contentTypeEnum;
+  type?: contentTypeEnum;
   title: string;
+  icon?: LucideIcon;
   children?: React.ReactNode;
+  isEmpty?: boolean;
+  emptyIcon?: LucideIcon;
+  emptyBackgroundColor?: string;
 }
 
 interface FooterProp {
@@ -38,7 +42,11 @@ function Card({
   backgroundImageAlt,
   id,
   title,
+  icon,
   children,
+  isEmpty = false,
+  emptyIcon,
+  emptyBackgroundColor = "#374151",
 }: Prop) {
   const iconMap = {
     movie: Film,
@@ -48,7 +56,8 @@ function Card({
     music: Music,
   };
 
-  const Icon = iconMap[type] || Film;
+  const Icon = icon || (type ? iconMap[type] : Film);
+  const EmptyIcon = emptyIcon;
 
   return (
     <motion.div
@@ -59,14 +68,33 @@ function Card({
         className="relative overflow-hidden rounded-2xl h-[240px] md:h-[480px] bg-transparent backdrop-blur-lg p-0! border-none!"
         spotlightColor="rgba(255, 255, 255, 0.1)"
       >
-        {/* Background image */}
-        <div
-          className="absolute inset-0 bg-center bg-cover"
-          style={{ backgroundImage: `url(${backgroundImage})` }}
-          aria-label={backgroundImageAlt}
-        />
-        <div className="absolute inset-0 bg-black/20" />
-        <div className="absolute inset-x-0 bottom-0 h-[55%] bg-linear-to-t from-black/95 via-black/40 to-transparent" />
+        {/* Background image or empty state */}
+        {isEmpty ? (
+          <div
+            className="absolute inset-0 flex items-center justify-center"
+            style={{ backgroundColor: emptyBackgroundColor }}
+            aria-label={backgroundImageAlt || "Empty list"}
+          >
+            {EmptyIcon && (
+              <EmptyIcon className="w-24 h-24 md:w-32 md:h-32 text-gray-400 opacity-50" />
+            )}
+          </div>
+        ) : (
+          <AnimatePresence>
+            <motion.div
+              key={backgroundImage}
+              className="absolute inset-0 bg-center bg-cover"
+              style={{ backgroundImage: `url(${backgroundImage})` }}
+              aria-label={backgroundImageAlt}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 1, ease: "easeInOut" }}
+            />
+          </AnimatePresence>
+        )}
+        {!isEmpty && <div className="absolute inset-0 bg-black/20" />}
+        <div className={`absolute inset-x-0 bottom-0 h-[55%] bg-linear-to-t ${isEmpty ? 'from-gray-700/80 via-gray-600/40 to-transparent' : 'from-black/95 via-black/40 to-transparent'}`} />
 
         {/* Foreground content */}
         <div className="relative z-10 h-full flex flex-col">

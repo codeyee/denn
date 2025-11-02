@@ -2,41 +2,87 @@
 
 import { useEffect } from "react";
 import ContentCard from "../../Card/ContentCard";
+import ListCard from "../../Card/ListCard";
 import Carousel from "../../Carousel";
+import CreateListCard from "../../Card/CreateListCard";
 import { useContentStore } from "@/app/_stores/content-store";
+import { useListsStore } from "@/app/_stores/lists-store";
 
 const ITEMS_PER_VIEW = 5;
 
 export default function HomePage() {
-  const { suggestions, isLoading, error, fetchSuggestions } = useContentStore();
+  const {
+    suggestions,
+    isLoading: suggestionsLoading,
+    error: suggestionsError,
+    fetchSuggestions,
+  } = useContentStore();
+
+  const {
+    lists,
+    isLoading: listsLoading,
+    error: listsError,
+    fetchLists,
+    fetchListItems,
+    createList,
+  } = useListsStore();
 
   useEffect(() => {
-    // Fetch 20 items per content type on mount
     fetchSuggestions(20);
-  }, [fetchSuggestions]);
+    fetchLists();
+  }, [fetchSuggestions, fetchLists]);
 
-  if (isLoading) {
+  useEffect(() => {
+    if (lists.length > 0) {
+      lists.forEach((list) => {
+        if (!list.items) {
+          fetchListItems(list.id, 4);
+        }
+      });
+    }
+  }, [lists, fetchListItems]);
+
+  const isLoadingAny = suggestionsLoading || listsLoading;
+  const hasAnyError = suggestionsError || listsError;
+
+  if (isLoadingAny) {
     return (
       <div className="relative w-full min-h-screen bg-[#12040fff]">
         <div className="container mx-auto px-4 py-20">
           <div className="flex items-center justify-center min-h-[400px]">
-            <p className="text-white text-xl">Loading suggestions...</p>
+            <p className="text-white text-xl">Loading...</p>
           </div>
         </div>
       </div>
     );
   }
 
-  if (error) {
+  if (hasAnyError) {
     return (
       <div className="relative w-full min-h-screen bg-[#12040fff]">
         <div className="container mx-auto px-4 py-20">
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center">
-              <p className="text-red-400 text-xl mb-4">
-                Error loading suggestions
-              </p>
-              <p className="text-gray-400">{error}</p>
+              <p className="text-red-400 text-xl mb-4">Error loading data</p>
+              {suggestionsError && (
+                <p className="text-gray-400 mb-2">
+                  Content:{' '}
+                  {typeof suggestionsError === 'string'
+                    ? suggestionsError
+                    : (suggestionsError && typeof (suggestionsError as any).message === 'string')
+                      ? (suggestionsError as any).message
+                      : 'Unknown error'}
+                </p>
+              )}
+              {listsError && (
+                <p className="text-gray-400 mb-2">
+                  Lists: {typeof listsError === 'string'
+                    ? listsError
+                    : (listsError && typeof (listsError as any).message === 'string')
+                      ? (listsError as any).message
+                      : 'Unknown error'}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -46,16 +92,19 @@ export default function HomePage() {
 
   return (
     <div className="relative w-full min-h-screen bg-[#12040fff]">
-      <div className="py-20">
-        <div className="px-4 md:px-12 mb-12">
-          <h1 className="text-4xl font-bold text-white mb-4">
-            Welcome to Denn
-          </h1>
-          <p className="text-gray-300 font-sans">
-            Discover popular content across movies, TV shows, games, music, and
-            books
-          </p>
-        </div>
+      <div className="px-4 md:px-12 mb-12 py-30">
+        {/* Lists Section */}
+        {(lists.length > 0 || !listsLoading) && (
+          <section className="mb-12 pl-4 md:pl-12 pr-4 md:pr-12 py-4">
+            <h2 className="text-2xl font-bold text-white mb-6">Your Lists</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {lists.map((list) => (
+                <ListCard key={`list-${list.id}`} list={list} />
+              ))}
+              <CreateListCard onCreateList={createList} isLoading={listsLoading} />
+            </div>
+          </section>
+        )}
 
         {/* Movies Section */}
         {suggestions.movies.length > 0 && (
