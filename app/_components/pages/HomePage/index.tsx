@@ -59,11 +59,10 @@ export default function HomePage() {
     };
 
     const pool = [
-      ...pickRandom(suggestions.movies || [], 2),
-      ...pickRandom(suggestions.tvShows || [], 2),
-      ...pickRandom(suggestions.games || [], 2),
-      ...pickRandom(suggestions.music || [], 2),
-      ...pickRandom(suggestions.books || [], 2),
+      ...pickRandom(suggestions.movies || [], 3),
+      ...pickRandom(suggestions.tvShows || [], 3),
+      ...pickRandom(suggestions.games || [], 3),
+      ...pickRandom(suggestions.music || [], 3),
     ];
 
     // Shuffle and take up to 10
@@ -72,7 +71,7 @@ export default function HomePage() {
       [pool[i], pool[j]] = [pool[j], pool[i]];
     }
     return pool.slice(0, 10);
-  }, [suggestions.movies, suggestions.tvShows, suggestions.games, suggestions.music, suggestions.books]);
+  }, [suggestions.movies, suggestions.tvShows, suggestions.games, suggestions.music]);
 
   if (hasAnyError) {
     return (
