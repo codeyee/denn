@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import ContentCard from "../../cards/ContentCard";
 import Carousel from "../../common/Carousel";
 import Footer from "../../layout/Footer";
@@ -38,6 +38,8 @@ export default function SearchPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const currentSearchQueryRef = useRef<string>("");
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedQuery(searchQuery);
@@ -57,8 +59,12 @@ export default function SearchPage() {
           books: [],
         });
         setIsLoading(false);
+        currentSearchQueryRef.current = "";
         return;
       }
+
+      const searchQueryForThisRequest = debouncedQuery.trim();
+      currentSearchQueryRef.current = searchQueryForThisRequest;
 
       setIsLoading(true);
       setError(null);
@@ -66,11 +72,15 @@ export default function SearchPage() {
       try {
         const [videoResponse, gameResponse, musicResponse, bookResponse] =
           await Promise.all([
-            videoActions.search({ query: debouncedQuery, limit: 20 }),
-            gameActions.search({ query: debouncedQuery, limit: 20 }),
-            musicActions.search({ query: debouncedQuery, limit: 20 }),
-            bookActions.search({ query: debouncedQuery, limit: 20 }),
+            videoActions.search({ query: searchQueryForThisRequest, limit: 20 }),
+            gameActions.search({ query: searchQueryForThisRequest, limit: 20 }),
+            musicActions.search({ query: searchQueryForThisRequest, limit: 20 }),
+            bookActions.search({ query: searchQueryForThisRequest, limit: 20 }),
           ]);
+
+        if (currentSearchQueryRef.current !== searchQueryForThisRequest) {
+          return;
+        }
 
         const movies: Movie[] = [];
         const tvShows: TVShow[] = [];
@@ -136,18 +146,22 @@ export default function SearchPage() {
           books,
         });
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "An error occurred while searching"
-        );
-        setResults({
-          movies: [],
-          tvShows: [],
-          games: [],
-          music: [],
-          books: [],
-        });
+        if (currentSearchQueryRef.current === searchQueryForThisRequest) {
+          setError(
+            err instanceof Error ? err.message : "An error occurred while searching"
+          );
+          setResults({
+            movies: [],
+            tvShows: [],
+            games: [],
+            music: [],
+            books: [],
+          });
+        }
       } finally {
-        setIsLoading(false);
+        if (currentSearchQueryRef.current === searchQueryForThisRequest) {
+          setIsLoading(false);
+        }
       }
     };
 
