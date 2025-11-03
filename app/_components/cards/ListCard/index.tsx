@@ -9,6 +9,8 @@ interface ListCardProps {
   className?: string;
 }
 
+const IMAGE_ROTATION_INTERVAL = 5000;
+
 export default function ListCard({ list, className }: ListCardProps) {
   const id = String(list.id);
   const title = list.name;
@@ -37,7 +39,7 @@ export default function ListCard({ list, className }: ListCardProps) {
         setCurrentImage(imageUrls[nextIndex]);
         return nextIndex;
       });
-    }, 5000);
+    }, IMAGE_ROTATION_INTERVAL);
 
     return () => clearInterval(interval);
   }, [imageUrls]);
@@ -51,7 +53,6 @@ export default function ListCard({ list, className }: ListCardProps) {
   const memberInfo = `${memberCount} ${parseInt(memberCount) === 1 ? 'member' : 'members'}`;
   const itemInfo = `${itemCount} ${parseInt(itemCount) === 1 ? 'item' : 'items'}`;
 
-  // Determine list type and icon
   const isShared = list.list_type === ListType.SHARED;
   const ListTypeIcon = isShared ? Users : User;
   const listTypeLabel = isShared ? "Shared" : "Personal";
@@ -70,7 +71,6 @@ export default function ListCard({ list, className }: ListCardProps) {
       className={`${className} cursor-pointer`}
       isEmpty={isEmpty}
       emptyIcon={Package}
-      emptyBackgroundColor="var(--color-empty-card)"
     >
       <Card.Footer>
         <div className="flex items-center gap-1.5">

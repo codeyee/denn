@@ -1,22 +1,33 @@
 import { motion, AnimatePresence } from "motion/react";
-
 import { Film, Tv, Gamepad2, Book, Music, LucideIcon } from "lucide-react";
 
 import { contentTypeEnum } from "@/types/types";
 
+const ICON_MAP = {
+  movie: Film,
+  tv: Tv,
+  game: Gamepad2,
+  book: Book,
+  music: Music,
+} as const;
+
+const DEFAULT_CARD_ASPECT_RATIO = "5 / 8";
+
 interface CardProps {
+  id: string | number;
+  title: string;
+  type?: contentTypeEnum;
+
   className?: string;
   backgroundImage?: string;
   backgroundImageAlt?: string;
-  id: string | number;
-  type?: contentTypeEnum;
-  title: string;
   icon?: LucideIcon;
-  children?: React.ReactNode;
+  noAspectRatio?: boolean;
+
   isEmpty?: boolean;
   emptyIcon?: LucideIcon;
-  emptyBackgroundColor?: string;
-  noAspectRatio?: boolean;
+
+  children?: React.ReactNode;
 }
 
 interface CardFooterProps {
@@ -35,42 +46,32 @@ function Footer({ children, className }: CardFooterProps) {
 }
 
 function Card({
-  type,
-  className = "",
-  backgroundImage,
-  backgroundImageAlt,
   id,
   title,
+  type,
+  backgroundImage,
+  backgroundImageAlt,
   icon,
-  children,
-  isEmpty = false,
   emptyIcon,
-  emptyBackgroundColor = "var(--color-empty-card)",
   noAspectRatio = false,
+  isEmpty = false,
+  className = "",
+  children,
 }: CardProps) {
-  const iconMap = {
-    movie: Film,
-    tv: Tv,
-    game: Gamepad2,
-    book: Book,
-    music: Music,
-  };
-
-  const Icon = icon || (type ? iconMap[type] : Film);
+  const Icon = icon || (type ? ICON_MAP[type] : Film);
   const EmptyIcon = emptyIcon || Icon;
 
   return (
     <motion.div
       key={id}
       className={`w-full ${className}`}
-      style={noAspectRatio ? undefined : { aspectRatio: '5 / 8' }}
+      style={noAspectRatio ? undefined : { aspectRatio: DEFAULT_CARD_ASPECT_RATIO }}
     >
       <div className="relative overflow-hidden rounded-2xl h-full bg-transparent backdrop-blur-lg p-0! border-none!">
-        {/* Background image or empty state */}
+        {/* Background layer */}
         {isEmpty ? (
           <div
-            className="absolute inset-0 flex items-center justify-center"
-            style={{ backgroundColor: emptyBackgroundColor }}
+            className="absolute inset-0 flex items-center justify-center bg-empty-card"
             aria-label={backgroundImageAlt || "Empty list"}
           >
             {EmptyIcon && (
@@ -91,12 +92,21 @@ function Card({
             />
           </AnimatePresence>
         )}
-        {!isEmpty && <div className="absolute inset-0 bg-black/20" />}
-        <div className={`absolute inset-x-0 bottom-0 h-[55%] bg-linear-to-t ${isEmpty ? 'from-gray-700/80 via-gray-600/40 to-transparent' : 'from-black/95 via-black/40 to-transparent'}`} />
 
-        {/* Foreground content */}
+        {/* Overlay layer */}
+        {!isEmpty && <div className="absolute inset-0 bg-black/20" />}
+        <div 
+          className={`absolute inset-x-0 bottom-0 h-[55%] bg-linear-to-t ${
+            isEmpty
+              ? 'from-gray-700/80 via-gray-600/40 to-transparent'
+              : 'from-black/95 via-black/40 to-transparent'
+          }`}
+        />
+
+        {/* Content layer */}
         <div className="relative z-10 h-full flex flex-col">
           <div className="mt-auto w-full px-4 md:px-6 pb-4 md:pb-6 pt-3 md:pt-5 space-y-2 md:space-y-4">
+            {/* Title section */}
             <div className="flex items-center gap-2 md:gap-3 text-white mb-1 md:mb-2">
               <Icon className="w-5 h-5 md:w-6 md:h-6 shrink-0 drop-shadow-[0_4px_12px_rgba(0,0,0,0.45)]" />
               <span className="text-base md:text-xl font-bold drop-shadow-[0_4px_16px_rgba(0,0,0,0.55)] line-clamp-2">

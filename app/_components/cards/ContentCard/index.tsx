@@ -1,5 +1,4 @@
 import Card from "../Card";
-
 import { contentTypeEnum } from "@/types/types";
 import { ContentItem } from "@/types/contentTypes";
 
@@ -9,35 +8,20 @@ interface ContentCardProps {
 }
 
 export default function ContentCard({ item, className }: ContentCardProps) {
-  // Helper function to get the content type as enum
   const getContentType = (): contentTypeEnum => {
     if ("type" in item && typeof item.type === "string") {
-      // For Movie, TVShow, and MusicAlbum with type field
       if (item.type === "movie") return contentTypeEnum.movie;
       if (item.type === "tv") return contentTypeEnum.tv;
       if (item.type === "album") return contentTypeEnum.music;
     }
 
-    // For Game - check if it has platforms or authors array combined with no type field matching movie/tv
     if ("platforms" in item) return contentTypeEnum.game;
-
-    // For Book - check if it has pages field
     if ("pages" in item) return contentTypeEnum.book;
-
-    // For MusicAlbum - check if it has total_tracks
     if ("total_tracks" in item) return contentTypeEnum.music;
 
-    // Default fallback
     return contentTypeEnum.movie;
   };
 
-  // Get common fields
-  const title = item.title;
-  const imageUrl = item.image_url;
-  const id = String(item.id);
-  const type = getContentType();
-
-  // Get additional info for footer
   const getFooterInfo = (): string => {
     const footerInfo: string[] = [];
 
@@ -72,6 +56,11 @@ export default function ContentCard({ item, className }: ContentCardProps) {
     }
     return "";
   };
+
+  const title = item.title;
+  const imageUrl = item.image_url;
+  const id = String(item.id);
+  const type = getContentType();
 
   const footerInfo = getFooterInfo();
   const authors = getAuthors();

@@ -5,6 +5,8 @@ import { Plus } from "lucide-react";
 import CreateListModal from "@/app/_components/Modal/CreateListModal";
 import { ListType } from "@/types/contentTypes";
 
+const CARD_ASPECT_RATIO = "5 / 8";
+
 interface CreateListCardProps {
   onCreateList: (name: string, description?: string, listType?: ListType) => Promise<unknown>;
   isLoading?: boolean;
@@ -23,7 +25,7 @@ export default function CreateListCard({ onCreateList, isLoading }: CreateListCa
 
   return (
     <>
-      <div className="w-full" style={{ aspectRatio: '5 / 8' }}>
+      <div className="w-full" style={{ aspectRatio: CARD_ASPECT_RATIO }}>
         <button
           onClick={handleClick}
           disabled={isLoading}
