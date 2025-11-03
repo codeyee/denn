@@ -58,7 +58,7 @@ export default function ListCard({ list, className }: ListCardProps) {
   const listTypeLabel = isShared ? "Shared" : "Personal";
 
   const footerInfo = isShared
-    ? memberInfo + ' - ' + itemInfo
+    ? memberInfo + ' • ' + itemInfo
     : itemInfo;
 
   return (
@@ -77,7 +77,7 @@ export default function ListCard({ list, className }: ListCardProps) {
           <ListTypeIcon className="w-3.5 h-3.5" />
           <span>{listTypeLabel}</span>
         </div>
-        <div>- {footerInfo}</div>
+        <div>• {footerInfo}</div>
       </Card.Footer>
     </Card>
   );

@@ -126,7 +126,7 @@ export default function FeaturedBanner({ items, autoRotateMs = 6000 }: FeaturedB
     if ("total_tracks" in item && item.total_tracks) {
       parts.push(`${item.total_tracks} ${item.total_tracks === 1 ? "track" : "tracks"}`);
     }
-    return parts.join(" · ");
+    return parts.join(" • ");
   };
 
   const getAuthors = (item: ContentItem): string => {
@@ -156,6 +156,28 @@ export default function FeaturedBanner({ items, autoRotateMs = 6000 }: FeaturedB
   const releaseDate = getReleaseDate(current);
   const originalTitleIsSame =
     originalTitle && originalTitle.toLowerCase() === current.title.toLowerCase();
+
+  // Extra info specific to type: duration (movies/albums) and TV counts
+  const getExtraInfo = (item: any): string => {
+    const extra: string[] = [];
+    if (typeof item?.duration_minutes === 'number' && item.duration_minutes > 0) {
+      extra.push(`${item.duration_minutes} min`);
+    }
+    const seasons = item?.number_of_seasons as number | undefined;
+    const episodes = item?.number_of_episodes as number | undefined;
+    if (seasons || episodes) {
+      const parts: string[] = [];
+      if (typeof seasons === 'number' && seasons > 0) {
+        parts.push(`${seasons} ${seasons === 1 ? 'season' : 'seasons'}`);
+      }
+      if (typeof episodes === 'number' && episodes > 0) {
+        parts.push(`${episodes} ${episodes === 1 ? 'episode' : 'episodes'}`);
+      }
+      if (parts.length) extra.push(parts.join(' • '));
+    }
+    return extra.join(' • ');
+  };
+  const extraInfo = getExtraInfo(current);
 
   return (
     <div className="relative w-full aspect-16/16 md:aspect-16/13 lg:aspect-16/10 xl:aspect-16/7 overflow-hidden mb-6 md:mb-10 rounded-none md:rounded-2xl">
@@ -204,6 +226,9 @@ export default function FeaturedBanner({ items, autoRotateMs = 6000 }: FeaturedB
             )}
             {releaseDate && (
               <div className="text-xs md:text-sm opacity-90">{releaseDate}</div>
+            )}
+            {extraInfo && (
+              <div className="text-xs md:text-sm opacity-90">{extraInfo}</div>
             )}
             {footerInfo && (
               <div className="text-xs md:text-sm opacity-90">{footerInfo}</div>

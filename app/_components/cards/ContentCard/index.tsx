@@ -62,7 +62,25 @@ export default function ContentCard({ item, className }: ContentCardProps) {
       footerInfo.push(`${item.total_tracks} ${item.total_tracks === 1 ? 'track' : 'tracks'}`);
     }
 
-    return footerInfo.join(" - ");
+    if ("duration_minutes" in item && (item as any).duration_minutes) {
+      const mins = (item as any).duration_minutes as number;
+      footerInfo.push(`${mins} min`);
+    }
+
+    const seasons = ("number_of_seasons" in item ? (item as any).number_of_seasons : undefined) as number | undefined;
+    const episodes = ("number_of_episodes" in item ? (item as any).number_of_episodes : undefined) as number | undefined;
+    if (seasons || episodes) {
+      const parts: string[] = [];
+      if (typeof seasons === 'number' && seasons > 0) {
+        parts.push(`${seasons} ${seasons === 1 ? 'season' : 'seasons'}`);
+      }
+      if (typeof episodes === 'number' && episodes > 0) {
+        parts.push(`${episodes} ${episodes === 1 ? 'episode' : 'episodes'}`);
+      }
+      if (parts.length) footerInfo.push(parts.join(' • '));
+    }
+
+    return footerInfo.join(" • ");
   };
 
   const getAuthors = (): string => {
