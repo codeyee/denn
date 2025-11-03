@@ -1,5 +1,5 @@
 from .base import SpotifyBaseView
-from .utils import normalize_album_search
+from .utils import normalize_album_search, should_include_album
 from proxy.errors import build_error_response, get_http_status, MISSING_QUERY
 from proxy.serializers import MusicSearchResponseSerializer, ErrorResponseSerializer
 from drf_spectacular.utils import extend_schema, OpenApiParameter
@@ -7,27 +7,14 @@ from drf_spectacular.types import OpenApiTypes
 from typing import Dict, Any
 
 class MusicSearchView(SpotifyBaseView):
-    MIN_TRACKS = 4
 
     def filter_albums(self, data: Dict[str, Any]) -> Dict[str, Any]:
         albums_data = data.get('albums', {})
         albums = albums_data.get('items', [])
 
-        min_tracks_threshold = getattr(
-            self, 'current_min_tracks', self.MIN_TRACKS)
-
         filtered_albums = []
         for album in albums:
-            album_type = album.get('album_type', '').lower()
-            total_tracks = album.get('total_tracks', 0)
-
-            if total_tracks < min_tracks_threshold:
-                continue
-
-            if album_type == 'album':
-                filtered_albums.append(normalize_album_search(album))
-            elif album_type == 'single' and total_tracks >= 4:
-                album['album_type'] = 'ep'
+            if should_include_album(album):
                 filtered_albums.append(normalize_album_search(album))
 
         total_results = albums_data.get('total', 0)
@@ -52,14 +39,12 @@ class MusicSearchView(SpotifyBaseView):
         description='''
         Search for music albums on Spotify.
 
-        Results are filtered to show only albums and EPs (4+ tracks).
-        Singles with less than the minimum tracks are excluded by default.
+        Results are filtered to show only albums and EPs (excludes singles).
         ''',
         parameters=[
             OpenApiParameter('query', OpenApiTypes.STR, required=True, description='Search query'),
             OpenApiParameter('limit', OpenApiTypes.INT, description='Results per page (1-50, default: 20)'),
-            OpenApiParameter('offset', OpenApiTypes.INT, description='Offset for pagination (default: 0)'),
-            OpenApiParameter('min_tracks', OpenApiTypes.INT, description='Minimum number of tracks to include (default: 4)')
+            OpenApiParameter('offset', OpenApiTypes.INT, description='Offset for pagination (default: 0)')
         ],
         responses={
             200: MusicSearchResponseSerializer,
@@ -75,9 +60,6 @@ class MusicSearchView(SpotifyBaseView):
 
         limit = int(request.query_params.get('limit', 20))
         offset = int(request.query_params.get('offset', 0))
-        min_tracks = int(request.query_params.get('min_tracks', self.MIN_TRACKS))
-
-        self.current_min_tracks = min_tracks
 
         client = self.get_client()
         return self.handle_api_call(

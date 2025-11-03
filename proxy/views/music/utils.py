@@ -30,20 +30,9 @@ def normalize_release_date(date_str: Optional[str]) -> Optional[str]:
 
     return None
 
-def should_include_album(album: Dict[str, Any], min_tracks: int = 4) -> bool:
-    album_type = album.get('album_type', '').lower()
-    total_tracks = album.get('total_tracks', 0)
-
-    if total_tracks < min_tracks:
-        return False
-
-    if album_type == 'album' or album_type == 'ep':
-        return True
-
-    if album_type == 'single' and total_tracks >= min_tracks:
-        return True
-
-    return False
+def should_include_album(album: Dict[str, Any]) -> bool:
+    album_type = (album.get('album_type') or '').lower()
+    return album_type != 'single'
 
 def normalize_album_search(item: Dict[str, Any]) -> Dict[str, Any]:
     album_type = item.get('album_type', '').lower()
@@ -79,9 +68,40 @@ def normalize_track_simple(track: Dict[str, Any]) -> Dict[str, Any]:
         'external_url': track.get('external_urls', {}).get('spotify')
     }
 
+def calculate_total_duration_seconds(tracks: List[Dict[str, Any]]) -> int:
+    if not tracks: return 0
+    return sum((track.get('duration_seconds') or 0) for track in tracks)
+
+def to_minutes(total_seconds: int) -> Optional[int]:
+    if not total_seconds: return None
+    return round(total_seconds / 60)
+
+def derive_album_type(
+    spotify_album_type: Optional[str],
+    total_tracks: int,
+    total_duration_minutes: Optional[int]
+) -> str:
+    if total_duration_minutes is not None and total_duration_minutes >= 30:
+        return 'album'
+
+    if total_tracks >= 7:
+        return 'album'
+
+    if 4 <= total_tracks <= 6 and (total_duration_minutes is None or total_duration_minutes < 30):
+        return 'ep'
+
+    return 'single'
+
 def normalize_album(data: Dict[str, Any]) -> Dict[str, Any]:
     tracks = data.get('tracks', {}).get('items', [])
     normalized_tracks = [normalize_track_simple(track) for track in tracks]
+
+    total_duration_seconds = calculate_total_duration_seconds(normalized_tracks)
+    duration_minutes = to_minutes(total_duration_seconds)
+
+    spotify_album_type = (data.get('album_type') or '').lower()
+    total_tracks = data.get('total_tracks', 0)
+    derived_album_type = derive_album_type(spotify_album_type, total_tracks, duration_minutes)
 
     return {
         'id': data.get('id'),
@@ -90,7 +110,8 @@ def normalize_album(data: Dict[str, Any]) -> Dict[str, Any]:
         'image_url': get_image_url(data.get('images'), 'large'),
         'release_date': normalize_release_date(data.get('release_date')),
         'total_tracks': data.get('total_tracks'),
-        'album_type': data.get('album_type'),
+        'album_type': derived_album_type or data.get('album_type'),
         'external_url': data.get('external_urls', {}).get('spotify'),
         'tracks': normalized_tracks,
+        'duration_minutes': duration_minutes,
     }

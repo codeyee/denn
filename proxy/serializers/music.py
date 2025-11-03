@@ -58,6 +58,10 @@ class AlbumDetailSerializer(serializers.Serializer):
     album_type = serializers.CharField(help_text="Album type from Spotify")
     external_url = serializers.URLField(help_text="Spotify URL for the album")
     tracks = TrackSerializer(many=True, help_text="List of all tracks in album")
+    duration_minutes = serializers.IntegerField(
+        allow_null=True,
+        help_text="Total album duration in minutes (sum of track durations)"
+    )
 
 class BulkAlbumsResponseSerializer(serializers.Serializer):
     albums = AlbumDetailSerializer(

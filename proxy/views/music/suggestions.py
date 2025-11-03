@@ -6,7 +6,6 @@ from drf_spectacular.types import OpenApiTypes
 from typing import Dict, Any, List, Tuple
 
 class MusicSuggestionsView(SpotifyBaseView):
-    MIN_TRACKS = 4
 
     def fetch_and_filter_new_releases(
         self, client, target_limit: int
@@ -38,7 +37,7 @@ class MusicSuggestionsView(SpotifyBaseView):
                 if album_id in seen_ids:
                     continue
 
-                if should_include_album(album, self.MIN_TRACKS):
+                if should_include_album(album):
                     seen_ids.add(album_id)
                     normalized = normalize_album_search(album)
                     filtered_results.append(normalized)
@@ -64,7 +63,7 @@ class MusicSuggestionsView(SpotifyBaseView):
             if not album:
                 continue
 
-            if should_include_album(album, self.MIN_TRACKS):
+            if should_include_album(album):
                 normalized = normalize_album_search(album)
                 filtered_results.append(normalized)
 
@@ -80,8 +79,7 @@ class MusicSuggestionsView(SpotifyBaseView):
         Get new release albums for homepage suggestions.
 
         This endpoint fetches recently released albums from Spotify,
-        filtered to show only albums and EPs (4+ tracks) and singles with 4+ tracks.
-        Singles with less than 4 tracks are excluded.
+        filtered to show only albums and EPs (excludes singles).
         ''',
         parameters=[
             OpenApiParameter(

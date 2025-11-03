@@ -315,6 +315,12 @@ class HomepageView(APIView):
         except Exception as e:
             print(f"Error during details enrichment: {e}")
 
+        if music_results:
+            try:
+                music_results = [item for item in music_results if (item or {}).get('album_type') != 'single']
+            except Exception:
+                pass
+
         response_data = {
             'movies': movie_results,
             'tv_shows': tv_show_results,
