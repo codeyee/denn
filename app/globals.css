@@ -140,7 +140,17 @@
       transparent 100%
     );
   }
-  
+
+  .bg-bottom-gradient {
+    background: linear-gradient(
+      to top,
+      var(--color-hero-gradient) 0%,
+      var(--color-hero-gradient-70) 40%,
+      var(--color-hero-gradient-40) 80%,
+      transparent 100%
+    );
+  }
+
   .drop-shadow-text {
     filter: drop-shadow(var(--drop-shadow-text));
   }

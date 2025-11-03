@@ -76,7 +76,7 @@ export default function ContentCard({ item, className }: ContentCardProps) {
       title={title}
       backgroundImage={imageUrl || ""}
       backgroundImageAlt={`${title} cover image`}
-      className={className}
+      className={className + " cursor-pointer"}
       isEmpty={!imageUrl}
     >
       <Card.Footer>
