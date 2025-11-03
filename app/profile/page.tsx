@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { ProtectedRoute } from "@/app/_components/common/ProtectedRoute";
 import { useAuth } from "@/app/_hooks/useAuth";
 import { Button } from "@/app/_components/lib/button";
@@ -13,7 +14,9 @@ export default function ProfilePage() {
   return (
     <ProtectedRoute>
       <div className="min-h-screen flex flex-col bg-background-logged-in">
-        <Navbar />
+        <Suspense fallback={null}>
+          <Navbar />
+        </Suspense>
         <div className="flex-1 p-8 pt-24">
           <Card className="max-w-2xl mx-auto p-8">
             <h1 className="text-3xl font-bold mb-6">Profile</h1>

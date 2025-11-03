@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import ContentCard from "../../cards/ContentCard";
 import PlaceholderCard from "../../cards/PlaceholderCard";
 import Carousel from "../../common/Carousel";
@@ -28,6 +29,7 @@ interface SearchResults {
 }
 
 export default function SearchPage() {
+  const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [results, setResults] = useState<SearchResults>({
@@ -41,6 +43,12 @@ export default function SearchPage() {
   const [error, setError] = useState<string | null>(null);
 
   const currentSearchQueryRef = useRef<string>("");
+
+  // Sync with URL params on mount and when they change
+  useEffect(() => {
+    const queryFromUrl = searchParams.get("q") || "";
+    setSearchQuery(queryFromUrl);
+  }, [searchParams]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -170,13 +178,6 @@ export default function SearchPage() {
     performSearch();
   }, [debouncedQuery]);
 
-  const handleSearchChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      setSearchQuery(e.target.value);
-    },
-    []
-  );
-
   const hasResults =
     results.movies.length > 0 ||
     results.tvShows.length > 0 ||
@@ -187,26 +188,6 @@ export default function SearchPage() {
   return (
     <div className="relative w-full min-h-screen bg-background-logged-in">
       <div className="pt-30 pb-20">
-        {/* Search Input Section */}
-        <section className="mb-8 md:mb-12 px-4 md:px-12">
-          <div className="max-w-4xl mx-auto">
-            <div className="relative">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={handleSearchChange}
-                placeholder="Search for movies, TV shows, games, music, books..."
-                className="w-full px-6 py-4 text-lg bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white/40 transition-all"
-              />
-              {isLoading && (
-                <div className="absolute right-6 top-1/2 -translate-y-1/2">
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                </div>
-              )}
-            </div>
-          </div>
-        </section>
-
         {/* Error State */}
         {error && !isLoading && (
           <div className="container mx-auto px-4 py-8">

@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { ThemeProvider } from "@/app/_components/common/ThemeProvider";
 import { StoreProvider } from "@/app/_providers/StoreProvider";
 

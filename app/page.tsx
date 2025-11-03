@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import dynamic from "next/dynamic";
 import Navbar from "@/app/_components/layout/Navbar";
 import HomePage from "@/app/_components/pages/HomePage";
@@ -16,7 +17,9 @@ export default function Home() {
   if (isLoading) {
     return (
       <div className="relative w-full overflow-x-hidden">
-        <Navbar />
+        <Suspense fallback={null}>
+          <Navbar />
+        </Suspense>
         <div
           className="flex items-center justify-center min-h-screen"
           style={{ backgroundColor: "var(--color-hero-gradient)" }}
@@ -29,7 +32,9 @@ export default function Home() {
 
   return (
     <div className="relative w-full overflow-x-hidden">
-      <Navbar />
+      <Suspense fallback={null}>
+        <Navbar />
+      </Suspense>
       {isAuthenticated ? <HomePage /> : <LandingPage />}
     </div>
   );
