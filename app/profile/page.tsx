@@ -50,6 +50,9 @@ export default function ProfilePage() {
           </Card>
         </div>
         <Footer />
+
+        {/* Bottom gradient */}
+        <div className="pointer-events-none fixed left-0 right-0 bottom-0 h-16 bg-bottom-gradient z-10" />
       </div>
     </ProtectedRoute>
   );
