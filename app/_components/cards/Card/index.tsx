@@ -1,4 +1,5 @@
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
+import { useRef, useEffect } from "react";
 import { Film, Tv, Gamepad2, Book, Music, LucideIcon } from "lucide-react";
 
 import { contentTypeEnum } from "@/types/types";
@@ -60,6 +61,21 @@ function Card({
 }: CardProps) {
   const Icon = icon || (type ? ICON_MAP[type] : Film);
   const EmptyIcon = emptyIcon || Icon;
+  const previousImageRef = useRef<string | undefined>(undefined);
+  const isFirstImageRef = useRef(true);
+  
+  // Check if this is the first image for this card instance
+  const isFirstRender = previousImageRef.current === undefined;
+  
+  // Update refs after render to track image changes
+  useEffect(() => {
+    if (previousImageRef.current !== backgroundImage) {
+      if (previousImageRef.current !== undefined) {
+        isFirstImageRef.current = false;
+      }
+      previousImageRef.current = backgroundImage;
+    }
+  }, [backgroundImage]);
 
   return (
     <motion.div
@@ -81,11 +97,18 @@ function Card({
             )}
           </div>
         ) : (
-          <div
-            className="absolute inset-0 bg-center bg-cover"
-            style={{ backgroundImage: `url(${backgroundImage})` }}
-            aria-label={backgroundImageAlt}
-          />
+          <AnimatePresence>
+            <motion.div
+              key={backgroundImage}
+              className="absolute inset-0 bg-center bg-cover"
+              style={{ backgroundImage: `url(${backgroundImage})` }}
+              aria-label={backgroundImageAlt}
+              initial={isFirstImageRef.current ? { opacity: 1 } : { opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.5, ease: "easeInOut" }}
+            />
+          </AnimatePresence>
         )}
 
         {/* Overlay layer */}

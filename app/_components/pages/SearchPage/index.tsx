@@ -262,8 +262,8 @@ export default function SearchPage() {
           </div>
         )}
 
-        {/* Loading State with Placeholders */}
-        {isLoading && debouncedQuery.trim() && (
+        {/* Loading State with Placeholders - Show immediately when user types, not waiting for debounce */}
+        {(isLoading || (searchQuery.trim() && !hasResults && !error)) && (
           <>
             {/* Movies Placeholders */}
             <section className="mb-4 md:mb-8">
@@ -337,8 +337,8 @@ export default function SearchPage() {
           </>
         )}
 
-        {/* Results Section */}
-        {!isLoading && !error && (
+        {/* Results Section - Show when not loading and search has completed */}
+        {!isLoading && !error && debouncedQuery.trim() && (
           <>
             {/* Movies Section */}
             {results.movies.length > 0 && (
@@ -415,24 +415,24 @@ export default function SearchPage() {
               </section>
             )}
 
-            {/* Empty State */}
-            {!hasResults && debouncedQuery.trim() && (
+            {/* No Results State */}
+            {!hasResults && (
               <div className="flex items-center justify-center min-h-[400px]">
                 <p className="text-gray-400 text-lg">
                   No results found for &quot;{debouncedQuery}&quot;
                 </p>
               </div>
             )}
-
-            {/* Initial State */}
-            {!debouncedQuery.trim() && (
-              <div className="flex items-center justify-center min-h-[400px]">
-                <p className="text-gray-400 text-lg">
-                  Start typing to search for content
-                </p>
-              </div>
-            )}
           </>
+        )}
+
+        {/* Initial State - Only show when query is completely empty and not loading */}
+        {!searchQuery.trim() && !isLoading && !error && (
+          <div className="flex items-center justify-center min-h-[400px]">
+            <p className="text-gray-400 text-lg">
+              Start typing to search for content
+            </p>
+          </div>
         )}
 
         <Footer />
