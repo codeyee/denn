@@ -47,11 +47,6 @@ class HomepageView(APIView):
                 OpenApiTypes.INT,
                 description='Number of suggestions per category (default: 10, max: 50)'
             ),
-            OpenApiParameter(
-                'details',
-                OpenApiTypes.BOOL,
-                description='Whether to fetch per-item details for richer images/metadata (default: false)'
-            ),
         ],
         responses={
             200: HomepageResponseSerializer,
@@ -62,7 +57,6 @@ class HomepageView(APIView):
     def get(self, request):
         limit = int(request.GET.get('limit', 10))
         limit = min(limit, 50)
-        details_param = str(request.GET.get('details', 'false')).lower() in ('1', 'true', 'yes', 'on')
 
         movie_results = []
         tv_show_results = []
@@ -202,16 +196,7 @@ class HomepageView(APIView):
             except Exception as e:
                 print(f"Error fetching books suggestions: {e}")
 
-        response_data = {
-            'movies': movie_results,
-            'tv_shows': tv_show_results,
-            'games': games_results,
-            'music': music_results,
-            'books': books_results
-        }
-
-        if details_param:
-            try:
+        try:
                 with ThreadPoolExecutor(max_workers=10) as detail_executor:
                     tmdb_movie_futures = {}
                     tmdb_tv_futures = {}
@@ -284,7 +269,7 @@ class HomepageView(APIView):
                             print(f"Error fetching OpenLibrary details: {e}")
 
                     if tmdb_movie_futures:
-                        for item in movie_results:
+                        for idx, item in enumerate(movie_results):
                             item_id = item.get('id')
                             fut = tmdb_movie_futures.get(item_id)
                             if not fut:
@@ -292,12 +277,12 @@ class HomepageView(APIView):
                             try:
                                 data, status_code = fut.result()
                                 if status_code == 200 and isinstance(data, dict):
-                                    item['details'] = normalize_movie_details(data)
+                                    movie_results[idx] = normalize_movie_details(data)
                             except Exception as e:
                                 print(f"Error resolving TMDB movie details for {item_id}: {e}")
 
                     if tmdb_tv_futures:
-                        for item in tv_show_results:
+                        for idx, item in enumerate(tv_show_results):
                             item_id = item.get('id')
                             fut = tmdb_tv_futures.get(item_id)
                             if not fut:
@@ -305,29 +290,37 @@ class HomepageView(APIView):
                             try:
                                 data, status_code = fut.result()
                                 if status_code == 200 and isinstance(data, dict):
-                                    item['details'] = normalize_tv_details(data)
+                                    tv_show_results[idx] = normalize_tv_details(data)
                             except Exception as e:
                                 print(f"Error resolving TMDB tv details for {item_id}: {e}")
 
                     if igdb_details_map:
-                        for item in games_results:
+                        for idx, item in enumerate(games_results):
                             gid = item.get('id')
                             if gid in igdb_details_map:
-                                item['details'] = igdb_details_map[gid]
+                                games_results[idx] = igdb_details_map[gid]
 
                     if spotify_details_map:
-                        for item in music_results:
+                        for idx, item in enumerate(music_results):
                             aid = item.get('id')
                             if aid in spotify_details_map:
-                                item['details'] = spotify_details_map[aid]
+                                music_results[idx] = spotify_details_map[aid]
 
                     if openlibrary_details_map:
-                        for item in books_results:
+                        for idx, item in enumerate(books_results):
                             bid = item.get('id')
                             if bid in openlibrary_details_map:
-                                item['details'] = openlibrary_details_map[bid]
+                                books_results[idx] = openlibrary_details_map[bid]
 
-            except Exception as e:
-                print(f"Error during details enrichment: {e}")
+        except Exception as e:
+            print(f"Error during details enrichment: {e}")
+
+        response_data = {
+            'movies': movie_results,
+            'tv_shows': tv_show_results,
+            'games': games_results,
+            'music': music_results,
+            'books': books_results
+        }
 
         return Response(response_data, status=http_status.HTTP_200_OK)

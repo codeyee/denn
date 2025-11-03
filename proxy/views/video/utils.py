@@ -28,15 +28,35 @@ def normalize_search_item(item: Dict[str, Any], media_type: Optional[str] = None
     }
 
 def normalize_movie(data: Dict[str, Any]) -> Dict[str, Any]:
+    poster_path = data.get('poster_path')
+    backdrop_path = data.get('backdrop_path')
+
+    poster_w500 = build_image_url(poster_path, 'w500')
+    poster_original = build_image_url(poster_path, 'original')
+    backdrop_w1280 = build_image_url(backdrop_path, 'w1280')
+    backdrop_original = build_image_url(backdrop_path, 'original')
+
     return {
         'id': data.get('id'),
+        'imdb_id': data.get('imdb_id'),
         'title': data.get('title'),
         'original_title': data.get('original_title'),
         'description': data.get('overview') if data.get('overview') else None,
-        'image_url': build_image_url(data.get('poster_path')),
+        'image_url': poster_w500,
+        'tagline': data.get('tagline'),
         'release_date': data.get('release_date'),
         'duration_minutes': data.get('runtime'),
-        'status': data.get('status')
+        'status': data.get('status'),
+        'images': {
+            'poster': {
+                'standard': poster_w500,
+                'original': poster_original,
+            },
+            'backdrop': {
+                'standard': backdrop_w1280,
+                'original': backdrop_original,
+            }
+        }
     }
 
 def normalize_episode(episode: Dict[str, Any]) -> Dict[str, Any]:
@@ -77,15 +97,36 @@ def normalize_tv(data: Dict[str, Any]) -> Dict[str, Any]:
     seasons = data.get('seasons', [])
     transformed_seasons = [normalize_season(season) for season in seasons] if seasons else []
 
+    poster_path = data.get('poster_path')
+    backdrop_path = data.get('backdrop_path')
+
+    poster_w500 = build_image_url(poster_path)
+    poster_original = build_image_url(poster_path, 'original')
+
+    backdrop_w1280 = build_image_url(backdrop_path, 'w1280')
+    backdrop_original = build_image_url(backdrop_path, 'original')
+
     return {
         'id': data.get('id'),
         'title': data.get('name'),
         'original_title': data.get('original_name'),
         'description': data.get('overview') if data.get('overview') else None,
-        'image_url': build_image_url(data.get('poster_path')),
+        'image_url': poster_w500,
+        'tagline': data.get('tagline'),
+        'homepage': data.get('homepage'),
         'release_date': data.get('first_air_date'),
         'status': data.get('status'),
         'number_of_seasons': data.get('number_of_seasons'),
         'number_of_episodes': data.get('number_of_episodes'),
+        'images': {
+            'poster': {
+                'standard': poster_w500,
+                'original': poster_original,
+            },
+            'backdrop': {
+                'standard': backdrop_w1280,
+                'original': backdrop_original,
+            }
+        },
         'seasons': transformed_seasons
     }

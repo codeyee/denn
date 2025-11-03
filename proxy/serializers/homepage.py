@@ -1,8 +1,12 @@
 from rest_framework import serializers
-from .video import VideoSearchItemSerializer
-from .games import GameSearchItemSerializer
-from .music import MusicSearchItemSerializer
-from .books import BookSearchItemSerializer
+from .video import (
+    VideoSearchItemSerializer,
+    MovieDetailSerializer,
+    TVShowDetailSerializer,
+)
+from .games import GameSearchItemSerializer, GameDetailSerializer
+from .music import MusicSearchItemSerializer, AlbumDetailSerializer
+from .books import BookSearchItemSerializer, BookDetailSerializer
 
 class VideoSuggestionsResponseSerializer(serializers.Serializer):
     results = VideoSearchItemSerializer(many=True, help_text="List of suggested movies and TV shows")
@@ -21,8 +25,8 @@ class BooksSuggestionsResponseSerializer(serializers.Serializer):
     count = serializers.IntegerField(help_text="Number of suggestions returned")
 
 class HomepageResponseSerializer(serializers.Serializer):
-    movies = VideoSearchItemSerializer(many=True, help_text="Suggested movies")
-    tv_shows = VideoSearchItemSerializer(many=True, help_text="Suggested TV shows")
-    games = GameSearchItemSerializer(many=True, help_text="Suggested games")
-    music = MusicSearchItemSerializer(many=True, help_text="Suggested albums")
-    books = BookSearchItemSerializer(many=True, help_text="Suggested books")
+    movies = MovieDetailSerializer(many=True, help_text="Suggested movies (detailed)")
+    tv_shows = TVShowDetailSerializer(many=True, help_text="Suggested TV shows (detailed)")
+    games = GameDetailSerializer(many=True, help_text="Suggested games (detailed)")
+    music = AlbumDetailSerializer(many=True, help_text="Suggested albums (detailed)")
+    books = BookDetailSerializer(many=True, help_text="Suggested books (detailed)")
