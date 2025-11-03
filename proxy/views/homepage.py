@@ -5,9 +5,17 @@ from proxy.clients.tmdb import TMDBClient
 from proxy.clients.igdb import IGDBClient
 from proxy.clients.spotify import SpotifyClient
 from proxy.clients.openlibrary import OpenLibraryClient
-from proxy.views.video.utils import normalize_search_item as normalize_video
+from proxy.views.video.utils import (
+    normalize_search_item as normalize_video,
+    normalize_movie as normalize_movie_details,
+    normalize_tv as normalize_tv_details,
+)
 from proxy.views.games.utils import normalize_search_item as normalize_game
-from proxy.views.music.utils import normalize_album_search as normalize_music, should_include_album
+from proxy.views.music.utils import (
+    normalize_album_search as normalize_music,
+    normalize_album as normalize_album_details,
+    should_include_album,
+)
 from proxy.views.book.utils import normalize_search_item as normalize_book
 from proxy.serializers import HomepageResponseSerializer, ErrorResponseSerializer
 from drf_spectacular.utils import extend_schema, OpenApiParameter
@@ -38,7 +46,12 @@ class HomepageView(APIView):
                 'limit',
                 OpenApiTypes.INT,
                 description='Number of suggestions per category (default: 10, max: 50)'
-            )
+            ),
+            OpenApiParameter(
+                'details',
+                OpenApiTypes.BOOL,
+                description='Whether to fetch per-item details for richer images/metadata (default: false)'
+            ),
         ],
         responses={
             200: HomepageResponseSerializer,
@@ -49,6 +62,7 @@ class HomepageView(APIView):
     def get(self, request):
         limit = int(request.GET.get('limit', 10))
         limit = min(limit, 50)
+        details_param = str(request.GET.get('details', 'false')).lower() in ('1', 'true', 'yes', 'on')
 
         movie_results = []
         tv_show_results = []
@@ -195,5 +209,125 @@ class HomepageView(APIView):
             'music': music_results,
             'books': books_results
         }
+
+        if details_param:
+            try:
+                with ThreadPoolExecutor(max_workers=10) as detail_executor:
+                    tmdb_movie_futures = {}
+                    tmdb_tv_futures = {}
+                    if tmdb_client:
+                        for item in movie_results:
+                            item_id = item.get('id')
+                            if item_id is None:
+                                continue
+                            tmdb_movie_futures[item_id] = detail_executor.submit(
+                                tmdb_client.get_movie_details, int(item_id)
+                            )
+                        for item in tv_show_results:
+                            item_id = item.get('id')
+                            if item_id is None:
+                                continue
+                            tmdb_tv_futures[item_id] = detail_executor.submit(
+                                tmdb_client.get_tv_details, int(item_id)
+                            )
+
+                    igdb_details_map = {}
+                    if igdb_client and games_results:
+                        try:
+                            game_ids = [item.get('id') for item in games_results if item.get('id') is not None]
+                            games_data, games_status = igdb_client.get_bulk_games(game_ids)
+                            if games_status == 200 and isinstance(games_data, list):
+                                for game in games_data:
+                                    gid = game.get('id')
+                                    if gid is not None:
+                                        igdb_details_map[gid] = normalize_game(game)
+                        except Exception as e:
+                            print(f"Error fetching IGDB details: {e}")
+
+                    spotify_details_map = {}
+                    if spotify_client and music_results:
+                        try:
+                            album_ids = [item.get('id') for item in music_results if item.get('id')]
+                            albums_data, albums_status = spotify_client.get_bulk_albums(album_ids)
+                            if albums_status == 200 and isinstance(albums_data, dict):
+                                for album in albums_data.get('albums', []) or []:
+                                    aid = album.get('id')
+                                    if aid:
+                                        spotify_details_map[aid] = normalize_album_details(album)
+                        except Exception as e:
+                            print(f"Error fetching Spotify details: {e}")
+
+                    openlibrary_details_map = {}
+                    if openlibrary_client and books_results:
+                        try:
+                            book_ids = [item.get('id') for item in books_results if item.get('id')]
+                            book_keys = [f"/works/{bid}" for bid in book_ids]
+                            bulk_results, bulk_status = openlibrary_client.get_bulk_books(book_keys)
+
+                            if bulk_status == 200 and isinstance(bulk_results, list):
+                                for entry in bulk_results:
+                                    key = entry.get('key')
+                                    data = entry.get('data')
+
+                                    if not key or not data:
+                                        continue
+
+                                    try:
+                                        bid = key.split('/')[-1]
+                                    except Exception:
+                                        bid = None
+
+                                    if bid:
+                                        openlibrary_details_map[bid] = normalize_book(data)
+
+                        except Exception as e:
+                            print(f"Error fetching OpenLibrary details: {e}")
+
+                    if tmdb_movie_futures:
+                        for item in movie_results:
+                            item_id = item.get('id')
+                            fut = tmdb_movie_futures.get(item_id)
+                            if not fut:
+                                continue
+                            try:
+                                data, status_code = fut.result()
+                                if status_code == 200 and isinstance(data, dict):
+                                    item['details'] = normalize_movie_details(data)
+                            except Exception as e:
+                                print(f"Error resolving TMDB movie details for {item_id}: {e}")
+
+                    if tmdb_tv_futures:
+                        for item in tv_show_results:
+                            item_id = item.get('id')
+                            fut = tmdb_tv_futures.get(item_id)
+                            if not fut:
+                                continue
+                            try:
+                                data, status_code = fut.result()
+                                if status_code == 200 and isinstance(data, dict):
+                                    item['details'] = normalize_tv_details(data)
+                            except Exception as e:
+                                print(f"Error resolving TMDB tv details for {item_id}: {e}")
+
+                    if igdb_details_map:
+                        for item in games_results:
+                            gid = item.get('id')
+                            if gid in igdb_details_map:
+                                item['details'] = igdb_details_map[gid]
+
+                    if spotify_details_map:
+                        for item in music_results:
+                            aid = item.get('id')
+                            if aid in spotify_details_map:
+                                item['details'] = spotify_details_map[aid]
+
+                    if openlibrary_details_map:
+                        for item in books_results:
+                            bid = item.get('id')
+                            if bid in openlibrary_details_map:
+                                item['details'] = openlibrary_details_map[bid]
+
+            except Exception as e:
+                print(f"Error during details enrichment: {e}")
 
         return Response(response_data, status=http_status.HTTP_200_OK)
