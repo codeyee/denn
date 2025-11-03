@@ -2,8 +2,8 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Button } from "@/app/_components/ui/button";
-import { Card } from "@/app/_components/ui/card";
+import { Button } from "@/app/_components/lib/button";
+import { Card } from "@/app/_components/lib/card";
 import Input from "@/app/_components/Input";
 import { useAuth } from "@/app/_hooks/useAuth";
 import { useEffect } from "react";

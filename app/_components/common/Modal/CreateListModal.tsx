@@ -4,8 +4,8 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import Modal from "@/app/_components/Modal";
-import { Button } from "@/app/_components/ui/button";
+import Modal from "@/app/_components/common/Modal";
+import { Button } from "@/app/_components/lib/button";
 import Input from "@/app/_components/Input";
 import { ListType } from "@/types/contentTypes";
 

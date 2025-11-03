@@ -1,9 +1,9 @@
 "use client";
 
-import BlurText from "@/app/_components/ui/TextAnimations/BlurText";
-import GradientText from "@/app/_components/ui/TextAnimations/GradientText";
-import { Badge } from "@/app/_components/ui/badge";
-import { Button } from "@/app/_components/ui/button";
+import BlurText from "@/app/_components/lib/TextAnimations/BlurText";
+import GradientText from "@/app/_components/lib/TextAnimations/GradientText";
+import { Badge } from "@/app/_components/lib/badge";
+import { Button } from "@/app/_components/lib/button";
 import { useState } from "react";
 import {
   Film,

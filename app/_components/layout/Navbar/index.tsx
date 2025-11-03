@@ -4,8 +4,8 @@ import {
   NavigationMenu,
   NavigationMenuItem,
   NavigationMenuList,
-} from "@/app/_components/ui/navigation-menu";
-import { Button } from "@/app/_components/ui/button";
+} from "@/app/_components/lib/navigation-menu";
+import { Button } from "@/app/_components/lib/button";
 import { useAuth } from "@/app/_hooks/useAuth";
 import { Settings } from "lucide-react";
 import {
@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-} from "@/app/_components/DropdownMenu";
+} from "@/app/_components/common/Dropdown";
 import { useSettings } from "@/app/_hooks/useSettings";
 
 export default function Navbar() {

@@ -1,4 +1,4 @@
-import { ThemeProvider } from "@/app/_components/ThemeProvider";
+import { ThemeProvider } from "@/app/_components/common/ThemeProvider";
 import { StoreProvider } from "@/app/_providers/StoreProvider";
 
 import type { Metadata } from "next";
@@ -44,7 +44,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${azeretMono.variable} font-[family-name:var(--font-azeret-mono)] antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${azeretMono.variable} font-mono antialiased`}
       >
         <ThemeProvider
           attribute="class"
