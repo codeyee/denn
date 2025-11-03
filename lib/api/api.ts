@@ -2,6 +2,44 @@ import { useAuthStore } from "@/app/_stores/auth-store";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
+let refreshPromise: Promise<void> | null = null;
+
+async function performTokenRefresh(): Promise<void> {
+  if (refreshPromise) return refreshPromise;
+
+  refreshPromise = (async () => {
+    const { refreshToken, setAccessToken, setRefreshToken } = useAuthStore.getState();
+    if (!refreshToken) {
+      throw new Error("No refresh token available");
+    }
+
+    const response = await fetch(`${API_BASE_URL}/auth/token/refresh/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh: refreshToken }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Token refresh failed");
+    }
+
+    const data = await response.json();
+    if (data?.access) setAccessToken(data.access);
+    if (data?.refresh) setRefreshToken(data.refresh);
+  })()
+    .catch((err) => {
+      const { setAccessToken, setRefreshToken } = useAuthStore.getState();
+      setAccessToken(null);
+      setRefreshToken(null);
+      throw err;
+    })
+    .finally(() => {
+      refreshPromise = null;
+    });
+
+  return refreshPromise;
+}
+
 interface RequestConfig extends RequestInit {
   requiresAuth?: boolean;
 }
@@ -34,7 +72,7 @@ export async function apiRequest<T = unknown>(
   const url = `${API_BASE_URL}${endpoint}`;
 
   try {
-    const response = await fetch(url, {
+    let response = await fetch(url, {
       ...rest,
       headers: requestHeaders,
     });
@@ -44,6 +82,45 @@ export async function apiRequest<T = unknown>(
     const isJson = contentType?.includes("application/json");
 
     if (!response.ok) {
+      if (requiresAuth && response.status === 401) {
+        try {
+          await performTokenRefresh();
+
+          const newHeaders: Record<string, string> = { ...requestHeaders };
+          const newAccessToken = useAuthStore.getState().accessToken;
+          if (newAccessToken) {
+            newHeaders["Authorization"] = `Bearer ${newAccessToken}`;
+          }
+
+          response = await fetch(url, {
+            ...rest,
+            headers: newHeaders,
+          });
+
+          const retriedContentType = response.headers.get("content-type");
+          const retriedIsJson = retriedContentType?.includes("application/json");
+          if (!response.ok) {
+            if (retriedIsJson) {
+              const retryErrorData = await response.json().catch(() => ({}));
+              throw new Error(
+                retryErrorData.message || `Request failed: ${response.statusText}`
+              );
+            }
+            throw new Error(`Request failed: ${response.statusText}`);
+          }
+
+          if (response.status === 204) {
+            return {} as T;
+          }
+          if (retriedIsJson) {
+            return (await response.json()) as T;
+          }
+          const retriedText = await response.text();
+          return retriedText as unknown as T;
+        } catch (e) {
+        }
+      }
+
       if (isJson) {
         const errorData = await response.json();
         throw new Error(errorData.message || `Request failed: ${response.statusText}`);

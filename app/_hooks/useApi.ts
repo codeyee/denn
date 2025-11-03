@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuthStore } from "@/app/_stores/auth-store";
+import { apiRequest } from "@/lib/api/api";
 import { useCallback, useState } from "react";
 
 interface UseApiOptions {
@@ -29,30 +30,12 @@ export function useApi<T = unknown>(
       setError(null);
 
       try {
-        const headers: Record<string, string> = {
-          "Content-Type": "application/json",
-        };
-
-        if (requiresAuth && accessToken) {
-          headers["Authorization"] = `Bearer ${accessToken}`;
-        }
-
-        const apiUrl =
-          process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
-        const response = await fetch(`${apiUrl}${endpoint}`, {
+        const responseData = await apiRequest<T>(endpoint, {
           method,
-          headers,
+          headers: { "Content-Type": "application/json" },
           body: body ? JSON.stringify(body) : undefined,
+          requiresAuth,
         });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(
-            errorData.message || `Request failed: ${response.statusText}`
-          );
-        }
-
-        const responseData = await response.json();
         setData(responseData);
         onSuccess?.(responseData);
         return responseData;
