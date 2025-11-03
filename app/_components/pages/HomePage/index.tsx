@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import ContentCard from "../../cards/ContentCard";
 import PlaceholderCard from "../../cards/PlaceholderCard";
 import ListCard from "../../cards/ListCard";
@@ -9,6 +9,7 @@ import CreateListCard from "../../cards/CreateListCard";
 import Footer from "../../layout/Footer";
 import { useContentStore } from "@/app/_stores/content-store";
 import { useListsStore } from "@/app/_stores/lists-store";
+import FeaturedBanner from "./FeaturedBanner";
 
 const ITEMS_PER_CAROUSEL = undefined;
 const ITEM_TARGET_WIDTH = 250;
@@ -41,6 +42,36 @@ export default function HomePage() {
 
   const isLoadingAny = suggestionsLoading || listsLoading;
   const hasAnyError = suggestionsError || listsError;
+
+  const featuredItems = useMemo(() => {
+    // Helper to pick up to n random items from a list
+    const pickRandom = <T,>(arr: T[], n: number): T[] => {
+      const available = arr.slice();
+      const result: T[] = [];
+      const max = Math.min(n, available.length);
+      while (result.length < max) {
+        const idx = Math.floor(Math.random() * available.length);
+        result.push(available[idx]);
+        available.splice(idx, 1);
+      }
+      return result;
+    };
+
+    const pool = [
+      ...pickRandom(suggestions.movies || [], 2),
+      ...pickRandom(suggestions.tvShows || [], 2),
+      ...pickRandom(suggestions.games || [], 2),
+      ...pickRandom(suggestions.music || [], 2),
+      ...pickRandom(suggestions.books || [], 2),
+    ];
+
+    // Shuffle and take up to 10
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    return pool.slice(0, 10);
+  }, [suggestions.movies, suggestions.tvShows, suggestions.games, suggestions.music, suggestions.books]);
 
   if (hasAnyError) {
     return (
@@ -81,6 +112,13 @@ export default function HomePage() {
   return (
     <div className="relative w-full min-h-screen bg-background-logged-in">
       <div className="pt-30 pb-20">
+        {/* Featured Banner */}
+        {!suggestionsLoading && featuredItems.length > 0 && (
+          <section className="-mt-30 mb-6 md:mb-10 relative z-0">
+            <FeaturedBanner items={featuredItems} />
+          </section>
+        )}
+
         {/* Lists Section */}
         {listsLoading ? (
           <section className="mb-4 md:mb-8">
