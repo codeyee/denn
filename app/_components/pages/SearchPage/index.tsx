@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
+import { Search } from "lucide-react";
 import ContentCard from "../../cards/ContentCard";
 import PlaceholderCard from "../../cards/PlaceholderCard";
 import Carousel from "../../common/Carousel";
@@ -18,6 +19,8 @@ import type { Movie, TVShow, Game, MusicAlbum, Book } from "@/types/contentTypes
 const ITEMS_PER_CAROUSEL = undefined;
 const ITEM_TARGET_WIDTH = 250;
 const DEBOUNCE_DELAY = 500;
+const SEARCH_DEBOUNCE_MS = 300;
+const PREV_PAGE_KEY = "denn_search_prev_page";
 const PLACEHOLDER_COUNT = 6; // Number of placeholder cards to show per category
 
 interface SearchResults {
@@ -29,7 +32,9 @@ interface SearchResults {
 }
 
 export default function SearchPage() {
+  const router = useRouter();
   const searchParams = useSearchParams();
+  const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [results, setResults] = useState<SearchResults>({
     movies: [],
@@ -42,11 +47,57 @@ export default function SearchPage() {
   const [error, setError] = useState<string | null>(null);
 
   const currentSearchQueryRef = useRef<string>("");
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const hasUserTypedRef = useRef(false);
+  const mobileInputRef = useRef<HTMLInputElement>(null);
 
-  // Read query from URL and debounce it
   useEffect(() => {
     const queryFromUrl = searchParams.get("q") || "";
-    
+    setSearchQuery(queryFromUrl);
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    debounceTimerRef.current = setTimeout(() => {
+      const trimmedQuery = searchQuery.trim();
+      const urlQuery = searchParams.get("q") || "";
+
+      if (trimmedQuery !== urlQuery) {
+        if (trimmedQuery) {
+          router.push(`/search?q=${encodeURIComponent(trimmedQuery)}`, { scroll: false });
+          hasUserTypedRef.current = true;
+        } else {
+          if (hasUserTypedRef.current) {
+            const prevPage = typeof window !== "undefined" 
+              ? sessionStorage.getItem(PREV_PAGE_KEY) || "/"
+              : "/";
+            router.push(prevPage);
+          }
+        }
+      }
+    }, SEARCH_DEBOUNCE_MS);
+
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [searchQuery, router, searchParams]);
+
+  useEffect(() => {
+    if (mobileInputRef.current) {
+      requestAnimationFrame(() => {
+        mobileInputRef.current?.focus();
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    const queryFromUrl = searchParams.get("q") || "";
+
     const timer = setTimeout(() => {
       setDebouncedQuery(queryFromUrl);
     }, DEBOUNCE_DELAY);
@@ -183,7 +234,24 @@ export default function SearchPage() {
 
   return (
     <div className="relative w-full min-h-screen bg-background-logged-in">
-      <div className="pt-30 pb-20">
+      {/* Mobile Search Input - Only visible on mobile/tablet (below lg) */}
+      <div className="lg:hidden container mx-auto px-4 pt-24 pb-4">
+        <div className="relative">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+          <input
+            ref={mobileInputRef}
+            type="text"
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              hasUserTypedRef.current = true;
+            }}
+            placeholder="Search for movies, TV shows, games..."
+            className="w-full pl-12 pr-4 py-3 bg-white/10 backdrop-blur-lg border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white/40 transition-all"
+          />
+        </div>
+      </div>
+      <div className="pt-5 lg:pt-30 pb-20">
         {/* Error State */}
         {error && !isLoading && (
           <div className="container mx-auto px-4 py-8">

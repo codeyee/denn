@@ -9,7 +9,7 @@ import {
 } from "@/app/_components/lib/navigation-menu";
 import { Button } from "@/app/_components/lib/button";
 import { useAuth } from "@/app/_hooks/useAuth";
-import { Settings, Search } from "lucide-react";
+import { Settings, Search, User, LogOut, LogIn, UserPlus } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -32,8 +32,8 @@ export default function Navbar() {
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isInitialMountRef = useRef(true);
   const hasFocusedRef = useRef(false);
+  const hasUserTypedRef = useRef(false);
 
-  // Store previous page before navigating to search
   useEffect(() => {
     if (pathname !== "/search") {
       // Store current page as previous page (but not if it's search itself)
@@ -61,6 +61,7 @@ export default function Navbar() {
       setSearchQuery("");
       isInitialMountRef.current = true;
       hasFocusedRef.current = false;
+      hasUserTypedRef.current = false;
     }
   }, [pathname, searchParams]);
 
@@ -85,12 +86,15 @@ export default function Navbar() {
         if (trimmedQuery !== urlQuery) {
           if (trimmedQuery) {
             router.push(`/search?q=${encodeURIComponent(trimmedQuery)}`, { scroll: false });
+            hasUserTypedRef.current = true; // Mark that user has typed
           } else {
-            // Query is empty - go back to previous page
-            const prevPage = typeof window !== "undefined" 
-              ? sessionStorage.getItem(PREV_PAGE_KEY) || "/"
-              : "/";
-            router.push(prevPage);
+            // Query is empty - only go back if user had typed before (not on initial empty visit)
+            if (hasUserTypedRef.current) {
+              const prevPage = typeof window !== "undefined" 
+                ? sessionStorage.getItem(PREV_PAGE_KEY) || "/"
+                : "/";
+              router.push(prevPage);
+            }
           }
         }
       }
@@ -140,16 +144,19 @@ export default function Navbar() {
             </NavigationMenuList>
           </NavigationMenu>
 
-          {/* Search Input - Only visible when logged in */}
+          {/* Search Input - Only visible on desktop (md and above) when logged in */}
           {isAuthenticated && (
-            <div className="flex-1 max-w-md mx-auto hidden md:block">
+            <div className="flex-1 max-w-md mx-auto hidden lg:block">
               <div className="relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <input
                   ref={searchInputRef}
                   type="text"
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    hasUserTypedRef.current = true;
+                  }}
                   placeholder="Search for movies, TV shows, games..."
                   className="w-full pl-12 pr-4 py-2 bg-white/10 backdrop-blur-lg border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white/40 transition-all"
                 />
@@ -158,30 +165,51 @@ export default function Navbar() {
           )}
 
           <div className="flex items-center gap-3">
+            {/* Search Icon Button - Only visible on mobile/tablet (below lg) when logged in */}
+            {isAuthenticated && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="cursor-pointer lg:hidden"
+                onClick={() => {
+                  router.push("/search");
+                }}
+                aria-label="Search"
+              >
+                <Search className="h-5 w-5" />
+              </Button>
+            )}
+
             {isAuthenticated && user ? (
               <>
+                {/* Profile Link - Icon only in all views */}
                 <Link href="/profile">
-                  <Button variant="link" className="cursor-pointer">
-                    Welcome, {user.username}
+                  <Button variant="ghost" size="icon" className="cursor-pointer" aria-label="Profile">
+                    <User className="h-5 w-5" />
                   </Button>
                 </Link>
-                <Button
-                  variant="outline"
-                  className="cursor-pointer"
-                  onClick={logout}
-                >
-                  Logout
-                </Button>
               </>
             ) : (
               <>
-                <Link href="/login">
+                {/* Login Link - Text on desktop, icon on mobile */}
+                <Link href="/login" className="hidden lg:block">
                   <Button variant="link" className="cursor-pointer">
                     Login
                   </Button>
                 </Link>
-                <Link href="/register">
+                <Link href="/login" className="lg:hidden">
+                  <Button variant="ghost" size="icon" className="cursor-pointer" aria-label="Login">
+                    <LogIn className="h-5 w-5" />
+                  </Button>
+                </Link>
+                {/* Register Button - Text on desktop, icon on mobile */}
+                <Link href="/register" className="hidden lg:block">
                   <Button className="cursor-pointer">Register</Button>
+                </Link>
+                <Link href="/register" className="lg:hidden">
+                  <Button variant="ghost" size="icon" className="cursor-pointer" aria-label="Register">
+                    <UserPlus className="h-5 w-5" />
+                  </Button>
                 </Link>
               </>
             )}
@@ -207,6 +235,19 @@ export default function Navbar() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+
+            {/* Logout Button - Icon only in all views, placed last */}
+            {isAuthenticated && user && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="cursor-pointer"
+                onClick={logout}
+                aria-label="Logout"
+              >
+                <LogOut className="h-5 w-5" />
+              </Button>
+            )}
           </div>
           </div>
         </div>
