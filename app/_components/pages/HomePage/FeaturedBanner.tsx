@@ -33,7 +33,67 @@ function getItemType(item: ContentItem): keyof typeof TYPE_ICON {
 }
 
 export default function FeaturedBanner({ items, autoRotateMs = 6000 }: FeaturedBannerProps) {
-  const validItems = useMemo(() => items.filter((i) => i.image_url), [items]);
+
+  const getBestImageUrl = (item: any): string | undefined => {
+    if (item && item.images) {
+      const images = item.images as any;
+
+      const tryPickFromArray = (arr?: any[]): string | undefined => {
+        if (!Array.isArray(arr)) return undefined;
+
+        for (const entry of arr) {
+          if (entry?.original) return entry.original as string;
+        }
+
+        for (const entry of arr) {
+          if (entry?.standard) return entry.standard as string;
+        }
+
+        return undefined;
+      };
+
+      const tryPickFromMap = (mapObj: any, keys: string[]): string | undefined => {
+        for (const key of keys) {
+          const bucket = mapObj?.[key];
+          if (!bucket) continue;
+
+          if (typeof bucket === "object") {
+            if (bucket.original) return bucket.original as string;
+            const firstVal = Object.values(bucket).find((v) => typeof v === "string" && v);
+            if (typeof firstVal === "string") return firstVal as string;
+          }
+        }
+
+        for (const value of Object.values(mapObj || {})) {
+          if (value && typeof value === "object") {
+            if ((value as any).original) return (value as any).original as string;
+            const firstVal = Object.values(value as any).find((v) => typeof v === "string" && v);
+            if (typeof firstVal === "string") return firstVal as string;
+          }
+        }
+
+        return undefined;
+      };
+
+      if (Array.isArray(images?.screenshots) || Array.isArray(images?.artworks) || images?.poster) {
+        return (
+          tryPickFromArray(images.screenshots) ||
+          tryPickFromArray(images.artworks) ||
+          (images.poster?.original || images.poster?.standard)
+        );
+      }
+
+      const fromMap = tryPickFromMap(images, ["backdrop", "backdrops", "stills", "fanart", "landscape"]);
+      if (fromMap) return fromMap;
+    }
+
+    return item?.image_url || undefined;
+  };
+
+  const validItems = useMemo(
+    () => items.filter((i) => Boolean(getBestImageUrl(i))),
+    [items]
+  );
   const [index, setIndex] = useState(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -56,6 +116,7 @@ export default function FeaturedBanner({ items, autoRotateMs = 6000 }: FeaturedB
 
   const current = validItems[index];
   const Icon = TYPE_ICON[getItemType(current)];
+  const backgroundUrl = getBestImageUrl(current);
 
   const getFooterInfo = (item: ContentItem): string => {
     const parts: string[] = [];
@@ -103,7 +164,7 @@ export default function FeaturedBanner({ items, autoRotateMs = 6000 }: FeaturedB
         <motion.div
           key={(current as any).id}
           className="absolute inset-0 bg-center bg-cover"
-          style={{ backgroundImage: `url(${current.image_url})` }}
+          style={{ backgroundImage: `url(${backgroundUrl})` }}
           initial={{ opacity: 0.3, scale: 1.02 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0 }}

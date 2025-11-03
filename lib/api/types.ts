@@ -196,50 +196,48 @@ export interface VideoSearchItem {
 }
 
 export interface ImageVariant {
-  standard: string | null;
-  original: string | null;
+  standard: string;
+  original: string;
 }
 
 export interface GameImages {
   poster: ImageVariant;
-  screenshots: ImageVariant[];
-  artworks: ImageVariant[];
+  screenshots: ImageVariant[] | null;
+  artworks: ImageVariant[] | null;
 }
 
 export interface MovieDetail {
   id: number;
+  imdb_id: string;
   title: string;
   original_title: string;
-  description: string | null;
-  image_url: string | null;
-  tagline: string | null;
-  imdb_id: string | null;
+  description: string;
+  image_url: string;
+  tagline: string;
+  release_date: string;
+  duration_minutes: number;
+  status: string;
   images: {
-    [key: string]: {
-      [key: string]: string | null;
-    };
+    poster: ImageVariant;
+    backdrop: ImageVariant;
   };
-  release_date: string | null;
-  duration_minutes: number | null;
-  status: string | null;
 }
 
 export interface TVShowDetail {
   id: number;
   title: string;
   original_title: string;
-  description: string | null;
-  image_url: string | null;
-  tagline: string | null;
+  description: string;
+  image_url: string;
+  tagline: string;
+  release_date: string;
+  status: string;
+  number_of_seasons: number;
+  number_of_episodes: number;
   images: {
-    [key: string]: {
-      [key: string]: string | null;
-    };
+    poster: ImageVariant;
+    backdrop: ImageVariant;
   };
-  release_date: string | null;
-  status: string | null;
-  number_of_seasons: number | null;
-  number_of_episodes: number | null;
   seasons: TVSeason[];
 }
 
@@ -249,7 +247,7 @@ export interface TVSeason {
   title: string;
   description: string | null;
   release_date: string | null;
-  image_url: string | null;
+  image_url: string;
   number_of_episodes: number;
 }
 
@@ -319,10 +317,10 @@ export interface AlbumDetail {
   id: string;
   title: string;
   authors: string[];
-  image_url: string | null;
-  release_date: string | null;
+  image_url: string;
+  release_date: string;
   total_tracks: number;
-  duration_minutes: number | null;
+  duration_minutes: number;
   album_type: string;
   external_url: string;
   tracks: Track[];
@@ -331,9 +329,9 @@ export interface AlbumDetail {
 export interface Track {
   id: string;
   title: string;
-  authors: string[];
+  authors: string[] | null;
   track_number: number;
-  duration_seconds: number;
+  duration_seconds: number | null;
   external_url: string;
 }
 
@@ -354,13 +352,13 @@ export interface BulkAlbumsResponse {
 export interface GameDetail {
   id: number;
   title: string;
-  type: string | null;
+  type: string;
   release_date: string | null;
   description: string | null;
-  image_url: string | null;
+  image_url: string;
   authors: string[] | null;
   platforms: string[] | null;
-  slug: string | null;
+  slug: string;
   images: GameImages;
 }
 
@@ -388,10 +386,10 @@ export interface GamesSuggestionsResponse {
 export interface BookDetail {
   id: string;
   title: string;
-  authors: string[] | null;
-  image_url: string | null;
-  release_date: string | null;
-  pages: number | null;
+  authors: string[];
+  image_url: string;
+  release_date: string;
+  pages: number;
   description: string | null;
 }
 

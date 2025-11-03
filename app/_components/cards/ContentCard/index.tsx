@@ -22,6 +22,35 @@ export default function ContentCard({ item, className }: ContentCardProps) {
     return contentTypeEnum.movie;
   };
 
+  const getPosterImageUrl = (item: any): string | undefined => {
+    if (item?.image_url) {
+      return item.image_url;
+    }
+
+    if (item?.images) {
+      const images = item.images as any;
+
+      if (images.poster) {
+        if (images.poster.original) return images.poster.original;
+        if (images.poster.standard) return images.poster.standard;
+      }
+
+      if (Array.isArray(images.screenshots) && images.screenshots.length > 0) {
+        const first = images.screenshots[0];
+        if (first?.original) return first.original;
+        if (first?.standard) return first.standard;
+      }
+
+      if (Array.isArray(images.artworks) && images.artworks.length > 0) {
+        const first = images.artworks[0];
+        if (first?.original) return first.original;
+        if (first?.standard) return first.standard;
+      }
+    }
+
+    return undefined;
+  };
+
   const getFooterInfo = (): string => {
     const footerInfo: string[] = [];
 
@@ -58,7 +87,7 @@ export default function ContentCard({ item, className }: ContentCardProps) {
   };
 
   const title = item.title;
-  const imageUrl = item.image_url;
+  const imageUrl = getPosterImageUrl(item);
   const id = String(item.id);
   const type = getContentType();
 
