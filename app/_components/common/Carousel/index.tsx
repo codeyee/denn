@@ -172,21 +172,27 @@ export default function Carousel({
             }}
             style={{ gap: `${gap}px` }}
           >
-            {items.map((child, index) => (
-              <motion.div
-                key={index}
-                className="shrink-0"
-                style={{
-                  width: `calc((100% - ${
-                    gap * visibleItems
-                  }px) / ${visibleItems})`,
-                }}
-                whileHover={{ scale: 1.05, zIndex: 10 }}
-                transition={{ duration: 0.3 }}
-              >
-                {child}
-              </motion.div>
-            ))}
+            <AnimatePresence mode="popLayout">
+              {items.map((child, index) => {
+                // Extract key from child if it exists, otherwise fallback to index
+                const childKey = (child as any)?.key || `carousel-item-${index}`;
+                return (
+                  <motion.div
+                    key={childKey}
+                    className="shrink-0"
+                    style={{
+                      width: `calc((100% - ${
+                        gap * visibleItems
+                      }px) / ${visibleItems})`,
+                    }}
+                    whileHover={{ scale: 1.05, zIndex: 10 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    {child}
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
           </motion.div>
         </div>
       </div>

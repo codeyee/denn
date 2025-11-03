@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from "motion/react";
+import { motion } from "motion/react";
 import { Film, Tv, Gamepad2, Book, Music, LucideIcon } from "lucide-react";
 
 import { contentTypeEnum } from "@/types/types";
@@ -66,6 +66,8 @@ function Card({
       key={id}
       className={`w-full ${className}`}
       style={noAspectRatio ? undefined : { aspectRatio: DEFAULT_CARD_ASPECT_RATIO }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.3, ease: "easeInOut" }}
     >
       <div className="relative overflow-hidden rounded-2xl h-full bg-transparent backdrop-blur-lg p-0! border-none!">
         {/* Background layer */}
@@ -79,18 +81,11 @@ function Card({
             )}
           </div>
         ) : (
-          <AnimatePresence>
-            <motion.div
-              key={backgroundImage}
-              className="absolute inset-0 bg-center bg-cover"
-              style={{ backgroundImage: `url(${backgroundImage})` }}
-              aria-label={backgroundImageAlt}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 1, ease: "easeInOut" }}
-            />
-          </AnimatePresence>
+          <div
+            className="absolute inset-0 bg-center bg-cover"
+            style={{ backgroundImage: `url(${backgroundImage})` }}
+            aria-label={backgroundImageAlt}
+          />
         )}
 
         {/* Overlay layer */}
