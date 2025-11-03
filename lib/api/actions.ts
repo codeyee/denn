@@ -407,7 +407,7 @@ export const videoActions = {
     if (params.limit) queryParams.append("limit", String(params.limit));
 
     return api.get<VideoSearchResponse>(
-      `/proxy/video/search/?${queryParams}`,
+      `/proxy/video/search?${queryParams}`,
       true
     );
   },
@@ -463,7 +463,7 @@ export const musicActions = {
     if (params.min_tracks) queryParams.append("min_tracks", String(params.min_tracks));
 
     return api.get<MusicSearchResponse>(
-      `/proxy/music/search/?${queryParams}`,
+      `/proxy/music/search?${queryParams}`,
       true
     );
   },
@@ -494,7 +494,7 @@ export const gameActions = {
     if (params.limit) queryParams.append("limit", String(params.limit));
 
     return api.get<GameSearchResponse>(
-      `/proxy/game/search/?${queryParams}`,
+      `/proxy/game/search?${queryParams}`,
       true
     );
   },
@@ -521,7 +521,7 @@ export const bookActions = {
     if (params.limit) queryParams.append("limit", String(params.limit));
 
     return api.get<BookSearchResponse>(
-      `/proxy/book/search/?${queryParams}`,
+      `/proxy/book/search?${queryParams}`,
       true
     );
   },
