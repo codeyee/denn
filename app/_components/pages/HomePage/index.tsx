@@ -43,8 +43,7 @@ export default function HomePage() {
   if (isLoadingAny) {
     return (
       <div
-        className="relative w-full min-h-screen"
-        style={{ backgroundColor: "var(--color-background-logged-in)" }}
+        className="relative w-full min-h-screen bg-background-logged-in"
       >
         <div className="container mx-auto px-4 py-20">
           <div className="flex items-center justify-center min-h-[400px]">
@@ -57,7 +56,7 @@ export default function HomePage() {
 
   if (hasAnyError) {
     return (
-      <div className="relative w-full min-h-screen" style={{ backgroundColor: 'var(--color-background-logged-in)' }}>
+      <div className="relative w-full min-h-screen bg-background-logged-in">
         <div className="container mx-auto px-4 py-20">
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center">
@@ -92,7 +91,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="relative w-full min-h-screen bg-[#0d030b]">
+    <div className="relative w-full min-h-screen bg-background-logged-in">
       <div className="pt-30 pb-20">
         {/* Lists Section */}
         {(lists.length > 0 || !listsLoading) && (
