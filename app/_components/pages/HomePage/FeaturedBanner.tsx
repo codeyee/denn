@@ -38,53 +38,29 @@ export default function FeaturedBanner({ items, autoRotateMs = 6000 }: FeaturedB
     if (item && item.images) {
       const images = item.images as any;
 
-      const tryPickFromArray = (arr?: any[]): string | undefined => {
-        if (!Array.isArray(arr)) return undefined;
-
-        for (const entry of arr) {
-          if (entry?.original) return entry.original as string;
-        }
-
-        for (const entry of arr) {
-          if (entry?.standard) return entry.standard as string;
-        }
-
-        return undefined;
-      };
-
-      const tryPickFromMap = (mapObj: any, keys: string[]): string | undefined => {
-        for (const key of keys) {
-          const bucket = mapObj?.[key];
-          if (!bucket) continue;
-
-          if (typeof bucket === "object") {
-            if (bucket.original) return bucket.original as string;
-            const firstVal = Object.values(bucket).find((v) => typeof v === "string" && v);
-            if (typeof firstVal === "string") return firstVal as string;
-          }
-        }
-
-        for (const value of Object.values(mapObj || {})) {
-          if (value && typeof value === "object") {
-            if ((value as any).original) return (value as any).original as string;
-            const firstVal = Object.values(value as any).find((v) => typeof v === "string" && v);
-            if (typeof firstVal === "string") return firstVal as string;
-          }
-        }
-
-        return undefined;
-      };
-
       if (Array.isArray(images?.screenshots) || Array.isArray(images?.artworks) || images?.poster) {
-        return (
-          tryPickFromArray(images.screenshots) ||
-          tryPickFromArray(images.artworks) ||
-          (images.poster?.original || images.poster?.standard)
-        );
-      }
+        if (Array.isArray(images.artworks) && images.artworks.length > 0) {
+          const first = images.artworks[0];
+          if (first?.original) return first.original;
+          if (first?.standard) return first.standard;
+        }
 
-      const fromMap = tryPickFromMap(images, ["backdrop", "backdrops", "stills", "fanart", "landscape"]);
-      if (fromMap) return fromMap;
+        if (Array.isArray(images.screenshots) && images.screenshots.length > 0) {
+          const first = images.screenshots[0];
+          if (first?.original) return first.original;
+          if (first?.standard) return first.standard;
+        }
+
+        if (images.backdrop) {
+          if (images.backdrop.original) return images.backdrop.original;
+          if (images.backdrop.standard) return images.backdrop.standard;
+        }
+
+        if (images.poster) {
+          if (images.poster.original) return images.poster.original;
+          if (images.poster.standard) return images.poster.standard;
+        }
+      }
     }
 
     return item?.image_url || undefined;
