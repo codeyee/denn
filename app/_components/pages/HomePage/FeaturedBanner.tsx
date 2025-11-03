@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { Film, Tv, Gamepad2, Book, Music } from "lucide-react";
 import { Button } from "@/app/_components/lib/button";
 import { ContentItem } from "@/types/contentTypes";
+import Noise from "@/app/_components/lib/Animations/Noise";
 
 type FeaturedBannerProps = {
   items: ContentItem[];
@@ -25,6 +26,9 @@ function getItemType(item: ContentItem): keyof typeof TYPE_ICON {
     if (t === "movie") return "movie";
     if (t === "tv") return "tv";
     if (t === "album" || t === "music") return "music";
+  }
+  if ("number_of_seasons" in item || "number_of_episodes" in item) {
+    return "tv";
   }
   if ("platforms" in item) return "game";
   if ("pages" in item) return "book";
@@ -170,13 +174,21 @@ export default function FeaturedBanner({ items, autoRotateMs = 6000 }: FeaturedB
         />
       </AnimatePresence>
 
+      {/* Noise layer */}
+      <div className="absolute inset-0 pointer-events-none z-10">
+        <Noise
+          patternAlpha={15}
+          patternRefreshInterval={2}
+        />
+      </div>
+
       {/* Overlay gradients */}
-      <div className="absolute inset-0 bg-black/35" />
+      <div className="absolute inset-0 bg-black/35 z-20" />
       {/* Fade up (content legibility) */}
-      <div className="absolute inset-x-0 bottom-0 h-1/2 bg-linear-to-t from-black/90 via-black/50 to-transparent" />
+      <div className="absolute inset-x-0 bottom-0 h-1/2 bg-linear-to-t from-black/90 via-black/50 to-transparent z-20" />
       {/* Fade down (blend into app background) */}
       <div
-        className="absolute inset-x-0 bottom-0 h-28 md:h-36"
+        className="absolute inset-x-0 bottom-0 h-28 md:h-36 z-20"
         style={{
           background:
             "linear-gradient(to bottom, rgba(0,0,0,0) 0%, var(--color-background-logged-in) 100%)",

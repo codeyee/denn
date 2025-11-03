@@ -15,6 +15,10 @@ export default function ContentCard({ item, className }: ContentCardProps) {
       if (item.type === "album") return contentTypeEnum.music;
     }
 
+    if ("number_of_seasons" in item || "number_of_episodes" in item) {
+      return contentTypeEnum.tv;
+    }
+
     if ("platforms" in item) return contentTypeEnum.game;
     if ("pages" in item) return contentTypeEnum.book;
     if ("total_tracks" in item) return contentTypeEnum.music;
