@@ -38,7 +38,27 @@ class MovieDetailSerializer(serializers.Serializer):
     )
     image_url = serializers.URLField(
         allow_null=True,
-        help_text="Movie poster URL"
+        help_text="Movie poster URL (standard size)"
+    )
+    tagline = serializers.CharField(
+        allow_null=True,
+        allow_blank=True,
+        help_text="Movie tagline",
+        required=False
+    )
+    imdb_id = serializers.CharField(
+        allow_null=True,
+        allow_blank=True,
+        help_text="IMDB ID",
+        required=False
+    )
+    images = serializers.DictField(
+        child=serializers.DictField(
+            child=serializers.URLField(allow_null=True, required=False),
+            required=False
+        ),
+        help_text="Image variants grouped by type (poster/backdrop) with generic keys: standard, original",
+        required=False
     )
     release_date = serializers.CharField(
         allow_null=True,
@@ -73,7 +93,6 @@ class TVSeasonSerializer(serializers.Serializer):
     number_of_episodes = serializers.IntegerField(help_text="Number of episodes in season")
 
 class TVShowDetailSerializer(serializers.Serializer):
-    """Detailed information about a TV show."""
     id = serializers.IntegerField(help_text="TMDB TV show ID")
     title = serializers.CharField(help_text="TV show title")
     original_title = serializers.CharField(help_text="Original TV show title")
@@ -84,7 +103,21 @@ class TVShowDetailSerializer(serializers.Serializer):
     )
     image_url = serializers.URLField(
         allow_null=True,
-        help_text="TV show poster URL"
+        help_text="TV show poster URL (standard size)"
+    )
+    tagline = serializers.CharField(
+        allow_null=True,
+        allow_blank=True,
+        help_text="TV show tagline",
+        required=False
+    )
+    images = serializers.DictField(
+        child=serializers.DictField(
+            child=serializers.URLField(allow_null=True, required=False),
+            required=False
+        ),
+        help_text="Image variants grouped by type (poster/backdrop) with generic keys: standard, original",
+        required=False
     )
     release_date = serializers.CharField(
         allow_null=True,

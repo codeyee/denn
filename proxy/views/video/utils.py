@@ -113,7 +113,6 @@ def normalize_tv(data: Dict[str, Any]) -> Dict[str, Any]:
         'description': data.get('overview') if data.get('overview') else None,
         'image_url': poster_w500,
         'tagline': data.get('tagline'),
-        'homepage': data.get('homepage'),
         'release_date': data.get('first_air_date'),
         'status': data.get('status'),
         'number_of_seasons': data.get('number_of_seasons'),
