@@ -1,7 +1,6 @@
 import { create } from "zustand";
-import { api } from "@/lib/api";
+import { homepageActions } from "@/lib/api";
 import {
-  ContentApiResponse,
   Movie,
   TVShow,
   Game,
@@ -61,18 +60,15 @@ export const useContentStore = create<ContentStore>((set, get) => ({
     set({ isLoading: true, error: null });
     
     try {
-      const response = await api.get<ContentApiResponse>(
-        `/proxy/homepage/?limit=${limit}`,
-        true // Requires authentication
-      );
+      const response = await homepageActions.getSuggestions(limit);
 
       set({
         suggestions: {
-          movies: response.movies || [],
-          tvShows: response.tv_shows || [],
-          games: response.games || [],
-          music: response.music || [],
-          books: response.books || [],
+          movies: (response.movies || []) as unknown as Movie[],
+          tvShows: (response.tv_shows || []) as unknown as TVShow[],
+          games: (response.games || []) as unknown as Game[],
+          music: (response.music || []) as unknown as MusicAlbum[],
+          books: (response.books || []) as unknown as Book[],
         },
         isLoading: false,
         error: null,

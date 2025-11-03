@@ -1,6 +1,6 @@
 import { create } from "zustand";
-import { api, apiRequest } from "@/lib/api";
-import { ListsApiResponse, List, ListItemsApiResponse, ListType } from "@/types/contentTypes";
+import { listActions, listItemActions } from "@/lib/api";
+import { List, ListType } from "@/types/contentTypes";
 
 interface ListsState {
   lists: List[];
@@ -48,28 +48,10 @@ export const useListsStore = create<ListsStore>((set, get) => ({
     set({ isLoading: true, error: null });
 
     try {
-      const queryParams = new URLSearchParams();
-
-      if (options?.render_items !== undefined) {
-        queryParams.append("render_items", options.render_items.toString());
-      }
-      if (options?.max_items !== undefined) {
-        queryParams.append("max_items", options.max_items.toString());
-      }
-      if (options?.render_source !== undefined) {
-        queryParams.append("render_source", options.render_source.toString());
-      }
-
-      const queryString = queryParams.toString();
-      const endpoint = `/content/lists/${queryString ? `?${queryString}` : ""}`;
-
-      const response = await api.get<ListsApiResponse>(
-        endpoint,
-        true
-      );
+      const response = await listActions.list(options);
 
       set({
-        lists: response.results || [],
+        lists: (response.results || []) as unknown as List[],
         isLoading: false,
         error: null,
         lastFetched: Date.now(),
@@ -88,18 +70,12 @@ export const useListsStore = create<ListsStore>((set, get) => ({
 
   fetchListItems: async (listId: number, pageSize: number) => {
     try {
-      const response = await apiRequest<ListItemsApiResponse>(
-        `/content/lists/${listId}/items/?page_size=${pageSize || 10}&render_source=true`,
-        {
-          method: "GET",
-          requiresAuth: true,
-        }
-      );
+      const response = await listItemActions.list(listId, true, undefined, pageSize || 10);
 
       const { lists } = get();
       const updatedLists = lists.map((list) =>
         list.id === listId
-          ? { ...list, items: response.results || [] }
+          ? { ...list, items: (response.results || []) as unknown as import('@/types/contentTypes').ListItem[] }
           : list
       );
 
@@ -109,28 +85,25 @@ export const useListsStore = create<ListsStore>((set, get) => ({
     }
   },
 
-  createList: async (name: string, description?: string, listType: ListType = ListType.PERSONAL) => {
+  createList: async (name: string, description?: string, listType: ListType = ListType.PERSONAL): Promise<List> => {
     set({ isLoading: true, error: null });
 
     try {
-      const response = await api.post<List>(
-        `/content/lists/`,
-        {
-          name,
-          description: description || null,
-          list_type: listType,
-        },
-        true
-      );
+      const response = await listActions.create({
+        name,
+        description: description || null,
+        list_type: listType,
+      });
 
       const { lists } = get();
+      const typedResponse = response as unknown as List;
       set({
-        lists: [response, ...lists],
+        lists: [typedResponse, ...lists],
         isLoading: false,
         error: null,
       });
 
-      return response;
+      return typedResponse;
     } catch (error) {
       const errorMessage = error instanceof Error
         ? error.message

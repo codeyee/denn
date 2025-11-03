@@ -6,9 +6,6 @@ interface RequestConfig extends RequestInit {
   requiresAuth?: boolean;
 }
 
-/**
- * API utility for making authenticated requests
- */
 export async function apiRequest<T = unknown>(
   endpoint: string,
   config: RequestConfig = {}
@@ -19,7 +16,6 @@ export async function apiRequest<T = unknown>(
     "Content-Type": "application/json",
   };
 
-  // Add custom headers
   if (headers) {
     Object.entries(headers).forEach(([key, value]) => {
       if (typeof value === "string") {
@@ -28,7 +24,6 @@ export async function apiRequest<T = unknown>(
     });
   }
 
-  // Add auth token if required
   if (requiresAuth) {
     const accessToken = useAuthStore.getState().accessToken;
     if (accessToken) {
@@ -56,7 +51,6 @@ export async function apiRequest<T = unknown>(
       throw new Error(`Request failed: ${response.statusText}`);
     }
 
-    // Return empty object for 204 No Content
     if (response.status === 204) {
       return {} as T;
     }
@@ -65,7 +59,6 @@ export async function apiRequest<T = unknown>(
       return await response.json();
     }
 
-    // Fallback for non-JSON responses
     const text = await response.text();
     return text as unknown as T;
   } catch (error) {
@@ -76,9 +69,6 @@ export async function apiRequest<T = unknown>(
   }
 }
 
-/**
- * Convenience methods for common HTTP verbs
- */
 export const api = {
   get: <T = unknown>(endpoint: string, requiresAuth = false) =>
     apiRequest<T>(endpoint, { method: "GET", requiresAuth }),
