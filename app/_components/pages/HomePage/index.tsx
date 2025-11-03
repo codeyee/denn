@@ -10,6 +10,7 @@ import Footer from "../../layout/Footer";
 import { useContentStore } from "@/app/_stores/content-store";
 import { useListsStore } from "@/app/_stores/lists-store";
 import FeaturedBanner from "./FeaturedBanner";
+import FeaturedBannerPlaceholder from "./FeaturedBannerPlaceholder";
 
 const ITEMS_PER_CAROUSEL = undefined;
 const ITEM_TARGET_WIDTH = 250;
@@ -113,11 +114,13 @@ export default function HomePage() {
     <div className="relative w-full min-h-screen bg-background-logged-in">
       <div className="pt-30 pb-20">
         {/* Featured Banner */}
-        {!suggestionsLoading && featuredItems.length > 0 && (
-          <section className="-mt-30 mb-6 md:mb-10 relative z-0">
+        <section className="-mt-30 mb-6 md:mb-10 relative z-0">
+          {suggestionsLoading || featuredItems.length === 0 ? (
+            <FeaturedBannerPlaceholder />
+          ) : (
             <FeaturedBanner items={featuredItems} />
-          </section>
-        )}
+          )}
+        </section>
 
         {/* Lists Section */}
         {listsLoading ? (
