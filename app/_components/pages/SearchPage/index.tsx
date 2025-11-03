@@ -30,7 +30,6 @@ interface SearchResults {
 
 export default function SearchPage() {
   const searchParams = useSearchParams();
-  const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [results, setResults] = useState<SearchResults>({
     movies: [],
@@ -44,19 +43,16 @@ export default function SearchPage() {
 
   const currentSearchQueryRef = useRef<string>("");
 
-  // Sync with URL params on mount and when they change
+  // Read query from URL and debounce it
   useEffect(() => {
     const queryFromUrl = searchParams.get("q") || "";
-    setSearchQuery(queryFromUrl);
-  }, [searchParams]);
-
-  useEffect(() => {
+    
     const timer = setTimeout(() => {
-      setDebouncedQuery(searchQuery);
+      setDebouncedQuery(queryFromUrl);
     }, DEBOUNCE_DELAY);
 
     return () => clearTimeout(timer);
-  }, [searchQuery]);
+  }, [searchParams]);
 
   useEffect(() => {
     const performSearch = async () => {

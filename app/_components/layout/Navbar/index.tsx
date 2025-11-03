@@ -18,6 +18,9 @@ import {
 } from "@/app/_components/common/Dropdown";
 import { useSettings } from "@/app/_hooks/useSettings";
 
+const SEARCH_DEBOUNCE_MS = 300;
+const PREV_PAGE_KEY = "denn_search_prev_page";
+
 export default function Navbar() {
   const { user, isAuthenticated, logout } = useAuth();
   const { settings, toggleAnimations } = useSettings();
@@ -25,41 +28,97 @@ export default function Navbar() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
-  const isInternalNavigationRef = useRef(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isInitialMountRef = useRef(true);
+  const hasFocusedRef = useRef(false);
 
+  // Store previous page before navigating to search
   useEffect(() => {
     if (pathname !== "/search") {
+      // Store current page as previous page (but not if it's search itself)
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem(PREV_PAGE_KEY, pathname);
+      }
+    }
+  }, [pathname]);
+
+  // Sync search query from URL when on search page
+  useEffect(() => {
+    if (pathname === "/search") {
+      const urlQuery = searchParams.get("q") || "";
+      // Use functional update to avoid stale closure
+      setSearchQuery((prevQuery) => {
+        // Only update if URL query actually changed (to avoid unnecessary re-renders)
+        if (isInitialMountRef.current || urlQuery !== prevQuery) {
+          isInitialMountRef.current = false;
+          return urlQuery;
+        }
+        return prevQuery;
+      });
+    } else {
+      // Clear search when leaving search page
       setSearchQuery("");
-    } else if (!isInternalNavigationRef.current) {
-      const queryFromUrl = searchParams.get("q") || "";
-      setSearchQuery(queryFromUrl);
+      isInitialMountRef.current = true;
+      hasFocusedRef.current = false;
     }
   }, [pathname, searchParams]);
 
+  // Handle navigation and URL updates with debouncing
   useEffect(() => {
-    if (pathname !== "/search" && searchQuery.trim()) {
-      isInternalNavigationRef.current = true;
-      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
-      return;
+    // Clear any pending debounce
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
     }
 
-    if (pathname === "/search") {
-      const urlQuery = searchParams.get("q") || "";
-      if (searchQuery.trim() !== urlQuery.trim()) {
-        isInternalNavigationRef.current = true;
-        router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`, { scroll: false });
+    debounceTimerRef.current = setTimeout(() => {
+      const trimmedQuery = searchQuery.trim();
+
+      if (pathname !== "/search") {
+        // Not on search page - navigate to search if query exists
+        if (trimmedQuery) {
+          router.push(`/search?q=${encodeURIComponent(trimmedQuery)}`);
+        }
+      } else {
+        // On search page - update URL if query changed
+        const urlQuery = searchParams.get("q") || "";
+        if (trimmedQuery !== urlQuery) {
+          if (trimmedQuery) {
+            router.push(`/search?q=${encodeURIComponent(trimmedQuery)}`, { scroll: false });
+          } else {
+            // Query is empty - go back to previous page
+            const prevPage = typeof window !== "undefined" 
+              ? sessionStorage.getItem(PREV_PAGE_KEY) || "/"
+              : "/";
+            router.push(prevPage);
+          }
+        }
       }
-    }
+    }, SEARCH_DEBOUNCE_MS);
 
-    isInternalNavigationRef.current = false;
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
   }, [searchQuery, pathname, router, searchParams]);
 
+  // Maintain focus on search input when on search page (only once per visit)
   useEffect(() => {
-    if (pathname === "/search" && searchInputRef.current && document.activeElement !== searchInputRef.current) {
-      setTimeout(() => {
-        searchInputRef.current?.focus();
-      }, 50);
+    if (pathname === "/search" && searchInputRef.current && !hasFocusedRef.current) {
+      // Use requestAnimationFrame to ensure DOM is ready
+      requestAnimationFrame(() => {
+        if (searchInputRef.current) {
+          // Only focus if nothing else is focused (user hasn't clicked elsewhere)
+          if (document.activeElement === document.body || document.activeElement === null) {
+            searchInputRef.current.focus();
+            // Move cursor to end of input
+            const length = searchInputRef.current.value.length;
+            searchInputRef.current.setSelectionRange(length, length);
+            hasFocusedRef.current = true;
+          }
+        }
+      });
     }
   }, [pathname]);
 
