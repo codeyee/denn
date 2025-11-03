@@ -5,7 +5,6 @@ class ImageVariantSerializer(serializers.Serializer):
     standard = serializers.URLField(allow_null=True, required=False)
     original = serializers.URLField(allow_null=True, required=False)
 
-
 class GameImagesSerializer(serializers.Serializer):
     poster = ImageVariantSerializer(required=False)
     screenshots = ImageVariantSerializer(many=True, required=False)
