@@ -16,6 +16,7 @@ import type { Movie, TVShow, Game, MusicAlbum, Book } from "@/types/contentTypes
 const ITEMS_PER_CAROUSEL = undefined;
 const ITEM_TARGET_WIDTH = 250;
 const DEBOUNCE_DELAY = 500;
+const PLACEHOLDER_COUNT = 6; // Number of placeholder cards to show per category
 
 interface SearchResults {
   movies: Movie[];
@@ -23,6 +24,56 @@ interface SearchResults {
   games: Game[];
   music: MusicAlbum[];
   books: Book[];
+}
+
+// Placeholder Card Component
+function PlaceholderCard({ index }: { index: number }) {
+  return (
+    <div
+      className="w-full"
+      style={{ aspectRatio: "5 / 8" }}
+    >
+      <div className="relative overflow-hidden rounded-2xl h-full bg-white/5 backdrop-blur-lg">
+        {/* Empty card background */}
+        <div className="absolute inset-0 bg-empty-card" />
+        
+        {/* Glare animation overlay */}
+        <div
+          className="absolute inset-0 animate-glare"
+          style={{
+            background: `linear-gradient(-45deg,
+              transparent 40%,
+              rgba(255, 255, 255, 0.05) 45%,
+              rgba(255, 255, 255, 0.05) 55%,
+              transparent 60%)`,
+            backgroundSize: "200% 200%",
+            backgroundRepeat: "no-repeat",
+            pointerEvents: "none",
+          }}
+        />
+        
+        {/* Overlay */}
+        <div className="absolute inset-x-0 bottom-0 h-[55%] bg-linear-to-t from-gray-700/80 via-gray-600/40 to-transparent" />
+        
+        {/* Content placeholder */}
+        <div className="relative z-10 h-full flex flex-col">
+          <div className="mt-auto w-full px-4 md:px-6 pb-4 md:pb-6 pt-3 md:pt-5 space-y-2 md:space-y-4">
+            {/* Icon and title placeholder */}
+            <div className="flex items-center gap-2 md:gap-3">
+              <div className="w-5 h-5 md:w-6 md:h-6 bg-white/20 rounded shrink-0" />
+              <div className="h-4 md:h-6 bg-white/20 rounded flex-1" style={{ width: `${60 + (index % 3) * 20}%` }} />
+            </div>
+            
+            {/* Footer placeholder lines */}
+            <div className="flex flex-col gap-1.5">
+              <div className="h-3 bg-white/15 rounded w-full" />
+              <div className="h-3 bg-white/15 rounded" style={{ width: `${70 + (index % 2) * 15}%` }} />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function SearchPage() {
@@ -206,7 +257,7 @@ export default function SearchPage() {
         </section>
 
         {/* Error State */}
-        {error && (
+        {error && !isLoading && (
           <div className="container mx-auto px-4 py-8">
             <div className="text-center">
               <p className="text-red-400 text-xl mb-4">Error searching</p>
@@ -215,13 +266,79 @@ export default function SearchPage() {
           </div>
         )}
 
-        {/* Loading State */}
-        {isLoading && !hasResults && (
-          <div className="container mx-auto px-4 py-20">
-            <div className="flex items-center justify-center min-h-[400px]">
-              <p className="text-white text-xl">Searching...</p>
-            </div>
-          </div>
+        {/* Loading State with Placeholders */}
+        {isLoading && debouncedQuery.trim() && (
+          <>
+            {/* Movies Placeholders */}
+            <section className="mb-4 md:mb-8">
+              <Carousel
+                title="Movies"
+                itemsPerView={ITEMS_PER_CAROUSEL}
+                targetCardWidth={ITEM_TARGET_WIDTH}
+                disableNavigation
+              >
+                {Array.from({ length: PLACEHOLDER_COUNT }).map((_, index) => (
+                  <PlaceholderCard key={`movie-placeholder-${index}`} index={index} />
+                ))}
+              </Carousel>
+            </section>
+
+            {/* TV Shows Placeholders */}
+            <section className="mb-4 md:mb-8">
+              <Carousel
+                title="TV Shows"
+                itemsPerView={ITEMS_PER_CAROUSEL}
+                targetCardWidth={ITEM_TARGET_WIDTH}
+                disableNavigation
+              >
+                {Array.from({ length: PLACEHOLDER_COUNT }).map((_, index) => (
+                  <PlaceholderCard key={`tv-placeholder-${index}`} index={index} />
+                ))}
+              </Carousel>
+            </section>
+
+            {/* Games Placeholders */}
+            <section className="mb-4 md:mb-8">
+              <Carousel
+                title="Games"
+                itemsPerView={ITEMS_PER_CAROUSEL}
+                targetCardWidth={ITEM_TARGET_WIDTH}
+                disableNavigation
+              >
+                {Array.from({ length: PLACEHOLDER_COUNT }).map((_, index) => (
+                  <PlaceholderCard key={`game-placeholder-${index}`} index={index} />
+                ))}
+              </Carousel>
+            </section>
+
+            {/* Music Placeholders */}
+            <section className="mb-4 md:mb-8">
+              <Carousel
+                title="Music"
+                itemsPerView={ITEMS_PER_CAROUSEL}
+                targetCardWidth={ITEM_TARGET_WIDTH}
+                disableNavigation
+              >
+                {Array.from({ length: PLACEHOLDER_COUNT }).map((_, index) => (
+                  <PlaceholderCard key={`music-placeholder-${index}`} index={index} />
+                ))}
+              </Carousel>
+            </section>
+
+            {/* Books Placeholders */}
+            <section className="mb-4 md:mb-8">
+              <Carousel
+                title="Books"
+                itemsPerView={ITEMS_PER_CAROUSEL}
+                targetCardWidth={ITEM_TARGET_WIDTH}
+                disableNavigation
+              >
+                {Array.from({ length: PLACEHOLDER_COUNT }).map((_, index) => (
+                  <PlaceholderCard key={`book-placeholder-${index}`} index={index} />
+                ))}
+              </Carousel>
+            </section>
+          </>
         )}
 
         {/* Results Section */}

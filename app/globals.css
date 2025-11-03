@@ -244,3 +244,34 @@
   background: var(--color-scrollbar-thumb-light-hover);
   border-color: var(--color-shadow-dark-hover);
 }
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+}
+
+@keyframes glare {
+  0% {
+    background-position: 150% 150%, 0 0;
+  }
+  70% {
+    background-position: -150% -150%, 0 0;
+  }
+  100% {
+    background-position: -150% -150%, 0 0;
+  }
+}
+
+.animate-glare {
+  animation-delay: 0s;
+  animation: glare 2s ease-in-out infinite;
+  -webkit-animation: glare 2s ease-in-out infinite;
+}

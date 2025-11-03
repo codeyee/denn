@@ -11,6 +11,7 @@ interface CarouselProps {
   itemsPerView?: number;
   gap?: number;
   targetCardWidth?: number;
+  disableNavigation?: boolean;
 }
 
 export default function Carousel({
@@ -20,6 +21,7 @@ export default function Carousel({
   itemsPerView,
   gap = 16,
   targetCardWidth = 200,
+  disableNavigation = false,
 }: CarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
@@ -104,8 +106,7 @@ export default function Carousel({
     });
   }, [maxIndex, visibleItems]);
 
-  // Show navigation buttons only if there are more items than can be displayed
-  const showNavigation = totalItems > visibleItems;
+  const showNavigation = !disableNavigation && totalItems > visibleItems;
 
   return (
     <div className={`relative group ${className}`}>
@@ -162,7 +163,7 @@ export default function Carousel({
           <motion.div
             className="flex"
             animate={{
-              x: `-${currentIndex * (100 / visibleItems)}%`,
+              x: disableNavigation ? 0 : `-${currentIndex * (100 / visibleItems)}%`,
             }}
             transition={{
               type: "spring",
