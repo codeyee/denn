@@ -2,21 +2,47 @@ import re
 from typing import Optional, Dict, Any, List
 from datetime import datetime
 
-def replace_size(url: Optional[str], desired_size: str) -> Optional[str]:
+IGDB_IMAGE_BASE_URL = 'https://images.igdb.com/igdb/image/upload'
+
+def extract_image_id(url: Optional[str]) -> Optional[str]:
     if not url: return None
-    size_match = re.search(r'/t_[^/]+/', url)
+    match = re.search(r'/([^/]+)\.jpg$', url)
+    if match: return match.group(1)
+    return None
 
-    if size_match:
-        size = size_match.group(0)
-        url = url.replace(size, f'/t_{desired_size}/')
+def build_igdb_image_url(image_id: Optional[str], size: str) -> Optional[str]:
+    if not image_id: return None
+    return f'{IGDB_IMAGE_BASE_URL}/t_{size}/{image_id}.jpg'
 
-    return url
+def build_poster_variants(cover_data: Optional[Dict[str, Any]]) -> Optional[Dict[str, Optional[str]]]:
+    if not cover_data: return None
 
-def build_image_url(url: Optional[str]) -> Optional[str]:
-    if not url: return None
-    url = 'https:' + url
-    desired_size = '720p'
-    return replace_size(url, desired_size)
+    image_id = cover_data.get('image_id')
+    if not image_id:
+        url = cover_data.get('url')
+        image_id = extract_image_id(url)
+
+    if not image_id: return None
+
+    return {
+        'standard': build_igdb_image_url(image_id, '720p'),
+        'original': build_igdb_image_url(image_id, '1080p')
+    }
+
+def build_screenshot_artwork_variants(item_data: Optional[Dict[str, Any]]) -> Optional[Dict[str, Optional[str]]]:
+    if not item_data: return None
+
+    image_id = item_data.get('image_id')
+    if not image_id:
+        url = item_data.get('url')
+        image_id = extract_image_id(url)
+
+    if not image_id: return None
+
+    return {
+        'standard': build_igdb_image_url(image_id, 'screenshot_huge'),
+        'original': build_igdb_image_url(image_id, '1080p')
+    }
 
 def format_release_date(timestamp: Optional[int]) -> Optional[str]:
     if not timestamp: return None
@@ -58,10 +84,26 @@ def normalize_item(item: Dict[str, Any]) -> Dict[str, Any]:
     if isinstance(item, list) and len(item) > 0:
         item = item[0]
 
-    cover_url = None
-    if isinstance(item.get('cover'), dict):
-        cover_url = item.get('cover', {}).get('url')
-        cover_url = build_image_url(cover_url)
+    cover_data = item.get('cover') if isinstance(item.get('cover'), dict) else None
+    poster_variants = build_poster_variants(cover_data)
+    cover_standard = poster_variants.get('standard') if poster_variants else None
+    cover_original = poster_variants.get('original') if poster_variants else None
+
+    screenshots_list = []
+    if isinstance(item.get('screenshots'), list):
+        for shot in item.get('screenshots'):
+            if isinstance(shot, dict):
+                variants = build_screenshot_artwork_variants(shot)
+                if variants:
+                    screenshots_list.append(variants)
+
+    artworks_list = []
+    if isinstance(item.get('artworks'), list):
+        for art in item.get('artworks'):
+            if isinstance(art, dict):
+                variants = build_screenshot_artwork_variants(art)
+                if variants:
+                    artworks_list.append(variants)
 
     return {
         'id': item.get('id'),
@@ -69,9 +111,18 @@ def normalize_item(item: Dict[str, Any]) -> Dict[str, Any]:
         'type': format_game_type(item.get('game_type')),
         'release_date': format_release_date(item.get('first_release_date')),
         'description': build_description(item.get('summary'), item.get('storyline')),
-        'image_url': cover_url,
+        'image_url': cover_standard,
         'authors': extract_authors(item.get('involved_companies')),
         'platforms': extract_platforms(item.get('platforms')),
+        'slug': item.get('slug'),
+        'images': {
+            'poster': {
+                'standard': cover_standard,
+                'original': cover_original,
+            } if poster_variants else None,
+            'screenshots': screenshots_list if screenshots_list else None,
+            'artworks': artworks_list if artworks_list else None,
+        }
     }
 
 def normalize_search_item(item: Dict[str, Any]) -> Dict[str, Any]:

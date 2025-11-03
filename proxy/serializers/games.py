@@ -66,6 +66,23 @@ class GameDetailSerializer(serializers.Serializer):
         allow_null=True,
         help_text="List of platform names"
     )
+    slug = serializers.CharField(
+        allow_null=True,
+        allow_blank=True,
+        help_text="URL-safe version of the game name",
+        required=False
+    )
+
+    class ImageVariantSerializer(serializers.Serializer):
+        standard = serializers.URLField(allow_null=True, required=False)
+        original = serializers.URLField(allow_null=True, required=False)
+
+    class ImagesSerializer(serializers.Serializer):
+        poster = ImageVariantSerializer(required=False)
+        screenshots = ImageVariantSerializer(many=True, required=False)
+        artworks = ImageVariantSerializer(many=True, required=False)
+
+    images = ImagesSerializer(required=False, help_text="Image variants by type: poster (standard/original), lists of screenshots and artworks with the same variants")
 
 class BulkGameItemSerializer(serializers.Serializer):
     key = serializers.IntegerField(help_text="The game ID that was requested", required=False)

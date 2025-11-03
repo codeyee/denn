@@ -155,11 +155,17 @@ class IGDBClient(CachedAPIClient):
             'summary',
             'storyline',
             'cover.url',
+            'cover.image_id',
+            'screenshots.url',
+            'screenshots.image_id',
+            'artworks.url',
+            'artworks.image_id',
             'first_release_date',
             'platforms.name',
             'game_type',
             'involved_companies.company.name',
-            'involved_companies.developer'
+            'involved_companies.developer',
+            'slug'
         ])
 
     def get_included_game_types(self) -> str:
