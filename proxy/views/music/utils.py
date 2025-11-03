@@ -110,8 +110,8 @@ def normalize_album(data: Dict[str, Any]) -> Dict[str, Any]:
         'image_url': get_image_url(data.get('images'), 'large'),
         'release_date': normalize_release_date(data.get('release_date')),
         'total_tracks': data.get('total_tracks'),
+        'duration_minutes': duration_minutes,
         'album_type': derived_album_type or data.get('album_type'),
         'external_url': data.get('external_urls', {}).get('spotify'),
         'tracks': normalized_tracks,
-        'duration_minutes': duration_minutes,
     }
