@@ -1,6 +1,13 @@
 from rest_framework import serializers
 from .common import PaginationMetadataSerializer
 
+class ImageVariantSerializer(serializers.Serializer):
+    standard = serializers.URLField(allow_null=True, required=False)
+    original = serializers.URLField(allow_null=True, required=False)
+
+class BookImagesSerializer(serializers.Serializer):
+    poster = ImageVariantSerializer(required=False)
+
 class BookSearchItemSerializer(serializers.Serializer):
     id = serializers.CharField(help_text="OpenLibrary work ID")
     title = serializers.CharField(help_text="Book title")
@@ -26,6 +33,7 @@ class BookSearchItemSerializer(serializers.Serializer):
         allow_blank=True,
         help_text="Book description or first sentence"
     )
+    images = BookImagesSerializer(required=False, help_text="Image variants: poster (standard/original)")
 
 class BookSearchResponseSerializer(serializers.Serializer):
     metadata = PaginationMetadataSerializer()
@@ -55,6 +63,10 @@ class BookDetailSerializer(serializers.Serializer):
         allow_null=True,
         allow_blank=True,
         help_text="Book description"
+    )
+    images = BookImagesSerializer(
+        required=False,
+        help_text="Image variants: poster (standard/original)"
     )
 
 class BulkBookItemSerializer(serializers.Serializer):

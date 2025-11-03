@@ -3,10 +3,20 @@ from django.conf import settings
 from dateutil import parser
 from datetime import datetime
 
-def build_image_url(image_id: Optional[int], size: str = 'L') -> Optional[str]:
+def build_cover_url(image_id: Optional[int], size: str = 'M') -> Optional[str]:
     if not image_id: return None
     base_url = settings.PROXY_API['OPENLIBRARY']['COVERS_BASE_URL']
     return f'{base_url}/b/id/{image_id}-{size}.jpg'
+
+def build_image_variants(image_id: Optional[int]) -> Optional[Dict[str, Optional[str]]]:
+    if not image_id: return None
+    return {
+        'standard': build_cover_url(image_id, 'M'),
+        'original': build_cover_url(image_id, 'L')
+    }
+
+def build_image_url(image_id: Optional[int], size: str = 'L') -> Optional[str]:
+    return build_cover_url(image_id, size)
 
 def extract_id_from_key(key: Optional[str]) -> Optional[str]:
     if not key: return None
@@ -26,12 +36,19 @@ def parse_publish_date(publish_dates: Optional[List[str]], first_publish_year: O
 
 
 def normalize_search_item(item: Dict[str, Any]) -> Dict[str, Any]:
+    cover_id = item.get('cover_i')
+    image_variants = build_image_variants(cover_id)
+    image_url_standard = image_variants.get('standard') if image_variants else None
+
     return {
         'id': extract_id_from_key(item.get('key')),
         'title': item.get('title'),
         'authors': item.get('author_name', []) if item.get('author_name') else None,
-        'image_url': build_image_url(item.get('cover_i')),
+        'image_url': image_url_standard,
         'release_date': parse_publish_date(item.get('publish_date'), item.get('first_publish_year')),
         'pages': item.get('number_of_pages_median'),
         'description': item.get('first_sentence', [None])[0] if item.get('first_sentence') else None,
+        'images': {
+            'poster': image_variants
+        } if image_variants else None,
     }
