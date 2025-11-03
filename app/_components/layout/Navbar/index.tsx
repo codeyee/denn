@@ -5,7 +5,7 @@ import {
   NavigationMenuItem,
   NavigationMenuList,
 } from "@/app/_components/ui/navigation-menu";
-import { Button } from "../ui/button";
+import { Button } from "@/app/_components/ui/button";
 import { useAuth } from "@/app/_hooks/useAuth";
 import { Settings } from "lucide-react";
 import {
@@ -16,7 +16,7 @@ import {
 } from "@/app/_components/DropdownMenu";
 import { useSettings } from "@/app/_hooks/useSettings";
 
-export default function TopMenu() {
+export default function Navbar() {
   const { user, isAuthenticated, logout } = useAuth();
   const { settings, toggleAnimations } = useSettings();
 

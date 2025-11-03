@@ -3,7 +3,7 @@
 import HeroSection from "./HeroSection";
 import TypesSection from "./TypesSection";
 import FeaturesSection from "./FeaturesSection";
-import Footer from "../../Footer";
+import Footer from "../../layout/Footer";
 
 export default function LandingPage() {
   return (

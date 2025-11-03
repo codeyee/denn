@@ -5,7 +5,7 @@ import ContentCard from "../../cards/ContentCard";
 import ListCard from "../../cards/ListCard";
 import Carousel from "../../Carousel";
 import CreateListCard from "../../cards/CreateListCard";
-import Footer from "../../Footer";
+import Footer from "../../layout/Footer";
 import { useContentStore } from "@/app/_stores/content-store";
 import { useListsStore } from "@/app/_stores/lists-store";
 
