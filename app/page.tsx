@@ -1,9 +1,14 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Navbar from "@/app/_components/layout/Navbar";
-import LandingPage from "@/app/_components/pages/LandingPage";
 import HomePage from "@/app/_components/pages/HomePage";
 import { useAuth } from "@/app/_hooks/useAuth";
+
+const LandingPage = dynamic(
+  () => import("@/app/_components/pages/LandingPage"),
+  { ssr: false }
+);
 
 export default function Home() {
   const { isAuthenticated, isLoading } = useAuth();
