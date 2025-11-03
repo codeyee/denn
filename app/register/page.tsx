@@ -4,7 +4,7 @@ import Footer from "@/app/_components/layout/Footer";
 
 export default function RegisterPage() {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-background-logged-in">
       <Navbar />
       <div className="flex-1 flex items-center justify-center px-4 pt-20">
         <RegisterForm />

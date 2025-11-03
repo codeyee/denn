@@ -12,7 +12,7 @@ export default function ProfilePage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col bg-background-logged-in">
         <Navbar />
         <div className="flex-1 p-8 pt-24">
           <Card className="max-w-2xl mx-auto p-8">
