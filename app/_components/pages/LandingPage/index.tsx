@@ -23,7 +23,7 @@ export default function LandingPage() {
             }}
           />
 
-          <div className="relative min-h-screen w-full pt-30 md:pt-40 pb-5 z-20">
+          <div className="relative min-h-screen w-full pt-30 md:pt-40 pb-20 z-20">
             <TypesSection />
             <FeaturesSection />
             <Footer />
