@@ -126,6 +126,9 @@
   --color-spotlight-light: rgba(255, 255, 255, 0.25);
   --color-radial-gradient-start: rgba(255, 255, 255, 0);
 
+  /* Glare colors */
+  --color-glare: rgba(255, 255, 255, 0.1);
+
   /* Utilities */
   --drop-shadow-text: 0_4px_16px_rgba(0,0,0,0.6);
 }
