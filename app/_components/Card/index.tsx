@@ -2,8 +2,6 @@ import { motion, AnimatePresence } from "motion/react";
 
 import { Film, Tv, Gamepad2, Book, Music, LucideIcon } from "lucide-react";
 
-import SpotlightCard from "@/app/_components/ui/SpotlightCard/SpotlightCard";
-
 import { contentTypeEnum } from "@/types/types";
 
 interface CardProps {
@@ -67,10 +65,7 @@ function Card({
       className={`w-full ${className}`}
       style={noAspectRatio ? undefined : { aspectRatio: '5 / 8' }}
     >
-      <SpotlightCard
-        className="relative overflow-hidden rounded-2xl h-full bg-transparent backdrop-blur-lg p-0! border-none!"
-        spotlightColor="var(--color-spotlight)"
-      >
+      <div className="relative overflow-hidden rounded-2xl h-full bg-transparent backdrop-blur-lg p-0! border-none!">
         {/* Background image or empty state */}
         {isEmpty ? (
           <div
@@ -112,7 +107,7 @@ function Card({
             {children}
           </div>
         </div>
-      </SpotlightCard>
+      </div>
     </motion.div>
   );
 }
