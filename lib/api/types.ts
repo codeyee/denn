@@ -195,12 +195,30 @@ export interface VideoSearchItem {
   release_date: string | null;
 }
 
+export interface ImageVariant {
+  standard: string | null;
+  original: string | null;
+}
+
+export interface GameImages {
+  poster: ImageVariant;
+  screenshots: ImageVariant[];
+  artworks: ImageVariant[];
+}
+
 export interface MovieDetail {
   id: number;
   title: string;
   original_title: string;
   description: string | null;
   image_url: string | null;
+  tagline: string | null;
+  imdb_id: string | null;
+  images: {
+    [key: string]: {
+      [key: string]: string | null;
+    };
+  };
   release_date: string | null;
   duration_minutes: number | null;
   status: string | null;
@@ -212,6 +230,12 @@ export interface TVShowDetail {
   original_title: string;
   description: string | null;
   image_url: string | null;
+  tagline: string | null;
+  images: {
+    [key: string]: {
+      [key: string]: string | null;
+    };
+  };
   release_date: string | null;
   status: string | null;
   number_of_seasons: number | null;
@@ -298,6 +322,7 @@ export interface AlbumDetail {
   image_url: string | null;
   release_date: string | null;
   total_tracks: number;
+  duration_minutes: number | null;
   album_type: string;
   external_url: string;
   tracks: Track[];
@@ -335,6 +360,8 @@ export interface GameDetail {
   image_url: string | null;
   authors: string[] | null;
   platforms: string[] | null;
+  slug: string | null;
+  images: GameImages;
 }
 
 export interface GameSearchItem {
@@ -396,11 +423,11 @@ export interface BulkBookItem {
 }
 
 export interface HomepageResponse {
-  movies: VideoSearchItem[];
-  tv_shows: VideoSearchItem[];
-  games: GameSearchItem[];
-  music: MusicSearchItem[];
-  books: BookSearchItem[];
+  movies: MovieDetail[];
+  tv_shows: TVShowDetail[];
+  games: GameDetail[];
+  music: AlbumDetail[];
+  books: BookDetail[];
 }
 
 export interface PaginationMetadata {
