@@ -1,4 +1,4 @@
-import Card from ".";
+import Card from "../Card";
 
 import { LucideIcon } from "lucide-react";
 import { ProviderAttribution } from "@/types/types";

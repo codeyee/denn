@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import LandingCard from "@/app/_components/Card/LandingCard";
+import LandingCard from "@/app/_components/cards/LandingCard";
 import { LucideIcon } from "lucide-react";
 
 import { ProviderAttribution } from "@/types/types";

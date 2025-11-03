@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { List as ListIcon, Package, User, Users } from "lucide-react";
 
-import Card from ".";
+import Card from "../Card";
 import { List, ListType } from "@/types/contentTypes";
 
 interface ListCardProps {

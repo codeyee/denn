@@ -1,4 +1,4 @@
-import Card from ".";
+import Card from "../Card";
 
 import { contentTypeEnum } from "@/types/types";
 import { ContentItem } from "@/types/contentTypes";
