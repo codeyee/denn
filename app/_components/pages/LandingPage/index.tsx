@@ -19,7 +19,7 @@ export default function LandingPage() {
           <div
             className="absolute top-0 left-0 right-0 h-80 pointer-events-none z-10"
             style={{
-              background: `linear-gradient(to bottom, var(--color-hero-gradient-0) 0%, var(--color-hero-gradient-20) 25%, var(--color-hero-gradient-60) 50%, var(--color-hero-gradient-90) 75%, var(--color-hero-gradient) 100%)`,
+              background: `linear-gradient(to bottom, var(--color-hero-gradient-00) 0%, var(--color-hero-gradient-20) 25%, var(--color-hero-gradient-60) 50%, var(--color-hero-gradient-90) 75%, var(--color-hero-gradient) 100%)`,
             }}
           />
 

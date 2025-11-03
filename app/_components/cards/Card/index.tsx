@@ -38,7 +38,7 @@ interface CardFooterProps {
 function Footer({ children, className }: CardFooterProps) {
   return (
     <div
-      className={`flex items-center gap-1 text-[10px] md:text-xs text-white/80 font-sans drop-shadow-[0_3px_10px_rgba(0,0,0,0.6)] ${className}`}
+      className={`flex items-center gap-1 text-[10px] md:text-xs text-white/80 font-sans drop-shadow-text ${className}`}
     >
       {children}
     </div>
@@ -108,8 +108,8 @@ function Card({
           <div className="mt-auto w-full px-4 md:px-6 pb-4 md:pb-6 pt-3 md:pt-5 space-y-2 md:space-y-4">
             {/* Title section */}
             <div className="flex items-center gap-2 md:gap-3 text-white mb-1 md:mb-2">
-              <Icon className="w-5 h-5 md:w-6 md:h-6 shrink-0 drop-shadow-[0_4px_12px_rgba(0,0,0,0.45)]" />
-              <span className="text-base md:text-xl font-bold drop-shadow-[0_4px_16px_rgba(0,0,0,0.55)] line-clamp-2">
+              <Icon className="w-5 h-5 md:w-6 md:h-6 shrink-0 drop-shadow-text" />
+              <span className="text-base md:text-xl font-bold drop-shadow-text line-clamp-2">
                 {title}
               </span>
             </div>

@@ -880,15 +880,15 @@ export default function DomeGallery({
           <div
             className="absolute inset-0 m-auto z-3 pointer-events-none"
             style={{
-              backgroundImage: `radial-gradient(rgba(235, 235, 235, 0) 65%, var(--overlay-blur-color, ${overlayBlurColor}) 100%)`
+              backgroundImage: `radial-gradient(var(--color-radial-gradient-start) 65%, var(--overlay-blur-color, ${overlayBlurColor}) 100%)`
             }}
           />
 
           <div
             className="absolute inset-0 m-auto z-3 pointer-events-none"
             style={{
-              WebkitMaskImage: `radial-gradient(rgba(235, 235, 235, 0) 70%, var(--overlay-blur-color, ${overlayBlurColor}) 90%)`,
-              maskImage: `radial-gradient(rgba(235, 235, 235, 0) 70%, var(--overlay-blur-color, ${overlayBlurColor}) 90%)`,
+              WebkitMaskImage: `radial-gradient(var(--color-radial-gradient-start) 70%, var(--overlay-blur-color, ${overlayBlurColor}) 90%)`,
+              maskImage: `radial-gradient(var(--color-radial-gradient-start) 70%, var(--overlay-blur-color, ${overlayBlurColor}) 90%)`,
               backdropFilter: 'blur(3px)'
             }}
           />

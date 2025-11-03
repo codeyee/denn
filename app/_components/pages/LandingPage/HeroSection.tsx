@@ -49,7 +49,7 @@ export default function HeroSection() {
               initialDelay={250}
               animateBy="words"
               direction="bottom"
-              className="text-5xl md:text-7xl font-bold mb-1 font-mono justify-center drop-shadow-[0_4px_16px_rgba(0,0,0,0.6)]"
+              className="text-5xl md:text-7xl font-bold mb-1 font-mono justify-center drop-shadow-text"
               stepDuration={0.25}
               onAnimationComplete={() => setIntroDone(true)}
             />
@@ -60,12 +60,12 @@ export default function HeroSection() {
                 animationSpeed={6}
                 animationDelayMs={250}
                 backdropBlur={false}
-                className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight leading-tight pb-1 drop-shadow-[0_4px_16px_rgba(0,0,0,0.5)]"
+                className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight leading-tight pb-1 drop-shadow-text"
               >
                 Track and rate everything you love
               </GradientText>
 
-              <p className="text-base md:text-lg text-gray-200 max-w-2xl mx-auto font-semibold drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)] font-sans">
+              <p className="text-base md:text-lg text-gray-200 max-w-2xl mx-auto font-semibold drop-shadow-text font-sans">
                 Your personal hub for movies, TV shows, games, books, and music.
                 Create lists, share with friends, and never lose track of
                 what&apos;s next.
@@ -128,8 +128,8 @@ export default function HeroSection() {
 
           {/* Scroll Indicator - higher z-index to stay above gradient */}
           <div className={`absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 animate-bounce z-40 transition-opacity duration-400 ${introDone ? "opacity-100" : "opacity-0"}`}>
-            <p className="text-white/70 text-sm font-medium drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]">Scroll to explore</p>
-            <ChevronDown className="w-6 h-6 text-white/70 drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]" />
+            <p className="text-white/70 text-sm font-medium drop-shadow-text">Scroll to explore</p>
+            <ChevronDown className="w-6 h-6 text-white/70 drop-shadow-text" />
           </div>
 
           {/* Fade-out gradient at bottom of hero screen */}

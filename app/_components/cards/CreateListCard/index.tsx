@@ -33,7 +33,7 @@ export default function CreateListCard({ onCreateList, isLoading }: CreateListCa
         >
           <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400 group-hover:text-white transition-colors">
             <Plus className="w-12 h-12 md:w-16 md:h-16 mb-2 md:mb-3" />
-            <span className="text-base md:text-lg font-bold drop-shadow-[0_4px_16px_rgba(0,0,0,0.55)]">
+            <span className="text-base md:text-lg font-bold drop-shadow-text">
               Create New List
             </span>
           </div>
