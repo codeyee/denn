@@ -97,7 +97,7 @@ export default function FeaturedBanner({ items, autoRotateMs = 6000 }: FeaturedB
     originalTitle && originalTitle.toLowerCase() === current.title.toLowerCase();
 
   return (
-    <div className="relative w-full aspect-16/17 md:aspect-video lg:aspect-16/7 overflow-hidden mb-6 md:mb-10 rounded-none md:rounded-2xl">
+    <div className="relative w-full aspect-16/16 md:aspect-16/13 lg:aspect-16/10 xl:aspect-16/7 overflow-hidden mb-6 md:mb-10 rounded-none md:rounded-2xl">
       {/* Background */}
       <AnimatePresence mode="wait">
         <motion.div
