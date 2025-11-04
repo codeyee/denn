@@ -1,13 +1,92 @@
+"use client";
+
+import { useRouter } from "next/navigation";
 import Card from "../Card";
 import { contentTypeEnum } from "@/types/types";
 import { ContentItem } from "@/types/contentTypes";
+import { SourceApi, ContentType } from "@/lib/api/types";
 
 interface ContentCardProps {
   item: ContentItem;
   className?: string;
+  contentItemId?: number; // Optional internal content item ID
 }
 
-export default function ContentCard({ item, className }: ContentCardProps) {
+export default function ContentCard({ item, className, contentItemId }: ContentCardProps) {
+  const router = useRouter();
+
+  const handleClick = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    
+    // If we have a content item ID, navigate directly
+    if (contentItemId) {
+      router.push(`/content/${contentItemId}`);
+      return;
+    }
+
+    // Otherwise, navigate with external identifiers - the detail page will handle the API calls
+    // Determine source API and content type from the item
+    let sourceApi: SourceApi | undefined;
+    let contentType: ContentType | undefined;
+    let externalId: string | number | undefined;
+
+    // First check if there's an explicit type field (from search results)
+    if ("type" in item && typeof item.type === "string") {
+      const itemType = item.type.toLowerCase();
+      if (itemType === "movie") {
+        sourceApi = SourceApi.TMDB;
+        contentType = ContentType.MOVIE;
+        externalId = String(item.id);
+      } else if (itemType === "tv" || itemType === "tv_show") {
+        sourceApi = SourceApi.TMDB;
+        contentType = ContentType.TV_SHOW;
+        externalId = String(item.id);
+      } else if (itemType === "album" || itemType === "music" || itemType === "ep") {
+        sourceApi = SourceApi.SPOTIFY;
+        contentType = ContentType.ALBUM;
+        externalId = String(item.id);
+      }
+    }
+
+    // If not determined by type field, check properties
+    if (!sourceApi || !contentType) {
+      if ("platforms" in item) {
+        sourceApi = SourceApi.IGDB;
+        contentType = ContentType.GAME;
+        externalId = String(item.id);
+      } else if ("total_tracks" in item) {
+        sourceApi = SourceApi.SPOTIFY;
+        contentType = ContentType.ALBUM;
+        externalId = String(item.id);
+      } else if ("pages" in item) {
+        sourceApi = SourceApi.OPENLIBRARY;
+        contentType = ContentType.BOOK;
+        externalId = String(item.id);
+      } else if ("number_of_seasons" in item || "number_of_episodes" in item) {
+        sourceApi = SourceApi.TMDB;
+        contentType = ContentType.TV_SHOW;
+        externalId = String(item.id);
+      } else {
+        // Default to movie
+        sourceApi = SourceApi.TMDB;
+        contentType = ContentType.MOVIE;
+        externalId = String(item.id);
+      }
+    }
+
+    if (sourceApi && contentType && externalId) {
+      // Navigate immediately with query parameters - the detail page will handle API calls
+      const params = new URLSearchParams({
+        external_id: String(externalId),
+        source_api: sourceApi,
+        content_type: contentType,
+      });
+      router.push(`/content?${params.toString()}`);
+    } else {
+      console.error("Missing required parameters:", { sourceApi, contentType, externalId });
+      alert("Unable to determine content type. Please try again.");
+    }
+  };
   const getContentType = (): contentTypeEnum => {
     if ("type" in item && typeof item.type === "string") {
       if (item.type === "movie") return contentTypeEnum.movie;
@@ -121,23 +200,37 @@ export default function ContentCard({ item, className }: ContentCardProps) {
   const originalTitleIsSameAsTitle = originalTitle.toLowerCase() === title.toLowerCase();
 
   return (
-    <Card
-      type={type}
-      id={id}
-      title={title}
-      backgroundImage={imageUrl || ""}
-      backgroundImageAlt={`${title} cover image`}
-      className={className + " cursor-pointer"}
-      isEmpty={!imageUrl}
+    <div 
+      onClick={handleClick} 
+      className={`cursor-pointer ${className || ""}`}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          e.stopPropagation();
+          handleClick();
+        }
+      }}
+      aria-label={`View details for ${title}`}
     >
-      <Card.Footer>
-        <div className="flex flex-col gap-1.5">
-          {originalTitle && !originalTitleIsSameAsTitle && <div>{originalTitle}</div>}
-          {authors && <div>{authors}</div>}
-          {releaseDate && <div>{releaseDate}</div>}
-          {footerInfo && <div>{footerInfo}</div>}
-        </div>
-      </Card.Footer>
-    </Card>
+      <Card
+        type={type}
+        id={id}
+        title={title}
+        backgroundImage={imageUrl || ""}
+        backgroundImageAlt={`${title} cover image`}
+        isEmpty={!imageUrl}
+      >
+        <Card.Footer>
+          <div className="flex flex-col gap-1.5">
+            {originalTitle && !originalTitleIsSameAsTitle && <div>{originalTitle}</div>}
+            {authors && <div>{authors}</div>}
+            {releaseDate && <div>{releaseDate}</div>}
+            {footerInfo && <div>{footerInfo}</div>}
+          </div>
+        </Card.Footer>
+      </Card>
+    </div>
   );
 }

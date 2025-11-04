@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import { Film, Tv, Gamepad2, Book, Music } from "lucide-react";
 import { Button } from "@/app/_components/lib/button";
 import { ContentItem } from "@/types/contentTypes";
+import { SourceApi, ContentType } from "@/lib/api/types";
 import Noise from "@/app/_components/lib/Animations/Noise";
 
 type FeaturedBannerProps = {
@@ -37,6 +39,69 @@ function getItemType(item: ContentItem): keyof typeof TYPE_ICON {
 }
 
 export default function FeaturedBanner({ items, autoRotateMs = 6000 }: FeaturedBannerProps) {
+  const router = useRouter();
+
+  const handleViewDetails = (item: ContentItem) => {
+
+    // Navigate instantly with external identifiers - the detail page will handle API calls
+    let sourceApi: SourceApi | undefined;
+    let contentType: ContentType | undefined;
+    let externalId: string | number | undefined;
+
+    // First check if there's an explicit type field (from search results)
+    if ("type" in item && typeof item.type === "string") {
+      const itemType = item.type.toLowerCase();
+      if (itemType === "movie") {
+        sourceApi = SourceApi.TMDB;
+        contentType = ContentType.MOVIE;
+        externalId = String(item.id);
+      } else if (itemType === "tv" || itemType === "tv_show") {
+        sourceApi = SourceApi.TMDB;
+        contentType = ContentType.TV_SHOW;
+        externalId = String(item.id);
+      } else if (itemType === "album" || itemType === "music" || itemType === "ep") {
+        sourceApi = SourceApi.SPOTIFY;
+        contentType = ContentType.ALBUM;
+        externalId = String(item.id);
+      }
+    }
+
+    // If not determined by type field, check properties
+    if (!sourceApi || !contentType) {
+      if ("platforms" in item) {
+        sourceApi = SourceApi.IGDB;
+        contentType = ContentType.GAME;
+        externalId = String(item.id);
+      } else if ("total_tracks" in item) {
+        sourceApi = SourceApi.SPOTIFY;
+        contentType = ContentType.ALBUM;
+        externalId = String(item.id);
+      } else if ("pages" in item) {
+        sourceApi = SourceApi.OPENLIBRARY;
+        contentType = ContentType.BOOK;
+        externalId = String(item.id);
+      } else if ("number_of_seasons" in item || "number_of_episodes" in item) {
+        sourceApi = SourceApi.TMDB;
+        contentType = ContentType.TV_SHOW;
+        externalId = String(item.id);
+      } else {
+        // Default to movie
+        sourceApi = SourceApi.TMDB;
+        contentType = ContentType.MOVIE;
+        externalId = String(item.id);
+      }
+    }
+
+    if (sourceApi && contentType && externalId) {
+      // Navigate immediately with query parameters - the detail page will handle API calls
+      const params = new URLSearchParams({
+        external_id: String(externalId),
+        source_api: sourceApi,
+        content_type: contentType,
+      });
+      router.push(`/content?${params.toString()}`);
+    }
+  };
 
   const getBestImageUrl = (item: any): string | undefined => {
     if (item && item.images) {
@@ -229,7 +294,10 @@ export default function FeaturedBanner({ items, autoRotateMs = 6000 }: FeaturedB
             </p>
           )}
           <div className="mt-3 md:mt-5 flex items-center gap-3">
-            <Button className="bg-white text-black hover:bg-white/90 cursor-pointer text-xs md:text-sm">
+            <Button 
+              onClick={() => handleViewDetails(current)}
+              className="bg-white text-black hover:bg-white/90 cursor-pointer text-xs md:text-sm"
+            >
               View details <span className="ml-2">-&gt;</span>
             </Button>
           </div>

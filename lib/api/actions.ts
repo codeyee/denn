@@ -145,12 +145,14 @@ export const contentItemActions = {
   findByExternalId: (
     externalId: string,
     sourceApi?: SourceApi,
+    contentType?: ContentType,
     page?: number,
     pageSize?: number
   ): Promise<PaginatedContentItemList> => {
     const params = new URLSearchParams();
     params.append("external_id", externalId);
     if (sourceApi) params.append("source_api", sourceApi);
+    if (contentType) params.append("content_type", contentType);
     if (page) params.append("page", String(page));
     if (pageSize) params.append("page_size", String(pageSize));
 
@@ -163,16 +165,17 @@ export const contentItemActions = {
   getOrCreate: (
     sourceApi: SourceApi,
     externalId: string,
-    contentType: ContentType
+    contentType: ContentType,
+    renderSource = false
   ): Promise<ContentItem> => {
-    const params = new URLSearchParams();
-    params.append("source_api", sourceApi);
-    params.append("external_id", externalId);
-    params.append("content_type", contentType);
-
+    const params = renderSource ? "?render_source=true" : "";
     return api.post<ContentItem>(
-      `/content/items/get_or_create/?${params}`,
-      {},
+      `/content/items/get_or_create/${params}`,
+      {
+        source_api: sourceApi,
+        external_id: externalId,
+        content_type: contentType,
+      },
       true
     );
   },
