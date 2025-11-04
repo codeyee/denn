@@ -51,7 +51,7 @@ class ContentItem(models.Model):
 
         constraints = [
             models.UniqueConstraint(
-                fields=['source_api', 'external_id'],
+                fields=['source_api', 'external_id', 'content_type'],
                 name='unique_external_content'
             )
         ]

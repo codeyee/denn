@@ -109,7 +109,8 @@ class RatingCreateSerializer(serializers.ModelSerializer):
         content_item, created = ContentItem.objects.get_or_create(
             source_api=source_api,
             external_id=external_id,
-            defaults={'content_type': content_type}
+            content_type=content_type,
+            defaults={}
         )
 
         rating, created = Rating.objects.update_or_create(

@@ -158,7 +158,8 @@ class ContentItemViewSet(viewsets.ModelViewSet):
         content_item, created = ContentItem.objects.get_or_create(
             source_api=source_api,
             external_id=external_id,
-            defaults={'content_type': content_type}
+            content_type=content_type,
+            defaults={}
         )
 
         serializer = self.get_serializer(content_item)
@@ -172,6 +173,7 @@ class ContentItemViewSet(viewsets.ModelViewSet):
         parameters=[
             OpenApiParameter('external_id', OpenApiTypes.STR, OpenApiParameter.QUERY, required=True, description='External ID to search for'),
             OpenApiParameter('source_api', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Optional: Filter by source API'),
+            OpenApiParameter('content_type', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Optional: Filter by content type (MOVIE, TV_SHOW, GAME, ALBUM, BOOK)'),
         ],
         responses={
             200: ContentItemSerializer(many=True),
@@ -182,6 +184,7 @@ class ContentItemViewSet(viewsets.ModelViewSet):
     def by_external_id(self, request):
         external_id = request.query_params.get('external_id')
         source_api = request.query_params.get('source_api')
+        content_type = request.query_params.get('content_type')
 
         if not external_id:
             return Response(
@@ -194,6 +197,8 @@ class ContentItemViewSet(viewsets.ModelViewSet):
         if source_api:
             queryset = queryset.filter(source_api=source_api)
 
+        if content_type:
+            queryset = queryset.filter(content_type=content_type)
+
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
-
