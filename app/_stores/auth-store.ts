@@ -49,6 +49,7 @@ export const useAuthStore = create<AuthStore>()(
   persist(
     (set) => ({
       ...initialState,
+      isLoading: true,
 
       login: async (email: string, password: string) => {
         set({ isLoading: true, error: null });
@@ -185,6 +186,16 @@ export const useAuthStore = create<AuthStore>()(
         refreshToken: state.refreshToken,
         isAuthenticated: state.isAuthenticated,
       }),
+      onRehydrateStorage: () => {
+        return (state, error) => {
+          if (error) {
+            console.error("Error rehydrating auth store:", error);
+          }
+          setTimeout(() => {
+            useAuthStore.setState({ isLoading: false });
+          }, 0);
+        };
+      },
     }
   )
 );
