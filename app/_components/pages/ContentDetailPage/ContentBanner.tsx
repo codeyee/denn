@@ -85,9 +85,10 @@ export default function ContentBanner({ item }: ContentBannerProps) {
   const originalTitleIsSame =
     originalTitle && originalTitle.toLowerCase() === item.title.toLowerCase();
   
-  // For albums, show artists as metadata
+  // For albums and books, show authors/artists as metadata
   const authors = getAuthors(item);
   const isAlbum = "total_tracks" in item;
+  const isBook = "pages" in item;
 
   if (!backgroundUrl) {
     return (
@@ -125,8 +126,8 @@ export default function ContentBanner({ item }: ContentBannerProps) {
               {item.title}
             </h1>
           </div>
-          {/* Original Title (for non-albums) or Artists (for albums) */}
-          {isAlbum && authors ? (
+          {/* Original Title (for movies/TV) or Authors/Artists (for albums/books) */}
+          {(isAlbum || isBook) && authors ? (
             <div className="mt-2 md:mt-3 text-white/85 text-sm md:text-base opacity-90 font-sans">
               {authors}
             </div>
