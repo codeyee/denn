@@ -4,19 +4,22 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { contentItemActions, videoActions, musicActions, gameActions, bookActions } from "@/lib/api";
 import { ContentType, SourceApi } from "@/lib/api/types";
-import { 
-  MovieDetail, 
-  TVShowDetail, 
-  AlbumDetail, 
-  GameDetail, 
-  BookDetail 
+import {
+  MovieDetail,
+  TVShowDetail,
+  TVSeasonDetail,
+  AlbumDetail,
+  GameDetail,
+  BookDetail
 } from "@/lib/api/types";
 import ContentBanner from "./ContentBanner";
 import MovieDetailContent from "./MovieDetailContent";
 import TVShowDetailContent from "./TVShowDetailContent";
+import SeasonDetailContent from "./SeasonDetailContent";
 import AlbumDetailContent from "./AlbumDetailContent";
 import GameDetailContent from "./GameDetailContent";
 import BookDetailContent from "./BookDetailContent";
+import Footer from "../../layout/Footer";
 
 interface ContentDetailPageProps {
   contentId?: number;
@@ -25,7 +28,7 @@ interface ContentDetailPageProps {
   contentType?: string;
 }
 
-export default function ContentDetailPage({ 
+export default function ContentDetailPage({
   contentId,
   externalId,
   sourceApi,
@@ -35,7 +38,8 @@ export default function ContentDetailPage({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [contentItem, setContentItem] = useState<any>(null);
-  const [detailData, setDetailData] = useState<MovieDetail | TVShowDetail | AlbumDetail | GameDetail | BookDetail | null>(null);
+  const [detailData, setDetailData] = useState<MovieDetail | TVShowDetail | TVSeasonDetail | AlbumDetail | GameDetail | BookDetail | null>(null);
+  const [tvShowTitle, setTvShowTitle] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchContent = async () => {
@@ -78,6 +82,20 @@ export default function ContentDetailPage({
         if (sourceData) {
           // Use the detailed data from source_data
           setDetailData(sourceData);
+
+          // For seasons, also fetch TV show title for context
+          if (item.content_type === ContentType.SEASON && item.source_api === SourceApi.TMDB) {
+            const [tvIdStr] = item.external_id.split(":");
+            const tvId = parseInt(tvIdStr);
+            if (!isNaN(tvId)) {
+              try {
+                const tvShow = await videoActions.getTVShow(tvId);
+                setTvShowTitle(tvShow.title);
+              } catch (error) {
+                console.warn("Could not fetch TV show title:", error);
+              }
+            }
+          }
         } else {
           // Fallback: only fetch from proxy API if source_data is not available
           const { content_type, source_api, external_id } = item;
@@ -88,6 +106,25 @@ export default function ContentDetailPage({
           } else if (content_type === ContentType.TV_SHOW && source_api === SourceApi.TMDB) {
             const tvDetail = await videoActions.getTVShow(parseInt(external_id));
             setDetailData(tvDetail);
+          } else if (content_type === ContentType.SEASON && source_api === SourceApi.TMDB) {
+            // Parse external_id format: "tv_id:season_number"
+            const [tvIdStr, seasonNumberStr] = external_id.split(":");
+            const tvId = parseInt(tvIdStr);
+            const seasonNumber = parseInt(seasonNumberStr);
+
+            if (!isNaN(tvId) && !isNaN(seasonNumber)) {
+              // Fetch season details
+              const seasonDetail = await videoActions.getTVSeason(tvId, seasonNumber);
+              setDetailData(seasonDetail);
+
+              // Optionally fetch TV show title for context
+              try {
+                const tvShow = await videoActions.getTVShow(tvId);
+                setTvShowTitle(tvShow.title);
+              } catch (error) {
+                console.warn("Could not fetch TV show title:", error);
+              }
+            }
           } else if (content_type === ContentType.ALBUM && source_api === SourceApi.SPOTIFY) {
             const albumDetail = await musicActions.getAlbum(external_id);
             setDetailData(albumDetail);
@@ -168,6 +205,8 @@ export default function ContentDetailPage({
       return <MovieDetailContent movie={detailData as MovieDetail} />;
     } else if (contentType === ContentType.TV_SHOW) {
       return <TVShowDetailContent tvShow={detailData as TVShowDetail} />;
+    } else if (contentType === ContentType.SEASON) {
+      return <SeasonDetailContent season={detailData as TVSeasonDetail} tvShowTitle={tvShowTitle || undefined} />;
     } else if (contentType === ContentType.ALBUM) {
       return <AlbumDetailContent album={detailData as AlbumDetail} />;
     } else if (contentType === ContentType.GAME) {
@@ -198,11 +237,19 @@ export default function ContentDetailPage({
       <div className="pt-30 pb-20">
         {/* Banner Section */}
         <section className="-mt-30 mb-6 md:mb-10 relative z-0">
-          <ContentBanner item={displayItem} />
+          <ContentBanner
+            item={displayItem}
+            tvShowTitle={contentItem?.content_type === ContentType.SEASON
+              ? tvShowTitle || undefined
+              : undefined
+            }
+          />
         </section>
 
         {/* Detail Content Section */}
         {renderDetailContent()}
+
+        <Footer />
       </div>
 
       {/* Bottom gradient */}

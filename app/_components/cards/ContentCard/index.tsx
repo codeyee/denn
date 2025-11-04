@@ -45,6 +45,17 @@ export default function ContentCard({ item, className, contentItemId }: ContentC
         sourceApi = SourceApi.SPOTIFY;
         contentType = ContentType.ALBUM;
         externalId = String(item.id);
+      } else if (itemType === "season") {
+        // For seasons, use the explicit external_id, source_api, and content_type if available
+        if ("external_id" in item && item.external_id) {
+          sourceApi = ("source_api" in item && item.source_api) as SourceApi || SourceApi.TMDB;
+          contentType = ("content_type" in item && item.content_type) as ContentType || ContentType.SEASON;
+          externalId = String(item.external_id);
+        } else {
+          sourceApi = SourceApi.TMDB;
+          contentType = ContentType.SEASON;
+          externalId = String(item.id);
+        }
       }
     }
 
@@ -90,8 +101,9 @@ export default function ContentCard({ item, className, contentItemId }: ContentC
   const getContentType = (): contentTypeEnum => {
     if ("type" in item && typeof item.type === "string") {
       if (item.type === "movie") return contentTypeEnum.movie;
-      if (item.type === "tv") return contentTypeEnum.tv;
+      if (item.type === "tv" || item.type === "tv_show") return contentTypeEnum.tv;
       if (item.type === "album") return contentTypeEnum.music;
+      if (item.type === "season") return contentTypeEnum.tv; // Seasons use TV icon
     }
 
     if ("number_of_seasons" in item || "number_of_episodes" in item) {
@@ -150,17 +162,26 @@ export default function ContentCard({ item, className, contentItemId }: ContentC
       footerInfo.push(`${mins} min`);
     }
 
-    const seasons = ("number_of_seasons" in item ? (item as any).number_of_seasons : undefined) as number | undefined;
-    const episodes = ("number_of_episodes" in item ? (item as any).number_of_episodes : undefined) as number | undefined;
-    if (seasons || episodes) {
-      const parts: string[] = [];
-      if (typeof seasons === 'number' && seasons > 0) {
-        parts.push(`${seasons} ${seasons === 1 ? 'season' : 'seasons'}`);
-      }
+    // For seasons, show episode count
+    if ("type" in item && item.type === "season") {
+      const episodes = ("number_of_episodes" in item ? (item as any).number_of_episodes : undefined) as number | undefined;
       if (typeof episodes === 'number' && episodes > 0) {
-        parts.push(`${episodes} ${episodes === 1 ? 'episode' : 'episodes'}`);
+        footerInfo.push(`${episodes} ${episodes === 1 ? 'episode' : 'episodes'}`);
       }
-      if (parts.length) footerInfo.push(parts.join(' • '));
+    } else {
+      // For TV shows, show both seasons and episodes
+      const seasons = ("number_of_seasons" in item ? (item as any).number_of_seasons : undefined) as number | undefined;
+      const episodes = ("number_of_episodes" in item ? (item as any).number_of_episodes : undefined) as number | undefined;
+      if (seasons || episodes) {
+        const parts: string[] = [];
+        if (typeof seasons === 'number' && seasons > 0) {
+          parts.push(`${seasons} ${seasons === 1 ? 'season' : 'seasons'}`);
+        }
+        if (typeof episodes === 'number' && episodes > 0) {
+          parts.push(`${episodes} ${episodes === 1 ? 'episode' : 'episodes'}`);
+        }
+        if (parts.length) footerInfo.push(parts.join(' • '));
+      }
     }
 
     return footerInfo.join(" • ");
@@ -172,6 +193,7 @@ export default function ContentCard({ item, className, contentItemId }: ContentC
     }
     return "";
   };
+
 
   const getReleaseDate = (): string => {
     if ("release_date" in item && item.release_date) {

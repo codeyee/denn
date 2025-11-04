@@ -61,9 +61,10 @@ function getBestImageUrl(item: any): string | undefined {
 
 interface ContentBannerProps {
   item: ContentItem | any;
+  tvShowTitle?: string;
 }
 
-export default function ContentBanner({ item }: ContentBannerProps) {
+export default function ContentBanner({ item, tvShowTitle }: ContentBannerProps) {
   const Icon = TYPE_ICON[getItemType(item)];
   const backgroundUrl = getBestImageUrl(item);
 
@@ -89,6 +90,8 @@ export default function ContentBanner({ item }: ContentBannerProps) {
   const authors = getAuthors(item);
   const isAlbum = "total_tracks" in item;
   const isBook = "pages" in item;
+  const isSeason = ("type" in item && item.type === "season") ||
+                   ("number_of_episodes" in item && !("number_of_seasons" in item));
 
   if (!backgroundUrl) {
     return (
@@ -126,8 +129,12 @@ export default function ContentBanner({ item }: ContentBannerProps) {
               {item.title}
             </h1>
           </div>
-          {/* Original Title (for movies/TV) or Authors/Artists (for albums/books) */}
-          {(isAlbum || isBook) && authors ? (
+          {/* Original Title (for movies/TV), Authors/Artists (for albums/books), or TV Show Name (for seasons) */}
+          {isSeason && tvShowTitle ? (
+            <div className="mt-2 md:mt-3 text-white/85 text-sm md:text-base opacity-90 font-sans">
+              {tvShowTitle}
+            </div>
+          ) : (isAlbum || isBook) && authors ? (
             <div className="mt-2 md:mt-3 text-white/85 text-sm md:text-base opacity-90 font-sans">
               {authors}
             </div>

@@ -8,8 +8,8 @@ interface BookDetailContentProps {
 
 export default function BookDetailContent({ book }: BookDetailContentProps) {
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="bg-white/5 rounded-2xl p-6 md:p-8">
+    <>
+      <div className="bg-white/5 rounded-2xl p-6 md:p-8 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Left Column */}
           <div>
@@ -41,7 +41,7 @@ export default function BookDetailContent({ book }: BookDetailContentProps) {
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 

@@ -16,16 +16,13 @@ function formatDuration(seconds: number | null): string {
 
 export default function AlbumDetailContent({ album }: AlbumDetailContentProps) {
   return (
-    <div className="container mx-auto px-4 py-8">
+    <>
       <div className="bg-white/5 rounded-2xl p-6 md:p-8 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Left Column */}
           <div>
             <h2 className="text-2xl font-bold text-white mb-4">About</h2>
-            {album.description && (
-              <p className="text-gray-300 mb-4 leading-relaxed">{album.description}</p>
-            )}
-            
+
             <div className="mt-6 space-y-2">
               {album.authors && album.authors.length > 0 && (
                 <div>
@@ -124,7 +121,7 @@ export default function AlbumDetailContent({ album }: AlbumDetailContentProps) {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 
