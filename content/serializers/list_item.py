@@ -146,6 +146,7 @@ class ListItemCreateSerializer(serializers.ModelSerializer):
         valid_combinations = {
             ContentItem.ContentType.MOVIE: [ContentItem.SourceAPI.TMDB],
             ContentItem.ContentType.TV_SHOW: [ContentItem.SourceAPI.TMDB],
+            ContentItem.ContentType.SEASON: [ContentItem.SourceAPI.TMDB],
             ContentItem.ContentType.GAME: [ContentItem.SourceAPI.IGDB],
             ContentItem.ContentType.ALBUM: [ContentItem.SourceAPI.SPOTIFY],
             ContentItem.ContentType.BOOK: [ContentItem.SourceAPI.OPENLIBRARY],

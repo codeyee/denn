@@ -51,7 +51,7 @@ from content.permissions import IsMemberOfList
         The content item is identified by:
         - `source_api`: The external API source (tmdb, spotify, igdb, openlibrary)
         - `external_id`: The ID from the external API
-        - `content_type`: The type of content (MOVIE, TV_SHOW, ALBUM, GAME, BOOK)
+        - `content_type`: The type of content (MOVIE, TV_SHOW, SEASON, ALBUM, GAME, BOOK)
 
         If the content item doesn't exist in the database, it will be created automatically.
         ''',

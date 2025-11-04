@@ -1,7 +1,7 @@
 from typing import Optional, Dict, Any
 from content.models import ContentItem
 from proxy.views.book.utils import normalize_search_item
-from proxy.views.video.utils import normalize_movie, normalize_tv
+from proxy.views.video.utils import normalize_movie, normalize_tv, normalize_season
 from proxy.views.games.utils import normalize_item
 from proxy.views.music.utils import normalize_album
 from proxy.clients.tmdb import TMDBClient
@@ -36,10 +36,22 @@ def _fetch_tmdb_data(external_id: str, content_type: str) -> Optional[Dict[str, 
             data, status_code = client.get_movie_details(int(external_id))
             if status_code == 200:
                 return normalize_movie(data)
+
         elif content_type == ContentItem.ContentType.TV_SHOW:
             data, status_code = client.get_tv_details(int(external_id))
             if status_code == 200:
                 return normalize_tv(data)
+
+        elif content_type == ContentItem.ContentType.SEASON:
+            parts = external_id.split(':')
+
+            if len(parts) == 2:
+                tv_id = int(parts[0])
+                season_number = int(parts[1])
+                data, status_code = client.get_season_details(tv_id, season_number)
+                if status_code == 200:
+                    return normalize_season(data)
+
     except Exception:
         pass
 

@@ -10,6 +10,7 @@ class ContentItem(models.Model):
     class ContentType(models.TextChoices):
         MOVIE = 'MOVIE', 'Movie'
         TV_SHOW = 'TV_SHOW', 'TV Show'
+        SEASON = 'SEASON', 'Season'
         GAME = 'GAME', 'Game'
         ALBUM = 'ALBUM', 'Album'
         BOOK = 'BOOK', 'Book'

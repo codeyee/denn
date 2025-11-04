@@ -21,7 +21,7 @@ from content.permissions import IsAdminOrReadOnly
         ''',
         parameters=[
             OpenApiParameter('source_api', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Filter by source API (tmdb, igdb, spotify, openlibrary)'),
-            OpenApiParameter('content_type', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Filter by content type (MOVIE, TV_SHOW, GAME, ALBUM, BOOK)'),
+            OpenApiParameter('content_type', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Filter by content type (MOVIE, TV_SHOW, SEASON, GAME, ALBUM, BOOK)'),
             OpenApiParameter('external_id', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Filter by external ID'),
             OpenApiParameter('ordering', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Order by field (e.g., "-created_at", "rating_count", "-average_rating")'),
             OpenApiParameter('render_source', OpenApiTypes.BOOL, OpenApiParameter.QUERY, required=False, description='Include external API data in response (set to true/false)'),
@@ -134,7 +134,7 @@ class ContentItemViewSet(viewsets.ModelViewSet):
         parameters=[
             OpenApiParameter('source_api', OpenApiTypes.STR, OpenApiParameter.QUERY, required=True, description='Source API (tmdb, igdb, spotify, openlibrary)'),
             OpenApiParameter('external_id', OpenApiTypes.STR, OpenApiParameter.QUERY, required=True, description='External ID from the source API'),
-            OpenApiParameter('content_type', OpenApiTypes.STR, OpenApiParameter.QUERY, required=True, description='Content type (MOVIE, TV_SHOW, GAME, ALBUM, BOOK)'),
+            OpenApiParameter('content_type', OpenApiTypes.STR, OpenApiParameter.QUERY, required=True, description='Content type (MOVIE, TV_SHOW, SEASON, GAME, ALBUM, BOOK)'),
         ],
         request=None,
         responses={
@@ -173,7 +173,7 @@ class ContentItemViewSet(viewsets.ModelViewSet):
         parameters=[
             OpenApiParameter('external_id', OpenApiTypes.STR, OpenApiParameter.QUERY, required=True, description='External ID to search for'),
             OpenApiParameter('source_api', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Optional: Filter by source API'),
-            OpenApiParameter('content_type', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Optional: Filter by content type (MOVIE, TV_SHOW, GAME, ALBUM, BOOK)'),
+            OpenApiParameter('content_type', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Optional: Filter by content type (MOVIE, TV_SHOW, SEASON, GAME, ALBUM, BOOK)'),
         ],
         responses={
             200: ContentItemSerializer(many=True),
