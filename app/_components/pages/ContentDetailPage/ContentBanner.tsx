@@ -67,15 +67,11 @@ export default function ContentBanner({ item }: ContentBannerProps) {
   const Icon = TYPE_ICON[getItemType(item)];
   const backgroundUrl = getBestImageUrl(item);
 
-  const getFooterInfo = (item: ContentItem | any): string => {
-    const parts: string[] = [];
-    if ("pages" in item && item.pages) {
-      parts.push(`${item.pages} pages`);
+  const getOriginalTitle = (item: ContentItem | any): string => {
+    if ("original_title" in item && item.original_title) {
+      return item.original_title as string;
     }
-    if ("total_tracks" in item && item.total_tracks) {
-      parts.push(`${item.total_tracks} ${item.total_tracks === 1 ? "track" : "tracks"}`);
-    }
-    return parts.join(" • ");
+    return "";
   };
 
   const getAuthors = (item: ContentItem | any): string => {
@@ -85,47 +81,13 @@ export default function ContentBanner({ item }: ContentBannerProps) {
     return "";
   };
 
-  const getReleaseDate = (item: ContentItem | any): string => {
-    if ("release_date" in item && item.release_date) {
-      return item.release_date as string;
-    }
-    return "";
-  };
-
-  const getOriginalTitle = (item: ContentItem | any): string => {
-    if ("original_title" in item && item.original_title) {
-      return item.original_title as string;
-    }
-    return "";
-  };
-
-  const footerInfo = getFooterInfo(item);
-  const authors = getAuthors(item);
   const originalTitle = getOriginalTitle(item);
-  const releaseDate = getReleaseDate(item);
   const originalTitleIsSame =
     originalTitle && originalTitle.toLowerCase() === item.title.toLowerCase();
-
-  const getExtraInfo = (item: any): string => {
-    const extra: string[] = [];
-    if (typeof item?.duration_minutes === 'number' && item.duration_minutes > 0) {
-      extra.push(`${item.duration_minutes} min`);
-    }
-    const seasons = item?.number_of_seasons as number | undefined;
-    const episodes = item?.number_of_episodes as number | undefined;
-    if (seasons || episodes) {
-      const parts: string[] = [];
-      if (typeof seasons === 'number' && seasons > 0) {
-        parts.push(`${seasons} ${seasons === 1 ? 'season' : 'seasons'}`);
-      }
-      if (typeof episodes === 'number' && episodes > 0) {
-        parts.push(`${episodes} ${episodes === 1 ? 'episode' : 'episodes'}`);
-      }
-      if (parts.length) extra.push(parts.join(' • '));
-    }
-    return extra.join(' • ');
-  };
-  const extraInfo = getExtraInfo(item);
+  
+  // For albums, show artists as metadata
+  const authors = getAuthors(item);
+  const isAlbum = "total_tracks" in item;
 
   if (!backgroundUrl) {
     return (
@@ -163,30 +125,16 @@ export default function ContentBanner({ item }: ContentBannerProps) {
               {item.title}
             </h1>
           </div>
-          {/* Metadata */}
-          <div className="mt-2 md:mt-3 text-white/85 space-y-1 font-sans">
-            {originalTitle && !originalTitleIsSame && (
-              <div className="text-sm md:text-base opacity-90">{originalTitle}</div>
-            )}
-            {authors && (
-              <div className="text-xs md:text-sm opacity-90">{authors}</div>
-            )}
-            {releaseDate && (
-              <div className="text-xs md:text-sm opacity-90">{releaseDate}</div>
-            )}
-            {extraInfo && (
-              <div className="text-xs md:text-sm opacity-90">{extraInfo}</div>
-            )}
-            {footerInfo && (
-              <div className="text-xs md:text-sm opacity-90">{footerInfo}</div>
-            )}
-          </div>
-
-          {"description" in item && item.description && (
-            <p className="mt-2 md:mt-3 text-white/90 max-w-3xl line-clamp-3 md:line-clamp-2 md:text-base font-sans text-xs">
-              {item.description}
-            </p>
-          )}
+          {/* Original Title (for non-albums) or Artists (for albums) */}
+          {isAlbum && authors ? (
+            <div className="mt-2 md:mt-3 text-white/85 text-sm md:text-base opacity-90 font-sans">
+              {authors}
+            </div>
+          ) : originalTitle && !originalTitleIsSame ? (
+            <div className="mt-2 md:mt-3 text-white/85 text-sm md:text-base opacity-90 font-sans">
+              {originalTitle}
+            </div>
+          ) : null}
         </div>
       </div>
     </div>
