@@ -32,7 +32,7 @@ export default function TVShowDetailContent({ tvShow }: TVShowDetailContentProps
 
   return (
     <>
-      <div className="bg-white/5 rounded-2xl p-6 md:p-8 mb-6">
+      <div className="p-6 md:p-8 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Left Column */}
           <div>

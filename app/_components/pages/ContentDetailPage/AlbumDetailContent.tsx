@@ -17,7 +17,7 @@ function formatDuration(seconds: number | null): string {
 export default function AlbumDetailContent({ album }: AlbumDetailContentProps) {
   return (
     <>
-      <div className="bg-white/5 rounded-2xl p-6 md:p-8 mb-6">
+      <div className="p-6 md:p-8 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Left Column */}
           <div>
@@ -77,7 +77,7 @@ export default function AlbumDetailContent({ album }: AlbumDetailContentProps) {
 
       {/* Tracks Section */}
       {album.tracks && album.tracks.length > 0 && (
-        <div className="bg-white/5 rounded-2xl p-6 md:p-8">
+        <div className="p-6 md:p-8">
           <h2 className="text-2xl font-bold text-white mb-6">Tracks</h2>
           <div className="space-y-2">
             {album.tracks.map((track) => (

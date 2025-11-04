@@ -191,7 +191,7 @@ export default function ContentDetailPage({
       // Fallback: show basic info from contentItem
       return (
         <div className="container mx-auto px-4 py-8">
-          <div className="bg-white/5 rounded-2xl p-6">
+          <div className="p-6">
             <h2 className="text-2xl font-bold text-white mb-4">Content Details</h2>
             <p className="text-gray-400">Detailed information not available.</p>
           </div>
@@ -217,7 +217,7 @@ export default function ContentDetailPage({
 
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="bg-white/5 rounded-2xl p-6">
+        <div className="p-6">
           <h2 className="text-2xl font-bold text-white mb-4">Content Details</h2>
           <p className="text-gray-400">Content type not supported.</p>
         </div>
