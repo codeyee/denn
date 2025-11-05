@@ -142,6 +142,10 @@ class ListItemViewSet(viewsets.ModelViewSet):
         try:
             user_list = UserList.objects.get(pk=list_id)
 
+            # Check if user is the owner or a member
+            if user_list.owner == self.request.user:
+                return user_list
+
             if not user_list.members.filter(id=self.request.user.id).exists():
                 return None
 
