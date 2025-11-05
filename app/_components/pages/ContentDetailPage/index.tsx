@@ -239,6 +239,8 @@ export default function ContentDetailPage({
               ? tvShowTitle || undefined
               : undefined
             }
+            externalId={contentItem?.external_id}
+            sourceApi={contentItem?.source_api}
           />
         </section>
 

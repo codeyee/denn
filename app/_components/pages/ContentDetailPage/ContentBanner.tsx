@@ -1,7 +1,9 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { Film, Tv, Gamepad2, Book, Music, LucideIcon } from "lucide-react";
 import { ContentItem } from "@/types/contentTypes";
+import { SourceApi, ContentType } from "@/lib/api/types";
 
 const TYPE_ICON: Record<string, LucideIcon> = {
   movie: Film,
@@ -63,9 +65,12 @@ function getBestImageUrl(item: any): string | undefined {
 interface ContentBannerProps {
   item: ContentItem | any;
   tvShowTitle?: string;
+  externalId?: string;
+  sourceApi?: SourceApi | string;
 }
 
-export default function ContentBanner({ item, tvShowTitle }: ContentBannerProps) {
+export default function ContentBanner({ item, tvShowTitle, externalId, sourceApi }: ContentBannerProps) {
+  const router = useRouter();
   const Icon = TYPE_ICON[getItemType(item)];
   const backgroundUrl = getBestImageUrl(item);
 
@@ -93,6 +98,24 @@ export default function ContentBanner({ item, tvShowTitle }: ContentBannerProps)
   const isBook = "pages" in item;
   const isSeason = ("type" in item && item.type === "season") ||
                    ("number_of_episodes" in item && !("number_of_seasons" in item));
+
+  // Build TV show URL for season subtitle
+  const getTVShowUrl = (): string | null => {
+    if (!isSeason || !externalId || !sourceApi) return null;
+    
+    const [tvId] = externalId.split(":");
+    if (!tvId) return null;
+
+    const params = new URLSearchParams({
+      external_id: tvId,
+      source_api: String(sourceApi).toLowerCase(),
+      content_type: ContentType.TV_SHOW,
+    });
+    
+    return `/content?${params.toString()}`;
+  };
+
+  const tvShowUrl = getTVShowUrl();
 
   if (!backgroundUrl) {
     return (
@@ -133,7 +156,16 @@ export default function ContentBanner({ item, tvShowTitle }: ContentBannerProps)
           {/* Original Title (for movies/TV), Authors/Artists (for albums/books), or TV Show Name (for seasons) */}
           {isSeason && (item.tv_show_name || tvShowTitle) ? (
             <div className="mt-2 md:mt-3 text-white/85 text-sm md:text-base opacity-90 font-sans">
-              {item.tv_show_name || tvShowTitle}
+              {tvShowUrl ? (
+                <button
+                  onClick={() => router.push(tvShowUrl)}
+                  className="hover:text-white underline transition-colors cursor-pointer"
+                >
+                  {item.tv_show_name || tvShowTitle}
+                </button>
+              ) : (
+                <span>{item.tv_show_name || tvShowTitle}</span>
+              )}
             </div>
           ) : (isAlbum || isBook) && authors ? (
             <div className="mt-2 md:mt-3 text-white/85 text-sm md:text-base opacity-90 font-sans">
