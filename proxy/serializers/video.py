@@ -181,6 +181,20 @@ class TVSeasonDetailSerializer(serializers.Serializer):
         allow_null=True,
         help_text="Season poster URL"
     )
+    tv_show_name = serializers.CharField(
+        allow_null=True,
+        allow_blank=True,
+        required=False,
+        help_text="Name of the TV show this season belongs to"
+    )
+    images = serializers.DictField(
+        child=serializers.DictField(
+            child=serializers.URLField(allow_null=True, required=False),
+            required=False
+        ),
+        help_text="Image variants grouped by type (poster/backdrop) with generic keys: standard, original",
+        required=False
+    )
     episodes = TVEpisodeSerializer(many=True, help_text="List of all episodes in season")
     number_of_episodes = serializers.IntegerField(help_text="Total number of episodes")
 

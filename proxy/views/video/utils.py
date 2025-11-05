@@ -72,15 +72,36 @@ def normalize_episode(episode: Dict[str, Any]) -> Dict[str, Any]:
         'image_url': build_still_url(episode.get('still_path'))
     }
 
-def normalize_season(season: Dict[str, Any]) -> Dict[str, Any]:
+def normalize_season(season: Dict[str, Any], tv_show_name: Optional[str] = None, tv_show_backdrop_path: Optional[str] = None) -> Dict[str, Any]:
+    poster_path = season.get('poster_path')
+    backdrop_path = tv_show_backdrop_path
+
+    poster_w500 = build_image_url(poster_path)
+    poster_original = build_image_url(poster_path, 'original')
+    backdrop_w1280 = build_image_url(backdrop_path, 'w1280')
+    backdrop_original = build_image_url(backdrop_path, 'original')
+
     result = {
         'id': season.get('id'),
         'season_number': season.get('season_number'),
         'title': season.get('name'),
         'description': season.get('overview') if season.get('overview') else None,
         'release_date': season.get('air_date'),
-        'image_url': build_image_url(season.get('poster_path'))
+        'image_url': poster_w500,
+        'images': {
+            'poster': {
+                'standard': poster_w500,
+                'original': poster_original,
+            },
+            'backdrop': {
+                'standard': backdrop_w1280,
+                'original': backdrop_original,
+            }
+        }
     }
+
+    if tv_show_name:
+        result['tv_show_name'] = tv_show_name
 
     episodes = season.get('episodes', [])
 

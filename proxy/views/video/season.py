@@ -3,6 +3,8 @@ from .utils import normalize_season
 from proxy.serializers import TVSeasonDetailSerializer, ErrorResponseSerializer
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
+from rest_framework.response import Response
+from rest_framework import status as http_status
 
 class VideoTvSeasonDetailView(TMDBBaseView):
     @extend_schema(
@@ -20,9 +22,28 @@ class VideoTvSeasonDetailView(TMDBBaseView):
     )
     def get(self, request, tv_id, season_number):
         client = self.get_client()
-        return self.handle_api_call(
-            client.get_season_details,
-            transformer=normalize_season,
-            tv_id=int(tv_id),
-            season_number=int(season_number)
+
+        # Fetch season details
+        season_data, season_status = client.get_season_details(int(tv_id), int(season_number))
+
+        if season_status != http_status.HTTP_200_OK:
+            return self.transform_response(season_data, season_status)
+
+        # Fetch TV show details to get name and backdrop
+        tv_data, tv_status = client.get_tv_details(int(tv_id))
+
+        tv_show_name = None
+        tv_show_backdrop_path = None
+
+        if tv_status == http_status.HTTP_200_OK:
+            tv_show_name = tv_data.get('name')
+            tv_show_backdrop_path = tv_data.get('backdrop_path')
+
+        # Normalize season with TV show information
+        normalized_data = normalize_season(
+            season_data,
+            tv_show_name=tv_show_name,
+            tv_show_backdrop_path=tv_show_backdrop_path
         )
+
+        return Response(normalized_data, status=http_status.HTTP_200_OK)

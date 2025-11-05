@@ -49,8 +49,21 @@ def _fetch_tmdb_data(external_id: str, content_type: str) -> Optional[Dict[str, 
                 tv_id = int(parts[0])
                 season_number = int(parts[1])
                 data, status_code = client.get_season_details(tv_id, season_number)
+
                 if status_code == 200:
-                    return normalize_season(data)
+                    tv_data, tv_status = client.get_tv_details(tv_id)
+                    tv_show_name = None
+                    tv_show_backdrop_path = None
+
+                    if tv_status == 200:
+                        tv_show_name = tv_data.get('name')
+                        tv_show_backdrop_path = tv_data.get('backdrop_path')
+
+                    return normalize_season(
+                        data,
+                        tv_show_name=tv_show_name,
+                        tv_show_backdrop_path=tv_show_backdrop_path
+                    )
 
     except Exception:
         pass

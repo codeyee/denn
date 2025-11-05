@@ -66,8 +66,28 @@ class VideoBulkSeasonsView(TMDBBaseView):
         client = self.get_client()
         results, _ = client.get_bulk_seasons(season_requests)
 
+        # Get unique TV show IDs to fetch show names
+        unique_tv_ids = list(set(req['tv_id'] for req in season_requests))
+        tv_shows_data = {}
+
+        # Fetch TV show details for all unique TV shows
+        for tv_id in unique_tv_ids:
+            tv_data, tv_status = client.get_tv_details(tv_id)
+            if tv_status == http_status.HTTP_200_OK:
+                tv_shows_data[tv_id] = {
+                    'name': tv_data.get('name'),
+                    'backdrop_path': tv_data.get('backdrop_path')
+                }
+
+        # Normalize each season result with TV show information
         for result in results:
             if result['status_code'] == 200 and result['data']:
-                result['data'] = normalize_season(result['data'])
+                tv_id = result.get('tv_id')
+                tv_show_info = tv_shows_data.get(tv_id, {})
+                result['data'] = normalize_season(
+                    result['data'],
+                    tv_show_name=tv_show_info.get('name'),
+                    tv_show_backdrop_path=tv_show_info.get('backdrop_path')
+                )
 
         return Response(results, status=http_status.HTTP_200_OK)
