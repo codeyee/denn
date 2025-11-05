@@ -39,7 +39,7 @@ interface CardFooterProps {
 function Footer({ children, className }: CardFooterProps) {
   return (
     <div
-      className={`flex items-center gap-1 text-[10px] md:text-xs text-white/80 font-sans drop-shadow-text ${className}`}
+      className={`flex items-center gap-1 text-[9px] md:text-xs text-white/80 font-sans drop-shadow-text ${className}`}
     >
       {children}
     </div>
@@ -112,12 +112,12 @@ function Card({
         )}
 
         {/* Overlay layer */}
-        {!isEmpty && <div className="absolute inset-0 bg-black/20" />}
+        {!isEmpty && <div className="absolute inset-0 bg-black/20 md:bg-black/20" />}
         <div 
-          className={`absolute inset-x-0 bottom-0 h-[55%] bg-linear-to-t ${
+          className={`absolute inset-x-0 bottom-0 h-[55%] md:h-[55%] bg-linear-to-t ${
             isEmpty
               ? 'from-gray-700/80 via-gray-600/40 to-transparent'
-              : 'from-black/95 via-black/40 to-transparent'
+              : 'from-black/95 via-black/60 to-transparent md:from-black/95 md:via-black/40 md:to-transparent'
           }`}
         />
 
@@ -126,8 +126,8 @@ function Card({
           <div className="mt-auto w-full px-4 md:px-6 pb-4 md:pb-6 pt-3 md:pt-5 space-y-2 md:space-y-4">
             {/* Title section */}
             <div className="flex items-center gap-2 md:gap-3 text-white mb-1 md:mb-2">
-              <Icon className="w-5 h-5 md:w-6 md:h-6 shrink-0 drop-shadow-text" />
-              <span className="text-base md:text-xl font-bold drop-shadow-text line-clamp-2">
+              <Icon className="w-4 h-4 md:w-6 md:h-6 shrink-0 drop-shadow-text" />
+              <span className="text-sm md:text-xl font-bold drop-shadow-text line-clamp-2 break-words">
                 {title}
               </span>
             </div>

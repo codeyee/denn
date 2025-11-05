@@ -27,15 +27,31 @@ export default function ListItem({
   const isClickable = !!onClick;
 
   if (imageFullHeight && image) {
-    // New layout: Image touches borders, content on the right
+    // Desktop layout: Image on left side, content on right
+    // Mobile layout: Image as full background
     return (
       <div
-        className={`group bg-[var(--color-list-item-background)] rounded-lg hover:bg-[var(--color-list-item-background-hover)] overflow-hidden ${
+        className={`group relative rounded-lg overflow-hidden ${
           isClickable ? "cursor-pointer" : ""
         } ${className}`}
         onClick={onClick}
       >
-        <div className="flex items-stretch min-h-[100px]">
+        {/* Mobile: Full background image */}
+        <div className="absolute inset-0 md:hidden">
+          <Image
+            src={image}
+            alt={imageAlt}
+            fill
+            className="object-cover"
+            sizes="100vw"
+          />
+          {/* Darker overlay for mobile */}
+          <div className="absolute inset-0 bg-black/60" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+        </div>
+
+        {/* Desktop: Side-by-side layout with solid background */}
+        <div className="hidden md:flex items-stretch min-h-[100px] bg-[var(--color-list-item-background)] group-hover:bg-[var(--color-list-item-background-hover)]">
           {/* Full-height Image with fade - wider for backdrop 16:9 aspect ratio */}
           <div className="relative w-44 flex-shrink-0">
             <Image
@@ -71,6 +87,33 @@ export default function ListItem({
               </div>
             )}
           </div>
+        </div>
+
+        {/* Mobile: Content over background image */}
+        <div className="relative z-10 flex items-center gap-3 px-4 py-3 min-h-[100px] md:hidden">
+          {/* Leading Content */}
+          {leadingContent && (
+            <div className="flex-shrink-0">{leadingContent}</div>
+          )}
+
+          {/* Text Content */}
+          <div className="flex-1 min-w-0">
+            <h3 className="text-white font-medium text-sm drop-shadow-text break-words line-clamp-2">
+              {title}
+            </h3>
+            {description && (
+              <p className="text-gray-300 text-xs drop-shadow-text truncate">
+                {description}
+              </p>
+            )}
+          </div>
+
+          {/* Trailing Content */}
+          {trailingContent && (
+            <div className="flex-shrink-0 flex items-center gap-2">
+              {trailingContent}
+            </div>
+          )}
         </div>
       </div>
     );

@@ -80,11 +80,14 @@ export default function ListCard({ list, className }: ListCardProps) {
         emptyIcon={Package}
       >
         <Card.Footer>
-          <div className="flex items-center gap-1.5">
-            <ListTypeIcon className="w-3.5 h-3.5" />
-            <span>{listTypeLabel}</span>
+          <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+            <div className="flex items-center gap-1.5">
+              <ListTypeIcon className="w-3.5 h-3.5" />
+              <span>{listTypeLabel}</span>
+            </div>
+            <div className="hidden sm:block">•</div>
+            <div>{footerInfo}</div>
           </div>
-          <div>• {footerInfo}</div>
         </Card.Footer>
       </Card>
     </div>
