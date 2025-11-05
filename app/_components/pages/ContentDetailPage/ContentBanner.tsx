@@ -31,28 +31,29 @@ function getBestImageUrl(item: any): string | undefined {
   if (item && item.images) {
     const images = item.images as any;
 
-    if (Array.isArray(images?.screenshots) || Array.isArray(images?.artworks) || images?.poster) {
-      if (Array.isArray(images.artworks) && images.artworks.length > 0) {
-        const first = images.artworks[0];
-        if (first?.original) return first.original;
-        if (first?.standard) return first.standard;
-      }
+    // Check for game-specific images first (artworks, screenshots)
+    if (Array.isArray(images?.artworks) && images.artworks.length > 0) {
+      const first = images.artworks[0];
+      if (first?.original) return first.original;
+      if (first?.standard) return first.standard;
+    }
 
-      if (Array.isArray(images.screenshots) && images.screenshots.length > 0) {
-        const first = images.screenshots[0];
-        if (first?.original) return first.original;
-        if (first?.standard) return first.standard;
-      }
+    if (Array.isArray(images?.screenshots) && images.screenshots.length > 0) {
+      const first = images.screenshots[0];
+      if (first?.original) return first.original;
+      if (first?.standard) return first.standard;
+    }
 
-      if (images.backdrop) {
-        if (images.backdrop.original) return images.backdrop.original;
-        if (images.backdrop.standard) return images.backdrop.standard;
-      }
+    // Check for video content (movies, TV shows, seasons) - backdrop is preferred for banners
+    if (images.backdrop) {
+      if (images.backdrop.original) return images.backdrop.original;
+      if (images.backdrop.standard) return images.backdrop.standard;
+    }
 
-      if (images.poster) {
-        if (images.poster.original) return images.poster.original;
-        if (images.poster.standard) return images.poster.standard;
-      }
+    // Fall back to poster if no backdrop
+    if (images.poster) {
+      if (images.poster.original) return images.poster.original;
+      if (images.poster.standard) return images.poster.standard;
     }
   }
 
@@ -130,9 +131,9 @@ export default function ContentBanner({ item, tvShowTitle }: ContentBannerProps)
             </h1>
           </div>
           {/* Original Title (for movies/TV), Authors/Artists (for albums/books), or TV Show Name (for seasons) */}
-          {isSeason && tvShowTitle ? (
+          {isSeason && (item.tv_show_name || tvShowTitle) ? (
             <div className="mt-2 md:mt-3 text-white/85 text-sm md:text-base opacity-90 font-sans">
-              {tvShowTitle}
+              {item.tv_show_name || tvShowTitle}
             </div>
           ) : (isAlbum || isBook) && authors ? (
             <div className="mt-2 md:mt-3 text-white/85 text-sm md:text-base opacity-90 font-sans">

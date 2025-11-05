@@ -6,43 +6,43 @@ import Navbar from "@/app/_components/layout/Navbar";
 import ContentDetailPage from "@/app/_components/pages/ContentDetailPage";
 import { ProtectedRoute } from "@/app/_components/common/ProtectedRoute";
 
-function ContentPageContent({ 
-  searchParams 
-}: { 
+function ContentPageContent({
+  searchParams
+}: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const router = useRouter();
   const search = use(searchParams);
-  
+
   // Check for external identifiers in query params
   const externalId = search.external_id as string | undefined;
   const sourceApi = search.source_api as string | undefined;
   const contentType = search.content_type as string | undefined;
-  
+
   // Redirect to home if required query params are missing
   useEffect(() => {
     if (!externalId || !sourceApi || !contentType) {
       router.push('/');
     }
   }, [externalId, sourceApi, contentType, router]);
-  
+
   if (externalId && sourceApi && contentType) {
     return (
-      <ContentDetailPage 
+      <ContentDetailPage
         externalId={externalId}
         sourceApi={sourceApi}
         contentType={contentType}
       />
     );
   }
-  
+
   // Return null while redirecting
   return null;
 }
 
-export default function ContentPageWithQuery({ 
-  searchParams 
-}: { 
+export default function ContentPageWithQuery({
+  searchParams
+}: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   return (

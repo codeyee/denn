@@ -83,18 +83,9 @@ export default function ContentDetailPage({
           // Use the detailed data from source_data
           setDetailData(sourceData);
 
-          // For seasons, also fetch TV show title for context
-          if (item.content_type === ContentType.SEASON && item.source_api === SourceApi.TMDB) {
-            const [tvIdStr] = item.external_id.split(":");
-            const tvId = parseInt(tvIdStr);
-            if (!isNaN(tvId)) {
-              try {
-                const tvShow = await videoActions.getTVShow(tvId);
-                setTvShowTitle(tvShow.title);
-              } catch (error) {
-                console.warn("Could not fetch TV show title:", error);
-              }
-            }
+          // For seasons, extract TV show name from source_data if available
+          if (item.content_type === ContentType.SEASON && sourceData.tv_show_name) {
+            setTvShowTitle(sourceData.tv_show_name);
           }
         } else {
           // Fallback: only fetch from proxy API if source_data is not available
@@ -117,12 +108,17 @@ export default function ContentDetailPage({
               const seasonDetail = await videoActions.getTVSeason(tvId, seasonNumber);
               setDetailData(seasonDetail);
 
-              // Optionally fetch TV show title for context
-              try {
-                const tvShow = await videoActions.getTVShow(tvId);
-                setTvShowTitle(tvShow.title);
-              } catch (error) {
-                console.warn("Could not fetch TV show title:", error);
+              // Extract TV show name from season detail if available
+              if (seasonDetail.tv_show_name) {
+                setTvShowTitle(seasonDetail.tv_show_name);
+              } else {
+                // Fallback: only fetch TV show if tv_show_name is not in season detail
+                try {
+                  const tvShow = await videoActions.getTVShow(tvId);
+                  setTvShowTitle(tvShow.title);
+                } catch (error) {
+                  console.warn("Could not fetch TV show title:", error);
+                }
               }
             }
           } else if (content_type === ContentType.ALBUM && source_api === SourceApi.SPOTIFY) {

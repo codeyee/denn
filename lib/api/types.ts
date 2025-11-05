@@ -253,6 +253,11 @@ export interface TVSeason {
 }
 
 export interface TVSeasonDetail extends TVSeason {
+  tv_show_name: string;
+  images: {
+    poster: ImageVariant;
+    backdrop: ImageVariant;
+  };
   episodes: TVEpisode[];
 }
 
