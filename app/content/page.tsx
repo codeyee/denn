@@ -1,6 +1,7 @@
 "use client";
 
-import { Suspense, use } from "react";
+import { Suspense, use, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Navbar from "@/app/_components/layout/Navbar";
 import ContentDetailPage from "@/app/_components/pages/ContentDetailPage";
 import { ProtectedRoute } from "@/app/_components/common/ProtectedRoute";
@@ -10,12 +11,20 @@ function ContentPageContent({
 }: { 
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
+  const router = useRouter();
   const search = use(searchParams);
   
   // Check for external identifiers in query params
   const externalId = search.external_id as string | undefined;
   const sourceApi = search.source_api as string | undefined;
   const contentType = search.content_type as string | undefined;
+  
+  // Redirect to home if required query params are missing
+  useEffect(() => {
+    if (!externalId || !sourceApi || !contentType) {
+      router.push('/');
+    }
+  }, [externalId, sourceApi, contentType, router]);
   
   if (externalId && sourceApi && contentType) {
     return (
@@ -27,19 +36,8 @@ function ContentPageContent({
     );
   }
   
-  // Invalid - show error
-  return (
-    <div className="relative w-full min-h-screen bg-background-logged-in">
-      <div className="container mx-auto px-4 py-20">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <p className="text-red-400 text-xl mb-4">Invalid content identifier</p>
-            <p className="text-gray-400">Please provide valid external identifiers.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  // Return null while redirecting
+  return null;
 }
 
 export default function ContentPageWithQuery({ 

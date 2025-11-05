@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useRef } from "react";
 import Card from "../Card";
 import { contentTypeEnum } from "@/types/types";
 import { ContentItem } from "@/types/contentTypes";
@@ -9,22 +10,14 @@ import { SourceApi, ContentType } from "@/lib/api/types";
 interface ContentCardProps {
   item: ContentItem;
   className?: string;
-  contentItemId?: number; // Optional internal content item ID
 }
 
-export default function ContentCard({ item, className, contentItemId }: ContentCardProps) {
+export default function ContentCard({ item, className }: ContentCardProps) {
   const router = useRouter();
+  const middleClickHandled = useRef(false);
 
-  const handleClick = (e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    
-    // If we have a content item ID, navigate directly
-    if (contentItemId) {
-      router.push(`/content/${contentItemId}`);
-      return;
-    }
-
-    // Otherwise, navigate with external identifiers - the detail page will handle the API calls
+  const getNavigationUrl = (): string | null => {
+    // Navigate with external identifiers - the detail page will handle the API calls
     // Determine source API and content type from the item
     let sourceApi: SourceApi | undefined;
     let contentType: ContentType | undefined;
@@ -92,10 +85,99 @@ export default function ContentCard({ item, className, contentItemId }: ContentC
         source_api: sourceApi,
         content_type: contentType,
       });
-      router.push(`/content?${params.toString()}`);
+      return `/content?${params.toString()}`;
     } else {
       console.error("Missing required parameters:", { sourceApi, contentType, externalId });
+      return null;
+    }
+  };
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    const url = getNavigationUrl();
+    if (!url) {
       alert("Unable to determine content type. Please try again.");
+      return;
+    }
+
+    // Check for Ctrl/Cmd+click to open in new tab
+    const isModifierClick = e.ctrlKey || e.metaKey;
+
+    if (isModifierClick) {
+      // Open in new tab without losing focus
+      const newWindow = window.open(url, '_blank');
+      if (newWindow) {
+        newWindow.blur();
+        window.focus();
+      }
+    } else {
+      // Navigate in same tab
+      router.push(url);
+    }
+  };
+
+  const openInNewTab = (url: string) => {
+    // Store reference to current window
+    const currentWindow = window;
+    
+    // Open the URL in a new tab
+    const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
+    
+    // Try to refocus the current window after a delay
+    // Many browsers block this for security, but we try anyway
+    if (newWindow) {
+      // Use a delay to allow the tab to start loading
+      setTimeout(() => {
+        try {
+          // Try to blur the new window
+          newWindow.blur();
+        } catch (e) {
+          // Ignored - browser security restriction
+        }
+        // Try to focus the current window
+        setTimeout(() => {
+          try {
+            currentWindow.focus();
+          } catch (e) {
+            // Ignored - browser security restriction
+          }
+        }, 50);
+      }, 200);
+    }
+  };
+
+  const handleAuxClick = (e: React.MouseEvent) => {
+    // Handle middle-click (button === 1) - onAuxClick fires for non-primary buttons
+    if (e.button === 1) {
+      e.preventDefault(); // Prevent default middle-click behavior
+      e.stopPropagation();
+      middleClickHandled.current = true;
+      const url = getNavigationUrl();
+      if (url) {
+        openInNewTab(url);
+      }
+      // Reset the flag after a short delay
+      setTimeout(() => {
+        middleClickHandled.current = false;
+      }, 100);
+    }
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    // Handle middle-click (button === 1) as fallback for browsers that don't support onAuxClick
+    if (e.button === 1 && !middleClickHandled.current) {
+      e.preventDefault(); // Prevent default middle-click behavior (scrolling)
+      e.stopPropagation();
+      middleClickHandled.current = true;
+      const url = getNavigationUrl();
+      if (url) {
+        openInNewTab(url);
+      }
+      // Reset the flag after a short delay
+      setTimeout(() => {
+        middleClickHandled.current = false;
+      }, 100);
     }
   };
   const getContentType = (): contentTypeEnum => {
@@ -223,7 +305,9 @@ export default function ContentCard({ item, className, contentItemId }: ContentC
 
   return (
     <div 
-      onClick={handleClick} 
+      onClick={handleClick}
+      onAuxClick={handleAuxClick}
+      onMouseDown={handleMouseDown}
       className={`cursor-pointer ${className || ""}`}
       role="button"
       tabIndex={0}
@@ -231,7 +315,10 @@ export default function ContentCard({ item, className, contentItemId }: ContentC
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
           e.stopPropagation();
-          handleClick();
+          const url = getNavigationUrl();
+          if (url) {
+            router.push(url);
+          }
         }
       }}
       aria-label={`View details for ${title}`}
