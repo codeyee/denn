@@ -1,7 +1,6 @@
 "use client";
 
 import { AlbumDetail, Track } from "@/lib/api/types";
-import { ExternalLink } from "lucide-react";
 import { VerticalList } from "@/app/_components/common/List";
 import TrackListItem from "@/app/_components/common/List/TrackListItem";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
@@ -11,7 +10,7 @@ interface AlbumDetailContentProps {
 }
 
 function formatDuration(seconds: number | null): string {
-  if (!seconds) return "Unknown";
+  if (!seconds) return "";
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
   return `${mins}:${secs.toString().padStart(2, "0")}`;
@@ -20,55 +19,56 @@ function formatDuration(seconds: number | null): string {
 export default function AlbumDetailContent({ album }: AlbumDetailContentProps) {
   const releaseDate = formatReleaseDate(album.release_date);
   return (
-    <>
-      <div className="container mx-auto px-4">
-        <div className="mb-10 py-5 text-lg">
-          <div>
-            <h2 className="text-2xl font-bold text-white mb-4">About</h2>
+    <div className="container mx-auto px-4">
+      <div className="mb-10 py-5 text-lg">
+        <div>
+          <h2 className="text-2xl font-bold text-white mb-4">About</h2>
 
-            <div className="my-6 space-y-2">
-              {releaseDate && (
-                <div>
-                  <span className="text-white/60 font-bold">Release Date:</span>
-                  <span className="text-white ml-2 font-sans">{releaseDate}</span>
-                </div>
-              )}
-              {album.album_type && (
-                <div>
-                  <span className="text-white/60 font-bold">Type:</span>
-                  <span className="text-white ml-2 capitalize font-sans">{album.album_type}</span>
-                </div>
-              )}
-              {album.total_tracks !== undefined && (
-                <div>
-                  <span className="text-white/60 font-bold">Tracks:</span>
-                  <span className="text-white ml-2 font-sans">{album.total_tracks}</span>
-                </div>
-              )}
-              {album.duration_minutes !== undefined && (
-                <div>
-                  <span className="text-white/60 font-bold">Duration:</span>
-                  <span className="text-white ml-2 font-sans">
-                    {Math.floor(album.duration_minutes)} minutes
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {album.external_url && (
-              <div className="mt-6">
-                <a
-                  href={album.external_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-white/80 hover:text-white underline"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  Open in Spotify
-                </a>
+          <div className="my-6 space-y-2">
+            {releaseDate && (
+              <div>
+                <span className="text-white/60 font-bold">Release Date:</span>
+                <span className="text-white ml-2 font-sans">{releaseDate}</span>
+              </div>
+            )}
+            {album.album_type && (
+              <div>
+                <span className="text-white/60 font-bold">Type:</span>
+                <span className="text-white ml-2 capitalize font-sans">{album.album_type}</span>
+              </div>
+            )}
+            {album.total_tracks !== undefined && (
+              <div>
+                <span className="text-white/60 font-bold">Tracks:</span>
+                <span className="text-white ml-2 font-sans">{album.total_tracks}</span>
+              </div>
+            )}
+            {album.duration_minutes !== undefined && (
+              <div>
+                <span className="text-white/60 font-bold">Duration:</span>
+                <span className="text-white ml-2 font-sans">
+                  {Math.floor(album.duration_minutes)} minutes
+                </span>
               </div>
             )}
           </div>
+
+          {album.external_url && (
+            <div className="mt-6">
+              <a
+                href={album.external_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer"
+              >
+                <img
+                  src="/images/logos/spotify.svg"
+                  alt="Spotify"
+                  className="h-7 w-auto"
+                />
+              </a>
+            </div>
+          )}
         </div>
       </div>
 
@@ -89,12 +89,13 @@ export default function AlbumDetailContent({ album }: AlbumDetailContentProps) {
                     : undefined
                 }
                 externalUrl={track.external_url || undefined}
+                image={album.image_url || null}
               />
             ))}
           </VerticalList>
         </div>
       )}
-    </>
+    </div>
   );
 }
 

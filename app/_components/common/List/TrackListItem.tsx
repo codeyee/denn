@@ -1,7 +1,7 @@
 "use client";
 
 import { ExternalLink } from "lucide-react";
-import ExpandableListItem from "./ExpandableListItem";
+import ListItem from "./ListItem";
 
 interface TrackListItemProps {
   trackNumber: number;
@@ -10,7 +10,13 @@ interface TrackListItemProps {
   duration?: string;
   externalUrl?: string;
   image?: string | null;
-  additionalDetails?: React.ReactNode;
+}
+
+function formatDuration(seconds: number | null): string {
+  if (!seconds) return "";
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
 
 export default function TrackListItem({
@@ -20,7 +26,6 @@ export default function TrackListItem({
   duration,
   externalUrl,
   image,
-  additionalDetails,
 }: TrackListItemProps) {
   const leadingContent = (
     <div className="w-8 text-center">
@@ -39,7 +44,7 @@ export default function TrackListItem({
           target="_blank"
           rel="noopener noreferrer"
           className="text-white/60 hover:text-white transition-colors"
-          aria-label={`Open ${title} in external service`}
+          aria-label={`Open ${title} in Spotify`}
           onClick={(e) => e.stopPropagation()}
         >
           <ExternalLink className="w-4 h-4" />
@@ -50,15 +55,22 @@ export default function TrackListItem({
 
   const description = artists && artists.length > 0 ? artists.join(", ") : undefined;
 
+  const handleClick = () => {
+    if (externalUrl) {
+      window.open(externalUrl, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   return (
-    <ExpandableListItem
+    <ListItem
       title={title}
       description={description}
       image={image}
       imageAlt={title}
+      imageFullHeight={true}
       leadingContent={leadingContent}
       trailingContent={trailingContent}
-      expandedContent={additionalDetails}
+      onClick={handleClick}
     />
   );
 }
