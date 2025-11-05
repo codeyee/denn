@@ -27,6 +27,8 @@
   --color-ring: var(--ring);
 
   /* Custom colors */
+  --color-list-item-background: var(--color-list-item-background);
+  --color-list-item-background-hover: var(--color-list-item-background-hover);
   --color-hero-gradient: var(--color-hero-gradient);
   --color-hero-gradient-95: var(--color-hero-gradient-95);
   --color-hero-gradient-90: var(--color-hero-gradient-90);
@@ -103,6 +105,8 @@
   --color-hero-gradient-00: rgba(18, 4, 15, 0);
 
   /* Custom colors */
+  --color-list-item-background: #1D131C;
+  --color-list-item-background-hover: #2C242B;
   --color-background-logged-in: rgba(13, 3, 11, 1);
   --color-overlay-blur: rgba(6, 0, 16, 1);
   --color-empty-card: rgba(55, 65, 81, 1);
@@ -151,6 +155,16 @@
       var(--color-hero-gradient-70) 40%,
       var(--color-hero-gradient-40) 80%,
       transparent 100%
+    );
+  }
+
+  .bg-image-fade-right {
+    background: linear-gradient(
+      to right,
+      var(--color-hero-gradient-00) 0%,
+      var(--color-hero-gradient-40) 40%,
+      var(--color-hero-gradient-70) 80%,
+      var(--color-hero-gradient) 100%
     );
   }
 

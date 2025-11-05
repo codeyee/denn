@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { List as ListIcon, Package, User, Users } from "lucide-react";
 
 import Card from "../Card";
@@ -12,6 +13,7 @@ interface ListCardProps {
 const IMAGE_ROTATION_INTERVAL = 5000;
 
 export default function ListCard({ list, className }: ListCardProps) {
+  const router = useRouter();
   const id = String(list.id);
   const title = list.name;
 
@@ -61,25 +63,31 @@ export default function ListCard({ list, className }: ListCardProps) {
     ? memberInfo + ' • ' + itemInfo
     : itemInfo;
 
+  const handleClick = () => {
+    router.push(`/lists/${id}`);
+  };
+
   return (
-    <Card
-      id={id}
-      title={title}
-      icon={ListIcon}
-      backgroundImage={isEmpty ? undefined : currentImage}
-      backgroundImageAlt={`${title} list background`}
-      className={`${className} cursor-pointer`}
-      isEmpty={isEmpty}
-      emptyIcon={Package}
-    >
-      <Card.Footer>
-        <div className="flex items-center gap-1.5">
-          <ListTypeIcon className="w-3.5 h-3.5" />
-          <span>{listTypeLabel}</span>
-        </div>
-        <div>• {footerInfo}</div>
-      </Card.Footer>
-    </Card>
+    <div onClick={handleClick} className="cursor-pointer">
+      <Card
+        id={id}
+        title={title}
+        icon={ListIcon}
+        backgroundImage={isEmpty ? undefined : currentImage}
+        backgroundImageAlt={`${title} list background`}
+        className={className}
+        isEmpty={isEmpty}
+        emptyIcon={Package}
+      >
+        <Card.Footer>
+          <div className="flex items-center gap-1.5">
+            <ListTypeIcon className="w-3.5 h-3.5" />
+            <span>{listTypeLabel}</span>
+          </div>
+          <div>• {footerInfo}</div>
+        </Card.Footer>
+      </Card>
+    </div>
   );
 }
 

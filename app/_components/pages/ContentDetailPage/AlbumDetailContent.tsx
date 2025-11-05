@@ -2,6 +2,8 @@
 
 import { AlbumDetail, Track } from "@/lib/api/types";
 import { ExternalLink } from "lucide-react";
+import { VerticalList } from "@/app/_components/common/List";
+import TrackListItem from "@/app/_components/common/List/TrackListItem";
 
 interface AlbumDetailContentProps {
   album: AlbumDetail;
@@ -79,46 +81,22 @@ export default function AlbumDetailContent({ album }: AlbumDetailContentProps) {
       {album.tracks && album.tracks.length > 0 && (
         <div className="p-6 md:p-8">
           <h2 className="text-2xl font-bold text-white mb-6">Tracks</h2>
-          <div className="space-y-2">
+          <VerticalList spacing="md">
             {album.tracks.map((track) => (
-              <div
+              <TrackListItem
                 key={track.id}
-                className="bg-white/5 rounded-lg p-4 hover:bg-white/10 transition-colors"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="flex-shrink-0 w-8 text-center">
-                    <span className="text-white/60 text-sm font-medium">
-                      {track.track_number}
-                    </span>
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-white font-medium mb-1">{track.title}</h3>
-                    {track.authors && track.authors.length > 0 && (
-                      <p className="text-gray-400 text-sm">{track.authors.join(", ")}</p>
-                    )}
-                  </div>
-                  <div className="flex-shrink-0 text-right">
-                    {track.duration_seconds && (
-                      <span className="text-white/60 text-sm">
-                        {formatDuration(track.duration_seconds)}
-                      </span>
-                    )}
-                  </div>
-                  {track.external_url && (
-                    <a
-                      href={track.external_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-shrink-0 text-white/60 hover:text-white transition-colors"
-                      aria-label={`Open ${track.title} in Spotify`}
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                    </a>
-                  )}
-                </div>
-              </div>
+                trackNumber={track.track_number}
+                title={track.title}
+                artists={track.authors || undefined}
+                duration={
+                  track.duration_seconds
+                    ? formatDuration(track.duration_seconds)
+                    : undefined
+                }
+                externalUrl={track.external_url || undefined}
+              />
             ))}
-          </div>
+          </VerticalList>
         </div>
       )}
     </>
