@@ -4,6 +4,7 @@ import { TVShowDetail, TVSeason } from "@/lib/api/types";
 import ContentCard from "@/app/_components/cards/ContentCard";
 import Carousel from "@/app/_components/common/Carousel";
 import { SourceApi, ContentType } from "@/lib/api/types";
+import { formatReleaseDate } from "@/lib/utils/dateUtils";
 
 interface TVShowDetailContentProps {
   tvShow: TVShowDetail;
@@ -30,43 +31,45 @@ export default function TVShowDetailContent({ tvShow }: TVShowDetailContentProps
     };
   };
 
+  const status = tvShow.status === "Returning Series" ? "Currently in emission" : "Ended";
+  const releaseDate = formatReleaseDate(tvShow.release_date);
+
   return (
     <>
-      <div className="p-6 md:p-8 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Left Column */}
+      <div className="container mx-auto px-4">
+        <div className="mb-10 py-5 text-lg">
           <div>
             <h2 className="text-2xl font-bold text-white mb-4">About</h2>
             {tvShow.tagline && (
-              <p className="text-white/80 italic mb-4">"{tvShow.tagline}"</p>
+              <p className="text-white/80 italic mb-4 font-sans">"{tvShow.tagline}"</p>
             )}
             {tvShow.description && (
-              <p className="text-gray-300 mb-4 leading-relaxed">{tvShow.description}</p>
+              <p className="text-gray-300 mb-4 leading-relaxed font-sans">{tvShow.description}</p>
             )}
 
-            <div className="mt-6 space-y-2">
-              {tvShow.release_date && (
+            <div className="my-6 space-y-2">
+              {releaseDate && (
                 <div>
-                  <span className="text-white/60 text-sm">Release Date:</span>
-                  <span className="text-white ml-2">{tvShow.release_date}</span>
+                  <span className="text-white/60 font-bold">Release Date:</span>
+                  <span className="text-white ml-2 font-sans">{releaseDate}</span>
                 </div>
               )}
-              {tvShow.status && (
+              {status && status !== "Ended" && (
                 <div>
-                  <span className="text-white/60 text-sm">Status:</span>
-                  <span className="text-white ml-2">{tvShow.status}</span>
+                  <span className="text-white/60 font-bold">Status:</span>
+                  <span className="text-white ml-2 font-sans">{status}</span>
                 </div>
               )}
               {tvShow.number_of_seasons !== undefined && (
                 <div>
-                  <span className="text-white/60 text-sm">Seasons:</span>
-                  <span className="text-white ml-2">{tvShow.number_of_seasons}</span>
+                  <span className="text-white/60 font-bold">Seasons:</span>
+                  <span className="text-white ml-2 font-sans">{tvShow.number_of_seasons}</span>
                 </div>
               )}
               {tvShow.number_of_episodes !== undefined && (
                 <div>
-                  <span className="text-white/60 text-sm">Episodes:</span>
-                  <span className="text-white ml-2">{tvShow.number_of_episodes}</span>
+                  <span className="text-white/60 font-bold">Episodes:</span>
+                  <span className="text-white ml-2 font-sans">{tvShow.number_of_episodes}</span>
                 </div>
               )}
             </div>

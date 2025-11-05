@@ -1,66 +1,68 @@
 "use client";
 
 import { MovieDetail } from "@/lib/api/types";
+import { formatReleaseDate } from "@/lib/utils/dateUtils";
 
 interface MovieDetailContentProps {
   movie: MovieDetail;
 }
 
 export default function MovieDetailContent({ movie }: MovieDetailContentProps) {
+  const releaseDate = formatReleaseDate(movie.release_date);
+
   return (
-    <>
-      <div className="p-6 md:p-8 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Left Column */}
-          <div>
-            <h2 className="text-2xl font-bold text-white mb-4">About</h2>
-            {movie.tagline && (
-              <p className="text-white/80 italic mb-4">"{movie.tagline}"</p>
-            )}
-            {movie.description && (
-              <p className="text-gray-300 mb-4 leading-relaxed">{movie.description}</p>
-            )}
+    <div className="container mx-auto px-4">
+      <div className="mb-10 py-5 text-lg">
+        <div>
+          <h2 className="text-2xl font-bold text-white mb-4">About</h2>
+          {movie.tagline && (
+            <p className="text-white/80 italic mb-4 font-sans">"{movie.tagline}"</p>
+          )}
+          {movie.description && (
+            <p className="text-gray-300 mb-4 leading-relaxed font-sans">{movie.description}</p>
+          )}
 
-            <div className="mt-6 space-y-2">
-              {movie.release_date && (
-                <div>
-                  <span className="text-white/60 text-sm">Release Date:</span>
-                  <span className="text-white ml-2">{movie.release_date}</span>
-                </div>
-              )}
-              {movie.duration_minutes && (
-                <div>
-                  <span className="text-white/60 text-sm">Duration:</span>
-                  <span className="text-white ml-2">{movie.duration_minutes} minutes</span>
-                </div>
-              )}
-              {movie.status && (
-                <div>
-                  <span className="text-white/60 text-sm">Status:</span>
-                  <span className="text-white ml-2">{movie.status}</span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Right Column */}
-          <div>
-            {movie.imdb_id && (
-              <div className="mb-4">
-                <a
-                  href={`https://www.imdb.com/title/${movie.imdb_id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-white/80 hover:text-white underline"
-                >
-                  View on IMDb →
-                </a>
+          <div className="my-6 space-y-2">
+            {releaseDate && (
+              <div>
+                <span className="text-white/60 font-bold">Release Date:</span>
+                <span className="text-white ml-2 font-sans">{releaseDate}</span>
+              </div>
+            )}
+            {movie.duration_minutes && (
+              <div>
+                <span className="text-white/60 font-bold">Duration:</span>
+                <span className="text-white ml-2 font-sans">{movie.duration_minutes} minutes</span>
+              </div>
+            )}
+            {movie.status && movie.status !== "Released" && (
+              <div>
+                <span className="text-white/60 font-bold">Status:</span>
+                <span className="text-white ml-2 font-sans">{movie.status}</span>
               </div>
             )}
           </div>
+
+          {movie.imdb_id && (
+            <div className="flex flex-row gap-2">
+              <a
+                href={`https://www.imdb.com/title/${movie.imdb_id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex flex-row gap-2 hover:opacity-80 transition-opacity cursor-pointer"
+              >
+                <img
+                  src="/images/logos/imdb.svg"
+                  alt="IMDb"
+                  className="h-7 w-auto"
+                />
+              </a>
+            </div>
+          )}
+
         </div>
       </div>
-    </>
+    </div>
   );
 }
 

@@ -9,6 +9,7 @@ import Navbar from "../../layout/Navbar";
 import Footer from "../../layout/Footer";
 import { User, Users, Package, Calendar } from "lucide-react";
 import { getContentTypeIcon, getContentTypeLabel } from "@/lib/utils/contentTypeUtils";
+import { formatReleaseDate } from "@/lib/utils/dateUtils";
 
 interface ListDetailPageProps {
   listId: number;
@@ -139,7 +140,7 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
                 <span>
-                  Created {new Date(list.created_at).toLocaleDateString()}
+                  Created {formatReleaseDate(list.created_at)}
                 </span>
               </div>
             </div>
@@ -244,7 +245,7 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
                                   Release Date:
                                 </span>
                                 <span className="text-white ml-2">
-                                  {sourceData.release_date}
+                                  {formatReleaseDate(sourceData.release_date)}
                                 </span>
                               </div>
                             )}
@@ -260,7 +261,7 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
                               <div>
                                 <span className="text-white/60">Added:</span>
                                 <span className="text-white ml-2">
-                                  {new Date(item.added_at).toLocaleDateString()}
+                                  {formatReleaseDate(item.added_at)}
                                 </span>
                               </div>
                             )}

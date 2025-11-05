@@ -8,6 +8,7 @@ import { Button } from "@/app/_components/lib/button";
 import { ContentItem } from "@/types/contentTypes";
 import { SourceApi, ContentType } from "@/lib/api/types";
 import Noise from "@/app/_components/lib/Animations/Noise";
+import { formatReleaseDate } from "@/lib/utils/dateUtils";
 
 type FeaturedBannerProps = {
   items: ContentItem[];
@@ -183,7 +184,7 @@ export default function FeaturedBanner({ items, autoRotateMs = 6000 }: FeaturedB
 
   const getReleaseDate = (item: ContentItem): string => {
     if ("release_date" in item && item.release_date) {
-      return item.release_date as string;
+      return formatReleaseDate(item.release_date as string);
     }
     return "";
   };

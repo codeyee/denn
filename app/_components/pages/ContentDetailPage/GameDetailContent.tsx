@@ -1,88 +1,84 @@
 "use client";
 
 import { GameDetail } from "@/lib/api/types";
+import { formatReleaseDate } from "@/lib/utils/dateUtils";
 
 interface GameDetailContentProps {
   game: GameDetail;
 }
 
 export default function GameDetailContent({ game }: GameDetailContentProps) {
+  const releaseDate = formatReleaseDate(game.release_date);
+
+  // Combine artworks and screenshots into a single gallery array
+  const galleryImages = [
+    ...(game.images?.artworks?.map((artwork, index) => ({
+      src: artwork.standard || artwork.original,
+      alt: `${game.title} artwork ${index + 1}`,
+      type: "artwork" as const,
+    })) || []),
+    ...(game.images?.screenshots?.map((screenshot, index) => ({
+      src: screenshot.standard || screenshot.original,
+      alt: `${game.title} screenshot ${index + 1}`,
+      type: "screenshot" as const,
+    })) || []),
+  ];
+
   return (
     <>
-      <div className="p-6 md:p-8 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Left Column */}
+      <div className="container mx-auto px-4">
+        <div className="mb-10 py-5 text-lg">
           <div>
             <h2 className="text-2xl font-bold text-white mb-4">About</h2>
             {game.description && (
-              <p className="text-gray-300 mb-4 leading-relaxed">{game.description}</p>
+              <p className="text-gray-300 mb-4 leading-relaxed font-sans">{game.description}</p>
             )}
 
-            <div className="mt-6 space-y-2">
-              {game.release_date && (
+            <div className="my-6 space-y-2">
+              {releaseDate && (
                 <div>
-                  <span className="text-white/60 text-sm">Release Date:</span>
-                  <span className="text-white ml-2">{game.release_date}</span>
-                </div>
-              )}
-              {game.type && (
-                <div>
-                  <span className="text-white/60 text-sm">Type:</span>
-                  <span className="text-white ml-2 capitalize">{game.type}</span>
+                  <span className="text-white/60 font-bold">Release Date:</span>
+                  <span className="text-white ml-2 font-sans">{releaseDate}</span>
                 </div>
               )}
               {game.authors && game.authors.length > 0 && (
                 <div>
-                  <span className="text-white/60 text-sm">Developers:</span>
-                  <span className="text-white ml-2">{game.authors.join(", ")}</span>
+                  <span className="text-white/60 font-bold">Developers:</span>
+                  <span className="text-white ml-2 font-sans">{game.authors.join(", ")}</span>
                 </div>
               )}
               {game.platforms && game.platforms.length > 0 && (
                 <div>
-                  <span className="text-white/60 text-sm">Platforms:</span>
-                  <span className="text-white ml-2">{game.platforms.join(", ")}</span>
+                  <span className="text-white/60 font-bold">Platforms:</span>
+                  <span className="text-white ml-2 font-sans">{game.platforms.join(", ")}</span>
                 </div>
               )}
             </div>
           </div>
-
-          {/* Right Column - Images */}
-          {game.images && (
-            <div>
-              {game.images.screenshots && game.images.screenshots.length > 0 && (
-                <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-white mb-3">Screenshots</h3>
-                  <div className="grid grid-cols-2 gap-3">
-                    {game.images.screenshots.slice(0, 4).map((screenshot, index) => (
-                      <img
-                        key={index}
-                        src={screenshot.standard || screenshot.original}
-                        alt={`${game.title} screenshot ${index + 1}`}
-                        className="w-full rounded-lg"
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-              {game.images.artworks && game.images.artworks.length > 0 && (
-                <div>
-                  <h3 className="text-lg font-semibold text-white mb-3">Artworks</h3>
-                  <div className="grid grid-cols-2 gap-3">
-                    {game.images.artworks.slice(0, 4).map((artwork, index) => (
-                      <img
-                        key={index}
-                        src={artwork.standard || artwork.original}
-                        alt={`${game.title} artwork ${index + 1}`}
-                        className="w-full rounded-lg"
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
         </div>
       </div>
+
+      {/* Gallery */}
+      {galleryImages.length > 0 && (
+        <div className="p-6 md:p-8">
+          <h2 className="text-2xl font-bold text-white mb-6">Artworks & Screenshots</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+            {galleryImages.map((image, index) => (
+              <div
+                key={index}
+                className="relative overflow-hidden rounded-2xl"
+                style={{ aspectRatio: "16 / 9" }}
+              >
+                <img
+                  src={image.src}
+                  alt={image.alt}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </>
   );
 }

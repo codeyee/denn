@@ -6,6 +6,7 @@ import Card from "../Card";
 import { contentTypeEnum } from "@/types/types";
 import { ContentItem } from "@/types/contentTypes";
 import { SourceApi, ContentType } from "@/lib/api/types";
+import { formatReleaseDate } from "@/lib/utils/dateUtils";
 
 interface ContentCardProps {
   item: ContentItem;
@@ -279,7 +280,7 @@ export default function ContentCard({ item, className }: ContentCardProps) {
 
   const getReleaseDate = (): string => {
     if ("release_date" in item && item.release_date) {
-      return item.release_date;
+      return formatReleaseDate(item.release_date);
     }
     return "";
   };

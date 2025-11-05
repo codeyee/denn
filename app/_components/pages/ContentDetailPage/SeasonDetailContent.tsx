@@ -2,6 +2,7 @@
 
 import { TVSeasonDetail, TVEpisode } from "@/lib/api/types";
 import EpisodeCard from "@/app/_components/cards/EpisodeCard";
+import { formatReleaseDate } from "@/lib/utils/dateUtils";
 
 interface SeasonDetailContentProps {
   season: TVSeasonDetail;
@@ -9,34 +10,29 @@ interface SeasonDetailContentProps {
 }
 
 export default function SeasonDetailContent({ season, tvShowTitle }: SeasonDetailContentProps) {
+  const releaseDate = formatReleaseDate(season.release_date);
+
   return (
     <>
-      <div className="p-6 md:p-8 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Left Column */}
+      <div className="container mx-auto px-4">
+        <div className="mb-10 py-5 text-lg">
           <div>
             <h2 className="text-2xl font-bold text-white mb-4">About</h2>
             {season.description && (
-              <p className="text-gray-300 mb-4 leading-relaxed">{season.description}</p>
+              <p className="text-gray-300 mb-4 leading-relaxed font-sans">{season.description}</p>
             )}
 
-            <div className="mt-6 space-y-2">
-              {season.release_date && (
+            <div className="my-6 space-y-2">
+              {releaseDate && (
                 <div>
-                  <span className="text-white/60 text-sm">Release Date:</span>
-                  <span className="text-white ml-2">{season.release_date}</span>
+                  <span className="text-white/60 font-bold">Release Date:</span>
+                  <span className="text-white ml-2 font-sans">{releaseDate}</span>
                 </div>
               )}
               {season.number_of_episodes !== undefined && (
                 <div>
-                  <span className="text-white/60 text-sm">Episodes:</span>
-                  <span className="text-white ml-2">{season.number_of_episodes}</span>
-                </div>
-              )}
-              {season.season_number !== undefined && (
-                <div>
-                  <span className="text-white/60 text-sm">Season Number:</span>
-                  <span className="text-white ml-2">{season.season_number}</span>
+                  <span className="text-white/60 font-bold">Episodes:</span>
+                  <span className="text-white ml-2 font-sans">{season.number_of_episodes}</span>
                 </div>
               )}
             </div>

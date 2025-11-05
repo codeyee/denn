@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { useRef, useEffect } from "react";
 import { Tv } from "lucide-react";
 import { TVEpisode } from "@/lib/api/types";
+import { formatReleaseDate } from "@/lib/utils/dateUtils";
 
 interface EpisodeCardProps {
   episode: TVEpisode;
@@ -23,20 +24,6 @@ export default function EpisodeCard({ episode, className = "" }: EpisodeCardProp
       previousImageRef.current = episode.image_url || undefined;
     }
   }, [episode.image_url]);
-
-  const formatReleaseDate = (dateString: string | null | undefined): string => {
-    if (!dateString) return "";
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "short",
-        day: "numeric"
-      });
-    } catch {
-      return dateString;
-    }
-  };
 
   const title = episode.title || `Episode ${episode.episode_number}`;
   const imageUrl = episode.image_url || undefined;

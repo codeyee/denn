@@ -4,6 +4,7 @@ import { AlbumDetail, Track } from "@/lib/api/types";
 import { ExternalLink } from "lucide-react";
 import { VerticalList } from "@/app/_components/common/List";
 import TrackListItem from "@/app/_components/common/List/TrackListItem";
+import { formatReleaseDate } from "@/lib/utils/dateUtils";
 
 interface AlbumDetailContentProps {
   album: AlbumDetail;
@@ -17,43 +18,37 @@ function formatDuration(seconds: number | null): string {
 }
 
 export default function AlbumDetailContent({ album }: AlbumDetailContentProps) {
+  const releaseDate = formatReleaseDate(album.release_date);
   return (
     <>
-      <div className="p-6 md:p-8 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Left Column */}
+      <div className="container mx-auto px-4">
+        <div className="mb-10 py-5 text-lg">
           <div>
             <h2 className="text-2xl font-bold text-white mb-4">About</h2>
 
-            <div className="mt-6 space-y-2">
-              {album.authors && album.authors.length > 0 && (
+            <div className="my-6 space-y-2">
+              {releaseDate && (
                 <div>
-                  <span className="text-white/60 text-sm">Artists:</span>
-                  <span className="text-white ml-2">{album.authors.join(", ")}</span>
-                </div>
-              )}
-              {album.release_date && (
-                <div>
-                  <span className="text-white/60 text-sm">Release Date:</span>
-                  <span className="text-white ml-2">{album.release_date}</span>
+                  <span className="text-white/60 font-bold">Release Date:</span>
+                  <span className="text-white ml-2 font-sans">{releaseDate}</span>
                 </div>
               )}
               {album.album_type && (
                 <div>
-                  <span className="text-white/60 text-sm">Type:</span>
-                  <span className="text-white ml-2 capitalize">{album.album_type}</span>
+                  <span className="text-white/60 font-bold">Type:</span>
+                  <span className="text-white ml-2 capitalize font-sans">{album.album_type}</span>
                 </div>
               )}
               {album.total_tracks !== undefined && (
                 <div>
-                  <span className="text-white/60 text-sm">Tracks:</span>
-                  <span className="text-white ml-2">{album.total_tracks}</span>
+                  <span className="text-white/60 font-bold">Tracks:</span>
+                  <span className="text-white ml-2 font-sans">{album.total_tracks}</span>
                 </div>
               )}
               {album.duration_minutes !== undefined && (
                 <div>
-                  <span className="text-white/60 text-sm">Duration:</span>
-                  <span className="text-white ml-2">
+                  <span className="text-white/60 font-bold">Duration:</span>
+                  <span className="text-white ml-2 font-sans">
                     {Math.floor(album.duration_minutes)} minutes
                   </span>
                 </div>
