@@ -37,17 +37,16 @@ export default function TVShowDetailContent({ tvShow }: TVShowDetailContentProps
   return (
     <>
       <div className="container mx-auto px-4">
-        <div className="mb-10 py-5 text-lg">
-          <div>
-            <h2 className="text-2xl font-bold text-white mb-4">About</h2>
-            {tvShow.tagline && (
-              <p className="text-white/80 italic mb-4 font-sans">"{tvShow.tagline}"</p>
-            )}
-            {tvShow.description && (
-              <p className="text-gray-300 mb-4 leading-relaxed font-sans">{tvShow.description}</p>
-            )}
+        <div className="mb-10">
+          <h2 className="text-2xl font-bold text-white mb-6">About</h2>
+          {tvShow.tagline && (
+            <p className="text-white/80 italic mb-4 font-sans">"{tvShow.tagline}"</p>
+          )}
+          {tvShow.description && (
+            <p className="text-gray-300 mb-4 leading-relaxed font-sans">{tvShow.description}</p>
+          )}
 
-            <div className="my-6 space-y-2">
+          <div className="mt-6 space-y-2">
               {releaseDate && (
                 <div>
                   <span className="text-white/60 font-bold">Release Date:</span>
