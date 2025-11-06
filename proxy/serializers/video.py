@@ -69,11 +69,11 @@ class MovieDetailSerializer(serializers.Serializer):
         required=False,
         help_text="External IDs (imdb_id, wikidata_id, facebook_id, instagram_id, twitter_id)"
     )
-    providers = ProviderSerializer(
-        many=True,
+    providers = serializers.DictField(
+        child=ProviderSerializer(many=True),
         allow_null=True,
         required=False,
-        help_text="List of watch providers (streaming, rent, buy, rent_buy)"
+        help_text="Watch providers grouped by country code. Format: { 'CO': [...], 'AR': [...], 'MX': [...] } when no country param, or { 'US': [...] } when country param provided"
     )
     images = serializers.DictField(
         child=serializers.DictField(
@@ -145,11 +145,11 @@ class TVShowDetailSerializer(serializers.Serializer):
         required=False,
         help_text="External IDs (imdb_id, wikidata_id, facebook_id, instagram_id, twitter_id)"
     )
-    providers = ProviderSerializer(
-        many=True,
+    providers = serializers.DictField(
+        child=ProviderSerializer(many=True),
         allow_null=True,
         required=False,
-        help_text="List of watch providers (streaming, rent, buy, rent_buy)"
+        help_text="Watch providers grouped by country code. Format: { 'CO': [...], 'AR': [...], 'MX': [...] } when no country param, or { 'US': [...] } when country param provided"
     )
     images = serializers.DictField(
         child=serializers.DictField(
@@ -238,11 +238,11 @@ class TVSeasonDetailSerializer(serializers.Serializer):
         required=False,
         help_text="External IDs (imdb_id, wikidata_id, facebook_id, instagram_id, twitter_id)"
     )
-    providers = ProviderSerializer(
-        many=True,
+    providers = serializers.DictField(
+        child=ProviderSerializer(many=True),
         allow_null=True,
         required=False,
-        help_text="List of watch providers (streaming, rent, buy, rent_buy)"
+        help_text="Watch providers grouped by country code. Format: { 'CO': [...], 'AR': [...], 'MX': [...] } when no country param, or { 'US': [...] } when country param provided"
     )
     images = serializers.DictField(
         child=serializers.DictField(

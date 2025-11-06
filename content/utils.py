@@ -51,7 +51,12 @@ def _fetch_tmdb_data(external_id: str, content_type: str, country_code: Optional
                 
                 # Add providers (normalized watch providers, filtered by country if provided)
                 if watch_providers_status == http_status.HTTP_200_OK and watch_providers_data:
-                    normalized_data['providers'] = normalize_providers(watch_providers_data, country_code=country_code)
+                    providers_result = normalize_providers(watch_providers_data, country_code=country_code)
+                    # If country_code is provided and result is a list, wrap it in a dict with country code as key
+                    if country_code and isinstance(providers_result, list):
+                        normalized_data['providers'] = {country_code.upper(): providers_result}
+                    else:
+                        normalized_data['providers'] = providers_result
                 
                 return normalized_data
 
@@ -73,7 +78,12 @@ def _fetch_tmdb_data(external_id: str, content_type: str, country_code: Optional
                 
                 # Add providers (normalized watch providers, filtered by country if provided)
                 if watch_providers_status == http_status.HTTP_200_OK and watch_providers_data:
-                    normalized_data['providers'] = normalize_providers(watch_providers_data, country_code=country_code)
+                    providers_result = normalize_providers(watch_providers_data, country_code=country_code)
+                    # If country_code is provided and result is a list, wrap it in a dict with country code as key
+                    if country_code and isinstance(providers_result, list):
+                        normalized_data['providers'] = {country_code.upper(): providers_result}
+                    else:
+                        normalized_data['providers'] = providers_result
                 
                 return normalized_data
 
@@ -112,7 +122,12 @@ def _fetch_tmdb_data(external_id: str, content_type: str, country_code: Optional
                     
                     # Add providers (normalized watch providers, filtered by country if provided)
                     if watch_providers_status == http_status.HTTP_200_OK and watch_providers_data:
-                        normalized_data['providers'] = normalize_providers(watch_providers_data, country_code=country_code)
+                        providers_result = normalize_providers(watch_providers_data, country_code=country_code)
+                        # If country_code is provided and result is a list, wrap it in a dict with country code as key
+                        if country_code and isinstance(providers_result, list):
+                            normalized_data['providers'] = {country_code.upper(): providers_result}
+                        else:
+                            normalized_data['providers'] = providers_result
                     
                     return normalized_data
 
