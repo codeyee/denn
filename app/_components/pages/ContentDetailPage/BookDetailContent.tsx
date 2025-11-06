@@ -12,7 +12,7 @@ export default function BookDetailContent({ book }: BookDetailContentProps) {
   return (
     <>
       <div className="container mx-auto px-4">
-        <div className="mb-10 py-5 text-lg">
+        <div className="mb-10 text-lg">
           <div>
             <h2 className="text-2xl font-bold text-white mb-4">About</h2>
             {book.description && (

@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { contentItemActions, videoActions, musicActions, gameActions, bookActions } from "@/lib/api";
-import { ContentType, SourceApi } from "@/lib/api/types";
+import { contentItemActions, videoActions, musicActions, gameActions, bookActions, ratingActions } from "@/lib/api";
+import { ContentType, SourceApi, Rating, RatingCreate } from "@/lib/api/types";
 import {
   MovieDetail,
   TVShowDetail,
@@ -12,14 +12,20 @@ import {
   GameDetail,
   BookDetail
 } from "@/lib/api/types";
+import { useAuthStore } from "@/app/_stores/auth-store";
 import ContentBanner from "./ContentBanner";
 import MovieDetailContent from "./MovieDetailContent";
-import TVShowDetailContent from "./TVShowDetailContent";
-import SeasonDetailContent from "./SeasonDetailContent";
-import AlbumDetailContent from "./AlbumDetailContent";
-import GameDetailContent from "./GameDetailContent";
 import BookDetailContent from "./BookDetailContent";
+import RatingsSection from "./RatingsSection";
+import RatingModal from "@/app/_components/common/Modal/RatingModal";
+import { Star } from "lucide-react";
 import Footer from "../../layout/Footer";
+import { formatReleaseDate } from "@/lib/utils/dateUtils";
+import { VerticalList } from "@/app/_components/common/List";
+import TrackListItem from "@/app/_components/common/List/TrackListItem";
+import EpisodeCard from "@/app/_components/cards/EpisodeCard";
+import Carousel from "@/app/_components/common/Carousel";
+import ContentCard from "@/app/_components/cards/ContentCard";
 
 interface ContentDetailPageProps {
   contentId?: number;
@@ -35,11 +41,16 @@ export default function ContentDetailPage({
   contentType: contentTypeStr
 }: ContentDetailPageProps) {
   const router = useRouter();
+  const { user } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [contentItem, setContentItem] = useState<any>(null);
   const [detailData, setDetailData] = useState<MovieDetail | TVShowDetail | TVSeasonDetail | AlbumDetail | GameDetail | BookDetail | null>(null);
   const [tvShowTitle, setTvShowTitle] = useState<string | null>(null);
+  const [userRating, setUserRating] = useState<Rating | null>(null);
+  const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
+  const [isRatingLoading, setIsRatingLoading] = useState(false);
+  const [ratingRefreshKey, setRatingRefreshKey] = useState(0);
 
   useEffect(() => {
     const fetchContent = async () => {
@@ -68,6 +79,22 @@ export default function ContentDetailPage({
         }
 
         setContentItem(item);
+
+        // Fetch user's rating if authenticated
+        if (user?.id) {
+          try {
+            const ratingsResponse = await ratingActions.list({
+              content_item_id: item.id,
+              user_id: user.id,
+              page_size: 1,
+            });
+            if (ratingsResponse.results.length > 0) {
+              setUserRating(ratingsResponse.results[0]);
+            }
+          } catch (err) {
+            console.warn("Could not fetch user rating:", err);
+          }
+        }
 
         // Parse source_data if it's a string
         let sourceData: any = null;
@@ -143,7 +170,7 @@ export default function ContentDetailPage({
     if (contentId || (externalId && sourceApi && contentTypeStr)) {
       fetchContent();
     }
-  }, [contentId, externalId, sourceApi, contentTypeStr]);
+  }, [contentId, externalId, sourceApi, contentTypeStr, user?.id]);
 
   if (loading) {
     return (
@@ -181,10 +208,9 @@ export default function ContentDetailPage({
     );
   }
 
-  // Determine which detail component to render
-  const renderDetailContent = () => {
+  // Render About section only
+  const renderAboutSection = () => {
     if (!detailData) {
-      // Fallback: show basic info from contentItem
       return (
         <div className="container mx-auto px-4 py-8">
           <div className="p-6">
@@ -200,13 +226,174 @@ export default function ContentDetailPage({
     if (contentType === ContentType.MOVIE) {
       return <MovieDetailContent movie={detailData as MovieDetail} />;
     } else if (contentType === ContentType.TV_SHOW) {
-      return <TVShowDetailContent tvShow={detailData as TVShowDetail} />;
+      // Extract About section from TVShowDetailContent
+      const tvShow = detailData as TVShowDetail;
+      const status = tvShow.status === "Returning Series" ? "Currently in emission" : "Ended";
+      const releaseDate = formatReleaseDate(tvShow.release_date);
+      return (
+        <div className="container mx-auto px-4">
+          <div className="mb-10 text-lg">
+            <div>
+              <h2 className="text-2xl font-bold text-white mb-4">About</h2>
+              {tvShow.tagline && (
+                <p className="text-white/80 italic mb-4 font-sans">"{tvShow.tagline}"</p>
+              )}
+              {tvShow.description && (
+                <p className="text-gray-300 mb-4 leading-relaxed font-sans">{tvShow.description}</p>
+              )}
+              <div className="my-6 space-y-2">
+                {releaseDate && (
+                  <div>
+                    <span className="text-white/60 font-bold">Release Date:</span>
+                    <span className="text-white ml-2 font-sans">{releaseDate}</span>
+                  </div>
+                )}
+                {status && status !== "Ended" && (
+                  <div>
+                    <span className="text-white/60 font-bold">Status:</span>
+                    <span className="text-white ml-2 font-sans">{status}</span>
+                  </div>
+                )}
+                {tvShow.number_of_seasons !== undefined && (
+                  <div>
+                    <span className="text-white/60 font-bold">Seasons:</span>
+                    <span className="text-white ml-2 font-sans">{tvShow.number_of_seasons}</span>
+                  </div>
+                )}
+                {tvShow.number_of_episodes !== undefined && (
+                  <div>
+                    <span className="text-white/60 font-bold">Episodes:</span>
+                    <span className="text-white ml-2 font-sans">{tvShow.number_of_episodes}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
     } else if (contentType === ContentType.SEASON) {
-      return <SeasonDetailContent season={detailData as TVSeasonDetail} tvShowTitle={tvShowTitle || undefined} />;
+      // Extract About section from SeasonDetailContent
+      const season = detailData as TVSeasonDetail;
+      const releaseDate = formatReleaseDate(season.release_date);
+      return (
+        <div className="container mx-auto px-4">
+          <div className="mb-10 text-lg">
+            <div>
+              <h2 className="text-2xl font-bold text-white mb-4">About</h2>
+              {season.description && (
+                <p className="text-gray-300 mb-4 leading-relaxed font-sans">{season.description}</p>
+              )}
+              <div className="my-6 space-y-2">
+                {releaseDate && (
+                  <div>
+                    <span className="text-white/60 font-bold">Release Date:</span>
+                    <span className="text-white ml-2 font-sans">{releaseDate}</span>
+                  </div>
+                )}
+                {season.number_of_episodes !== undefined && (
+                  <div>
+                    <span className="text-white/60 font-bold">Episodes:</span>
+                    <span className="text-white ml-2 font-sans">{season.number_of_episodes}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
     } else if (contentType === ContentType.ALBUM) {
-      return <AlbumDetailContent album={detailData as AlbumDetail} />;
+      // Extract About section from AlbumDetailContent
+      const album = detailData as AlbumDetail;
+      const releaseDate = formatReleaseDate(album.release_date);
+      return (
+        <div className="container mx-auto px-4">
+          <div className="mb-10 text-lg">
+            <div>
+              <h2 className="text-2xl font-bold text-white mb-4">About</h2>
+              <div className="my-6 space-y-2">
+                {releaseDate && (
+                  <div>
+                    <span className="text-white/60 font-bold">Release Date:</span>
+                    <span className="text-white ml-2 font-sans">{releaseDate}</span>
+                  </div>
+                )}
+                {album.album_type && (
+                  <div>
+                    <span className="text-white/60 font-bold">Type:</span>
+                    <span className="text-white ml-2 capitalize font-sans">{album.album_type}</span>
+                  </div>
+                )}
+                {album.total_tracks !== undefined && (
+                  <div>
+                    <span className="text-white/60 font-bold">Tracks:</span>
+                    <span className="text-white ml-2 font-sans">{album.total_tracks}</span>
+                  </div>
+                )}
+                {album.duration_minutes !== undefined && (
+                  <div>
+                    <span className="text-white/60 font-bold">Duration:</span>
+                    <span className="text-white ml-2 font-sans">
+                      {Math.floor(album.duration_minutes)} minutes
+                    </span>
+                  </div>
+                )}
+              </div>
+              {album.external_url && (
+                <div className="mt-6">
+                  <a
+                    href={album.external_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer"
+                  >
+                    <img
+                      src="/images/logos/spotify.svg"
+                      alt="Spotify"
+                      className="h-7 w-auto"
+                    />
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
     } else if (contentType === ContentType.GAME) {
-      return <GameDetailContent game={detailData as GameDetail} />;
+      // Extract About section from GameDetailContent
+      const game = detailData as GameDetail;
+      const releaseDate = formatReleaseDate(game.release_date);
+      return (
+        <div className="container mx-auto px-4">
+          <div className="mb-10 text-lg">
+            <div>
+              <h2 className="text-2xl font-bold text-white mb-4">About</h2>
+              {game.description && (
+                <p className="text-gray-300 mb-4 leading-relaxed font-sans">{game.description}</p>
+              )}
+              <div className="my-6 space-y-2">
+                {releaseDate && (
+                  <div>
+                    <span className="text-white/60 font-bold">Release Date:</span>
+                    <span className="text-white ml-2 font-sans">{releaseDate}</span>
+                  </div>
+                )}
+                {game.authors && game.authors.length > 0 && (
+                  <div>
+                    <span className="text-white/60 font-bold">Developers:</span>
+                    <span className="text-white ml-2 font-sans">{game.authors.join(", ")}</span>
+                  </div>
+                )}
+                {game.platforms && game.platforms.length > 0 && (
+                  <div>
+                    <span className="text-white/60 font-bold">Platforms:</span>
+                    <span className="text-white ml-2 font-sans">{game.platforms.join(", ")}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
     } else if (contentType === ContentType.BOOK) {
       return <BookDetailContent book={detailData as BookDetail} />;
     }
@@ -221,12 +408,240 @@ export default function ContentDetailPage({
     );
   };
 
+  // Render tracks section for albums
+  const renderTracksSection = () => {
+    if (contentItem?.content_type !== ContentType.ALBUM || !detailData) return null;
+    const album = detailData as AlbumDetail;
+    if (!album.tracks || album.tracks.length === 0) return null;
+
+    const formatDuration = (seconds: number | null): string => {
+      if (!seconds) return "";
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return `${mins}:${secs.toString().padStart(2, "0")}`;
+    };
+
+    return (
+      <div className="p-6 md:p-8">
+        <h2 className="text-2xl font-bold text-white mb-6">Tracks</h2>
+        <VerticalList spacing="md">
+          {album.tracks.map((track) => (
+            <TrackListItem
+              key={track.id}
+              trackNumber={track.track_number}
+              title={track.title}
+              artists={track.authors || undefined}
+              duration={
+                track.duration_seconds
+                  ? formatDuration(track.duration_seconds)
+                  : undefined
+              }
+              externalUrl={track.external_url || undefined}
+              image={album.image_url || null}
+            />
+          ))}
+        </VerticalList>
+      </div>
+    );
+  };
+
+  // Render episodes section for seasons
+  const renderEpisodesSection = () => {
+    if (contentItem?.content_type !== ContentType.SEASON || !detailData) return null;
+    const season = detailData as TVSeasonDetail;
+    if (!season.episodes || season.episodes.length === 0) return null;
+
+    return (
+      <div className="p-6 md:p-8">
+        <h2 className="text-2xl font-bold text-white mb-6">Episodes</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+          {season.episodes.map((episode) => (
+            <EpisodeCard key={episode.id} episode={episode} />
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  // Render gallery section for games
+  const renderGallerySection = () => {
+    if (contentItem?.content_type !== ContentType.GAME || !detailData) return null;
+    const game = detailData as GameDetail;
+
+    const galleryImages = [
+      ...(game.images?.artworks?.map((artwork, index) => ({
+        src: artwork.standard || artwork.original,
+        alt: `${game.title} artwork ${index + 1}`,
+        type: "artwork" as const,
+      })) || []),
+      ...(game.images?.screenshots?.map((screenshot, index) => ({
+        src: screenshot.standard || screenshot.original,
+        alt: `${game.title} screenshot ${index + 1}`,
+        type: "screenshot" as const,
+      })) || []),
+    ];
+
+    if (galleryImages.length === 0) return null;
+
+    return (
+      <div className="p-6 md:p-8 mb-10">
+        <h2 className="text-2xl font-bold text-white mb-6">Artworks & Screenshots</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+          {galleryImages.map((image, index) => (
+            <div
+              key={index}
+              className="relative overflow-hidden rounded-2xl"
+              style={{ aspectRatio: "16 / 9" }}
+            >
+              <img
+                src={image.src}
+                alt={image.alt}
+                className="w-full h-full object-cover"
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  // Render seasons section for TV shows
+  const renderSeasonsSection = () => {
+    if (contentItem?.content_type !== ContentType.TV_SHOW || !detailData) return null;
+    const tvShow = detailData as TVShowDetail;
+    if (!tvShow.seasons || tvShow.seasons.length === 0) return null;
+
+    const createSeasonItem = (season: any) => {
+      const externalId = `${tvShow.id}:${season.season_number}`;
+      return {
+        id: externalId,
+        title: season.title || `Season ${season.season_number}`,
+        image_url: season.image_url,
+        release_date: season.release_date,
+        number_of_episodes: season.number_of_episodes,
+        description: season.description,
+        tv_show_name: tvShow.title,
+        type: "season" as const,
+        external_id: externalId,
+        source_api: SourceApi.TMDB,
+        content_type: ContentType.SEASON,
+      };
+    };
+
+    return (
+      <Carousel
+        title="Seasons"
+        itemsPerView={undefined}
+        targetCardWidth={250}
+      >
+        {tvShow.seasons.map((season) => {
+          const seasonItem = createSeasonItem(season);
+          return (
+            <ContentCard
+              key={season.id}
+              item={{
+                ...seasonItem,
+                release_date:
+                  seasonItem.release_date === null
+                    ? undefined
+                    : seasonItem.release_date,
+              }}
+            />
+          );
+        })}
+      </Carousel>
+    );
+  };
+
   // Use detailData if available, otherwise fallback to contentItem source_data
-  const displayItem = detailData || (contentItem.source_data 
-    ? (typeof contentItem.source_data === 'string' 
-        ? JSON.parse(contentItem.source_data) 
-        : contentItem.source_data)
+  const displayItem = detailData || (contentItem.source_data
+    ? (typeof contentItem.source_data === 'string'
+      ? JSON.parse(contentItem.source_data)
+      : contentItem.source_data)
     : contentItem);
+
+  const handleSubmitRating = async (data: RatingCreate) => {
+    setIsRatingLoading(true);
+    try {
+      if (userRating) {
+        // Update existing rating - only send score and comment
+        const updatedRating = await ratingActions.patch(userRating.id, {
+          score: data.score,
+          comment: data.comment,
+        });
+        setUserRating(updatedRating);
+      } else {
+        // Create new rating
+        const newRating = await ratingActions.create({
+          source_api: contentItem.source_api,
+          external_id: contentItem.external_id,
+          content_type: contentItem.content_type,
+          score: data.score,
+          comment: data.comment,
+        });
+        setUserRating(newRating);
+      }
+
+      // Refresh content item to get updated stats
+      const updatedItem = await contentItemActions.get(contentItem.id, true);
+      setContentItem(updatedItem);
+
+      // Trigger ratings section refresh
+      setRatingRefreshKey((prev) => prev + 1);
+    } catch (err) {
+      throw err;
+    } finally {
+      setIsRatingLoading(false);
+    }
+  };
+
+  const handleDeleteRating = async () => {
+    if (!userRating) return;
+
+    setIsRatingLoading(true);
+    try {
+      await ratingActions.delete(userRating.id);
+      setUserRating(null);
+
+      // Refresh content item to get updated stats
+      const updatedItem = await contentItemActions.get(contentItem.id, true);
+      setContentItem(updatedItem);
+
+      // Trigger ratings section refresh
+      setRatingRefreshKey((prev) => prev + 1);
+    } catch (err) {
+      console.error("Error deleting rating:", err);
+    } finally {
+      setIsRatingLoading(false);
+    }
+  };
+
+  const handleRatingChange = () => {
+    // Refresh ratings section
+    setRatingRefreshKey((prev) => prev + 1);
+
+    // Refresh content item to get updated stats
+    contentItemActions.get(contentItem.id, true).then((updatedItem) => {
+      setContentItem(updatedItem);
+    });
+
+    // Refresh user rating
+    if (user?.id) {
+      ratingActions.list({
+        content_item_id: contentItem.id,
+        user_id: user.id,
+        page_size: 1,
+      }).then((ratingsResponse) => {
+        if (ratingsResponse.results.length > 0) {
+          setUserRating(ratingsResponse.results[0]);
+        } else {
+          setUserRating(null);
+        }
+      }).catch((err) => {
+        console.warn("Could not refresh user rating:", err);
+      });
+    }
+  };
 
   return (
     <div className="relative w-full min-h-screen bg-background-logged-in">
@@ -244,11 +659,73 @@ export default function ContentDetailPage({
           />
         </section>
 
-        {/* Detail Content Section */}
-        {renderDetailContent()}
+        {/* Rating Summary */}
+        {contentItem && (
+          <section className="mb-6">
+            <div className="container mx-auto px-4">
+              {contentItem.average_rating && (contentItem.rating_count ?? 0) > 0 ? (
+                <div className="flex gap-2 flex-wrap flex-col">
+                  <div className="flex items-center gap-2">
+                    <Star className="w-6 h-6 text-yellow-400 fill-yellow-400" />
+                    <span className="text-3xl font-bold text-white">
+                      {(() => {
+                        const num = parseFloat(contentItem.average_rating);
+                        return Number.isInteger(num) ? num.toString() : num.toFixed(1);
+                      })()}/10
+                    </span>
+                  </div>
+                  <div className="text-white/80 font-sans text-md">
+                    <span className="font-semibold">{contentItem.rating_count}</span>{" "}
+                    {contentItem.rating_count === 1 ? "rating" : "ratings"}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </section>
+        )}
+
+        {/* About Section */}
+        {renderAboutSection()}
+
+        {/* Tracks Section (for albums only - before ratings) */}
+        {renderTracksSection()}
+
+        {/* Unified Ratings Section */}
+        {contentItem && (
+          <RatingsSection
+            key={ratingRefreshKey}
+            contentItem={contentItem}
+            userRating={userRating}
+            onRatingChange={handleRatingChange}
+            onEditRating={() => setIsRatingModalOpen(true)}
+            onDeleteRating={handleDeleteRating}
+            isRatingLoading={isRatingLoading}
+            user={user}
+          />
+        )}
+
+        {/* Episodes Section (for seasons - after ratings) */}
+        {renderEpisodesSection()}
+
+        {/* Gallery Section (for games - after ratings) */}
+        {renderGallerySection()}
+
+        {/* Seasons Section (for TV shows - after ratings) */}
+        {renderSeasonsSection()}
 
         <Footer />
       </div>
+
+      {/* Rating Modal */}
+      {user && (
+        <RatingModal
+          isOpen={isRatingModalOpen}
+          onOpenChange={setIsRatingModalOpen}
+          onSubmitRating={handleSubmitRating}
+          existingRating={userRating}
+          isLoading={isRatingLoading}
+        />
+      )}
 
       {/* Bottom gradient */}
       <div className="pointer-events-none fixed left-0 right-0 bottom-0 h-16 bg-bottom-gradient z-10" />

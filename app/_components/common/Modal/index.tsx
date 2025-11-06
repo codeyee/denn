@@ -33,7 +33,11 @@ function Header({ children, className, title, description }: ModalHeaderProps) {
   return (
     <ShadcnDialogHeader className={className}>
       {title && <DialogTitle>{title}</DialogTitle>}
-      {description && <DialogDescription>{description}</DialogDescription>}
+      {description && (
+        <DialogDescription className="font-sans text-md text-white/80">
+          {description}
+        </DialogDescription>
+      )}
       {children}
     </ShadcnDialogHeader>
   );
