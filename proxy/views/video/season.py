@@ -54,12 +54,7 @@ class VideoTvSeasonDetailView(TMDBBaseView):
             tv_show_backdrop_path=tv_show_backdrop_path
         )
 
-        # Add external IDs (use imdb_id from external_ids if available)
-        if external_ids_status == http_status.HTTP_200_OK and external_ids_data:
-            normalized_data['external_ids'] = external_ids_data
-            # Update imdb_id from external_ids if available
-            if external_ids_data.get('imdb_id'):
-                normalized_data['imdb_id'] = external_ids_data.get('imdb_id')
+        # Note: IMDB doesn't handle seasons, so we don't extract imdb_id
 
         # Add providers (normalized watch providers, filtered by country if provided)
         if watch_providers_status == http_status.HTTP_200_OK and watch_providers_data:

@@ -38,10 +38,8 @@ class VideoMovieDetailView(TMDBBaseView):
         # Normalize movie data
         normalized_data = normalize_movie(movie_data)
 
-        # Add external IDs (use imdb_id from external_ids if available, otherwise keep existing)
+        # Extract imdb_id from external_ids
         if external_ids_status == http_status.HTTP_200_OK and external_ids_data:
-            normalized_data['external_ids'] = external_ids_data
-            # Update imdb_id from external_ids if not already present or if external_ids has it
             if external_ids_data.get('imdb_id'):
                 normalized_data['imdb_id'] = external_ids_data.get('imdb_id')
 

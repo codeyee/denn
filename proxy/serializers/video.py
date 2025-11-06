@@ -40,6 +40,7 @@ class ProviderSerializer(serializers.Serializer):
     )
 
 class MovieDetailSerializer(serializers.Serializer):
+    # Primitive metadata
     id = serializers.IntegerField(help_text="TMDB movie ID")
     title = serializers.CharField(help_text="Movie title")
     original_title = serializers.CharField(help_text="Original movie title")
@@ -64,25 +65,6 @@ class MovieDetailSerializer(serializers.Serializer):
         help_text="IMDB ID",
         required=False
     )
-    external_ids = serializers.DictField(
-        allow_null=True,
-        required=False,
-        help_text="External IDs (imdb_id, wikidata_id, facebook_id, instagram_id, twitter_id)"
-    )
-    providers = serializers.DictField(
-        child=ProviderSerializer(many=True),
-        allow_null=True,
-        required=False,
-        help_text="Watch providers grouped by country code. Format: { 'CO': [...], 'AR': [...], 'MX': [...] } when no country param, or { 'US': [...] } when country param provided"
-    )
-    images = serializers.DictField(
-        child=serializers.DictField(
-            child=serializers.URLField(allow_null=True, required=False),
-            required=False
-        ),
-        help_text="Image variants grouped by type (poster/backdrop) with generic keys: standard, original",
-        required=False
-    )
     release_date = serializers.CharField(
         allow_null=True,
         help_text="Release date in YYYY-MM-DD format"
@@ -94,6 +76,21 @@ class MovieDetailSerializer(serializers.Serializer):
     status = serializers.CharField(
         allow_null=True,
         help_text="Release status (e.g., 'Released', 'Post Production')"
+    )
+    # Complex metadata
+    images = serializers.DictField(
+        child=serializers.DictField(
+            child=serializers.URLField(allow_null=True, required=False),
+            required=False
+        ),
+        help_text="Image variants grouped by type (poster/backdrop) with generic keys: standard, original",
+        required=False
+    )
+    providers = serializers.DictField(
+        child=ProviderSerializer(many=True),
+        allow_null=True,
+        required=False,
+        help_text="Watch providers grouped by country code. Format: { 'CO': [...], 'AR': [...], 'MX': [...] } when no country param, or { 'US': [...] } when country param provided"
     )
 
 class TVSeasonSerializer(serializers.Serializer):
@@ -116,6 +113,7 @@ class TVSeasonSerializer(serializers.Serializer):
     number_of_episodes = serializers.IntegerField(help_text="Number of episodes in season")
 
 class TVShowDetailSerializer(serializers.Serializer):
+    # Primitive metadata
     id = serializers.IntegerField(help_text="TMDB TV show ID")
     title = serializers.CharField(help_text="TV show title")
     original_title = serializers.CharField(help_text="Original TV show title")
@@ -140,25 +138,6 @@ class TVShowDetailSerializer(serializers.Serializer):
         help_text="IMDB ID",
         required=False
     )
-    external_ids = serializers.DictField(
-        allow_null=True,
-        required=False,
-        help_text="External IDs (imdb_id, wikidata_id, facebook_id, instagram_id, twitter_id)"
-    )
-    providers = serializers.DictField(
-        child=ProviderSerializer(many=True),
-        allow_null=True,
-        required=False,
-        help_text="Watch providers grouped by country code. Format: { 'CO': [...], 'AR': [...], 'MX': [...] } when no country param, or { 'US': [...] } when country param provided"
-    )
-    images = serializers.DictField(
-        child=serializers.DictField(
-            child=serializers.URLField(allow_null=True, required=False),
-            required=False
-        ),
-        help_text="Image variants grouped by type (poster/backdrop) with generic keys: standard, original",
-        required=False
-    )
     release_date = serializers.CharField(
         allow_null=True,
         help_text="First air date in YYYY-MM-DD format"
@@ -174,6 +153,21 @@ class TVShowDetailSerializer(serializers.Serializer):
     number_of_episodes = serializers.IntegerField(
         allow_null=True,
         help_text="Total number of episodes"
+    )
+    # Complex metadata
+    images = serializers.DictField(
+        child=serializers.DictField(
+            child=serializers.URLField(allow_null=True, required=False),
+            required=False
+        ),
+        help_text="Image variants grouped by type (poster/backdrop) with generic keys: standard, original",
+        required=False
+    )
+    providers = serializers.DictField(
+        child=ProviderSerializer(many=True),
+        allow_null=True,
+        required=False,
+        help_text="Watch providers grouped by country code. Format: { 'CO': [...], 'AR': [...], 'MX': [...] } when no country param, or { 'US': [...] } when country param provided"
     )
     seasons = TVSeasonSerializer(many=True, help_text="List of all seasons")
 
@@ -205,6 +199,7 @@ class TVEpisodeSerializer(serializers.Serializer):
     )
 
 class TVSeasonDetailSerializer(serializers.Serializer):
+    # Primitive metadata
     id = serializers.IntegerField(help_text="TMDB season ID")
     season_number = serializers.IntegerField(help_text="Season number")
     title = serializers.CharField(help_text="Season title")
@@ -212,10 +207,6 @@ class TVSeasonDetailSerializer(serializers.Serializer):
         allow_null=True,
         allow_blank=True,
         help_text="Season description"
-    )
-    release_date = serializers.CharField(
-        allow_null=True,
-        help_text="Season premiere date in YYYY-MM-DD format"
     )
     image_url = serializers.URLField(
         allow_null=True,
@@ -227,23 +218,12 @@ class TVSeasonDetailSerializer(serializers.Serializer):
         required=False,
         help_text="Name of the TV show this season belongs to"
     )
-    imdb_id = serializers.CharField(
+    release_date = serializers.CharField(
         allow_null=True,
-        allow_blank=True,
-        help_text="IMDB ID",
-        required=False
+        help_text="Season premiere date in YYYY-MM-DD format"
     )
-    external_ids = serializers.DictField(
-        allow_null=True,
-        required=False,
-        help_text="External IDs (imdb_id, wikidata_id, facebook_id, instagram_id, twitter_id)"
-    )
-    providers = serializers.DictField(
-        child=ProviderSerializer(many=True),
-        allow_null=True,
-        required=False,
-        help_text="Watch providers grouped by country code. Format: { 'CO': [...], 'AR': [...], 'MX': [...] } when no country param, or { 'US': [...] } when country param provided"
-    )
+    number_of_episodes = serializers.IntegerField(help_text="Total number of episodes")
+    # Complex metadata
     images = serializers.DictField(
         child=serializers.DictField(
             child=serializers.URLField(allow_null=True, required=False),
@@ -252,8 +232,13 @@ class TVSeasonDetailSerializer(serializers.Serializer):
         help_text="Image variants grouped by type (poster/backdrop) with generic keys: standard, original",
         required=False
     )
+    providers = serializers.DictField(
+        child=ProviderSerializer(many=True),
+        allow_null=True,
+        required=False,
+        help_text="Watch providers grouped by country code. Format: { 'CO': [...], 'AR': [...], 'MX': [...] } when no country param, or { 'US': [...] } when country param provided"
+    )
     episodes = TVEpisodeSerializer(many=True, help_text="List of all episodes in season")
-    number_of_episodes = serializers.IntegerField(help_text="Total number of episodes")
 
 class BulkMovieItemSerializer(serializers.Serializer):
     key = serializers.IntegerField(help_text="The movie ID that was requested", required=False)

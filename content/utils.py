@@ -10,6 +10,7 @@ from proxy.clients.spotify import SpotifyClient
 from proxy.clients.openlibrary import OpenLibraryClient
 from rest_framework import status as http_status
 
+
 def fetch_source_data(content_item: ContentItem, country_code: Optional[str] = None) -> Optional[Dict[str, Any]]:
     source_api = content_item.source_api
     external_id = content_item.external_id
@@ -29,6 +30,7 @@ def fetch_source_data(content_item: ContentItem, country_code: Optional[str] = N
 
     return None
 
+
 def _fetch_tmdb_data(external_id: str, content_type: str, country_code: Optional[str] = None) -> Optional[Dict[str, Any]]:
     client = TMDBClient()
 
@@ -38,26 +40,30 @@ def _fetch_tmdb_data(external_id: str, content_type: str, country_code: Optional
             data, status_code = client.get_movie_details(movie_id_int)
             if status_code == http_status.HTTP_200_OK:
                 normalized_data = normalize_movie(data)
-                
+
                 # Fetch external IDs and watch providers
-                external_ids_data, external_ids_status = client.get_movie_external_ids(movie_id_int)
-                watch_providers_data, watch_providers_status = client.get_movie_watch_providers(movie_id_int)
-                
-                # Add external IDs
+                external_ids_data, external_ids_status = client.get_movie_external_ids(
+                    movie_id_int)
+                watch_providers_data, watch_providers_status = client.get_movie_watch_providers(
+                    movie_id_int)
+
+                # Extract imdb_id from external_ids
                 if external_ids_status == http_status.HTTP_200_OK and external_ids_data:
-                    normalized_data['external_ids'] = external_ids_data
                     if external_ids_data.get('imdb_id'):
-                        normalized_data['imdb_id'] = external_ids_data.get('imdb_id')
-                
+                        normalized_data['imdb_id'] = external_ids_data.get(
+                            'imdb_id')
+
                 # Add providers (normalized watch providers, filtered by country if provided)
                 if watch_providers_status == http_status.HTTP_200_OK and watch_providers_data:
-                    providers_result = normalize_providers(watch_providers_data, country_code=country_code)
+                    providers_result = normalize_providers(
+                        watch_providers_data, country_code=country_code)
                     # If country_code is provided and result is a list, wrap it in a dict with country code as key
                     if country_code and isinstance(providers_result, list):
-                        normalized_data['providers'] = {country_code.upper(): providers_result}
+                        normalized_data['providers'] = {
+                            country_code.upper(): providers_result}
                     else:
                         normalized_data['providers'] = providers_result
-                
+
                 return normalized_data
 
         elif content_type == ContentItem.ContentType.TV_SHOW:
@@ -65,26 +71,30 @@ def _fetch_tmdb_data(external_id: str, content_type: str, country_code: Optional
             data, status_code = client.get_tv_details(tv_id_int)
             if status_code == http_status.HTTP_200_OK:
                 normalized_data = normalize_tv(data)
-                
+
                 # Fetch external IDs and watch providers
-                external_ids_data, external_ids_status = client.get_tv_external_ids(tv_id_int)
-                watch_providers_data, watch_providers_status = client.get_tv_watch_providers(tv_id_int)
-                
-                # Add external IDs
+                external_ids_data, external_ids_status = client.get_tv_external_ids(
+                    tv_id_int)
+                watch_providers_data, watch_providers_status = client.get_tv_watch_providers(
+                    tv_id_int)
+
+                # Extract imdb_id from external_ids
                 if external_ids_status == http_status.HTTP_200_OK and external_ids_data:
-                    normalized_data['external_ids'] = external_ids_data
                     if external_ids_data.get('imdb_id'):
-                        normalized_data['imdb_id'] = external_ids_data.get('imdb_id')
-                
+                        normalized_data['imdb_id'] = external_ids_data.get(
+                            'imdb_id')
+
                 # Add providers (normalized watch providers, filtered by country if provided)
                 if watch_providers_status == http_status.HTTP_200_OK and watch_providers_data:
-                    providers_result = normalize_providers(watch_providers_data, country_code=country_code)
+                    providers_result = normalize_providers(
+                        watch_providers_data, country_code=country_code)
                     # If country_code is provided and result is a list, wrap it in a dict with country code as key
                     if country_code and isinstance(providers_result, list):
-                        normalized_data['providers'] = {country_code.upper(): providers_result}
+                        normalized_data['providers'] = {
+                            country_code.upper(): providers_result}
                     else:
                         normalized_data['providers'] = providers_result
-                
+
                 return normalized_data
 
         elif content_type == ContentItem.ContentType.SEASON:
@@ -93,7 +103,8 @@ def _fetch_tmdb_data(external_id: str, content_type: str, country_code: Optional
             if len(parts) == 2:
                 tv_id = int(parts[0])
                 season_number = int(parts[1])
-                data, status_code = client.get_season_details(tv_id, season_number)
+                data, status_code = client.get_season_details(
+                    tv_id, season_number)
 
                 if status_code == http_status.HTTP_200_OK:
                     tv_data, tv_status = client.get_tv_details(tv_id)
@@ -109,32 +120,33 @@ def _fetch_tmdb_data(external_id: str, content_type: str, country_code: Optional
                         tv_show_name=tv_show_name,
                         tv_show_backdrop_path=tv_show_backdrop_path
                     )
-                    
+
                     # Fetch external IDs and watch providers for season
-                    external_ids_data, external_ids_status = client.get_season_external_ids(tv_id, season_number)
-                    watch_providers_data, watch_providers_status = client.get_season_watch_providers(tv_id, season_number)
-                    
-                    # Add external IDs
-                    if external_ids_status == http_status.HTTP_200_OK and external_ids_data:
-                        normalized_data['external_ids'] = external_ids_data
-                        if external_ids_data.get('imdb_id'):
-                            normalized_data['imdb_id'] = external_ids_data.get('imdb_id')
-                    
+                    external_ids_data, external_ids_status = client.get_season_external_ids(
+                        tv_id, season_number)
+                    watch_providers_data, watch_providers_status = client.get_season_watch_providers(
+                        tv_id, season_number)
+
+                    # Note: IMDB doesn't handle seasons, so we don't extract imdb_id
+
                     # Add providers (normalized watch providers, filtered by country if provided)
                     if watch_providers_status == http_status.HTTP_200_OK and watch_providers_data:
-                        providers_result = normalize_providers(watch_providers_data, country_code=country_code)
+                        providers_result = normalize_providers(
+                            watch_providers_data, country_code=country_code)
                         # If country_code is provided and result is a list, wrap it in a dict with country code as key
                         if country_code and isinstance(providers_result, list):
-                            normalized_data['providers'] = {country_code.upper(): providers_result}
+                            normalized_data['providers'] = {
+                                country_code.upper(): providers_result}
                         else:
                             normalized_data['providers'] = providers_result
-                    
+
                     return normalized_data
 
     except Exception:
         pass
 
     return None
+
 
 def _fetch_igdb_data(external_id: str) -> Optional[Dict[str, Any]]:
     client = IGDBClient()
@@ -160,6 +172,7 @@ def _fetch_spotify_data(external_id: str) -> Optional[Dict[str, Any]]:
         pass
 
     return None
+
 
 def _fetch_openlibrary_data(external_id: str) -> Optional[Dict[str, Any]]:
     client = OpenLibraryClient()
