@@ -159,7 +159,7 @@ export default function RatingsSection({
 
   if (loading && page === 1) {
     return (
-      <div className="container mx-auto px-4 pb-8">
+      <div className="container mx-auto px-4 mb-10">
         <div className="flex items-center justify-center min-h-[200px]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"></div>
@@ -171,9 +171,8 @@ export default function RatingsSection({
   }
 
   return (
-    <div className="container mx-auto px-4 pb-8">
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-6">
+    <div className="container mx-auto px-4 mb-10">
+      <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-white">Ratings</h2>
           {!userRating && user && onEditRating && (
             <Button
@@ -187,9 +186,9 @@ export default function RatingsSection({
               Rate This
             </Button>
           )}
-        </div>
+      </div>
 
-        {/* Ratings List */}
+      {/* Ratings List */}
         {error && (
           <div className="bg-red-500/10 border border-red-500/50 rounded-md p-3 mb-4">
             <p className="text-red-500 text-sm">{error}</p>
@@ -208,29 +207,28 @@ export default function RatingsSection({
           </div>
         )}
 
-        {/* Pagination */}
-        {(hasNext || hasPrevious) && (
-          <div className="flex justify-center gap-4 mt-6">
-            <Button
-              variant="outline"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={!hasPrevious || loading}
-            >
-              Previous
-            </Button>
-            <span className="text-white/60 flex items-center">
-              Page {page}
-            </span>
-            <Button
-              variant="outline"
-              onClick={() => setPage((p) => p + 1)}
-              disabled={!hasNext || loading}
-            >
-              Next
-            </Button>
-          </div>
-        )}
-      </div>
+      {/* Pagination */}
+      {(hasNext || hasPrevious) && (
+        <div className="flex justify-center gap-4 mt-6">
+          <Button
+            variant="outline"
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={!hasPrevious || loading}
+          >
+            Previous
+          </Button>
+          <span className="text-white/60 flex items-center">
+            Page {page}
+          </span>
+          <Button
+            variant="outline"
+            onClick={() => setPage((p) => p + 1)}
+            disabled={!hasNext || loading}
+          >
+            Next
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

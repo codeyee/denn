@@ -20,11 +20,10 @@ export default function AlbumDetailContent({ album }: AlbumDetailContentProps) {
   const releaseDate = formatReleaseDate(album.release_date);
   return (
     <div className="container mx-auto px-4">
-      <div className="mb-10 text-lg">
-        <div>
-          <h2 className="text-2xl font-bold text-white mb-4">About</h2>
+      <div className="mb-10">
+        <h2 className="text-2xl font-bold text-white mb-6">About</h2>
 
-          <div className="my-6 space-y-2">
+        <div className="mt-6 space-y-2">
             {releaseDate && (
               <div>
                 <span className="text-white/60 font-bold">Release Date:</span>
@@ -51,30 +50,29 @@ export default function AlbumDetailContent({ album }: AlbumDetailContentProps) {
                 </span>
               </div>
             )}
-          </div>
-
-          {album.external_url && (
-            <div className="mt-6">
-              <a
-                href={album.external_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer"
-              >
-                <img
-                  src="/images/logos/spotify.svg"
-                  alt="Spotify"
-                  className="h-7 w-auto"
-                />
-              </a>
-            </div>
-          )}
         </div>
+
+        {album.external_url && (
+          <div className="mt-6">
+            <a
+              href={album.external_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer"
+            >
+              <img
+                src="/images/logos/spotify.svg"
+                alt="Spotify"
+                className="h-7 w-auto"
+              />
+            </a>
+          </div>
+        )}
       </div>
 
       {/* Tracks Section */}
       {album.tracks && album.tracks.length > 0 && (
-        <div className="p-6 md:p-8">
+        <div className="container mx-auto px-4 mb-10">
           <h2 className="text-2xl font-bold text-white mb-6">Tracks</h2>
           <VerticalList spacing="md">
             {album.tracks.map((track) => (

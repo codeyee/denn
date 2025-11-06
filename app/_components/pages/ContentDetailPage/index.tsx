@@ -243,9 +243,9 @@ export default function ContentDetailPage({
   const renderAboutSection = () => {
     if (!detailData) {
       return (
-        <div className="container mx-auto px-4 py-8">
-          <div className="p-6">
-            <h2 className="text-2xl font-bold text-white mb-4">Content Details</h2>
+        <div className="container mx-auto px-4">
+          <div className="mb-10">
+            <h2 className="text-2xl font-bold text-white mb-6">Content Details</h2>
             <p className="text-gray-400">Detailed information not available.</p>
           </div>
         </div>
@@ -263,41 +263,39 @@ export default function ContentDetailPage({
       const releaseDate = formatReleaseDate(tvShow.release_date);
       return (
         <div className="container mx-auto px-4">
-          <div className="mb-10 text-lg">
-            <div>
-              <h2 className="text-2xl font-bold text-white mb-4">About</h2>
-              {tvShow.tagline && (
-                <p className="text-white/80 italic mb-4 font-sans">"{tvShow.tagline}"</p>
+          <div className="mb-10">
+            <h2 className="text-2xl font-bold text-white mb-6">About</h2>
+            {tvShow.tagline && (
+              <p className="text-white/80 italic mb-4 font-sans">"{tvShow.tagline}"</p>
+            )}
+            {tvShow.description && (
+              <p className="text-gray-300 mb-4 leading-relaxed font-sans">{tvShow.description}</p>
+            )}
+            <div className="mt-6 space-y-2">
+              {releaseDate && (
+                <div>
+                  <span className="text-white/60 font-bold">Release Date:</span>
+                  <span className="text-white ml-2 font-sans">{releaseDate}</span>
+                </div>
               )}
-              {tvShow.description && (
-                <p className="text-gray-300 mb-4 leading-relaxed font-sans">{tvShow.description}</p>
+              {status && status !== "Ended" && (
+                <div>
+                  <span className="text-white/60 font-bold">Status:</span>
+                  <span className="text-white ml-2 font-sans">{status}</span>
+                </div>
               )}
-              <div className="my-6 space-y-2">
-                {releaseDate && (
-                  <div>
-                    <span className="text-white/60 font-bold">Release Date:</span>
-                    <span className="text-white ml-2 font-sans">{releaseDate}</span>
-                  </div>
-                )}
-                {status && status !== "Ended" && (
-                  <div>
-                    <span className="text-white/60 font-bold">Status:</span>
-                    <span className="text-white ml-2 font-sans">{status}</span>
-                  </div>
-                )}
-                {tvShow.number_of_seasons !== undefined && (
-                  <div>
-                    <span className="text-white/60 font-bold">Seasons:</span>
-                    <span className="text-white ml-2 font-sans">{tvShow.number_of_seasons}</span>
-                  </div>
-                )}
-                {tvShow.number_of_episodes !== undefined && (
-                  <div>
-                    <span className="text-white/60 font-bold">Episodes:</span>
-                    <span className="text-white ml-2 font-sans">{tvShow.number_of_episodes}</span>
-                  </div>
-                )}
-              </div>
+              {tvShow.number_of_seasons !== undefined && (
+                <div>
+                  <span className="text-white/60 font-bold">Seasons:</span>
+                  <span className="text-white ml-2 font-sans">{tvShow.number_of_seasons}</span>
+                </div>
+              )}
+              {tvShow.number_of_episodes !== undefined && (
+                <div>
+                  <span className="text-white/60 font-bold">Episodes:</span>
+                  <span className="text-white ml-2 font-sans">{tvShow.number_of_episodes}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -308,13 +306,12 @@ export default function ContentDetailPage({
       const releaseDate = formatReleaseDate(season.release_date);
       return (
         <div className="container mx-auto px-4">
-          <div className="mb-10 text-lg">
-            <div>
-              <h2 className="text-2xl font-bold text-white mb-4">About</h2>
-              {season.description && (
-                <p className="text-gray-300 mb-4 leading-relaxed font-sans">{season.description}</p>
-              )}
-              <div className="my-6 space-y-2">
+          <div className="mb-10">
+            <h2 className="text-2xl font-bold text-white mb-6">About</h2>
+            {season.description && (
+              <p className="text-gray-300 mb-4 leading-relaxed font-sans">{season.description}</p>
+            )}
+            <div className="mt-6 space-y-2">
                 {releaseDate && (
                   <div>
                     <span className="text-white/60 font-bold">Release Date:</span>
@@ -327,7 +324,6 @@ export default function ContentDetailPage({
                     <span className="text-white ml-2 font-sans">{season.number_of_episodes}</span>
                   </div>
                 )}
-              </div>
             </div>
           </div>
         </div>
@@ -338,10 +334,9 @@ export default function ContentDetailPage({
       const releaseDate = formatReleaseDate(album.release_date);
       return (
         <div className="container mx-auto px-4">
-          <div className="mb-10 text-lg">
-            <div>
-              <h2 className="text-2xl font-bold text-white mb-4">About</h2>
-              <div className="my-6 space-y-2">
+          <div className="mb-10">
+            <h2 className="text-2xl font-bold text-white mb-6">About</h2>
+            <div className="mt-6 space-y-2">
                 {releaseDate && (
                   <div>
                     <span className="text-white/60 font-bold">Release Date:</span>
@@ -368,24 +363,23 @@ export default function ContentDetailPage({
                     </span>
                   </div>
                 )}
-              </div>
-              {album.external_url && (
-                <div className="mt-6">
-                  <a
-                    href={album.external_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer"
-                  >
-                    <img
-                      src="/images/logos/spotify.svg"
-                      alt="Spotify"
-                      className="h-7 w-auto"
-                    />
-                  </a>
-                </div>
-              )}
             </div>
+            {album.external_url && (
+              <div className="mt-6">
+                <a
+                  href={album.external_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer"
+                >
+                  <img
+                    src="/images/logos/spotify.svg"
+                    alt="Spotify"
+                    className="h-7 w-auto"
+                  />
+                </a>
+              </div>
+            )}
           </div>
         </div>
       );
@@ -395,13 +389,12 @@ export default function ContentDetailPage({
       const releaseDate = formatReleaseDate(game.release_date);
       return (
         <div className="container mx-auto px-4">
-          <div className="mb-10 text-lg">
-            <div>
-              <h2 className="text-2xl font-bold text-white mb-4">About</h2>
-              {game.description && (
-                <p className="text-gray-300 mb-4 leading-relaxed font-sans">{game.description}</p>
-              )}
-              <div className="my-6 space-y-2">
+          <div className="mb-10">
+            <h2 className="text-2xl font-bold text-white mb-6">About</h2>
+            {game.description && (
+              <p className="text-gray-300 mb-4 leading-relaxed font-sans">{game.description}</p>
+            )}
+            <div className="mt-6 space-y-2">
                 {releaseDate && (
                   <div>
                     <span className="text-white/60 font-bold">Release Date:</span>
@@ -420,7 +413,6 @@ export default function ContentDetailPage({
                     <span className="text-white ml-2 font-sans">{game.platforms.join(", ")}</span>
                   </div>
                 )}
-              </div>
             </div>
           </div>
         </div>
@@ -430,9 +422,9 @@ export default function ContentDetailPage({
     }
 
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="p-6">
-          <h2 className="text-2xl font-bold text-white mb-4">Content Details</h2>
+      <div className="container mx-auto px-4">
+        <div className="mb-10">
+          <h2 className="text-2xl font-bold text-white mb-6">Content Details</h2>
           <p className="text-gray-400">Content type not supported.</p>
         </div>
       </div>
@@ -453,7 +445,7 @@ export default function ContentDetailPage({
     };
 
     return (
-      <div className="p-6 md:p-8">
+      <div className="container mx-auto px-4 mb-10">
         <h2 className="text-2xl font-bold text-white mb-6">Tracks</h2>
         <VerticalList spacing="md">
           {album.tracks.map((track) => (
@@ -483,7 +475,7 @@ export default function ContentDetailPage({
     if (!season.episodes || season.episodes.length === 0) return null;
 
     return (
-      <div className="p-6 md:p-8">
+      <div className="container mx-auto px-4 mb-10">
         <h2 className="text-2xl font-bold text-white mb-6">Episodes</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
           {season.episodes.map((episode) => (
@@ -515,7 +507,7 @@ export default function ContentDetailPage({
     if (galleryImages.length === 0) return null;
 
     return (
-      <div className="p-6 md:p-8 mb-10">
+      <div className="container mx-auto px-4 mb-10">
         <h2 className="text-2xl font-bold text-white mb-6">Artworks & Screenshots</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
           {galleryImages.map((image, index) => (
@@ -692,7 +684,7 @@ export default function ContentDetailPage({
 
         {/* Rating Summary */}
         {contentItem && (
-          <section className="mb-6">
+          <section className="mb-10">
             <div className="container mx-auto px-4">
               {contentItem.average_rating && (contentItem.rating_count ?? 0) > 0 ? (
                 <div className="flex gap-2 flex-wrap flex-col">

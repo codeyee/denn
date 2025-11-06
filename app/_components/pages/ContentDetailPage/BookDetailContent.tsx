@@ -12,14 +12,13 @@ export default function BookDetailContent({ book }: BookDetailContentProps) {
   return (
     <>
       <div className="container mx-auto px-4">
-        <div className="mb-10 text-lg">
-          <div>
-            <h2 className="text-2xl font-bold text-white mb-4">About</h2>
-            {book.description && (
-              <p className="text-gray-300 mb-4 leading-relaxed font-sans">"{book.description}..."</p>
-            )}
+        <div className="mb-10">
+          <h2 className="text-2xl font-bold text-white mb-6">About</h2>
+          {book.description && (
+            <p className="text-gray-300 mb-4 leading-relaxed font-sans">"{book.description}..."</p>
+          )}
 
-            <div className="my-6 space-y-2">
+          <div className="mt-6 space-y-2">
               {book.authors && book.authors.length > 0 && (
                 <div>
                   <span className="text-white/60 font-bold">Authors:</span>
@@ -38,7 +37,6 @@ export default function BookDetailContent({ book }: BookDetailContentProps) {
                   <span className="text-white ml-2 font-sans">{book.pages}</span>
                 </div>
               )}
-            </div>
           </div>
         </div>
       </div>

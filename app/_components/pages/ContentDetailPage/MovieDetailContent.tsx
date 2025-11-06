@@ -12,17 +12,16 @@ export default function MovieDetailContent({ movie }: MovieDetailContentProps) {
 
   return (
     <div className="container mx-auto px-4">
-      <div className="mb-10 text-lg">
-        <div>
-          <h2 className="text-2xl font-bold text-white mb-4">About</h2>
-          {movie.tagline && (
-            <p className="text-white/80 italic mb-4 font-sans">"{movie.tagline}"</p>
-          )}
-          {movie.description && (
-            <p className="text-gray-300 mb-4 leading-relaxed font-sans">{movie.description}</p>
-          )}
+      <div className="mb-10">
+        <h2 className="text-2xl font-bold text-white mb-6">About</h2>
+        {movie.tagline && (
+          <p className="text-white/80 italic mb-4 font-sans">"{movie.tagline}"</p>
+        )}
+        {movie.description && (
+          <p className="text-gray-300 mb-4 leading-relaxed font-sans">{movie.description}</p>
+        )}
 
-          <div className="my-6 space-y-2">
+        <div className="mt-6 space-y-2">
             {releaseDate && (
               <div>
                 <span className="text-white/60 font-bold">Release Date:</span>
@@ -41,26 +40,24 @@ export default function MovieDetailContent({ movie }: MovieDetailContentProps) {
                 <span className="text-white ml-2 font-sans">{movie.status}</span>
               </div>
             )}
-          </div>
-
-          {movie.imdb_id && (
-            <div className="flex flex-row gap-2">
-              <a
-                href={`https://www.imdb.com/title/${movie.imdb_id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex flex-row gap-2 hover:opacity-80 transition-opacity cursor-pointer"
-              >
-                <img
-                  src="/images/logos/imdb.svg"
-                  alt="IMDb"
-                  className="h-7 w-auto"
-                />
-              </a>
-            </div>
-          )}
-
         </div>
+
+        {movie.imdb_id && (
+          <div className="mt-6 flex flex-row gap-2">
+            <a
+              href={`https://www.imdb.com/title/${movie.imdb_id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex flex-row gap-2 hover:opacity-80 transition-opacity cursor-pointer"
+            >
+              <img
+                src="/images/logos/imdb.svg"
+                alt="IMDb"
+                className="h-7 w-auto"
+              />
+            </a>
+          </div>
+        )}
       </div>
     </div>
   );

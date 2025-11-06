@@ -7,7 +7,7 @@ import * as z from "zod";
 import Modal from "@/app/_components/common/Modal";
 import { Button } from "@/app/_components/lib/button";
 import StarRating from "@/app/_components/common/Rating/StarRating";
-import { Rating, RatingCreate } from "@/lib/api/types";
+import { ContentType, Rating, RatingCreate, SourceApi } from "@/lib/api/types";
 
 // Define validation schema
 const ratingSchema = z.object({
@@ -78,6 +78,9 @@ export default function RatingModal({
       await onSubmitRating({
         score: data.score.toString(),
         comment: data.comment || null,
+        source_api: existingRating?.content_item.source_api as SourceApi,
+        external_id: existingRating?.content_item.external_id as string,
+        content_type: existingRating?.content_item.content_type as ContentType,
       });
 
       // Reset form and close modal on success
