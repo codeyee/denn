@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { contentItemActions, videoActions, musicActions, gameActions, bookActions, ratingActions } from "@/lib/api";
 import { ContentType, SourceApi, Rating, RatingCreate } from "@/lib/api/types";
@@ -51,6 +51,7 @@ export default function ContentDetailPage({
   const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
   const [isRatingLoading, setIsRatingLoading] = useState(false);
   const [ratingRefreshKey, setRatingRefreshKey] = useState(0);
+  const userRatingFetchRef = useRef<{ contentItemId: number | null; userId: number | null }>({ contentItemId: null, userId: null });
 
   useEffect(() => {
     const fetchContent = async () => {
@@ -79,22 +80,6 @@ export default function ContentDetailPage({
         }
 
         setContentItem(item);
-
-        // Fetch user's rating if authenticated
-        if (user?.id) {
-          try {
-            const ratingsResponse = await ratingActions.list({
-              content_item_id: item.id,
-              user_id: user.id,
-              page_size: 1,
-            });
-            if (ratingsResponse.results.length > 0) {
-              setUserRating(ratingsResponse.results[0]);
-            }
-          } catch (err) {
-            console.warn("Could not fetch user rating:", err);
-          }
-        }
 
         // Parse source_data if it's a string
         let sourceData: any = null;
@@ -170,7 +155,53 @@ export default function ContentDetailPage({
     if (contentId || (externalId && sourceApi && contentTypeStr)) {
       fetchContent();
     }
-  }, [contentId, externalId, sourceApi, contentTypeStr, user?.id]);
+  }, [contentId, externalId, sourceApi, contentTypeStr]);
+
+  // Separate effect to fetch user rating when contentItem changes
+  useEffect(() => {
+    const fetchUserRating = async () => {
+      if (!contentItem?.id || !user?.id) {
+        setUserRating(null);
+        userRatingFetchRef.current = { contentItemId: null, userId: null };
+        return;
+      }
+
+      // Prevent duplicate calls for the same contentItem and user
+      if (userRatingFetchRef.current.contentItemId === contentItem.id && 
+          userRatingFetchRef.current.userId === user.id) {
+        return;
+      }
+
+      // Mark as fetching
+      userRatingFetchRef.current = { contentItemId: contentItem.id, userId: user.id };
+
+      try {
+        const ratingsResponse = await ratingActions.list({
+          content_item_id: contentItem.id,
+          user_id: user.id,
+          page_size: 1,
+        });
+        // Verify we're still fetching the same contentItem/user combination
+        if (userRatingFetchRef.current.contentItemId === contentItem.id && 
+            userRatingFetchRef.current.userId === user.id) {
+          if (ratingsResponse.results.length > 0) {
+            setUserRating(ratingsResponse.results[0]);
+          } else {
+            setUserRating(null);
+          }
+        }
+      } catch (err) {
+        console.warn("Could not fetch user rating:", err);
+        // Only set to null if we're still fetching the same contentItem/user
+        if (userRatingFetchRef.current.contentItemId === contentItem.id && 
+            userRatingFetchRef.current.userId === user.id) {
+          setUserRating(null);
+        }
+      }
+    };
+
+    fetchUserRating();
+  }, [contentItem?.id, user?.id]);
 
   if (loading) {
     return (
