@@ -20,11 +20,13 @@ from content.permissions import IsOwnerOrReadOnly
         - `render_items`: Set to `true` to include items list for all lists (default: false)
         - `max_items`: If `render_items` is true, limit the number of items per list (default: 10)
         - `render_source`: Set to `true` to include detailed information from external APIs (TMDB, IGDB, Spotify, OpenLibrary) in the `source_data` field of each content item (default: false)
+        - `country`: ISO 3166-1 alpha-2 country code (e.g., US, GB, FR) to filter providers by country (only applies when render_source=true and source_api=tmdb).
         ''',
         parameters=[
             OpenApiParameter('render_items', OpenApiTypes.BOOL, OpenApiParameter.QUERY, required=False, description='Include items list in response (set to true/false, default: false)'),
             OpenApiParameter('max_items', OpenApiTypes.INT, OpenApiParameter.QUERY, required=False, description='Maximum number of items per list when render_items is true (default: 10)'),
-            OpenApiParameter('render_source', OpenApiTypes.BOOL, OpenApiParameter.QUERY, required=False, description='Include external API data in response (set to true/false, default: false)')
+            OpenApiParameter('render_source', OpenApiTypes.BOOL, OpenApiParameter.QUERY, required=False, description='Include external API data in response (set to true/false, default: false)'),
+            OpenApiParameter('country', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='ISO 3166-1 alpha-2 country code to filter providers by country (only applies when render_source=true and source_api=tmdb)')
         ],
         responses={200: UserListSerializer(many=True)}
     ),
@@ -34,11 +36,13 @@ from content.permissions import IsOwnerOrReadOnly
         description='''
         Get detailed information about a specific list including all items and members.
 
-        **Optional Query Parameter:**
+        **Optional Query Parameters:**
         - `render_source`: Set to `true` to include detailed information from external APIs (TMDB, IGDB, Spotify, OpenLibrary) in the `source_data` field of each content item.
+        - `country`: ISO 3166-1 alpha-2 country code (e.g., US, GB, FR) to filter providers by country (only applies when render_source=true and source_api=tmdb).
         ''',
         parameters=[
-            OpenApiParameter('render_source', OpenApiTypes.BOOL, OpenApiParameter.QUERY, required=False, description='Include external API data in response (set to true/false)')
+            OpenApiParameter('render_source', OpenApiTypes.BOOL, OpenApiParameter.QUERY, required=False, description='Include external API data in response (set to true/false)'),
+            OpenApiParameter('country', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='ISO 3166-1 alpha-2 country code to filter providers by country (only applies when render_source=true and source_api=tmdb)')
         ],
         responses={
             200: UserListDetailSerializer,

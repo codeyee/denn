@@ -52,22 +52,28 @@ CACHE_TIMEOUTS = {
     'homepage': 3600 * 12,
 
     # API-specific cache timeouts
-    'api_igdb_search': 3600 * 3,
-    'api_igdb_details': 3600 * 12,
-    'api_igdb_popular': 3600 * 12,
+    'api_igdb_search': 3600 * 6,
+    'api_igdb_details': 3600 * 24,
+    'api_igdb_popular': 3600 * 24,
 
-    'api_spotify_search': 3600 * 3,
-    'api_spotify_details': 3600 * 12,
-    'api_spotify_new_releases': 3600 * 12,
+    'api_spotify_search': 3600 * 6,
+    'api_spotify_details': 3600 * 24,
+    'api_spotify_new_releases': 3600 * 24,
 
-    'api_tmdb_search': 3600 * 3,
-    'api_tmdb_details': 3600 * 12,
-    'api_tmdb_popular_movies': 3600 * 12,
-    'api_tmdb_popular_tv': 3600 * 12,
+    'api_tmdb_search': 3600 * 6,
+    'api_tmdb_details': 3600 * 24,
+    'api_tmdb_popular_movies': 3600 * 24,
+    'api_tmdb_popular_tv': 3600 * 24,
+    'api_tmdb_external_ids': 3600 * 24 * 14,
+    'api_tmdb_watch_providers': 3600 * 24 * 14,
+    'api_tmdb_external_ids_tv': 3600 * 24 * 14,
+    'api_tmdb_watch_providers_tv': 3600 * 24 * 14,
+    'api_tmdb_external_ids_season': 3600 * 24 * 14,
+    'api_tmdb_watch_providers_season': 3600 * 24 * 14,
 
-    'api_openlibrary_search': 3600 * 3,
-    'api_openlibrary_details': 3600 * 12,
-    'api_openlibrary_trending': 3600 * 12,
+    'api_openlibrary_search': 3600 * 6,
+    'api_openlibrary_details': 3600 * 24,
+    'api_openlibrary_trending': 3600 * 24 * 14,
 }
 
 # Cache key patterns
@@ -91,6 +97,12 @@ CACHE_KEYS = {
     'api_tmdb_popular_movies': 'api:tmdb:popular:movies:{page}',
     'api_tmdb_popular_tv': 'api:tmdb:popular:tv:{page}',
     'api_tmdb_bulk': 'api:tmdb:bulk:{movie_ids}',
+    'api_tmdb_external_ids': 'api:tmdb:external_ids:movie:{movie_id}',
+    'api_tmdb_watch_providers': 'api:tmdb:watch_providers:movie:{movie_id}',
+    'api_tmdb_external_ids_tv': 'api:tmdb:external_ids:tv:{tv_id}',
+    'api_tmdb_watch_providers_tv': 'api:tmdb:watch_providers:tv:{tv_id}',
+    'api_tmdb_external_ids_season': 'api:tmdb:external_ids:season:{tv_id}:{season_number}',
+    'api_tmdb_watch_providers_season': 'api:tmdb:watch_providers:season:{tv_id}:{season_number}',
 
     'api_openlibrary_search': 'api:openlibrary:search:{query}:{page}:{limit}',
     'api_openlibrary_details': 'api:openlibrary:details:{book_key}',

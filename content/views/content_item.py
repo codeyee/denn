@@ -16,8 +16,9 @@ from content.permissions import IsAdminOrReadOnly
         description='''
         Get all content items with optional filtering by source API, content type, or search.
 
-        **Optional Query Parameter:**
+        **Optional Query Parameters:**
         - `render_source`: Set to `true` to include detailed information from external APIs (TMDB, IGDB, Spotify, OpenLibrary) in the `source_data` field of each content item.
+        - `country`: ISO 3166-1 alpha-2 country code (e.g., US, GB, FR) to filter providers by country (only applies when render_source=true and source_api=tmdb).
         ''',
         parameters=[
             OpenApiParameter('source_api', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Filter by source API (tmdb, igdb, spotify, openlibrary)'),
@@ -25,6 +26,7 @@ from content.permissions import IsAdminOrReadOnly
             OpenApiParameter('external_id', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Filter by external ID'),
             OpenApiParameter('ordering', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Order by field (e.g., "-created_at", "rating_count", "-average_rating")'),
             OpenApiParameter('render_source', OpenApiTypes.BOOL, OpenApiParameter.QUERY, required=False, description='Include external API data in response (set to true/false)'),
+            OpenApiParameter('country', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='ISO 3166-1 alpha-2 country code to filter providers by country (only applies when render_source=true and source_api=tmdb)'),
         ],
         responses={200: ContentItemSerializer(many=True)}
     ),
@@ -34,11 +36,13 @@ from content.permissions import IsAdminOrReadOnly
         description='''
         Get detailed information about a specific content item.
 
-        **Optional Query Parameter:**
+        **Optional Query Parameters:**
         - `render_source`: Set to `true` to include detailed information from external APIs (TMDB, IGDB, Spotify, OpenLibrary) in the `source_data` field.
+        - `country`: ISO 3166-1 alpha-2 country code (e.g., US, GB, FR) to filter providers by country (only applies when render_source=true and source_api=tmdb).
         ''',
         parameters=[
-            OpenApiParameter('render_source', OpenApiTypes.BOOL, OpenApiParameter.QUERY, required=False, description='Include external API data in response (set to true/false)')
+            OpenApiParameter('render_source', OpenApiTypes.BOOL, OpenApiParameter.QUERY, required=False, description='Include external API data in response (set to true/false)'),
+            OpenApiParameter('country', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='ISO 3166-1 alpha-2 country code to filter providers by country (only applies when render_source=true and source_api=tmdb)')
         ],
         responses={
             200: ContentItemSerializer,

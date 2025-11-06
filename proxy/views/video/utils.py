@@ -1,4 +1,4 @@
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from django.conf import settings
 
 def build_image_url(path: Optional[str], size: str = 'w500') -> Optional[str]:
@@ -9,6 +9,92 @@ def build_image_url(path: Optional[str], size: str = 'w500') -> Optional[str]:
 
 def build_still_url(path: Optional[str]) -> Optional[str]:
     return build_image_url(path, size='w500')
+
+def normalize_providers(watch_providers_data: Optional[Dict[str, Any]], country_code: Optional[str] = None) -> Optional[List[Dict[str, Any]]]:
+    if not watch_providers_data: return None
+
+    results = watch_providers_data.get('results', {})
+    if not results: return None
+
+    # Track providers by ID to merge rent/buy
+    providers_by_id: Dict[int, Dict[str, Any]] = {}
+
+    # If country_code is provided, only process that country
+    countries_to_process = {}
+    if country_code:
+        country_code_upper = country_code.upper()
+        if country_code_upper in results:
+            countries_to_process[country_code_upper] = results[country_code_upper]
+    else:
+        countries_to_process = results
+
+    # Iterate through countries to process
+    for country_code_key, country_data in countries_to_process.items():
+        if not isinstance(country_data, dict): continue
+
+        # Process flatrate providers (streaming)
+        flatrate_providers = country_data.get('flatrate', [])
+
+        for provider in flatrate_providers:
+            provider_id = provider.get('provider_id')
+
+            if provider_id:
+                providers_by_id[provider_id] = {
+                    'id': provider_id,
+                    'name': provider.get('provider_name', ''),
+                    'image_url': build_image_url(provider.get('logo_path')),
+                    'type': 'streaming'
+                }
+
+        # Process rent providers
+        rent_providers = country_data.get('rent', [])
+        for provider in rent_providers:
+            provider_id = provider.get('provider_id')
+            if provider_id:
+                if provider_id in providers_by_id:
+                    # Already exists (from flatrate), skip or update type
+                    # If it's streaming, keep it as streaming
+                    if providers_by_id[provider_id]['type'] != 'streaming':
+                        # If it was buy, make it rent_buy
+                        providers_by_id[provider_id]['type'] = 'rent_buy'
+                else:
+                    providers_by_id[provider_id] = {
+                        'id': provider_id,
+                        'name': provider.get('provider_name', ''),
+                        'image_url': build_image_url(provider.get('logo_path')),
+                        'type': 'rent'
+                    }
+
+        # Process buy providers
+        buy_providers = country_data.get('buy', [])
+        for provider in buy_providers:
+            provider_id = provider.get('provider_id')
+            if provider_id:
+                if provider_id in providers_by_id:
+                    # Already exists
+                    current_type = providers_by_id[provider_id]['type']
+                    if current_type == 'streaming':
+                        # Keep as streaming
+                        pass
+                    elif current_type == 'rent':
+                        # Make it rent_buy
+                        providers_by_id[provider_id]['type'] = 'rent_buy'
+                    elif current_type == 'buy':
+                        # Already buy, keep it
+                        pass
+                else:
+                    providers_by_id[provider_id] = {
+                        'id': provider_id,
+                        'name': provider.get('provider_name', ''),
+                        'image_url': build_image_url(provider.get('logo_path')),
+                        'type': 'buy'
+                    }
+
+    # Convert to list and sort by id
+    providers_list = list(providers_by_id.values())
+    providers_list.sort(key=lambda x: x['id'])
+
+    return providers_list if providers_list else None
 
 def normalize_search_item(item: Dict[str, Any], media_type: Optional[str] = None) -> Dict[str, Any]:
     item_type = media_type or item.get('media_type')

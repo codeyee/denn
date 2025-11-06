@@ -143,3 +143,59 @@ class TMDBClient(CachedAPIClient):
             operation='search',
             page=page
         )
+
+    def get_movie_external_ids(self, movie_id: int) -> Tuple[Dict[str, Any], int]:
+        endpoint = f'movie/{movie_id}/external_ids'
+        return self.cached_get(
+            endpoint=endpoint,
+            cache_type='api_tmdb_external_ids',
+            operation='details',
+            movie_id=movie_id
+        )
+
+    def get_movie_watch_providers(self, movie_id: int) -> Tuple[Dict[str, Any], int]:
+        endpoint = f'movie/{movie_id}/watch/providers'
+        return self.cached_get(
+            endpoint=endpoint,
+            cache_type='api_tmdb_watch_providers',
+            operation='details',
+            movie_id=movie_id
+        )
+
+    def get_tv_external_ids(self, tv_id: int) -> Tuple[Dict[str, Any], int]:
+        endpoint = f'tv/{tv_id}/external_ids'
+        return self.cached_get(
+            endpoint=endpoint,
+            cache_type='api_tmdb_external_ids_tv',
+            operation='details',
+            tv_id=tv_id
+        )
+
+    def get_tv_watch_providers(self, tv_id: int) -> Tuple[Dict[str, Any], int]:
+        endpoint = f'tv/{tv_id}/watch/providers'
+        return self.cached_get(
+            endpoint=endpoint,
+            cache_type='api_tmdb_watch_providers_tv',
+            operation='details',
+            tv_id=tv_id
+        )
+
+    def get_season_external_ids(self, tv_id: int, season_number: int) -> Tuple[Dict[str, Any], int]:
+        endpoint = f'tv/{tv_id}/season/{season_number}/external_ids'
+        return self.cached_get(
+            endpoint=endpoint,
+            cache_type='api_tmdb_external_ids_season',
+            operation='details',
+            tv_id=tv_id,
+            season_number=season_number
+        )
+
+    def get_season_watch_providers(self, tv_id: int, season_number: int) -> Tuple[Dict[str, Any], int]:
+        endpoint = f'tv/{tv_id}/season/{season_number}/watch/providers'
+        return self.cached_get(
+            endpoint=endpoint,
+            cache_type='api_tmdb_watch_providers_season',
+            operation='details',
+            tv_id=tv_id,
+            season_number=season_number
+        )

@@ -34,7 +34,8 @@ class ContentItemSerializer(serializers.ModelSerializer):
 
             if render_source == 'true':
                 from content.utils import fetch_source_data
-                return fetch_source_data(obj)
+                country_code = request.query_params.get('country', None)
+                return fetch_source_data(obj, country_code=country_code)
 
         return None
 

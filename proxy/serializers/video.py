@@ -27,6 +27,18 @@ class VideoSearchResponseSerializer(serializers.Serializer):
     metadata = PaginationMetadataSerializer()
     results = VideoSearchItemSerializer(many=True)
 
+class ProviderSerializer(serializers.Serializer):
+    id = serializers.IntegerField(help_text="Provider ID")
+    name = serializers.CharField(help_text="Provider name")
+    image_url = serializers.URLField(
+        allow_null=True,
+        help_text="Provider logo image URL"
+    )
+    type = serializers.ChoiceField(
+        choices=['streaming', 'rent', 'buy', 'rent_buy'],
+        help_text="Provider type: streaming (flatrate), rent, buy, or rent_buy"
+    )
+
 class MovieDetailSerializer(serializers.Serializer):
     id = serializers.IntegerField(help_text="TMDB movie ID")
     title = serializers.CharField(help_text="Movie title")
@@ -51,6 +63,17 @@ class MovieDetailSerializer(serializers.Serializer):
         allow_blank=True,
         help_text="IMDB ID",
         required=False
+    )
+    external_ids = serializers.DictField(
+        allow_null=True,
+        required=False,
+        help_text="External IDs (imdb_id, wikidata_id, facebook_id, instagram_id, twitter_id)"
+    )
+    providers = ProviderSerializer(
+        many=True,
+        allow_null=True,
+        required=False,
+        help_text="List of watch providers (streaming, rent, buy, rent_buy)"
     )
     images = serializers.DictField(
         child=serializers.DictField(
@@ -110,6 +133,23 @@ class TVShowDetailSerializer(serializers.Serializer):
         allow_blank=True,
         help_text="TV show tagline",
         required=False
+    )
+    imdb_id = serializers.CharField(
+        allow_null=True,
+        allow_blank=True,
+        help_text="IMDB ID",
+        required=False
+    )
+    external_ids = serializers.DictField(
+        allow_null=True,
+        required=False,
+        help_text="External IDs (imdb_id, wikidata_id, facebook_id, instagram_id, twitter_id)"
+    )
+    providers = ProviderSerializer(
+        many=True,
+        allow_null=True,
+        required=False,
+        help_text="List of watch providers (streaming, rent, buy, rent_buy)"
     )
     images = serializers.DictField(
         child=serializers.DictField(
@@ -186,6 +226,23 @@ class TVSeasonDetailSerializer(serializers.Serializer):
         allow_blank=True,
         required=False,
         help_text="Name of the TV show this season belongs to"
+    )
+    imdb_id = serializers.CharField(
+        allow_null=True,
+        allow_blank=True,
+        help_text="IMDB ID",
+        required=False
+    )
+    external_ids = serializers.DictField(
+        allow_null=True,
+        required=False,
+        help_text="External IDs (imdb_id, wikidata_id, facebook_id, instagram_id, twitter_id)"
+    )
+    providers = ProviderSerializer(
+        many=True,
+        allow_null=True,
+        required=False,
+        help_text="List of watch providers (streaming, rent, buy, rent_buy)"
     )
     images = serializers.DictField(
         child=serializers.DictField(
