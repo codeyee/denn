@@ -15,7 +15,8 @@ class VideoSuggestionsView(TMDBBaseView):
 
         results = []
         for item in data['results']:
-            if item.get('media_type') == MediaType.PERSON:
+            raw_media_type = item.get('media_type', '').lower()
+            if raw_media_type == 'person':
                 continue
 
             mapped_item = mapper.map_search_item(item)

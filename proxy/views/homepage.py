@@ -108,7 +108,8 @@ class HomepageView(APIView):
                     movies_data, movies_status = futures['movies'].result()
                     if movies_status == http_status.HTTP_200_OK and 'results' in movies_data:
                         for item in movies_data['results'][:limit]:
-                            if item.get('media_type') != MediaType.PERSON:
+                            raw_media_type = item.get('media_type', '').lower()
+                            if raw_media_type != 'person':
                                 movie_results.append(tmdb_mapper.map_search_item(item, MediaType.MOVIE).to_dict())
             except Exception as e:
                 print(f"Error fetching video (movies) suggestions: {e}")
@@ -118,7 +119,8 @@ class HomepageView(APIView):
                     tv_data, tv_status = futures['tv'].result()
                     if tv_status == http_status.HTTP_200_OK and 'results' in tv_data:
                         for item in tv_data['results'][:limit]:
-                            if item.get('media_type') != MediaType.PERSON:
+                            raw_media_type = item.get('media_type', '').lower()
+                            if raw_media_type != 'person':
                                 tv_show_results.append(tmdb_mapper.map_search_item(item, MediaType.TV_SHOW).to_dict())
             except Exception as e:
                 print(f"Error fetching video (tv) suggestions: {e}")

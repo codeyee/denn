@@ -188,8 +188,27 @@ class TMDBMapper:
 
         return providers_by_country if providers_by_country else None
 
+    def _normalize_media_type(self, media_type: Optional[str]) -> str:
+        if not media_type:
+            return media_type
+
+        media_type_lower = media_type.lower()
+
+        if media_type_lower == 'movie':
+            return MediaType.MOVIE
+
+        elif media_type_lower == 'tv':
+            return MediaType.TV_SHOW
+
+        elif media_type_lower == 'person':
+            return MediaType.PERSON
+
+        else:
+            return media_type.upper()
+
     def map_search_item(self, item: Dict[str, Any], media_type: Optional[str] = None) -> SearchItem:
-        item_type = media_type or item.get('media_type')
+        raw_type = media_type or item.get('media_type')
+        item_type = self._normalize_media_type(raw_type)
         title = item.get('title') or item.get('name') or ''
         original_title = item.get('original_title') or item.get('original_name') or ''
         release_date = item.get('release_date') or item.get('first_air_date')
