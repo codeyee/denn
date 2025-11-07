@@ -4,6 +4,21 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  /* Custom breakpoints*/
+  --breakpoint-3xl: 112rem;
+  --breakpoint-4xl: 128rem;
+  --breakpoint-5xl: 144rem;
+  --breakpoint-6xl: 160rem;
+  --breakpoint-7xl: 176rem;
+  --breakpoint-8xl: 192rem;
+  --breakpoint-9xl: 208rem;
+  --breakpoint-10xl: 224rem;
+  --breakpoint-11xl: 240rem;
+  --breakpoint-12xl: 256rem;
+  --breakpoint-13xl: 272rem;
+  --breakpoint-14xl: 288rem;
+  --breakpoint-15xl: 304rem;
+
   /* Fonts */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-azeret-mono);

@@ -91,18 +91,18 @@ export default function ContentBanner({ item, tvShowTitle, externalId, sourceApi
   const originalTitle = getOriginalTitle(item);
   const originalTitleIsSame =
     originalTitle && originalTitle.toLowerCase() === item.title.toLowerCase();
-  
+
   // For albums and books, show authors/artists as metadata
   const authors = getAuthors(item);
   const isAlbum = "total_tracks" in item;
   const isBook = "pages" in item;
   const isSeason = ("type" in item && item.type === "season") ||
-                   ("number_of_episodes" in item && !("number_of_seasons" in item));
+    ("number_of_episodes" in item && !("number_of_seasons" in item));
 
   // Build TV show URL for season subtitle
   const getTVShowUrl = (): string | null => {
     if (!isSeason || !externalId || !sourceApi) return null;
-    
+
     const [tvId] = externalId.split(":");
     if (!tvId) return null;
 
@@ -111,7 +111,7 @@ export default function ContentBanner({ item, tvShowTitle, externalId, sourceApi
       source_api: String(sourceApi).toLowerCase(),
       content_type: ContentType.TV_SHOW,
     });
-    
+
     return `/content?${params.toString()}`;
   };
 
@@ -119,14 +119,14 @@ export default function ContentBanner({ item, tvShowTitle, externalId, sourceApi
 
   if (!backgroundUrl) {
     return (
-      <div className="relative w-full aspect-16/16 md:aspect-16/13 lg:aspect-16/10 xl:aspect-16/7 overflow-hidden mb-6 md:mb-10 rounded-none md:rounded-2xl bg-gray-800 flex items-center justify-center">
+      <div className="relative w-full aspect-16/16 md:aspect-16/13 lg:aspect-16/10 xl:aspect-16/7 4xl:aspect-16/5 15xl:aspect-16/3 overflow-hidden mb-6 md:mb-10 rounded-none md:rounded-2xl bg-gray-800 flex items-center justify-center">
         {Icon && <Icon className="w-16 h-16 md:w-24 md:h-24 text-gray-400 opacity-50" />}
       </div>
     );
   }
 
   return (
-    <div className="relative w-full aspect-16/16 md:aspect-16/13 lg:aspect-16/10 xl:aspect-16/7 overflow-hidden mb-6 md:mb-10 rounded-none md:rounded-2xl">
+    <div className="relative w-full aspect-16/16 md:aspect-16/13 lg:aspect-16/10 xl:aspect-16/7 4xl:aspect-16/5 15xl:aspect-16/3 overflow-hidden mb-6 md:mb-10 rounded-none md:rounded-2xl">
       {/* Background */}
       <div
         className="absolute inset-0 bg-center bg-cover"
