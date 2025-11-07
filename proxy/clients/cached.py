@@ -31,7 +31,7 @@ class CachedAPIClient(BaseAPIClient):
         return settings.CACHE_TIMEOUTS.get(cache_type, 3600)
 
     def _generate_cache_key(self, cache_type: str, **kwargs) -> str:
-        cache_key_template = settings.CACHE_KEYS.get(cache_type, f'{cache_type}:{{}}')
+        cache_key_template = settings.CACHE_KEYS.get(cache_type)
         formatted_kwargs = {}
 
         for key, value in kwargs.items():
@@ -40,9 +40,13 @@ class CachedAPIClient(BaseAPIClient):
             else:
                 formatted_kwargs[key] = str(value)
 
-        try:
-            cache_key = cache_key_template.format(**formatted_kwargs)
-        except KeyError as e:
+        if cache_key_template:
+            try:
+                cache_key = cache_key_template.format(**formatted_kwargs)
+            except (KeyError, IndexError, ValueError):
+                key_string = f"{self.api_name}:{cache_type}:{json.dumps(formatted_kwargs, sort_keys=True)}"
+                cache_key = hashlib.md5(key_string.encode()).hexdigest()
+        else:
             key_string = f"{self.api_name}:{cache_type}:{json.dumps(formatted_kwargs, sort_keys=True)}"
             cache_key = hashlib.md5(key_string.encode()).hexdigest()
 

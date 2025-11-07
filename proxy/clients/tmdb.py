@@ -199,3 +199,31 @@ class TMDBClient(CachedAPIClient):
             tv_id=tv_id,
             season_number=season_number
         )
+
+    def get_movie_images(self, movie_id: int) -> Tuple[Dict[str, Any], int]:
+        endpoint = f'movie/{movie_id}/images'
+        return self.cached_get(
+            endpoint=endpoint,
+            cache_type='api_tmdb_images',
+            operation='details',
+            movie_id=movie_id
+        )
+
+    def get_tv_images(self, tv_id: int) -> Tuple[Dict[str, Any], int]:
+        endpoint = f'tv/{tv_id}/images'
+        return self.cached_get(
+            endpoint=endpoint,
+            cache_type='api_tmdb_images_tv',
+            operation='details',
+            tv_id=tv_id
+        )
+
+    def get_season_images(self, tv_id: int, season_number: int) -> Tuple[Dict[str, Any], int]:
+        endpoint = f'tv/{tv_id}/season/{season_number}/images'
+        return self.cached_get(
+            endpoint=endpoint,
+            cache_type='api_tmdb_images_season',
+            operation='details',
+            tv_id=tv_id,
+            season_number=season_number
+        )

@@ -7,6 +7,7 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     "DEFAULT_PAGINATION_CLASS": "core.pagination.CustomPageNumberPagination",
+    "EXCEPTION_HANDLER": "core.exceptions.custom_exception_handler",
     "PAGE_SIZE": 20,
     "TIMEOUT": 30,
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",

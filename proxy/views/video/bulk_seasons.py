@@ -3,8 +3,10 @@ from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 from proxy.serializers import BulkSeasonItemSerializer, ErrorResponseSerializer
+from proxy.mappers import TMDBMapper
+from proxy.exceptions import MissingParameterError, InvalidParameterError
 from .base import TMDBBaseView
-from .utils import normalize_season
+from concurrent.futures import ThreadPoolExecutor
 
 class VideoBulkSeasonsView(TMDBBaseView):
     @extend_schema(
@@ -29,10 +31,7 @@ class VideoBulkSeasonsView(TMDBBaseView):
         seasons_param = request.query_params.get('seasons', '')
 
         if not seasons_param:
-            return Response(
-                {'error': 'INVALID_REQUEST', 'message': 'Missing seasons parameter'},
-                status=http_status.HTTP_400_BAD_REQUEST
-            )
+            raise MissingParameterError('seasons')
 
         season_requests = []
         for item in seasons_param.split(','):
@@ -41,53 +40,35 @@ class VideoBulkSeasonsView(TMDBBaseView):
                 continue
 
             try:
-                tv_id_str, season_number_str = item.split(':')
-                tv_id = int(tv_id_str.strip())
-                season_number = int(season_number_str.strip())
-                season_requests.append({'tv_id': tv_id, 'season_number': season_number})
+                tv_show, season = item.split(':')
+                tv_show_id = int(tv_show.strip())
+                season_number = int(season.strip())
+                season_requests.append({
+                    'tv_show_id': tv_show_id,
+                    'season_number': season_number
+                })
             except (ValueError, AttributeError):
-                return Response(
-                    {'error': 'INVALID_REQUEST', 'message': f'Invalid season format: "{item}". Expected format: "tv_id:season_number"'},
-                    status=http_status.HTTP_400_BAD_REQUEST
-                )
-
-        if not season_requests:
-            return Response(
-                {'error': 'INVALID_REQUEST', 'message': 'No valid season requests provided'},
-                status=http_status.HTTP_400_BAD_REQUEST
-            )
+                raise InvalidParameterError(f'Invalid season format: "{item}". Expected format: "tv_show_id:season_number"')
 
         if len(season_requests) > 50:
-            return Response(
-                {'error': 'INVALID_REQUEST', 'message': 'Maximum 50 season requests allowed per request'},
-                status=http_status.HTTP_400_BAD_REQUEST
-            )
+            raise InvalidParameterError('Maximum 50 season requests allowed per request')
 
         client = self.get_client()
-        results, _ = client.get_bulk_seasons(season_requests)
+        mapper = TMDBMapper(client)
+        country = request.query_params.get('country', None)
 
-        # Get unique TV show IDs to fetch show names
-        unique_tv_ids = list(set(req['tv_id'] for req in season_requests))
-        tv_shows_data = {}
+        results = {}
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            futures = {
+                executor.submit(mapper.get_season_complete, season_request['tv_show_id'], season_request['season_number'], country): season_request
+                for season_request in season_requests
+            }
 
-        # Fetch TV show details for all unique TV shows
-        for tv_id in unique_tv_ids:
-            tv_data, tv_status = client.get_tv_details(tv_id)
-            if tv_status == http_status.HTTP_200_OK:
-                tv_shows_data[tv_id] = {
-                    'name': tv_data.get('name'),
-                    'backdrop_path': tv_data.get('backdrop_path')
-                }
+            for future in futures:
+                season_request = futures[future]
+                season, status = future.result()
 
-        # Normalize each season result with TV show information
-        for result in results:
-            if result['status_code'] == 200 and result['data']:
-                tv_id = result.get('tv_id')
-                tv_show_info = tv_shows_data.get(tv_id, {})
-                result['data'] = normalize_season(
-                    result['data'],
-                    tv_show_name=tv_show_info.get('name'),
-                    tv_show_backdrop_path=tv_show_info.get('backdrop_path')
-                )
+                result_key = f"{season_request['tv_show_id']}:{season_request['season_number']}"
+                results[result_key] = season.to_dict() if season else None
 
         return Response(results, status=http_status.HTTP_200_OK)

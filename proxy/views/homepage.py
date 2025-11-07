@@ -5,11 +5,8 @@ from proxy.clients.tmdb import TMDBClient
 from proxy.clients.igdb import IGDBClient
 from proxy.clients.spotify import SpotifyClient
 from proxy.clients.openlibrary import OpenLibraryClient
-from proxy.views.video.utils import (
-    normalize_search_item as normalize_video,
-    normalize_movie as normalize_movie_details,
-    normalize_tv as normalize_tv_details,
-)
+from proxy.mappers import TMDBMapper
+from proxy.constants import MediaType
 from proxy.views.games.utils import normalize_search_item as normalize_game
 from proxy.views.music.utils import (
     normalize_album_search as normalize_music,
@@ -66,8 +63,10 @@ class HomepageView(APIView):
 
         try:
             tmdb_client = TMDBClient()
+            tmdb_mapper = TMDBMapper(tmdb_client)
         except Exception as e:
             tmdb_client = None
+            tmdb_mapper = None
             print(f"Error initializing TMDB client: {e}")
 
         try:
@@ -105,22 +104,22 @@ class HomepageView(APIView):
                 futures['books'] = executor.submit(openlibrary_client.get_trending_books, limit)
 
             try:
-                if 'movies' in futures:
+                if 'movies' in futures and tmdb_mapper:
                     movies_data, movies_status = futures['movies'].result()
-                    if movies_status == 200 and 'results' in movies_data:
+                    if movies_status == http_status.HTTP_200_OK and 'results' in movies_data:
                         for item in movies_data['results'][:limit]:
-                            if item.get('media_type') != 'person':
-                                movie_results.append(normalize_video(item, 'movie'))
+                            if item.get('media_type') != MediaType.PERSON:
+                                movie_results.append(tmdb_mapper.map_search_item(item, MediaType.MOVIE).to_dict())
             except Exception as e:
                 print(f"Error fetching video (movies) suggestions: {e}")
 
             try:
-                if 'tv' in futures:
+                if 'tv' in futures and tmdb_mapper:
                     tv_data, tv_status = futures['tv'].result()
-                    if tv_status == 200 and 'results' in tv_data:
+                    if tv_status == http_status.HTTP_200_OK and 'results' in tv_data:
                         for item in tv_data['results'][:limit]:
-                            if item.get('media_type') != 'person':
-                                tv_show_results.append(normalize_video(item, 'tv'))
+                            if item.get('media_type') != MediaType.PERSON:
+                                tv_show_results.append(tmdb_mapper.map_search_item(item, MediaType.TV_SHOW).to_dict())
             except Exception as e:
                 print(f"Error fetching video (tv) suggestions: {e}")
 
@@ -200,20 +199,20 @@ class HomepageView(APIView):
                 with ThreadPoolExecutor(max_workers=10) as detail_executor:
                     tmdb_movie_futures = {}
                     tmdb_tv_futures = {}
-                    if tmdb_client:
+                    if tmdb_client and tmdb_mapper:
                         for item in movie_results:
                             item_id = item.get('id')
                             if item_id is None:
                                 continue
                             tmdb_movie_futures[item_id] = detail_executor.submit(
-                                tmdb_client.get_movie_details, int(item_id)
+                                tmdb_mapper.get_movie_complete, int(item_id)
                             )
                         for item in tv_show_results:
                             item_id = item.get('id')
                             if item_id is None:
                                 continue
                             tmdb_tv_futures[item_id] = detail_executor.submit(
-                                tmdb_client.get_tv_details, int(item_id)
+                                tmdb_mapper.get_tv_show_complete, int(item_id)
                             )
 
                     igdb_details_map = {}
@@ -275,9 +274,9 @@ class HomepageView(APIView):
                             if not fut:
                                 continue
                             try:
-                                data, status_code = fut.result()
-                                if status_code == 200 and isinstance(data, dict):
-                                    movie_results[idx] = normalize_movie_details(data)
+                                movie, status_code = fut.result()
+                                if status_code == http_status.HTTP_200_OK and movie:
+                                    movie_results[idx] = movie.to_dict()
                             except Exception as e:
                                 print(f"Error resolving TMDB movie details for {item_id}: {e}")
 
@@ -288,9 +287,9 @@ class HomepageView(APIView):
                             if not fut:
                                 continue
                             try:
-                                data, status_code = fut.result()
-                                if status_code == 200 and isinstance(data, dict):
-                                    tv_show_results[idx] = normalize_tv_details(data)
+                                tv_show, status_code = fut.result()
+                                if status_code == http_status.HTTP_200_OK and tv_show:
+                                    tv_show_results[idx] = tv_show.to_dict()
                             except Exception as e:
                                 print(f"Error resolving TMDB tv details for {item_id}: {e}")
 

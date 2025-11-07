@@ -70,6 +70,9 @@ CACHE_TIMEOUTS = {
     'api_tmdb_watch_providers_tv': 3600 * 24 * 14,
     'api_tmdb_external_ids_season': 3600 * 24 * 14,
     'api_tmdb_watch_providers_season': 3600 * 24 * 14,
+    'api_tmdb_images': 3600 * 24 * 14,
+    'api_tmdb_images_tv': 3600 * 24 * 14,
+    'api_tmdb_images_season': 3600 * 24 * 14,
 
     'api_openlibrary_search': 3600 * 6,
     'api_openlibrary_details': 3600 * 24,
@@ -103,6 +106,9 @@ CACHE_KEYS = {
     'api_tmdb_watch_providers_tv': 'api:tmdb:watch_providers:tv:{tv_id}',
     'api_tmdb_external_ids_season': 'api:tmdb:external_ids:season:{tv_id}:{season_number}',
     'api_tmdb_watch_providers_season': 'api:tmdb:watch_providers:season:{tv_id}:{season_number}',
+    'api_tmdb_images': 'api:tmdb:images:movie:{movie_id}',
+    'api_tmdb_images_tv': 'api:tmdb:images:tv:{tv_id}',
+    'api_tmdb_images_season': 'api:tmdb:images:season:{tv_id}:{season_number}',
 
     'api_openlibrary_search': 'api:openlibrary:search:{query}:{page}:{limit}',
     'api_openlibrary_details': 'api:openlibrary:details:{book_key}',
