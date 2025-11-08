@@ -1,7 +1,8 @@
 from rest_framework import serializers
-from .video import MovieDetailSerializer, TVShowDetailSerializer
+from .movies import MovieDetailSerializer
+from .tv_shows import TVShowDetailSerializer
 from .games import GameDetailSerializer
-from .music import AlbumDetailSerializer
+from .albums import AlbumDetailSerializer
 from .books import BookDetailSerializer
 
 class HomepageResponseSerializer(serializers.Serializer):

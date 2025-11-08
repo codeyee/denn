@@ -1,8 +1,8 @@
 import re
 from typing import Dict, Any, Optional, List
 from datetime import datetime
-from proxy.models.base import Images, Provider
-from proxy.models.game import Game, SearchItem
+from proxy.models.game import Game
+from proxy.models.base import SearchItem, Images, Provider
 from proxy.clients.igdb import IGDBClient
 
 IGDB_IMAGE_BASE_URL = 'https://images.igdb.com/igdb/image/upload'

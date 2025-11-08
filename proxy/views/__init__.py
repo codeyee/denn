@@ -1,31 +1,24 @@
-from .video import (
-    VideoSearchView,
-    VideoMovieDetailView,
-    VideoTvDetailView,
-    VideoTvSeasonDetailView,
-)
-
-from .games import (
-    GamesSearchView,
-)
-
-from .music import (
-    MusicSearchView,
-)
-
-from .book import (
-    BookSearchView,
-)
-
 from .homepage import HomepageView
+from .movies import *
+from .tv_shows import *
+from .albums import *
+from .games import *
+from .books import *
 
 __all__ = [
-    'VideoSearchView',
-    'VideoMovieDetailView',
-    'VideoTvDetailView',
-    'VideoTvSeasonDetailView',
-    'GamesSearchView',
-    'MusicSearchView',
+    'HomepageView',
+    'MovieSearchView',
+    'MovieDetailView',
+    'MovieBulkView',
+    'TVShowSearchView',
+    'TVShowDetailView',
+    'TVShowBulkView',
+    'TVSeasonDetailView',
+    'AlbumSearchView',
+    'AlbumDetailView',
+    'AlbumBulkView',
+    'GameSearchView',
+    'GameBulkView',
     'BookSearchView',
-    'HomepageView'
+    'BookBulkView',
 ]

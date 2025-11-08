@@ -17,12 +17,24 @@ class TMDBClient(CachedAPIClient):
         headers['Authorization'] = f'Bearer {self.api_key}'
         return headers
 
-    def search(self, query: str, page: int = 1) -> Tuple[Dict[str, Any], int]:
-        endpoint = 'search/multi'
+    def search_movies(self, query: str, page: int = 1) -> Tuple[Dict[str, Any], int]:
+        endpoint = 'search/movie'
         params = {'query': query, 'page': page}
         return self.cached_get(
             endpoint=endpoint,
-            cache_type='api_tmdb_search',
+            cache_type='api_tmdb_search_movies',
+            params=params,
+            operation='search',
+            query=query,
+            page=page
+        )
+
+    def search_tv_shows(self, query: str, page: int = 1) -> Tuple[Dict[str, Any], int]:
+        endpoint = 'search/tv'
+        params = {'query': query, 'page': page}
+        return self.cached_get(
+            endpoint=endpoint,
+            cache_type='api_tmdb_search_tv_shows',
             params=params,
             operation='search',
             query=query,

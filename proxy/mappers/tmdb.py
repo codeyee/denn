@@ -3,7 +3,9 @@ from concurrent.futures import ThreadPoolExecutor
 from django.conf import settings
 from rest_framework import status as http_status
 from proxy.models.base import Images, Provider
-from proxy.models.video import Episode, Season, Movie, TVShow, SearchItem
+from proxy.models.movie import Movie
+from proxy.models.tv_show import TVShow, Season, Episode
+from proxy.models.base import SearchItem
 from proxy.clients.tmdb import TMDBClient
 from proxy.constants import ProviderAction, MediaType
 

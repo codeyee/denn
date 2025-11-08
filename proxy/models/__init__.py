@@ -1,20 +1,21 @@
-from .video import (
-    Provider,
-    Images,
-    Episode,
-    Season,
-    Movie,
-    TVShow,
-    SearchItem
-)
+from .base import Provider, Images, SearchItem
+from .movie import Movie
+from .tv_show import TVShow, Season, Episode
+from .album import Album, Track
+from .game import Game
+from .book import Book
 
 __all__ = [
     'Provider',
     'Images',
-    'Episode',
-    'Season',
+    'SearchItem',
     'Movie',
     'TVShow',
-    'SearchItem'
+    'Season',
+    'Episode',
+    'Album',
+    'Track',
+    'Game',
+    'Book',
 ]
 

@@ -67,3 +67,25 @@ class Images:
                 'image_url': gallery_url
             })
         return images
+
+
+@dataclass
+class SearchItem:
+    id: int
+    type: str
+    title: str
+    original_title: str
+    description: Optional[str] = None
+    image_url: Optional[str] = None
+    release_date: Optional[str] = None
+
+    def to_dict(self) -> Dict:
+        return {
+            'id': self.id,
+            'type': self.type,
+            'title': self.title,
+            'original_title': self.original_title,
+            'description': self.description,
+            'image_url': self.image_url,
+            'release_date': self.release_date
+        }

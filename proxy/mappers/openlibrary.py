@@ -1,8 +1,8 @@
 from typing import Dict, Any, Optional, List
 from django.conf import settings
 from dateutil import parser
-from proxy.models.base import Images
-from proxy.models.book import Book, SearchItem
+from proxy.models.book import Book
+from proxy.models.base import SearchItem, Images
 from proxy.clients.openlibrary import OpenLibraryClient
 
 

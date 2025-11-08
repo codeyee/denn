@@ -2,13 +2,14 @@ from rest_framework import status as http_status
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
-from proxy.serializers import GameDetailSerializer, ErrorResponseSerializer
+from proxy.serializers.games import GameDetailSerializer
+from proxy.serializers.common import ErrorResponseSerializer
 from proxy.exceptions import MissingParameterError
-from .base import IGDBBaseView
+from ..base import IGDBBaseView
 
-class GamesBulkView(IGDBBaseView):
+class GameBulkView(IGDBBaseView):
     @extend_schema(
-        tags=['Proxy - Games'],
+        tags=['Games'],
         summary='Bulk get game details',
         description='Retrieve detailed information about multiple games from IGDB in a single request.',
         parameters=[

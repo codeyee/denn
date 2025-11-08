@@ -1,6 +1,6 @@
 from typing import Dict, Any, Optional, List
-from proxy.models.base import Images
-from proxy.models.music import Album, Track, SearchItem
+from proxy.models.album import Album, Track
+from proxy.models.base import SearchItem, Images
 from proxy.clients.spotify import SpotifyClient
 
 

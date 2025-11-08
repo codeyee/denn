@@ -35,21 +35,3 @@ class Game:
         return result
 
 
-@dataclass
-class SearchItem:
-    id: int
-    title: str
-    description: Optional[str] = None
-    image_url: Optional[str] = None
-    game_type: Optional[str] = None
-    release_date: Optional[str] = None
-
-    def to_dict(self) -> Dict:
-        return {
-            'id': self.id,
-            'title': self.title,
-            'type': self.game_type,
-            'description': self.description,
-            'image_url': self.image_url,
-            'release_date': self.release_date
-        }

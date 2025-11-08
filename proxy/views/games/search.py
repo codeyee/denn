@@ -1,15 +1,16 @@
 from rest_framework.response import Response
 from rest_framework import status as http_status
-from .base import IGDBBaseView
+from proxy.views.base import IGDBBaseView
 from proxy.exceptions import MissingParameterError
-from proxy.serializers import GameSearchResponseSerializer, ErrorResponseSerializer
+from proxy.serializers.games import GameSearchResponseSerializer
+from proxy.serializers.common import ErrorResponseSerializer
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 
-class GamesSearchView(IGDBBaseView):
+class GameSearchView(IGDBBaseView):
 
     @extend_schema(
-        tags=['Proxy - Games'],
+        tags=['Games'],
         summary='Search video games',
         description='''
         Search for video games by title using IGDB.
@@ -58,4 +59,3 @@ class GamesSearchView(IGDBBaseView):
         }
 
         return Response({'metadata': metadata, 'results': results}, status=http_status.HTTP_200_OK)
-

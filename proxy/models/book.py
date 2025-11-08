@@ -31,23 +31,3 @@ class Book:
         return result
 
 
-@dataclass
-class SearchItem:
-    id: str
-    title: str
-    authors: Optional[List[str]] = None
-    image_url: Optional[str] = None
-    release_date: Optional[str] = None
-    pages: Optional[int] = None
-    description: Optional[str] = None
-
-    def to_dict(self) -> Dict:
-        return {
-            'id': self.id,
-            'title': self.title,
-            'authors': self.authors,
-            'image_url': self.image_url,
-            'release_date': self.release_date,
-            'pages': self.pages,
-            'description': self.description
-        }

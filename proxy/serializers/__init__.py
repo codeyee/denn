@@ -1,79 +1,46 @@
 from .common import (
     PaginationMetadataSerializer,
     ErrorResponseSerializer,
+    ImageSerializer,
+    ProviderSerializer,
 )
-
-from .video import (
-    VideoSearchItemSerializer,
-    VideoSearchResponseSerializer,
-    MovieDetailSerializer,
-    TVSeasonSerializer,
-    TVShowDetailSerializer,
-    TVEpisodeSerializer,
-    TVSeasonDetailSerializer,
-    BulkMovieItemSerializer,
-    BulkTVShowItemSerializer,
-    BulkSeasonItemSerializer,
-    BulkMoviesResponseSerializer,
-    BulkTVShowsResponseSerializer,
-    BulkSeasonsResponseSerializer,
-)
-
-from .music import (
-    MusicSearchItemSerializer,
-    MusicSearchResponseSerializer,
-    TrackSerializer,
-    AlbumDetailSerializer,
-    BulkAlbumsResponseSerializer,
-)
-
-from .games import (
-    GameSearchItemSerializer,
-    GameSearchResponseSerializer,
-    GameDetailSerializer,
-)
-
-from .books import (
-    BookSearchItemSerializer,
-    BookSearchResponseSerializer,
-    BookDetailSerializer,
-)
-
-from .homepage import (
-    HomepageResponseSerializer,
-)
+from .movies import *
+from .tv_shows import *
+from .albums import *
+from .games import *
+from .books import *
+from .homepage import *
 
 __all__ = [
     'PaginationMetadataSerializer',
     'ErrorResponseSerializer',
-
-    'VideoSearchItemSerializer',
-    'VideoSearchResponseSerializer',
+    'ImageSerializer',
+    'ProviderSerializer',
+    'MovieSearchItemSerializer',
+    'MovieSearchResponseSerializer',
     'MovieDetailSerializer',
-    'TVSeasonSerializer',
+    'BulkMovieItemSerializer',
+    'BulkMoviesResponseSerializer',
+    'TVShowSearchItemSerializer',
+    'TVShowSearchResponseSerializer',
     'TVShowDetailSerializer',
+    'TVSeasonSerializer',
     'TVEpisodeSerializer',
     'TVSeasonDetailSerializer',
-    'BulkMovieItemSerializer',
     'BulkTVShowItemSerializer',
-    'BulkSeasonItemSerializer',
-    'BulkMoviesResponseSerializer',
     'BulkTVShowsResponseSerializer',
+    'BulkSeasonItemSerializer',
     'BulkSeasonsResponseSerializer',
-
-    'MusicSearchItemSerializer',
-    'MusicSearchResponseSerializer',
-    'TrackSerializer',
+    'AlbumSearchItemSerializer',
+    'AlbumSearchResponseSerializer',
     'AlbumDetailSerializer',
+    'TrackSerializer',
     'BulkAlbumsResponseSerializer',
-
     'GameSearchItemSerializer',
     'GameSearchResponseSerializer',
     'GameDetailSerializer',
-
     'BookSearchItemSerializer',
     'BookSearchResponseSerializer',
     'BookDetailSerializer',
-
     'HomepageResponseSerializer',
 ]
