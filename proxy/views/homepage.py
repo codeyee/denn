@@ -41,6 +41,11 @@ class HomepageView(APIView):
                 OpenApiTypes.INT,
                 description='Number of suggestions per category (default: 10, max: 50)'
             ),
+            OpenApiParameter(
+                'country',
+                OpenApiTypes.STR,
+                description='ISO 3166-1 alpha-2 country code for filtering results (e.g., US, GB). Not all categories support country filtering.'
+            ),
         ],
         responses={
             200: HomepageResponseSerializer,
@@ -51,6 +56,7 @@ class HomepageView(APIView):
     def get(self, request):
         limit = int(request.GET.get('limit', 10))
         limit = min(limit, 50)
+        country = request.GET.get('country')
 
         movie_results = []
         tv_show_results = []
@@ -101,7 +107,7 @@ class HomepageView(APIView):
                 futures['games'] = executor.submit(igdb_client.get_popular_games, limit, 0)
 
             if spotify_client:
-                futures['music'] = executor.submit(spotify_client.get_new_releases, limit, 0)
+                futures['music'] = executor.submit(spotify_client.get_new_releases, limit, 0, country)
 
             if openlibrary_client:
                 futures['books'] = executor.submit(openlibrary_client.get_trending_books, limit)
@@ -212,14 +218,14 @@ class HomepageView(APIView):
                             if item_id is None:
                                 continue
                             tmdb_movie_futures[item_id] = detail_executor.submit(
-                                tmdb_mapper.get_movie_complete, int(item_id)
+                                tmdb_mapper.get_movie_complete, int(item_id), country
                             )
                         for item in tv_show_results:
                             item_id = item.get('id')
                             if item_id is None:
                                 continue
                             tmdb_tv_futures[item_id] = detail_executor.submit(
-                                tmdb_mapper.get_tv_show_complete, int(item_id)
+                                tmdb_mapper.get_tv_show_complete, int(item_id), country
                             )
 
                     igdb_details_map = {}
