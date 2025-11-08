@@ -11,6 +11,35 @@ from concurrent.futures import ThreadPoolExecutor
 
 
 class MovieBulkView(TMDBBaseView):
+
+    def _validate_ids(self, request):
+        ids_param = request.query_params.get('ids', '')
+        if not ids_param:
+            raise MissingParameterException('ids')
+
+        return ids_param
+
+    def _validate_movie_ids(self, ids_param):
+        movie_ids = [id.strip() for id in ids_param.split(',') if id.strip()]
+
+        if not movie_ids:
+            raise InvalidParameterException('No valid movie IDs provided')
+
+        return movie_ids
+
+    def _validate_max_ids(self, movie_ids):
+        if len(movie_ids) > 50:
+            raise InvalidParameterException('Maximum 50 movie IDs allowed per request')
+
+        return movie_ids
+
+    def _validate_country(self, request):
+        country = request.query_params.get('country', None)
+        if country and len(country) != 2:
+            raise InvalidParameterException('Country must be a valid ISO 3166-1 alpha-2 code')
+
+        return country
+
     @extend_schema(
         tags=['Proxy - Movies'],
         summary='Bulk get movie details',
@@ -37,25 +66,13 @@ class MovieBulkView(TMDBBaseView):
         }
     )
     def get(self, request):
-        ids_param = request.query_params.get('ids', '')
-
-        if not ids_param:
-            raise MissingParameterException('ids')
-
-        try:
-            movie_ids = [int(id.strip()) for id in ids_param.split(',') if id.strip()]
-        except ValueError:
-            raise InvalidParameterException('Invalid movie IDs. Must be comma-separated integers.')
-
-        if not movie_ids:
-            raise InvalidParameterException('No valid movie IDs provided')
-
-        if len(movie_ids) > 50:
-            raise InvalidParameterException('Maximum 50 movie IDs allowed per request')
+        ids_param = self._validate_ids(request)
+        movie_ids = self._validate_movie_ids(ids_param)
+        movie_ids = self._validate_max_ids(movie_ids)
+        country = self._validate_country(request)
 
         client = self.get_client()
-        mapper = TMDBMapper(client)
-        country = request.query_params.get('country', None)
+        mapper = self.get_mapper()
 
         results = []
         with ThreadPoolExecutor(max_workers=10) as executor:

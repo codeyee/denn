@@ -8,6 +8,28 @@ from proxy.exceptions import MissingParameterException, InvalidParameterExceptio
 from ..base import OpenLibraryBaseView
 
 class BookBulkView(OpenLibraryBaseView):
+
+    def _validate_ids(self, request):
+        ids_param = request.query_params.get('ids', '')
+        if not ids_param:
+            raise MissingParameterException('ids')
+
+        return ids_param
+
+    def _validate_book_ids(self, ids_param):
+        book_ids = [id.strip() for id in ids_param.split(',') if id.strip()]
+
+        if not book_ids:
+            raise InvalidParameterException('No valid book IDs provided')
+
+        return book_ids
+
+    def _validate_max_ids(self, book_ids):
+        if len(book_ids) > 50:
+            raise InvalidParameterException('Maximum 50 book IDs allowed per request')
+
+        return book_ids
+
     @extend_schema(
         tags=['Proxy - Books'],
         summary='Bulk get book details',
@@ -27,17 +49,9 @@ class BookBulkView(OpenLibraryBaseView):
         }
     )
     def get(self, request):
-        ids_param = request.query_params.get('ids', '')
-        if not ids_param:
-            raise MissingParameterException('ids')
-
-        book_ids = [id.strip() for id in ids_param.split(',') if id.strip()]
-
-        if not book_ids:
-            raise InvalidParameterException('No valid book IDs provided')
-
-        if len(book_ids) > 50:
-            raise InvalidParameterException('Maximum 50 book IDs allowed per request')
+        ids_param = self._validate_ids(request)
+        book_ids = self._validate_book_ids(ids_param)
+        book_ids = self._validate_max_ids(book_ids)
 
         client = self.get_client()
         mapper = self.get_mapper()

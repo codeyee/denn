@@ -2,7 +2,7 @@ from ..base import TMDBBaseView
 from proxy.serializers.tv_shows import TVSeasonDetailSerializer
 from proxy.serializers.common import ErrorResponseSerializer
 from proxy.mappers import TMDBMapper
-from proxy.exceptions import NotFoundException
+from proxy.exceptions import NotFoundException, InvalidParameterException
 from proxy.constants import SearchItemType
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
@@ -11,6 +11,14 @@ from rest_framework import status as http_status
 
 
 class TVSeasonDetailView(TMDBBaseView):
+
+    def _validate_country(self, request):
+        country = request.query_params.get('country', None)
+        if country and len(country) != 2:
+            raise InvalidParameterException('Country must be a valid ISO 3166-1 alpha-2 code')
+
+        return country
+
     @extend_schema(
         tags=['Proxy - TV Shows'],
         summary='Get TV season details',
@@ -44,13 +52,16 @@ class TVSeasonDetailView(TMDBBaseView):
         }
     )
     def get(self, request, tv_id, season_number):
+        tv_id = int(tv_id)
+        season_number = int(season_number)
+        country = self._validate_country(request)
+
         client = self.get_client()
-        mapper = TMDBMapper(client)
-        country = request.query_params.get('country', None)
+        mapper = self.get_mapper()
 
         season, status_code = mapper.get_season_complete(
-            tv_id=int(tv_id),
-            season_number=int(season_number),
+            tv_id=tv_id,
+            season_number=season_number,
             country=country
         )
         if status_code != http_status.HTTP_200_OK or not season:

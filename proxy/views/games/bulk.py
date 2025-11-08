@@ -8,6 +8,28 @@ from proxy.exceptions import MissingParameterException, InvalidParameterExceptio
 from ..base import IGDBBaseView
 
 class GameBulkView(IGDBBaseView):
+
+    def _validate_ids(self, request):
+        ids_param = request.query_params.get('ids', '')
+        if not ids_param:
+            raise MissingParameterException('ids')
+
+        return ids_param
+
+    def _validate_game_ids(self, ids_param):
+        game_ids = [id.strip() for id in ids_param.split(',') if id.strip()]
+
+        if not game_ids:
+            raise InvalidParameterException('No valid game IDs provided')
+
+        return game_ids
+
+    def _validate_max_ids(self, game_ids):
+        if len(game_ids) > 100:
+            raise InvalidParameterException('Maximum 100 game IDs allowed per request')
+
+        return game_ids
+
     @extend_schema(
         tags=['Proxy - Games'],
         summary='Bulk get game details',
@@ -27,20 +49,9 @@ class GameBulkView(IGDBBaseView):
         }
     )
     def get(self, request):
-        ids_param = request.query_params.get('ids', '')
-        if not ids_param:
-            raise MissingParameterException('ids')
-
-        try:
-            game_ids = [int(id.strip()) for id in ids_param.split(',') if id.strip()]
-        except ValueError:
-            raise InvalidParameterException('Invalid game IDs. Must be comma-separated integers.')
-
-        if not game_ids:
-            raise InvalidParameterException('No valid game IDs provided')
-
-        if len(game_ids) > 100:
-            raise InvalidParameterException('Maximum 100 game IDs allowed per request')
+        ids_param = self._validate_ids(request)
+        game_ids = self._validate_game_ids(ids_param)
+        game_ids = self._validate_max_ids(game_ids)
 
         client = self.get_client()
         mapper = self.get_mapper()

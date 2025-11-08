@@ -1,5 +1,5 @@
 from proxy.views.base import TMDBBaseView
-from proxy.exceptions import MissingParameterException
+from proxy.exceptions import MissingParameterException, InvalidParameterException
 from proxy.serializers.tv_shows import TVShowSearchResponseSerializer
 from proxy.serializers.common import ErrorResponseSerializer
 from proxy.mappers import TMDBMapper
@@ -11,6 +11,27 @@ from rest_framework import status as http_status
 
 
 class TVShowSearchView(TMDBBaseView):
+    def _validate_query(self, request):
+        query = request.query_params.get('query')
+        if not query:
+            raise MissingParameterException('query is required')
+
+        return query
+
+    def _validate_limit(self, request):
+        limit = int(request.query_params.get('limit', 50))
+        if limit < 1 or limit > 50:
+            raise InvalidParameterException('limit must be between 1 and 50')
+
+        return limit
+
+    def _validate_page(self, request):
+        page = int(request.query_params.get('page', 1))
+        if page < 1:
+            raise InvalidParameterException('page must be greater than or equal to 1')
+
+        return page
+
     def filter_and_transform_results(self, data, mapper):
         if 'results' not in data:
             return data
@@ -53,17 +74,14 @@ class TVShowSearchView(TMDBBaseView):
         }
     )
     def get(self, request):
-        query = request.query_params.get('query')
-
-        if not query:
-            raise MissingParameterException('query')
-
-        page = int(request.query_params.get('page', 1))
+        query = self._validate_query(request)
+        page = self._validate_page(request)
+        limit = self._validate_limit(request)
 
         client = self.get_client()
-        mapper = TMDBMapper(client)
-        data, status_code = client.search_tv_shows(query, page)
+        mapper = self.get_mapper()
 
+        data, status_code = client.search_tv_shows(query, page)
         if status_code != http_status.HTTP_200_OK:
             return Response(data, status=status_code)
 

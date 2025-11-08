@@ -8,6 +8,28 @@ from proxy.exceptions import MissingParameterException, InvalidParameterExceptio
 from ..base import SpotifyBaseView
 
 class AlbumBulkView(SpotifyBaseView):
+
+    def _validate_ids(self, request):
+        ids_param = request.query_params.get('ids', '')
+        if not ids_param:
+            raise MissingParameterException('ids')
+
+        return ids_param
+    
+    def _validate_album_ids(self, ids_param):
+        album_ids = [id.strip() for id in ids_param.split(',') if id.strip()]
+
+        if not album_ids:
+            raise InvalidParameterException('No valid album IDs provided')
+
+        return album_ids
+
+    def _validate_max_ids(self, album_ids):
+        if len(album_ids) > 20:
+            raise InvalidParameterException('Maximum 20 album IDs allowed per request')
+
+        return album_ids
+
     @extend_schema(
         tags=['Proxy - Albums'],
         summary='Bulk get album details',
@@ -27,17 +49,9 @@ class AlbumBulkView(SpotifyBaseView):
         }
     )
     def get(self, request):
-        ids_param = request.query_params.get('ids', '')
-        if not ids_param:
-            raise MissingParameterException('ids')
-
-        album_ids = [id.strip() for id in ids_param.split(',') if id.strip()]
-
-        if not album_ids:
-            raise InvalidParameterException('No valid album IDs provided')
-
-        if len(album_ids) > 20:
-            raise InvalidParameterException('Maximum 20 album IDs allowed per request (Spotify API limitation)')
+        ids_param = self._validate_ids(request)
+        album_ids = self._validate_album_ids(ids_param)
+        album_ids = self._validate_max_ids(album_ids)
 
         client = self.get_client()
         mapper = self.get_mapper()

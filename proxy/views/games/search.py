@@ -1,13 +1,34 @@
 from rest_framework.response import Response
 from rest_framework import status as http_status
 from proxy.views.base import IGDBBaseView
-from proxy.exceptions import MissingParameterException
+from proxy.exceptions import MissingParameterException, InvalidParameterException
 from proxy.serializers.games import GameSearchResponseSerializer
 from proxy.serializers.common import ErrorResponseSerializer
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 
 class GameSearchView(IGDBBaseView):
+
+    def _validate_query(self, request):
+        query = request.query_params.get('query')
+        if not query:
+            raise MissingParameterException('query is required')
+
+        return query
+
+    def _validate_limit(self, request):
+        limit = int(request.query_params.get('limit', 50))
+        if limit < 1 or limit > 500:
+            raise InvalidParameterException('limit must be between 1 and 500')
+
+        return limit
+
+    def _validate_page(self, request):
+        page = int(request.query_params.get('page', 1))
+        if page < 1:
+            raise InvalidParameterException('page must be greater than or equal to 1')
+
+        return page
 
     @extend_schema(
         tags=['Proxy - Games'],
@@ -28,12 +49,10 @@ class GameSearchView(IGDBBaseView):
         }
     )
     def get(self, request):
-        query = request.query_params.get('query')
-        if not query:
-            raise MissingParameterException('query')
+        query = self._validate_query(request)
+        page = self._validate_page(request)
+        limit = self._validate_limit(request)
 
-        limit = int(request.query_params.get('limit', 50))
-        page = int(request.query_params.get('page', 1))
         offset = (page - 1) * limit
 
         client = self.get_client()

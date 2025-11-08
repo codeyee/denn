@@ -11,6 +11,34 @@ from concurrent.futures import ThreadPoolExecutor
 
 
 class TVShowBulkView(TMDBBaseView):
+
+    def _validate_ids(self, request):
+        ids_param = request.query_params.get('ids', '')
+        if not ids_param:
+            raise MissingParameterException('ids')
+
+        return ids_param
+
+    def _validate_tv_ids(self, ids_param):
+        tv_ids = [id.strip() for id in ids_param.split(',') if id.strip()]
+
+        if not tv_ids:
+            raise InvalidParameterException('No valid TV show IDs provided')
+
+        return tv_ids
+
+    def _validate_max_ids(self, tv_ids):
+        if len(tv_ids) > 50:
+            raise InvalidParameterException('Maximum 50 TV show IDs allowed per request')
+
+        return tv_ids
+
+    def _validate_country(self, country):
+        if country and len(country) != 2:
+            raise InvalidParameterException('Country must be a valid ISO 3166-1 alpha-2 code')
+
+        return country
+
     @extend_schema(
         tags=['Proxy - TV Shows'],
         summary='Bulk get TV show details',
@@ -37,25 +65,13 @@ class TVShowBulkView(TMDBBaseView):
         }
     )
     def get(self, request):
-        ids_param = request.query_params.get('ids', '')
-
-        if not ids_param:
-            raise MissingParameterException('ids')
-
-        try:
-            tv_ids = [int(id.strip()) for id in ids_param.split(',') if id.strip()]
-        except ValueError:
-            raise InvalidParameterException('Invalid TV show IDs. Must be comma-separated integers.')
-
-        if not tv_ids:
-            raise InvalidParameterException('No valid TV show IDs provided')
-
-        if len(tv_ids) > 50:
-            raise InvalidParameterException('Maximum 50 TV show IDs allowed per request')
+        ids_param = self._validate_ids(request)
+        tv_ids = self._validate_tv_ids(ids_param)
+        tv_ids = self._validate_max_ids(tv_ids)
+        country = self._validate_country(request)
 
         client = self.get_client()
-        mapper = TMDBMapper(client)
-        country = request.query_params.get('country', None)
+        mapper = self.get_mapper()
 
         results = []
         with ThreadPoolExecutor(max_workers=10) as executor:
