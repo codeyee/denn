@@ -9,3 +9,8 @@ class PaginationMetadataSerializer(serializers.Serializer):
 class ErrorResponseSerializer(serializers.Serializer):
     error = serializers.CharField(help_text="Error code")
     message = serializers.CharField(help_text="Human-readable error message")
+
+class ImageSerializer(serializers.Serializer):
+    type = serializers.CharField(help_text="Image type: POSTER, GALLERY, SCREENSHOT, ARTWORK, etc.")
+    size = serializers.CharField(help_text="Image size: STANDARD or ORIGINAL")
+    image_url = serializers.URLField(help_text="Image URL")

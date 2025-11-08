@@ -1,20 +1,11 @@
+from rest_framework.response import Response
+from rest_framework import status as http_status, serializers
 from .base import OpenLibraryBaseView
-from .utils import normalize_search_item
-from proxy.serializers import BooksSuggestionsResponseSerializer, ErrorResponseSerializer
+from proxy.serializers import BookDetailSerializer, ErrorResponseSerializer
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 
 class BooksSuggestionsView(OpenLibraryBaseView):
-    def transform_results(self, data):
-        if 'docs' not in data: return {'results': [], 'count': 0}
-
-        docs = data.get('docs', [])
-        results = [normalize_search_item(doc) for doc in docs]
-
-        return {
-            'results': results,
-            'count': len(results)
-        }
 
     @extend_schema(
         tags=['Proxy - Books'],
@@ -24,6 +15,8 @@ class BooksSuggestionsView(OpenLibraryBaseView):
 
         This endpoint fetches popular books from Open Library,
         ideal for displaying as recommendations on a homepage or discovery section.
+
+        Returns an object with 'results' (list of books) and 'count' (number of results).
         ''',
         parameters=[
             OpenApiParameter(
@@ -33,7 +26,13 @@ class BooksSuggestionsView(OpenLibraryBaseView):
             )
         ],
         responses={
-            200: BooksSuggestionsResponseSerializer,
+            200: {
+                "type": "object",
+                "properties": {
+                    "results": {"type": "array", "items": {}},
+                    "count": {"type": "integer"}
+                }
+            },
             400: ErrorResponseSerializer
         }
     )
@@ -42,10 +41,17 @@ class BooksSuggestionsView(OpenLibraryBaseView):
         limit = min(limit, 100)
 
         client = self.get_client()
+        mapper = self.get_mapper()
 
         data, status_code = client.get_trending_books(limit=limit)
 
-        return self.handle_api_call(
-            lambda: (data, status_code),
-            transformer=self.transform_results
-        )
+        if status_code != http_status.HTTP_200_OK:
+            return Response(data, status=status_code)
+
+        if 'docs' not in data:
+            return Response({'results': [], 'count': 0}, status=http_status.HTTP_200_OK)
+
+        docs = data.get('docs', [])
+        results = [mapper.map_search_item(doc).to_dict() for doc in docs]
+
+        return Response({'results': results, 'count': len(results)}, status=http_status.HTTP_200_OK)

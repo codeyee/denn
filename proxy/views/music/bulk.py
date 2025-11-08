@@ -3,8 +3,8 @@ from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 from proxy.serializers import BulkAlbumsResponseSerializer, ErrorResponseSerializer
+from proxy.exceptions import MissingParameterError
 from .base import SpotifyBaseView
-from .utils import normalize_album
 
 class MusicBulkAlbumsView(SpotifyBaseView):
     @extend_schema(
@@ -27,12 +27,8 @@ class MusicBulkAlbumsView(SpotifyBaseView):
     )
     def get(self, request):
         ids_param = request.query_params.get('ids', '')
-
         if not ids_param:
-            return Response(
-                {'error': 'INVALID_REQUEST', 'message': 'Missing ids parameter'},
-                status=http_status.HTTP_400_BAD_REQUEST
-            )
+            raise MissingParameterError('ids')
 
         album_ids = [id.strip() for id in ids_param.split(',') if id.strip()]
 
@@ -49,17 +45,19 @@ class MusicBulkAlbumsView(SpotifyBaseView):
             )
 
         client = self.get_client()
+        mapper = self.get_mapper()
+
         data, status_code = client.get_bulk_albums(album_ids)
 
-        if status_code == 200:
-            albums = data.get('albums', [])
-            normalized_albums = []
-            for album in albums:
-                if album is not None:
-                    normalized_albums.append(normalize_album(album))
-                else:
-                    normalized_albums.append(None)
+        if status_code != http_status.HTTP_200_OK:
+            return Response(data, status=status_code)
 
-            return Response({'albums': normalized_albums}, status=http_status.HTTP_200_OK)
+        albums = data.get('albums', [])
+        normalized_albums = []
+        for album in albums:
+            if album is not None:
+                normalized_albums.append(mapper.map_detail(album).to_dict())
+            else:
+                normalized_albums.append(None)
 
-        return Response(data, status=status_code)
+        return Response({'albums': normalized_albums}, status=http_status.HTTP_200_OK)

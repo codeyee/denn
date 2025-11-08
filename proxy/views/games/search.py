@@ -1,30 +1,12 @@
+from rest_framework.response import Response
+from rest_framework import status as http_status
 from .base import IGDBBaseView
-from .utils import normalize_search_item
-from proxy.errors import build_error_response, get_http_status, MISSING_QUERY
+from proxy.exceptions import MissingParameterError
 from proxy.serializers import GameSearchResponseSerializer, ErrorResponseSerializer
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
-from typing import Dict, Any, List
 
 class GamesSearchView(IGDBBaseView):
-    def filter_and_transform_results(self, data: Any, limit: int = 50, page: int = 1) -> Dict[str, Any]:
-        if not isinstance(data, list):
-            return data
-
-        results = [normalize_search_item(item) for item in data]
-
-        # Note: IGDB doesn't provide total count in response, so we estimate based on results
-        # If we get exactly 'limit' results, there might be more pages
-        has_more = len(results) == limit
-
-        metadata = {
-            'page': page,
-            'page_results': len(results),
-            'total_pages': page + 1 if has_more else page,
-            'total_results': len(results) if not has_more else None  # Unknown total
-        }
-
-        return {'metadata': metadata, 'results': results}
 
     @extend_schema(
         tags=['Proxy - Games'],
@@ -46,25 +28,34 @@ class GamesSearchView(IGDBBaseView):
     )
     def get(self, request):
         query = request.query_params.get('query')
-
         if not query:
-            error_response = build_error_response(MISSING_QUERY)
-            return self.transform_response(error_response, get_http_status(MISSING_QUERY))
+            raise MissingParameterError('query')
 
         limit = int(request.query_params.get('limit', 50))
         page = int(request.query_params.get('page', 1))
         offset = (page - 1) * limit
 
         client = self.get_client()
+        mapper = self.get_mapper()
 
-        def transform_with_context(data):
-            return self.filter_and_transform_results(data, limit=limit, page=page)
+        data, status_code = client.search_games(query=query, limit=limit, offset=offset)
 
-        return self.handle_api_call(
-            client.search_games,
-            transformer=transform_with_context,
-            query=query,
-            limit=limit,
-            offset=offset
-        )
+        if status_code != http_status.HTTP_200_OK:
+            return Response(data, status=status_code)
+
+        if not isinstance(data, list):
+            return Response(data, status=status_code)
+
+        results = [mapper.map_search_item(item).to_dict() for item in data]
+
+        has_more = len(results) == limit
+
+        metadata = {
+            'page': page,
+            'page_results': len(results),
+            'total_pages': page + 1 if has_more else page,
+            'total_results': len(results) if not has_more else None
+        }
+
+        return Response({'metadata': metadata, 'results': results}, status=http_status.HTTP_200_OK)
 

@@ -5,15 +5,11 @@ from proxy.clients.tmdb import TMDBClient
 from proxy.clients.igdb import IGDBClient
 from proxy.clients.spotify import SpotifyClient
 from proxy.clients.openlibrary import OpenLibraryClient
-from proxy.mappers import TMDBMapper
+from proxy.mappers.tmdb import TMDBMapper
+from proxy.mappers.igdb import IGDBMapper
+from proxy.mappers.spotify import SpotifyMapper
+from proxy.mappers.openlibrary import OpenLibraryMapper
 from proxy.constants import MediaType
-from proxy.views.games.utils import normalize_search_item as normalize_game
-from proxy.views.music.utils import (
-    normalize_album_search as normalize_music,
-    normalize_album as normalize_album_details,
-    should_include_album,
-)
-from proxy.views.book.utils import normalize_search_item as normalize_book
 from proxy.serializers import HomepageResponseSerializer, ErrorResponseSerializer
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
@@ -71,20 +67,26 @@ class HomepageView(APIView):
 
         try:
             igdb_client = IGDBClient()
+            igdb_mapper = IGDBMapper(igdb_client)
         except Exception as e:
             igdb_client = None
+            igdb_mapper = None
             print(f"Error initializing IGDB client: {e}")
 
         try:
             spotify_client = SpotifyClient()
+            spotify_mapper = SpotifyMapper(spotify_client)
         except Exception as e:
             spotify_client = None
+            spotify_mapper = None
             print(f"Error initializing Spotify client: {e}")
 
         try:
             openlibrary_client = OpenLibraryClient()
+            openlibrary_mapper = OpenLibraryMapper(openlibrary_client)
         except Exception as e:
             openlibrary_client = None
+            openlibrary_mapper = None
             print(f"Error initializing OpenLibrary client: {e}")
 
         with ThreadPoolExecutor(max_workers=5) as executor:
@@ -126,15 +128,15 @@ class HomepageView(APIView):
                 print(f"Error fetching video (tv) suggestions: {e}")
 
             try:
-                if 'games' in futures:
+                if 'games' in futures and igdb_mapper:
                     games_data, games_status = futures['games'].result()
                     if games_status == 200 and isinstance(games_data, list):
-                        games_results = [normalize_game(item) for item in games_data[:limit]]
+                        games_results = [igdb_mapper.map_search_item(item).to_dict() for item in games_data[:limit]]
             except Exception as e:
                 print(f"Error fetching games suggestions: {e}")
 
             try:
-                if 'music' in futures:
+                if 'music' in futures and spotify_mapper:
                     music_data, music_status = futures['music'].result()
                     if music_status == 200 and 'albums' in music_data:
                         albums = music_data['albums'].get('items', [])
@@ -144,11 +146,12 @@ class HomepageView(APIView):
                         for album in albums:
                             if not album or not album.get('id'):
                                 continue
-                            if should_include_album(album):
+                            album_type = (album.get('album_type') or '').lower()
+                            if album_type != 'single':
                                 album_id = album.get('id')
                                 if album_id not in seen_ids:
                                     seen_ids.add(album_id)
-                                    filtered_albums.append(normalize_music(album))
+                                    filtered_albums.append(spotify_mapper.map_search_item(album).to_dict())
 
                         offset = len(albums)
                         max_per_request = 50
@@ -172,11 +175,12 @@ class HomepageView(APIView):
                             for album in more_albums:
                                 if not album or not album.get('id'):
                                     continue
-                                if should_include_album(album):
+                                album_type = (album.get('album_type') or '').lower()
+                                if album_type != 'single':
                                     album_id = album.get('id')
                                     if album_id not in seen_ids:
                                         seen_ids.add(album_id)
-                                        filtered_albums.append(normalize_music(album))
+                                        filtered_albums.append(spotify_mapper.map_search_item(album).to_dict())
                                         if len(filtered_albums) >= limit:
                                             break
 
@@ -189,11 +193,11 @@ class HomepageView(APIView):
                 print(f"Error fetching music suggestions: {e}")
 
             try:
-                if 'books' in futures:
+                if 'books' in futures and openlibrary_mapper:
                     books_data, books_status = futures['books'].result()
                     if books_status == 200 and 'docs' in books_data:
                         docs = books_data.get('docs', [])
-                        books_results = [normalize_book(doc) for doc in docs[:limit]]
+                        books_results = [openlibrary_mapper.map_search_item(doc).to_dict() for doc in docs[:limit]]
             except Exception as e:
                 print(f"Error fetching books suggestions: {e}")
 
@@ -218,7 +222,7 @@ class HomepageView(APIView):
                             )
 
                     igdb_details_map = {}
-                    if igdb_client and games_results:
+                    if igdb_client and igdb_mapper and games_results:
                         try:
                             game_ids = [item.get('id') for item in games_results if item.get('id') is not None]
                             games_data, games_status = igdb_client.get_bulk_games(game_ids)
@@ -226,12 +230,12 @@ class HomepageView(APIView):
                                 for game in games_data:
                                     gid = game.get('id')
                                     if gid is not None:
-                                        igdb_details_map[gid] = normalize_game(game)
+                                        igdb_details_map[gid] = igdb_mapper.map_detail(game).to_dict()
                         except Exception as e:
                             print(f"Error fetching IGDB details: {e}")
 
                     spotify_details_map = {}
-                    if spotify_client and music_results:
+                    if spotify_client and spotify_mapper and music_results:
                         try:
                             album_ids = [item.get('id') for item in music_results if item.get('id')]
                             albums_data, albums_status = spotify_client.get_bulk_albums(album_ids)
@@ -239,12 +243,12 @@ class HomepageView(APIView):
                                 for album in albums_data.get('albums', []) or []:
                                     aid = album.get('id')
                                     if aid:
-                                        spotify_details_map[aid] = normalize_album_details(album)
+                                        spotify_details_map[aid] = spotify_mapper.map_detail(album).to_dict()
                         except Exception as e:
                             print(f"Error fetching Spotify details: {e}")
 
                     openlibrary_details_map = {}
-                    if openlibrary_client and books_results:
+                    if openlibrary_client and openlibrary_mapper and books_results:
                         try:
                             book_ids = [item.get('id') for item in books_results if item.get('id')]
                             book_keys = [f"/works/{bid}" for bid in book_ids]
@@ -264,7 +268,7 @@ class HomepageView(APIView):
                                         bid = None
 
                                     if bid:
-                                        openlibrary_details_map[bid] = normalize_book(data)
+                                        openlibrary_details_map[bid] = openlibrary_mapper.map_detail(data).to_dict()
 
                         except Exception as e:
                             print(f"Error fetching OpenLibrary details: {e}")

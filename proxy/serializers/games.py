@@ -1,14 +1,5 @@
 from rest_framework import serializers
-from .common import PaginationMetadataSerializer
-
-class ImageVariantSerializer(serializers.Serializer):
-    standard = serializers.URLField(allow_null=True, required=False)
-    original = serializers.URLField(allow_null=True, required=False)
-
-class GameImagesSerializer(serializers.Serializer):
-    poster = ImageVariantSerializer(required=False)
-    screenshots = ImageVariantSerializer(many=True, required=False)
-    artworks = ImageVariantSerializer(many=True, required=False)
+from .common import PaginationMetadataSerializer, ImageSerializer
 
 class GameSearchItemSerializer(serializers.Serializer):
     id = serializers.IntegerField(help_text="IGDB game ID")
@@ -75,23 +66,9 @@ class GameDetailSerializer(serializers.Serializer):
         allow_null=True,
         help_text="List of platform names"
     )
-    slug = serializers.CharField(
-        allow_null=True,
-        allow_blank=True,
-        help_text="URL-safe version of the game name",
-        required=False
-    )
-    images = GameImagesSerializer(
+    images = ImageSerializer(
+        many=True,
         required=False,
-        help_text="Image variants by type: poster (standard/original), lists of screenshots and artworks with the same variants"
+        help_text="List of images with type (POSTER, SCREENSHOT, ARTWORK), size (STANDARD, ORIGINAL), and image_url"
     )
 
-class BulkGameItemSerializer(serializers.Serializer):
-    key = serializers.IntegerField(help_text="The game ID that was requested", required=False)
-    id = serializers.IntegerField(help_text="The game ID", required=False)
-    data = GameDetailSerializer(allow_null=True, help_text="Game details")
-    status_code = serializers.IntegerField(help_text="HTTP status code for this item")
-    error = serializers.CharField(
-        allow_null=True,
-        help_text="Error message if request failed"
-    )

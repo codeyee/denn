@@ -9,8 +9,7 @@ from .music import MusicSearchItemSerializer, AlbumDetailSerializer
 from .books import BookSearchItemSerializer, BookDetailSerializer
 
 class VideoSuggestionsResponseSerializer(serializers.Serializer):
-    results = VideoSearchItemSerializer(many=True, help_text="List of suggested movies and TV shows")
-    count = serializers.IntegerField(help_text="Number of suggestions returned")
+    pass
 
 class GamesSuggestionsResponseSerializer(serializers.Serializer):
     results = GameSearchItemSerializer(many=True, help_text="List of suggested games")

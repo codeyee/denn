@@ -1,12 +1,5 @@
 from rest_framework import serializers
-from .common import PaginationMetadataSerializer
-
-class ImageVariantSerializer(serializers.Serializer):
-    standard = serializers.URLField(allow_null=True, required=False)
-    original = serializers.URLField(allow_null=True, required=False)
-
-class BookImagesSerializer(serializers.Serializer):
-    poster = ImageVariantSerializer(required=False)
+from .common import PaginationMetadataSerializer, ImageSerializer
 
 class BookSearchItemSerializer(serializers.Serializer):
     id = serializers.CharField(help_text="OpenLibrary work ID")
@@ -33,7 +26,11 @@ class BookSearchItemSerializer(serializers.Serializer):
         allow_blank=True,
         help_text="Book description or first sentence"
     )
-    images = BookImagesSerializer(required=False, help_text="Image variants: poster (standard/original)")
+    images = ImageSerializer(
+        many=True,
+        required=False,
+        help_text="List of images with type (POSTER), size (STANDARD, ORIGINAL), and image_url"
+    )
 
 class BookSearchResponseSerializer(serializers.Serializer):
     metadata = PaginationMetadataSerializer()
@@ -64,16 +61,9 @@ class BookDetailSerializer(serializers.Serializer):
         allow_blank=True,
         help_text="Book description"
     )
-    images = BookImagesSerializer(
+    images = ImageSerializer(
+        many=True,
         required=False,
-        help_text="Image variants: poster (standard/original)"
+        help_text="List of images with type (POSTER), size (STANDARD, ORIGINAL), and image_url"
     )
 
-class BulkBookItemSerializer(serializers.Serializer):
-    key = serializers.CharField(help_text="The book ID that was requested")
-    data = BookDetailSerializer(allow_null=True, help_text="Book details")
-    status_code = serializers.IntegerField(help_text="HTTP status code for this item")
-    error = serializers.CharField(
-        allow_null=True,
-        help_text="Error message if request failed"
-    )

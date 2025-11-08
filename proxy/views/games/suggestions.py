@@ -1,19 +1,11 @@
+from rest_framework.response import Response
+from rest_framework import status as http_status, serializers
 from .base import IGDBBaseView
-from .utils import normalize_search_item
-from proxy.serializers import GamesSuggestionsResponseSerializer, ErrorResponseSerializer
+from proxy.serializers import GameDetailSerializer, ErrorResponseSerializer
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 
 class GamesSuggestionsView(IGDBBaseView):
-    def transform_results(self, data):
-        if not isinstance(data, list): return {'results': [], 'count': 0}
-
-        results = [normalize_search_item(item) for item in data]
-
-        return {
-            'results': results,
-            'count': len(results)
-        }
 
     @extend_schema(
         tags=['Proxy - Games'],
@@ -23,6 +15,8 @@ class GamesSuggestionsView(IGDBBaseView):
 
         This endpoint fetches highly rated and popular games from IGDB,
         sorted by aggregated rating, ideal for displaying as recommendations.
+
+        Returns an object with 'results' (list of games) and 'count' (number of results).
         ''',
         parameters=[
             OpenApiParameter(
@@ -32,7 +26,13 @@ class GamesSuggestionsView(IGDBBaseView):
             )
         ],
         responses={
-            200: GamesSuggestionsResponseSerializer,
+            200: {
+                "type": "object",
+                "properties": {
+                    "results": {"type": "array", "items": {}},
+                    "count": {"type": "integer"}
+                }
+            },
             400: ErrorResponseSerializer
         }
     )
@@ -41,10 +41,16 @@ class GamesSuggestionsView(IGDBBaseView):
         limit = min(limit, 100)
 
         client = self.get_client()
+        mapper = self.get_mapper()
 
         data, status_code = client.get_popular_games(limit=limit, offset=0)
 
-        return self.handle_api_call(
-            lambda: (data, status_code),
-            transformer=self.transform_results
-        )
+        if status_code != http_status.HTTP_200_OK:
+            return Response(data, status=status_code)
+
+        if not isinstance(data, list):
+            return Response({'results': [], 'count': 0}, status=http_status.HTTP_200_OK)
+
+        results = [mapper.map_search_item(item).to_dict() for item in data]
+
+        return Response({'results': results, 'count': len(results)}, status=http_status.HTTP_200_OK)

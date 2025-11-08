@@ -1,16 +1,16 @@
-from rest_framework import status as http_status
+from rest_framework import status as http_status, serializers
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
-from proxy.serializers import BulkBookItemSerializer, ErrorResponseSerializer
+from proxy.serializers import BookDetailSerializer, ErrorResponseSerializer
+from proxy.exceptions import MissingParameterError
 from .base import OpenLibraryBaseView
-from .utils import normalize_search_item
 
 class BookBulkView(OpenLibraryBaseView):
     @extend_schema(
         tags=['Proxy - Books'],
         summary='Bulk get book details',
-        description='Retrieve detailed information about multiple books from OpenLibrary in a single request. Use OpenLibrary work keys (e.g., "OL28346580W").',
+        description='Retrieve detailed information about multiple books from OpenLibrary in a single request. Returns a list of results with key, data, status_code, and error fields. Use OpenLibrary work keys (e.g., "OL28346580W").',
         parameters=[
             OpenApiParameter(
                 'keys',
@@ -21,18 +21,14 @@ class BookBulkView(OpenLibraryBaseView):
             )
         ],
         responses={
-            200: BulkBookItemSerializer(many=True),
+            200: serializers.ListSerializer(child=serializers.DictField()),
             400: ErrorResponseSerializer
         }
     )
     def get(self, request):
         keys_param = request.query_params.get('keys', '')
-
         if not keys_param:
-            return Response(
-                {'error': 'INVALID_REQUEST', 'message': 'Missing keys parameter'},
-                status=http_status.HTTP_400_BAD_REQUEST
-            )
+            raise MissingParameterError('keys')
 
         book_keys = [key.strip() for key in keys_param.split(',') if key.strip()]
 
@@ -49,10 +45,12 @@ class BookBulkView(OpenLibraryBaseView):
             )
 
         client = self.get_client()
+        mapper = self.get_mapper()
+
         results, _ = client.get_bulk_books(book_keys)
 
         for result in results:
             if result['status_code'] == 200 and result['data']:
-                result['data'] = normalize_search_item(result['data'])
+                result['data'] = mapper.map_detail(result['data']).to_dict()
 
         return Response(results, status=http_status.HTTP_200_OK)

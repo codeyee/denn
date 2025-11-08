@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .common import PaginationMetadataSerializer
+from .common import PaginationMetadataSerializer, ImageSerializer
 
 class MusicSearchItemSerializer(serializers.Serializer):
     id = serializers.CharField(help_text="Spotify album ID")
@@ -61,6 +61,11 @@ class AlbumDetailSerializer(serializers.Serializer):
     duration_minutes = serializers.IntegerField(
         allow_null=True,
         help_text="Total album duration in minutes (sum of track durations)"
+    )
+    images = ImageSerializer(
+        many=True,
+        required=False,
+        help_text="List of images with type (POSTER), size (STANDARD, ORIGINAL), and image_url"
     )
 
 class BulkAlbumsResponseSerializer(serializers.Serializer):

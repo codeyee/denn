@@ -2,17 +2,10 @@ from typing import Dict, Any, Optional, List, Tuple
 from concurrent.futures import ThreadPoolExecutor
 from django.conf import settings
 from rest_framework import status as http_status
-from proxy.models.video import (
-    Provider,
-    Images,
-    Episode,
-    Season,
-    Movie,
-    TVShow,
-    SearchItem
-)
+from proxy.models.base import Images, Provider
+from proxy.models.video import Episode, Season, Movie, TVShow, SearchItem
 from proxy.clients.tmdb import TMDBClient
-from proxy.constants import ImageType, ImageSize, ProviderAction, MediaType
+from proxy.constants import ProviderAction, MediaType
 
 
 def build_image_url(path: Optional[str], size: str = 'w500') -> Optional[str]:
@@ -85,8 +78,8 @@ class TMDBMapper:
             if provider_name not in providers_map:
                 providers_map[provider_name] = Provider(
                     name=provider_name,
-                    actions=[],
-                    image_url=image_url
+                    image_url=image_url,
+                    actions=[]
                 )
             else:
                 if not providers_map[provider_name].image_url and image_url:
@@ -108,8 +101,8 @@ class TMDBMapper:
             if provider_name not in providers_map:
                 providers_map[provider_name] = Provider(
                     name=provider_name,
-                    actions=[],
-                    image_url=image_url
+                    image_url=image_url,
+                    actions=[]
                 )
             else:
                 if not providers_map[provider_name].image_url and image_url:
@@ -131,8 +124,8 @@ class TMDBMapper:
             if provider_name not in providers_map:
                 providers_map[provider_name] = Provider(
                     name=provider_name,
-                    actions=[],
-                    image_url=image_url
+                    image_url=image_url,
+                    actions=[]
                 )
             else:
                 if not providers_map[provider_name].image_url and image_url:

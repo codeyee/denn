@@ -1,5 +1,5 @@
 from .base import TMDBBaseView
-from proxy.serializers import VideoSuggestionsResponseSerializer, ErrorResponseSerializer
+from proxy.serializers import VideoSearchItemSerializer, ErrorResponseSerializer
 from proxy.mappers import TMDBMapper
 from proxy.constants import MediaType
 from drf_spectacular.utils import extend_schema, OpenApiParameter
@@ -27,7 +27,7 @@ class VideoSuggestionsView(TMDBBaseView):
     @extend_schema(
         tags=['Proxy - Video'],
         summary='Get video suggestions',
-        description='Get popular movies and TV shows for homepage suggestions. This endpoint fetches a mix of popular movies and TV shows from TMDB, ideal for displaying as recommendations on a homepage or discovery section.',
+        description='Get popular movies and TV shows for homepage suggestions. This endpoint fetches a mix of popular movies and TV shows from TMDB, ideal for displaying as recommendations on a homepage or discovery section. Returns a list of video items.',
         parameters=[
             OpenApiParameter(
                 'limit',
@@ -36,7 +36,7 @@ class VideoSuggestionsView(TMDBBaseView):
             )
         ],
         responses={
-            200: VideoSuggestionsResponseSerializer,
+            200: VideoSearchItemSerializer(many=True),
             400: ErrorResponseSerializer
         }
     )

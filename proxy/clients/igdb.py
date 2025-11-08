@@ -164,8 +164,7 @@ class IGDBClient(CachedAPIClient):
             'platforms.name',
             'game_type',
             'involved_companies.company.name',
-            'involved_companies.developer',
-            'slug'
+            'involved_companies.developer'
         ])
 
     def get_included_game_types(self) -> str:

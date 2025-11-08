@@ -3,8 +3,8 @@ from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 from proxy.serializers import GameDetailSerializer, ErrorResponseSerializer
+from proxy.exceptions import MissingParameterError
 from .base import IGDBBaseView
-from .utils import normalize_item
 
 class GamesBulkView(IGDBBaseView):
     @extend_schema(
@@ -27,12 +27,8 @@ class GamesBulkView(IGDBBaseView):
     )
     def get(self, request):
         ids_param = request.query_params.get('ids', '')
-
         if not ids_param:
-            return Response(
-                {'error': 'INVALID_REQUEST', 'message': 'Missing ids parameter'},
-                status=http_status.HTTP_400_BAD_REQUEST
-            )
+            raise MissingParameterError('ids')
 
         try:
             game_ids = [int(id.strip()) for id in ids_param.split(',') if id.strip()]
@@ -55,11 +51,15 @@ class GamesBulkView(IGDBBaseView):
             )
 
         client = self.get_client()
+        mapper = self.get_mapper()
+
         data, status_code = client.get_bulk_games(game_ids)
 
-        if status_code == 200:
-            if isinstance(data, list):
-                normalized_games = [normalize_item(game) for game in data]
-                return Response(normalized_games, status=http_status.HTTP_200_OK)
+        if status_code != http_status.HTTP_200_OK:
+            return Response(data, status=status_code)
+
+        if isinstance(data, list):
+            games = [mapper.map_detail(game).to_dict() for game in data]
+            return Response(games, status=http_status.HTTP_200_OK)
 
         return Response(data, status=status_code)

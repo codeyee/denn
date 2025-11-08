@@ -1,5 +1,7 @@
+from rest_framework.response import Response
+from rest_framework import status as http_status
 from .base import SpotifyBaseView
-from .utils import normalize_album
+from proxy.exceptions import NotFoundError
 from proxy.serializers import AlbumDetailSerializer, ErrorResponseSerializer
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
@@ -19,9 +21,15 @@ class MusicAlbumDetailView(SpotifyBaseView):
     )
     def get(self, request, album_id: str):
         client = self.get_client()
-        return self.handle_api_call(
-            client.get_album,
-            transformer=normalize_album,
-            album_id=album_id
-        )
+        mapper = self.get_mapper()
+
+        data, status_code = client.get_album(album_id=album_id)
+
+        if status_code != http_status.HTTP_200_OK:
+            if status_code == http_status.HTTP_404_NOT_FOUND:
+                raise NotFoundError('Album')
+            return Response(data, status=status_code)
+
+        album = mapper.map_detail(data)
+        return Response(album.to_dict(), status=http_status.HTTP_200_OK)
 

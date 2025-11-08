@@ -14,6 +14,9 @@ from .video import (
     BulkMovieItemSerializer,
     BulkTVShowItemSerializer,
     BulkSeasonItemSerializer,
+    BulkMoviesResponseSerializer,
+    BulkTVShowsResponseSerializer,
+    BulkSeasonsResponseSerializer,
 )
 
 from .music import (
@@ -28,14 +31,12 @@ from .games import (
     GameSearchItemSerializer,
     GameSearchResponseSerializer,
     GameDetailSerializer,
-    BulkGameItemSerializer,
 )
 
 from .books import (
     BookSearchItemSerializer,
     BookSearchResponseSerializer,
     BookDetailSerializer,
-    BulkBookItemSerializer,
 )
 
 from .homepage import (
@@ -60,6 +61,9 @@ __all__ = [
     'BulkMovieItemSerializer',
     'BulkTVShowItemSerializer',
     'BulkSeasonItemSerializer',
+    'BulkMoviesResponseSerializer',
+    'BulkTVShowsResponseSerializer',
+    'BulkSeasonsResponseSerializer',
 
     'MusicSearchItemSerializer',
     'MusicSearchResponseSerializer',
@@ -70,12 +74,10 @@ __all__ = [
     'GameSearchItemSerializer',
     'GameSearchResponseSerializer',
     'GameDetailSerializer',
-    'BulkGameItemSerializer',
 
     'BookSearchItemSerializer',
     'BookSearchResponseSerializer',
     'BookDetailSerializer',
-    'BulkBookItemSerializer',
 
     'VideoSuggestionsResponseSerializer',
     'GamesSuggestionsResponseSerializer',

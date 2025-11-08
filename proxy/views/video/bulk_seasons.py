@@ -2,7 +2,7 @@ from rest_framework import status as http_status
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
-from proxy.serializers import BulkSeasonItemSerializer, ErrorResponseSerializer
+from proxy.serializers import BulkSeasonsResponseSerializer, ErrorResponseSerializer
 from proxy.mappers import TMDBMapper
 from proxy.exceptions import MissingParameterError, InvalidParameterError
 from .base import TMDBBaseView
@@ -12,7 +12,7 @@ class VideoBulkSeasonsView(TMDBBaseView):
     @extend_schema(
         tags=['Proxy - Video'],
         summary='Bulk get TV season details',
-        description='Retrieve detailed information about multiple TV seasons from TMDB in a single request. Format: "tv_id:season_number" (e.g., "1396:1,1396:2,94605:1")',
+        description='Retrieve detailed information about multiple TV seasons from TMDB in a single request. Returns a dictionary with "tv_id:season_number" keys and season details (or null) as values.',
         parameters=[
             OpenApiParameter(
                 'seasons',
@@ -20,10 +20,17 @@ class VideoBulkSeasonsView(TMDBBaseView):
                 OpenApiParameter.QUERY,
                 required=True,
                 description='Comma-separated list of TV show ID and season number pairs (e.g., "1396:1,1396:2,94605:1")'
+            ),
+            OpenApiParameter(
+                'country',
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
+                required=False,
+                description='ISO 3166-1 alpha-2 country code (e.g., US, GB, FR) to filter providers by country'
             )
         ],
         responses={
-            200: BulkSeasonItemSerializer(many=True),
+            200: BulkSeasonsResponseSerializer,
             400: ErrorResponseSerializer
         }
     )

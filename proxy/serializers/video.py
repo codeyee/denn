@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .common import PaginationMetadataSerializer
+from .common import PaginationMetadataSerializer, ImageSerializer
 
 class VideoSearchItemSerializer(serializers.Serializer):
     id = serializers.IntegerField(help_text="TMDB ID")
@@ -77,14 +77,10 @@ class MovieDetailSerializer(serializers.Serializer):
         allow_null=True,
         help_text="Release status (e.g., 'Released', 'Post Production')"
     )
-    # Complex metadata
-    images = serializers.DictField(
-        child=serializers.DictField(
-            child=serializers.URLField(allow_null=True, required=False),
-            required=False
-        ),
-        help_text="Image variants grouped by type (poster/backdrop) with generic keys: standard, original",
-        required=False
+    images = ImageSerializer(
+        many=True,
+        required=False,
+        help_text="List of images with type (POSTER, GALLERY), size (STANDARD, ORIGINAL), and image_url"
     )
     providers = serializers.DictField(
         child=ProviderSerializer(many=True),
@@ -154,14 +150,10 @@ class TVShowDetailSerializer(serializers.Serializer):
         allow_null=True,
         help_text="Total number of episodes"
     )
-    # Complex metadata
-    images = serializers.DictField(
-        child=serializers.DictField(
-            child=serializers.URLField(allow_null=True, required=False),
-            required=False
-        ),
-        help_text="Image variants grouped by type (poster/backdrop) with generic keys: standard, original",
-        required=False
+    images = ImageSerializer(
+        many=True,
+        required=False,
+        help_text="List of images with type (POSTER, GALLERY), size (STANDARD, ORIGINAL), and image_url"
     )
     providers = serializers.DictField(
         child=ProviderSerializer(many=True),
@@ -223,14 +215,10 @@ class TVSeasonDetailSerializer(serializers.Serializer):
         help_text="Season premiere date in YYYY-MM-DD format"
     )
     number_of_episodes = serializers.IntegerField(help_text="Total number of episodes")
-    # Complex metadata
-    images = serializers.DictField(
-        child=serializers.DictField(
-            child=serializers.URLField(allow_null=True, required=False),
-            required=False
-        ),
-        help_text="Image variants grouped by type (poster/backdrop) with generic keys: standard, original",
-        required=False
+    images = ImageSerializer(
+        many=True,
+        required=False,
+        help_text="List of images with type (POSTER, GALLERY), size (STANDARD, ORIGINAL), and image_url"
     )
     providers = serializers.DictField(
         child=ProviderSerializer(many=True),
@@ -269,3 +257,12 @@ class BulkSeasonItemSerializer(serializers.Serializer):
         allow_null=True,
         help_text="Error message if request failed"
     )
+
+class BulkMoviesResponseSerializer(serializers.Serializer):
+    pass
+
+class BulkTVShowsResponseSerializer(serializers.Serializer):
+    pass
+
+class BulkSeasonsResponseSerializer(serializers.Serializer):
+    pass

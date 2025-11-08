@@ -2,7 +2,7 @@ from rest_framework import status as http_status
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
-from proxy.serializers import BulkMovieItemSerializer, BulkTVShowItemSerializer, ErrorResponseSerializer
+from proxy.serializers import BulkMoviesResponseSerializer, BulkTVShowsResponseSerializer, ErrorResponseSerializer
 from proxy.mappers import TMDBMapper
 from proxy.exceptions import MissingParameterError, InvalidParameterError
 from .base import TMDBBaseView
@@ -13,7 +13,7 @@ class VideoBulkMoviesView(TMDBBaseView):
     @extend_schema(
         tags=['Proxy - Video'],
         summary='Bulk get movie details',
-        description='Retrieve detailed information about multiple movies from TMDB in a single request.',
+        description='Retrieve detailed information about multiple movies from TMDB in a single request. Returns a dictionary with movie IDs as keys and movie details (or null) as values.',
         parameters=[
             OpenApiParameter(
                 'ids',
@@ -21,10 +21,17 @@ class VideoBulkMoviesView(TMDBBaseView):
                 OpenApiParameter.QUERY,
                 required=True,
                 description='Comma-separated list of TMDB movie IDs (e.g., "550,680,27205")'
+            ),
+            OpenApiParameter(
+                'country',
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
+                required=False,
+                description='ISO 3166-1 alpha-2 country code (e.g., US, GB, FR) to filter providers by country'
             )
         ],
         responses={
-            200: BulkMovieItemSerializer(many=True),
+            200: BulkMoviesResponseSerializer,
             400: ErrorResponseSerializer
         }
     )
@@ -68,7 +75,7 @@ class VideoBulkTvShowsView(TMDBBaseView):
     @extend_schema(
         tags=['Proxy - Video'],
         summary='Bulk get TV show details',
-        description='Retrieve detailed information about multiple TV shows from TMDB in a single request.',
+        description='Retrieve detailed information about multiple TV shows from TMDB in a single request. Returns a dictionary with TV show IDs as keys and TV show details (or null) as values.',
         parameters=[
             OpenApiParameter(
                 'ids',
@@ -76,10 +83,17 @@ class VideoBulkTvShowsView(TMDBBaseView):
                 OpenApiParameter.QUERY,
                 required=True,
                 description='Comma-separated list of TMDB TV show IDs (e.g., "1396,1668,94605")'
+            ),
+            OpenApiParameter(
+                'country',
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
+                required=False,
+                description='ISO 3166-1 alpha-2 country code (e.g., US, GB, FR) to filter providers by country'
             )
         ],
         responses={
-            200: BulkTVShowItemSerializer(many=True),
+            200: BulkTVShowsResponseSerializer,
             400: ErrorResponseSerializer
         }
     )
