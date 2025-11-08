@@ -21,6 +21,11 @@ from proxy.serializers import HomepageResponseSerializer, ErrorResponseSerialize
 
 class HomepageView(APIView):
 
+    CACHE_CONFIG = {
+        'cache_type': 'homepage',
+        'timeout': 3600 * 24
+    }
+
     SERVICE_CONFIG = [
         {
             'name': 'tmdb',
@@ -75,7 +80,10 @@ class HomepageView(APIView):
             500: ErrorResponseSerializer
         }
     )
-    @cached_view(cache_type='homepage', timeout=3600 * 12)
+    @cached_view(
+        cache_type=CACHE_CONFIG['cache_type'],
+        timeout=CACHE_CONFIG['timeout']
+    )
     def get(self, request):
         try:
             limit, country = self._get_valid_params(request)
