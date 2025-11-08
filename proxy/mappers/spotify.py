@@ -92,23 +92,6 @@ class SpotifyMapper:
         )
 
     def map_search_item(self, item: Dict[str, Any]) -> SearchItem:
-        album_type = (item.get('album_type') or '').lower()
-        total_tracks = item.get('total_tracks', 0)
-
-        if album_type == 'single' and total_tracks >= 4:
-            album_type = 'ep'
-
-        additional_data = {}
-        if total_tracks:
-            additional_data['total_tracks'] = total_tracks
-
-        if album_type:
-            additional_data['album_type'] = album_type
-
-        external_url = item.get('external_urls', {}).get('spotify')
-        if external_url:
-            additional_data['external_url'] = external_url
-
         return SearchItem(
             id=item.get('id'),
             type=SearchItemType.ALBUM,
@@ -116,8 +99,7 @@ class SpotifyMapper:
             original_title=item.get('name', ''),
             authors=self._get_artist_names(item.get('artists')),
             image_url=self._get_image_url(item.get('images'), 'large'),
-            release_date=self._normalize_release_date(item.get('release_date')),
-            additional_data=additional_data
+            release_date=self._normalize_release_date(item.get('release_date'))
         )
 
     def map_detail(self, data: Dict[str, Any]) -> Album:

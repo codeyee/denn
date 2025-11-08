@@ -150,11 +150,6 @@ class IGDBMapper:
         poster_image_id = self._get_image_id_from_cover(cover_data)
         image_url = build_igdb_image_url(poster_image_id, '720p')
 
-        additional_data = {}
-        game_type = self._format_game_type(item.get('game_type'))
-        if game_type:
-            additional_data['game_type'] = game_type
-
         return SearchItem(
             id=item.get('id'),
             type=SearchItemType.GAME,
@@ -162,8 +157,7 @@ class IGDBMapper:
             original_title=item.get('name', ''),
             description=self._build_description(item.get('summary'), item.get('storyline')),
             image_url=image_url,
-            release_date=self._format_release_date(item.get('first_release_date')),
-            additional_data=additional_data
+            release_date=self._format_release_date(item.get('first_release_date'))
         )
 
     def map_detail(self, item: Dict[str, Any]) -> Game:

@@ -59,11 +59,6 @@ class OpenLibraryMapper:
         if first_sentence and isinstance(first_sentence, list) and len(first_sentence) > 0:
             description = first_sentence[0]
 
-        additional_data = {}
-        pages = item.get('number_of_pages_median')
-        if pages:
-            additional_data['pages'] = pages
-
         return SearchItem(
             id=self._extract_id_from_key(item.get('key')),
             type=SearchItemType.BOOK,
@@ -72,8 +67,7 @@ class OpenLibraryMapper:
             authors=item.get('author_name', []) if item.get('author_name') else None,
             image_url=image_url,
             release_date=self._parse_publish_date(item.get('publish_date'), item.get('first_publish_year')),
-            description=description,
-            additional_data=additional_data
+            description=description
         )
 
     def map_detail(self, item: Dict[str, Any]) -> Book:
