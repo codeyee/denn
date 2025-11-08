@@ -2,9 +2,9 @@ from typing import Dict, Any, Optional, List
 from django.conf import settings
 from dateutil import parser
 from proxy.models.book import Book
-from proxy.models.base import SearchItem, Images
+from proxy.models.base import SearchItem, Images, Author
 from proxy.clients.openlibrary import OpenLibraryClient
-from proxy.constants import SearchItemType
+from proxy.constants import SearchItemType, AuthorType
 
 
 class OpenLibraryMapper:
@@ -37,6 +37,20 @@ class OpenLibraryMapper:
             return None
         return key.split('/')[-1] if '/' in key else key
 
+    def _convert_author_names(self, author_names: Optional[List[str]]) -> Optional[List[Author]]:
+        if not author_names:
+            return None
+
+        authors = []
+        for name in author_names:
+            if name:
+                authors.append(Author(
+                    name=name,
+                    type=AuthorType.PERSON
+                ))
+
+        return authors if authors else None
+
     def _parse_publish_date(self, publish_dates: Optional[List[str]], first_publish_year: Optional[int]) -> Optional[str]:
         if publish_dates and isinstance(publish_dates, list):
             for date_str in publish_dates:
@@ -59,12 +73,15 @@ class OpenLibraryMapper:
         if first_sentence and isinstance(first_sentence, list) and len(first_sentence) > 0:
             description = first_sentence[0]
 
+        author_names = item.get('author_name', []) if item.get('author_name') else None
+        authors = self._convert_author_names(author_names)
+
         return SearchItem(
             id=self._extract_id_from_key(item.get('key')),
             type=SearchItemType.BOOK,
             title=item.get('title', ''),
             original_title=item.get('title', ''),
-            authors=item.get('author_name', []) if item.get('author_name') else None,
+            authors=authors,
             image_url=image_url,
             release_date=self._parse_publish_date(item.get('publish_date'), item.get('first_publish_year')),
             description=description
@@ -80,10 +97,13 @@ class OpenLibraryMapper:
         if first_sentence and isinstance(first_sentence, list) and len(first_sentence) > 0:
             description = first_sentence[0]
 
+        author_names = item.get('author_name', []) if item.get('author_name') else None
+        authors = self._convert_author_names(author_names)
+
         return Book(
             id=self._extract_id_from_key(item.get('key')),
             title=item.get('title', ''),
-            authors=item.get('author_name', []) if item.get('author_name') else None,
+            authors=authors,
             image_url=image_url,
             release_date=self._parse_publish_date(item.get('publish_date'), item.get('first_publish_year')),
             pages=item.get('number_of_pages_median'),

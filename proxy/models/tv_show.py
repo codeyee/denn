@@ -1,6 +1,6 @@
 from typing import Optional, Dict, List
 from dataclasses import dataclass, field
-from proxy.models.base import Images, Provider
+from proxy.models.base import Images, Platform, Author
 
 
 @dataclass
@@ -40,7 +40,7 @@ class Season:
     tv_show_name: Optional[str] = None
     images: Optional[Images] = None
     episodes: List[Episode] = field(default_factory=list)
-    providers: Optional[Dict[str, List[Provider]]] = None
+    platforms: Optional[Dict[str, List[Platform]]] = None
 
     def to_dict(self) -> Dict:
         result = {
@@ -57,10 +57,10 @@ class Season:
         if self.images:
             result['images'] = self.images.to_dict()
 
-        if self.providers:
-            result['providers'] = {
-                country: [p.to_dict() for p in providers]
-                for country, providers in self.providers.items()
+        if self.platforms:
+            result['platforms'] = {
+                country: [p.to_dict() for p in platforms]
+                for country, platforms in self.platforms.items()
             }
 
         if self.episodes:
@@ -82,8 +82,9 @@ class TVShow:
     status: Optional[str] = None
     number_of_seasons: Optional[int] = None
     number_of_episodes: Optional[int] = None
+    authors: Optional[List[Author]] = None
     images: Optional[Images] = None
-    providers: Optional[Dict[str, List[Provider]]] = None
+    platforms: Optional[Dict[str, List[Platform]]] = None
     seasons: List[Season] = field(default_factory=list)
 
     def to_dict(self) -> Dict:
@@ -101,13 +102,16 @@ class TVShow:
             'number_of_episodes': self.number_of_episodes
         }
 
+        if self.authors:
+            result['authors'] = [author.to_dict() for author in self.authors]
+
         if self.images:
             result['images'] = self.images.to_dict()
 
-        if self.providers:
-            result['providers'] = {
-                country: [provider.to_dict() for provider in providers]
-                for country, providers in self.providers.items()
+        if self.platforms:
+            result['platforms'] = {
+                country: [platform.to_dict() for platform in platforms]
+                for country, platforms in self.platforms.items()
             }
 
         if self.seasons:

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from ..common import ImageSerializer
+from ..common import ImageSerializer, AuthorSerializer, PlatformSerializer
 
 class GameDetailSerializer(serializers.Serializer):
     id = serializers.IntegerField(help_text="IGDB game ID")
@@ -21,15 +21,17 @@ class GameDetailSerializer(serializers.Serializer):
         allow_null=True,
         help_text="Game cover image URL"
     )
-    authors = serializers.ListField(
-        child=serializers.CharField(),
+    authors = AuthorSerializer(
+        many=True,
         allow_null=True,
+        required=False,
         help_text="List of developers/publishers"
     )
-    platforms = serializers.ListField(
-        child=serializers.CharField(),
+    platforms = PlatformSerializer(
+        many=True,
         allow_null=True,
-        help_text="List of platform names"
+        required=False,
+        help_text="List of platforms"
     )
     images = ImageSerializer(
         many=True,

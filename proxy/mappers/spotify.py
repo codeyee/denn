@@ -1,8 +1,8 @@
 from typing import Dict, Any, Optional, List
 from proxy.models.album import Album, Track
-from proxy.models.base import SearchItem, Images
+from proxy.models.base import SearchItem, Images, Author
 from proxy.clients.spotify import SpotifyClient
-from proxy.constants import SearchItemType
+from proxy.constants import SearchItemType, AuthorType
 
 
 class SpotifyMapper:
@@ -22,11 +22,18 @@ class SpotifyMapper:
 
         return images[0].get('url')
 
-    def _get_artist_names(self, artists: Optional[List[Dict[str, Any]]]) -> Optional[List[str]]:
+    def _get_artist_names(self, artists: Optional[List[Dict[str, Any]]]) -> Optional[List[Author]]:
         if not artists or len(artists) == 0:
             return None
-        names = [artist.get('name', '') for artist in artists if artist.get('name')]
-        return names if names else None
+        authors = []
+        for artist in artists:
+            name = artist.get('name')
+            if name:
+                authors.append(Author(
+                    name=name,
+                    type=AuthorType.PERSON
+                ))
+        return authors if authors else None
 
     def _normalize_release_date(self, date_str: Optional[str]) -> Optional[str]:
         if not date_str:

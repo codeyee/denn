@@ -1,11 +1,13 @@
 from rest_framework import serializers
-from ..common import ImageSerializer
+from ..common import ImageSerializer, AuthorSerializer
 
 class TrackSerializer(serializers.Serializer):
     id = serializers.CharField(help_text="Spotify track ID")
     title = serializers.CharField(help_text="Track title")
-    authors = serializers.ListField(
-        child=serializers.CharField(),
+    authors = AuthorSerializer(
+        many=True,
+        allow_null=True,
+        required=False,
         help_text="List of artist names"
     )
     track_number = serializers.IntegerField(help_text="Track number in album")
@@ -15,8 +17,10 @@ class TrackSerializer(serializers.Serializer):
 class AlbumDetailSerializer(serializers.Serializer):
     id = serializers.CharField(help_text="Spotify album ID")
     title = serializers.CharField(help_text="Album title")
-    authors = serializers.ListField(
-        child=serializers.CharField(),
+    authors = AuthorSerializer(
+        many=True,
+        allow_null=True,
+        required=False,
         help_text="List of artist names"
     )
     image_url = serializers.URLField(

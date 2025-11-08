@@ -2,12 +2,12 @@ from typing import Dict, Any, Optional, List, Tuple
 from concurrent.futures import ThreadPoolExecutor
 from django.conf import settings
 from rest_framework import status as http_status
-from proxy.models.base import Images, Provider
+from proxy.models.base import Images, Platform, Author
 from proxy.models.movie import Movie
 from proxy.models.tv_show import TVShow, Season, Episode
 from proxy.models.base import SearchItem
 from proxy.clients.tmdb import TMDBClient
-from proxy.constants import ProviderAction, SearchItemType
+from proxy.constants import ProviderAction, SearchItemType, AuthorType
 
 
 def build_image_url(path: Optional[str], size: str = 'w500') -> Optional[str]:
@@ -67,95 +67,95 @@ class TMDBMapper:
             additional_galleries=additional_galleries
         )
 
-    def _process_flatrate_providers(self, flatrate_list: List[Dict], providers_map: Dict[str, Provider]) -> None:
-        for provider in flatrate_list:
-            provider_id = provider.get('provider_id')
-            if not provider_id:
+    def _process_flatrate_platforms(self, flatrate_list: List[Dict], platforms_map: Dict[str, Platform]) -> None:
+        for platform in flatrate_list:
+            platform_id = platform.get('provider_id')
+            if not platform_id:
                 continue
 
-            provider_name = provider.get('provider_name', '')
-            logo_path = provider.get('logo_path')
+            platform_name = platform.get('provider_name', '')
+            logo_path = platform.get('logo_path')
             image_url = build_image_url(logo_path, 'w500')
 
-            if provider_name not in providers_map:
-                providers_map[provider_name] = Provider(
-                    name=provider_name,
+            if platform_name not in platforms_map:
+                platforms_map[platform_name] = Platform(
+                    name=platform_name,
                     image_url=image_url,
                     actions=[]
                 )
             else:
-                if not providers_map[provider_name].image_url and image_url:
-                    providers_map[provider_name].image_url = image_url
+                if not platforms_map[platform_name].image_url and image_url:
+                    platforms_map[platform_name].image_url = image_url
 
-            if ProviderAction.STREAMING not in providers_map[provider_name].actions:
-                providers_map[provider_name].actions.append(ProviderAction.STREAMING)
+            if ProviderAction.STREAMING not in platforms_map[platform_name].actions:
+                platforms_map[platform_name].actions.append(ProviderAction.STREAMING)
 
-    def _process_rent_providers(self, rent_list: List[Dict], providers_map: Dict[str, Provider]) -> None:
-        for provider in rent_list:
-            provider_id = provider.get('provider_id')
-            if not provider_id:
+    def _process_rent_platforms(self, rent_list: List[Dict], platforms_map: Dict[str, Platform]) -> None:
+        for platform in rent_list:
+            platform_id = platform.get('provider_id')
+            if not platform_id:
                 continue
 
-            provider_name = provider.get('provider_name', '')
-            logo_path = provider.get('logo_path')
+            platform_name = platform.get('provider_name', '')
+            logo_path = platform.get('logo_path')
             image_url = build_image_url(logo_path, 'w500')
 
-            if provider_name not in providers_map:
-                providers_map[provider_name] = Provider(
-                    name=provider_name,
+            if platform_name not in platforms_map:
+                platforms_map[platform_name] = Platform(
+                    name=platform_name,
                     image_url=image_url,
                     actions=[]
                 )
             else:
-                if not providers_map[provider_name].image_url and image_url:
-                    providers_map[provider_name].image_url = image_url
+                if not platforms_map[platform_name].image_url and image_url:
+                    platforms_map[platform_name].image_url = image_url
 
-            if ProviderAction.RENT not in providers_map[provider_name].actions:
-                providers_map[provider_name].actions.append(ProviderAction.RENT)
+            if ProviderAction.RENT not in platforms_map[platform_name].actions:
+                platforms_map[platform_name].actions.append(ProviderAction.RENT)
 
-    def _process_buy_providers(self, buy_list: List[Dict], providers_map: Dict[str, Provider]) -> None:
-        for provider in buy_list:
-            provider_id = provider.get('provider_id')
-            if not provider_id:
+    def _process_buy_platforms(self, buy_list: List[Dict], platforms_map: Dict[str, Platform]) -> None:
+        for platform in buy_list:
+            platform_id = platform.get('provider_id')
+            if not platform_id:
                 continue
 
-            provider_name = provider.get('provider_name', '')
-            logo_path = provider.get('logo_path')
+            platform_name = platform.get('provider_name', '')
+            logo_path = platform.get('logo_path')
             image_url = build_image_url(logo_path, 'w500')
 
-            if provider_name not in providers_map:
-                providers_map[provider_name] = Provider(
-                    name=provider_name,
+            if platform_name not in platforms_map:
+                platforms_map[platform_name] = Platform(
+                    name=platform_name,
                     image_url=image_url,
                     actions=[]
                 )
             else:
-                if not providers_map[provider_name].image_url and image_url:
-                    providers_map[provider_name].image_url = image_url
+                if not platforms_map[platform_name].image_url and image_url:
+                    platforms_map[platform_name].image_url = image_url
 
-            if ProviderAction.BUY not in providers_map[provider_name].actions:
-                providers_map[provider_name].actions.append(ProviderAction.BUY)
+            if ProviderAction.BUY not in platforms_map[platform_name].actions:
+                platforms_map[platform_name].actions.append(ProviderAction.BUY)
 
-    def _normalize_country_providers(self, country_data: Dict[str, Any]) -> List[Provider]:
-        providers_map: Dict[str, Provider] = {}
+    def _normalize_country_platforms(self, country_data: Dict[str, Any]) -> List[Platform]:
+        platforms_map: Dict[str, Platform] = {}
 
         flatrate_list = country_data.get('flatrate', [])
         rent_list = country_data.get('rent', [])
         buy_list = country_data.get('buy', [])
 
-        self._process_flatrate_providers(flatrate_list, providers_map)
-        self._process_rent_providers(rent_list, providers_map)
-        self._process_buy_providers(buy_list, providers_map)
+        self._process_flatrate_platforms(flatrate_list, platforms_map)
+        self._process_rent_platforms(rent_list, platforms_map)
+        self._process_buy_platforms(buy_list, platforms_map)
 
-        providers_list = list(providers_map.values())
-        providers_list.sort(key=lambda x: x.name)
-        return providers_list
+        platforms_list = list(platforms_map.values())
+        platforms_list.sort(key=lambda x: x.name)
+        return platforms_list
 
-    def _normalize_providers(
+    def _normalize_platforms(
         self,
         results: Optional[Dict[str, Any]],
         country: Optional[str] = None
-    ) -> Optional[Dict[str, List[Provider]]]:
+    ) -> Optional[Dict[str, List[Platform]]]:
         if not results:
             return None
 
@@ -168,20 +168,36 @@ class TMDBMapper:
             if not isinstance(country_data, dict):
                 return None
 
-            providers_list = self._normalize_country_providers(country_data)
-            return {country_upper: providers_list} if providers_list else None
+            platforms_list = self._normalize_country_platforms(country_data)
+            return {country_upper: platforms_list} if platforms_list else None
 
-        providers_by_country: Dict[str, List[Provider]] = {}
+        platforms_by_country: Dict[str, List[Platform]] = {}
 
         for country_key, country_data in results.items():
             if not isinstance(country_data, dict):
                 continue
 
-            providers_list = self._normalize_country_providers(country_data)
-            if providers_list:
-                providers_by_country[country_key] = providers_list
+            platforms_list = self._normalize_country_platforms(country_data)
+            if platforms_list:
+                platforms_by_country[country_key] = platforms_list
 
-        return providers_by_country if providers_by_country else None
+        return platforms_by_country if platforms_by_country else None
+
+    def _extract_authors(self, movie_or_tv_data: Dict[str, Any]) -> Optional[List[Author]]:
+        production_companies = movie_or_tv_data.get('production_companies', [])
+        if not production_companies:
+            return None
+
+        authors = []
+        for company in production_companies:
+            company_name = company.get('name')
+            if company_name:
+                authors.append(Author(
+                    name=company_name,
+                    type=AuthorType.COMPANY
+                ))
+
+        return authors if authors else None
 
     def _normalize_media_type(self, media_type: Optional[str]) -> str:
         if not media_type:
@@ -236,7 +252,7 @@ class TMDBMapper:
         season_data: Dict[str, Any],
         tv_show_name: Optional[str] = None,
         tv_show_backdrop_path: Optional[str] = None,
-        providers_data: Optional[Dict[str, Any]] = None,
+        platforms_data: Optional[Dict[str, Any]] = None,
         images_data: Optional[Dict[str, Any]] = None,
         country: Optional[str] = None
     ) -> Season:
@@ -248,10 +264,10 @@ class TMDBMapper:
             images_data
         )
 
-        providers = None
-        if providers_data:
-            results = providers_data.get('results', {})
-            providers = self._normalize_providers(results, country)
+        platforms = None
+        if platforms_data:
+            results = platforms_data.get('results', {})
+            platforms = self._normalize_platforms(results, country)
 
         return Season(
             id=season_data.get('id'),
@@ -264,14 +280,14 @@ class TMDBMapper:
             tv_show_name=tv_show_name,
             images=images,
             episodes=episodes,
-            providers=providers
+            platforms=platforms
         )
 
     def map_movie(
         self,
         movie_data: Dict[str, Any],
         external_ids_data: Optional[Dict[str, Any]] = None,
-        providers_data: Optional[Dict[str, Any]] = None,
+        platforms_data: Optional[Dict[str, Any]] = None,
         images_data: Optional[Dict[str, Any]] = None,
         country: Optional[str] = None
     ) -> Movie:
@@ -285,10 +301,12 @@ class TMDBMapper:
         if external_ids_data:
             imdb_id = external_ids_data.get('imdb_id')
 
-        providers = None
-        if providers_data:
-            results = providers_data.get('results', {})
-            providers = self._normalize_providers(results, country)
+        platforms = None
+        if platforms_data:
+            results = platforms_data.get('results', {})
+            platforms = self._normalize_platforms(results, country)
+
+        authors = self._extract_authors(movie_data)
 
         return Movie(
             id=movie_data.get('id'),
@@ -301,15 +319,16 @@ class TMDBMapper:
             release_date=movie_data.get('release_date'),
             duration_minutes=movie_data.get('runtime'),
             status=movie_data.get('status'),
+            authors=authors,
             images=images,
-            providers=providers
+            platforms=platforms
         )
 
     def map_tv_show(
         self,
         tv_data: Dict[str, Any],
         external_ids_data: Optional[Dict[str, Any]] = None,
-        providers_data: Optional[Dict[str, Any]] = None,
+        platforms_data: Optional[Dict[str, Any]] = None,
         images_data: Optional[Dict[str, Any]] = None,
         country: Optional[str] = None
     ) -> TVShow:
@@ -327,10 +346,12 @@ class TMDBMapper:
         if external_ids_data:
             imdb_id = external_ids_data.get('imdb_id')
 
-        providers = None
-        if providers_data:
-            results = providers_data.get('results', {})
-            providers = self._normalize_providers(results, country)
+        platforms = None
+        if platforms_data:
+            results = platforms_data.get('results', {})
+            platforms = self._normalize_platforms(results, country)
+
+        authors = self._extract_authors(tv_data)
 
         return TVShow(
             id=tv_data.get('id'),
@@ -344,8 +365,9 @@ class TMDBMapper:
             status=tv_data.get('status'),
             number_of_seasons=tv_data.get('number_of_seasons'),
             number_of_episodes=tv_data.get('number_of_episodes'),
+            authors=authors,
             images=images,
-            providers=providers,
+            platforms=platforms,
             seasons=seasons
         )
 
@@ -361,13 +383,13 @@ class TMDBMapper:
                 return None, movie_status
 
             external_ids_data, external_ids_status = external_ids_future.result()
-            providers_data, watch_providers_status = watch_providers_future.result()
+            platforms_data, watch_providers_status = watch_providers_future.result()
             images_data, images_status = images_future.result()
 
             movie = self.map_movie(
                 movie_data,
                 external_ids_data if external_ids_status == http_status.HTTP_200_OK else None,
-                providers_data if watch_providers_status == http_status.HTTP_200_OK else None,
+                platforms_data if watch_providers_status == http_status.HTTP_200_OK else None,
                 images_data if images_status == http_status.HTTP_200_OK else None,
                 country
             )
@@ -386,13 +408,13 @@ class TMDBMapper:
                 return None, tv_status
 
             external_ids_data, external_ids_status = external_ids_future.result()
-            providers_data, watch_providers_status = watch_providers_future.result()
+            platforms_data, watch_providers_status = watch_providers_future.result()
             images_data, images_status = images_future.result()
 
             tv_show = self.map_tv_show(
                 tv_data,
                 external_ids_data if external_ids_status == http_status.HTTP_200_OK else None,
-                providers_data if watch_providers_status == http_status.HTTP_200_OK else None,
+                platforms_data if watch_providers_status == http_status.HTTP_200_OK else None,
                 images_data if images_status == http_status.HTTP_200_OK else None,
                 country
             )
@@ -426,14 +448,14 @@ class TMDBMapper:
                 tv_show_name = tv_data.get('name')
                 tv_show_backdrop_path = tv_data.get('backdrop_path')
 
-            providers_data, watch_providers_status = watch_providers_future.result()
+            platforms_data, watch_providers_status = watch_providers_future.result()
             images_data, images_status = images_future.result()
 
             season = self.map_season(
                 season_data,
                 tv_show_name,
                 tv_show_backdrop_path,
-                providers_data if watch_providers_status == http_status.HTTP_200_OK else None,
+                platforms_data if watch_providers_status == http_status.HTTP_200_OK else None,
                 images_data if images_status == http_status.HTTP_200_OK else None,
                 country
             )

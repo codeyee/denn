@@ -1,10 +1,22 @@
 from typing import Optional, Dict, List, Union
 from dataclasses import dataclass, field
-from proxy.constants import ImageType, ImageSize, SearchItemType
+from proxy.constants import ImageType, ImageSize, SearchItemType, AuthorType
 
 
 @dataclass
-class Provider:
+class Author:
+    name: str
+    type: str
+
+    def to_dict(self) -> Dict:
+        return {
+            'name': self.name,
+            'type': self.type
+        }
+
+
+@dataclass
+class Platform:
     name: str
     image_url: Optional[str] = None
     actions: Optional[List[str]] = None
@@ -78,7 +90,7 @@ class SearchItem:
     description: Optional[str] = None
     image_url: Optional[str] = None
     release_date: Optional[str] = None
-    authors: Optional[List[str]] = None
+    authors: Optional[List[Author]] = None
 
     def to_dict(self) -> Dict:
         result = {
@@ -94,6 +106,6 @@ class SearchItem:
             result['original_title'] = self.original_title
 
         if self.authors is not None:
-            result['authors'] = self.authors
+            result['authors'] = [author.to_dict() for author in self.authors]
 
         return result

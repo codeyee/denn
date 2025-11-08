@@ -15,14 +15,22 @@ class ImageSerializer(serializers.Serializer):
     size = serializers.CharField(help_text="Image size: STANDARD or ORIGINAL")
     image_url = serializers.URLField(help_text="Image URL")
 
-class ProviderSerializer(serializers.Serializer):
-    id = serializers.IntegerField(help_text="Provider ID")
-    name = serializers.CharField(help_text="Provider name")
+class AuthorSerializer(serializers.Serializer):
+    name = serializers.CharField(help_text="Author name")
+    type = serializers.ChoiceField(
+        choices=['PERSON', 'COMPANY'],
+        help_text="Author type: PERSON or COMPANY"
+    )
+
+class PlatformSerializer(serializers.Serializer):
+    title = serializers.CharField(help_text="Platform name")
     image_url = serializers.URLField(
         allow_null=True,
-        help_text="Provider logo image URL"
+        help_text="Platform logo image URL"
     )
-    type = serializers.ChoiceField(
-        choices=['streaming', 'rent', 'buy', 'rent_buy'],
-        help_text="Provider type: streaming (flatrate), rent, buy, or rent_buy"
+    actions = serializers.ListField(
+        child=serializers.CharField(),
+        allow_null=True,
+        required=False,
+        help_text="Available actions: STREAM, RENT, BUY"
     )

@@ -1,12 +1,13 @@
 from rest_framework import serializers
-from ..common import ImageSerializer
+from ..common import ImageSerializer, AuthorSerializer
 
 class BookDetailSerializer(serializers.Serializer):
     id = serializers.CharField(help_text="OpenLibrary work ID")
     title = serializers.CharField(help_text="Book title")
-    authors = serializers.ListField(
-        child=serializers.CharField(),
+    authors = AuthorSerializer(
+        many=True,
         allow_null=True,
+        required=False,
         help_text="List of author names"
     )
     image_url = serializers.URLField(

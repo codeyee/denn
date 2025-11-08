@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from ..common import ImageSerializer, ProviderSerializer
+from ..common import ImageSerializer, PlatformSerializer, AuthorSerializer
 from .season import TVSeasonSerializer
 
 class TVShowDetailSerializer(serializers.Serializer):
@@ -44,15 +44,21 @@ class TVShowDetailSerializer(serializers.Serializer):
         allow_null=True,
         help_text="Total number of episodes"
     )
+    authors = AuthorSerializer(
+        many=True,
+        allow_null=True,
+        required=False,
+        help_text="List of production companies"
+    )
     images = ImageSerializer(
         many=True,
         required=False,
         help_text="List of images with type (POSTER, GALLERY), size (STANDARD, ORIGINAL), and image_url"
     )
-    providers = serializers.DictField(
-        child=ProviderSerializer(many=True),
+    platforms = serializers.DictField(
+        child=PlatformSerializer(many=True),
         allow_null=True,
         required=False,
-        help_text="Watch providers grouped by country code. Format: { 'CO': [...], 'AR': [...], 'MX': [...] } when no country param, or { 'US': [...] } when country param provided"
+        help_text="Watch platforms grouped by country code. Format: { 'CO': [...], 'AR': [...], 'MX': [...] } when no country param, or { 'US': [...] } when country param provided"
     )
     seasons = TVSeasonSerializer(many=True, help_text="List of all seasons")

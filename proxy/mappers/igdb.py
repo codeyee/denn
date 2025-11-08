@@ -2,9 +2,9 @@ import re
 from typing import Dict, Any, Optional, List
 from datetime import datetime
 from proxy.models.game import Game
-from proxy.models.base import SearchItem, Images, Provider
+from proxy.models.base import SearchItem, Images, Platform, Author
 from proxy.clients.igdb import IGDBClient
-from proxy.constants import SearchItemType
+from proxy.constants import SearchItemType, AuthorType
 
 IGDB_IMAGE_BASE_URL = 'https://images.igdb.com/igdb/image/upload'
 
@@ -41,26 +41,29 @@ class IGDBMapper:
         except (ValueError, OSError):
             return None
 
-    def _extract_platforms(self, platforms: Optional[List[Dict[str, Any]]]) -> Optional[List[Provider]]:
-        if not platforms:
+    def _extract_platforms(self, platforms_data: Optional[List[Dict[str, Any]]]) -> Optional[List[Platform]]:
+        if not platforms_data:
             return None
 
-        providers = []
-        for platform in platforms:
-            name = platform.get('name')
+        platforms = []
+        for platform_data in platforms_data:
+            name = platform_data.get('name')
             if name:
-                providers.append(Provider(name=name))
+                platforms.append(Platform(name=name))
 
-        return providers if providers else None
+        return platforms if platforms else None
 
-    def _extract_authors(self, involved_companies: Optional[List[Dict[str, Any]]]) -> Optional[List[str]]:
+    def _extract_authors(self, involved_companies: Optional[List[Dict[str, Any]]]) -> Optional[List[Author]]:
         if not involved_companies:
             return None
 
         authors = []
         for company in involved_companies:
             if company.get('developer') and company.get('company', {}).get('name'):
-                authors.append(company['company']['name'])
+                authors.append(Author(
+                    name=company['company']['name'],
+                    type=AuthorType.COMPANY
+                ))
 
         return authors if authors else None
 
@@ -169,7 +172,7 @@ class IGDBMapper:
         image_url = build_igdb_image_url(poster_image_id, '720p')
 
         images = self._build_images(item)
-        providers = self._extract_platforms(item.get('platforms'))
+        platforms = self._extract_platforms(item.get('platforms'))
         authors = self._extract_authors(item.get('involved_companies'))
 
         return Game(
@@ -180,6 +183,6 @@ class IGDBMapper:
             game_type=self._format_game_type(item.get('game_type')),
             release_date=self._format_release_date(item.get('first_release_date')),
             authors=authors,
-            providers=providers,
+            platforms=platforms,
             images=images
         )

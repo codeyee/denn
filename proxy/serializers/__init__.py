@@ -2,7 +2,8 @@ from .common import (
     PaginationMetadataSerializer,
     ErrorResponseSerializer,
     ImageSerializer,
-    ProviderSerializer,
+    AuthorSerializer,
+    PlatformSerializer,
 )
 from .movies import *
 from .tv_shows import *
@@ -15,7 +16,8 @@ __all__ = [
     'PaginationMetadataSerializer',
     'ErrorResponseSerializer',
     'ImageSerializer',
-    'ProviderSerializer',
+    'AuthorSerializer',
+    'PlatformSerializer',
     'MovieSearchItemSerializer',
     'MovieSearchResponseSerializer',
     'MovieDetailSerializer',

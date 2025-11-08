@@ -1,6 +1,6 @@
 from typing import Optional, Dict, List
 from dataclasses import dataclass
-from proxy.models.base import Images, Provider
+from proxy.models.base import Images, Platform, Author
 
 
 @dataclass
@@ -11,8 +11,8 @@ class Game:
     image_url: Optional[str] = None
     game_type: Optional[str] = None
     release_date: Optional[str] = None
-    authors: Optional[List[str]] = None
-    providers: Optional[List[Provider]] = None
+    authors: Optional[List[Author]] = None
+    platforms: Optional[List[Platform]] = None
     images: Optional[Images] = None
 
     def to_dict(self) -> Dict:
@@ -23,11 +23,13 @@ class Game:
             'description': self.description,
             'image_url': self.image_url,
             'release_date': self.release_date,
-            'authors': self.authors,
         }
 
-        if self.providers:
-            result['providers'] = [p.to_dict() for p in self.providers]
+        if self.authors:
+            result['authors'] = [author.to_dict() for author in self.authors]
+
+        if self.platforms:
+            result['platforms'] = [p.to_dict() for p in self.platforms]
 
         if self.images:
             result['images'] = self.images.to_dict()

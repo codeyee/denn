@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from ..common import ImageSerializer, ProviderSerializer
+from ..common import ImageSerializer, PlatformSerializer
 
 class TVEpisodeSerializer(serializers.Serializer):
     id = serializers.IntegerField(help_text="TMDB episode ID")
@@ -77,10 +77,10 @@ class TVSeasonDetailSerializer(serializers.Serializer):
         required=False,
         help_text="List of images with type (POSTER, GALLERY), size (STANDARD, ORIGINAL), and image_url"
     )
-    providers = serializers.DictField(
-        child=ProviderSerializer(many=True),
+    platforms = serializers.DictField(
+        child=PlatformSerializer(many=True),
         allow_null=True,
         required=False,
-        help_text="Watch providers grouped by country code. Format: { 'CO': [...], 'AR': [...], 'MX': [...] } when no country param, or { 'US': [...] } when country param provided"
+        help_text="Watch platforms grouped by country code. Format: { 'CO': [...], 'AR': [...], 'MX': [...] } when no country param, or { 'US': [...] } when country param provided"
     )
     episodes = TVEpisodeSerializer(many=True, help_text="List of all episodes in season")

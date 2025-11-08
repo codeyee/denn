@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from ..common import PaginationMetadataSerializer
+from ..common import PaginationMetadataSerializer, AuthorSerializer
 
 class AlbumSearchItemSerializer(serializers.Serializer):
     id = serializers.CharField(help_text="Spotify album ID")
@@ -8,8 +8,10 @@ class AlbumSearchItemSerializer(serializers.Serializer):
         help_text="Album type: 'album' or 'ep'"
     )
     title = serializers.CharField(help_text="Album title")
-    authors = serializers.ListField(
-        child=serializers.CharField(),
+    authors = AuthorSerializer(
+        many=True,
+        allow_null=True,
+        required=False,
         help_text="List of artist names"
     )
     image_url = serializers.URLField(
