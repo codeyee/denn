@@ -29,9 +29,15 @@ class TVEpisodeSerializer(serializers.Serializer):
     )
 
 class TVSeasonSerializer(serializers.Serializer):
-    id = serializers.IntegerField(help_text="TMDB season ID")
-    season_number = serializers.IntegerField(help_text="Season number (0 for specials)")
-    title = serializers.CharField(help_text="Season title")
+    id = serializers.IntegerField(
+        help_text="TMDB season ID"
+    )
+    season_number = serializers.IntegerField(
+        help_text="Season number (0 for specials)"
+    )
+    title = serializers.CharField(
+        help_text="Season title"
+    )
     description = serializers.CharField(
         allow_null=True,
         allow_blank=True,
@@ -45,13 +51,20 @@ class TVSeasonSerializer(serializers.Serializer):
         allow_null=True,
         help_text="Season poster URL"
     )
-    number_of_episodes = serializers.IntegerField(help_text="Number of episodes in season")
+    number_of_episodes = serializers.IntegerField(
+        help_text="Number of episodes in season"
+    )
 
 class TVSeasonDetailSerializer(serializers.Serializer):
-    # Primitive metadata
-    id = serializers.IntegerField(help_text="TMDB season ID")
-    season_number = serializers.IntegerField(help_text="Season number")
-    title = serializers.CharField(help_text="Season title")
+    id = serializers.IntegerField(
+        help_text="TMDB season ID"
+    )
+    season_number = serializers.IntegerField(
+        help_text="Season number"
+    )
+    title = serializers.CharField(
+        help_text="Season title"
+    )
     description = serializers.CharField(
         allow_null=True,
         allow_blank=True,
@@ -71,7 +84,9 @@ class TVSeasonDetailSerializer(serializers.Serializer):
         allow_null=True,
         help_text="Season premiere date in YYYY-MM-DD format"
     )
-    number_of_episodes = serializers.IntegerField(help_text="Total number of episodes")
+    number_of_episodes = serializers.IntegerField(
+        help_text="Total number of episodes"
+    )
     images = ImageSerializer(
         many=True,
         required=False,
@@ -83,4 +98,7 @@ class TVSeasonDetailSerializer(serializers.Serializer):
         required=False,
         help_text="Watch platforms grouped by country code. Format: { 'CO': [...], 'AR': [...], 'MX': [...] } when no country param, or { 'US': [...] } when country param provided"
     )
-    episodes = TVEpisodeSerializer(many=True, help_text="List of all episodes in season")
+    episodes = TVEpisodeSerializer(
+        many=True,
+        help_text="List of all episodes in season"
+    )

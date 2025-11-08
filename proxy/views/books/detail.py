@@ -14,18 +14,18 @@ class BookDetailView(OpenLibraryBaseView):
         summary='Get book details',
         description='Retrieve detailed information about a specific book from OpenLibrary using the work key.',
         parameters=[
-            OpenApiParameter('book_key', OpenApiTypes.STR, OpenApiParameter.PATH, required=True, description='OpenLibrary work key (e.g., "OL82563W")')
+            OpenApiParameter('book_id', OpenApiTypes.STR, OpenApiParameter.PATH, required=True, description='OpenLibrary work key (e.g., "OL82563W")')
         ],
         responses={
             200: BookDetailSerializer,
             404: ErrorResponseSerializer
         }
     )
-    def get(self, request, book_key: str):
+    def get(self, request, book_id: str):
         client = self.get_client()
         mapper = self.get_mapper()
 
-        data, status_code = client.search_by_key(key=book_key)
+        data, status_code = client.search_by_key(key=book_id)
 
         if status_code != http_status.HTTP_200_OK:
             if status_code == http_status.HTTP_404_NOT_FOUND:

@@ -2,10 +2,15 @@ from rest_framework import serializers
 from ..common import ImageSerializer, PlatformSerializer, AuthorSerializer
 
 class MovieDetailSerializer(serializers.Serializer):
-    # Primitive metadata
-    id = serializers.IntegerField(help_text="TMDB movie ID")
-    title = serializers.CharField(help_text="Movie title")
-    original_title = serializers.CharField(help_text="Original movie title")
+    id = serializers.IntegerField(
+        help_text="TMDB movie ID"
+    )
+    title = serializers.CharField(
+        help_text="Movie title"
+    )
+    original_title = serializers.CharField(
+        help_text="Original movie title"
+    )
     description = serializers.CharField(
         allow_null=True,
         allow_blank=True,

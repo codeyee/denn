@@ -412,10 +412,10 @@ class HomepageView(APIView):
         if not book_ids:
             return {}
 
-        book_keys = [f"/works/{bid}" for bid in book_ids]
+        book_ids = [f"/works/{bid}" for bid in book_ids]
 
         try:
-            data, status = client.get_bulk_books(book_keys)
+            data, status = client.get_bulk_books(book_ids)
             if status != http_status.HTTP_200_OK or not isinstance(data, list):
                 return {}
 

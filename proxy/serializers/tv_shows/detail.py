@@ -3,10 +3,15 @@ from ..common import ImageSerializer, PlatformSerializer, AuthorSerializer
 from .season import TVSeasonSerializer
 
 class TVShowDetailSerializer(serializers.Serializer):
-    # Primitive metadata
-    id = serializers.IntegerField(help_text="TMDB TV show ID")
-    title = serializers.CharField(help_text="TV show title")
-    original_title = serializers.CharField(help_text="Original TV show title")
+    id = serializers.IntegerField(
+        help_text="TMDB TV show ID"
+    )
+    title = serializers.CharField(
+        help_text="TV show title"
+    )
+    original_title = serializers.CharField(
+        help_text="Original TV show title"
+    )
     description = serializers.CharField(
         allow_null=True,
         allow_blank=True,
@@ -61,4 +66,7 @@ class TVShowDetailSerializer(serializers.Serializer):
         required=False,
         help_text="Watch platforms grouped by country code. Format: { 'CO': [...], 'AR': [...], 'MX': [...] } when no country param, or { 'US': [...] } when country param provided"
     )
-    seasons = TVSeasonSerializer(many=True, help_text="List of all seasons")
+    seasons = TVSeasonSerializer(
+        many=True,
+        help_text="List of all seasons"
+    )

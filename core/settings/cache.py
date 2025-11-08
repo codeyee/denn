@@ -111,7 +111,7 @@ CACHE_KEYS = {
     'api_tmdb_images_season': 'api:tmdb:images:season:{tv_id}:{season_number}',
 
     'api_openlibrary_search': 'api:openlibrary:search:{query}:{page}:{limit}',
-    'api_openlibrary_details': 'api:openlibrary:details:{book_key}',
+    'api_openlibrary_details': 'api:openlibrary:details:{book_id}',
     'api_openlibrary_trending': 'api:openlibrary:trending:{limit}',
-    'api_openlibrary_bulk': 'api:openlibrary:bulk:{book_keys}',
+    'api_openlibrary_bulk': 'api:openlibrary:bulk:{book_ids}',
 }

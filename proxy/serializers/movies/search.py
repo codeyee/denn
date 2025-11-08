@@ -2,13 +2,19 @@ from rest_framework import serializers
 from ..common import PaginationMetadataSerializer
 
 class MovieSearchItemSerializer(serializers.Serializer):
-    id = serializers.IntegerField(help_text="TMDB ID")
+    id = serializers.IntegerField(
+        help_text="TMDB ID"
+    )
     type = serializers.ChoiceField(
         choices=['movie'],
         help_text="Content type: 'movie'"
     )
-    title = serializers.CharField(help_text="Title in English or original language")
-    original_title = serializers.CharField(help_text="Original title")
+    title = serializers.CharField(
+        help_text="Title in English or original language"
+    )
+    original_title = serializers.CharField(
+        help_text="Original title"
+    )
     description = serializers.CharField(
         allow_null=True,
         allow_blank=True,

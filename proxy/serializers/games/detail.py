@@ -2,8 +2,12 @@ from rest_framework import serializers
 from ..common import ImageSerializer, AuthorSerializer, PlatformSerializer
 
 class GameDetailSerializer(serializers.Serializer):
-    id = serializers.IntegerField(help_text="IGDB game ID")
-    title = serializers.CharField(help_text="Game title")
+    id = serializers.IntegerField(
+        help_text="IGDB game ID"
+    )
+    title = serializers.CharField(
+        help_text="Game title"
+    )
     type = serializers.CharField(
         allow_null=True,
         help_text="Game type"

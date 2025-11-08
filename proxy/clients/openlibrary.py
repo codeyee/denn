@@ -37,14 +37,14 @@ class OpenLibraryClient(CachedAPIClient):
             limit=limit
         )
 
-    def get_book_by_key(self, book_key: str) -> Tuple[Dict[str, Any], int]:
-        book_key = book_key.lstrip('/')
-        endpoint = f'{book_key}.json'
+    def get_book_by_key(self, book_id: str) -> Tuple[Dict[str, Any], int]:
+        book_id = book_id.lstrip('/')
+        endpoint = f'{book_id}.json'
         return self.cached_get(
             endpoint=endpoint,
             cache_type='api_openlibrary_details',
             operation='details',
-            book_key=book_key
+            book_id=book_id
         )
 
     def search_by_key(self, key: str) -> Tuple[Dict[str, Any], int]:

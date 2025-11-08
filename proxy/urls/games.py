@@ -5,6 +5,11 @@ app_name = 'games'
 
 urlpatterns = [
     path(
+        '<int:game_id>',
+        GameDetailView.as_view(),
+        name='detail'
+    ),
+    path(
         'search',
         GameSearchView.as_view(),
         name='search'
@@ -13,10 +18,5 @@ urlpatterns = [
         'bulk',
         GameBulkView.as_view(),
         name='bulk'
-    ),
-    path(
-        '<int:game_id>',
-        GameDetailView.as_view(),
-        name='detail'
     ),
 ]

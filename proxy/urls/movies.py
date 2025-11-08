@@ -9,14 +9,14 @@ app_name = 'movies'
 
 urlpatterns = [
     path(
-        'search',
-        MovieSearchView.as_view(),
-        name='search'
-    ),
-    path(
         '<int:movie_id>',
         MovieDetailView.as_view(),
         name='detail'
+    ),
+    path(
+        'search',
+        MovieSearchView.as_view(),
+        name='search'
     ),
     path(
         'bulk',

@@ -2,21 +2,35 @@ from rest_framework import serializers
 from ..common import ImageSerializer, AuthorSerializer
 
 class TrackSerializer(serializers.Serializer):
-    id = serializers.CharField(help_text="Spotify track ID")
-    title = serializers.CharField(help_text="Track title")
+    id = serializers.CharField(
+        help_text="Spotify track ID"
+    )
+    title = serializers.CharField(
+        help_text="Track title"
+    )
     authors = AuthorSerializer(
         many=True,
         allow_null=True,
         required=False,
         help_text="List of artist names"
     )
-    track_number = serializers.IntegerField(help_text="Track number in album")
-    duration_seconds = serializers.IntegerField(help_text="Track duration in seconds")
-    external_url = serializers.URLField(help_text="Spotify URL for the track")
+    track_number = serializers.IntegerField(
+        help_text="Track number in album"
+    )
+    duration_seconds = serializers.IntegerField(
+        help_text="Track duration in seconds"
+    )
+    external_url = serializers.URLField(
+        help_text="Spotify URL for the track"
+    )
 
 class AlbumDetailSerializer(serializers.Serializer):
-    id = serializers.CharField(help_text="Spotify album ID")
-    title = serializers.CharField(help_text="Album title")
+    id = serializers.CharField(
+        help_text="Spotify album ID"
+)
+    title = serializers.CharField(
+        help_text="Album title"
+    )
     authors = AuthorSerializer(
         many=True,
         allow_null=True,
@@ -31,10 +45,19 @@ class AlbumDetailSerializer(serializers.Serializer):
         allow_null=True,
         help_text="Release date"
     )
-    total_tracks = serializers.IntegerField(help_text="Number of tracks in album")
-    album_type = serializers.CharField(help_text="Album type from Spotify")
-    external_url = serializers.URLField(help_text="Spotify URL for the album")
-    tracks = TrackSerializer(many=True, help_text="List of all tracks in album")
+    total_tracks = serializers.IntegerField(
+        help_text="Number of tracks in album"
+    )
+    album_type = serializers.CharField(
+        help_text="Album type from Spotify"
+    )
+    external_url = serializers.URLField(
+        help_text="Spotify URL for the album"
+    )
+    tracks = TrackSerializer(
+        many=True, 
+        help_text="List of all tracks in album"
+    )
     duration_minutes = serializers.IntegerField(
         allow_null=True,
         help_text="Total album duration in minutes (sum of track durations)"
