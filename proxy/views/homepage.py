@@ -28,7 +28,7 @@ class HomepageView(APIView):
         This endpoint fetches popular/trending content from all available APIs:
         - Movies and TV shows from TMDB
         - Games from IGDB
-        - Music albums from Spotify
+        - Albums from Spotify
         - Books from Open Library
 
         Returns a limited number of items per category, ideal for homepage recommendations.
@@ -61,7 +61,7 @@ class HomepageView(APIView):
         movie_results = []
         tv_show_results = []
         games_results = []
-        music_results = []
+        albums_results = []
         books_results = []
 
         try:
@@ -107,7 +107,7 @@ class HomepageView(APIView):
                 futures['games'] = executor.submit(igdb_client.get_popular_games, limit, 0)
 
             if spotify_client:
-                futures['music'] = executor.submit(spotify_client.get_new_releases, limit, 0, country)
+                futures['albums'] = executor.submit(spotify_client.get_new_releases, limit, 0)
 
             if openlibrary_client:
                 futures['books'] = executor.submit(openlibrary_client.get_trending_books, limit)
@@ -143,10 +143,10 @@ class HomepageView(APIView):
                 print(f"Error fetching games suggestions: {e}")
 
             try:
-                if 'music' in futures and spotify_mapper:
-                    music_data, music_status = futures['music'].result()
-                    if music_status == 200 and 'albums' in music_data:
-                        albums = music_data['albums'].get('items', [])
+                if 'albums' in futures and spotify_mapper:
+                    albums_data, music_status = futures['albums'].result()
+                    if music_status == 200 and 'albums' in albums_data:
+                        albums = albums_data['albums'].get('items', [])
                         filtered_albums = []
                         seen_ids = set()
 
@@ -195,7 +195,7 @@ class HomepageView(APIView):
                             if len(more_albums) < request_limit:
                                 break
 
-                        music_results = filtered_albums[:limit]
+                        albums_results = filtered_albums[:limit]
             except Exception as e:
                 print(f"Error fetching music suggestions: {e}")
 
@@ -242,9 +242,9 @@ class HomepageView(APIView):
                             print(f"Error fetching IGDB details: {e}")
 
                     spotify_details_map = {}
-                    if spotify_client and spotify_mapper and music_results:
+                    if spotify_client and spotify_mapper and albums_results:
                         try:
-                            album_ids = [item.get('id') for item in music_results if item.get('id')]
+                            album_ids = [item.get('id') for item in albums_results if item.get('id')]
                             albums_data, albums_status = spotify_client.get_bulk_albums(album_ids)
                             if albums_status == 200 and isinstance(albums_data, dict):
                                 for album in albums_data.get('albums', []) or []:
@@ -313,10 +313,10 @@ class HomepageView(APIView):
                                 games_results[idx] = igdb_details_map[gid]
 
                     if spotify_details_map:
-                        for idx, item in enumerate(music_results):
+                        for idx, item in enumerate(albums_results):
                             aid = item.get('id')
                             if aid in spotify_details_map:
-                                music_results[idx] = spotify_details_map[aid]
+                                albums_results[idx] = spotify_details_map[aid]
 
                     if openlibrary_details_map:
                         for idx, item in enumerate(books_results):
@@ -327,9 +327,9 @@ class HomepageView(APIView):
         except Exception as e:
             print(f"Error during details enrichment: {e}")
 
-        if music_results:
+        if albums_results:
             try:
-                music_results = [item for item in music_results if (item or {}).get('album_type') != 'single']
+                albums_results = [item for item in albums_results if (item or {}).get('album_type') != 'single']
             except Exception:
                 pass
 
@@ -337,7 +337,7 @@ class HomepageView(APIView):
             'movies': movie_results,
             'tv_shows': tv_show_results,
             'games': games_results,
-            'music': music_results,
+            'albums': albums_results,
             'books': books_results
         }
 
