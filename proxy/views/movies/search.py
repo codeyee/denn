@@ -1,5 +1,5 @@
 from proxy.views.base import TMDBBaseView
-from proxy.errors import build_error_response, get_http_status, MISSING_QUERY
+from proxy.exceptions import MissingParameterException
 from proxy.serializers.movies import MovieSearchResponseSerializer
 from proxy.serializers.common import ErrorResponseSerializer
 from proxy.mappers import TMDBMapper
@@ -30,7 +30,7 @@ class MovieSearchView(TMDBBaseView):
         return {'metadata': metadata, 'results': results}
 
     @extend_schema(
-        tags=['Movies'],
+        tags=['Proxy - Movies'],
         summary='Search movies',
         description='Search for movies by title using TMDB.',
         parameters=[
@@ -56,8 +56,7 @@ class MovieSearchView(TMDBBaseView):
         query = request.query_params.get('query')
 
         if not query:
-            error_response = build_error_response(MISSING_QUERY)
-            return self.transform_response(error_response, get_http_status(MISSING_QUERY))
+            raise MissingParameterException('query')
 
         page = int(request.query_params.get('page', 1))
 
@@ -66,7 +65,7 @@ class MovieSearchView(TMDBBaseView):
         data, status_code = client.search_movies(query, page)
 
         if status_code != http_status.HTTP_200_OK:
-            return self.transform_response(data, status_code)
+            return Response(data, status=status_code)
 
         transformed_data = self.filter_and_transform_results(data, mapper)
         return Response(transformed_data, status=http_status.HTTP_200_OK)

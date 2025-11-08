@@ -2,15 +2,16 @@ from ..base import TMDBBaseView
 from proxy.serializers.tv_shows import TVShowDetailSerializer
 from proxy.serializers.common import ErrorResponseSerializer
 from proxy.mappers import TMDBMapper
-from proxy.exceptions import NotFoundError
+from proxy.exceptions import NotFoundException
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 from rest_framework.response import Response
 from rest_framework import status as http_status
 
+
 class TVShowDetailView(TMDBBaseView):
     @extend_schema(
-        tags=['TV Shows'],
+        tags=['Proxy - TV Shows'],
         summary='Get TV show details',
         description='Retrieve detailed information about a specific TV show including all seasons.',
         parameters=[
@@ -39,8 +40,11 @@ class TVShowDetailView(TMDBBaseView):
         mapper = TMDBMapper(client)
         country = request.query_params.get('country', None)
 
-        tv_show, status_code = mapper.get_tv_show_complete(int(tv_id), country)
+        tv_show, status_code = mapper.get_tv_show_complete(
+            tv_id=int(tv_id),
+            country=country
+        )
         if status_code != http_status.HTTP_200_OK or not tv_show:
-            raise NotFoundError('TV show')
+            raise NotFoundException('TV show')
 
         return Response(tv_show.to_dict(), status=http_status.HTTP_200_OK)

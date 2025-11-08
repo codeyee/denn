@@ -1,6 +1,6 @@
 from typing import Dict, Any, Optional, Tuple
 from django.conf import settings
-from .cached import CachedAPIClient
+from .base.cached import CachedAPIClient
 from concurrent.futures import ThreadPoolExecutor
 
 class TMDBClient(CachedAPIClient):

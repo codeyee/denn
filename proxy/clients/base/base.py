@@ -1,21 +1,20 @@
 import requests
 from typing import Dict, Any, Optional, Tuple
 from django.conf import settings
-from proxy.errors import (
-    build_error_response,
-    get_http_status,
-    TIMEOUT,
-    CONNECTION_ERROR,
-    RESPONSE_NOT_JSON,
-    INTERNAL_SERVER_ERROR
+from proxy.exceptions import (
+    TimeoutException,
+    ConnectionErrorException,
+    ResponseNotJsonException,
+    InternalServerException
 )
+
 
 class BaseAPIClient:
     def __init__(self, base_url: str, api_name: str = None):
         self.base_url = base_url.rstrip('/')
         self.api_name = api_name
         self.timeout = settings.REST_FRAMEWORK.get('TIMEOUT', 30)
-    
+
     def _get_timeout(self, operation: str = 'default') -> int:
         if self.api_name and hasattr(settings, 'API_TIMEOUTS'):
             api_timeouts = settings.API_TIMEOUTS.get(self.api_name, {})
@@ -46,7 +45,8 @@ class BaseAPIClient:
     ) -> Tuple[Dict[str, Any], int]:
         url = self.build_url(endpoint)
         final_headers = self.get_headers()
-        if headers: final_headers.update(headers)
+        if headers:
+            final_headers.update(headers)
 
         try:
             timeout = self._get_timeout(operation)
@@ -62,24 +62,22 @@ class BaseAPIClient:
             try:
                 response_data = response.json()
             except ValueError:
-                response_data = build_error_response(
-                    RESPONSE_NOT_JSON,
-                    custom_message=f'Non-JSON response: {response.text}'
-                )
+                raise ResponseNotJsonException(
+                    f'Non-JSON response: {response.text}')
 
             return response_data, response.status_code
 
         except requests.exceptions.Timeout:
-            return build_error_response(TIMEOUT), get_http_status(TIMEOUT)
+            raise TimeoutException()
 
         except requests.exceptions.ConnectionError:
-            return build_error_response(CONNECTION_ERROR), get_http_status(CONNECTION_ERROR)
+            raise ConnectionErrorException()
+
+        except (TimeoutException, ConnectionErrorException, ResponseNotJsonException):
+            raise
 
         except Exception as e:
-            return (
-                build_error_response(INTERNAL_SERVER_ERROR, custom_message=str(e)),
-                get_http_status(INTERNAL_SERVER_ERROR)
-            )
+            raise InternalServerException(custom_message=str(e))
 
     def get(self, endpoint: str, params: Optional[Dict[str, Any]] = None, operation: str = 'default') -> Tuple[Dict[str, Any], int]:
         return self.request('GET', endpoint, params=params, operation=operation)

@@ -2,7 +2,7 @@ from ..base import TMDBBaseView
 from proxy.serializers.movies import MovieDetailSerializer
 from proxy.serializers.common import ErrorResponseSerializer
 from proxy.mappers import TMDBMapper
-from proxy.exceptions import NotFoundError
+from proxy.exceptions import NotFoundException
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 from rest_framework.response import Response
@@ -11,7 +11,7 @@ from rest_framework import status as http_status
 
 class MovieDetailView(TMDBBaseView):
     @extend_schema(
-        tags=['Movies'],
+        tags=['Proxy - Movies'],
         summary='Get movie details',
         description='Retrieve detailed information about a specific movie from TMDB.',
         parameters=[
@@ -40,8 +40,11 @@ class MovieDetailView(TMDBBaseView):
         mapper = TMDBMapper(client)
         country = request.query_params.get('country', None)
 
-        movie, status_code = mapper.get_movie_complete(int(movie_id), country)
+        movie, status_code = mapper.get_movie_complete(
+            movie_id=int(movie_id),
+            country=country
+        )
         if status_code != http_status.HTTP_200_OK or not movie:
-            raise NotFoundError('Movie')
+            raise NotFoundException('Movie')
 
         return Response(movie.to_dict(), status=http_status.HTTP_200_OK)

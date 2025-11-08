@@ -1,4 +1,4 @@
-from proxy.clients.cached import CachedAPIClient
+from proxy.clients.base.cached import CachedAPIClient
 from django.conf import settings
 from typing import Dict, Any, Tuple
 from concurrent.futures import ThreadPoolExecutor

@@ -4,12 +4,12 @@ from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 from proxy.serializers.albums import BulkAlbumsResponseSerializer
 from proxy.serializers.common import ErrorResponseSerializer
-from proxy.exceptions import MissingParameterError
+from proxy.exceptions import MissingParameterException, InvalidParameterException
 from ..base import SpotifyBaseView
 
 class AlbumBulkView(SpotifyBaseView):
     @extend_schema(
-        tags=['Albums'],
+        tags=['Proxy - Albums'],
         summary='Bulk get album details',
         description='Retrieve detailed information about multiple albums from Spotify in a single request. Maximum 20 albums per request.',
         parameters=[
@@ -29,21 +29,15 @@ class AlbumBulkView(SpotifyBaseView):
     def get(self, request):
         ids_param = request.query_params.get('ids', '')
         if not ids_param:
-            raise MissingParameterError('ids')
+            raise MissingParameterException('ids')
 
         album_ids = [id.strip() for id in ids_param.split(',') if id.strip()]
 
         if not album_ids:
-            return Response(
-                {'error': 'INVALID_REQUEST', 'message': 'No valid album IDs provided'},
-                status=http_status.HTTP_400_BAD_REQUEST
-            )
+            raise InvalidParameterException('No valid album IDs provided')
 
         if len(album_ids) > 20:
-            return Response(
-                {'error': 'INVALID_REQUEST', 'message': 'Maximum 20 album IDs allowed per request (Spotify API limitation)'},
-                status=http_status.HTTP_400_BAD_REQUEST
-            )
+            raise InvalidParameterException('Maximum 20 album IDs allowed per request (Spotify API limitation)')
 
         client = self.get_client()
         mapper = self.get_mapper()

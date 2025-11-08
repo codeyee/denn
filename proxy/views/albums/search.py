@@ -1,7 +1,7 @@
 from rest_framework.response import Response
 from rest_framework import status as http_status
 from proxy.views.base import SpotifyBaseView
-from proxy.exceptions import MissingParameterError
+from proxy.exceptions import MissingParameterException
 from proxy.serializers.albums import AlbumSearchResponseSerializer
 from proxy.serializers.common import ErrorResponseSerializer
 from drf_spectacular.utils import extend_schema, OpenApiParameter
@@ -10,7 +10,7 @@ from drf_spectacular.types import OpenApiTypes
 class AlbumSearchView(SpotifyBaseView):
 
     @extend_schema(
-        tags=['Albums'],
+        tags=['Proxy - Albums'],
         summary='Search music albums',
         description='''
         Search for music albums on Spotify.
@@ -30,7 +30,7 @@ class AlbumSearchView(SpotifyBaseView):
     def get(self, request):
         query = request.query_params.get('query')
         if not query:
-            raise MissingParameterError('query')
+            raise MissingParameterException('query')
 
         limit = int(request.query_params.get('limit', 20))
         offset = int(request.query_params.get('offset', 0))

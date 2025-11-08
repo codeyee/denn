@@ -3,8 +3,7 @@ from django.conf import settings
 import requests
 import base64
 from time import time
-from .cached import CachedAPIClient
-from proxy.errors import build_error_response, get_http_status, UNAUTHORIZED
+from .base.cached import CachedAPIClient
 from concurrent.futures import ThreadPoolExecutor
 
 class SpotifyClient(CachedAPIClient):

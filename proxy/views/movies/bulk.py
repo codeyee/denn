@@ -5,14 +5,14 @@ from drf_spectacular.types import OpenApiTypes
 from proxy.serializers.movies import BulkMoviesResponseSerializer
 from proxy.serializers.common import ErrorResponseSerializer
 from proxy.mappers import TMDBMapper
-from proxy.exceptions import MissingParameterError, InvalidParameterError
+from proxy.exceptions import MissingParameterException, InvalidParameterException
 from ..base import TMDBBaseView
 from concurrent.futures import ThreadPoolExecutor
 
 
 class MovieBulkView(TMDBBaseView):
     @extend_schema(
-        tags=['Movies'],
+        tags=['Proxy - Movies'],
         summary='Bulk get movie details',
         description='Retrieve detailed information about multiple movies from TMDB in a single request. Returns a dictionary with movie IDs as keys and movie details (or null) as values.',
         parameters=[
@@ -40,18 +40,18 @@ class MovieBulkView(TMDBBaseView):
         ids_param = request.query_params.get('ids', '')
 
         if not ids_param:
-            raise MissingParameterError('ids')
+            raise MissingParameterException('ids')
 
         try:
             movie_ids = [int(id.strip()) for id in ids_param.split(',') if id.strip()]
         except ValueError:
-            raise InvalidParameterError('Invalid movie IDs. Must be comma-separated integers.')
+            raise InvalidParameterException('Invalid movie IDs. Must be comma-separated integers.')
 
         if not movie_ids:
-            raise InvalidParameterError('No valid movie IDs provided')
+            raise InvalidParameterException('No valid movie IDs provided')
 
         if len(movie_ids) > 50:
-            raise InvalidParameterError('Maximum 50 movie IDs allowed per request')
+            raise InvalidParameterException('Maximum 50 movie IDs allowed per request')
 
         client = self.get_client()
         mapper = TMDBMapper(client)

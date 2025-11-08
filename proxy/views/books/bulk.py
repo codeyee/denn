@@ -4,12 +4,12 @@ from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 from proxy.serializers.books import BookDetailSerializer
 from proxy.serializers.common import ErrorResponseSerializer
-from proxy.exceptions import MissingParameterError
+from proxy.exceptions import MissingParameterException, InvalidParameterException
 from ..base import OpenLibraryBaseView
 
 class BookBulkView(OpenLibraryBaseView):
     @extend_schema(
-        tags=['Books'],
+        tags=['Proxy - Books'],
         summary='Bulk get book details',
         description='Retrieve detailed information about multiple books from OpenLibrary in a single request. Returns a list of results with key, data, status_code, and error fields. Use OpenLibrary work keys (e.g., "OL28346580W").',
         parameters=[
@@ -29,21 +29,15 @@ class BookBulkView(OpenLibraryBaseView):
     def get(self, request):
         keys_param = request.query_params.get('keys', '')
         if not keys_param:
-            raise MissingParameterError('keys')
+            raise MissingParameterException('keys')
 
         book_keys = [key.strip() for key in keys_param.split(',') if key.strip()]
 
         if not book_keys:
-            return Response(
-                {'error': 'INVALID_REQUEST', 'message': 'No valid book keys provided'},
-                status=http_status.HTTP_400_BAD_REQUEST
-            )
+            raise InvalidParameterException('No valid book keys provided')
 
         if len(book_keys) > 50:
-            return Response(
-                {'error': 'INVALID_REQUEST', 'message': 'Maximum 50 book keys allowed per request'},
-                status=http_status.HTTP_400_BAD_REQUEST
-            )
+            raise InvalidParameterException('Maximum 50 book keys allowed per request')
 
         client = self.get_client()
         mapper = self.get_mapper()

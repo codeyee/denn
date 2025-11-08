@@ -5,14 +5,14 @@ from drf_spectacular.types import OpenApiTypes
 from proxy.serializers.tv_shows import BulkTVShowsResponseSerializer
 from proxy.serializers.common import ErrorResponseSerializer
 from proxy.mappers import TMDBMapper
-from proxy.exceptions import MissingParameterError, InvalidParameterError
+from proxy.exceptions import MissingParameterException, InvalidParameterException
 from ..base import TMDBBaseView
 from concurrent.futures import ThreadPoolExecutor
 
 
 class TVShowBulkView(TMDBBaseView):
     @extend_schema(
-        tags=['TV Shows'],
+        tags=['Proxy - TV Shows'],
         summary='Bulk get TV show details',
         description='Retrieve detailed information about multiple TV shows from TMDB in a single request. Returns a dictionary with TV show IDs as keys and TV show details (or null) as values.',
         parameters=[
@@ -40,18 +40,18 @@ class TVShowBulkView(TMDBBaseView):
         ids_param = request.query_params.get('ids', '')
 
         if not ids_param:
-            raise MissingParameterError('ids')
+            raise MissingParameterException('ids')
 
         try:
             tv_ids = [int(id.strip()) for id in ids_param.split(',') if id.strip()]
         except ValueError:
-            raise InvalidParameterError('Invalid TV show IDs. Must be comma-separated integers.')
+            raise InvalidParameterException('Invalid TV show IDs. Must be comma-separated integers.')
 
         if not tv_ids:
-            raise InvalidParameterError('No valid TV show IDs provided')
+            raise InvalidParameterException('No valid TV show IDs provided')
 
         if len(tv_ids) > 50:
-            raise InvalidParameterError('Maximum 50 TV show IDs allowed per request')
+            raise InvalidParameterException('Maximum 50 TV show IDs allowed per request')
 
         client = self.get_client()
         mapper = TMDBMapper(client)

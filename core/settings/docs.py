@@ -3,19 +3,62 @@ API_VERSION = "1.0.0"
 
 # Tags
 SPECTACULAR_TAGS = [
-    {"name": "Authentication", "description": "User authentication and registration"},
-    {"name": "Lists", "description": "User lists management"},
-    {"name": "List Items", "description": "Items within lists"},
-    {"name": "List Members", "description": "Manage list members for shared lists"},
-    {"name": "List Invitations", "description": "Invite users to shared lists"},
-    {"name": "Ratings", "description": "Rate and review content"},
-    {"name": "Content Items", "description": "Content items management"},
-    {"name": "Proxy - Suggestions", "description": "Homepage suggestions"},
-    {"name": "Proxy - Video", "description": "Movies and TV Shows (TMDB)"},
-    {"name": "Proxy - Music", "description": "Music albums and tracks (Spotify)"},
-    {"name": "Proxy - Games", "description": "Video games (IGDB)"},
-    {"name": "Proxy - Books", "description": "Books (OpenLibrary)"},
-    {"name": "API Schema", "description": "OpenAPI schema endpoints"}
+    {
+        "name": "API Schema",
+        "description": "OpenAPI schema endpoints"
+    },
+    {
+        "name": "Authentication",
+        "description": "User authentication"
+    },
+    {
+        "name": "Lists Management",
+        "description": "User lists management"
+    },
+    {
+        "name": "List Items",
+        "description": "Items within lists"
+    },
+    {
+        "name": "List Members",
+        "description": "Manage list members for shared lists"
+    },
+    {
+        "name": "List Invitations",
+        "description": "Invite users to shared lists"
+    },
+    {
+        "name": "Ratings",
+        "description": "Rate and review content"
+    },
+    {
+        "name": "Content Items",
+        "description": "Content items management"
+    },
+    {
+        "name": "Proxy - Suggestions",
+        "description": "Homepage suggestions"
+    },
+    {
+        "name": "Proxy - Movies",
+        "description": "Movies (TMDB)"
+    },
+    {
+        "name": "Proxy - TV Shows",
+        "description": "TV Shows (TMDB)"
+    },
+    {
+        "name": "Proxy - Games",
+        "description": "Video games (IGDB)"
+    },
+    {
+        "name": "Proxy - Albums",
+        "description": "Music albums (Spotify)"
+    },
+    {
+        "name": "Proxy - Books",
+        "description": "Books (OpenLibrary)"
+    }
 ]
 
 # Swagger UI Configuration

@@ -4,12 +4,12 @@ from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 from proxy.serializers.games import GameDetailSerializer
 from proxy.serializers.common import ErrorResponseSerializer
-from proxy.exceptions import MissingParameterError
+from proxy.exceptions import MissingParameterException, InvalidParameterException
 from ..base import IGDBBaseView
 
 class GameBulkView(IGDBBaseView):
     @extend_schema(
-        tags=['Games'],
+        tags=['Proxy - Games'],
         summary='Bulk get game details',
         description='Retrieve detailed information about multiple games from IGDB in a single request.',
         parameters=[
@@ -29,27 +29,18 @@ class GameBulkView(IGDBBaseView):
     def get(self, request):
         ids_param = request.query_params.get('ids', '')
         if not ids_param:
-            raise MissingParameterError('ids')
+            raise MissingParameterException('ids')
 
         try:
             game_ids = [int(id.strip()) for id in ids_param.split(',') if id.strip()]
         except ValueError:
-            return Response(
-                {'error': 'INVALID_REQUEST', 'message': 'Invalid game IDs. Must be comma-separated integers.'},
-                status=http_status.HTTP_400_BAD_REQUEST
-            )
+            raise InvalidParameterException('Invalid game IDs. Must be comma-separated integers.')
 
         if not game_ids:
-            return Response(
-                {'error': 'INVALID_REQUEST', 'message': 'No valid game IDs provided'},
-                status=http_status.HTTP_400_BAD_REQUEST
-            )
+            raise InvalidParameterException('No valid game IDs provided')
 
         if len(game_ids) > 100:
-            return Response(
-                {'error': 'INVALID_REQUEST', 'message': 'Maximum 100 game IDs allowed per request'},
-                status=http_status.HTTP_400_BAD_REQUEST
-            )
+            raise InvalidParameterException('Maximum 100 game IDs allowed per request')
 
         client = self.get_client()
         mapper = self.get_mapper()

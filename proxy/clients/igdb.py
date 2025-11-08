@@ -1,16 +1,14 @@
 import requests
 from typing import Dict, Any, Tuple, Optional
 from django.conf import settings
-from .cached import CachedAPIClient
+from .base.cached import CachedAPIClient
 from concurrent.futures import ThreadPoolExecutor
-from proxy.errors import (
-    build_error_response,
-    get_http_status,
-    TIMEOUT,
-    CONNECTION_ERROR,
-    RESPONSE_NOT_JSON,
-    INTERNAL_SERVER_ERROR,
-    UNAUTHORIZED
+from proxy.exceptions import (
+    TimeoutException,
+    ConnectionErrorException,
+    ResponseNotJsonException,
+    InternalServerException,
+    UnauthorizedException
 )
 from time import time
 
@@ -94,29 +92,26 @@ class IGDBClient(CachedAPIClient):
             )
 
             if response.status_code == 401:
-                return build_error_response(UNAUTHORIZED), get_http_status(UNAUTHORIZED)
+                raise UnauthorizedException()
 
             try:
                 response_data = response.json()
             except ValueError:
-                response_data = build_error_response(
-                    RESPONSE_NOT_JSON,
-                    custom_message=f'Non-JSON response: {response.text}'
-                )
+                raise ResponseNotJsonException(f'Non-JSON response: {response.text}')
 
             return response_data, response.status_code
 
         except requests.exceptions.Timeout:
-            return build_error_response(TIMEOUT), get_http_status(TIMEOUT)
+            raise TimeoutException()
 
         except requests.exceptions.ConnectionError:
-            return build_error_response(CONNECTION_ERROR), get_http_status(CONNECTION_ERROR)
+            raise ConnectionErrorException()
+
+        except (TimeoutException, ConnectionErrorException, ResponseNotJsonException, UnauthorizedException):
+            raise
 
         except Exception as e:
-            return (
-                build_error_response(INTERNAL_SERVER_ERROR, custom_message=str(e)),
-                get_http_status(INTERNAL_SERVER_ERROR)
-            )
+            raise InternalServerException(custom_message=str(e))
 
     def cached_igdb_post(
         self,
