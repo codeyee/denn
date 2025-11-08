@@ -3,7 +3,7 @@ from proxy.exceptions import MissingParameterException
 from proxy.serializers.tv_shows import TVShowSearchResponseSerializer
 from proxy.serializers.common import ErrorResponseSerializer
 from proxy.mappers import TMDBMapper
-from proxy.constants import MediaType
+from proxy.constants import SearchItemType
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 from rest_framework.response import Response
@@ -17,7 +17,7 @@ class TVShowSearchView(TMDBBaseView):
 
         results = []
         for item in data['results']:
-            mapped_item = mapper.map_search_item(item, MediaType.TV_SHOW)
+            mapped_item = mapper.map_search_item(item, SearchItemType.TV_SHOW)
             results.append(mapped_item.to_dict())
 
         metadata = {

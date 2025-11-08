@@ -3,7 +3,7 @@ from proxy.serializers.tv_shows import TVSeasonDetailSerializer
 from proxy.serializers.common import ErrorResponseSerializer
 from proxy.mappers import TMDBMapper
 from proxy.exceptions import NotFoundException
-from proxy.constants import MediaType
+from proxy.constants import SearchItemType
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 from rest_framework.response import Response
@@ -54,6 +54,6 @@ class TVSeasonDetailView(TMDBBaseView):
             country=country
         )
         if status_code != http_status.HTTP_200_OK or not season:
-            raise NotFoundException(MediaType.SEASON)
+            raise NotFoundException(SearchItemType.SEASON)
 
         return Response(season.to_dict(), status=http_status.HTTP_200_OK)

@@ -2,6 +2,7 @@ from typing import Dict, Any, Optional, List
 from proxy.models.album import Album, Track
 from proxy.models.base import SearchItem, Images
 from proxy.clients.spotify import SpotifyClient
+from proxy.constants import SearchItemType
 
 
 class SpotifyMapper:
@@ -97,15 +98,26 @@ class SpotifyMapper:
         if album_type == 'single' and total_tracks >= 4:
             album_type = 'ep'
 
+        additional_data = {}
+        if total_tracks:
+            additional_data['total_tracks'] = total_tracks
+
+        if album_type:
+            additional_data['album_type'] = album_type
+
+        external_url = item.get('external_urls', {}).get('spotify')
+        if external_url:
+            additional_data['external_url'] = external_url
+
         return SearchItem(
             id=item.get('id'),
+            type=SearchItemType.ALBUM,
             title=item.get('name', ''),
+            original_title=item.get('name', ''),
             authors=self._get_artist_names(item.get('artists')),
             image_url=self._get_image_url(item.get('images'), 'large'),
             release_date=self._normalize_release_date(item.get('release_date')),
-            total_tracks=total_tracks,
-            album_type=album_type,
-            external_url=item.get('external_urls', {}).get('spotify')
+            additional_data=additional_data
         )
 
     def map_detail(self, data: Dict[str, Any]) -> Album:

@@ -1,6 +1,6 @@
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Union
 from dataclasses import dataclass, field
-from proxy.constants import ImageType, ImageSize
+from proxy.constants import ImageType, ImageSize, SearchItemType
 
 
 @dataclass
@@ -71,21 +71,33 @@ class Images:
 
 @dataclass
 class SearchItem:
-    id: int
+    id: Union[int, str]
     type: str
     title: str
-    original_title: str
+    original_title: Optional[str] = None
     description: Optional[str] = None
     image_url: Optional[str] = None
     release_date: Optional[str] = None
+    authors: Optional[List[str]] = None
+    additional_data: Dict = field(default_factory=dict)
 
     def to_dict(self) -> Dict:
-        return {
+        result = {
             'id': self.id,
             'type': self.type,
             'title': self.title,
-            'original_title': self.original_title,
             'description': self.description,
             'image_url': self.image_url,
             'release_date': self.release_date
         }
+
+        if self.original_title is not None:
+            result['original_title'] = self.original_title
+
+        if self.authors is not None:
+            result['authors'] = self.authors
+
+        if self.additional_data:
+            result.update(self.additional_data)
+
+        return result

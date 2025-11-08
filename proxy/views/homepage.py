@@ -9,12 +9,13 @@ from proxy.mappers.tmdb import TMDBMapper
 from proxy.mappers.igdb import IGDBMapper
 from proxy.mappers.spotify import SpotifyMapper
 from proxy.mappers.openlibrary import OpenLibraryMapper
-from proxy.constants import MediaType
+from proxy.constants import SearchItemType
 from proxy.serializers import HomepageResponseSerializer, ErrorResponseSerializer
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 from concurrent.futures import ThreadPoolExecutor
 from core.cache_utils import cached_view
+from proxy.exceptions import MissingParameterException
 
 class HomepageView(APIView):
 
@@ -112,7 +113,7 @@ class HomepageView(APIView):
                         for item in movies_data['results'][:limit]:
                             raw_media_type = item.get('media_type', '').lower()
                             if raw_media_type != 'person':
-                                movie_results.append(tmdb_mapper.map_search_item(item, MediaType.MOVIE).to_dict())
+                                movie_results.append(tmdb_mapper.map_search_item(item, SearchItemType.MOVIE).to_dict())
             except Exception as e:
                 print(f"Error fetching video (movies) suggestions: {e}")
 
@@ -123,7 +124,7 @@ class HomepageView(APIView):
                         for item in tv_data['results'][:limit]:
                             raw_media_type = item.get('media_type', '').lower()
                             if raw_media_type != 'person':
-                                tv_show_results.append(tmdb_mapper.map_search_item(item, MediaType.TV_SHOW).to_dict())
+                                tv_show_results.append(tmdb_mapper.map_search_item(item, SearchItemType.TV_SHOW).to_dict())
             except Exception as e:
                 print(f"Error fetching video (tv) suggestions: {e}")
 

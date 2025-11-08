@@ -4,6 +4,7 @@ from dateutil import parser
 from proxy.models.book import Book
 from proxy.models.base import SearchItem, Images
 from proxy.clients.openlibrary import OpenLibraryClient
+from proxy.constants import SearchItemType
 
 
 class OpenLibraryMapper:
@@ -58,14 +59,21 @@ class OpenLibraryMapper:
         if first_sentence and isinstance(first_sentence, list) and len(first_sentence) > 0:
             description = first_sentence[0]
 
+        additional_data = {}
+        pages = item.get('number_of_pages_median')
+        if pages:
+            additional_data['pages'] = pages
+
         return SearchItem(
             id=self._extract_id_from_key(item.get('key')),
+            type=SearchItemType.BOOK,
             title=item.get('title', ''),
+            original_title=item.get('title', ''),
             authors=item.get('author_name', []) if item.get('author_name') else None,
             image_url=image_url,
             release_date=self._parse_publish_date(item.get('publish_date'), item.get('first_publish_year')),
-            pages=item.get('number_of_pages_median'),
-            description=description
+            description=description,
+            additional_data=additional_data
         )
 
     def map_detail(self, item: Dict[str, Any]) -> Book:

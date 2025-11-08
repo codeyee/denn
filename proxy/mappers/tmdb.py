@@ -7,7 +7,7 @@ from proxy.models.movie import Movie
 from proxy.models.tv_show import TVShow, Season, Episode
 from proxy.models.base import SearchItem
 from proxy.clients.tmdb import TMDBClient
-from proxy.constants import ProviderAction, MediaType
+from proxy.constants import ProviderAction, SearchItemType
 
 
 def build_image_url(path: Optional[str], size: str = 'w500') -> Optional[str]:
@@ -190,13 +190,13 @@ class TMDBMapper:
         media_type_lower = media_type.lower()
 
         if media_type_lower == 'movie':
-            return MediaType.MOVIE
+            return SearchItemType.MOVIE
 
         elif media_type_lower == 'tv':
-            return MediaType.TV_SHOW
+            return SearchItemType.TV_SHOW
 
         elif media_type_lower == 'person':
-            return MediaType.PERSON
+            return SearchItemType.PERSON
 
         else:
             return media_type.upper()
