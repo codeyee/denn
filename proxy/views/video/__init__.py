@@ -4,7 +4,6 @@ from .tv import VideoTvDetailView
 from .season import VideoTvSeasonDetailView
 from .bulk import VideoBulkMoviesView, VideoBulkTvShowsView
 from .bulk_seasons import VideoBulkSeasonsView
-from .suggestions import VideoSuggestionsView
 
 __all__ = [
     'VideoSearchView',
@@ -14,6 +13,5 @@ __all__ = [
     'VideoBulkMoviesView',
     'VideoBulkTvShowsView',
     'VideoBulkSeasonsView',
-    'VideoSuggestionsView'
 ]
 

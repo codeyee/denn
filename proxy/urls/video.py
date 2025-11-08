@@ -7,7 +7,6 @@ from proxy.views.video import (
     VideoBulkMoviesView,
     VideoBulkTvShowsView,
     VideoBulkSeasonsView,
-    VideoSuggestionsView
 )
 
 app_name = 'video'
@@ -17,11 +16,6 @@ urlpatterns = [
         'search',
         VideoSearchView.as_view(),
         name='search'
-    ),
-    path(
-        'suggestions',
-        VideoSuggestionsView.as_view(),
-        name='suggestions'
     ),
     path(
         'movie/<int:movie_id>',

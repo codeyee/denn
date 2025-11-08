@@ -40,10 +40,6 @@ from .books import (
 )
 
 from .homepage import (
-    VideoSuggestionsResponseSerializer,
-    GamesSuggestionsResponseSerializer,
-    MusicSuggestionsResponseSerializer,
-    BooksSuggestionsResponseSerializer,
     HomepageResponseSerializer,
 )
 
@@ -79,9 +75,5 @@ __all__ = [
     'BookSearchResponseSerializer',
     'BookDetailSerializer',
 
-    'VideoSuggestionsResponseSerializer',
-    'GamesSuggestionsResponseSerializer',
-    'MusicSuggestionsResponseSerializer',
-    'BooksSuggestionsResponseSerializer',
     'HomepageResponseSerializer',
 ]
