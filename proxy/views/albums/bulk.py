@@ -2,7 +2,7 @@ from rest_framework import status as http_status
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
-from proxy.serializers.albums import BulkAlbumsResponseSerializer
+from proxy.serializers.albums import AlbumDetailSerializer
 from proxy.serializers.common import ErrorResponseSerializer
 from proxy.exceptions import MissingParameterException, InvalidParameterException
 from ..base import SpotifyBaseView
@@ -11,7 +11,7 @@ class AlbumBulkView(SpotifyBaseView):
     @extend_schema(
         tags=['Proxy - Albums'],
         summary='Bulk get album details',
-        description='Retrieve detailed information about multiple albums from Spotify in a single request. Maximum 20 albums per request.',
+        description='Retrieve detailed information about multiple albums from Spotify in a single request. Maximum 20 albums per request. Returns a list of album details.',
         parameters=[
             OpenApiParameter(
                 'ids',
@@ -22,7 +22,7 @@ class AlbumBulkView(SpotifyBaseView):
             )
         ],
         responses={
-            200: BulkAlbumsResponseSerializer,
+            200: AlbumDetailSerializer(many=True),
             400: ErrorResponseSerializer
         }
     )
@@ -52,7 +52,5 @@ class AlbumBulkView(SpotifyBaseView):
         for album in albums:
             if album is not None:
                 normalized_albums.append(mapper.map_detail(album).to_dict())
-            else:
-                normalized_albums.append(None)
 
-        return Response({'albums': normalized_albums}, status=http_status.HTTP_200_OK)
+        return Response(normalized_albums, status=http_status.HTTP_200_OK)

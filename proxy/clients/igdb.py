@@ -182,6 +182,18 @@ class IGDBClient(CachedAPIClient):
             offset=offset
         )
 
+    def get_game(self, game_id: int) -> Tuple[Dict[str, Any], int]:
+        endpoint = 'games'
+        fields = self.get_fields()
+        body = f'fields {fields}; where id = {game_id};'
+        return self.cached_igdb_post(
+            endpoint=endpoint,
+            cache_type='api_igdb_details',
+            body=body,
+            operation='details',
+            game_id=game_id
+        )
+
     def get_bulk_games(self, game_ids: list[int]) -> Tuple[Dict[str, Any], int]:
         if not game_ids: return [], 200
 

@@ -63,30 +63,30 @@ class OpenLibraryClient(CachedAPIClient):
             limit=1
         )
 
-    def get_bulk_books(self, book_keys: list[str]) -> Tuple[list[Dict[str, Any]], int]:
-        cache_key = self._generate_cache_key('api_openlibrary_bulk', book_keys=book_keys)
+    def get_bulk_books(self, book_ids: list[str]) -> Tuple[list[Dict[str, Any]], int]:
+        cache_key = self._generate_cache_key('api_openlibrary_bulk', book_ids=book_ids)
         cached_response = self._get_cached_response(cache_key)
         if cached_response is not None:
             return cached_response
 
         results = []
 
-        def fetch_book(book_key: str) -> Dict[str, Any]:
-            data, status_code = self.search_by_key(book_key)
+        def fetch_book(book_id: str) -> Dict[str, Any]:
+            data, status_code = self.search_by_key(book_id)
 
             book_data = None
             if status_code == 200 and 'docs' in data and len(data['docs']) > 0:
                 book_data = data['docs'][0]
 
             return {
-                'key': book_key,
+                'key': book_id,
                 'data': book_data if book_data else None,
                 'status_code': status_code if book_data else 404,
                 'error': None if book_data else {'error': 'RESOURCE_NOT_FOUND', 'message': 'Book not found'}
             }
 
         with ThreadPoolExecutor(max_workers=10) as executor:
-            futures = [executor.submit(fetch_book, book_key) for book_key in book_keys]
+            futures = [executor.submit(fetch_book, book_id) for book_id in book_ids]
             results = [future.result() for future in futures]
 
         cache_timeout = self._get_cache_timeout('api_openlibrary_details')

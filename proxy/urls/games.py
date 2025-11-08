@@ -1,5 +1,5 @@
 from django.urls import path
-from proxy.views.games import GameSearchView, GameBulkView
+from proxy.views.games import GameSearchView, GameBulkView, GameDetailView
 
 app_name = 'games'
 
@@ -13,5 +13,10 @@ urlpatterns = [
         'bulk',
         GameBulkView.as_view(),
         name='bulk'
+    ),
+    path(
+        '<int:game_id>',
+        GameDetailView.as_view(),
+        name='detail'
     ),
 ]
