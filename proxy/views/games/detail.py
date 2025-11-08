@@ -32,8 +32,14 @@ class GameDetailView(IGDBBaseView):
                 raise NotFoundException('Game')
             return Response(data, status=status_code)
 
+        if data is None:
+            raise NotFoundException('Game')
+
         if isinstance(data, list) and len(data) > 0:
             game = mapper.map_detail(data[0])
+            return Response(game.to_dict(), status=http_status.HTTP_200_OK)
+        elif isinstance(data, dict):
+            game = mapper.map_detail(data)
             return Response(game.to_dict(), status=http_status.HTTP_200_OK)
 
         raise NotFoundException('Game')

@@ -1,5 +1,5 @@
 import requests
-from typing import Dict, Any, Tuple, Optional
+from typing import Dict, Any, Tuple, Optional, Union, List
 from django.conf import settings
 from .base.cached import CachedAPIClient
 from concurrent.futures import ThreadPoolExecutor
@@ -77,7 +77,7 @@ class IGDBClient(CachedAPIClient):
         body: str,
         params: Optional[Dict[str, Any]] = None,
         operation: str = 'search'
-    ) -> Tuple[Dict[str, Any], int]:
+    ) -> Tuple[Union[Dict[str, Any], List[Dict[str, Any]]], int]:
         url = self.build_url(endpoint)
         headers = self.get_headers()
 
@@ -121,7 +121,7 @@ class IGDBClient(CachedAPIClient):
         params: Optional[Dict[str, Any]] = None,
         operation: str = 'search',
         **cache_kwargs
-    ) -> Tuple[Dict[str, Any], int]:
+    ) -> Tuple[Union[Dict[str, Any], List[Dict[str, Any]]], int]:
         cache_key = self._generate_cache_key(cache_type, **cache_kwargs)
         cached_response = self._get_cached_response(cache_key)
         if cached_response is not None:
@@ -157,6 +157,7 @@ class IGDBClient(CachedAPIClient):
             'artworks.image_id',
             'first_release_date',
             'platforms.name',
+            'platforms.platform_logo.image_id',
             'game_type',
             'involved_companies.company.name',
             'involved_companies.developer'
@@ -167,12 +168,12 @@ class IGDBClient(CachedAPIClient):
         # 8 = Remake
         return ','.join(['0', '8'])
 
-    def search_games(self, query: str, limit: int = 50, offset: int = 0) -> Tuple[Dict[str, Any], int]:
+    def search_games(self, query: str, limit: int = 50, offset: int = 0) -> Tuple[List[Dict[str, Any]], int]:
         endpoint = 'games'
         fields = self.get_fields()
         included_game_types = self.get_included_game_types()
         body = f'search "{query}"; fields {fields}; where game_type = ({included_game_types}); limit {limit}; offset {offset};'
-        return self.cached_igdb_post(
+        data, status_code = self.cached_igdb_post(
             endpoint=endpoint,
             cache_type='api_igdb_search',
             body=body,
@@ -181,30 +182,38 @@ class IGDBClient(CachedAPIClient):
             limit=limit,
             offset=offset
         )
+        if isinstance(data, dict):
+            data = [data]
+        return data, status_code
 
-    def get_game(self, game_id: int) -> Tuple[Dict[str, Any], int]:
+    def get_game(self, game_id: int) -> Tuple[Optional[Dict[str, Any]], int]:
         endpoint = 'games'
         fields = self.get_fields()
         body = f'fields {fields}; where id = {game_id};'
-        return self.cached_igdb_post(
+        data, status_code = self.cached_igdb_post(
             endpoint=endpoint,
             cache_type='api_igdb_details',
             body=body,
             operation='details',
             game_id=game_id
         )
+        if isinstance(data, list) and data:
+            return data[0], status_code
+        elif isinstance(data, dict):
+            return data, status_code
+        return None, status_code
 
-    def get_bulk_games(self, game_ids: list[int]) -> Tuple[Dict[str, Any], int]:
+    def get_bulk_games(self, game_ids: list[int]) -> Tuple[List[Dict[str, Any]], int]:
         if not game_ids: return [], 200
 
-        # Check cache first
         cache_key = self._generate_cache_key('api_igdb_bulk', game_ids=game_ids)
         cached_response = self._get_cached_response(cache_key)
         if cached_response is not None:
-            return cached_response
+            data, status_code = cached_response
+            if isinstance(data, dict):
+                data = [data]
+            return data, status_code
 
-        # IGDB has a limit on the number of IDs in a single query
-        # Split into batches of 50 for parallel processing
         batch_size = 50
         if len(game_ids) <= batch_size:
             endpoint = 'games'
@@ -217,6 +226,8 @@ class IGDBClient(CachedAPIClient):
                 cache_timeout = self._get_cache_timeout('api_igdb_details')
                 self._cache_response(cache_key, data, status_code, cache_timeout)
 
+            if isinstance(data, dict):
+                data = [data]
             return data, status_code
 
         def fetch_games_batch(batch_ids: list[int]) -> Tuple[list[Dict[str, Any]], int]:
@@ -239,12 +250,12 @@ class IGDBClient(CachedAPIClient):
 
         return all_games, 200
 
-    def get_popular_games(self, limit: int = 50, offset: int = 0) -> Tuple[Dict[str, Any], int]:
+    def get_popular_games(self, limit: int = 50, offset: int = 0) -> Tuple[List[Dict[str, Any]], int]:
         endpoint = 'games'
         fields = self.get_fields()
         included_game_types = self.get_included_game_types()
         body = f'fields {fields}; where game_type = ({included_game_types}) & aggregated_rating != null; sort aggregated_rating desc; limit {limit}; offset {offset};'
-        return self.cached_igdb_post(
+        data, status_code = self.cached_igdb_post(
             endpoint=endpoint,
             cache_type='api_igdb_popular',
             body=body,
@@ -252,3 +263,6 @@ class IGDBClient(CachedAPIClient):
             limit=limit,
             offset=offset
         )
+        if isinstance(data, dict):
+            data = [data]
+        return data, status_code

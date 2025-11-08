@@ -1,6 +1,6 @@
 import hashlib
 import json
-from typing import Dict, Any, Optional, Tuple, Callable
+from typing import Dict, Any, Optional, Tuple, Callable, Union, List
 from django.core.cache import cache
 from django.conf import settings
 from .base import BaseAPIClient
@@ -52,13 +52,13 @@ class CachedAPIClient(BaseAPIClient):
 
         return f"api:{cache_key}"
 
-    def _get_cached_response(self, cache_key: str) -> Optional[Tuple[Dict[str, Any], int]]:
+    def _get_cached_response(self, cache_key: str) -> Optional[Tuple[Union[Dict[str, Any], List[Dict[str, Any]]], int]]:
         cached_data = cache.get(cache_key)
         if cached_data is not None:
             return cached_data.get('data'), cached_data.get('status_code')
         return None
 
-    def _cache_response(self, cache_key: str, data: Dict[str, Any], status_code: int, cache_timeout: int):
+    def _cache_response(self, cache_key: str, data: Union[Dict[str, Any], List[Dict[str, Any]]], status_code: int, cache_timeout: int):
         cache_data = {
             'data': data,
             'status_code': status_code

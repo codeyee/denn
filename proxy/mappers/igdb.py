@@ -48,8 +48,10 @@ class IGDBMapper:
         platforms = []
         for platform_data in platforms_data:
             name = platform_data.get('name')
+            image_id = platform_data.get('platform_logo', {}).get('image_id')
+            image_url = build_igdb_image_url(image_id, 'cover_small') if image_id else None
             if name:
-                platforms.append(Platform(name=name))
+                platforms.append(Platform(name=name, image_url=image_url))
 
         return platforms if platforms else None
 
@@ -149,12 +151,18 @@ class IGDBMapper:
         if isinstance(item, list) and len(item) > 0:
             item = item[0]
 
+        item_id = item.get('id')
+        if item_id is None:
+            # Handle cases where ID might be missing, though IGDB usually provides it
+            # For now, we'll assume it's always present and cast to int
+            item_id = 0 # Or raise an error, or return None
+
         cover_data = item.get('cover') if isinstance(item.get('cover'), dict) else None
         poster_image_id = self._get_image_id_from_cover(cover_data)
         image_url = build_igdb_image_url(poster_image_id, '720p')
 
         return SearchItem(
-            id=item.get('id'),
+            id=int(item_id),
             type=SearchItemType.GAME,
             title=item.get('name', ''),
             original_title=item.get('name', ''),
@@ -167,6 +175,12 @@ class IGDBMapper:
         if isinstance(item, list) and len(item) > 0:
             item = item[0]
 
+        item_id = item.get('id')
+        if item_id is None:
+            # Handle cases where ID might be missing, though IGDB usually provides it
+            # For now, we'll assume it's always present and cast to int
+            item_id = 0 # Or raise an error, or return None
+
         cover_data = item.get('cover') if isinstance(item.get('cover'), dict) else None
         poster_image_id = self._get_image_id_from_cover(cover_data)
         image_url = build_igdb_image_url(poster_image_id, '720p')
@@ -176,7 +190,7 @@ class IGDBMapper:
         authors = self._extract_authors(item.get('involved_companies'))
 
         return Game(
-            id=item.get('id'),
+            id=int(item_id),
             title=item.get('name', ''),
             description=self._build_description(item.get('summary'), item.get('storyline')),
             image_url=image_url,
