@@ -15,18 +15,15 @@ from content.permissions import IsOwnerOrReadOnly
         summary='List all user lists',
         description='''
         Get all lists where the user is the owner or a member.
+        Detailed information from external APIs (TMDB, IGDB, Spotify, OpenLibrary) is always included in the `source_data` field of each content item.
 
         **Optional Query Parameters:**
-        - `render_items`: Set to `true` to include items list for all lists (default: false)
-        - `max_items`: If `render_items` is true, limit the number of items per list (default: 10)
-        - `render_source`: Set to `true` to include detailed information from external APIs (TMDB, IGDB, Spotify, OpenLibrary) in the `source_data` field of each content item (default: false)
-        - `country`: ISO 3166-1 alpha-2 country code (e.g., US, GB, FR) to filter providers by country (only applies when render_source=true and source_api=tmdb).
+        - `items_size`: Number of items to include per list (0 or not set = don't fetch items, >0 = fetch that many items, default: 0)
+        - `country`: ISO 3166-1 alpha-2 country code (e.g., US, GB, FR) to filter providers by country (only applies when source_api=tmdb).
         ''',
         parameters=[
-            OpenApiParameter('render_items', OpenApiTypes.BOOL, OpenApiParameter.QUERY, required=False, description='Include items list in response (set to true/false, default: false)'),
-            OpenApiParameter('max_items', OpenApiTypes.INT, OpenApiParameter.QUERY, required=False, description='Maximum number of items per list when render_items is true (default: 10)'),
-            OpenApiParameter('render_source', OpenApiTypes.BOOL, OpenApiParameter.QUERY, required=False, description='Include external API data in response (set to true/false, default: false)'),
-            OpenApiParameter('country', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='ISO 3166-1 alpha-2 country code to filter providers by country (only applies when render_source=true and source_api=tmdb)')
+            OpenApiParameter('items_size', OpenApiTypes.INT, OpenApiParameter.QUERY, required=False, description='Number of items to include per list (0 or not set = no items, >0 = fetch that many items, default: 0)'),
+            OpenApiParameter('country', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='ISO 3166-1 alpha-2 country code to filter providers by country (only applies when source_api=tmdb)')
         ],
         responses={200: UserListSerializer(many=True)}
     ),
@@ -35,14 +32,13 @@ from content.permissions import IsOwnerOrReadOnly
         summary='Get list details',
         description='''
         Get detailed information about a specific list including all items and members.
+        Detailed information from external APIs (TMDB, IGDB, Spotify, OpenLibrary) is always included in the `source_data` field of each content item.
 
         **Optional Query Parameters:**
-        - `render_source`: Set to `true` to include detailed information from external APIs (TMDB, IGDB, Spotify, OpenLibrary) in the `source_data` field of each content item.
-        - `country`: ISO 3166-1 alpha-2 country code (e.g., US, GB, FR) to filter providers by country (only applies when render_source=true and source_api=tmdb).
+        - `country`: ISO 3166-1 alpha-2 country code (e.g., US, GB, FR) to filter providers by country (only applies when source_api=tmdb).
         ''',
         parameters=[
-            OpenApiParameter('render_source', OpenApiTypes.BOOL, OpenApiParameter.QUERY, required=False, description='Include external API data in response (set to true/false)'),
-            OpenApiParameter('country', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='ISO 3166-1 alpha-2 country code to filter providers by country (only applies when render_source=true and source_api=tmdb)')
+            OpenApiParameter('country', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='ISO 3166-1 alpha-2 country code to filter providers by country (only applies when source_api=tmdb)')
         ],
         responses={
             200: UserListDetailSerializer,
@@ -123,10 +119,14 @@ class UserListViewSet(viewsets.ModelViewSet):
             return UserListDetailSerializer
 
         elif self.action == 'list':
-            render_items = self.request.query_params.get('render_items', '').lower()
+            items_size = self.request.query_params.get('items_size', '0')
 
-            if render_items == 'true':
-                return UserListDetailSerializer
+            try:
+                items_size = int(items_size)
+                if items_size > 0:
+                    return UserListDetailSerializer
+            except (ValueError, TypeError):
+                pass
 
         return UserListSerializer
 
@@ -134,21 +134,14 @@ class UserListViewSet(viewsets.ModelViewSet):
         context = super().get_serializer_context()
 
         if self.action == 'list':
-            render_items = self.request.query_params.get('render_items', '').lower()
+            items_size = self.request.query_params.get('items_size', '0')
 
-            if render_items == 'true':
-                max_items = self.request.query_params.get('max_items', '10')
-
-                try:
-                    max_items = int(max_items)
-
-                    if max_items <= 0:
-                        max_items = 10
-
-                except (ValueError, TypeError):
-                    max_items = 10
-
-                context['max_items'] = max_items
+            try:
+                items_size = int(items_size)
+                if items_size > 0:
+                    context['items_size'] = items_size
+            except (ValueError, TypeError):
+                pass
 
         return context
 

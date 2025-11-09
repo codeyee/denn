@@ -23,6 +23,59 @@ class CustomPageNumberPagination(PageNumberPagination):
             ('results', data)
         ]))
 
+    def get_paginated_response_schema(self, schema):
+        """
+        Override to provide custom OpenAPI schema for paginated responses.
+        This ensures Swagger/ReDoc documentation shows the correct response format.
+        """
+        return {
+            'type': 'object',
+            'properties': {
+                'metadata': {
+                    'type': 'object',
+                    'properties': {
+                        'count': {
+                            'type': 'integer',
+                            'example': 123,
+                            'description': 'Total number of items across all pages'
+                        },
+                        'page_size': {
+                            'type': 'integer',
+                            'example': 20,
+                            'description': 'Number of items per page'
+                        },
+                        'current_page': {
+                            'type': 'integer',
+                            'example': 1,
+                            'description': 'Current page number (1-indexed)'
+                        },
+                        'total_pages': {
+                            'type': 'integer',
+                            'example': 7,
+                            'description': 'Total number of pages'
+                        },
+                        'next': {
+                            'type': 'string',
+                            'nullable': True,
+                            'format': 'uri',
+                            'example': 'http://api.example.org/accounts/?page=2',
+                            'description': 'URL to the next page (null if on last page)'
+                        },
+                        'previous': {
+                            'type': 'string',
+                            'nullable': True,
+                            'format': 'uri',
+                            'example': 'http://api.example.org/accounts/?page=1',
+                            'description': 'URL to the previous page (null if on first page)'
+                        },
+                    },
+                    'required': ['count', 'page_size', 'current_page', 'total_pages', 'next', 'previous']
+                },
+                'results': schema,
+            },
+            'required': ['metadata', 'results']
+        }
+
 
 def build_pagination_metadata(
     request,
