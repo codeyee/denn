@@ -27,17 +27,19 @@ const TYPE_ICON: Record<string, any> = {
 
 function getItemType(item: ContentItem): keyof typeof TYPE_ICON {
   if ("type" in item && typeof (item as any).type === "string") {
-    const t = (item as any).type as string;
+    const t = ((item as any).type as string).toLowerCase();
     if (t === "movie") return "movie";
-    if (t === "tv") return "tv";
+    if (t === "tv" || t === "tv_show") return "tv";
     if (t === "album" || t === "music") return "music";
+    if (t === "game") return "game";
+    if (t === "book") return "book";
   }
   if ("number_of_seasons" in item || "number_of_episodes" in item) {
     return "tv";
   }
-  if ("platforms" in item) return "game";
   if ("pages" in item) return "book";
   if ("total_tracks" in item) return "music";
+  if ("duration_minutes" in item) return "movie";
   return "movie";
 }
 
@@ -66,16 +68,20 @@ export default function FeaturedBanner({ items, autoRotateMs = 6000 }: FeaturedB
         sourceApi = SourceApi.SPOTIFY;
         contentType = ContentType.ALBUM;
         externalId = String(item.id);
+      } else if (itemType === "game") {
+        sourceApi = SourceApi.IGDB;
+        contentType = ContentType.GAME;
+        externalId = String(item.id);
+      } else if (itemType === "book") {
+        sourceApi = SourceApi.OPENLIBRARY;
+        contentType = ContentType.BOOK;
+        externalId = String(item.id);
       }
     }
 
     // If not determined by type field, check properties
     if (!sourceApi || !contentType) {
-      if ("platforms" in item) {
-        sourceApi = SourceApi.IGDB;
-        contentType = ContentType.GAME;
-        externalId = String(item.id);
-      } else if ("total_tracks" in item) {
+      if ("total_tracks" in item) {
         sourceApi = SourceApi.SPOTIFY;
         contentType = ContentType.ALBUM;
         externalId = String(item.id);
@@ -86,6 +92,10 @@ export default function FeaturedBanner({ items, autoRotateMs = 6000 }: FeaturedB
       } else if ("number_of_seasons" in item || "number_of_episodes" in item) {
         sourceApi = SourceApi.TMDB;
         contentType = ContentType.TV_SHOW;
+        externalId = String(item.id);
+      } else if ("duration_minutes" in item) {
+        sourceApi = SourceApi.TMDB;
+        contentType = ContentType.MOVIE;
         externalId = String(item.id);
       } else {
         // Default to movie
