@@ -5,10 +5,10 @@ import { useRef } from "react";
 import Card from "../Card";
 import { contentTypeEnum } from "@/types/types";
 import { ContentItem } from "@/types/contentTypes";
-import { SourceApi, ContentType } from "@/lib/api/types";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { getCardImageUrl } from "@/lib/utils/imageUtils";
 import { formatAuthors } from "@/lib/utils/authorUtils";
+import { inferContentTypeEnum, inferNavigationParams } from "@/lib/utils/contentTypeUtils";
 
 interface ContentCardProps {
   item: ContentItem;
@@ -90,9 +90,8 @@ export default function ContentCard({ item, className }: ContentCardProps) {
     }
 
     if (sourceApi && contentType && externalId) {
-      // Navigate immediately with query parameters - the detail page will handle API calls
       const params = new URLSearchParams({
-        external_id: String(externalId),
+        external_id: externalId,
         source_api: sourceApi,
         content_type: contentType,
       });
@@ -192,27 +191,7 @@ export default function ContentCard({ item, className }: ContentCardProps) {
     }
   };
   const getContentType = (): contentTypeEnum => {
-    if ("type" in item && typeof item.type === "string") {
-      const itemType = item.type.toLowerCase();
-      if (itemType === "movie") return contentTypeEnum.movie;
-      if (itemType === "tv" || itemType === "tv_show") return contentTypeEnum.tv;
-      if (itemType === "album" || itemType === "music") return contentTypeEnum.music;
-      if (itemType === "season") return contentTypeEnum.tv; // Seasons use TV icon
-      if (itemType === "game") return contentTypeEnum.game;
-      if (itemType === "book") return contentTypeEnum.book;
-    }
-
-    if ("number_of_seasons" in item || "number_of_episodes" in item) {
-      return contentTypeEnum.tv;
-    }
-
-    if ("pages" in item) return contentTypeEnum.book;
-    if ("total_tracks" in item) return contentTypeEnum.music;
-
-    // Movies have duration_minutes
-    if ("duration_minutes" in item) return contentTypeEnum.movie;
-
-    return contentTypeEnum.movie;
+    return inferContentTypeEnum(item as unknown as Record<string, unknown>);
   };
 
   const getPosterImageUrl = (item: any): string | undefined => {

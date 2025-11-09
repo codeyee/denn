@@ -1,7 +1,6 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Film, Tv, Gamepad2, Book, Music, LucideIcon } from "lucide-react";
 import { ContentItem } from "@/types/contentTypes";
 import { SourceApi, ContentType } from "@/lib/api/types";
 import { getLegacyImageUrl } from "@/lib/utils/imageUtils";
@@ -42,7 +41,8 @@ interface ContentBannerProps {
 
 export default function ContentBanner({ item, tvShowTitle, externalId, sourceApi }: ContentBannerProps) {
   const router = useRouter();
-  const Icon = TYPE_ICON[getItemType(item)];
+  const contentType = inferNavigationParams(item as Record<string, unknown>).contentType?.toLowerCase() || 'movie';
+  const Icon = CONTENT_TYPE_ICONS[contentType];
   const backgroundUrl = getLegacyImageUrl(item);
 
   const getOriginalTitle = (item: ContentItem | any): string => {

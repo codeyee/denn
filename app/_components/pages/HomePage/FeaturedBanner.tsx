@@ -6,11 +6,11 @@ import { motion, AnimatePresence } from "motion/react";
 import { Film, Tv, Gamepad2, Book, Music } from "lucide-react";
 import { Button } from "@/app/_components/lib/button";
 import { ContentItem } from "@/types/contentTypes";
-import { SourceApi, ContentType } from "@/lib/api/types";
 import { getLegacyImageUrl } from "@/lib/utils/imageUtils";
 import { formatAuthors } from "@/lib/utils/authorUtils";
 import Noise from "@/app/_components/lib/Animations/Noise";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
+import { inferNavigationParams, CONTENT_TYPE_ICONS } from "@/lib/utils/contentTypeUtils";
 
 type FeaturedBannerProps = {
   items: ContentItem[];
@@ -106,9 +106,8 @@ export default function FeaturedBanner({ items, autoRotateMs = 6000 }: FeaturedB
     }
 
     if (sourceApi && contentType && externalId) {
-      // Navigate immediately with query parameters - the detail page will handle API calls
       const params = new URLSearchParams({
-        external_id: String(externalId),
+        external_id: externalId,
         source_api: sourceApi,
         content_type: contentType,
       });
@@ -145,7 +144,8 @@ export default function FeaturedBanner({ items, autoRotateMs = 6000 }: FeaturedB
   if (validItems.length === 0) return null;
 
   const current = validItems[index];
-  const Icon = TYPE_ICON[getItemType(current)];
+  const contentType = inferNavigationParams(current as unknown as Record<string, unknown>).contentType?.toLowerCase() || 'movie';
+  const Icon = CONTENT_TYPE_ICONS[contentType];
   const backgroundUrl = getBestImageUrl(current);
 
   const getFooterInfo = (item: ContentItem): string => {
