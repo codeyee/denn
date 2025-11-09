@@ -12,7 +12,7 @@ export default function BookDetailContent({ book }: BookDetailContentProps) {
   const releaseDate = formatReleaseDate(book.release_date);
   return (
     <>
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-4 mt-8">
         <div className="mb-10">
           <h2 className="text-2xl font-bold text-white mb-6">About</h2>
           {book.description && (

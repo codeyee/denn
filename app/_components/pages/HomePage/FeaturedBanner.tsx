@@ -68,6 +68,14 @@ export default function FeaturedBanner({ items, autoRotateMs = 6000 }: FeaturedB
         sourceApi = SourceApi.SPOTIFY;
         contentType = ContentType.ALBUM;
         externalId = String(item.id);
+      } else if (itemType === "game") {
+        sourceApi = SourceApi.IGDB;
+        contentType = ContentType.GAME;
+        externalId = String(item.id);
+      } else if (itemType === "book") {
+        sourceApi = SourceApi.OPENLIBRARY;
+        contentType = ContentType.BOOK;
+        externalId = String(item.id);
       }
     }
 

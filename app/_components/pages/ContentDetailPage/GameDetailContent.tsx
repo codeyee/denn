@@ -1,8 +1,9 @@
 "use client";
 
-import { GameDetail, ImageType } from "@/lib/api/types";
+import { GameDetail, Platform } from "@/lib/api/types";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
-import { formatAuthors, formatPlatforms } from "@/lib/utils/authorUtils";
+import { formatAuthors } from "@/lib/utils/authorUtils";
+import PlatformsDisplay from "./PlatformsDisplay";
 
 interface GameDetailContentProps {
   game: GameDetail;
@@ -11,70 +12,45 @@ interface GameDetailContentProps {
 export default function GameDetailContent({ game }: GameDetailContentProps) {
   const releaseDate = formatReleaseDate(game.release_date);
 
-  // Get gallery images for display
-  const galleryImages = game.images
-    ? game.images
-        .filter(img => img.type === ImageType.GALLERY)
-        .map((img, index) => ({
-          src: img.image_url,
-          alt: `${game.title} gallery image ${index + 1}`,
-          type: img.type.toLowerCase(),
-        }))
-    : [];
+  // Convert game platforms to the format expected by PlatformsDisplay
+  // Use empty string as country code since games don't have regional platforms
+  const platformsByCountry: Record<string, Platform[]> = game.platforms && game.platforms.length > 0
+    ? { "": game.platforms }
+    : {};
 
   return (
-    <>
-      <div className="container mx-auto px-4">
-        <div className="mb-10">
-          <h2 className="text-2xl font-bold text-white mb-6">About</h2>
+    <div className="container mx-auto px-4 mt-8">
+      <h2 className="text-2xl font-bold text-white mb-6">About</h2>
+
+      {/* 2-column layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left column - Description */}
+        <div className="lg:col-span-2">
           {game.description && (
-            <p className="text-gray-300 mb-4 leading-relaxed font-sans">{game.description}</p>
+            <p className="text-gray-300 mb-6 leading-relaxed font-sans">{game.description}</p>
           )}
 
-          <div className="mt-6 space-y-2">
-              {releaseDate && (
-                <div>
-                  <span className="text-white/60 font-bold">Release Date:</span>
-                  <span className="text-white ml-2 font-sans">{releaseDate}</span>
-                </div>
-              )}
-              {game.authors && game.authors.length > 0 && (
-                <div>
-                  <span className="text-white/60 font-bold">Developers:</span>
-                  <span className="text-white ml-2 font-sans">{formatAuthors(game.authors)}</span>
-                </div>
-              )}
-              {game.platforms && game.platforms.length > 0 && (
-                <div>
-                  <span className="text-white/60 font-bold">Platforms:</span>
-                  <span className="text-white ml-2 font-sans">{formatPlatforms(game.platforms)}</span>
-                </div>
-              )}
+          <div className="space-y-2">
+            {releaseDate && (
+              <div>
+                <span className="text-white/60 font-bold">Release Date:</span>
+                <span className="text-white ml-2 font-sans">{releaseDate}</span>
+              </div>
+            )}
+            {game.authors && game.authors.length > 0 && (
+              <div>
+                <span className="text-white/60 font-bold">Developers:</span>
+                <span className="text-white ml-2 font-sans">{formatAuthors(game.authors)}</span>
+              </div>
+            )}
           </div>
+        </div>
+
+        {/* Right column - Where to Play */}
+        <div className="lg:col-span-1">
+          <PlatformsDisplay platforms={platformsByCountry} title="Where to Play" />
         </div>
       </div>
-
-      {/* Gallery */}
-      {galleryImages.length > 0 && (
-        <div className="container mx-auto px-4 mb-10">
-          <h2 className="text-2xl font-bold text-white mb-6">Gallery</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-            {galleryImages.map((image, index) => (
-              <div
-                key={index}
-                className="relative overflow-hidden rounded-2xl"
-                style={{ aspectRatio: "16 / 9" }}
-              >
-                <img
-                  src={image.src}
-                  alt={image.alt}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </>
+    </div>
   );
 }

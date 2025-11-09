@@ -41,6 +41,14 @@ export default function ContentCard({ item, className }: ContentCardProps) {
         sourceApi = SourceApi.SPOTIFY;
         contentType = ContentType.ALBUM;
         externalId = String(item.id);
+      } else if (itemType === "game") {
+        sourceApi = SourceApi.IGDB;
+        contentType = ContentType.GAME;
+        externalId = String(item.id);
+      } else if (itemType === "book") {
+        sourceApi = SourceApi.OPENLIBRARY;
+        contentType = ContentType.BOOK;
+        externalId = String(item.id);
       } else if (itemType === "season") {
         // For seasons, use the explicit external_id, source_api, and content_type if available
         if ("external_id" in item && item.external_id) {

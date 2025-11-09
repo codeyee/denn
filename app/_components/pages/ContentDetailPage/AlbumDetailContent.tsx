@@ -20,7 +20,7 @@ function formatDuration(seconds: number | null): string {
 export default function AlbumDetailContent({ album }: AlbumDetailContentProps) {
   const releaseDate = formatReleaseDate(album.release_date);
   return (
-    <div className="container mx-auto px-4">
+    <div className="container mx-auto px-4 mt-8">
       <div className="mb-10">
         <h2 className="text-2xl font-bold text-white mb-6">About</h2>
 
@@ -73,7 +73,7 @@ export default function AlbumDetailContent({ album }: AlbumDetailContentProps) {
 
       {/* Tracks Section */}
       {album.tracks && album.tracks.length > 0 && (
-        <div className="container mx-auto px-4 mb-10">
+        <div className="container mx-auto px-4 mt-8">
           <h2 className="text-2xl font-bold text-white mb-6">Tracks</h2>
           <VerticalList spacing="md">
             {album.tracks.map((track) => (
