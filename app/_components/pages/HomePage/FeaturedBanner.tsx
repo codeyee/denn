@@ -27,9 +27,11 @@ const TYPE_ICON: Record<string, any> = {
 
 function getItemType(item: ContentItem): keyof typeof TYPE_ICON {
   if ("type" in item && typeof (item as any).type === "string") {
-    const t = (item as any).type as string;
+    const t = (item as any).type.toLowerCase();
     if (t === "movie") return "movie";
-    if (t === "tv") return "tv";
+    if (t === "tv" || t === "tv_show") return "tv";
+    if (t === "game") return "game";
+    if (t === "book") return "book";
     if (t === "album" || t === "music") return "music";
   }
   if ("number_of_seasons" in item || "number_of_episodes" in item) {
@@ -150,8 +152,14 @@ export default function FeaturedBanner({ items, autoRotateMs = 6000 }: FeaturedB
   };
 
   const getAuthors = (item: ContentItem): string => {
-    if ("authors" in item && item.authors) {
-      return formatAuthors(item.authors);
+    if ("authors" in item && item.authors && item.authors.length > 0) {
+      // Show only the first author
+      const firstAuthor = item.authors[0];
+      if (typeof firstAuthor === "string") {
+        return firstAuthor;
+      } else if (firstAuthor && "name" in firstAuthor) {
+        return firstAuthor.name;
+      }
     }
     return "";
   };

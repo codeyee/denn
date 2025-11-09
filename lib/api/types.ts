@@ -263,6 +263,7 @@ export interface GameImages {
 
 export interface MovieDetail {
   id: number;
+  type: "MOVIE";
   title: string;
   original_title: string;
   description: string | null;
@@ -279,6 +280,7 @@ export interface MovieDetail {
 
 export interface TVShowDetail {
   id: number;
+  type: "TV_SHOW";
   title: string;
   original_title: string;
   description: string | null;
@@ -307,6 +309,7 @@ export interface TVSeason {
 
 export interface TVSeasonDetail {
   id: number;
+  type: "SEASON";
   season_number: number;
   title: string;
   description: string | null;
@@ -367,12 +370,13 @@ export interface BulkSeasonItem {
 
 export interface AlbumDetail {
   id: string;
+  type: "ALBUM";
   title: string;
   authors: Author[] | null;
   image_url: string | null;
   release_date: string | null;
   total_tracks: number;
-  album_type: AlbumType;
+  album_type: string;
   external_url: string;
   tracks: Track[];
   duration_minutes: number | null;
@@ -407,8 +411,9 @@ export type BulkBooksResponse = BookDetail[];
 
 export interface GameDetail {
   id: number;
+  type: "GAME";
   title: string;
-  type: string | null;
+  game_type: string | null;
   release_date: string | null;
   description: string | null;
   image_url: string | null;
@@ -429,6 +434,7 @@ export interface GamesSuggestionsResponse {
 
 export interface BookDetail {
   id: string;
+  type: "BOOK";
   title: string;
   authors: Author[] | null;
   image_url: string | null;
@@ -519,9 +525,7 @@ export interface RestAuthDetail {
 export interface ListQueryParams {
   page?: number;
   page_size?: number;
-  render_items?: boolean;
-  max_items?: number;
-  render_source?: boolean;
+  items_size?: number;
   country?: string;
 }
 
@@ -533,7 +537,6 @@ export interface ContentItemQueryParams {
   source_api?: SourceApi;
   external_id?: string;
   ordering?: string;
-  render_source?: boolean;
   country?: string;
 }
 

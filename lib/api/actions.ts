@@ -1,4 +1,5 @@
 import { api } from "./api";
+import { getUserCountryCode } from "@/lib/utils/countryUtils";
 import type {
   EmailLogin,
   Register,
@@ -110,6 +111,10 @@ export const contentItemActions = {
         }
       });
     }
+    // Always add country parameter if not already provided
+    if (!params?.country) {
+      queryParams.append("country", getUserCountryCode());
+    }
     const query = queryParams.toString();
     return api.get<PaginatedContentItemList>(
       `/content/items/${query ? `?${query}` : ""}`,
@@ -117,10 +122,10 @@ export const contentItemActions = {
     );
   },
 
-  get: (id: number, renderSource = false, country?: string): Promise<ContentItem> => {
+  get: (id: number, country?: string): Promise<ContentItem> => {
     const params = new URLSearchParams();
-    if (renderSource) params.append("render_source", "true");
-    if (country) params.append("country", country);
+    const countryCode = country || getUserCountryCode();
+    params.append("country", countryCode);
     const query = params.toString();
     return api.get<ContentItem>(`/content/items/${id}/${query ? `?${query}` : ""}`, true);
   },
@@ -164,12 +169,15 @@ export const contentItemActions = {
   getOrCreate: (
     sourceApi: SourceApi,
     externalId: string,
-    contentType: ContentType
+    contentType: ContentType,
+    country?: string
   ): Promise<ContentItem> => {
     const params = new URLSearchParams();
     params.append("source_api", sourceApi);
     params.append("external_id", externalId);
     params.append("content_type", contentType);
+    const countryCode = country || getUserCountryCode();
+    params.append("country", countryCode);
 
     return api.post<ContentItem>(
       `/content/items/get_or_create/?${params}`,
@@ -189,6 +197,10 @@ export const listActions = {
         }
       });
     }
+    // Always add country parameter if not already provided
+    if (!params?.country) {
+      queryParams.append("country", getUserCountryCode());
+    }
     const query = queryParams.toString();
     return api.get<PaginatedUserListList>(
       `/content/lists/${query ? `?${query}` : ""}`,
@@ -196,10 +208,10 @@ export const listActions = {
     );
   },
 
-  get: (id: number, renderSource = false, country?: string): Promise<UserListDetail> => {
+  get: (id: number, country?: string): Promise<UserListDetail> => {
     const params = new URLSearchParams();
-    if (renderSource) params.append("render_source", "true");
-    if (country) params.append("country", country);
+    const countryCode = country || getUserCountryCode();
+    params.append("country", countryCode);
     const query = params.toString();
     return api.get<UserListDetail>(`/content/lists/${id}/${query ? `?${query}` : ""}`, true);
   },
@@ -230,12 +242,12 @@ export const listActions = {
 };
 
 export const listItemActions = {
-  list: (listId: number, renderSource = false, page?: number, pageSize?: number, country?: string): Promise<PaginatedListItemList> => {
+  list: (listId: number, page?: number, pageSize?: number, country?: string): Promise<PaginatedListItemList> => {
     const params = new URLSearchParams();
-    if (renderSource) params.append("render_source", "true");
     if (page) params.append("page", String(page));
     if (pageSize) params.append("page_size", String(pageSize));
-    if (country) params.append("country", country);
+    const countryCode = country || getUserCountryCode();
+    params.append("country", countryCode);
 
     const query = params.toString();
     return api.get<PaginatedListItemList>(
@@ -244,10 +256,10 @@ export const listItemActions = {
     );
   },
 
-  get: (listId: number, itemId: number, renderSource = false, country?: string): Promise<ListItem> => {
+  get: (listId: number, itemId: number, country?: string): Promise<ListItem> => {
     const params = new URLSearchParams();
-    if (renderSource) params.append("render_source", "true");
-    if (country) params.append("country", country);
+    const countryCode = country || getUserCountryCode();
+    params.append("country", countryCode);
     const query = params.toString();
     return api.get<ListItem>(
       `/content/lists/${listId}/items/${itemId}/${query ? `?${query}` : ""}`,
@@ -433,17 +445,20 @@ export const videoActions = {
   },
 
   getMovie: (movieId: number, country?: string): Promise<MovieDetail> => {
-    const params = country ? `?country=${country}` : "";
+    const countryCode = country || getUserCountryCode();
+    const params = `?country=${countryCode}`;
     return api.get<MovieDetail>(`/proxy/movies/${movieId}${params}`, true);
   },
 
   getTVShow: (tvId: number, country?: string): Promise<TVShowDetail> => {
-    const params = country ? `?country=${country}` : "";
+    const countryCode = country || getUserCountryCode();
+    const params = `?country=${countryCode}`;
     return api.get<TVShowDetail>(`/proxy/tv-shows/${tvId}${params}`, true);
   },
 
   getTVSeason: (tvId: number, seasonNumber: number, country?: string): Promise<TVSeasonDetail> => {
-    const params = country ? `?country=${country}` : "";
+    const countryCode = country || getUserCountryCode();
+    const params = `?country=${countryCode}`;
     return api.get<TVSeasonDetail>(
       `/proxy/tv-shows/${tvId}/season/${seasonNumber}${params}`,
       true
@@ -453,14 +468,16 @@ export const videoActions = {
   bulkGetMovies: (ids: number[], country?: string): Promise<BulkMoviesResponse> => {
     const params = new URLSearchParams();
     params.append("ids", ids.join(","));
-    if (country) params.append("country", country);
+    const countryCode = country || getUserCountryCode();
+    params.append("country", countryCode);
     return api.get<BulkMoviesResponse>(`/proxy/movies/bulk?${params}`, true);
   },
 
   bulkGetTVShows: (ids: number[], country?: string): Promise<BulkTVShowsResponse> => {
     const params = new URLSearchParams();
     params.append("ids", ids.join(","));
-    if (country) params.append("country", country);
+    const countryCode = country || getUserCountryCode();
+    params.append("country", countryCode);
     return api.get<BulkTVShowsResponse>(`/proxy/tv-shows/bulk?${params}`, true);
   },
 };
@@ -541,7 +558,8 @@ export const homepageActions = {
   getSuggestions: (limit = 10, country?: string): Promise<HomepageResponse> => {
     const params = new URLSearchParams();
     params.append("limit", String(limit));
-    if (country) params.append("country", country);
+    const countryCode = country || getUserCountryCode();
+    params.append("country", countryCode);
     return api.get<HomepageResponse>(
       `/proxy/homepage/?${params}`,
       true

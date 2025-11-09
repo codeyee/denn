@@ -64,7 +64,7 @@ export default function ContentDetailPage({
 
         // If we have an internal content ID, fetch directly with source data
         if (contentId) {
-          item = await contentItemActions.get(contentId, true);
+          item = await contentItemActions.get(contentId);
         }
         // Otherwise, use external identifiers to get or create
         else if (externalId && sourceApi && contentTypeStr) {
@@ -88,10 +88,7 @@ export default function ContentDetailPage({
             : item.source_data;
         }
 
-        // Use source_data if available (from render_source=true), otherwise fetch from proxy API
-        // This avoids redundant API calls when source_data is already populated
         if (sourceData) {
-          // Use the detailed data from source_data
           setDetailData(sourceData);
 
           // For seasons, extract TV show name from source_data if available
@@ -166,8 +163,8 @@ export default function ContentDetailPage({
       }
 
       // Prevent duplicate calls for the same contentItem and user
-      if (userRatingFetchRef.current.contentItemId === contentItem.id && 
-          userRatingFetchRef.current.userId === user.id) {
+      if (userRatingFetchRef.current.contentItemId === contentItem.id &&
+        userRatingFetchRef.current.userId === user.id) {
         return;
       }
 
@@ -181,8 +178,8 @@ export default function ContentDetailPage({
           page_size: 1,
         });
         // Verify we're still fetching the same contentItem/user combination
-        if (userRatingFetchRef.current.contentItemId === contentItem.id && 
-            userRatingFetchRef.current.userId === user.id) {
+        if (userRatingFetchRef.current.contentItemId === contentItem.id &&
+          userRatingFetchRef.current.userId === user.id) {
           if (ratingsResponse.results.length > 0) {
             setUserRating(ratingsResponse.results[0]);
           } else {
@@ -192,8 +189,8 @@ export default function ContentDetailPage({
       } catch (err) {
         console.warn("Could not fetch user rating:", err);
         // Only set to null if we're still fetching the same contentItem/user
-        if (userRatingFetchRef.current.contentItemId === contentItem.id && 
-            userRatingFetchRef.current.userId === user.id) {
+        if (userRatingFetchRef.current.contentItemId === contentItem.id &&
+          userRatingFetchRef.current.userId === user.id) {
           setUserRating(null);
         }
       }
@@ -311,18 +308,18 @@ export default function ContentDetailPage({
               <p className="text-gray-300 mb-4 leading-relaxed font-sans">{season.description}</p>
             )}
             <div className="mt-6 space-y-2">
-                {releaseDate && (
-                  <div>
-                    <span className="text-white/60 font-bold">Release Date:</span>
-                    <span className="text-white ml-2 font-sans">{releaseDate}</span>
-                  </div>
-                )}
-                {season.number_of_episodes !== undefined && (
-                  <div>
-                    <span className="text-white/60 font-bold">Episodes:</span>
-                    <span className="text-white ml-2 font-sans">{season.number_of_episodes}</span>
-                  </div>
-                )}
+              {releaseDate && (
+                <div>
+                  <span className="text-white/60 font-bold">Release Date:</span>
+                  <span className="text-white ml-2 font-sans">{releaseDate}</span>
+                </div>
+              )}
+              {season.number_of_episodes !== undefined && (
+                <div>
+                  <span className="text-white/60 font-bold">Episodes:</span>
+                  <span className="text-white ml-2 font-sans">{season.number_of_episodes}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -336,32 +333,32 @@ export default function ContentDetailPage({
           <div className="mb-10">
             <h2 className="text-2xl font-bold text-white mb-6">About</h2>
             <div className="mt-6 space-y-2">
-                {releaseDate && (
-                  <div>
-                    <span className="text-white/60 font-bold">Release Date:</span>
-                    <span className="text-white ml-2 font-sans">{releaseDate}</span>
-                  </div>
-                )}
-                {album.album_type && (
-                  <div>
-                    <span className="text-white/60 font-bold">Type:</span>
-                    <span className="text-white ml-2 capitalize font-sans">{album.album_type}</span>
-                  </div>
-                )}
-                {album.total_tracks !== undefined && (
-                  <div>
-                    <span className="text-white/60 font-bold">Tracks:</span>
-                    <span className="text-white ml-2 font-sans">{album.total_tracks}</span>
-                  </div>
-                )}
-                {album.duration_minutes !== undefined && album.duration_minutes !== null && (
-                  <div>
-                    <span className="text-white/60 font-bold">Duration:</span>
-                    <span className="text-white ml-2 font-sans">
-                      {Math.floor(album.duration_minutes)} minutes
-                    </span>
-                  </div>
-                )}
+              {releaseDate && (
+                <div>
+                  <span className="text-white/60 font-bold">Release Date:</span>
+                  <span className="text-white ml-2 font-sans">{releaseDate}</span>
+                </div>
+              )}
+              {album.album_type && (
+                <div>
+                  <span className="text-white/60 font-bold">Type:</span>
+                  <span className="text-white ml-2 capitalize font-sans">{album.album_type}</span>
+                </div>
+              )}
+              {album.total_tracks !== undefined && (
+                <div>
+                  <span className="text-white/60 font-bold">Tracks:</span>
+                  <span className="text-white ml-2 font-sans">{album.total_tracks}</span>
+                </div>
+              )}
+              {album.duration_minutes !== undefined && album.duration_minutes !== null && (
+                <div>
+                  <span className="text-white/60 font-bold">Duration:</span>
+                  <span className="text-white ml-2 font-sans">
+                    {Math.floor(album.duration_minutes)} minutes
+                  </span>
+                </div>
+              )}
             </div>
             {album.external_url && (
               <div className="mt-6">
@@ -394,24 +391,24 @@ export default function ContentDetailPage({
               <p className="text-gray-300 mb-4 leading-relaxed font-sans">{game.description}</p>
             )}
             <div className="mt-6 space-y-2">
-                {releaseDate && (
-                  <div>
-                    <span className="text-white/60 font-bold">Release Date:</span>
-                    <span className="text-white ml-2 font-sans">{releaseDate}</span>
-                  </div>
-                )}
-                {game.authors && game.authors.length > 0 && (
-                  <div>
-                    <span className="text-white/60 font-bold">Developers:</span>
-                    <span className="text-white ml-2 font-sans">{formatAuthors(game.authors)}</span>
-                  </div>
-                )}
-                {game.platforms && game.platforms.length > 0 && (
-                  <div>
-                    <span className="text-white/60 font-bold">Platforms:</span>
-                    <span className="text-white ml-2 font-sans">{formatPlatforms(game.platforms)}</span>
-                  </div>
-                )}
+              {releaseDate && (
+                <div>
+                  <span className="text-white/60 font-bold">Release Date:</span>
+                  <span className="text-white ml-2 font-sans">{releaseDate}</span>
+                </div>
+              )}
+              {game.authors && game.authors.length > 0 && (
+                <div>
+                  <span className="text-white/60 font-bold">Developers:</span>
+                  <span className="text-white ml-2 font-sans">{formatAuthors(game.authors)}</span>
+                </div>
+              )}
+              {game.platforms && game.platforms.length > 0 && (
+                <div>
+                  <span className="text-white/60 font-bold">Platforms:</span>
+                  <span className="text-white ml-2 font-sans">{formatPlatforms(game.platforms)}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -492,12 +489,12 @@ export default function ContentDetailPage({
 
     const galleryImages = game.images
       ? game.images
-          .filter(img => img.type === ImageType.GALLERY)
-          .map((img, index) => ({
-            src: img.image_url,
-            alt: `${game.title} gallery image ${index + 1}`,
-            type: img.type.toLowerCase(),
-          }))
+        .filter(img => img.type === ImageType.GALLERY)
+        .map((img, index) => ({
+          src: img.image_url,
+          alt: `${game.title} gallery image ${index + 1}`,
+          type: img.type.toLowerCase(),
+        }))
       : [];
 
     if (galleryImages.length === 0) return null;
@@ -602,7 +599,7 @@ export default function ContentDetailPage({
       }
 
       // Refresh content item to get updated stats
-      const updatedItem = await contentItemActions.get(contentItem.id, true);
+      const updatedItem = await contentItemActions.get(contentItem.id);
       setContentItem(updatedItem);
 
       // Trigger ratings section refresh
@@ -623,7 +620,7 @@ export default function ContentDetailPage({
       setUserRating(null);
 
       // Refresh content item to get updated stats
-      const updatedItem = await contentItemActions.get(contentItem.id, true);
+      const updatedItem = await contentItemActions.get(contentItem.id);
       setContentItem(updatedItem);
 
       // Trigger ratings section refresh
@@ -640,7 +637,7 @@ export default function ContentDetailPage({
     setRatingRefreshKey((prev) => prev + 1);
 
     // Refresh content item to get updated stats
-    contentItemActions.get(contentItem.id, true).then((updatedItem) => {
+    contentItemActions.get(contentItem.id).then((updatedItem) => {
       setContentItem(updatedItem);
     });
 

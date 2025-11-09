@@ -11,9 +11,7 @@ interface ListsState {
 
 interface ListsActions {
   fetchLists: (options?: {
-    render_items?: boolean;
-    max_items?: number;
-    render_source?: boolean;
+    items_size?: number;
   }) => Promise<void>;
   fetchListItems: (listId: number, pageSize: number) => Promise<void>;
   createList: (name: string, description?: string, listType?: ListType) => Promise<List>;
@@ -34,9 +32,7 @@ export const useListsStore = create<ListsStore>((set, get) => ({
   ...initialState,
 
   fetchLists: async (options?: {
-    render_items?: boolean;
     max_items?: number;
-    render_source?: boolean;
   }) => {
     const { lastFetched } = get();
     const fiveMinutesInMs = 5 * 60 * 1000;
