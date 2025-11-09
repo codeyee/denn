@@ -110,10 +110,11 @@ def _fetch_igdb_data(external_id: str) -> Optional[Dict[str, Any]]:
     mapper = IGDBMapper(client)
 
     try:
-        data, status_code = client.get_bulk_games([int(external_id)])
-        if status_code == 200 and isinstance(data, list) and len(data) > 0:
-            search_item = mapper.map_search_item(data[0])
-            return search_item.to_dict()
+        game_id = int(external_id)
+        data, status_code = client.get_game(game_id)
+        if status_code == 200 and data:
+            game = mapper.map_detail(data)
+            return game.to_dict()
     except Exception:
         pass
 
@@ -127,8 +128,8 @@ def _fetch_spotify_data(external_id: str) -> Optional[Dict[str, Any]]:
     try:
         data, status_code = client.get_album(external_id)
         if status_code == 200:
-            search_item = mapper.map_search_item(data)
-            return search_item.to_dict()
+            album = mapper.map_detail(data)
+            return album.to_dict()
     except Exception:
         pass
 
@@ -140,10 +141,10 @@ def _fetch_openlibrary_data(external_id: str) -> Optional[Dict[str, Any]]:
     mapper = OpenLibraryMapper(client)
 
     try:
-        data, status_code = client.search_by_key(external_id)
-        if status_code == 200 and 'docs' in data and len(data['docs']) > 0:
-            search_item = mapper.map_search_item(data['docs'][0])
-            return search_item.to_dict()
+        data, status_code = client.get_book_by_key(external_id)
+        if status_code == 200:
+            book = mapper.map_detail(data)
+            return book.to_dict()
     except Exception:
         pass
 
