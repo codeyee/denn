@@ -37,7 +37,6 @@ export default function SeasonDetailContent({ season, tvShowTitle }: SeasonDetai
             </div>
           </div>
         </div>
-      </div>
 
       {/* Episodes Section */}
       {season.episodes && season.episodes.length > 0 && (

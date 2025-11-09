@@ -1,4 +1,5 @@
 import { contentTypeEnum } from "./types"
+import { Author, Platform, Image, AlbumType } from "@/lib/api/types"
 
 export interface Movie {
   id: number
@@ -8,6 +9,9 @@ export interface Movie {
   description?: string
   image_url?: string
   release_date?: string
+  images?: Image[]
+  authors?: Author[]
+  platforms?: Record<string, Platform[]>
 }
 
 export interface TVShow {
@@ -18,6 +22,9 @@ export interface TVShow {
   description?: string
   image_url?: string
   release_date?: string
+  images?: Image[]
+  authors?: Author[]
+  platforms?: Record<string, Platform[]>
 }
 
 export interface Game {
@@ -27,30 +34,33 @@ export interface Game {
   release_date?: string
   description?: string
   image_url?: string
-  authors?: string[]
-  platforms?: string[]
+  authors?: Author[]
+  platforms?: Platform[]
+  images?: Image[]
 }
 
 export interface MusicAlbum {
   id: string
   type?: string
   title: string
-  authors?: string[]
+  authors?: Author[]
   image_url?: string
   release_date?: string
   total_tracks?: number
-  album_type?: string
+  album_type?: AlbumType
   external_url?: string
+  images?: Image[]
 }
 
 export interface Book {
   id: string
   title: string
-  authors?: string[]
+  authors?: Author[]
   image_url?: string
   release_date?: string
   pages?: number
   description?: string
+  images?: Image[]
 }
 
 export type ContentItem = Movie | TVShow | Game | MusicAlbum | Book

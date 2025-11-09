@@ -69,6 +69,41 @@ export enum ContentType {
   GAME = "GAME",
   ALBUM = "ALBUM",
   BOOK = "BOOK",
+  PERSON = "PERSON",
+}
+
+export enum AuthorType {
+  PERSON = "PERSON",
+  COMPANY = "COMPANY",
+}
+
+export enum ImageType {
+  POSTER = "POSTER",
+  GALLERY = "GALLERY",
+}
+
+export enum ImageSize {
+  STANDARD = "STANDARD",
+  ORIGINAL = "ORIGINAL",
+}
+
+export enum ProviderAction {
+  STREAM = "STREAM",
+  RENT = "RENT",
+  BUY = "BUY",
+}
+
+export enum GameType {
+  ORIGINAL = "ORIGINAL",
+  REMAKE = "REMAKE",
+  REMASTER = "REMASTER",
+  STANDALONE_EXPANSION = "STANDALONE_EXPANSION",
+}
+
+export enum AlbumType {
+  ALBUM = "ALBUM",
+  EP = "EP",
+  SINGLE = "SINGLE",
 }
 
 export interface ContentItem {
@@ -186,14 +221,33 @@ export interface RatingCreate {
   comment?: string | null;
 }
 
-export interface VideoSearchItem {
-  id: number;
-  type: "movie" | "tv";
+export interface Author {
+  name: string;
+  type: AuthorType;
+}
+
+export interface Image {
+  type: ImageType;
+  size: ImageSize;
+  image_url: string;
+}
+
+export interface Platform {
   title: string;
-  original_title: string;
-  description: string | null;
   image_url: string | null;
-  release_date: string | null;
+  actions?: ProviderAction[] | null;
+}
+
+// Unified search item for all content types
+export interface SearchItem {
+  id: number | string;
+  type: ContentType;
+  title: string;
+  original_title?: string | null;
+  description?: string | null;
+  image_url?: string | null;
+  release_date?: string | null;
+  authors?: Author[] | null;
 }
 
 export interface ImageVariant {
@@ -209,36 +263,35 @@ export interface GameImages {
 
 export interface MovieDetail {
   id: number;
-  imdb_id: string;
   title: string;
   original_title: string;
-  description: string;
-  image_url: string;
-  tagline: string;
-  release_date: string;
-  duration_minutes: number;
-  status: string;
-  images: {
-    poster: ImageVariant;
-    backdrop: ImageVariant;
-  };
+  description: string | null;
+  image_url: string | null;
+  tagline: string | null;
+  imdb_id: string | null;
+  release_date: string | null;
+  duration_minutes: number | null;
+  status: string | null;
+  authors: Author[] | null;
+  images: Image[];
+  platforms: Record<string, Platform[]> | null;
 }
 
 export interface TVShowDetail {
   id: number;
   title: string;
   original_title: string;
-  description: string;
-  image_url: string;
-  tagline: string;
-  release_date: string;
-  status: string;
-  number_of_seasons: number;
-  number_of_episodes: number;
-  images: {
-    poster: ImageVariant;
-    backdrop: ImageVariant;
-  };
+  description: string | null;
+  image_url: string | null;
+  tagline: string | null;
+  imdb_id: string | null;
+  release_date: string | null;
+  status: string | null;
+  number_of_seasons: number | null;
+  number_of_episodes: number | null;
+  authors: Author[] | null;
+  images: Image[];
+  platforms: Record<string, Platform[]> | null;
   seasons: TVSeason[];
 }
 
@@ -248,16 +301,21 @@ export interface TVSeason {
   title: string;
   description: string | null;
   release_date: string | null;
-  image_url: string;
+  image_url: string | null;
   number_of_episodes: number;
 }
 
-export interface TVSeasonDetail extends TVSeason {
-  tv_show_name: string;
-  images: {
-    poster: ImageVariant;
-    backdrop: ImageVariant;
-  };
+export interface TVSeasonDetail {
+  id: number;
+  season_number: number;
+  title: string;
+  description: string | null;
+  image_url: string | null;
+  tv_show_name: string | null;
+  release_date: string | null;
+  number_of_episodes: number;
+  images: Image[];
+  platforms: Record<string, Platform[]> | null;
   episodes: TVEpisode[];
 }
 
@@ -275,11 +333,11 @@ export interface TVEpisode {
 
 export interface VideoSearchResponse {
   metadata: PaginationMetadata;
-  results: VideoSearchItem[];
+  results: SearchItem[];
 }
 
 export interface VideoSuggestionsResponse {
-  results: VideoSearchItem[];
+  results: SearchItem[];
   count: number;
 }
 
@@ -307,115 +365,86 @@ export interface BulkSeasonItem {
   error: string | null;
 }
 
-export interface MusicSearchItem {
-  id: string;
-  type: "album" | "ep";
-  title: string;
-  authors: string[];
-  image_url: string | null;
-  release_date: string | null;
-  total_tracks: number;
-  album_type: string;
-  external_url: string;
-}
-
 export interface AlbumDetail {
   id: string;
   title: string;
-  authors: string[];
-  image_url: string;
-  release_date: string;
+  authors: Author[] | null;
+  image_url: string | null;
+  release_date: string | null;
   total_tracks: number;
-  duration_minutes: number;
-  album_type: string;
+  album_type: AlbumType;
   external_url: string;
   tracks: Track[];
+  duration_minutes: number | null;
+  images: Image[];
 }
 
 export interface Track {
   id: string;
   title: string;
-  authors: string[] | null;
+  authors: Author[] | null;
   track_number: number;
-  duration_seconds: number | null;
+  duration_seconds: number;
   external_url: string;
 }
 
 export interface MusicSearchResponse {
   metadata: PaginationMetadata;
-  results: MusicSearchItem[];
+  results: SearchItem[];
 }
 
 export interface MusicSuggestionsResponse {
-  results: MusicSearchItem[];
+  results: SearchItem[];
   count: number;
 }
 
-export interface BulkAlbumsResponse {
-  albums: (AlbumDetail | null)[];
-}
+// Bulk response types are now just arrays
+export type BulkMoviesResponse = MovieDetail[];
+export type BulkTVShowsResponse = TVShowDetail[];
+export type BulkAlbumsResponse = AlbumDetail[];
+export type BulkGamesResponse = GameDetail[];
+export type BulkBooksResponse = BookDetail[];
 
 export interface GameDetail {
-  id: number;
-  title: string;
-  type: string;
-  release_date: string | null;
-  description: string | null;
-  image_url: string;
-  authors: string[] | null;
-  platforms: string[] | null;
-  slug: string;
-  images: GameImages;
-}
-
-export interface GameSearchItem {
   id: number;
   title: string;
   type: string | null;
   release_date: string | null;
   description: string | null;
   image_url: string | null;
-  authors: string[] | null;
-  platforms: string[] | null;
+  authors: Author[] | null;
+  platforms: Platform[] | null;
+  images: Image[];
 }
 
 export interface GameSearchResponse {
   metadata: PaginationMetadata;
-  results: GameSearchItem[];
+  results: SearchItem[];
 }
 
 export interface GamesSuggestionsResponse {
-  results: GameSearchItem[];
+  results: SearchItem[];
   count: number;
 }
 
 export interface BookDetail {
   id: string;
   title: string;
-  authors: string[];
-  image_url: string;
-  release_date: string;
-  pages: number;
-  description: string | null;
-}
-
-export interface BookSearchItem {
-  id: string;
-  title: string;
-  authors: string[] | null;
+  authors: Author[] | null;
   image_url: string | null;
   release_date: string | null;
   pages: number | null;
   description: string | null;
+  images: Image[];
 }
 
 export interface BookSearchResponse {
   metadata: PaginationMetadata;
-  results: BookSearchItem[];
+  results: SearchItem[];
 }
 
 export interface BooksSuggestionsResponse {
-  results: BookSearchItem[];
+  results: SearchItem[];
   count: number;
 }
 
@@ -430,15 +459,17 @@ export interface HomepageResponse {
   movies: MovieDetail[];
   tv_shows: TVShowDetail[];
   games: GameDetail[];
-  music: AlbumDetail[];
+  albums: AlbumDetail[];
   books: BookDetail[];
 }
 
 export interface PaginationMetadata {
-  page: number;
-  page_results: number;
-  total_pages: number;
-  total_results: number;
+  count: number | null;
+  page_size: number;
+  current_page: number;
+  total_pages: number | null;
+  next: string | null;
+  previous: string | null;
 }
 
 export interface PaginatedContentItemList {
@@ -491,6 +522,7 @@ export interface ListQueryParams {
   render_items?: boolean;
   max_items?: number;
   render_source?: boolean;
+  country?: string;
 }
 
 export interface ContentItemQueryParams {
@@ -502,6 +534,7 @@ export interface ContentItemQueryParams {
   external_id?: string;
   ordering?: string;
   render_source?: boolean;
+  country?: string;
 }
 
 export interface RatingQueryParams {
@@ -525,24 +558,23 @@ export interface InvitationQueryParams {
 export interface VideoSearchParams {
   query: string;
   page?: number;
-  limit?: number;
+  page_size?: number;
 }
 
 export interface GameSearchParams {
   query: string;
   page?: number;
-  limit?: number;
+  page_size?: number;
 }
 
 export interface MusicSearchParams {
   query: string;
-  offset?: number;
-  limit?: number;
-  min_tracks?: number;
+  page?: number;
+  page_size?: number;
 }
 
 export interface BookSearchParams {
   query: string;
   page?: number;
-  limit?: number;
+  page_size?: number;
 }

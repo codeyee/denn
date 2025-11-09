@@ -102,11 +102,13 @@ export async function apiRequest<T = unknown>(
           if (!response.ok) {
             if (retriedIsJson) {
               const retryErrorData = await response.json().catch(() => ({}));
-              throw new Error(
-                retryErrorData.message || `Request failed: ${response.statusText}`
-              );
+              const errorMessage = retryErrorData.message
+                || retryErrorData.detail
+                || retryErrorData.error
+                || JSON.stringify(retryErrorData);
+              throw new Error(`Request failed (${response.status}): ${errorMessage}`);
             }
-            throw new Error(`Request failed: ${response.statusText}`);
+            throw new Error(`Request failed (${response.status}): ${response.statusText || 'No error details'}`);
           }
 
           if (response.status === 204) {
@@ -123,9 +125,13 @@ export async function apiRequest<T = unknown>(
 
       if (isJson) {
         const errorData = await response.json();
-        throw new Error(errorData.message || `Request failed: ${response.statusText}`);
+        const errorMessage = errorData.message
+          || errorData.detail
+          || errorData.error
+          || JSON.stringify(errorData);
+        throw new Error(`Request failed (${response.status}): ${errorMessage}`);
       }
-      throw new Error(`Request failed: ${response.statusText}`);
+      throw new Error(`Request failed (${response.status}): ${response.statusText || 'No error details'}`);
     }
 
     if (response.status === 204) {

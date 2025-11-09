@@ -5,8 +5,10 @@ import { useRef } from "react";
 import Card from "../Card";
 import { contentTypeEnum } from "@/types/types";
 import { ContentItem } from "@/types/contentTypes";
-import { SourceApi, ContentType } from "@/lib/api/types";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
+import { getCardImageUrl } from "@/lib/utils/imageUtils";
+import { formatAuthors } from "@/lib/utils/authorUtils";
+import { inferContentTypeEnum, inferNavigationParams } from "@/lib/utils/contentTypeUtils";
 
 interface ContentCardProps {
   item: ContentItem;
@@ -18,71 +20,11 @@ export default function ContentCard({ item, className }: ContentCardProps) {
   const middleClickHandled = useRef(false);
 
   const getNavigationUrl = (): string | null => {
-    // Navigate with external identifiers - the detail page will handle the API calls
-    // Determine source API and content type from the item
-    let sourceApi: SourceApi | undefined;
-    let contentType: ContentType | undefined;
-    let externalId: string | number | undefined;
-
-    // First check if there's an explicit type field (from search results)
-    if ("type" in item && typeof item.type === "string") {
-      const itemType = item.type.toLowerCase();
-      if (itemType === "movie") {
-        sourceApi = SourceApi.TMDB;
-        contentType = ContentType.MOVIE;
-        externalId = String(item.id);
-      } else if (itemType === "tv" || itemType === "tv_show") {
-        sourceApi = SourceApi.TMDB;
-        contentType = ContentType.TV_SHOW;
-        externalId = String(item.id);
-      } else if (itemType === "album" || itemType === "music" || itemType === "ep") {
-        sourceApi = SourceApi.SPOTIFY;
-        contentType = ContentType.ALBUM;
-        externalId = String(item.id);
-      } else if (itemType === "season") {
-        // For seasons, use the explicit external_id, source_api, and content_type if available
-        if ("external_id" in item && item.external_id) {
-          sourceApi = ("source_api" in item && item.source_api) as SourceApi || SourceApi.TMDB;
-          contentType = ("content_type" in item && item.content_type) as ContentType || ContentType.SEASON;
-          externalId = String(item.external_id);
-        } else {
-          sourceApi = SourceApi.TMDB;
-          contentType = ContentType.SEASON;
-          externalId = String(item.id);
-        }
-      }
-    }
-
-    // If not determined by type field, check properties
-    if (!sourceApi || !contentType) {
-      if ("platforms" in item) {
-        sourceApi = SourceApi.IGDB;
-        contentType = ContentType.GAME;
-        externalId = String(item.id);
-      } else if ("total_tracks" in item) {
-        sourceApi = SourceApi.SPOTIFY;
-        contentType = ContentType.ALBUM;
-        externalId = String(item.id);
-      } else if ("pages" in item) {
-        sourceApi = SourceApi.OPENLIBRARY;
-        contentType = ContentType.BOOK;
-        externalId = String(item.id);
-      } else if ("number_of_seasons" in item || "number_of_episodes" in item) {
-        sourceApi = SourceApi.TMDB;
-        contentType = ContentType.TV_SHOW;
-        externalId = String(item.id);
-      } else {
-        // Default to movie
-        sourceApi = SourceApi.TMDB;
-        contentType = ContentType.MOVIE;
-        externalId = String(item.id);
-      }
-    }
+    const { sourceApi, contentType, externalId } = inferNavigationParams(item as unknown as Record<string, unknown>);
 
     if (sourceApi && contentType && externalId) {
-      // Navigate immediately with query parameters - the detail page will handle API calls
       const params = new URLSearchParams({
-        external_id: String(externalId),
+        external_id: externalId,
         source_api: sourceApi,
         content_type: contentType,
       });
@@ -182,51 +124,12 @@ export default function ContentCard({ item, className }: ContentCardProps) {
     }
   };
   const getContentType = (): contentTypeEnum => {
-    if ("type" in item && typeof item.type === "string") {
-      if (item.type === "movie") return contentTypeEnum.movie;
-      if (item.type === "tv" || item.type === "tv_show") return contentTypeEnum.tv;
-      if (item.type === "album") return contentTypeEnum.music;
-      if (item.type === "season") return contentTypeEnum.tv; // Seasons use TV icon
-    }
-
-    if ("number_of_seasons" in item || "number_of_episodes" in item) {
-      return contentTypeEnum.tv;
-    }
-
-    if ("platforms" in item) return contentTypeEnum.game;
-    if ("pages" in item) return contentTypeEnum.book;
-    if ("total_tracks" in item) return contentTypeEnum.music;
-
-    return contentTypeEnum.movie;
+    return inferContentTypeEnum(item as unknown as Record<string, unknown>);
   };
 
   const getPosterImageUrl = (item: any): string | undefined => {
-    if (item?.image_url) {
-      return item.image_url;
-    }
-
-    if (item?.images) {
-      const images = item.images as any;
-
-      if (images.poster) {
-        if (images.poster.original) return images.poster.original;
-        if (images.poster.standard) return images.poster.standard;
-      }
-
-      if (Array.isArray(images.screenshots) && images.screenshots.length > 0) {
-        const first = images.screenshots[0];
-        if (first?.original) return first.original;
-        if (first?.standard) return first.standard;
-      }
-
-      if (Array.isArray(images.artworks) && images.artworks.length > 0) {
-        const first = images.artworks[0];
-        if (first?.original) return first.original;
-        if (first?.standard) return first.standard;
-      }
-    }
-
-    return undefined;
+    // Use the new image utility that handles both old and new image structures
+    return getCardImageUrl(item?.images, item?.image_url) || undefined;
   };
 
   const getFooterInfo = (): string => {
@@ -272,7 +175,23 @@ export default function ContentCard({ item, className }: ContentCardProps) {
 
   const getAuthors = (): string => {
     if ("authors" in item && item.authors && item.authors.length > 0) {
-      return item.authors.join(", ");
+      // For movies, TV shows, and games, show only the first author
+      const isMovie = ("type" in item && (item.type === "movie" || item.type === "MOVIE"));
+      const isTVShow = ("type" in item && (item.type === "tv" || item.type === "tv_show" || item.type === "TV_SHOW"));
+      const isGame = ("type" in item && (item.type === "game" || item.type === "GAME"));
+
+      if (isMovie || isTVShow || isGame) {
+        // Return only the first author
+        const firstAuthor = item.authors[0];
+        if (typeof firstAuthor === "string") {
+          return firstAuthor;
+        } else if (firstAuthor && "name" in firstAuthor) {
+          return firstAuthor.name;
+        }
+      }
+
+      // For other content types (albums, books), show all authors
+      return formatAuthors(item.authors);
     }
     return "";
   };

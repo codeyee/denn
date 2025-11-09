@@ -19,7 +19,7 @@ export default function ListCard({ list, className }: ListCardProps) {
 
   const imageUrls = useMemo(() => {
     return list.items
-      ?.map((item) => item.content_item.source_data.image_url)
+      ?.map((item) => item.content_item.source_data?.image_url)
       .filter((url): url is string => Boolean(url)) || [];
   }, [list.items]);
 

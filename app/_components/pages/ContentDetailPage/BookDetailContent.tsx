@@ -2,6 +2,7 @@
 
 import { BookDetail } from "@/lib/api/types";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
+import { formatAuthors } from "@/lib/utils/authorUtils";
 
 interface BookDetailContentProps {
   book: BookDetail;
@@ -22,7 +23,7 @@ export default function BookDetailContent({ book }: BookDetailContentProps) {
               {book.authors && book.authors.length > 0 && (
                 <div>
                   <span className="text-white/60 font-bold">Authors:</span>
-                  <span className="text-white ml-2 font-sans">{book.authors.join(", ")}</span>
+                  <span className="text-white ml-2 font-sans">{formatAuthors(book.authors)}</span>
                 </div>
               )}
               {releaseDate && (

@@ -8,12 +8,7 @@ import PlaceholderCard from "../../cards/PlaceholderCard";
 import Carousel from "../../common/Carousel";
 import Footer from "../../layout/Footer";
 import { videoActions, gameActions, musicActions, bookActions } from "@/lib/api/actions";
-import type {
-  VideoSearchItem,
-  GameSearchItem,
-  MusicSearchItem,
-  BookSearchItem,
-} from "@/lib/api/types";
+import type { SearchItem } from "@/lib/api/types";
 import type { Movie, TVShow, Game, MusicAlbum, Book } from "@/types/contentTypes";
 
 const ITEMS_PER_CAROUSEL = undefined;
@@ -127,71 +122,72 @@ export default function SearchPage() {
       setError(null);
 
       try {
-        const [videoResponse, gameResponse, musicResponse, bookResponse] =
+        const [movieResponse, tvResponse, gameResponse, musicResponse, bookResponse] =
           await Promise.all([
-            videoActions.search({ query: searchQueryForThisRequest, limit: 20 }),
-            gameActions.search({ query: searchQueryForThisRequest, limit: 20 }),
-            musicActions.search({ query: searchQueryForThisRequest, limit: 20 }),
-            bookActions.search({ query: searchQueryForThisRequest, limit: 20 }),
+            videoActions.searchMovies({ query: searchQueryForThisRequest, page_size: 20 }),
+            videoActions.searchTVShows({ query: searchQueryForThisRequest, page_size: 20 }),
+            gameActions.search({ query: searchQueryForThisRequest, page_size: 20 }),
+            musicActions.search({ query: searchQueryForThisRequest, page_size: 20 }),
+            bookActions.search({ query: searchQueryForThisRequest, page_size: 20 }),
           ]);
 
         if (currentSearchQueryRef.current !== searchQueryForThisRequest) {
           return;
         }
 
-        const movies: Movie[] = [];
-        const tvShows: TVShow[] = [];
+        const movies: Movie[] = movieResponse.results.map((item: SearchItem) => ({
+          id: item.id as number,
+          type: item.type,
+          title: item.title,
+          original_title: item.original_title || undefined,
+          description: item.description || undefined,
+          image_url: item.image_url || undefined,
+          release_date: item.release_date || undefined,
+          authors: item.authors || undefined,
+        })) as Movie[];
 
-        videoResponse.results.forEach((item: VideoSearchItem) => {
-          const contentItem = {
-            id: item.id,
-            type: item.type,
-            title: item.title,
-            original_title: item.original_title || undefined,
-            description: item.description || undefined,
-            image_url: item.image_url || undefined,
-            release_date: item.release_date || undefined,
-          };
+        const tvShows: TVShow[] = tvResponse.results.map((item: SearchItem) => ({
+          id: item.id as number,
+          type: item.type,
+          title: item.title,
+          original_title: item.original_title || undefined,
+          description: item.description || undefined,
+          image_url: item.image_url || undefined,
+          release_date: item.release_date || undefined,
+          authors: item.authors || undefined,
+        })) as TVShow[];
 
-          if (item.type === "movie") {
-            movies.push(contentItem as Movie);
-          } else if (item.type === "tv") {
-            tvShows.push(contentItem as TVShow);
-          }
-        });
-
-        const games: Game[] = gameResponse.results.map((item: GameSearchItem) => ({
-          id: item.id,
+        const games: Game[] = gameResponse.results.map((item: SearchItem) => ({
+          id: item.id as number,
           title: item.title,
           type: item.type || undefined,
+          original_title: item.original_title || undefined,
           release_date: item.release_date || undefined,
           description: item.description || undefined,
           image_url: item.image_url || undefined,
           authors: item.authors || undefined,
-          platforms: item.platforms || undefined,
         }));
 
         const music: MusicAlbum[] = musicResponse.results.map(
-          (item: MusicSearchItem) => ({
-            id: item.id,
+          (item: SearchItem) => ({
+            id: item.id as string,
             type: item.type || undefined,
             title: item.title,
+            original_title: item.original_title || undefined,
+            description: item.description || undefined,
             authors: item.authors || undefined,
             image_url: item.image_url || undefined,
             release_date: item.release_date || undefined,
-            total_tracks: item.total_tracks || undefined,
-            album_type: item.album_type || undefined,
-            external_url: item.external_url || undefined,
           })
         );
 
-        const books: Book[] = bookResponse.results.map((item: BookSearchItem) => ({
-          id: item.id,
+        const books: Book[] = bookResponse.results.map((item: SearchItem) => ({
+          id: item.id as string,
           title: item.title,
+          original_title: item.original_title || undefined,
           authors: item.authors || undefined,
           image_url: item.image_url || undefined,
           release_date: item.release_date || undefined,
-          pages: item.pages || undefined,
           description: item.description || undefined,
         }));
 
