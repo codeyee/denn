@@ -67,7 +67,7 @@ export const useContentStore = create<ContentStore>((set, get) => ({
           movies: (response.movies || []) as unknown as Movie[],
           tvShows: (response.tv_shows || []) as unknown as TVShow[],
           games: (response.games || []) as unknown as Game[],
-          music: (response.music || []) as unknown as MusicAlbum[],
+          music: (response.albums || []) as unknown as MusicAlbum[],
           books: (response.books || []) as unknown as Book[],
         },
         isLoading: false,

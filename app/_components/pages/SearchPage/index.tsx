@@ -127,38 +127,38 @@ export default function SearchPage() {
       setError(null);
 
       try {
-        const [videoResponse, gameResponse, musicResponse, bookResponse] =
+        const [movieResponse, tvResponse, gameResponse, musicResponse, bookResponse] =
           await Promise.all([
-            videoActions.search({ query: searchQueryForThisRequest, limit: 20 }),
-            gameActions.search({ query: searchQueryForThisRequest, limit: 20 }),
-            musicActions.search({ query: searchQueryForThisRequest, limit: 20 }),
-            bookActions.search({ query: searchQueryForThisRequest, limit: 20 }),
+            videoActions.searchMovies({ query: searchQueryForThisRequest, page_size: 20 }),
+            videoActions.searchTVShows({ query: searchQueryForThisRequest, page_size: 20 }),
+            gameActions.search({ query: searchQueryForThisRequest, page_size: 20 }),
+            musicActions.search({ query: searchQueryForThisRequest, page_size: 20 }),
+            bookActions.search({ query: searchQueryForThisRequest, page_size: 20 }),
           ]);
 
         if (currentSearchQueryRef.current !== searchQueryForThisRequest) {
           return;
         }
 
-        const movies: Movie[] = [];
-        const tvShows: TVShow[] = [];
+        const movies: Movie[] = movieResponse.results.map((item: VideoSearchItem) => ({
+          id: item.id,
+          type: item.type,
+          title: item.title,
+          original_title: item.original_title || undefined,
+          description: item.description || undefined,
+          image_url: item.image_url || undefined,
+          release_date: item.release_date || undefined,
+        })) as Movie[];
 
-        videoResponse.results.forEach((item: VideoSearchItem) => {
-          const contentItem = {
-            id: item.id,
-            type: item.type,
-            title: item.title,
-            original_title: item.original_title || undefined,
-            description: item.description || undefined,
-            image_url: item.image_url || undefined,
-            release_date: item.release_date || undefined,
-          };
-
-          if (item.type === "movie") {
-            movies.push(contentItem as Movie);
-          } else if (item.type === "tv") {
-            tvShows.push(contentItem as TVShow);
-          }
-        });
+        const tvShows: TVShow[] = tvResponse.results.map((item: VideoSearchItem) => ({
+          id: item.id,
+          type: item.type,
+          title: item.title,
+          original_title: item.original_title || undefined,
+          description: item.description || undefined,
+          image_url: item.image_url || undefined,
+          release_date: item.release_date || undefined,
+        })) as TVShow[];
 
         const games: Game[] = gameResponse.results.map((item: GameSearchItem) => ({
           id: item.id,

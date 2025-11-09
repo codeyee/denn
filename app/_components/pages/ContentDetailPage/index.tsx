@@ -67,13 +67,11 @@ export default function ContentDetailPage({
         }
         // Otherwise, use external identifiers to get or create
         else if (externalId && sourceApi && contentTypeStr) {
-          // Use get_or_create directly with render_source=true to get detailed data
-          // This avoids the need for a separate API call to fetch source_data
+          // Use get_or_create to ensure the content item exists in our database
           item = await contentItemActions.getOrCreate(
             sourceApi as SourceApi,
             externalId,
-            contentTypeStr as ContentType,
-            true // render_source=true to get detailed data in source_data
+            contentTypeStr as ContentType
           );
         } else {
           throw new Error("Missing required identifiers");

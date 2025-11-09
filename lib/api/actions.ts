@@ -29,27 +29,23 @@ import type {
   RatingCreate,
   RatingQueryParams,
   VideoSearchResponse,
-  VideoSuggestionsResponse,
   MovieDetail,
   TVShowDetail,
   TVSeasonDetail,
-  BulkMovieItem,
-  BulkTVShowItem,
-  BulkSeasonItem,
+  BulkMoviesResponse,
+  BulkTVShowsResponse,
   VideoSearchParams,
   MusicSearchResponse,
-  MusicSuggestionsResponse,
   AlbumDetail,
   BulkAlbumsResponse,
   MusicSearchParams,
   GameSearchResponse,
-  GamesSuggestionsResponse,
   GameDetail,
+  BulkGamesResponse,
   GameSearchParams,
   BookSearchResponse,
-  BooksSuggestionsResponse,
   BookDetail,
-  BulkBookItem,
+  BulkBooksResponse,
   BookSearchParams,
   HomepageResponse,
   ErrorResponse,
@@ -121,9 +117,12 @@ export const contentItemActions = {
     );
   },
 
-  get: (id: number, renderSource = false): Promise<ContentItem> => {
-    const params = renderSource ? "?render_source=true" : "";
-    return api.get<ContentItem>(`/content/items/${id}/${params}`, true);
+  get: (id: number, renderSource = false, country?: string): Promise<ContentItem> => {
+    const params = new URLSearchParams();
+    if (renderSource) params.append("render_source", "true");
+    if (country) params.append("country", country);
+    const query = params.toString();
+    return api.get<ContentItem>(`/content/items/${id}/${query ? `?${query}` : ""}`, true);
   },
 
   create: (item: Partial<ContentItem>): Promise<ContentItem> => {
@@ -165,17 +164,16 @@ export const contentItemActions = {
   getOrCreate: (
     sourceApi: SourceApi,
     externalId: string,
-    contentType: ContentType,
-    renderSource = false
+    contentType: ContentType
   ): Promise<ContentItem> => {
-    const params = renderSource ? "?render_source=true" : "";
+    const params = new URLSearchParams();
+    params.append("source_api", sourceApi);
+    params.append("external_id", externalId);
+    params.append("content_type", contentType);
+
     return api.post<ContentItem>(
-      `/content/items/get_or_create/${params}`,
-      {
-        source_api: sourceApi,
-        external_id: externalId,
-        content_type: contentType,
-      },
+      `/content/items/get_or_create/?${params}`,
+      {},
       true
     );
   },
@@ -198,9 +196,12 @@ export const listActions = {
     );
   },
 
-  get: (id: number, renderSource = false): Promise<UserListDetail> => {
-    const params = renderSource ? "?render_source=true" : "";
-    return api.get<UserListDetail>(`/content/lists/${id}/${params}`, true);
+  get: (id: number, renderSource = false, country?: string): Promise<UserListDetail> => {
+    const params = new URLSearchParams();
+    if (renderSource) params.append("render_source", "true");
+    if (country) params.append("country", country);
+    const query = params.toString();
+    return api.get<UserListDetail>(`/content/lists/${id}/${query ? `?${query}` : ""}`, true);
   },
 
   create: (list: {
@@ -229,11 +230,12 @@ export const listActions = {
 };
 
 export const listItemActions = {
-  list: (listId: number, renderSource = false, page?: number, pageSize?: number): Promise<PaginatedListItemList> => {
+  list: (listId: number, renderSource = false, page?: number, pageSize?: number, country?: string): Promise<PaginatedListItemList> => {
     const params = new URLSearchParams();
     if (renderSource) params.append("render_source", "true");
     if (page) params.append("page", String(page));
     if (pageSize) params.append("page_size", String(pageSize));
+    if (country) params.append("country", country);
 
     const query = params.toString();
     return api.get<PaginatedListItemList>(
@@ -242,10 +244,13 @@ export const listItemActions = {
     );
   },
 
-  get: (listId: number, itemId: number, renderSource = false): Promise<ListItem> => {
-    const params = renderSource ? "?render_source=true" : "";
+  get: (listId: number, itemId: number, renderSource = false, country?: string): Promise<ListItem> => {
+    const params = new URLSearchParams();
+    if (renderSource) params.append("render_source", "true");
+    if (country) params.append("country", country);
+    const query = params.toString();
     return api.get<ListItem>(
-      `/content/lists/${listId}/items/${itemId}/${params}`,
+      `/content/lists/${listId}/items/${itemId}/${query ? `?${query}` : ""}`,
       true
     );
   },
@@ -403,57 +408,60 @@ export const ratingActions = {
 };
 
 export const videoActions = {
-  search: (params: VideoSearchParams): Promise<VideoSearchResponse> => {
+  searchMovies: (params: VideoSearchParams): Promise<VideoSearchResponse> => {
     const queryParams = new URLSearchParams();
     queryParams.append("query", params.query);
     if (params.page) queryParams.append("page", String(params.page));
-    if (params.limit) queryParams.append("limit", String(params.limit));
+    if (params.page_size) queryParams.append("page_size", String(params.page_size));
 
     return api.get<VideoSearchResponse>(
-      `/proxy/video/search?${queryParams}`,
+      `/proxy/movies/search?${queryParams}`,
       true
     );
   },
 
-  getSuggestions: (limit = 20): Promise<VideoSuggestionsResponse> => {
-    return api.get<VideoSuggestionsResponse>(
-      `/proxy/video/suggestions/?limit=${limit}`,
+  searchTVShows: (params: VideoSearchParams): Promise<VideoSearchResponse> => {
+    const queryParams = new URLSearchParams();
+    queryParams.append("query", params.query);
+    if (params.page) queryParams.append("page", String(params.page));
+    if (params.page_size) queryParams.append("page_size", String(params.page_size));
+
+    return api.get<VideoSearchResponse>(
+      `/proxy/tv-shows/search?${queryParams}`,
       true
     );
   },
 
-  getMovie: (movieId: number): Promise<MovieDetail> => {
-    return api.get<MovieDetail>(`/proxy/video/movie/${movieId}`, true);
+  getMovie: (movieId: number, country?: string): Promise<MovieDetail> => {
+    const params = country ? `?country=${country}` : "";
+    return api.get<MovieDetail>(`/proxy/movies/${movieId}${params}`, true);
   },
 
-  getTVShow: (tvId: number): Promise<TVShowDetail> => {
-    return api.get<TVShowDetail>(`/proxy/video/tv/${tvId}`, true);
+  getTVShow: (tvId: number, country?: string): Promise<TVShowDetail> => {
+    const params = country ? `?country=${country}` : "";
+    return api.get<TVShowDetail>(`/proxy/tv-shows/${tvId}${params}`, true);
   },
 
-  getTVSeason: (tvId: number, seasonNumber: number): Promise<TVSeasonDetail> => {
+  getTVSeason: (tvId: number, seasonNumber: number, country?: string): Promise<TVSeasonDetail> => {
+    const params = country ? `?country=${country}` : "";
     return api.get<TVSeasonDetail>(
-      `/proxy/video/tv/${tvId}/season/${seasonNumber}`,
+      `/proxy/tv-shows/${tvId}/season/${seasonNumber}${params}`,
       true
     );
   },
 
-  bulkGetMovies: (ids: number[]): Promise<BulkMovieItem[]> => {
+  bulkGetMovies: (ids: number[], country?: string): Promise<BulkMoviesResponse> => {
     const params = new URLSearchParams();
     params.append("ids", ids.join(","));
-    return api.get<BulkMovieItem[]>(`/proxy/video/movies/bulk/?${params}`, true);
+    if (country) params.append("country", country);
+    return api.get<BulkMoviesResponse>(`/proxy/movies/bulk?${params}`, true);
   },
 
-  bulkGetTVShows: (ids: number[]): Promise<BulkTVShowItem[]> => {
+  bulkGetTVShows: (ids: number[], country?: string): Promise<BulkTVShowsResponse> => {
     const params = new URLSearchParams();
     params.append("ids", ids.join(","));
-    return api.get<BulkTVShowItem[]>(`/proxy/video/tv/bulk/?${params}`, true);
-  },
-
-  bulkGetSeasons: (seasons: Array<{ tvId: number; seasonNumber: number }>): Promise<BulkSeasonItem[]> => {
-    const params = new URLSearchParams();
-    const seasonStrings = seasons.map(s => `${s.tvId}:${s.seasonNumber}`);
-    params.append("seasons", seasonStrings.join(","));
-    return api.get<BulkSeasonItem[]>(`/proxy/video/seasons/bulk/?${params}`, true);
+    if (country) params.append("country", country);
+    return api.get<BulkTVShowsResponse>(`/proxy/tv-shows/bulk?${params}`, true);
   },
 };
 
@@ -461,31 +469,23 @@ export const musicActions = {
   search: (params: MusicSearchParams): Promise<MusicSearchResponse> => {
     const queryParams = new URLSearchParams();
     queryParams.append("query", params.query);
-    if (params.offset) queryParams.append("offset", String(params.offset));
-    if (params.limit) queryParams.append("limit", String(params.limit));
-    if (params.min_tracks) queryParams.append("min_tracks", String(params.min_tracks));
+    if (params.page) queryParams.append("page", String(params.page));
+    if (params.page_size) queryParams.append("page_size", String(params.page_size));
 
     return api.get<MusicSearchResponse>(
-      `/proxy/music/search?${queryParams}`,
-      true
-    );
-  },
-
-  getSuggestions: (limit = 20): Promise<MusicSuggestionsResponse> => {
-    return api.get<MusicSuggestionsResponse>(
-      `/proxy/music/suggestions/?limit=${limit}`,
+      `/proxy/albums/search?${queryParams}`,
       true
     );
   },
 
   getAlbum: (albumId: string): Promise<AlbumDetail> => {
-    return api.get<AlbumDetail>(`/proxy/music/${albumId}`, true);
+    return api.get<AlbumDetail>(`/proxy/albums/${albumId}`, true);
   },
 
   bulkGetAlbums: (ids: string[]): Promise<BulkAlbumsResponse> => {
     const params = new URLSearchParams();
     params.append("ids", ids.join(","));
-    return api.get<BulkAlbumsResponse>(`/proxy/music/bulk/?${params}`, true);
+    return api.get<BulkAlbumsResponse>(`/proxy/albums/bulk?${params}`, true);
   },
 };
 
@@ -494,25 +494,22 @@ export const gameActions = {
     const queryParams = new URLSearchParams();
     queryParams.append("query", params.query);
     if (params.page) queryParams.append("page", String(params.page));
-    if (params.limit) queryParams.append("limit", String(params.limit));
+    if (params.page_size) queryParams.append("page_size", String(params.page_size));
 
     return api.get<GameSearchResponse>(
-      `/proxy/game/search?${queryParams}`,
+      `/proxy/games/search?${queryParams}`,
       true
     );
   },
 
-  getSuggestions: (limit = 20): Promise<GamesSuggestionsResponse> => {
-    return api.get<GamesSuggestionsResponse>(
-      `/proxy/game/suggestions/?limit=${limit}`,
-      true
-    );
+  getGame: (gameId: number): Promise<GameDetail> => {
+    return api.get<GameDetail>(`/proxy/games/${gameId}`, true);
   },
 
-  bulkGetGames: (ids: number[]): Promise<GameDetail[]> => {
+  bulkGetGames: (ids: number[]): Promise<BulkGamesResponse> => {
     const params = new URLSearchParams();
     params.append("ids", ids.join(","));
-    return api.get<GameDetail[]>(`/proxy/game/bulk/?${params}`, true);
+    return api.get<BulkGamesResponse>(`/proxy/games/bulk?${params}`, true);
   },
 };
 
@@ -521,32 +518,32 @@ export const bookActions = {
     const queryParams = new URLSearchParams();
     queryParams.append("query", params.query);
     if (params.page) queryParams.append("page", String(params.page));
-    if (params.limit) queryParams.append("limit", String(params.limit));
+    if (params.page_size) queryParams.append("page_size", String(params.page_size));
 
     return api.get<BookSearchResponse>(
-      `/proxy/book/search?${queryParams}`,
+      `/proxy/books/search?${queryParams}`,
       true
     );
   },
 
-  getSuggestions: (limit = 20): Promise<BooksSuggestionsResponse> => {
-    return api.get<BooksSuggestionsResponse>(
-      `/proxy/book/suggestions/?limit=${limit}`,
-      true
-    );
+  getBook: (bookId: string): Promise<BookDetail> => {
+    return api.get<BookDetail>(`/proxy/books/${bookId}`, true);
   },
 
-  bulkGetBooks: (keys: string[]): Promise<BulkBookItem[]> => {
+  bulkGetBooks: (ids: string[]): Promise<BulkBooksResponse> => {
     const params = new URLSearchParams();
-    params.append("keys", keys.join(","));
-    return api.get<BulkBookItem[]>(`/proxy/book/bulk/?${params}`, true);
+    params.append("ids", ids.join(","));
+    return api.get<BulkBooksResponse>(`/proxy/books/bulk?${params}`, true);
   },
 };
 
 export const homepageActions = {
-  getSuggestions: (limit = 10): Promise<HomepageResponse> => {
+  getSuggestions: (limit = 10, country?: string): Promise<HomepageResponse> => {
+    const params = new URLSearchParams();
+    params.append("limit", String(limit));
+    if (country) params.append("country", country);
     return api.get<HomepageResponse>(
-      `/proxy/homepage/?limit=${limit}`,
+      `/proxy/homepage/?${params}`,
       true
     );
   },
