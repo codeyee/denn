@@ -5,7 +5,7 @@ from drf_spectacular.types import OpenApiTypes
 from proxy.serializers.tv_shows import TVShowDetailSerializer
 from proxy.serializers.common import ErrorResponseSerializer
 from proxy.mappers import TMDBMapper
-from proxy.exceptions import MissingParameterException, InvalidParameterException
+from core.exceptions import MissingParameterException, InvalidParameterException
 from ..base import TMDBBaseView
 from concurrent.futures import ThreadPoolExecutor
 

@@ -1,6 +1,6 @@
 import requests
 from typing import Dict, Any, Optional, Tuple
-from proxy.exceptions import (
+from core.exceptions import (
     TimeoutException,
     ConnectionErrorException,
     ResponseNotJsonException,

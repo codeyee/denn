@@ -2,7 +2,7 @@ from ..base import TMDBBaseView
 from proxy.serializers.tv_shows import TVSeasonDetailSerializer
 from proxy.serializers.common import ErrorResponseSerializer
 from proxy.mappers import TMDBMapper
-from proxy.exceptions import NotFoundException, InvalidParameterException
+from core.exceptions import NotFoundException, InvalidParameterException
 from proxy.constants import ContentType
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes

@@ -1,7 +1,7 @@
 from rest_framework.response import Response
 from rest_framework import status as http_status
 from proxy.views.base import OpenLibraryBaseView
-from proxy.exceptions import MissingParameterException, InvalidParameterException
+from core.exceptions import MissingParameterException, InvalidParameterException
 from proxy.serializers.books import BookSearchResponseSerializer
 from proxy.serializers.common import ErrorResponseSerializer
 from core.pagination import build_pagination_metadata

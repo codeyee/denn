@@ -4,7 +4,7 @@ from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 from proxy.serializers.books import BookDetailSerializer
 from proxy.serializers.common import ErrorResponseSerializer
-from proxy.exceptions import MissingParameterException, InvalidParameterException
+from core.exceptions import MissingParameterException, InvalidParameterException
 from ..base import OpenLibraryBaseView
 
 class BookBulkView(OpenLibraryBaseView):

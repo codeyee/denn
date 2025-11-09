@@ -4,7 +4,7 @@ from typing import Dict, Any, Tuple, Optional, Union, List
 from django.conf import settings
 from .base.cached import CachedAPIClient
 from concurrent.futures import ThreadPoolExecutor
-from proxy.exceptions import (
+from core.exceptions import (
     TimeoutException,
     ConnectionErrorException,
     ResponseNotJsonException,

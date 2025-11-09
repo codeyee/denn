@@ -11,7 +11,7 @@ from proxy.clients.openlibrary import OpenLibraryClient
 from proxy.clients.spotify import SpotifyClient
 from proxy.clients.tmdb import TMDBClient
 from proxy.constants import ContentType
-from proxy.exceptions import InvalidParameterException
+from core.exceptions import InvalidParameterException
 from proxy.mappers.igdb import IGDBMapper
 from proxy.mappers.openlibrary import OpenLibraryMapper
 from proxy.mappers.spotify import SpotifyMapper

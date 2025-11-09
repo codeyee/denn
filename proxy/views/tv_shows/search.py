@@ -1,5 +1,5 @@
 from proxy.views.base import TMDBBaseView
-from proxy.exceptions import MissingParameterException, InvalidParameterException
+from core.exceptions import MissingParameterException, InvalidParameterException
 from proxy.serializers.tv_shows import TVShowSearchResponseSerializer
 from proxy.serializers.common import ErrorResponseSerializer
 from proxy.mappers import TMDBMapper

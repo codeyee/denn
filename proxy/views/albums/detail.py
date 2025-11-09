@@ -1,7 +1,7 @@
 from rest_framework.response import Response
 from rest_framework import status as http_status
 from ..base import SpotifyBaseView
-from proxy.exceptions import NotFoundException
+from core.exceptions import NotFoundException
 from proxy.serializers.albums import AlbumDetailSerializer
 from proxy.serializers.common import ErrorResponseSerializer
 from drf_spectacular.utils import extend_schema, OpenApiParameter
