@@ -185,10 +185,13 @@ export default function ContentCard({ item, className }: ContentCardProps) {
   };
   const getContentType = (): contentTypeEnum => {
     if ("type" in item && typeof item.type === "string") {
-      if (item.type === "movie") return contentTypeEnum.movie;
-      if (item.type === "tv" || item.type === "tv_show") return contentTypeEnum.tv;
-      if (item.type === "album") return contentTypeEnum.music;
-      if (item.type === "season") return contentTypeEnum.tv; // Seasons use TV icon
+      const itemType = item.type.toLowerCase();
+      if (itemType === "movie") return contentTypeEnum.movie;
+      if (itemType === "tv" || itemType === "tv_show") return contentTypeEnum.tv;
+      if (itemType === "album" || itemType === "music") return contentTypeEnum.music;
+      if (itemType === "season") return contentTypeEnum.tv; // Seasons use TV icon
+      if (itemType === "game") return contentTypeEnum.game;
+      if (itemType === "book") return contentTypeEnum.book;
     }
 
     if ("number_of_seasons" in item || "number_of_episodes" in item) {
