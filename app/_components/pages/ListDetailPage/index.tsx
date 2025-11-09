@@ -166,20 +166,20 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
                   const contentTypeLabel = getContentTypeLabel(contentItem.content_type);
 
                   // Use the legacy image URL helper to handle both old and new image structures
-                  const imageUrl = sourceData.image_url;
+                  const imageUrl = sourceData?.image_url;
 
                   return (
                     <ExpandableListItem
                       key={item.id}
-                      title={sourceData.title || "Untitled"}
+                      title={sourceData?.title || "Untitled"}
                       description={
-                        sourceData.original_title &&
+                        sourceData?.original_title &&
                         sourceData.original_title !== sourceData.title
                           ? sourceData.original_title
                           : undefined
                       }
                       image={imageUrl}
-                      imageAlt={sourceData.title}
+                      imageAlt={sourceData?.title}
                       imageFullHeight={true}
                       leadingContent={
                         <div className="flex items-center gap-3">
@@ -209,7 +209,7 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
                       }
                       expandedContent={
                         <div className="space-y-3">
-                          {sourceData.description && (
+                          {sourceData?.description && (
                             <div>
                               <h4 className="text-white/80 font-semibold text-sm mb-1">
                                 Description
@@ -227,7 +227,7 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
                                 {contentTypeLabel}
                               </span>
                             </div>
-                            {sourceData.release_date && (
+                            {sourceData?.release_date && (
                               <div>
                                 <span className="text-white/60">
                                   Release Date:
@@ -237,7 +237,7 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
                                 </span>
                               </div>
                             )}
-                            {sourceData.duration_minutes && (
+                            {sourceData?.duration_minutes && (
                               <div>
                                 <span className="text-white/60">Duration:</span>
                                 <span className="text-white ml-2">
