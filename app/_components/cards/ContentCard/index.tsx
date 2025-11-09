@@ -249,7 +249,23 @@ export default function ContentCard({ item, className }: ContentCardProps) {
   };
 
   const getAuthors = (): string => {
-    if ("authors" in item && item.authors) {
+    if ("authors" in item && item.authors && item.authors.length > 0) {
+      // For movies, TV shows, and games, show only the first author
+      const isMovie = ("type" in item && (item.type === "movie" || item.type === "MOVIE"));
+      const isTVShow = ("type" in item && (item.type === "tv" || item.type === "tv_show" || item.type === "TV_SHOW"));
+      const isGame = ("platforms" in item) || ("type" in item && (item.type === "game" || item.type === "GAME"));
+
+      if (isMovie || isTVShow || isGame) {
+        // Return only the first author
+        const firstAuthor = item.authors[0];
+        if (typeof firstAuthor === "string") {
+          return firstAuthor;
+        } else if (firstAuthor && "name" in firstAuthor) {
+          return firstAuthor.name;
+        }
+      }
+
+      // For other content types (albums, books), show all authors
       return formatAuthors(item.authors);
     }
     return "";
