@@ -64,8 +64,11 @@ def _fetch_tmdb_movie_data(external_id: str, country_code: Optional[str] = None)
             movie_id_int, country_code)
         if status_code == http_status.HTTP_200_OK and movie:
             return movie.to_dict()
-    except Exception:
-        pass
+    except Exception as e:
+        # Log the exception for debugging
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error fetching TMDB movie data for {external_id}: {str(e)}", exc_info=True)
 
     return None
 
@@ -80,8 +83,11 @@ def _fetch_tmdb_tv_show_data(external_id: str, country_code: Optional[str] = Non
             tv_id_int, country_code)
         if status_code == http_status.HTTP_200_OK and tv_show:
             return tv_show.to_dict()
-    except Exception:
-        pass
+    except Exception as e:
+        # Log the exception for debugging
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error fetching TMDB TV show data for {external_id}: {str(e)}", exc_info=True)
 
     return None
 
@@ -99,8 +105,11 @@ def _fetch_tmdb_season_data(external_id: str, country_code: Optional[str] = None
                 tv_id, season_number, country_code)
             if status_code == http_status.HTTP_200_OK and season:
                 return season.to_dict()
-    except Exception:
-        pass
+    except Exception as e:
+        # Log the exception for debugging
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error fetching TMDB season data for {external_id}: {str(e)}", exc_info=True)
 
     return None
 
@@ -115,8 +124,11 @@ def _fetch_igdb_data(external_id: str) -> Optional[Dict[str, Any]]:
         if status_code == 200 and data:
             game = mapper.map_detail(data)
             return game.to_dict()
-    except Exception:
-        pass
+    except Exception as e:
+        # Log the exception for debugging
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error fetching IGDB data for {external_id}: {str(e)}", exc_info=True)
 
     return None
 
@@ -130,8 +142,11 @@ def _fetch_spotify_data(external_id: str) -> Optional[Dict[str, Any]]:
         if status_code == 200:
             album = mapper.map_detail(data)
             return album.to_dict()
-    except Exception:
-        pass
+    except Exception as e:
+        # Log the exception for debugging
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error fetching Spotify data for {external_id}: {str(e)}", exc_info=True)
 
     return None
 
@@ -141,11 +156,15 @@ def _fetch_openlibrary_data(external_id: str) -> Optional[Dict[str, Any]]:
     mapper = OpenLibraryMapper(client)
 
     try:
-        data, status_code = client.get_book_by_key(external_id)
-        if status_code == 200:
-            book = mapper.map_detail(data)
+        # Use search_by_key like the proxy views do - map_detail expects search result format
+        data, status_code = client.search_by_key(external_id)
+        if status_code == 200 and 'docs' in data and len(data['docs']) > 0:
+            book = mapper.map_detail(data['docs'][0])
             return book.to_dict()
-    except Exception:
-        pass
+    except Exception as e:
+        # Log the exception for debugging
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error fetching OpenLibrary data for {external_id}: {str(e)}", exc_info=True)
 
     return None
