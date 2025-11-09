@@ -198,9 +198,17 @@ export default function ContentCard({ item, className }: ContentCardProps) {
       return contentTypeEnum.tv;
     }
 
-    if ("platforms" in item) return contentTypeEnum.game;
+    // Check for game - platforms should be an array for games
+    // (movies/TV shows have platforms as Record<string, Platform[]>)
+    if ("platforms" in item && Array.isArray((item as any).platforms)) {
+      return contentTypeEnum.game;
+    }
+
     if ("pages" in item) return contentTypeEnum.book;
     if ("total_tracks" in item) return contentTypeEnum.music;
+
+    // Movies have duration_minutes
+    if ("duration_minutes" in item) return contentTypeEnum.movie;
 
     return contentTypeEnum.movie;
   };
