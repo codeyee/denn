@@ -132,11 +132,17 @@ class ContentItemViewSet(viewsets.ModelViewSet):
     @extend_schema(
         tags=['Content Items'],
         summary='Get or create content item',
-        description='Get a content item by source API and external ID, or create it if it doesn\'t exist. This is useful for ensuring a content item exists before creating ratings or list items.',
+        description='''
+        Get a content item by source API and external ID, or create it if it doesn't exist. This is useful for ensuring a content item exists before creating ratings or list items.
+
+        **Optional Query Parameters:**
+        - `country`: ISO 3166-1 alpha-2 country code (e.g., US, GB, FR) to filter providers by country (only applies when source_api=tmdb).
+        ''',
         parameters=[
             OpenApiParameter('source_api', OpenApiTypes.STR, OpenApiParameter.QUERY, required=True, description='Source API (tmdb, igdb, spotify, openlibrary)'),
             OpenApiParameter('external_id', OpenApiTypes.STR, OpenApiParameter.QUERY, required=True, description='External ID from the source API'),
             OpenApiParameter('content_type', OpenApiTypes.STR, OpenApiParameter.QUERY, required=True, description='Content type (MOVIE, TV_SHOW, SEASON, GAME, ALBUM, BOOK)'),
+            OpenApiParameter('country', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='ISO 3166-1 alpha-2 country code to filter providers by country (only applies when source_api=tmdb)'),
         ],
         request=None,
         responses={
