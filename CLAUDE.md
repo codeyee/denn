@@ -30,6 +30,9 @@ python manage.py migrate
 # Create migrations after model changes
 python manage.py makemigrations
 
+# Check migration status
+python manage.py showmigrations
+
 # Create superuser for admin access
 python manage.py createsuperuser
 
@@ -44,6 +47,9 @@ python manage.py runserver
 
 # Run on specific port
 python manage.py runserver 8080
+
+# Run on all interfaces (for Docker/Railway)
+python manage.py runserver 0.0.0.0:8000
 
 # Production server (using Gunicorn)
 gunicorn core.wsgi:application
@@ -62,8 +68,28 @@ python manage.py test proxy
 # Run specific test file
 python manage.py test authentication.tests.test_views
 
+# Run specific test class or method
+python manage.py test authentication.tests.test_views.TestClassName
+python manage.py test authentication.tests.test_views.TestClassName.test_method_name
+
 # Run with verbosity
 python manage.py test --verbosity=2
+
+# Run with warnings
+python manage.py test --debug-mode
+```
+
+### Cache Management
+```bash
+# Clear all cache (Django shell)
+python manage.py shell
+>>> from django.core.cache import cache
+>>> cache.clear()
+
+# Or using django-redis (if Redis is configured)
+python manage.py shell
+>>> from django_redis import get_redis_connection
+>>> get_redis_connection("default").flushall()
 ```
 
 ### API Documentation
@@ -97,48 +123,46 @@ python manage.py test --verbosity=2
 **`core/`** - Project settings and configuration
 - Modular settings files in `core/settings/`:
   - `base.py` - Django core settings
-  - `database.py` - Database configuration
+  - `db.py` - Database configuration
   - `jwt.py` - JWT authentication settings
   - `cors.py` - CORS configuration
-  - `cache.py` - Redis/cache configuration
-  - `proxy.py` - External API configurations
-  - `rest_framework.py` - DRF settings
+  - `cache.py` - Redis/cache configuration and cache key templates
+  - `drf.py` - DRF settings
   - `static.py` - Static file configuration
   - `docs.py` - API documentation settings
 
 ### Proxy API Client Architecture
 
-The proxy app uses a **layered client pattern**:
+The proxy app uses a **layered client pattern** with inheritance:
 
 ```
-BaseAPIClient (abstract)
-  ↓
-CachedAPIClient (adds caching + token management)
-  ↓
-TMDBClient, SpotifyClient, IGDBClient, OpenLibraryClient
+Client Hierarchy
+├── TMDBClient (proxy/clients/tmdb.py)
+├── SpotifyClient (proxy/clients/spotify.py)
+├── IGDBClient (proxy/clients/igdb.py)
+└── OpenLibraryClient (proxy/clients/openlibrary.py)
 ```
 
 **Key Concepts:**
 
-1. **BaseAPIClient** (`proxy/clients/base.py`)
-   - Generic HTTP methods with timeout/header management
-   - Error handling with ErrorCode dataclass
+1. **Client Layer** (`proxy/clients/`)
+   - Each client handles API-specific authentication and endpoints
+   - Uses `requests` library for HTTP operations
+   - Error handling with structured responses
+   - Operation-specific timeouts from settings
 
-2. **CachedAPIClient** (`proxy/clients/cached.py`)
+2. **Caching Strategy**
    - Redis caching layer with configurable timeouts
    - Automatic token management for OAuth2 APIs (IGDB, Spotify)
-   - Cache key generation from templates in `settings.CACHE_KEYS`
-
-3. **Specific Clients** (tmdb.py, spotify.py, igdb.py, openlibrary.py)
-   - Implement API-specific authentication
+   - Cache key templates defined in `settings.CACHE_KEYS`
    - Cache timeouts defined in `settings.CACHE_TIMEOUTS`
-   - Operation-specific timeouts from `settings.API_TIMEOUTS`
+   - Fallback to LocalMemCache when Redis unavailable
 
-**Authentication Patterns:**
-- **TMDB**: Bearer token authentication
-- **IGDB**: OAuth2 with Twitch (token auto-refresh)
-- **Spotify**: OAuth2 Client Credentials (token auto-refresh)
-- **OpenLibrary**: User-Agent string only
+3. **Authentication Patterns:**
+   - **TMDB**: Bearer token authentication (API key in headers)
+   - **IGDB**: OAuth2 with Twitch (token auto-refresh via client credentials)
+   - **Spotify**: OAuth2 Client Credentials (token auto-refresh)
+   - **OpenLibrary**: User-Agent string only (no authentication)
 
 ### Data Flow Pattern
 
@@ -150,7 +174,7 @@ Django View (proxy/views/)
 API Client (proxy/clients/)
   ↓
 [Check Cache] → Cache hit? Return cached data
-  ↓
+  ↓ (Cache miss)
 External API Request
   ↓
 Mapper (proxy/mappers/) - Transform response
@@ -164,43 +188,63 @@ Response to Frontend
 
 ### Mappers and Models
 
-**Mappers** (`proxy/mappers/`) transform external API responses to internal models:
+**Important:** Proxy models (`proxy/models/`) use Python `@dataclass`, NOT Django ORM models. This is intentional because proxy data is ephemeral (cached but not persisted to database).
+
+**Mappers** (`proxy/mappers/`) transform external API responses to internal dataclass models:
 - `TMDBMapper`: Converts TMDB responses, handles image URLs, normalizes providers
-- Similar mappers for other APIs
+- `SpotifyMapper`: Transforms Spotify album/track data
+- `IGDBMapper`: Processes game data from IGDB
+- `OpenLibraryMapper`: Converts book information
 
-**Models** (`proxy/models/`) use Python `@dataclass` (NOT Django models):
-- `Movie`, `TVShow`, `Season`, `Episode` (video.py)
-- `Game`, `Album`, `Book` (other model files)
-- `Provider`, `Images` (common structures)
+**Models** (`proxy/models/`) as dataclasses:
+- `Movie`, `TVShow`, `Season`, `Episode` (video models)
+- `Game` (gaming)
+- `Album`, `Track` (music)
+- `Book` (literature)
+- `Provider`, `Images`, `ExternalIds` (common structures)
 
-This design allows flexibility without database constraints since proxy data is ephemeral.
+This design provides flexibility without database constraints and allows rapid response format changes.
 
 ## Key Design Patterns
 
 ### 1. Settings Configuration
-- All external API configurations centralized in `core/settings/proxy.py`
-- Use `settings.PROXY_API["TMDB"]` to access TMDB config
-- Cache keys defined in `settings.CACHE_KEYS`
-- Timeouts defined in `settings.API_TIMEOUTS` and `settings.CACHE_TIMEOUTS`
+- All configurations centralized in modular `core/settings/` files
+- External API configs accessed via environment variables
+- Cache keys defined as templates in `settings.CACHE_KEYS`
+- Timeouts defined in `settings.CACHE_TIMEOUTS`
+- Settings imported via `core/settings/__init__.py`
 
 ### 2. Caching Strategy
+Cache timeouts (from `settings.CACHE_TIMEOUTS`):
 ```python
-# Cache timeouts (from settings.CACHE_TIMEOUTS)
-'api:searches': 6 hours
-'api:details': 24 hours
-'api:external_ids': 14 days
-'api:watch_providers': 14 days
-'homepage': 12 hours
+'homepage': 24 hours
+'api_tmdb_search': 24 hours
+'api_tmdb_details': 48 hours
+'api_tmdb_external_ids': 30 days
+'api_tmdb_watch_providers': 30 days
+'api_igdb_search': 24 hours
+'api_spotify_search': 24 hours
+'api_openlibrary_search': 24 hours
+```
+
+Cache key patterns use `.format()` for dynamic values:
+```python
+CACHE_KEYS = {
+    'api_tmdb_details': 'api:tmdb:details:{movie_id}',
+    'api_tmdb_search': 'api:tmdb:search:{query}:{page}',
+}
 ```
 
 ### 3. Error Handling
-- Use `ErrorCode` dataclass from `proxy/errors.py` for standardized errors
 - Custom exception handler in `core/exceptions.py`
+- Structured error responses from API clients
 - Never expose internal errors or API keys to clients
+- HTTP status codes follow REST conventions
 
 ### 4. Bulk Operations
-- Use `ThreadPoolExecutor` with 10 workers (see `TMDBClient.get_bulk_movies()`)
-- Operation-specific timeouts for bulk endpoints
+- Use `concurrent.futures.ThreadPoolExecutor` for parallel requests
+- See client implementations for bulk methods (e.g., `get_bulk_movies()`)
+- Operation-specific timeouts prevent hanging requests
 
 ### 5. Permissions
 Custom permission classes in `content/permissions.py`:
@@ -208,7 +252,7 @@ Custom permission classes in `content/permissions.py`:
 - `IsOwnerOfRating` - Verify rating ownership
 - `IsOwnerOfSharedList` - Verify list ownership
 
-## Database Models
+## Database Models (Content App)
 
 ### ContentItem
 - **Purpose**: Reference to external media (movies, games, albums, books)
@@ -237,41 +281,91 @@ Custom permission classes in `content/permissions.py`:
 
 1. **Create client** in `proxy/clients/new_api.py`:
 ```python
-from .cached import CachedAPIClient
+import os
+import requests
+from typing import Optional
 
-class NewAPIClient(CachedAPIClient):
+class NewAPIClient:
     def __init__(self):
-        super().__init__(
-            base_url=settings.PROXY_API["NEWAPI"]["BASE_URL"],
-            default_headers={"Authorization": f"Bearer {settings.PROXY_API['NEWAPI']['API_KEY']}"}
+        self.base_url = "https://api.newapi.com/v1"
+        self.api_key = os.getenv("NEWAPI_KEY")
+        self.session = requests.Session()
+        self.session.headers.update({
+            "Authorization": f"Bearer {self.api_key}"
+        })
+
+    def search(self, query: str) -> dict:
+        # Implement with caching pattern
+        pass
+```
+
+2. **Add environment variable** to `.env`:
+```env
+NEWAPI_KEY=your_api_key_here
+```
+
+3. **Create mapper** in `proxy/mappers/new_api.py`:
+```python
+from typing import Dict, Any
+from ..models.new_item import NewItem
+
+class NewAPIMapper:
+    @staticmethod
+    def map_item(data: Dict[str, Any]) -> NewItem:
+        return NewItem(
+            id=data.get('id'),
+            name=data.get('name'),
+            # ... map other fields
         )
 ```
 
-2. **Add configuration** in `core/settings/proxy.py`:
+4. **Create dataclass model** in `proxy/models/new_item.py`:
 ```python
-NEWAPI_CONFIG = {
-    "API_KEY": os.getenv("NEWAPI_KEY"),
-    "BASE_URL": "https://api.newapi.com/v1",
-}
+from dataclasses import dataclass
+from typing import Optional
 
-PROXY_API = {
-    # ... existing configs
-    "NEWAPI": NEWAPI_CONFIG,
-}
+@dataclass
+class NewItem:
+    id: str
+    name: str
+    description: Optional[str] = None
 ```
 
-3. **Create views** in `proxy/views/new_api/`:
+5. **Create serializer** in `proxy/serializers/new_item.py`:
 ```python
-class NewAPIView(APIView):
+from rest_framework import serializers
+
+class NewItemSerializer(serializers.Serializer):
+    id = serializers.CharField()
+    name = serializers.CharField()
+    description = serializers.CharField(required=False)
+```
+
+6. **Create views** in `proxy/views/new_api/`:
+```python
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from drf_spectacular.utils import extend_schema
+from ...clients.new_api import NewAPIClient
+
+class NewAPISearchView(APIView):
+    @extend_schema(
+        summary="Search NewAPI",
+        description="Search for items in NewAPI"
+    )
     def get(self, request):
         client = NewAPIClient()
         # ... implement logic
+        return Response(data)
 ```
 
-4. **Register URLs** in `proxy/urls/`:
+7. **Register URLs** in `proxy/urls/`:
 ```python
+from django.urls import path
+from .views.new_api import NewAPISearchView
+
 urlpatterns = [
-    path('newapi/', include('proxy.urls.new_api')),
+    path('newapi/search/', NewAPISearchView.as_view(), name='newapi-search'),
 ]
 ```
 
@@ -319,44 +413,57 @@ REDIS_URL=redis://localhost:6379/0
 
 When implementing or modifying external API integrations:
 
-1. **Always use caching** for expensive operations:
+1. **Use caching for all API calls**:
 ```python
-def get_movie(self, movie_id: str) -> dict:
-    cache_key = settings.CACHE_KEYS['api:movie:details'].format(movie_id=movie_id)
-    timeout = settings.CACHE_TIMEOUTS['api:details']
-    operation_timeout = settings.API_TIMEOUTS['tmdb']['details']
+from django.core.cache import cache
+from django.conf import settings
 
-    return self.cached_get(
-        f'/movie/{movie_id}',
-        cache_key=cache_key,
-        timeout=timeout,
-        operation_timeout=operation_timeout
-    )
+def get_movie(self, movie_id: str) -> dict:
+    # Build cache key from template
+    cache_key = settings.CACHE_KEYS['api_tmdb_details'].format(movie_id=movie_id)
+    timeout = settings.CACHE_TIMEOUTS['api_tmdb_details']
+
+    # Check cache first
+    cached_data = cache.get(cache_key)
+    if cached_data:
+        return cached_data
+
+    # Make API request
+    response = self.session.get(f'/movie/{movie_id}', timeout=10)
+    data = response.json()
+
+    # Cache result
+    cache.set(cache_key, data, timeout)
+    return data
 ```
 
-2. **Handle token refresh** for OAuth2 APIs (see `CachedAPIClient._ensure_valid_token()`)
+2. **Handle OAuth2 token refresh** for APIs requiring it (see IGDB/Spotify clients)
 
-3. **Use mappers** to transform external responses before serialization
+3. **Use mappers** to transform external responses before returning to views
 
-4. **Set operation-specific timeouts** in `settings.API_TIMEOUTS`
+4. **Set appropriate timeouts** to prevent hanging requests
 
 ### Working with Content Models
 
 When working with UserList and ListItem:
 
 1. **List membership**: Always check `IsMemberOfList` permission for shared lists
-2. **Ordering**: ListItem.list_order is auto-managed; use custom reorder actions if needed
-3. **Ratings**: Updates are automatically propagated to ContentItem.average_rating
+2. **Ordering**: ListItem.list_order is auto-managed; use custom actions for reordering
+3. **Ratings**: Updates automatically propagate to ContentItem.average_rating via signals
 
 ### Working with Serializers
 
 Use `@extend_schema` decorator for API documentation:
 ```python
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 
 @extend_schema(
     summary="Search for movies",
     description="Search TMDB for movies by query string",
+    parameters=[
+        OpenApiParameter(name='query', description='Search query', required=True, type=str),
+        OpenApiParameter(name='page', description='Page number', required=False, type=int),
+    ],
     responses={200: MovieSerializer(many=True)}
 )
 def get(self, request):
@@ -371,11 +478,4 @@ The project is production-ready for Railway platform:
 - Gunicorn configured for production
 - Whitenoise for static file serving
 - Health check endpoint at `/`
-
-## Current Branch: feature/proxy-v2
-
-Working on proxy refactoring with enhanced video endpoint responses including:
-- External IDs (IMDB, etc.)
-- Watch provider data with country filtering
-- Enhanced image handling
-- Provider normalization by country
+- Railway-specific environment detection in settings
