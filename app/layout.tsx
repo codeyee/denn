@@ -1,6 +1,6 @@
-import { Suspense } from "react";
 import { ThemeProvider } from "@/app/_components/common/ThemeProvider";
 import { StoreProvider } from "@/app/_providers/StoreProvider";
+import { CountryProvider } from "@/app/_components/common/CountryProvider";
 
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
@@ -53,7 +53,10 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <StoreProvider>{children}</StoreProvider>
+          <StoreProvider>
+            <CountryProvider />
+            {children}
+          </StoreProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -6,8 +6,8 @@ import { motion, AnimatePresence } from "motion/react";
 import { Film, Tv, Gamepad2, Book, Music } from "lucide-react";
 import { Button } from "@/app/_components/lib/button";
 import { ContentItem } from "@/types/contentTypes";
+import { SourceApi, ContentType } from "@/lib/api/types";
 import { getLegacyImageUrl } from "@/lib/utils/imageUtils";
-import { formatAuthors } from "@/lib/utils/authorUtils";
 import Noise from "@/app/_components/lib/Animations/Noise";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { inferNavigationParams, CONTENT_TYPE_ICONS } from "@/lib/utils/contentTypeUtils";
@@ -107,9 +107,9 @@ export default function FeaturedBanner({ items, autoRotateMs = 6000 }: FeaturedB
 
     if (sourceApi && contentType && externalId) {
       const params = new URLSearchParams({
-        external_id: externalId,
-        source_api: sourceApi,
-        content_type: contentType,
+        external_id: String(externalId),
+        source_api: String(sourceApi),
+        content_type: String(contentType),
       });
       router.push(`/content?${params.toString()}`);
     }

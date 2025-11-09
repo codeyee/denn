@@ -29,11 +29,11 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
         setError(null);
 
         // Fetch list details
-        const listData = await listActions.get(listId, true);
+        const listData = await listActions.get(listId);
         setList(listData as unknown as List);
 
         // Fetch list items with expanded content_item data
-        const itemsResponse = await listItemActions.list(listId, true);
+        const itemsResponse = await listItemActions.list(listId);
         setListItems(itemsResponse.results as unknown as ListItem[]);
       } catch (err) {
         console.error("Error fetching list:", err);

@@ -32,7 +32,7 @@ export const useListsStore = create<ListsStore>((set, get) => ({
   ...initialState,
 
   fetchLists: async (options?: {
-    max_items?: number;
+    items_size?: number;
   }) => {
     const { lastFetched } = get();
     const fiveMinutesInMs = 5 * 60 * 1000;
@@ -66,7 +66,7 @@ export const useListsStore = create<ListsStore>((set, get) => ({
 
   fetchListItems: async (listId: number, pageSize: number) => {
     try {
-      const response = await listItemActions.list(listId, true, undefined, pageSize || 10);
+      const response = await listItemActions.list(listId, undefined, pageSize || 10);
 
       const { lists } = get();
       const updatedLists = lists.map((list) =>
