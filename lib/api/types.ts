@@ -238,17 +238,16 @@ export interface Platform {
   actions?: ProviderAction[] | null;
 }
 
-export interface VideoSearchItem {
-  id: number;
+// Unified search item for all content types
+export interface SearchItem {
+  id: number | string;
   type: ContentType;
   title: string;
-  original_title: string | null;
-  description: string | null;
-  image_url: string | null;
-  release_date: string | null;
+  original_title?: string | null;
+  description?: string | null;
+  image_url?: string | null;
+  release_date?: string | null;
   authors?: Author[] | null;
-  images?: Image[];
-  platforms?: Record<string, Platform[]> | null;
 }
 
 export interface ImageVariant {
@@ -334,11 +333,11 @@ export interface TVEpisode {
 
 export interface VideoSearchResponse {
   metadata: PaginationMetadata;
-  results: VideoSearchItem[];
+  results: SearchItem[];
 }
 
 export interface VideoSuggestionsResponse {
-  results: VideoSearchItem[];
+  results: SearchItem[];
   count: number;
 }
 
@@ -366,21 +365,6 @@ export interface BulkSeasonItem {
   error: string | null;
 }
 
-export interface MusicSearchItem {
-  id: string;
-  type: ContentType;
-  title: string;
-  original_title?: string | null;
-  description?: string | null;
-  authors: Author[] | null;
-  image_url: string | null;
-  release_date: string | null;
-  total_tracks: number;
-  album_type: AlbumType;
-  external_url: string;
-  images?: Image[];
-}
-
 export interface AlbumDetail {
   id: string;
   title: string;
@@ -406,11 +390,11 @@ export interface Track {
 
 export interface MusicSearchResponse {
   metadata: PaginationMetadata;
-  results: MusicSearchItem[];
+  results: SearchItem[];
 }
 
 export interface MusicSuggestionsResponse {
-  results: MusicSearchItem[];
+  results: SearchItem[];
   count: number;
 }
 
@@ -433,26 +417,13 @@ export interface GameDetail {
   images: Image[];
 }
 
-export interface GameSearchItem {
-  id: number;
-  type: ContentType;
-  title: string;
-  original_title?: string | null;
-  release_date: string | null;
-  description: string | null;
-  image_url: string | null;
-  authors: Author[] | null;
-  platforms: Platform[] | null;
-  images?: Image[];
-}
-
 export interface GameSearchResponse {
   metadata: PaginationMetadata;
-  results: GameSearchItem[];
+  results: SearchItem[];
 }
 
 export interface GamesSuggestionsResponse {
-  results: GameSearchItem[];
+  results: SearchItem[];
   count: number;
 }
 
@@ -467,26 +438,13 @@ export interface BookDetail {
   images: Image[];
 }
 
-export interface BookSearchItem {
-  id: string;
-  type: ContentType;
-  title: string;
-  original_title?: string | null;
-  authors: Author[] | null;
-  image_url: string | null;
-  release_date: string | null;
-  pages: number | null;
-  description: string | null;
-  images?: Image[];
-}
-
 export interface BookSearchResponse {
   metadata: PaginationMetadata;
-  results: BookSearchItem[];
+  results: SearchItem[];
 }
 
 export interface BooksSuggestionsResponse {
-  results: BookSearchItem[];
+  results: SearchItem[];
   count: number;
 }
 
