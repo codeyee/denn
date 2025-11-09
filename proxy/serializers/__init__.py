@@ -1,85 +1,41 @@
 from .common import (
     PaginationMetadataSerializer,
     ErrorResponseSerializer,
+    ImageSerializer,
+    AuthorSerializer,
+    PlatformSerializer,
 )
-
-from .video import (
-    VideoSearchItemSerializer,
-    VideoSearchResponseSerializer,
-    MovieDetailSerializer,
-    TVSeasonSerializer,
-    TVShowDetailSerializer,
-    TVEpisodeSerializer,
-    TVSeasonDetailSerializer,
-    BulkMovieItemSerializer,
-    BulkTVShowItemSerializer,
-    BulkSeasonItemSerializer,
-)
-
-from .music import (
-    MusicSearchItemSerializer,
-    MusicSearchResponseSerializer,
-    TrackSerializer,
-    AlbumDetailSerializer,
-    BulkAlbumsResponseSerializer,
-)
-
-from .games import (
-    GameSearchItemSerializer,
-    GameSearchResponseSerializer,
-    GameDetailSerializer,
-    BulkGameItemSerializer,
-)
-
-from .books import (
-    BookSearchItemSerializer,
-    BookSearchResponseSerializer,
-    BookDetailSerializer,
-    BulkBookItemSerializer,
-)
-
-from .homepage import (
-    VideoSuggestionsResponseSerializer,
-    GamesSuggestionsResponseSerializer,
-    MusicSuggestionsResponseSerializer,
-    BooksSuggestionsResponseSerializer,
-    HomepageResponseSerializer,
-)
+from .movies import *
+from .tv_shows import *
+from .albums import *
+from .games import *
+from .books import *
+from .homepage import *
 
 __all__ = [
     'PaginationMetadataSerializer',
     'ErrorResponseSerializer',
-
-    'VideoSearchItemSerializer',
-    'VideoSearchResponseSerializer',
+    'ImageSerializer',
+    'AuthorSerializer',
+    'PlatformSerializer',
+    'MovieSearchItemSerializer',
+    'MovieSearchResponseSerializer',
     'MovieDetailSerializer',
-    'TVSeasonSerializer',
+    'TVShowSearchItemSerializer',
+    'TVShowSearchResponseSerializer',
     'TVShowDetailSerializer',
+    'TVSeasonSerializer',
     'TVEpisodeSerializer',
     'TVSeasonDetailSerializer',
-    'BulkMovieItemSerializer',
-    'BulkTVShowItemSerializer',
-    'BulkSeasonItemSerializer',
-
-    'MusicSearchItemSerializer',
-    'MusicSearchResponseSerializer',
-    'TrackSerializer',
+    'AlbumSearchItemSerializer',
+    'AlbumSearchResponseSerializer',
     'AlbumDetailSerializer',
-    'BulkAlbumsResponseSerializer',
-
+    'TrackSerializer',
     'GameSearchItemSerializer',
     'GameSearchResponseSerializer',
     'GameDetailSerializer',
-    'BulkGameItemSerializer',
-
     'BookSearchItemSerializer',
     'BookSearchResponseSerializer',
     'BookDetailSerializer',
-    'BulkBookItemSerializer',
-
-    'VideoSuggestionsResponseSerializer',
-    'GamesSuggestionsResponseSerializer',
-    'MusicSuggestionsResponseSerializer',
-    'BooksSuggestionsResponseSerializer',
     'HomepageResponseSerializer',
 ]

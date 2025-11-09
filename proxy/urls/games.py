@@ -1,22 +1,22 @@
 from django.urls import path
-from proxy.views.games import GamesSearchView, GamesBulkView, GamesSuggestionsView
+from proxy.views.games import GameSearchView, GameBulkView, GameDetailView
 
 app_name = 'games'
 
 urlpatterns = [
     path(
+        '<int:game_id>',
+        GameDetailView.as_view(),
+        name='detail'
+    ),
+    path(
         'search',
-        GamesSearchView.as_view(),
+        GameSearchView.as_view(),
         name='search'
     ),
     path(
-        'suggestions',
-        GamesSuggestionsView.as_view(),
-        name='suggestions'
-    ),
-    path(
         'bulk',
-        GamesBulkView.as_view(),
-        name='games-bulk'
+        GameBulkView.as_view(),
+        name='bulk'
     ),
 ]

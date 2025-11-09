@@ -1,12 +1,11 @@
 # Import all settings from modules
 from .base import *
-from .database import *
 from .static import *
-from .rest_framework import *
+from .db import *
+from .drf import *
 from .jwt import *
 from .cors import *
 from .docs import *
-from .proxy import *
 from .cache import *
 
 # Make settings available
@@ -47,9 +46,6 @@ __all__ = [
     "CSRF_TRUSTED_ORIGINS",
     # Documentation
     "SPECTACULAR_SETTINGS",
-    # Proxy APIs
-    "PROXY_API",
-    "API_TIMEOUTS",
     # Cache
     "CACHES",
     "CACHE_TIMEOUTS",

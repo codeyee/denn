@@ -1,26 +1,30 @@
+import os
 import requests
-from typing import Dict, Any, Tuple, Optional
+from typing import Dict, Any, Tuple, Optional, Union, List
 from django.conf import settings
-from .cached import CachedAPIClient
+from .base.cached import CachedAPIClient
 from concurrent.futures import ThreadPoolExecutor
-from proxy.errors import (
-    build_error_response,
-    get_http_status,
-    TIMEOUT,
-    CONNECTION_ERROR,
-    RESPONSE_NOT_JSON,
-    INTERNAL_SERVER_ERROR,
-    UNAUTHORIZED
+from proxy.exceptions import (
+    TimeoutException,
+    ConnectionErrorException,
+    ResponseNotJsonException,
+    InternalServerException,
+    UnauthorizedException
 )
 from time import time
 
+IGDB_CLIENT_ID = os.getenv("IGDB_CLIENT_ID")
+IGDB_CLIENT_SECRET = os.getenv("IGDB_CLIENT_SECRET")
+IGDB_AUTH_URL = "https://id.twitch.tv/oauth2/token"
+IGDB_BASE_URL = "https://api.igdb.com/v4"
+IGDB_TOKEN_BUFFER_TIME = 60 * 60
+
 class IGDBClient(CachedAPIClient):
     def __init__(self):
-        config = settings.PROXY_API['IGDB']
-        super().__init__(base_url=config['BASE_URL'], api_name='igdb')
+        super().__init__(base_url=IGDB_BASE_URL, api_name='igdb')
 
-        self.client_id = settings.API_KEYS_CACHE['igdb']['client_id'] or config['CLIENT_ID']
-        self.client_secret = settings.API_KEYS_CACHE['igdb']['client_secret'] or config['CLIENT_SECRET']
+        self.client_id = settings.API_KEYS_CACHE['igdb']['client_id'] or IGDB_CLIENT_ID
+        self.client_secret = settings.API_KEYS_CACHE['igdb']['client_secret'] or IGDB_CLIENT_SECRET
 
         settings.API_KEYS_CACHE['igdb']['client_id'] = self.client_id
         settings.API_KEYS_CACHE['igdb']['client_secret'] = self.client_secret
@@ -32,14 +36,12 @@ class IGDBClient(CachedAPIClient):
         access_token = settings.API_KEYS_CACHE['igdb']['access_token']
         token_expires_at = settings.API_KEYS_CACHE['igdb']['token_expires_at']
 
-        if not access_token or not token_expires_at: 
+        if not access_token or not token_expires_at:
             return False
 
-        buffer_time = settings.PROXY_API['IGDB']['TOKEN_BUFFER_TIME']
-        return time() < (token_expires_at - buffer_time)
+        return time() < (token_expires_at - IGDB_TOKEN_BUFFER_TIME)
 
     def _fetch_new_token(self) -> str:
-        url = settings.PROXY_API['IGDB']['AUTH_URL']
         params = {
             'client_id': self.client_id,
             'client_secret': self.client_secret,
@@ -48,7 +50,7 @@ class IGDBClient(CachedAPIClient):
 
         try:
             timeout = self._get_timeout('auth')
-            response = requests.post(url, params=params, timeout=timeout)
+            response = requests.post(IGDB_AUTH_URL, params=params, timeout=timeout)
             response.raise_for_status()
             data = response.json()
 
@@ -79,7 +81,7 @@ class IGDBClient(CachedAPIClient):
         body: str,
         params: Optional[Dict[str, Any]] = None,
         operation: str = 'search'
-    ) -> Tuple[Dict[str, Any], int]:
+    ) -> Tuple[Union[Dict[str, Any], List[Dict[str, Any]]], int]:
         url = self.build_url(endpoint)
         headers = self.get_headers()
 
@@ -94,29 +96,26 @@ class IGDBClient(CachedAPIClient):
             )
 
             if response.status_code == 401:
-                return build_error_response(UNAUTHORIZED), get_http_status(UNAUTHORIZED)
+                raise UnauthorizedException()
 
             try:
                 response_data = response.json()
             except ValueError:
-                response_data = build_error_response(
-                    RESPONSE_NOT_JSON,
-                    custom_message=f'Non-JSON response: {response.text}'
-                )
+                raise ResponseNotJsonException(f'Non-JSON response: {response.text}')
 
             return response_data, response.status_code
 
         except requests.exceptions.Timeout:
-            return build_error_response(TIMEOUT), get_http_status(TIMEOUT)
+            raise TimeoutException()
 
         except requests.exceptions.ConnectionError:
-            return build_error_response(CONNECTION_ERROR), get_http_status(CONNECTION_ERROR)
+            raise ConnectionErrorException()
+
+        except (TimeoutException, ConnectionErrorException, ResponseNotJsonException, UnauthorizedException):
+            raise
 
         except Exception as e:
-            return (
-                build_error_response(INTERNAL_SERVER_ERROR, custom_message=str(e)),
-                get_http_status(INTERNAL_SERVER_ERROR)
-            )
+            raise InternalServerException(custom_message=str(e))
 
     def cached_igdb_post(
         self,
@@ -126,7 +125,7 @@ class IGDBClient(CachedAPIClient):
         params: Optional[Dict[str, Any]] = None,
         operation: str = 'search',
         **cache_kwargs
-    ) -> Tuple[Dict[str, Any], int]:
+    ) -> Tuple[Union[Dict[str, Any], List[Dict[str, Any]]], int]:
         cache_key = self._generate_cache_key(cache_type, **cache_kwargs)
         cached_response = self._get_cached_response(cache_key)
         if cached_response is not None:
@@ -162,23 +161,21 @@ class IGDBClient(CachedAPIClient):
             'artworks.image_id',
             'first_release_date',
             'platforms.name',
+            'platforms.platform_logo.image_id',
             'game_type',
             'involved_companies.company.name',
-            'involved_companies.developer',
-            'slug'
+            'involved_companies.developer'
         ])
 
     def get_included_game_types(self) -> str:
-        # 0 = Main game
-        # 8 = Remake
-        return ','.join(['0', '8'])
+        return ','.join(['0', '4', '8', '9'])
 
-    def search_games(self, query: str, limit: int = 50, offset: int = 0) -> Tuple[Dict[str, Any], int]:
+    def search_games(self, query: str, limit: int = 50, offset: int = 0) -> Tuple[List[Dict[str, Any]], int]:
         endpoint = 'games'
         fields = self.get_fields()
         included_game_types = self.get_included_game_types()
         body = f'search "{query}"; fields {fields}; where game_type = ({included_game_types}); limit {limit}; offset {offset};'
-        return self.cached_igdb_post(
+        data, status_code = self.cached_igdb_post(
             endpoint=endpoint,
             cache_type='api_igdb_search',
             body=body,
@@ -187,18 +184,38 @@ class IGDBClient(CachedAPIClient):
             limit=limit,
             offset=offset
         )
+        if isinstance(data, dict):
+            data = [data]
+        return data, status_code
 
-    def get_bulk_games(self, game_ids: list[int]) -> Tuple[Dict[str, Any], int]:
+    def get_game(self, game_id: int) -> Tuple[Optional[Dict[str, Any]], int]:
+        endpoint = 'games'
+        fields = self.get_fields()
+        body = f'fields {fields}; where id = {game_id};'
+        data, status_code = self.cached_igdb_post(
+            endpoint=endpoint,
+            cache_type='api_igdb_details',
+            body=body,
+            operation='details',
+            game_id=game_id
+        )
+        if isinstance(data, list) and data:
+            return data[0], status_code
+        elif isinstance(data, dict):
+            return data, status_code
+        return None, status_code
+
+    def get_bulk_games(self, game_ids: list[int]) -> Tuple[List[Dict[str, Any]], int]:
         if not game_ids: return [], 200
 
-        # Check cache first
         cache_key = self._generate_cache_key('api_igdb_bulk', game_ids=game_ids)
         cached_response = self._get_cached_response(cache_key)
         if cached_response is not None:
-            return cached_response
+            data, status_code = cached_response
+            if isinstance(data, dict):
+                data = [data]
+            return data, status_code
 
-        # IGDB has a limit on the number of IDs in a single query
-        # Split into batches of 50 for parallel processing
         batch_size = 50
         if len(game_ids) <= batch_size:
             endpoint = 'games'
@@ -211,6 +228,8 @@ class IGDBClient(CachedAPIClient):
                 cache_timeout = self._get_cache_timeout('api_igdb_details')
                 self._cache_response(cache_key, data, status_code, cache_timeout)
 
+            if isinstance(data, dict):
+                data = [data]
             return data, status_code
 
         def fetch_games_batch(batch_ids: list[int]) -> Tuple[list[Dict[str, Any]], int]:
@@ -233,12 +252,12 @@ class IGDBClient(CachedAPIClient):
 
         return all_games, 200
 
-    def get_popular_games(self, limit: int = 50, offset: int = 0) -> Tuple[Dict[str, Any], int]:
+    def get_popular_games(self, limit: int = 50, offset: int = 0) -> Tuple[List[Dict[str, Any]], int]:
         endpoint = 'games'
         fields = self.get_fields()
         included_game_types = self.get_included_game_types()
         body = f'fields {fields}; where game_type = ({included_game_types}) & aggregated_rating != null; sort aggregated_rating desc; limit {limit}; offset {offset};'
-        return self.cached_igdb_post(
+        data, status_code = self.cached_igdb_post(
             endpoint=endpoint,
             cache_type='api_igdb_popular',
             body=body,
@@ -246,3 +265,6 @@ class IGDBClient(CachedAPIClient):
             limit=limit,
             offset=offset
         )
+        if isinstance(data, dict):
+            data = [data]
+        return data, status_code

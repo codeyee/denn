@@ -11,7 +11,7 @@ from content.permissions import IsOwnerOrReadOnly
 
 @extend_schema_view(
     list=extend_schema(
-        tags=['Lists'],
+        tags=['Lists Management'],
         summary='List all user lists',
         description='''
         Get all lists where the user is the owner or a member.
@@ -31,7 +31,7 @@ from content.permissions import IsOwnerOrReadOnly
         responses={200: UserListSerializer(many=True)}
     ),
     retrieve=extend_schema(
-        tags=['Lists'],
+        tags=['Lists Management'],
         summary='Get list details',
         description='''
         Get detailed information about a specific list including all items and members.
@@ -51,7 +51,7 @@ from content.permissions import IsOwnerOrReadOnly
         }
     ),
     create=extend_schema(
-        tags=['Lists'],
+        tags=['Lists Management'],
         summary='Create a new list',
         description='Create a new personal or shared list. The creator becomes the owner.',
         request=UserListSerializer,
@@ -78,7 +78,7 @@ from content.permissions import IsOwnerOrReadOnly
         ]
     ),
     update=extend_schema(
-        tags=['Lists'],
+        tags=['Lists Management'],
         summary='Update a list',
         description='Update list details. Only the owner can update the list.',
         request=UserListSerializer,
@@ -88,14 +88,14 @@ from content.permissions import IsOwnerOrReadOnly
         }
     ),
     partial_update=extend_schema(
-        tags=['Lists'],
+        tags=['Lists Management'],
         summary='Partially update a list',
         description='Update specific fields of a list. Only the owner can update the list.',
         request=UserListSerializer,
         responses={200: UserListSerializer}
     ),
     destroy=extend_schema(
-        tags=['Lists'],
+        tags=['Lists Management'],
         summary='Delete a list',
         description='Delete a list permanently. Only the owner can delete the list.',
         responses={
@@ -176,7 +176,7 @@ class UserListViewSet(viewsets.ModelViewSet):
         serializer.save(owner=self.request.user)
 
     @extend_schema(
-        tags=['Lists'],
+        tags=['Lists Management'],
         summary='Get list statistics',
         description='Get statistics about a list including item counts by status and content type.',
         responses={

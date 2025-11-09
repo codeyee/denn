@@ -1,20 +1,25 @@
+import os
 from typing import Dict, Any, Tuple, Optional
 from django.conf import settings
 import requests
 import base64
 from time import time
-from .cached import CachedAPIClient
-from proxy.errors import build_error_response, get_http_status, UNAUTHORIZED
+from .base.cached import CachedAPIClient
 from concurrent.futures import ThreadPoolExecutor
+
+SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID")
+SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")
+SPOTIFY_AUTH_URL = "https://accounts.spotify.com/api/token"
+SPOTIFY_BASE_URL = "https://api.spotify.com/v1"
+SPOTIFY_TOKEN_BUFFER_TIME = 60 * 60
 
 class SpotifyClient(CachedAPIClient):
     def __init__(self):
-        config = settings.PROXY_API['SPOTIFY']
-        super().__init__(base_url=config['BASE_URL'], api_name='spotify')
+        super().__init__(base_url=SPOTIFY_BASE_URL, api_name='spotify')
 
-        self.client_id = settings.API_KEYS_CACHE['spotify']['client_id'] or config['CLIENT_ID']
-        self.client_secret = settings.API_KEYS_CACHE['spotify']['client_secret'] or config['CLIENT_SECRET']
-        self.auth_url = config['AUTH_URL']
+        self.client_id = settings.API_KEYS_CACHE['spotify']['client_id'] or SPOTIFY_CLIENT_ID
+        self.client_secret = settings.API_KEYS_CACHE['spotify']['client_secret'] or SPOTIFY_CLIENT_SECRET
+        self.auth_url = SPOTIFY_AUTH_URL
 
         settings.API_KEYS_CACHE['spotify']['client_id'] = self.client_id
         settings.API_KEYS_CACHE['spotify']['client_secret'] = self.client_secret
@@ -26,11 +31,10 @@ class SpotifyClient(CachedAPIClient):
         access_token = settings.API_KEYS_CACHE['spotify']['access_token']
         token_expires_at = settings.API_KEYS_CACHE['spotify']['token_expires_at']
 
-        if not access_token or not token_expires_at: 
+        if not access_token or not token_expires_at:
             return False
 
-        buffer_time = settings.PROXY_API['SPOTIFY']['TOKEN_BUFFER_TIME']
-        return time() < (token_expires_at - buffer_time)
+        return time() < (token_expires_at - SPOTIFY_TOKEN_BUFFER_TIME)
 
     def _fetch_new_token(self) -> str:
         credentials = f"{self.client_id}:{self.client_secret}"
@@ -103,8 +107,6 @@ class SpotifyClient(CachedAPIClient):
         if cached_response is not None:
             return cached_response
 
-        # Spotify has a limit of 20 albums per request
-        # Split into batches of 20 for parallel processing
         batch_size = 20
         if len(album_ids) <= batch_size:
             endpoint = 'albums'

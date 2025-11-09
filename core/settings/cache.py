@@ -49,31 +49,40 @@ API_KEYS_CACHE = {
 # Cache settings for different content types
 CACHE_TIMEOUTS = {
     # General cache timeouts
-    'homepage': 3600 * 12,
+    'homepage': 3600 * 24,
 
     # API-specific cache timeouts
-    'api_igdb_search': 3600 * 6,
-    'api_igdb_details': 3600 * 24,
-    'api_igdb_popular': 3600 * 24,
+    # IGDB (Games)
+    'api_igdb_search': 3600 * 24,
+    'api_igdb_details': 3600 * 48,
+    'api_igdb_popular': 3600 * 36,
 
-    'api_spotify_search': 3600 * 6,
-    'api_spotify_details': 3600 * 24,
-    'api_spotify_new_releases': 3600 * 24,
+    # Spotify (Music)
+    'api_spotify_search': 3600 * 24,
+    'api_spotify_details': 3600 * 48,
+    'api_spotify_new_releases': 3600 * 36,
 
-    'api_tmdb_search': 3600 * 6,
-    'api_tmdb_details': 3600 * 24,
-    'api_tmdb_popular_movies': 3600 * 24,
-    'api_tmdb_popular_tv': 3600 * 24,
-    'api_tmdb_external_ids': 3600 * 24 * 14,
-    'api_tmdb_watch_providers': 3600 * 24 * 14,
-    'api_tmdb_external_ids_tv': 3600 * 24 * 14,
-    'api_tmdb_watch_providers_tv': 3600 * 24 * 14,
-    'api_tmdb_external_ids_season': 3600 * 24 * 14,
-    'api_tmdb_watch_providers_season': 3600 * 24 * 14,
+    # TMDB (Movies/TV)
+    'api_tmdb_search': 3600 * 24,
+    'api_tmdb_details': 3600 * 48,
+    'api_tmdb_popular_movies': 3600 * 36,
+    'api_tmdb_popular_tv': 3600 * 36,
 
-    'api_openlibrary_search': 3600 * 6,
-    'api_openlibrary_details': 3600 * 24,
-    'api_openlibrary_trending': 3600 * 24 * 14,
+    # TMDB (Extra Data)
+    'api_tmdb_external_ids': 3600 * 24 * 30,
+    'api_tmdb_watch_providers': 3600 * 24 * 30,
+    'api_tmdb_external_ids_tv': 3600 * 24 * 30,
+    'api_tmdb_watch_providers_tv': 3600 * 24 * 30,
+    'api_tmdb_external_ids_season': 3600 * 24 * 30,
+    'api_tmdb_watch_providers_season': 3600 * 24 * 30,
+    'api_tmdb_images': 3600 * 24 * 30,
+    'api_tmdb_images_tv': 3600 * 24 * 30,
+    'api_tmdb_images_season': 3600 * 24 * 30,
+
+    # OpenLibrary (Books)
+    'api_openlibrary_search': 3600 * 24,
+    'api_openlibrary_details': 3600 * 48,
+    'api_openlibrary_trending': 3600 * 24 * 30,
 }
 
 # Cache key patterns
@@ -103,9 +112,12 @@ CACHE_KEYS = {
     'api_tmdb_watch_providers_tv': 'api:tmdb:watch_providers:tv:{tv_id}',
     'api_tmdb_external_ids_season': 'api:tmdb:external_ids:season:{tv_id}:{season_number}',
     'api_tmdb_watch_providers_season': 'api:tmdb:watch_providers:season:{tv_id}:{season_number}',
+    'api_tmdb_images': 'api:tmdb:images:movie:{movie_id}',
+    'api_tmdb_images_tv': 'api:tmdb:images:tv:{tv_id}',
+    'api_tmdb_images_season': 'api:tmdb:images:season:{tv_id}:{season_number}',
 
     'api_openlibrary_search': 'api:openlibrary:search:{query}:{page}:{limit}',
-    'api_openlibrary_details': 'api:openlibrary:details:{book_key}',
+    'api_openlibrary_details': 'api:openlibrary:details:{book_id}',
     'api_openlibrary_trending': 'api:openlibrary:trending:{limit}',
-    'api_openlibrary_bulk': 'api:openlibrary:bulk:{book_keys}',
+    'api_openlibrary_bulk': 'api:openlibrary:bulk:{book_ids}',
 }
