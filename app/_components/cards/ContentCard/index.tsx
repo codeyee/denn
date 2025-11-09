@@ -198,12 +198,6 @@ export default function ContentCard({ item, className }: ContentCardProps) {
       return contentTypeEnum.tv;
     }
 
-    // Check for game - platforms should be an array for games
-    // (movies/TV shows have platforms as Record<string, Platform[]>)
-    if ("platforms" in item && Array.isArray((item as any).platforms)) {
-      return contentTypeEnum.game;
-    }
-
     if ("pages" in item) return contentTypeEnum.book;
     if ("total_tracks" in item) return contentTypeEnum.music;
 
@@ -264,7 +258,7 @@ export default function ContentCard({ item, className }: ContentCardProps) {
       // For movies, TV shows, and games, show only the first author
       const isMovie = ("type" in item && (item.type === "movie" || item.type === "MOVIE"));
       const isTVShow = ("type" in item && (item.type === "tv" || item.type === "tv_show" || item.type === "TV_SHOW"));
-      const isGame = ("platforms" in item) || ("type" in item && (item.type === "game" || item.type === "GAME"));
+      const isGame = ("type" in item && (item.type === "game" || item.type === "GAME"));
 
       if (isMovie || isTVShow || isGame) {
         // Return only the first author
