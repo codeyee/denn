@@ -59,8 +59,10 @@ def _fetch_tmdb_movie_data(external_id: str, country_code: Optional[str] = None)
         response = view.get(request, movie_id=external_id)
         if response.status_code == http_status.HTTP_200_OK:
             return response.data
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Error fetching movie {external_id}: {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
 
     return None
 
@@ -74,8 +76,10 @@ def _fetch_tmdb_tv_show_data(external_id: str, country_code: Optional[str] = Non
         response = view.get(request, tv_id=external_id)
         if response.status_code == http_status.HTTP_200_OK:
             return response.data
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Error fetching TV show {external_id}: {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
 
     return None
 
@@ -94,8 +98,10 @@ def _fetch_tmdb_season_data(external_id: str, country_code: Optional[str] = None
             response = view.get(request, tv_id=tv_id, season_number=season_number)
             if response.status_code == http_status.HTTP_200_OK:
                 return response.data
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Error fetching season {external_id}: {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
 
     return None
 
