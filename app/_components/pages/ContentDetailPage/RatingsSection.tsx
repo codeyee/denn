@@ -159,7 +159,7 @@ export default function RatingsSection({
 
   if (loading && page === 1) {
     return (
-      <div className="container mx-auto px-4 mb-10">
+      <div className="container mx-auto px-4 mt-8">
         <div className="flex items-center justify-center min-h-[200px]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"></div>
@@ -171,7 +171,7 @@ export default function RatingsSection({
   }
 
   return (
-    <div className="container mx-auto px-4 mb-10">
+    <div className="container mx-auto px-4 mt-8">
       <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-white">Ratings</h2>
           {!userRating && user && onEditRating && (

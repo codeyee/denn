@@ -2,9 +2,9 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { contentItemActions, videoActions, musicActions, gameActions, bookActions, ratingActions } from "@/lib/api";
-import { ContentType, SourceApi, Rating, RatingCreate, ImageType } from "@/lib/api/types";
-import { formatAuthors, formatPlatforms, getAuthorNames } from "@/lib/utils/authorUtils";
+import { contentItemActions, videoActions, musicActions, ratingActions } from "@/lib/api";
+import { ContentType, SourceApi, Rating, RatingCreate, ImageType, TVSeason } from "@/lib/api/types";
+import { getAuthorNames } from "@/lib/utils/authorUtils";
 import {
   MovieDetail,
   TVShowDetail,
@@ -16,6 +16,9 @@ import {
 import { useAuthStore } from "@/app/_stores/auth-store";
 import ContentBanner from "./ContentBanner";
 import MovieDetailContent from "./MovieDetailContent";
+import TVShowDetailContent from "./TVShowDetailContent";
+import SeasonDetailContent from "./SeasonDetailContent";
+import GameDetailContent from "./GameDetailContent";
 import BookDetailContent from "./BookDetailContent";
 import RatingsSection from "./RatingsSection";
 import RatingModal from "@/app/_components/common/Modal/RatingModal";
@@ -24,7 +27,6 @@ import Footer from "../../layout/Footer";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { VerticalList } from "@/app/_components/common/List";
 import TrackListItem from "@/app/_components/common/List/TrackListItem";
-import EpisodeCard from "@/app/_components/cards/EpisodeCard";
 import Carousel from "@/app/_components/common/Carousel";
 import ContentCard from "@/app/_components/cards/ContentCard";
 
@@ -64,7 +66,7 @@ export default function ContentDetailPage({
 
         // If we have an internal content ID, fetch directly with source data
         if (contentId) {
-          item = await contentItemActions.get(contentId, true);
+          item = await contentItemActions.get(contentId);
         }
         // Otherwise, use external identifiers to get or create
         else if (externalId && sourceApi && contentTypeStr) {
@@ -88,10 +90,7 @@ export default function ContentDetailPage({
             : item.source_data;
         }
 
-        // Use source_data if available (from render_source=true), otherwise fetch from proxy API
-        // This avoids redundant API calls when source_data is already populated
         if (sourceData) {
-          // Use the detailed data from source_data
           setDetailData(sourceData);
 
           // For seasons, extract TV show name from source_data if available
@@ -166,8 +165,8 @@ export default function ContentDetailPage({
       }
 
       // Prevent duplicate calls for the same contentItem and user
-      if (userRatingFetchRef.current.contentItemId === contentItem.id && 
-          userRatingFetchRef.current.userId === user.id) {
+      if (userRatingFetchRef.current.contentItemId === contentItem.id &&
+        userRatingFetchRef.current.userId === user.id) {
         return;
       }
 
@@ -181,8 +180,8 @@ export default function ContentDetailPage({
           page_size: 1,
         });
         // Verify we're still fetching the same contentItem/user combination
-        if (userRatingFetchRef.current.contentItemId === contentItem.id && 
-            userRatingFetchRef.current.userId === user.id) {
+        if (userRatingFetchRef.current.contentItemId === contentItem.id &&
+          userRatingFetchRef.current.userId === user.id) {
           if (ratingsResponse.results.length > 0) {
             setUserRating(ratingsResponse.results[0]);
           } else {
@@ -192,8 +191,8 @@ export default function ContentDetailPage({
       } catch (err) {
         console.warn("Could not fetch user rating:", err);
         // Only set to null if we're still fetching the same contentItem/user
-        if (userRatingFetchRef.current.contentItemId === contentItem.id && 
-            userRatingFetchRef.current.userId === user.id) {
+        if (userRatingFetchRef.current.contentItemId === contentItem.id &&
+          userRatingFetchRef.current.userId === user.id) {
           setUserRating(null);
         }
       }
@@ -205,7 +204,7 @@ export default function ContentDetailPage({
   if (loading) {
     return (
       <div className="relative w-full min-h-screen bg-background-logged-in">
-        <div className="container mx-auto px-4 py-20">
+        <div className="container mx-auto px-4 mt-8 py-20">
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
@@ -220,7 +219,7 @@ export default function ContentDetailPage({
   if (error || !contentItem) {
     return (
       <div className="relative w-full min-h-screen bg-background-logged-in">
-        <div className="container mx-auto px-4 py-20">
+        <div className="container mx-auto px-4 mt-8 py-20">
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center">
               <p className="text-red-400 text-xl mb-4">Error loading content</p>
@@ -242,7 +241,7 @@ export default function ContentDetailPage({
   const renderAboutSection = () => {
     if (!detailData) {
       return (
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-4 mt-8">
           <div className="mb-10">
             <h2 className="text-2xl font-bold text-white mb-6">Content Details</h2>
             <p className="text-gray-400">Detailed information not available.</p>
@@ -256,20 +255,17 @@ export default function ContentDetailPage({
     if (contentType === ContentType.MOVIE) {
       return <MovieDetailContent movie={detailData as MovieDetail} />;
     } else if (contentType === ContentType.TV_SHOW) {
-      // Extract About section from TVShowDetailContent
-      const tvShow = detailData as TVShowDetail;
-      const status = tvShow.status === "Returning Series" ? "Currently in emission" : "Ended";
-      const releaseDate = formatReleaseDate(tvShow.release_date);
+      return <TVShowDetailContent tvShow={detailData as TVShowDetail} />;
+    } else if (contentType === ContentType.SEASON) {
+      return <SeasonDetailContent season={detailData as TVSeasonDetail} tvShowTitle={tvShowTitle || undefined} />;
+    } else if (contentType === ContentType.ALBUM) {
+      // Extract About section from AlbumDetailContent
+      const album = detailData as AlbumDetail;
+      const releaseDate = formatReleaseDate(album.release_date);
       return (
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-4 mt-8">
           <div className="mb-10">
             <h2 className="text-2xl font-bold text-white mb-6">About</h2>
-            {tvShow.tagline && (
-              <p className="text-white/80 italic mb-4 font-sans">"{tvShow.tagline}"</p>
-            )}
-            {tvShow.description && (
-              <p className="text-gray-300 mb-4 leading-relaxed font-sans">{tvShow.description}</p>
-            )}
             <div className="mt-6 space-y-2">
               {releaseDate && (
                 <div>
@@ -277,91 +273,26 @@ export default function ContentDetailPage({
                   <span className="text-white ml-2 font-sans">{releaseDate}</span>
                 </div>
               )}
-              {status && status !== "Ended" && (
+              {album.album_type && (
                 <div>
-                  <span className="text-white/60 font-bold">Status:</span>
-                  <span className="text-white ml-2 font-sans">{status}</span>
+                  <span className="text-white/60 font-bold">Type:</span>
+                  <span className="text-white ml-2 capitalize font-sans">{album.album_type}</span>
                 </div>
               )}
-              {tvShow.number_of_seasons !== undefined && (
+              {album.total_tracks !== undefined && (
                 <div>
-                  <span className="text-white/60 font-bold">Seasons:</span>
-                  <span className="text-white ml-2 font-sans">{tvShow.number_of_seasons}</span>
+                  <span className="text-white/60 font-bold">Tracks:</span>
+                  <span className="text-white ml-2 font-sans">{album.total_tracks}</span>
                 </div>
               )}
-              {tvShow.number_of_episodes !== undefined && (
+              {album.duration_minutes !== undefined && album.duration_minutes !== null && (
                 <div>
-                  <span className="text-white/60 font-bold">Episodes:</span>
-                  <span className="text-white ml-2 font-sans">{tvShow.number_of_episodes}</span>
+                  <span className="text-white/60 font-bold">Duration:</span>
+                  <span className="text-white ml-2 font-sans">
+                    {Math.floor(album.duration_minutes)} minutes
+                  </span>
                 </div>
               )}
-            </div>
-          </div>
-        </div>
-      );
-    } else if (contentType === ContentType.SEASON) {
-      // Extract About section from SeasonDetailContent
-      const season = detailData as TVSeasonDetail;
-      const releaseDate = formatReleaseDate(season.release_date);
-      return (
-        <div className="container mx-auto px-4">
-          <div className="mb-10">
-            <h2 className="text-2xl font-bold text-white mb-6">About</h2>
-            {season.description && (
-              <p className="text-gray-300 mb-4 leading-relaxed font-sans">{season.description}</p>
-            )}
-            <div className="mt-6 space-y-2">
-                {releaseDate && (
-                  <div>
-                    <span className="text-white/60 font-bold">Release Date:</span>
-                    <span className="text-white ml-2 font-sans">{releaseDate}</span>
-                  </div>
-                )}
-                {season.number_of_episodes !== undefined && (
-                  <div>
-                    <span className="text-white/60 font-bold">Episodes:</span>
-                    <span className="text-white ml-2 font-sans">{season.number_of_episodes}</span>
-                  </div>
-                )}
-            </div>
-          </div>
-        </div>
-      );
-    } else if (contentType === ContentType.ALBUM) {
-      // Extract About section from AlbumDetailContent
-      const album = detailData as AlbumDetail;
-      const releaseDate = formatReleaseDate(album.release_date);
-      return (
-        <div className="container mx-auto px-4">
-          <div className="mb-10">
-            <h2 className="text-2xl font-bold text-white mb-6">About</h2>
-            <div className="mt-6 space-y-2">
-                {releaseDate && (
-                  <div>
-                    <span className="text-white/60 font-bold">Release Date:</span>
-                    <span className="text-white ml-2 font-sans">{releaseDate}</span>
-                  </div>
-                )}
-                {album.album_type && (
-                  <div>
-                    <span className="text-white/60 font-bold">Type:</span>
-                    <span className="text-white ml-2 capitalize font-sans">{album.album_type}</span>
-                  </div>
-                )}
-                {album.total_tracks !== undefined && (
-                  <div>
-                    <span className="text-white/60 font-bold">Tracks:</span>
-                    <span className="text-white ml-2 font-sans">{album.total_tracks}</span>
-                  </div>
-                )}
-                {album.duration_minutes !== undefined && album.duration_minutes !== null && (
-                  <div>
-                    <span className="text-white/60 font-bold">Duration:</span>
-                    <span className="text-white ml-2 font-sans">
-                      {Math.floor(album.duration_minutes)} minutes
-                    </span>
-                  </div>
-                )}
             </div>
             {album.external_url && (
               <div className="mt-6">
@@ -383,45 +314,13 @@ export default function ContentDetailPage({
         </div>
       );
     } else if (contentType === ContentType.GAME) {
-      // Extract About section from GameDetailContent
-      const game = detailData as GameDetail;
-      const releaseDate = formatReleaseDate(game.release_date);
-      return (
-        <div className="container mx-auto px-4">
-          <div className="mb-10">
-            <h2 className="text-2xl font-bold text-white mb-6">About</h2>
-            {game.description && (
-              <p className="text-gray-300 mb-4 leading-relaxed font-sans">{game.description}</p>
-            )}
-            <div className="mt-6 space-y-2">
-                {releaseDate && (
-                  <div>
-                    <span className="text-white/60 font-bold">Release Date:</span>
-                    <span className="text-white ml-2 font-sans">{releaseDate}</span>
-                  </div>
-                )}
-                {game.authors && game.authors.length > 0 && (
-                  <div>
-                    <span className="text-white/60 font-bold">Developers:</span>
-                    <span className="text-white ml-2 font-sans">{formatAuthors(game.authors)}</span>
-                  </div>
-                )}
-                {game.platforms && game.platforms.length > 0 && (
-                  <div>
-                    <span className="text-white/60 font-bold">Platforms:</span>
-                    <span className="text-white ml-2 font-sans">{formatPlatforms(game.platforms)}</span>
-                  </div>
-                )}
-            </div>
-          </div>
-        </div>
-      );
+      return <GameDetailContent game={detailData as GameDetail} />;
     } else if (contentType === ContentType.BOOK) {
       return <BookDetailContent book={detailData as BookDetail} />;
     }
 
     return (
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-4 mt-8">
         <div className="mb-10">
           <h2 className="text-2xl font-bold text-white mb-6">Content Details</h2>
           <p className="text-gray-400">Content type not supported.</p>
@@ -444,7 +343,7 @@ export default function ContentDetailPage({
     };
 
     return (
-      <div className="container mx-auto px-4 mb-10">
+      <div className="container mx-auto px-4 mt-8">
         <h2 className="text-2xl font-bold text-white mb-6">Tracks</h2>
         <VerticalList spacing="md">
           {album.tracks.map((track) => (
@@ -467,43 +366,69 @@ export default function ContentDetailPage({
     );
   };
 
-  // Render episodes section for seasons
-  const renderEpisodesSection = () => {
-    if (contentItem?.content_type !== ContentType.SEASON || !detailData) return null;
-    const season = detailData as TVSeasonDetail;
-    if (!season.episodes || season.episodes.length === 0) return null;
-
-    return (
-      <div className="container mx-auto px-4 mb-10">
-        <h2 className="text-2xl font-bold text-white mb-6">Episodes</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-          {season.episodes.map((episode) => (
-            <EpisodeCard key={episode.id} episode={episode} />
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  // Render gallery section for games
+  // Render gallery section for movies, TV shows, and games
   const renderGallerySection = () => {
-    if (contentItem?.content_type !== ContentType.GAME || !detailData) return null;
-    const game = detailData as GameDetail;
+    if (!detailData) return null;
 
-    const galleryImages = game.images
-      ? game.images
-          .filter(img => img.type === ImageType.GALLERY)
-          .map((img, index) => ({
+    const contentType = contentItem.content_type;
+
+    // No gallery for seasons
+    if (contentType === ContentType.SEASON) return null;
+
+    let galleryImages: { src: string; alt: string }[] = [];
+    let title = "";
+
+    if (contentType === ContentType.MOVIE) {
+      const movie = detailData as MovieDetail;
+      title = movie.title;
+      galleryImages = movie.images
+        ? Array.from(
+            new Map(
+              movie.images
+                .filter(img => img.type === ImageType.GALLERY && img.size === "STANDARD")
+                .map(img => [img.image_url, img])
+            ).values()
+          ).map((img, index) => ({
             src: img.image_url,
-            alt: `${game.title} gallery image ${index + 1}`,
-            type: img.type.toLowerCase(),
+            alt: `${title} gallery image ${index + 1}`,
           }))
-      : [];
+        : [];
+    } else if (contentType === ContentType.TV_SHOW) {
+      const tvShow = detailData as TVShowDetail;
+      title = tvShow.title;
+      galleryImages = tvShow.images
+        ? Array.from(
+            new Map(
+              tvShow.images
+                .filter(img => img.type === ImageType.GALLERY && img.size === "STANDARD")
+                .map(img => [img.image_url, img])
+            ).values()
+          ).map((img, index) => ({
+            src: img.image_url,
+            alt: `${title} gallery image ${index + 1}`,
+          }))
+        : [];
+    } else if (contentType === ContentType.GAME) {
+      const game = detailData as GameDetail;
+      title = game.title;
+      galleryImages = game.images
+        ? Array.from(
+            new Map(
+              game.images
+                .filter(img => img.type === ImageType.GALLERY && img.size === "STANDARD")
+                .map(img => [img.image_url, img])
+            ).values()
+          ).map((img, index) => ({
+            src: img.image_url,
+            alt: `${title} gallery image ${index + 1}`,
+          }))
+        : [];
+    }
 
     if (galleryImages.length === 0) return null;
 
     return (
-      <div className="container mx-auto px-4 mb-10">
+      <div className="container mx-auto px-4 mt-8">
         <h2 className="text-2xl font-bold text-white mb-6">Gallery</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
           {galleryImages.map((image, index) => (
@@ -530,7 +455,7 @@ export default function ContentDetailPage({
     const tvShow = detailData as TVShowDetail;
     if (!tvShow.seasons || tvShow.seasons.length === 0) return null;
 
-    const createSeasonItem = (season: any) => {
+    const createSeasonItem = (season: TVSeason) => {
       const externalId = `${tvShow.id}:${season.season_number}`;
       return {
         id: externalId,
@@ -548,27 +473,29 @@ export default function ContentDetailPage({
     };
 
     return (
-      <Carousel
-        title="Seasons"
-        itemsPerView={undefined}
-        targetCardWidth={250}
-      >
-        {tvShow.seasons.map((season) => {
-          const seasonItem = createSeasonItem(season);
-          return (
-            <ContentCard
-              key={season.id}
-              item={{
-                ...seasonItem,
-                release_date:
-                  seasonItem.release_date === null
-                    ? undefined
-                    : seasonItem.release_date,
-              }}
-            />
-          );
-        })}
-      </Carousel>
+      <div className="mt-8">
+        <Carousel
+          title="Seasons"
+          itemsPerView={undefined}
+          targetCardWidth={250}
+        >
+          {tvShow.seasons.map((season) => {
+            const seasonItem = createSeasonItem(season);
+            return (
+              <ContentCard
+                key={season.id}
+                item={{
+                  ...seasonItem,
+                  release_date:
+                    seasonItem.release_date === null
+                      ? undefined
+                      : seasonItem.release_date,
+                } as any}
+              />
+            );
+          })}
+        </Carousel>
+      </div>
     );
   };
 
@@ -602,7 +529,7 @@ export default function ContentDetailPage({
       }
 
       // Refresh content item to get updated stats
-      const updatedItem = await contentItemActions.get(contentItem.id, true);
+      const updatedItem = await contentItemActions.get(contentItem.id);
       setContentItem(updatedItem);
 
       // Trigger ratings section refresh
@@ -623,7 +550,7 @@ export default function ContentDetailPage({
       setUserRating(null);
 
       // Refresh content item to get updated stats
-      const updatedItem = await contentItemActions.get(contentItem.id, true);
+      const updatedItem = await contentItemActions.get(contentItem.id);
       setContentItem(updatedItem);
 
       // Trigger ratings section refresh
@@ -640,7 +567,7 @@ export default function ContentDetailPage({
     setRatingRefreshKey((prev) => prev + 1);
 
     // Refresh content item to get updated stats
-    contentItemActions.get(contentItem.id, true).then((updatedItem) => {
+    contentItemActions.get(contentItem.id).then((updatedItem) => {
       setContentItem(updatedItem);
     });
 
@@ -681,7 +608,7 @@ export default function ContentDetailPage({
         {/* Rating Summary */}
         {contentItem && (
           <section className="mb-10">
-            <div className="container mx-auto px-4">
+            <div className="container mx-auto px-4 mt-8">
               {contentItem.average_rating && (contentItem.rating_count ?? 0) > 0 ? (
                 <div className="flex gap-2 flex-wrap flex-col">
                   <div className="flex items-center gap-2">
@@ -706,10 +633,7 @@ export default function ContentDetailPage({
         {/* About Section */}
         {renderAboutSection()}
 
-        {/* Tracks Section (for albums only - before ratings) */}
-        {renderTracksSection()}
-
-        {/* Unified Ratings Section */}
+        {/* Unified Ratings Section - right after About/description */}
         {contentItem && (
           <RatingsSection
             key={ratingRefreshKey}
@@ -723,14 +647,87 @@ export default function ContentDetailPage({
           />
         )}
 
-        {/* Episodes Section (for seasons - after ratings) */}
-        {renderEpisodesSection()}
-
-        {/* Gallery Section (for games - after ratings) */}
-        {renderGallerySection()}
+        {/* Tracks Section (for albums only - after ratings) */}
+        {renderTracksSection()}
 
         {/* Seasons Section (for TV shows - after ratings) */}
         {renderSeasonsSection()}
+
+        {/* Gallery Section (for movies, TV shows, games - at the end) */}
+        {renderGallerySection()}
+
+        {/* API Attribution */}
+        {contentItem && (
+          <div className="container mx-auto px-4 mt-8 font-sans">
+            <div className="text-center text-sm text-white/40">
+              {contentItem.source_api === SourceApi.TMDB && (
+                <div className="flex flex-row justify-center gap-2">
+                  <p>
+                    Data provided by{" "}
+                    <a
+                      href="https://www.themoviedb.org"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-white/60 underline"
+                    >
+                      TMDB
+                    </a>
+                  </p>
+                  <p>•</p>
+                  <p>
+                    <a
+                      href="https://www.justwatch.com"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-white/60 underline"
+                    >
+                      JustWatch
+                    </a>
+                  </p>
+                </div>
+              )}
+              {contentItem.source_api === SourceApi.IGDB && (
+                <p>
+                  Data provided by{" "}
+                  <a
+                    href="https://www.igdb.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-white/60 underline"
+                  >
+                    IGDB
+                  </a>
+                </p>
+              )}
+              {contentItem.source_api === SourceApi.SPOTIFY && (
+                <p>
+                  Data provided by{" "}
+                  <a
+                    href="https://www.spotify.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-white/60 underline"
+                  >
+                    Spotify
+                  </a>
+                </p>
+              )}
+              {contentItem.source_api === SourceApi.OPENLIBRARY && (
+                <p>
+                  Data provided by{" "}
+                  <a
+                    href="https://openlibrary.org"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-white/60 underline"
+                  >
+                    Open Library
+                  </a>
+                </p>
+              )}
+            </div>
+          </div>
+        )}
 
         <Footer />
       </div>

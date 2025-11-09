@@ -35,9 +35,7 @@ export default function HomePage() {
   useEffect(() => {
     fetchSuggestions(20);
     fetchLists({
-      render_items: true,
-      max_items: 4,
-      render_source: true,
+      items_size: 4,
     });
   }, [fetchSuggestions, fetchLists]);
 
@@ -76,7 +74,7 @@ export default function HomePage() {
   if (hasAnyError) {
     return (
       <div className="relative w-full min-h-screen bg-background-logged-in">
-        <div className="container mx-auto px-4 py-20">
+        <div className="container mx-auto px-4 mt-8 py-20">
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center">
               <p className="text-red-400 text-xl mb-4">Error loading data</p>
@@ -87,8 +85,8 @@ export default function HomePage() {
                     ? suggestionsError
                     : suggestionsError &&
                       typeof (suggestionsError as any).message === "string"
-                    ? (suggestionsError as any).message
-                    : "Unknown error"}
+                      ? (suggestionsError as any).message
+                      : "Unknown error"}
                 </p>
               )}
               {listsError && (
@@ -98,8 +96,8 @@ export default function HomePage() {
                     ? listsError
                     : listsError &&
                       typeof (listsError as any).message === "string"
-                    ? (listsError as any).message
-                    : "Unknown error"}
+                      ? (listsError as any).message
+                      : "Unknown error"}
                 </p>
               )}
             </div>

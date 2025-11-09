@@ -183,6 +183,7 @@ export default function SearchPage() {
 
         const books: Book[] = bookResponse.results.map((item: SearchItem) => ({
           id: item.id as string,
+          type: item.type || undefined,
           title: item.title,
           original_title: item.original_title || undefined,
           authors: item.authors || undefined,
@@ -231,7 +232,7 @@ export default function SearchPage() {
   return (
     <div className="relative w-full min-h-screen bg-background-logged-in">
       {/* Mobile Search Input - Only visible on mobile/tablet (below lg) */}
-      <div className="lg:hidden container mx-auto px-4 pt-24 pb-4">
+      <div className="lg:hidden container mx-auto px-4 mt-8 pt-24 pb-4">
         <div className="relative">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-300 pointer-events-none z-10" />
           <input
@@ -250,7 +251,7 @@ export default function SearchPage() {
       <div className="pt-5 lg:pt-30 pb-20">
         {/* Error State */}
         {error && !isLoading && (
-          <div className="container mx-auto px-4 py-8">
+          <div className="container mx-auto px-4 mt-8 py-8">
             <div className="text-center">
               <p className="text-red-400 text-xl mb-4">Error searching</p>
               <p className="text-gray-400">{error}</p>

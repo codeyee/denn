@@ -5,7 +5,32 @@ import { ContentItem } from "@/types/contentTypes";
 import { SourceApi, ContentType } from "@/lib/api/types";
 import { getLegacyImageUrl } from "@/lib/utils/imageUtils";
 import { formatAuthors } from "@/lib/utils/authorUtils";
-import { inferNavigationParams, CONTENT_TYPE_ICONS } from "@/lib/utils/contentTypeUtils";
+
+const TYPE_ICON: Record<string, LucideIcon> = {
+  movie: Film,
+  tv: Tv,
+  game: Gamepad2,
+  book: Book,
+  music: Music,
+};
+
+function getItemType(item: ContentItem): keyof typeof TYPE_ICON {
+  if ("type" in item && typeof (item as any).type === "string") {
+    const t = (item as any).type.toLowerCase();
+    if (t === "movie") return "movie";
+    if (t === "tv" || t === "tv_show") return "tv";
+    if (t === "game") return "game";
+    if (t === "book") return "book";
+    if (t === "album" || t === "music") return "music";
+  }
+  if ("number_of_seasons" in item || "number_of_episodes" in item) {
+    return "tv";
+  }
+  if ("platforms" in item) return "game";
+  if ("pages" in item) return "book";
+  if ("total_tracks" in item) return "music";
+  return "movie";
+}
 
 interface ContentBannerProps {
   item: ContentItem | any;

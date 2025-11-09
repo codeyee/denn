@@ -51,7 +51,7 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
       <>
         <Navbar />
         <div className="relative w-full min-h-screen bg-background-logged-in">
-          <div className="container mx-auto px-4 py-20">
+          <div className="container mx-auto px-4 mt-8 py-20">
             <div className="flex items-center justify-center min-h-[400px]">
               <div className="text-white text-xl">Loading...</div>
             </div>
@@ -67,7 +67,7 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
       <>
         <Navbar />
         <div className="relative w-full min-h-screen bg-background-logged-in">
-          <div className="container mx-auto px-4 py-20">
+          <div className="container mx-auto px-4 mt-8 py-20">
             <div className="flex items-center justify-center min-h-[400px]">
               <div className="text-center">
                 <p className="text-red-400 text-xl mb-4">
@@ -98,7 +98,7 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
     <>
       <Navbar />
       <div className="relative w-full min-h-screen bg-background-logged-in">
-        <div className="container mx-auto px-4 pt-30 pb-8">
+        <div className="container mx-auto px-4 mt-8 pt-30 pb-8">
           {/* Header Section */}
           <div className="mb-8">
             <div className="flex items-center gap-3 mb-4">

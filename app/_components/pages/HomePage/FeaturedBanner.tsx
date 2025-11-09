@@ -17,11 +17,93 @@ type FeaturedBannerProps = {
   autoRotateMs?: number;
 };
 
+const TYPE_ICON: Record<string, any> = {
+  movie: Film,
+  tv: Tv,
+  game: Gamepad2,
+  book: Book,
+  music: Music,
+};
+
+function getItemType(item: ContentItem): keyof typeof TYPE_ICON {
+  if ("type" in item && typeof (item as any).type === "string") {
+    const t = (item as any).type.toLowerCase();
+    if (t === "movie") return "movie";
+    if (t === "tv" || t === "tv_show") return "tv";
+    if (t === "game") return "game";
+    if (t === "book") return "book";
+    if (t === "album" || t === "music") return "music";
+  }
+  if ("number_of_seasons" in item || "number_of_episodes" in item) {
+    return "tv";
+  }
+  if ("platforms" in item) return "game";
+  if ("pages" in item) return "book";
+  if ("total_tracks" in item) return "music";
+  return "movie";
+}
+
 export default function FeaturedBanner({ items, autoRotateMs = 6000 }: FeaturedBannerProps) {
   const router = useRouter();
 
   const handleViewDetails = (item: ContentItem) => {
-    const { sourceApi, contentType, externalId } = inferNavigationParams(item as unknown as Record<string, unknown>);
+
+    // Navigate instantly with external identifiers - the detail page will handle API calls
+    let sourceApi: SourceApi | undefined;
+    let contentType: ContentType | undefined;
+    let externalId: string | number | undefined;
+
+    // First check if there's an explicit type field (from search results)
+    if ("type" in item && typeof item.type === "string") {
+      const itemType = item.type.toLowerCase();
+      if (itemType === "movie") {
+        sourceApi = SourceApi.TMDB;
+        contentType = ContentType.MOVIE;
+        externalId = String(item.id);
+      } else if (itemType === "tv" || itemType === "tv_show") {
+        sourceApi = SourceApi.TMDB;
+        contentType = ContentType.TV_SHOW;
+        externalId = String(item.id);
+      } else if (itemType === "album" || itemType === "music" || itemType === "ep") {
+        sourceApi = SourceApi.SPOTIFY;
+        contentType = ContentType.ALBUM;
+        externalId = String(item.id);
+      } else if (itemType === "game") {
+        sourceApi = SourceApi.IGDB;
+        contentType = ContentType.GAME;
+        externalId = String(item.id);
+      } else if (itemType === "book") {
+        sourceApi = SourceApi.OPENLIBRARY;
+        contentType = ContentType.BOOK;
+        externalId = String(item.id);
+      }
+    }
+
+    // If not determined by type field, check properties
+    if (!sourceApi || !contentType) {
+      if ("platforms" in item) {
+        sourceApi = SourceApi.IGDB;
+        contentType = ContentType.GAME;
+        externalId = String(item.id);
+      } else if ("total_tracks" in item) {
+        sourceApi = SourceApi.SPOTIFY;
+        contentType = ContentType.ALBUM;
+        externalId = String(item.id);
+      } else if ("pages" in item) {
+        sourceApi = SourceApi.OPENLIBRARY;
+        contentType = ContentType.BOOK;
+        externalId = String(item.id);
+      } else if ("number_of_seasons" in item || "number_of_episodes" in item) {
+        sourceApi = SourceApi.TMDB;
+        contentType = ContentType.TV_SHOW;
+        externalId = String(item.id);
+      } else {
+        // Default to movie
+        sourceApi = SourceApi.TMDB;
+        contentType = ContentType.MOVIE;
+        externalId = String(item.id);
+      }
+    }
 
     if (sourceApi && contentType && externalId) {
       const params = new URLSearchParams({
@@ -78,8 +160,14 @@ export default function FeaturedBanner({ items, autoRotateMs = 6000 }: FeaturedB
   };
 
   const getAuthors = (item: ContentItem): string => {
-    if ("authors" in item && item.authors) {
-      return formatAuthors(item.authors);
+    if ("authors" in item && item.authors && item.authors.length > 0) {
+      // Show only the first author
+      const firstAuthor = item.authors[0];
+      if (typeof firstAuthor === "string") {
+        return firstAuthor;
+      } else if (firstAuthor && "name" in firstAuthor) {
+        return firstAuthor.name;
+      }
     }
     return "";
   };

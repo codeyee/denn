@@ -20,7 +20,74 @@ export default function ContentCard({ item, className }: ContentCardProps) {
   const middleClickHandled = useRef(false);
 
   const getNavigationUrl = (): string | null => {
-    const { sourceApi, contentType, externalId } = inferNavigationParams(item as unknown as Record<string, unknown>);
+    // Navigate with external identifiers - the detail page will handle the API calls
+    // Determine source API and content type from the item
+    let sourceApi: SourceApi | undefined;
+    let contentType: ContentType | undefined;
+    let externalId: string | number | undefined;
+
+    // First check if there's an explicit type field (from search results)
+    if ("type" in item && typeof item.type === "string") {
+      const itemType = item.type.toLowerCase();
+      if (itemType === "movie") {
+        sourceApi = SourceApi.TMDB;
+        contentType = ContentType.MOVIE;
+        externalId = String(item.id);
+      } else if (itemType === "tv" || itemType === "tv_show") {
+        sourceApi = SourceApi.TMDB;
+        contentType = ContentType.TV_SHOW;
+        externalId = String(item.id);
+      } else if (itemType === "album" || itemType === "music" || itemType === "ep") {
+        sourceApi = SourceApi.SPOTIFY;
+        contentType = ContentType.ALBUM;
+        externalId = String(item.id);
+      } else if (itemType === "game") {
+        sourceApi = SourceApi.IGDB;
+        contentType = ContentType.GAME;
+        externalId = String(item.id);
+      } else if (itemType === "book") {
+        sourceApi = SourceApi.OPENLIBRARY;
+        contentType = ContentType.BOOK;
+        externalId = String(item.id);
+      } else if (itemType === "season") {
+        // For seasons, use the explicit external_id, source_api, and content_type if available
+        if ("external_id" in item && item.external_id) {
+          sourceApi = ("source_api" in item && item.source_api) as SourceApi || SourceApi.TMDB;
+          contentType = ("content_type" in item && item.content_type) as ContentType || ContentType.SEASON;
+          externalId = String(item.external_id);
+        } else {
+          sourceApi = SourceApi.TMDB;
+          contentType = ContentType.SEASON;
+          externalId = String(item.id);
+        }
+      }
+    }
+
+    // If not determined by type field, check properties
+    if (!sourceApi || !contentType) {
+      if ("platforms" in item) {
+        sourceApi = SourceApi.IGDB;
+        contentType = ContentType.GAME;
+        externalId = String(item.id);
+      } else if ("total_tracks" in item) {
+        sourceApi = SourceApi.SPOTIFY;
+        contentType = ContentType.ALBUM;
+        externalId = String(item.id);
+      } else if ("pages" in item) {
+        sourceApi = SourceApi.OPENLIBRARY;
+        contentType = ContentType.BOOK;
+        externalId = String(item.id);
+      } else if ("number_of_seasons" in item || "number_of_episodes" in item) {
+        sourceApi = SourceApi.TMDB;
+        contentType = ContentType.TV_SHOW;
+        externalId = String(item.id);
+      } else {
+        // Default to movie
+        sourceApi = SourceApi.TMDB;
+        contentType = ContentType.MOVIE;
+        externalId = String(item.id);
+      }
+    }
 
     if (sourceApi && contentType && externalId) {
       const params = new URLSearchParams({
