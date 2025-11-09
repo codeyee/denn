@@ -7,6 +7,8 @@ import { Film, Tv, Gamepad2, Book, Music } from "lucide-react";
 import { Button } from "@/app/_components/lib/button";
 import { ContentItem } from "@/types/contentTypes";
 import { SourceApi, ContentType } from "@/lib/api/types";
+import { getLegacyImageUrl } from "@/lib/utils/imageUtils";
+import { formatAuthors } from "@/lib/utils/authorUtils";
 import Noise from "@/app/_components/lib/Animations/Noise";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 
@@ -105,35 +107,7 @@ export default function FeaturedBanner({ items, autoRotateMs = 6000 }: FeaturedB
   };
 
   const getBestImageUrl = (item: any): string | undefined => {
-    if (item && item.images) {
-      const images = item.images as any;
-
-      if (Array.isArray(images?.screenshots) || Array.isArray(images?.artworks) || images?.poster) {
-        if (Array.isArray(images.artworks) && images.artworks.length > 0) {
-          const first = images.artworks[0];
-          if (first?.original) return first.original;
-          if (first?.standard) return first.standard;
-        }
-
-        if (Array.isArray(images.screenshots) && images.screenshots.length > 0) {
-          const first = images.screenshots[0];
-          if (first?.original) return first.original;
-          if (first?.standard) return first.standard;
-        }
-
-        if (images.backdrop) {
-          if (images.backdrop.original) return images.backdrop.original;
-          if (images.backdrop.standard) return images.backdrop.standard;
-        }
-
-        if (images.poster) {
-          if (images.poster.original) return images.poster.original;
-          if (images.poster.standard) return images.poster.standard;
-        }
-      }
-    }
-
-    return item?.image_url || undefined;
+    return getLegacyImageUrl(item);
   };
 
   const validItems = useMemo(
@@ -176,8 +150,8 @@ export default function FeaturedBanner({ items, autoRotateMs = 6000 }: FeaturedB
   };
 
   const getAuthors = (item: ContentItem): string => {
-    if ("authors" in item && item.authors && item.authors.length > 0) {
-      return item.authors.join(", ");
+    if ("authors" in item && item.authors) {
+      return formatAuthors(item.authors);
     }
     return "";
   };

@@ -74,7 +74,6 @@ export default function TVShowDetailContent({ tvShow }: TVShowDetailContentProps
             </div>
           </div>
         </div>
-      </div>
 
       {/* Seasons Section */}
       {tvShow.seasons && tvShow.seasons.length > 0 && (
@@ -94,7 +93,7 @@ export default function TVShowDetailContent({ tvShow }: TVShowDetailContentProps
                     seasonItem.release_date === null
                       ? undefined
                       : seasonItem.release_date,
-                }}
+                } as any}
               />
             );
           })}

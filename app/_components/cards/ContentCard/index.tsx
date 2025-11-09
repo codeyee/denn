@@ -7,6 +7,8 @@ import { contentTypeEnum } from "@/types/types";
 import { ContentItem } from "@/types/contentTypes";
 import { SourceApi, ContentType } from "@/lib/api/types";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
+import { getCardImageUrl } from "@/lib/utils/imageUtils";
+import { formatAuthors } from "@/lib/utils/authorUtils";
 
 interface ContentCardProps {
   item: ContentItem;
@@ -201,32 +203,8 @@ export default function ContentCard({ item, className }: ContentCardProps) {
   };
 
   const getPosterImageUrl = (item: any): string | undefined => {
-    if (item?.image_url) {
-      return item.image_url;
-    }
-
-    if (item?.images) {
-      const images = item.images as any;
-
-      if (images.poster) {
-        if (images.poster.original) return images.poster.original;
-        if (images.poster.standard) return images.poster.standard;
-      }
-
-      if (Array.isArray(images.screenshots) && images.screenshots.length > 0) {
-        const first = images.screenshots[0];
-        if (first?.original) return first.original;
-        if (first?.standard) return first.standard;
-      }
-
-      if (Array.isArray(images.artworks) && images.artworks.length > 0) {
-        const first = images.artworks[0];
-        if (first?.original) return first.original;
-        if (first?.standard) return first.standard;
-      }
-    }
-
-    return undefined;
+    // Use the new image utility that handles both old and new image structures
+    return getCardImageUrl(item?.images, item?.image_url) || undefined;
   };
 
   const getFooterInfo = (): string => {
@@ -271,8 +249,8 @@ export default function ContentCard({ item, className }: ContentCardProps) {
   };
 
   const getAuthors = (): string => {
-    if ("authors" in item && item.authors && item.authors.length > 0) {
-      return item.authors.join(", ");
+    if ("authors" in item && item.authors) {
+      return formatAuthors(item.authors);
     }
     return "";
   };

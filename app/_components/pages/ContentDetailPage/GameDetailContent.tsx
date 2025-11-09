@@ -2,6 +2,7 @@
 
 import { GameDetail } from "@/lib/api/types";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
+import { formatAuthors, formatPlatforms } from "@/lib/utils/authorUtils";
 
 interface GameDetailContentProps {
   game: GameDetail;
@@ -11,18 +12,15 @@ export default function GameDetailContent({ game }: GameDetailContentProps) {
   const releaseDate = formatReleaseDate(game.release_date);
 
   // Combine artworks and screenshots into a single gallery array
-  const galleryImages = [
-    ...(game.images?.artworks?.map((artwork, index) => ({
-      src: artwork.standard || artwork.original,
-      alt: `${game.title} artwork ${index + 1}`,
-      type: "artwork" as const,
-    })) || []),
-    ...(game.images?.screenshots?.map((screenshot, index) => ({
-      src: screenshot.standard || screenshot.original,
-      alt: `${game.title} screenshot ${index + 1}`,
-      type: "screenshot" as const,
-    })) || []),
-  ];
+  const galleryImages = game.images
+    ? game.images
+        .filter(img => img.type === "ARTWORK" || img.type === "SCREENSHOT")
+        .map((img, index) => ({
+          src: img.image_url,
+          alt: `${game.title} ${img.type.toLowerCase()} ${index + 1}`,
+          type: img.type.toLowerCase(),
+        }))
+    : [];
 
   return (
     <>
@@ -43,13 +41,13 @@ export default function GameDetailContent({ game }: GameDetailContentProps) {
               {game.authors && game.authors.length > 0 && (
                 <div>
                   <span className="text-white/60 font-bold">Developers:</span>
-                  <span className="text-white ml-2 font-sans">{game.authors.join(", ")}</span>
+                  <span className="text-white ml-2 font-sans">{formatAuthors(game.authors)}</span>
                 </div>
               )}
               {game.platforms && game.platforms.length > 0 && (
                 <div>
                   <span className="text-white/60 font-bold">Platforms:</span>
-                  <span className="text-white ml-2 font-sans">{game.platforms.join(", ")}</span>
+                  <span className="text-white ml-2 font-sans">{formatPlatforms(game.platforms)}</span>
                 </div>
               )}
           </div>

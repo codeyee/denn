@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { Film, Tv, Gamepad2, Book, Music, LucideIcon } from "lucide-react";
 import { ContentItem } from "@/types/contentTypes";
 import { SourceApi, ContentType } from "@/lib/api/types";
+import { getLegacyImageUrl } from "@/lib/utils/imageUtils";
+import { formatAuthors } from "@/lib/utils/authorUtils";
 
 const TYPE_ICON: Record<string, LucideIcon> = {
   movie: Film,
@@ -29,39 +31,6 @@ function getItemType(item: ContentItem): keyof typeof TYPE_ICON {
   return "movie";
 }
 
-function getBestImageUrl(item: any): string | undefined {
-  if (item && item.images) {
-    const images = item.images as any;
-
-    // Check for game-specific images first (artworks, screenshots)
-    if (Array.isArray(images?.artworks) && images.artworks.length > 0) {
-      const first = images.artworks[0];
-      if (first?.original) return first.original;
-      if (first?.standard) return first.standard;
-    }
-
-    if (Array.isArray(images?.screenshots) && images.screenshots.length > 0) {
-      const first = images.screenshots[0];
-      if (first?.original) return first.original;
-      if (first?.standard) return first.standard;
-    }
-
-    // Check for video content (movies, TV shows, seasons) - backdrop is preferred for banners
-    if (images.backdrop) {
-      if (images.backdrop.original) return images.backdrop.original;
-      if (images.backdrop.standard) return images.backdrop.standard;
-    }
-
-    // Fall back to poster if no backdrop
-    if (images.poster) {
-      if (images.poster.original) return images.poster.original;
-      if (images.poster.standard) return images.poster.standard;
-    }
-  }
-
-  return item?.image_url || undefined;
-}
-
 interface ContentBannerProps {
   item: ContentItem | any;
   tvShowTitle?: string;
@@ -72,7 +41,7 @@ interface ContentBannerProps {
 export default function ContentBanner({ item, tvShowTitle, externalId, sourceApi }: ContentBannerProps) {
   const router = useRouter();
   const Icon = TYPE_ICON[getItemType(item)];
-  const backgroundUrl = getBestImageUrl(item);
+  const backgroundUrl = getLegacyImageUrl(item);
 
   const getOriginalTitle = (item: ContentItem | any): string => {
     if ("original_title" in item && item.original_title) {
@@ -82,8 +51,8 @@ export default function ContentBanner({ item, tvShowTitle, externalId, sourceApi
   };
 
   const getAuthors = (item: ContentItem | any): string => {
-    if ("authors" in item && item.authors && item.authors.length > 0) {
-      return item.authors.join(", ");
+    if ("authors" in item && item.authors) {
+      return formatAuthors(item.authors);
     }
     return "";
   };

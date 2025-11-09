@@ -165,20 +165,8 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
                   const ContentIcon = getContentTypeIcon(contentItem.content_type);
                   const contentTypeLabel = getContentTypeLabel(contentItem.content_type);
 
-                  // Try to get backdrop image first, fallback to poster
-                  let imageUrl = sourceData.image_url;
-                  if ('images' in sourceData && sourceData.images) {
-                    const images = sourceData.images as Record<string, Record<string, string>>;
-                    if (images.backdrop?.standard) {
-                      imageUrl = images.backdrop.standard;
-                    } else if (images.backdrop?.original) {
-                      imageUrl = images.backdrop.original;
-                    } else if (images.poster?.standard) {
-                      imageUrl = images.poster.standard;
-                    } else if (images.poster?.original) {
-                      imageUrl = images.poster.original;
-                    }
-                  }
+                  // Use the legacy image URL helper to handle both old and new image structures
+                  const imageUrl = sourceData.image_url;
 
                   return (
                     <ExpandableListItem

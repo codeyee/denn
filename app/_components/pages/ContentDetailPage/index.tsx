@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { contentItemActions, videoActions, musicActions, gameActions, bookActions, ratingActions } from "@/lib/api";
 import { ContentType, SourceApi, Rating, RatingCreate } from "@/lib/api/types";
+import { formatAuthors, formatPlatforms, getAuthorNames } from "@/lib/utils/authorUtils";
 import {
   MovieDetail,
   TVShowDetail,
@@ -353,7 +354,7 @@ export default function ContentDetailPage({
                     <span className="text-white ml-2 font-sans">{album.total_tracks}</span>
                   </div>
                 )}
-                {album.duration_minutes !== undefined && (
+                {album.duration_minutes !== undefined && album.duration_minutes !== null && (
                   <div>
                     <span className="text-white/60 font-bold">Duration:</span>
                     <span className="text-white ml-2 font-sans">
@@ -402,13 +403,13 @@ export default function ContentDetailPage({
                 {game.authors && game.authors.length > 0 && (
                   <div>
                     <span className="text-white/60 font-bold">Developers:</span>
-                    <span className="text-white ml-2 font-sans">{game.authors.join(", ")}</span>
+                    <span className="text-white ml-2 font-sans">{formatAuthors(game.authors)}</span>
                   </div>
                 )}
                 {game.platforms && game.platforms.length > 0 && (
                   <div>
                     <span className="text-white/60 font-bold">Platforms:</span>
-                    <span className="text-white ml-2 font-sans">{game.platforms.join(", ")}</span>
+                    <span className="text-white ml-2 font-sans">{formatPlatforms(game.platforms)}</span>
                   </div>
                 )}
             </div>
@@ -451,7 +452,7 @@ export default function ContentDetailPage({
               key={track.id}
               trackNumber={track.track_number}
               title={track.title}
-              artists={track.authors || undefined}
+              artists={track.authors ? getAuthorNames(track.authors) : undefined}
               duration={
                 track.duration_seconds
                   ? formatDuration(track.duration_seconds)
@@ -489,18 +490,15 @@ export default function ContentDetailPage({
     if (contentItem?.content_type !== ContentType.GAME || !detailData) return null;
     const game = detailData as GameDetail;
 
-    const galleryImages = [
-      ...(game.images?.artworks?.map((artwork, index) => ({
-        src: artwork.standard || artwork.original,
-        alt: `${game.title} artwork ${index + 1}`,
-        type: "artwork" as const,
-      })) || []),
-      ...(game.images?.screenshots?.map((screenshot, index) => ({
-        src: screenshot.standard || screenshot.original,
-        alt: `${game.title} screenshot ${index + 1}`,
-        type: "screenshot" as const,
-      })) || []),
-    ];
+    const galleryImages = game.images
+      ? game.images
+          .filter(img => img.type === "ARTWORK" || img.type === "SCREENSHOT")
+          .map((img, index) => ({
+            src: img.image_url,
+            alt: `${game.title} ${img.type.toLowerCase()} ${index + 1}`,
+            type: img.type.toLowerCase(),
+          }))
+      : [];
 
     if (galleryImages.length === 0) return null;
 

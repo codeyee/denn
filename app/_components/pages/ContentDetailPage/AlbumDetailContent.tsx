@@ -4,6 +4,7 @@ import { AlbumDetail, Track } from "@/lib/api/types";
 import { VerticalList } from "@/app/_components/common/List";
 import TrackListItem from "@/app/_components/common/List/TrackListItem";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
+import { getAuthorNames } from "@/lib/utils/authorUtils";
 
 interface AlbumDetailContentProps {
   album: AlbumDetail;
@@ -42,7 +43,7 @@ export default function AlbumDetailContent({ album }: AlbumDetailContentProps) {
                 <span className="text-white ml-2 font-sans">{album.total_tracks}</span>
               </div>
             )}
-            {album.duration_minutes !== undefined && (
+            {album.duration_minutes !== undefined && album.duration_minutes !== null && (
               <div>
                 <span className="text-white/60 font-bold">Duration:</span>
                 <span className="text-white ml-2 font-sans">
@@ -80,7 +81,7 @@ export default function AlbumDetailContent({ album }: AlbumDetailContentProps) {
                 key={track.id}
                 trackNumber={track.track_number}
                 title={track.title}
-                artists={track.authors || undefined}
+                artists={track.authors ? getAuthorNames(track.authors) : undefined}
                 duration={
                   track.duration_seconds
                     ? formatDuration(track.duration_seconds)
