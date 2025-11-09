@@ -6,8 +6,8 @@ class TVShowSearchItemSerializer(serializers.Serializer):
         help_text="TMDB ID"
     )
     type = serializers.ChoiceField(
-        choices=['tv'],
-        help_text="Content type: 'tv'"
+        choices=['TV_SHOW'],
+        help_text="Content type: 'TV_SHOW'"
     )
     title = serializers.CharField(
         help_text="Title in English or original language"

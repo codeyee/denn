@@ -5,12 +5,17 @@ class GameDetailSerializer(serializers.Serializer):
     id = serializers.IntegerField(
         help_text="IGDB game ID"
     )
+    type = serializers.ChoiceField(
+        choices=['GAME'],
+        help_text="Content type: 'GAME'"
+    )
     title = serializers.CharField(
         help_text="Game title"
     )
-    type = serializers.CharField(
+    game_type = serializers.CharField(
         allow_null=True,
-        help_text="Game type"
+        required=False,
+        help_text="Game type (ORIGINAL, REMAKE, REMASTER, STANDALONE_EXPANSION)"
     )
     release_date = serializers.CharField(
         allow_null=True,

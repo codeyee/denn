@@ -5,6 +5,10 @@ class MovieDetailSerializer(serializers.Serializer):
     id = serializers.IntegerField(
         help_text="TMDB movie ID"
     )
+    type = serializers.ChoiceField(
+        choices=['MOVIE'],
+        help_text="Content type: 'MOVIE'"
+    )
     title = serializers.CharField(
         help_text="Movie title"
     )

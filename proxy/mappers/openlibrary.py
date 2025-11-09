@@ -101,6 +101,7 @@ class OpenLibraryMapper:
         return Book(
             id=self._extract_id_from_key(item.get('key')),
             title=item.get('title', ''),
+            content_type=ContentType.BOOK,
             authors=authors,
             image_url=image_url,
             release_date=self._parse_publish_date(item.get('publish_date'), item.get('first_publish_year')),

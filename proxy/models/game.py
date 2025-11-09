@@ -7,9 +7,10 @@ from proxy.models.base import Images, Platform, Author
 class Game:
     id: int
     title: str
+    content_type: str
     description: Optional[str] = None
     image_url: Optional[str] = None
-    type: Optional[str] = None
+    game_type: Optional[str] = None
     release_date: Optional[str] = None
     authors: Optional[List[Author]] = None
     platforms: Optional[List[Platform]] = None
@@ -18,8 +19,9 @@ class Game:
     def to_dict(self) -> Dict:
         result = {
             'id': self.id,
+            'type': self.content_type,
             'title': self.title,
-            'type': self.type,
+            'game_type': self.game_type,
             'description': self.description,
             'image_url': self.image_url,
             'release_date': self.release_date,

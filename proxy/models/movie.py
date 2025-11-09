@@ -8,6 +8,7 @@ class Movie:
     id: int
     title: str
     original_title: str
+    content_type: str
     description: Optional[str] = None
     image_url: Optional[str] = None
     tagline: Optional[str] = None
@@ -22,6 +23,7 @@ class Movie:
     def to_dict(self) -> Dict:
         result = {
             'id': self.id,
+            'type': self.content_type,
             'imdb_id': self.imdb_id,
             'title': self.title,
             'original_title': self.original_title,

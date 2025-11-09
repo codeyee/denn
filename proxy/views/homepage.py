@@ -444,8 +444,8 @@ class HomepageView(APIView):
         enriched_items = list(items)
         for idx, item in enumerate(enriched_items):
             item_id = item.get('id')
-            if item_id in details_map:
-                enriched_items[idx] = details_map[item_id]
+            if item_id and str(item_id) in details_map:
+                enriched_items[idx] = details_map[str(item_id)]
         return enriched_items
 
     def _format_response(self, movies: List, tv: List, games: List, albums: List, books: List) -> Dict[str, List]:

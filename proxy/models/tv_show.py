@@ -33,6 +33,7 @@ class Season:
     id: int
     season_number: int
     title: str
+    content_type: str
     number_of_episodes: int = 0
     description: Optional[str] = None
     release_date: Optional[str] = None
@@ -45,6 +46,7 @@ class Season:
     def to_dict(self) -> Dict:
         result = {
             'id': self.id,
+            'type': self.content_type,
             'season_number': self.season_number,
             'title': self.title,
             'tv_show_name': self.tv_show_name,
@@ -74,6 +76,7 @@ class TVShow:
     id: int
     title: str
     original_title: str
+    content_type: str
     description: Optional[str] = None
     image_url: Optional[str] = None
     tagline: Optional[str] = None
@@ -90,6 +93,7 @@ class TVShow:
     def to_dict(self) -> Dict:
         result = {
             'id': self.id,
+            'type': self.content_type,
             'imdb_id': self.imdb_id,
             'title': self.title,
             'original_title': self.original_title,

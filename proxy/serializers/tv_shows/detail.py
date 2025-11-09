@@ -6,6 +6,10 @@ class TVShowDetailSerializer(serializers.Serializer):
     id = serializers.IntegerField(
         help_text="TMDB TV show ID"
     )
+    type = serializers.ChoiceField(
+        choices=['TV_SHOW'],
+        help_text="Content type: 'TV_SHOW'"
+    )
     title = serializers.CharField(
         help_text="TV show title"
     )

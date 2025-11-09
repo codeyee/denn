@@ -7,6 +7,7 @@ from proxy.models.base import Images, Author
 class Book:
     id: str
     title: str
+    content_type: str
     authors: Optional[List[Author]] = None
     image_url: Optional[str] = None
     release_date: Optional[str] = None
@@ -17,6 +18,7 @@ class Book:
     def to_dict(self) -> Dict:
         result = {
             'id': self.id,
+            'type': self.content_type,
             'title': self.title,
             'image_url': self.image_url,
             'release_date': self.release_date,
