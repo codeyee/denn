@@ -10,14 +10,43 @@ interface PlatformsDisplayProps {
 export default function PlatformsDisplay({ platforms, title = "Where to Watch" }: PlatformsDisplayProps) {
   if (Object.keys(platforms).length === 0) return null;
 
+  // Filter out redundant platform variants
+  const filterPlatforms = (platformList: Platform[]) => {
+    const excludeTerms = [
+      "Amazon Channel",
+      "Apple TV Channel",
+      "Roku Premium Channel",
+      "with Ads",
+    ];
+
+    return platformList.filter(platform => {
+      return !excludeTerms.some(term => platform.title.toLowerCase().includes(term.toLowerCase()));
+    });
+  };
+
   return (
     <div>
-      <h3 className="text-lg font-semibold text-white mb-4">{title}</h3>
+      <div className="flex items-center gap-4 mb-4">
+        <h3 className="text-lg font-semibold text-white">{title}</h3>
+        {Object.entries(platforms).map(([countryCode]) => (
+          <div
+            key={countryCode}
+            className="w-7 h-7 rounded-full overflow-hidden flex items-center justify-center"
+            title={countryCode}
+          >
+            <img
+              src={`https://flagsapi.com/${countryCode}/flat/64.png`}
+              alt={countryCode}
+              title={countryCode}
+              className="h-14 w-auto object-cover"
+            />
+          </div>
+        ))}
+      </div>
       {Object.entries(platforms).map(([countryCode, platformList]) => (
         <div key={countryCode} className="mb-6">
-          {countryCode && <h4 className="text-sm font-medium text-white/70 mb-3">{countryCode}</h4>}
           <div className="flex flex-wrap gap-3">
-            {platformList.map((platform, index) => (
+            {filterPlatforms(platformList).map((platform, index) => (
               <div key={index} className="flex flex-col items-center gap-2">
                 <div className="relative w-14 h-14 rounded-lg overflow-hidden bg-white/10">
                   {platform.image_url && (

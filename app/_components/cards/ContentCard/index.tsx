@@ -5,10 +5,11 @@ import { useRef } from "react";
 import Card from "../Card";
 import { contentTypeEnum } from "@/types/types";
 import { ContentItem } from "@/types/contentTypes";
+import { SourceApi, ContentType } from "@/lib/api/types";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { getCardImageUrl } from "@/lib/utils/imageUtils";
 import { formatAuthors } from "@/lib/utils/authorUtils";
-import { inferContentTypeEnum, inferNavigationParams } from "@/lib/utils/contentTypeUtils";
+import { inferContentTypeEnum } from "@/lib/utils/contentTypeUtils";
 
 interface ContentCardProps {
   item: ContentItem;
@@ -24,7 +25,7 @@ export default function ContentCard({ item, className }: ContentCardProps) {
     // Determine source API and content type from the item
     let sourceApi: SourceApi | undefined;
     let contentType: ContentType | undefined;
-    let externalId: string | number | undefined;
+    let externalId: string | undefined;
 
     // First check if there's an explicit type field (from search results)
     if ("type" in item && typeof item.type === "string") {
