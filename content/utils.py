@@ -59,12 +59,11 @@ def _fetch_tmdb_movie_data(external_id: str, country_code: Optional[str] = None)
     mapper = TMDBMapper(client)
 
     try:
-        if content_type == ContentItem.ContentType.MOVIE:
-            movie_id_int = int(external_id)
-            movie, status_code = mapper.get_movie_complete(
-                movie_id_int, country_code)
-            if status_code == http_status.HTTP_200_OK and movie:
-                return movie.to_dict()
+        movie_id_int = int(external_id)
+        movie, status_code = mapper.get_movie_complete(
+            movie_id_int, country_code)
+        if status_code == http_status.HTTP_200_OK and movie:
+            return movie.to_dict()
     except Exception:
         pass
 
@@ -76,12 +75,11 @@ def _fetch_tmdb_tv_show_data(external_id: str, country_code: Optional[str] = Non
     mapper = TMDBMapper(client)
 
     try:
-        if content_type == ContentItem.ContentType.TV_SHOW:
-            tv_id_int = int(external_id)
-            tv_show, status_code = mapper.get_tv_show_complete(
-                tv_id_int, country_code)
-            if status_code == http_status.HTTP_200_OK and tv_show:
-                return tv_show.to_dict()
+        tv_id_int = int(external_id)
+        tv_show, status_code = mapper.get_tv_show_complete(
+            tv_id_int, country_code)
+        if status_code == http_status.HTTP_200_OK and tv_show:
+            return tv_show.to_dict()
     except Exception:
         pass
 
@@ -93,15 +91,14 @@ def _fetch_tmdb_season_data(external_id: str, country_code: Optional[str] = None
     mapper = TMDBMapper(client)
 
     try:
-        if content_type == ContentItem.ContentType.SEASON:
-            parts = external_id.split(':')
-            if len(parts) == 2:
-                tv_id = int(parts[0])
-                season_number = int(parts[1])
-                season, status_code = mapper.get_season_complete(
-                    tv_id, season_number, country_code)
-                if status_code == http_status.HTTP_200_OK and season:
-                    return season.to_dict()
+        parts = external_id.split(':')
+        if len(parts) == 2:
+            tv_id = int(parts[0])
+            season_number = int(parts[1])
+            season, status_code = mapper.get_season_complete(
+                tv_id, season_number, country_code)
+            if status_code == http_status.HTTP_200_OK and season:
+                return season.to_dict()
     except Exception:
         pass
 
