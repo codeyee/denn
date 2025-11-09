@@ -80,8 +80,6 @@ export enum AuthorType {
 export enum ImageType {
   POSTER = "POSTER",
   GALLERY = "GALLERY",
-  SCREENSHOT = "SCREENSHOT",
-  ARTWORK = "ARTWORK",
 }
 
 export enum ImageSize {

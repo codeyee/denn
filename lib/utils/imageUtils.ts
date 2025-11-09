@@ -3,7 +3,7 @@ import { Image } from "@/lib/api/types";
 /**
  * Helper to extract image URL from the new Image[] structure
  * @param images - Array of images from the API
- * @param type - Image type (e.g., "POSTER", "GALLERY", "SCREENSHOT", "ARTWORK")
+ * @param type - Image type ("POSTER" or "GALLERY")
  * @param preferredSize - Preferred size ("ORIGINAL" or "STANDARD"), defaults to "ORIGINAL"
  * @returns Image URL or null
  */
@@ -63,7 +63,7 @@ export function getBannerImageUrl(
 
 /**
  * Get the best image URL for cards/thumbnails
- * Prefers POSTER, falls back to other types
+ * Prefers POSTER, falls back to GALLERY
  */
 export function getCardImageUrl(
   images: Image[] | undefined | null,
@@ -73,14 +73,7 @@ export function getCardImageUrl(
   const poster = getImageUrl(images, "POSTER", "STANDARD");
   if (poster) return poster;
 
-  // For games, try SCREENSHOT or ARTWORK
-  const screenshot = getImageUrl(images, "SCREENSHOT", "STANDARD");
-  if (screenshot) return screenshot;
-
-  const artwork = getImageUrl(images, "ARTWORK", "STANDARD");
-  if (artwork) return artwork;
-
-  // Fall back to GALLERY if nothing else
+  // Fall back to GALLERY if no poster
   const gallery = getImageUrl(images, "GALLERY", "STANDARD");
   if (gallery) return gallery;
 
