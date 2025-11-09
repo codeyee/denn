@@ -8,9 +8,9 @@ class GameSearchItemSerializer(serializers.Serializer):
     title = serializers.CharField(
         help_text="Game title"
     )
-    type = serializers.CharField(
-        allow_null=True,
-        help_text="Game type (e.g., 'Main game', 'DLC', 'Expansion')"
+    type = serializers.ChoiceField(
+        choices=['GAME'],
+        help_text="Content type: 'GAME'"
     )
     release_date = serializers.CharField(
         allow_null=True,

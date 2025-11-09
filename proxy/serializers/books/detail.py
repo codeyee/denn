@@ -5,6 +5,10 @@ class BookDetailSerializer(serializers.Serializer):
     id = serializers.CharField(
         help_text="OpenLibrary work ID"
     )
+    type = serializers.ChoiceField(
+        choices=['BOOK'],
+        help_text="Content type: 'BOOK'"
+    )
     title = serializers.CharField(
         help_text="Book title"
     )

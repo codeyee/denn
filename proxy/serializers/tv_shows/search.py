@@ -1,13 +1,13 @@
 from rest_framework import serializers
-from ..common import PaginationMetadataSerializer
+from ..common import PaginationMetadataSerializer, AuthorSerializer
 
 class TVShowSearchItemSerializer(serializers.Serializer):
     id = serializers.IntegerField(
         help_text="TMDB ID"
     )
     type = serializers.ChoiceField(
-        choices=['tv'],
-        help_text="Content type: 'tv'"
+        choices=['TV_SHOW'],
+        help_text="Content type: 'TV_SHOW'"
     )
     title = serializers.CharField(
         help_text="Title in English or original language"
@@ -27,6 +27,12 @@ class TVShowSearchItemSerializer(serializers.Serializer):
     release_date = serializers.CharField(
         allow_null=True,
         help_text="Release date in YYYY-MM-DD format"
+    )
+    authors = AuthorSerializer(
+        many=True,
+        allow_null=True,
+        required=False,
+        help_text="Production companies (not available in search results due to TMDB API limitations)"
     )
 
 class TVShowSearchResponseSerializer(serializers.Serializer):

@@ -27,7 +27,11 @@ class TrackSerializer(serializers.Serializer):
 class AlbumDetailSerializer(serializers.Serializer):
     id = serializers.CharField(
         help_text="Spotify album ID"
-)
+    )
+    type = serializers.ChoiceField(
+        choices=['ALBUM'],
+        help_text="Content type: 'ALBUM'"
+    )
     title = serializers.CharField(
         help_text="Album title"
     )

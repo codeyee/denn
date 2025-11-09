@@ -125,12 +125,13 @@ class SpotifyMapper:
         return Album(
             id=data.get('id'),
             title=data.get('name', ''),
+            content_type=ContentType.ALBUM,
             authors=self._get_artist_names(data.get('artists')),
             image_url=self._get_image_url(data.get('images'), 'large'),
             release_date=self._normalize_release_date(data.get('release_date')),
             total_tracks=total_tracks,
             duration_minutes=duration_minutes,
-            type=derived_album_type,
+            album_type=derived_album_type,
             external_url=data.get('external_urls', {}).get('spotify'),
             images=images,
             tracks=tracks

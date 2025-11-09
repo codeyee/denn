@@ -59,6 +59,10 @@ class TVSeasonDetailSerializer(serializers.Serializer):
     id = serializers.IntegerField(
         help_text="TMDB season ID"
     )
+    type = serializers.ChoiceField(
+        choices=['SEASON'],
+        help_text="Content type: 'SEASON'"
+    )
     season_number = serializers.IntegerField(
         help_text="Season number"
     )

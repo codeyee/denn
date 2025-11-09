@@ -29,12 +29,13 @@ class Track:
 class Album:
     id: str
     title: str
+    content_type: str
     authors: Optional[List[Author]] = None
     image_url: Optional[str] = None
     release_date: Optional[str] = None
     total_tracks: Optional[int] = None
     duration_minutes: Optional[int] = None
-    type: Optional[str] = None
+    album_type: Optional[str] = None
     external_url: Optional[str] = None
     images: Optional[Images] = None
     tracks: List[Track] = field(default_factory=list)
@@ -42,12 +43,13 @@ class Album:
     def to_dict(self) -> Dict:
         result = {
             'id': self.id,
+            'type': self.content_type,
             'title': self.title,
             'image_url': self.image_url,
             'release_date': self.release_date,
             'total_tracks': self.total_tracks,
             'duration_minutes': self.duration_minutes,
-            'type': self.type,
+            'album_type': self.album_type,
             'external_url': self.external_url,
         }
 
