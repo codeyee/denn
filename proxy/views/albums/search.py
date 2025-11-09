@@ -4,6 +4,7 @@ from proxy.views.base import SpotifyBaseView
 from proxy.exceptions import MissingParameterException, InvalidParameterException
 from proxy.serializers.albums import AlbumSearchResponseSerializer
 from proxy.serializers.common import ErrorResponseSerializer
+from core.pagination import build_pagination_metadata
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 
@@ -16,19 +17,19 @@ class AlbumSearchView(SpotifyBaseView):
 
         return query
 
-    def _validate_limit(self, request):
-        limit = int(request.query_params.get('limit', 20))
-        if limit < 1 or limit > 50:
-            raise InvalidParameterException('limit must be between 1 and 50')
+    def _validate_page_size(self, request):
+        page_size = int(request.query_params.get('page_size', 20))
+        if page_size < 1 or page_size > 50:
+            raise InvalidParameterException('page_size must be between 1 and 50')
 
-        return limit
+        return page_size
 
-    def _validate_offset(self, request):
-        offset = int(request.query_params.get('offset', 0))
-        if offset < 0:
-            raise InvalidParameterException('offset must be greater than or equal to 0')
+    def _validate_page(self, request):
+        page = int(request.query_params.get('page', 1))
+        if page < 1:
+            raise InvalidParameterException('page must be greater than or equal to 1')
 
-        return offset
+        return page
 
     @extend_schema(
         tags=['Proxy - Albums'],
@@ -40,8 +41,8 @@ class AlbumSearchView(SpotifyBaseView):
         ''',
         parameters=[
             OpenApiParameter('query', OpenApiTypes.STR, required=True, description='Search query'),
-            OpenApiParameter('limit', OpenApiTypes.INT, description='Results per page (1-50, default: 20)'),
-            OpenApiParameter('offset', OpenApiTypes.INT, description='Offset for pagination (default: 0)')
+            OpenApiParameter('page_size', OpenApiTypes.INT, description='Results per page (1-50, default: 20)'),
+            OpenApiParameter('page', OpenApiTypes.INT, description='Page number (default: 1)')
         ],
         responses={
             200: AlbumSearchResponseSerializer,
@@ -50,13 +51,16 @@ class AlbumSearchView(SpotifyBaseView):
     )
     def get(self, request):
         query = self._validate_query(request)
-        limit = self._validate_limit(request)
-        offset = self._validate_offset(request)
+        page = self._validate_page(request)
+        page_size = self._validate_page_size(request)
+
+        # Calculate offset for Spotify API (uses offset-based pagination internally)
+        offset = (page - 1) * page_size
 
         client = self.get_client()
         mapper = self.get_mapper()
 
-        data, status_code = client.search(query=query, search_type='album', limit=limit, offset=offset)
+        data, status_code = client.search(query=query, search_type='album', limit=page_size, offset=offset)
 
         if status_code != http_status.HTTP_200_OK:
             return Response(data, status=status_code)
@@ -71,15 +75,12 @@ class AlbumSearchView(SpotifyBaseView):
                 search_item = mapper.map_search_item(album)
                 filtered_albums.append(search_item.to_dict())
 
-        total_results = albums_data.get('total', 0)
-        current_page = (offset // limit) + 1 if limit > 0 else 1
-        total_pages = (total_results // limit) + (1 if total_results % limit > 0 else 0) if limit > 0 else 1
-
-        metadata = {
-            'page': current_page,
-            'page_results': len(filtered_albums),
-            'total_pages': total_pages,
-            'total_results': total_results
-        }
+        metadata = build_pagination_metadata(
+            request=request,
+            current_page=page,
+            page_size=page_size,
+            total_results=albums_data.get('total', 0),
+            results_count=len(filtered_albums)
+        )
 
         return Response({'metadata': metadata, 'results': filtered_albums}, status=http_status.HTTP_200_OK)

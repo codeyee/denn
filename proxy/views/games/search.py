@@ -4,6 +4,7 @@ from proxy.views.base import IGDBBaseView
 from proxy.exceptions import MissingParameterException, InvalidParameterException
 from proxy.serializers.games import GameSearchResponseSerializer
 from proxy.serializers.common import ErrorResponseSerializer
+from core.pagination import build_pagination_metadata
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 
@@ -16,12 +17,12 @@ class GameSearchView(IGDBBaseView):
 
         return query
 
-    def _validate_limit(self, request):
-        limit = int(request.query_params.get('limit', 50))
-        if limit < 1 or limit > 500:
-            raise InvalidParameterException('limit must be between 1 and 500')
+    def _validate_page_size(self, request):
+        page_size = int(request.query_params.get('page_size', 20))
+        if page_size < 1 or page_size > 500:
+            raise InvalidParameterException('page_size must be between 1 and 500')
 
-        return limit
+        return page_size
 
     def _validate_page(self, request):
         page = int(request.query_params.get('page', 1))
@@ -36,11 +37,11 @@ class GameSearchView(IGDBBaseView):
         description='''
         Search for video games by title using IGDB.
 
-        Note: IGDB doesn't provide total result counts, so total_results may be null.
+        Note: IGDB doesn't provide total result counts, so count and total_pages may be null.
         ''',
         parameters=[
             OpenApiParameter('query', OpenApiTypes.STR, required=True, description='Search query'),
-            OpenApiParameter('limit', OpenApiTypes.INT, description='Results per page (1-500, default: 50)'),
+            OpenApiParameter('page_size', OpenApiTypes.INT, description='Results per page (1-500, default: 20)'),
             OpenApiParameter('page', OpenApiTypes.INT, description='Page number (default: 1)')
         ],
         responses={
@@ -51,14 +52,14 @@ class GameSearchView(IGDBBaseView):
     def get(self, request):
         query = self._validate_query(request)
         page = self._validate_page(request)
-        limit = self._validate_limit(request)
+        page_size = self._validate_page_size(request)
 
-        offset = (page - 1) * limit
+        offset = (page - 1) * page_size
 
         client = self.get_client()
         mapper = self.get_mapper()
 
-        data, status_code = client.search_games(query=query, limit=limit, offset=offset)
+        data, status_code = client.search_games(query=query, limit=page_size, offset=offset)
 
         if status_code != http_status.HTTP_200_OK:
             return Response(data, status=status_code)
@@ -68,13 +69,13 @@ class GameSearchView(IGDBBaseView):
 
         results = [mapper.map_search_item(item).to_dict() for item in data]
 
-        has_more = len(results) == limit
-
-        metadata = {
-            'page': page,
-            'page_results': len(results),
-            'total_pages': page + 1 if has_more else page,
-            'total_results': len(results) if not has_more else None
-        }
+        # IGDB doesn't provide totals, so we pass None for total_results
+        metadata = build_pagination_metadata(
+            request=request,
+            current_page=page,
+            page_size=page_size,
+            total_results=None,  # IGDB doesn't provide this
+            results_count=len(results)
+        )
 
         return Response({'metadata': metadata, 'results': results}, status=http_status.HTTP_200_OK)

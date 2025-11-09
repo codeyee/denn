@@ -1,6 +1,5 @@
 from typing import Dict, Any, Optional, List, Tuple
 from concurrent.futures import ThreadPoolExecutor
-from django.conf import settings
 from rest_framework import status as http_status
 from proxy.models.base import Images, Platform, Author
 from proxy.models.movie import Movie
@@ -9,46 +8,35 @@ from proxy.models.base import SearchItem
 from proxy.clients.tmdb import TMDBClient
 from proxy.constants import ProviderAction, ContentType, AuthorType
 
+TMDB_IMAGES_BASE_URL = "https://image.tmdb.org/t/p"
+
 
 def build_image_url(path: Optional[str], size: str = 'w500') -> Optional[str]:
     if not path:
         return None
-
-    base_url = settings.PROXY_API["TMDB"]["IMAGES_BASE_URL"]
-    base_url = base_url.rsplit('/', 1)[0]
-    return f'{base_url}/{size}{path}'
+    return f'{TMDB_IMAGES_BASE_URL}/{size}{path}'
 
 
 class TMDBMapper:
     def __init__(self, client: TMDBClient):
         self.client = client
 
-    def _process_images_data(self, images_data: Optional[Dict[str, Any]]) -> Tuple[List[str], List[str]]:
-        additional_posters = []
+    def _process_images_data(self, images_data: Optional[Dict[str, Any]]) -> List[Dict[str, str]]:
         additional_galleries = []
 
         if not images_data:
-            return additional_posters, additional_galleries
+            return additional_galleries
 
-        posters = images_data.get('posters', [])[:4]
-        for poster in posters:
-            file_path = poster.get('file_path')
-            if file_path:
-                additional_posters.append(build_image_url(file_path, 'original'))
-
-        backdrops = images_data.get('backdrops', [])[:4]
+        backdrops = images_data.get('backdrops', [])[:7]
         for backdrop in backdrops:
             file_path = backdrop.get('file_path')
             if file_path:
-                additional_galleries.append(build_image_url(file_path, 'original'))
+                additional_galleries.append({
+                    'standard': build_image_url(file_path, 'w1280'),
+                    'original': build_image_url(file_path, 'original')
+                })
 
-        logos = images_data.get('logos', [])[:4]
-        for logo in logos:
-            file_path = logo.get('file_path')
-            if file_path:
-                additional_galleries.append(build_image_url(file_path, 'original'))
-
-        return additional_posters, additional_galleries
+        return additional_galleries
 
     def _build_images(
         self,
@@ -56,14 +44,13 @@ class TMDBMapper:
         gallery_path: Optional[str],
         images_data: Optional[Dict[str, Any]] = None
     ) -> Images:
-        additional_posters, additional_galleries = self._process_images_data(images_data)
+        additional_galleries = self._process_images_data(images_data)
 
         return Images(
             poster_standard=build_image_url(poster_path, 'w500'),
             poster_original=build_image_url(poster_path, 'original'),
             gallery_standard=build_image_url(gallery_path, 'w1280'),
             gallery_original=build_image_url(gallery_path, 'original'),
-            additional_posters=additional_posters,
             additional_galleries=additional_galleries
         )
 

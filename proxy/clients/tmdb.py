@@ -1,14 +1,17 @@
+import os
 from typing import Dict, Any, Optional, Tuple
 from django.conf import settings
 from .base.cached import CachedAPIClient
 from concurrent.futures import ThreadPoolExecutor
 
+TMDB_API_KEY = os.getenv("TMDB_API_KEY")
+TMDB_BASE_URL = "https://api.themoviedb.org/3"
+
 class TMDBClient(CachedAPIClient):
     def __init__(self):
-        config = settings.PROXY_API['TMDB']
-        super().__init__(base_url=config['BASE_URL'], api_name='tmdb')
+        super().__init__(base_url=TMDB_BASE_URL, api_name='tmdb')
 
-        self.api_key = settings.API_KEYS_CACHE['tmdb']['api_key'] or config['API_KEY']
+        self.api_key = settings.API_KEYS_CACHE['tmdb']['api_key'] or TMDB_API_KEY
         settings.API_KEYS_CACHE['tmdb']['api_key'] = self.api_key
         self._save_api_keys()
 

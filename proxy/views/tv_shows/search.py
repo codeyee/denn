@@ -4,6 +4,7 @@ from proxy.serializers.tv_shows import TVShowSearchResponseSerializer
 from proxy.serializers.common import ErrorResponseSerializer
 from proxy.mappers import TMDBMapper
 from proxy.constants import ContentType
+from core.pagination import build_pagination_metadata
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 from rest_framework.response import Response
@@ -18,12 +19,12 @@ class TVShowSearchView(TMDBBaseView):
 
         return query
 
-    def _validate_limit(self, request):
-        limit = int(request.query_params.get('limit', 50))
-        if limit < 1 or limit > 50:
-            raise InvalidParameterException('limit must be between 1 and 50')
+    def _validate_page_size(self, request):
+        page_size = int(request.query_params.get('page_size', 20))
+        if page_size < 1 or page_size > 50:
+            raise InvalidParameterException('page_size must be between 1 and 50')
 
-        return limit
+        return page_size
 
     def _validate_page(self, request):
         page = int(request.query_params.get('page', 1))
@@ -32,7 +33,7 @@ class TVShowSearchView(TMDBBaseView):
 
         return page
 
-    def filter_and_transform_results(self, data, mapper):
+    def filter_and_transform_results(self, data, mapper, request, page_size):
         if 'results' not in data:
             return data
 
@@ -41,12 +42,13 @@ class TVShowSearchView(TMDBBaseView):
             mapped_item = mapper.map_search_item(item, ContentType.TV_SHOW)
             results.append(mapped_item.to_dict())
 
-        metadata = {
-            'page': data.get('page'),
-            'page_results': len(results),
-            'total_pages': data.get('total_pages'),
-            'total_results': data.get('total_results')
-        }
+        metadata = build_pagination_metadata(
+            request=request,
+            current_page=data.get('page', 1),
+            page_size=page_size,
+            total_results=data.get('total_results'),
+            results_count=len(results)
+        )
 
         return {'metadata': metadata, 'results': results}
 
@@ -66,6 +68,12 @@ class TVShowSearchView(TMDBBaseView):
                 OpenApiParameter.QUERY,
                 required=False,
                 description='Page number (default: 1)'
+            ),
+            OpenApiParameter(
+                'page_size', OpenApiTypes.INT,
+                OpenApiParameter.QUERY,
+                required=False,
+                description='Number of results per page (1-50, default: 20)'
             )
         ],
         responses={
@@ -76,7 +84,7 @@ class TVShowSearchView(TMDBBaseView):
     def get(self, request):
         query = self._validate_query(request)
         page = self._validate_page(request)
-        limit = self._validate_limit(request)
+        page_size = self._validate_page_size(request)
 
         client = self.get_client()
         mapper = self.get_mapper()
@@ -85,5 +93,5 @@ class TVShowSearchView(TMDBBaseView):
         if status_code != http_status.HTTP_200_OK:
             return Response(data, status=status_code)
 
-        transformed_data = self.filter_and_transform_results(data, mapper)
+        transformed_data = self.filter_and_transform_results(data, mapper, request, page_size)
         return Response(transformed_data, status=http_status.HTTP_200_OK)

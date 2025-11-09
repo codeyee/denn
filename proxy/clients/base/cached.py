@@ -24,8 +24,7 @@ class CachedAPIClient(BaseAPIClient):
         settings.API_KEYS_CACHE[self.api_name] = api_keys
 
     def _get_timeout(self, operation: str) -> int:
-        api_timeouts = settings.API_TIMEOUTS.get(self.api_name, {})
-        return api_timeouts.get(operation, self.timeout)
+        return self.timeout
 
     def _get_cache_timeout(self, cache_type: str) -> int:
         return settings.CACHE_TIMEOUTS.get(cache_type, 3600)

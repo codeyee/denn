@@ -34,7 +34,7 @@ class Album:
     release_date: Optional[str] = None
     total_tracks: Optional[int] = None
     duration_minutes: Optional[int] = None
-    album_type: Optional[str] = None
+    type: Optional[str] = None
     external_url: Optional[str] = None
     images: Optional[Images] = None
     tracks: List[Track] = field(default_factory=list)
@@ -47,7 +47,7 @@ class Album:
             'release_date': self.release_date,
             'total_tracks': self.total_tracks,
             'duration_minutes': self.duration_minutes,
-            'album_type': self.album_type,
+            'type': self.type,
             'external_url': self.external_url,
         }
 

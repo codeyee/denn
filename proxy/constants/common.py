@@ -23,3 +23,14 @@ class ProviderAction:
     STREAMING = 'STREAM'
     RENT = 'RENT'
     BUY = 'BUY'
+
+class GameType:
+    ORIGINAL = 'ORIGINAL'
+    REMAKE = 'REMAKE'
+    REMASTER = 'REMASTER'
+    STANDALONE_EXPANSION = 'STANDALONE_EXPANSION'
+
+class AlbumType:
+    ALBUM = 'ALBUM'
+    EP = 'EP'
+    SINGLE = 'SINGLE'

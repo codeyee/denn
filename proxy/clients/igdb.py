@@ -1,3 +1,4 @@
+import os
 import requests
 from typing import Dict, Any, Tuple, Optional, Union, List
 from django.conf import settings
@@ -12,13 +13,18 @@ from proxy.exceptions import (
 )
 from time import time
 
+IGDB_CLIENT_ID = os.getenv("IGDB_CLIENT_ID")
+IGDB_CLIENT_SECRET = os.getenv("IGDB_CLIENT_SECRET")
+IGDB_AUTH_URL = "https://id.twitch.tv/oauth2/token"
+IGDB_BASE_URL = "https://api.igdb.com/v4"
+IGDB_TOKEN_BUFFER_TIME = 60 * 60
+
 class IGDBClient(CachedAPIClient):
     def __init__(self):
-        config = settings.PROXY_API['IGDB']
-        super().__init__(base_url=config['BASE_URL'], api_name='igdb')
+        super().__init__(base_url=IGDB_BASE_URL, api_name='igdb')
 
-        self.client_id = settings.API_KEYS_CACHE['igdb']['client_id'] or config['CLIENT_ID']
-        self.client_secret = settings.API_KEYS_CACHE['igdb']['client_secret'] or config['CLIENT_SECRET']
+        self.client_id = settings.API_KEYS_CACHE['igdb']['client_id'] or IGDB_CLIENT_ID
+        self.client_secret = settings.API_KEYS_CACHE['igdb']['client_secret'] or IGDB_CLIENT_SECRET
 
         settings.API_KEYS_CACHE['igdb']['client_id'] = self.client_id
         settings.API_KEYS_CACHE['igdb']['client_secret'] = self.client_secret
@@ -30,14 +36,12 @@ class IGDBClient(CachedAPIClient):
         access_token = settings.API_KEYS_CACHE['igdb']['access_token']
         token_expires_at = settings.API_KEYS_CACHE['igdb']['token_expires_at']
 
-        if not access_token or not token_expires_at: 
+        if not access_token or not token_expires_at:
             return False
 
-        buffer_time = settings.PROXY_API['IGDB']['TOKEN_BUFFER_TIME']
-        return time() < (token_expires_at - buffer_time)
+        return time() < (token_expires_at - IGDB_TOKEN_BUFFER_TIME)
 
     def _fetch_new_token(self) -> str:
-        url = settings.PROXY_API['IGDB']['AUTH_URL']
         params = {
             'client_id': self.client_id,
             'client_secret': self.client_secret,
@@ -46,7 +50,7 @@ class IGDBClient(CachedAPIClient):
 
         try:
             timeout = self._get_timeout('auth')
-            response = requests.post(url, params=params, timeout=timeout)
+            response = requests.post(IGDB_AUTH_URL, params=params, timeout=timeout)
             response.raise_for_status()
             data = response.json()
 
@@ -164,9 +168,7 @@ class IGDBClient(CachedAPIClient):
         ])
 
     def get_included_game_types(self) -> str:
-        # 0 = Main game
-        # 8 = Remake
-        return ','.join(['0', '8'])
+        return ','.join(['0', '4', '8', '9'])
 
     def search_games(self, query: str, limit: int = 50, offset: int = 0) -> Tuple[List[Dict[str, Any]], int]:
         endpoint = 'games'

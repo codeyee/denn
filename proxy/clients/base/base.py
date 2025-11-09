@@ -1,6 +1,5 @@
 import requests
 from typing import Dict, Any, Optional, Tuple
-from django.conf import settings
 from proxy.exceptions import (
     TimeoutException,
     ConnectionErrorException,
@@ -8,17 +7,16 @@ from proxy.exceptions import (
     InternalServerException
 )
 
+DEFAULT_API_TIMEOUT = 30
+
 
 class BaseAPIClient:
     def __init__(self, base_url: str, api_name: str = None):
         self.base_url = base_url.rstrip('/')
         self.api_name = api_name
-        self.timeout = settings.REST_FRAMEWORK.get('TIMEOUT', 30)
+        self.timeout = DEFAULT_API_TIMEOUT
 
     def _get_timeout(self, operation: str = 'default') -> int:
-        if self.api_name and hasattr(settings, 'API_TIMEOUTS'):
-            api_timeouts = settings.API_TIMEOUTS.get(self.api_name, {})
-            return api_timeouts.get(operation, self.timeout)
         return self.timeout
 
     def get_default_headers(self) -> Dict[str, str]:

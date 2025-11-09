@@ -1,9 +1,8 @@
 from typing import Dict, Any, Optional, List
-from django.conf import settings
 from dateutil import parser
 from proxy.models.book import Book
 from proxy.models.base import SearchItem, Images, Author
-from proxy.clients.openlibrary import OpenLibraryClient
+from proxy.clients.openlibrary import OpenLibraryClient, OPENLIBRARY_COVERS_BASE_URL
 from proxy.constants import ContentType, AuthorType
 
 
@@ -14,8 +13,7 @@ class OpenLibraryMapper:
     def _build_cover_url(self, image_id: Optional[int], size: str = 'M') -> Optional[str]:
         if not image_id:
             return None
-        base_url = settings.PROXY_API['OPENLIBRARY']['COVERS_BASE_URL']
-        return f'{base_url}/b/id/{image_id}-{size}.jpg'
+        return f'{OPENLIBRARY_COVERS_BASE_URL}/b/id/{image_id}-{size}.jpg'
 
     def _build_images(self, image_id: Optional[int]) -> Optional[Images]:
         if not image_id:

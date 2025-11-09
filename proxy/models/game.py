@@ -9,7 +9,7 @@ class Game:
     title: str
     description: Optional[str] = None
     image_url: Optional[str] = None
-    game_type: Optional[str] = None
+    type: Optional[str] = None
     release_date: Optional[str] = None
     authors: Optional[List[Author]] = None
     platforms: Optional[List[Platform]] = None
@@ -19,7 +19,7 @@ class Game:
         result = {
             'id': self.id,
             'title': self.title,
-            'type': self.game_type,
+            'type': self.type,
             'description': self.description,
             'image_url': self.image_url,
             'release_date': self.release_date,

@@ -2,7 +2,7 @@ from typing import Dict, Any, Optional, List
 from proxy.models.album import Album, Track
 from proxy.models.base import SearchItem, Images, Author
 from proxy.clients.spotify import SpotifyClient
-from proxy.constants import ContentType, AuthorType
+from proxy.constants import ContentType, AuthorType, AlbumType
 
 
 class SpotifyMapper:
@@ -70,15 +70,15 @@ class SpotifyMapper:
         total_duration_minutes: Optional[int]
     ) -> str:
         if total_duration_minutes is not None and total_duration_minutes >= 30:
-            return 'album'
+            return AlbumType.ALBUM
 
         if total_tracks >= 7:
-            return 'album'
+            return AlbumType.ALBUM
 
         if 4 <= total_tracks <= 6 and (total_duration_minutes is None or total_duration_minutes < 30):
-            return 'ep'
+            return AlbumType.EP
 
-        return 'single'
+        return AlbumType.SINGLE
 
     def _to_minutes(self, total_seconds: int) -> Optional[int]:
         if not total_seconds:
@@ -130,7 +130,7 @@ class SpotifyMapper:
             release_date=self._normalize_release_date(data.get('release_date')),
             total_tracks=total_tracks,
             duration_minutes=duration_minutes,
-            album_type=derived_album_type or data.get('album_type'),
+            type=derived_album_type,
             external_url=data.get('external_urls', {}).get('spotify'),
             images=images,
             tracks=tracks

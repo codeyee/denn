@@ -1,15 +1,19 @@
+import os
 from proxy.clients.base.cached import CachedAPIClient
 from django.conf import settings
 from typing import Dict, Any, Tuple
 from concurrent.futures import ThreadPoolExecutor
 
+OPENLIBRARY_USER_AGENT = os.getenv("OPENLIBRARY_USER_AGENT")
+OPENLIBRARY_BASE_URL = "https://openlibrary.org"
+OPENLIBRARY_COVERS_BASE_URL = "https://covers.openlibrary.org"
+
 
 class OpenLibraryClient(CachedAPIClient):
     def __init__(self):
-        config = settings.PROXY_API['OPENLIBRARY']
-        super().__init__(base_url=config['BASE_URL'], api_name='openlibrary')
-        self.covers_base_url = config['COVERS_BASE_URL']
-        self.user_agent = settings.API_KEYS_CACHE['openlibrary']['user_agent'] or config['USER_AGENT']
+        super().__init__(base_url=OPENLIBRARY_BASE_URL, api_name='openlibrary')
+        self.covers_base_url = OPENLIBRARY_COVERS_BASE_URL
+        self.user_agent = settings.API_KEYS_CACHE['openlibrary']['user_agent'] or OPENLIBRARY_USER_AGENT
         settings.API_KEYS_CACHE['openlibrary']['user_agent'] = self.user_agent
         self._save_api_keys()
 

@@ -37,8 +37,7 @@ class Images:
     poster_original: Optional[str] = None
     gallery_standard: Optional[str] = None
     gallery_original: Optional[str] = None
-    additional_posters: List[str] = field(default_factory=list)
-    additional_galleries: List[str] = field(default_factory=list)
+    additional_galleries: Union[List[Dict[str, str]], List[str]] = field(default_factory=list)
 
     def to_dict(self) -> List[Dict]:
         images = []
@@ -66,18 +65,26 @@ class Images:
                 'size': ImageSize.ORIGINAL,
                 'image_url': self.gallery_original
             })
-        for poster_url in self.additional_posters[:4]:
-            images.append({
-                'type': ImageType.POSTER,
-                'size': ImageSize.ORIGINAL,
-                'image_url': poster_url
-            })
-        for gallery_url in self.additional_galleries[:4]:
-            images.append({
-                'type': ImageType.GALLERY,
-                'size': ImageSize.ORIGINAL,
-                'image_url': gallery_url
-            })
+        for gallery_item in self.additional_galleries[:8]:
+            if isinstance(gallery_item, dict):
+                if gallery_item.get('standard'):
+                    images.append({
+                        'type': ImageType.GALLERY,
+                        'size': ImageSize.STANDARD,
+                        'image_url': gallery_item['standard']
+                    })
+                if gallery_item.get('original'):
+                    images.append({
+                        'type': ImageType.GALLERY,
+                        'size': ImageSize.ORIGINAL,
+                        'image_url': gallery_item['original']
+                    })
+            elif isinstance(gallery_item, str):
+                images.append({
+                    'type': ImageType.GALLERY,
+                    'size': ImageSize.ORIGINAL,
+                    'image_url': gallery_item
+                })
         return images
 
 

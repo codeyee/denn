@@ -4,13 +4,15 @@ from datetime import datetime
 from proxy.models.game import Game
 from proxy.models.base import SearchItem, Images, Platform, Author
 from proxy.clients.igdb import IGDBClient
-from proxy.constants import ContentType, AuthorType
+from proxy.constants import ContentType, AuthorType, GameType
 
 IGDB_IMAGE_BASE_URL = 'https://images.igdb.com/igdb/image/upload'
 
 GAME_TYPE_MAP = {
-    0: "Main game",
-    8: "Remake",
+    0: GameType.ORIGINAL,
+    4: GameType.STANDALONE_EXPANSION,
+    8: GameType.REMAKE,
+    9: GameType.REMASTER,
 }
 
 
@@ -72,7 +74,7 @@ class IGDBMapper:
     def _format_game_type(self, game_type: Optional[int]) -> Optional[str]:
         if game_type is None:
             return None
-        return GAME_TYPE_MAP.get(game_type, "Unknown")
+        return GAME_TYPE_MAP.get(game_type)
 
     def _build_description(self, summary: Optional[str], storyline: Optional[str]) -> Optional[str]:
         if not summary and not storyline:
@@ -194,7 +196,7 @@ class IGDBMapper:
             title=item.get('name', ''),
             description=self._build_description(item.get('summary'), item.get('storyline')),
             image_url=image_url,
-            game_type=self._format_game_type(item.get('game_type')),
+            type=self._format_game_type(item.get('category')),
             release_date=self._format_release_date(item.get('first_release_date')),
             authors=authors,
             platforms=platforms,
