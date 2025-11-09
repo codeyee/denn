@@ -2,6 +2,7 @@ from typing import Optional, Dict, Any
 from content.models import ContentItem
 from rest_framework import status as http_status
 from rest_framework.test import APIRequestFactory
+from rest_framework.request import Request
 from proxy.views.movies.detail import MovieDetailView
 from proxy.views.tv_shows.detail import TVShowDetailView
 from proxy.views.tv_shows.season import TVSeasonDetailView
@@ -54,15 +55,14 @@ def _fetch_tmdb_movie_data(external_id: str, country_code: Optional[str] = None)
     try:
         view = MovieDetailView()
         factory = APIRequestFactory()
-        request = factory.get(f'/api/proxy/movies/{external_id}/', {'country': country_code} if country_code else {})
+        factory_request = factory.get(f'/api/proxy/movies/{external_id}/', {'country': country_code} if country_code else {})
+        request = Request(factory_request)
 
         response = view.get(request, movie_id=external_id)
         if response.status_code == http_status.HTTP_200_OK:
             return response.data
-    except Exception as e:
-        print(f"Error fetching movie {external_id}: {type(e).__name__}: {str(e)}")
-        import traceback
-        traceback.print_exc()
+    except Exception:
+        pass
 
     return None
 
@@ -71,15 +71,14 @@ def _fetch_tmdb_tv_show_data(external_id: str, country_code: Optional[str] = Non
     try:
         view = TVShowDetailView()
         factory = APIRequestFactory()
-        request = factory.get(f'/api/proxy/tv-shows/{external_id}/', {'country': country_code} if country_code else {})
+        factory_request = factory.get(f'/api/proxy/tv-shows/{external_id}/', {'country': country_code} if country_code else {})
+        request = Request(factory_request)
 
         response = view.get(request, tv_id=external_id)
         if response.status_code == http_status.HTTP_200_OK:
             return response.data
-    except Exception as e:
-        print(f"Error fetching TV show {external_id}: {type(e).__name__}: {str(e)}")
-        import traceback
-        traceback.print_exc()
+    except Exception:
+        pass
 
     return None
 
@@ -93,15 +92,14 @@ def _fetch_tmdb_season_data(external_id: str, country_code: Optional[str] = None
 
             view = TVSeasonDetailView()
             factory = APIRequestFactory()
-            request = factory.get(f'/api/proxy/tv-shows/{tv_id}/seasons/{season_number}/', {'country': country_code} if country_code else {})
+            factory_request = factory.get(f'/api/proxy/tv-shows/{tv_id}/seasons/{season_number}/', {'country': country_code} if country_code else {})
+            request = Request(factory_request)
 
             response = view.get(request, tv_id=tv_id, season_number=season_number)
             if response.status_code == http_status.HTTP_200_OK:
                 return response.data
-    except Exception as e:
-        print(f"Error fetching season {external_id}: {type(e).__name__}: {str(e)}")
-        import traceback
-        traceback.print_exc()
+    except Exception:
+        pass
 
     return None
 
