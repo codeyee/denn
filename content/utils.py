@@ -2,6 +2,12 @@ from typing import Optional, Dict, Any
 from content.models import ContentItem
 from rest_framework import status as http_status
 from rest_framework.test import APIRequestFactory
+from proxy.views.movies.detail import MovieDetailView
+from proxy.views.tv_shows.detail import TVShowDetailView
+from proxy.views.tv_shows.season import TVSeasonDetailView
+from proxy.views.games.detail import GameDetailView
+from proxy.views.albums.detail import AlbumDetailView
+from proxy.views.books.detail import BookDetailView
 
 
 def fetch_source_data(content_item: ContentItem, country_code: Optional[str] = None) -> Optional[Dict[str, Any]]:
@@ -45,8 +51,6 @@ def _fetch_tmdb_data(external_id: str, content_type: str, country_code: Optional
 
 
 def _fetch_tmdb_movie_data(external_id: str, country_code: Optional[str] = None) -> Optional[Dict[str, Any]]:
-    from proxy.views.movies.detail import MovieDetailView
-
     try:
         view = MovieDetailView()
         factory = APIRequestFactory()
@@ -62,8 +66,6 @@ def _fetch_tmdb_movie_data(external_id: str, country_code: Optional[str] = None)
 
 
 def _fetch_tmdb_tv_show_data(external_id: str, country_code: Optional[str] = None) -> Optional[Dict[str, Any]]:
-    from proxy.views.tv_shows.detail import TVShowDetailView
-
     try:
         view = TVShowDetailView()
         factory = APIRequestFactory()
@@ -79,8 +81,6 @@ def _fetch_tmdb_tv_show_data(external_id: str, country_code: Optional[str] = Non
 
 
 def _fetch_tmdb_season_data(external_id: str, country_code: Optional[str] = None) -> Optional[Dict[str, Any]]:
-    from proxy.views.tv_shows.season import TVSeasonDetailView
-
     try:
         parts = external_id.split(':')
         if len(parts) == 2:
@@ -101,8 +101,6 @@ def _fetch_tmdb_season_data(external_id: str, country_code: Optional[str] = None
 
 
 def _fetch_igdb_data(external_id: str) -> Optional[Dict[str, Any]]:
-    from proxy.views.games.detail import GameDetailView
-
     try:
         view = GameDetailView()
         factory = APIRequestFactory()
@@ -118,8 +116,6 @@ def _fetch_igdb_data(external_id: str) -> Optional[Dict[str, Any]]:
 
 
 def _fetch_spotify_data(external_id: str) -> Optional[Dict[str, Any]]:
-    from proxy.views.albums.detail import AlbumDetailView
-
     try:
         view = AlbumDetailView()
         factory = APIRequestFactory()
@@ -135,8 +131,6 @@ def _fetch_spotify_data(external_id: str) -> Optional[Dict[str, Any]]:
 
 
 def _fetch_openlibrary_data(external_id: str) -> Optional[Dict[str, Any]]:
-    from proxy.views.books.detail import BookDetailView
-
     try:
         view = BookDetailView()
         factory = APIRequestFactory()
