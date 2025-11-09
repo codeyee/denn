@@ -63,10 +63,10 @@ function Card({
   const EmptyIcon = emptyIcon || Icon;
   const previousImageRef = useRef<string | undefined>(undefined);
   const isFirstImageRef = useRef(true);
-  
+
   // Check if this is the first image for this card instance
   const isFirstRender = previousImageRef.current === undefined;
-  
+
   // Update refs after render to track image changes
   useEffect(() => {
     if (previousImageRef.current !== backgroundImage) {
@@ -113,12 +113,11 @@ function Card({
 
         {/* Overlay layer */}
         {!isEmpty && <div className="absolute inset-0 bg-black/20 md:bg-black/20" />}
-        <div 
-          className={`absolute inset-x-0 bottom-0 h-[55%] md:h-[55%] bg-linear-to-t ${
-            isEmpty
+        <div
+          className={`absolute inset-x-0 bottom-0 h-[55%] md:h-[55%] bg-linear-to-t ${isEmpty
               ? 'from-gray-700/80 via-gray-600/40 to-transparent'
               : 'from-black/95 via-black/60 to-transparent md:from-black/95 md:via-black/40 md:to-transparent'
-          }`}
+            }`}
         />
 
         {/* Content layer */}
@@ -127,7 +126,7 @@ function Card({
             {/* Title section */}
             <div className="flex items-center gap-2 md:gap-3 text-white mb-1 md:mb-2">
               <Icon className="w-4 h-4 md:w-6 md:h-6 shrink-0 drop-shadow-text" />
-              <span className="text-sm md:text-xl font-bold drop-shadow-text line-clamp-2 break-words">
+              <span className="text-sm md:text-xl font-bold drop-shadow-text line-clamp-2 wrap-break-word">
                 {title}
               </span>
             </div>
