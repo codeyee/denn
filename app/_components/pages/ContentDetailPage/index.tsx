@@ -473,27 +473,29 @@ export default function ContentDetailPage({
     };
 
     return (
-      <Carousel
-        title="Seasons"
-        itemsPerView={undefined}
-        targetCardWidth={250}
-      >
-        {tvShow.seasons.map((season) => {
-          const seasonItem = createSeasonItem(season);
-          return (
-            <ContentCard
-              key={season.id}
-              item={{
-                ...seasonItem,
-                release_date:
-                  seasonItem.release_date === null
-                    ? undefined
-                    : seasonItem.release_date,
-              } as any}
-            />
-          );
-        })}
-      </Carousel>
+      <div className="mt-8">
+        <Carousel
+          title="Seasons"
+          itemsPerView={undefined}
+          targetCardWidth={250}
+        >
+          {tvShow.seasons.map((season) => {
+            const seasonItem = createSeasonItem(season);
+            return (
+              <ContentCard
+                key={season.id}
+                item={{
+                  ...seasonItem,
+                  release_date:
+                    seasonItem.release_date === null
+                      ? undefined
+                      : seasonItem.release_date,
+                } as any}
+              />
+            );
+          })}
+        </Carousel>
+      </div>
     );
   };
 
