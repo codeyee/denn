@@ -4,7 +4,7 @@ from dateutil import parser
 from proxy.models.book import Book
 from proxy.models.base import SearchItem, Images, Author
 from proxy.clients.openlibrary import OpenLibraryClient
-from proxy.constants import SearchItemType, AuthorType
+from proxy.constants import ContentType, AuthorType
 
 
 class OpenLibraryMapper:
@@ -78,7 +78,7 @@ class OpenLibraryMapper:
 
         return SearchItem(
             id=self._extract_id_from_key(item.get('key')),
-            type=SearchItemType.BOOK,
+            type=ContentType.BOOK,
             title=item.get('title', ''),
             original_title=item.get('title', ''),
             authors=authors,

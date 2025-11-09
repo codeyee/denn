@@ -10,7 +10,7 @@ from proxy.clients.igdb import IGDBClient
 from proxy.clients.openlibrary import OpenLibraryClient
 from proxy.clients.spotify import SpotifyClient
 from proxy.clients.tmdb import TMDBClient
-from proxy.constants import SearchItemType
+from proxy.constants import ContentType
 from proxy.exceptions import InvalidParameterException
 from proxy.mappers.igdb import IGDBMapper
 from proxy.mappers.openlibrary import OpenLibraryMapper
@@ -194,7 +194,7 @@ class HomepageView(APIView):
             if status == http_status.HTTP_200_OK and 'results' in data:
                 return [
                     mapper.map_search_item(
-                        item, SearchItemType.MOVIE).to_dict()
+                        item, ContentType.MOVIE).to_dict()
                     for item in data['results'][:limit]
                     if item.get('media_type') != 'person'
                 ]
@@ -208,7 +208,7 @@ class HomepageView(APIView):
             if status == http_status.HTTP_200_OK and 'results' in data:
                 return [
                     mapper.map_search_item(
-                        item, SearchItemType.TV_SHOW).to_dict()
+                        item, ContentType.TV_SHOW).to_dict()
                     for item in data['results'][:limit]
                     if item.get('media_type') != 'person'
                 ]

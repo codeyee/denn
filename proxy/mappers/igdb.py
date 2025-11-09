@@ -4,7 +4,7 @@ from datetime import datetime
 from proxy.models.game import Game
 from proxy.models.base import SearchItem, Images, Platform, Author
 from proxy.clients.igdb import IGDBClient
-from proxy.constants import SearchItemType, AuthorType
+from proxy.constants import ContentType, AuthorType
 
 IGDB_IMAGE_BASE_URL = 'https://images.igdb.com/igdb/image/upload'
 
@@ -163,7 +163,7 @@ class IGDBMapper:
 
         return SearchItem(
             id=int(item_id),
-            type=SearchItemType.GAME,
+            type=ContentType.GAME,
             title=item.get('name', ''),
             original_title=item.get('name', ''),
             description=self._build_description(item.get('summary'), item.get('storyline')),

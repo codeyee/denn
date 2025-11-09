@@ -2,7 +2,7 @@ from typing import Dict, Any, Optional, List
 from proxy.models.album import Album, Track
 from proxy.models.base import SearchItem, Images, Author
 from proxy.clients.spotify import SpotifyClient
-from proxy.constants import SearchItemType, AuthorType
+from proxy.constants import ContentType, AuthorType
 
 
 class SpotifyMapper:
@@ -101,7 +101,7 @@ class SpotifyMapper:
     def map_search_item(self, item: Dict[str, Any]) -> SearchItem:
         return SearchItem(
             id=item.get('id'),
-            type=SearchItemType.ALBUM,
+            type=ContentType.ALBUM,
             title=item.get('name', ''),
             original_title=item.get('name', ''),
             authors=self._get_artist_names(item.get('artists')),

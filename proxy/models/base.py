@@ -1,6 +1,6 @@
 from typing import Optional, Dict, List, Union
 from dataclasses import dataclass, field
-from proxy.constants import ImageType, ImageSize, SearchItemType, AuthorType
+from proxy.constants import ImageType, ImageSize, ContentType, AuthorType
 
 
 @dataclass
