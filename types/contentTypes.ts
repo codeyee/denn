@@ -1,5 +1,5 @@
 import { contentTypeEnum } from "./types"
-import { Author, Platform, Image } from "@/lib/api/types"
+import { Author, Platform, Image, AlbumType } from "@/lib/api/types"
 
 export interface Movie {
   id: number
@@ -47,7 +47,7 @@ export interface MusicAlbum {
   image_url?: string
   release_date?: string
   total_tracks?: number
-  album_type?: string
+  album_type?: AlbumType
   external_url?: string
   images?: Image[]
 }

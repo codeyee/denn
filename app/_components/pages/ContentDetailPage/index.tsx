@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { contentItemActions, videoActions, musicActions, gameActions, bookActions, ratingActions } from "@/lib/api";
-import { ContentType, SourceApi, Rating, RatingCreate } from "@/lib/api/types";
+import { ContentType, SourceApi, Rating, RatingCreate, ImageType } from "@/lib/api/types";
 import { formatAuthors, formatPlatforms, getAuthorNames } from "@/lib/utils/authorUtils";
 import {
   MovieDetail,
@@ -492,7 +492,7 @@ export default function ContentDetailPage({
 
     const galleryImages = game.images
       ? game.images
-          .filter(img => img.type === "ARTWORK" || img.type === "SCREENSHOT")
+          .filter(img => img.type === ImageType.ARTWORK || img.type === ImageType.SCREENSHOT)
           .map((img, index) => ({
             src: img.image_url,
             alt: `${game.title} ${img.type.toLowerCase()} ${index + 1}`,

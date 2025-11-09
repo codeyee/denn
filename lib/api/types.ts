@@ -69,6 +69,43 @@ export enum ContentType {
   GAME = "GAME",
   ALBUM = "ALBUM",
   BOOK = "BOOK",
+  PERSON = "PERSON",
+}
+
+export enum AuthorType {
+  PERSON = "PERSON",
+  COMPANY = "COMPANY",
+}
+
+export enum ImageType {
+  POSTER = "POSTER",
+  GALLERY = "GALLERY",
+  SCREENSHOT = "SCREENSHOT",
+  ARTWORK = "ARTWORK",
+}
+
+export enum ImageSize {
+  STANDARD = "STANDARD",
+  ORIGINAL = "ORIGINAL",
+}
+
+export enum ProviderAction {
+  STREAM = "STREAM",
+  RENT = "RENT",
+  BUY = "BUY",
+}
+
+export enum GameType {
+  ORIGINAL = "ORIGINAL",
+  REMAKE = "REMAKE",
+  REMASTER = "REMASTER",
+  STANDALONE_EXPANSION = "STANDALONE_EXPANSION",
+}
+
+export enum AlbumType {
+  ALBUM = "ALBUM",
+  EP = "EP",
+  SINGLE = "SINGLE",
 }
 
 export interface ContentItem {
@@ -188,19 +225,19 @@ export interface RatingCreate {
 
 export interface Author {
   name: string;
-  type: "PERSON" | "COMPANY";
+  type: AuthorType;
 }
 
 export interface Image {
-  type: string;
-  size: string;
+  type: ImageType;
+  size: ImageSize;
   image_url: string;
 }
 
 export interface Platform {
   title: string;
   image_url: string | null;
-  actions?: string[] | null;
+  actions?: ProviderAction[] | null;
 }
 
 export interface VideoSearchItem {
@@ -330,13 +367,13 @@ export interface BulkSeasonItem {
 
 export interface MusicSearchItem {
   id: string;
-  type: "album" | "ep";
+  type: AlbumType;
   title: string;
   authors: Author[] | null;
   image_url: string | null;
   release_date: string | null;
   total_tracks: number;
-  album_type: string;
+  album_type: AlbumType;
   external_url: string;
   images?: Image[];
 }
@@ -348,7 +385,7 @@ export interface AlbumDetail {
   image_url: string | null;
   release_date: string | null;
   total_tracks: number;
-  album_type: string;
+  album_type: AlbumType;
   external_url: string;
   tracks: Track[];
   duration_minutes: number | null;

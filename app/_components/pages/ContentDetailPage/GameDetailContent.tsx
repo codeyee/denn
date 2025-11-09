@@ -1,6 +1,6 @@
 "use client";
 
-import { GameDetail } from "@/lib/api/types";
+import { GameDetail, ImageType } from "@/lib/api/types";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { formatAuthors, formatPlatforms } from "@/lib/utils/authorUtils";
 
@@ -14,7 +14,7 @@ export default function GameDetailContent({ game }: GameDetailContentProps) {
   // Combine artworks and screenshots into a single gallery array
   const galleryImages = game.images
     ? game.images
-        .filter(img => img.type === "ARTWORK" || img.type === "SCREENSHOT")
+        .filter(img => img.type === ImageType.ARTWORK || img.type === ImageType.SCREENSHOT)
         .map((img, index) => ({
           src: img.image_url,
           alt: `${game.title} ${img.type.toLowerCase()} ${index + 1}`,
