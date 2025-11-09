@@ -1,35 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Film, Tv, Gamepad2, Book, Music, LucideIcon } from "lucide-react";
 import { ContentItem } from "@/types/contentTypes";
 import { SourceApi, ContentType } from "@/lib/api/types";
 import { getLegacyImageUrl } from "@/lib/utils/imageUtils";
 import { formatAuthors } from "@/lib/utils/authorUtils";
-
-const TYPE_ICON: Record<string, LucideIcon> = {
-  movie: Film,
-  tv: Tv,
-  game: Gamepad2,
-  book: Book,
-  music: Music,
-};
-
-function getItemType(item: ContentItem): keyof typeof TYPE_ICON {
-  if ("type" in item && typeof (item as any).type === "string") {
-    const t = (item as any).type as string;
-    if (t === "movie") return "movie";
-    if (t === "tv") return "tv";
-    if (t === "album" || t === "music") return "music";
-  }
-  if ("number_of_seasons" in item || "number_of_episodes" in item) {
-    return "tv";
-  }
-  if ("platforms" in item) return "game";
-  if ("pages" in item) return "book";
-  if ("total_tracks" in item) return "music";
-  return "movie";
-}
+import { inferNavigationParams, CONTENT_TYPE_ICONS } from "@/lib/utils/contentTypeUtils";
 
 interface ContentBannerProps {
   item: ContentItem | any;
@@ -40,7 +16,8 @@ interface ContentBannerProps {
 
 export default function ContentBanner({ item, tvShowTitle, externalId, sourceApi }: ContentBannerProps) {
   const router = useRouter();
-  const Icon = TYPE_ICON[getItemType(item)];
+  const contentType = inferNavigationParams(item as Record<string, unknown>).contentType?.toLowerCase() || 'movie';
+  const Icon = CONTENT_TYPE_ICONS[contentType];
   const backgroundUrl = getLegacyImageUrl(item);
 
   const getOriginalTitle = (item: ContentItem | any): string => {

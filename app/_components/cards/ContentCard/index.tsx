@@ -5,10 +5,10 @@ import { useRef } from "react";
 import Card from "../Card";
 import { contentTypeEnum } from "@/types/types";
 import { ContentItem } from "@/types/contentTypes";
-import { SourceApi, ContentType } from "@/lib/api/types";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { getCardImageUrl } from "@/lib/utils/imageUtils";
 import { formatAuthors } from "@/lib/utils/authorUtils";
+import { inferContentTypeEnum, inferNavigationParams } from "@/lib/utils/contentTypeUtils";
 
 interface ContentCardProps {
   item: ContentItem;
@@ -20,71 +20,11 @@ export default function ContentCard({ item, className }: ContentCardProps) {
   const middleClickHandled = useRef(false);
 
   const getNavigationUrl = (): string | null => {
-    // Navigate with external identifiers - the detail page will handle the API calls
-    // Determine source API and content type from the item
-    let sourceApi: SourceApi | undefined;
-    let contentType: ContentType | undefined;
-    let externalId: string | number | undefined;
-
-    // First check if there's an explicit type field (from search results)
-    if ("type" in item && typeof item.type === "string") {
-      const itemType = item.type.toLowerCase();
-      if (itemType === "movie") {
-        sourceApi = SourceApi.TMDB;
-        contentType = ContentType.MOVIE;
-        externalId = String(item.id);
-      } else if (itemType === "tv" || itemType === "tv_show") {
-        sourceApi = SourceApi.TMDB;
-        contentType = ContentType.TV_SHOW;
-        externalId = String(item.id);
-      } else if (itemType === "album" || itemType === "music" || itemType === "ep") {
-        sourceApi = SourceApi.SPOTIFY;
-        contentType = ContentType.ALBUM;
-        externalId = String(item.id);
-      } else if (itemType === "season") {
-        // For seasons, use the explicit external_id, source_api, and content_type if available
-        if ("external_id" in item && item.external_id) {
-          sourceApi = ("source_api" in item && item.source_api) as SourceApi || SourceApi.TMDB;
-          contentType = ("content_type" in item && item.content_type) as ContentType || ContentType.SEASON;
-          externalId = String(item.external_id);
-        } else {
-          sourceApi = SourceApi.TMDB;
-          contentType = ContentType.SEASON;
-          externalId = String(item.id);
-        }
-      }
-    }
-
-    // If not determined by type field, check properties
-    if (!sourceApi || !contentType) {
-      if ("platforms" in item) {
-        sourceApi = SourceApi.IGDB;
-        contentType = ContentType.GAME;
-        externalId = String(item.id);
-      } else if ("total_tracks" in item) {
-        sourceApi = SourceApi.SPOTIFY;
-        contentType = ContentType.ALBUM;
-        externalId = String(item.id);
-      } else if ("pages" in item) {
-        sourceApi = SourceApi.OPENLIBRARY;
-        contentType = ContentType.BOOK;
-        externalId = String(item.id);
-      } else if ("number_of_seasons" in item || "number_of_episodes" in item) {
-        sourceApi = SourceApi.TMDB;
-        contentType = ContentType.TV_SHOW;
-        externalId = String(item.id);
-      } else {
-        // Default to movie
-        sourceApi = SourceApi.TMDB;
-        contentType = ContentType.MOVIE;
-        externalId = String(item.id);
-      }
-    }
+    const { sourceApi, contentType, externalId } = inferNavigationParams(item as unknown as Record<string, unknown>);
 
     if (sourceApi && contentType && externalId) {
-      // Navigate immediately with query parameters - the detail page will handle API calls
       const params = new URLSearchParams({
-        external_id: String(externalId),
+        external_id: externalId,
         source_api: sourceApi,
         content_type: contentType,
       });
@@ -184,27 +124,7 @@ export default function ContentCard({ item, className }: ContentCardProps) {
     }
   };
   const getContentType = (): contentTypeEnum => {
-    if ("type" in item && typeof item.type === "string") {
-      const itemType = item.type.toLowerCase();
-      if (itemType === "movie") return contentTypeEnum.movie;
-      if (itemType === "tv" || itemType === "tv_show") return contentTypeEnum.tv;
-      if (itemType === "album" || itemType === "music") return contentTypeEnum.music;
-      if (itemType === "season") return contentTypeEnum.tv; // Seasons use TV icon
-      if (itemType === "game") return contentTypeEnum.game;
-      if (itemType === "book") return contentTypeEnum.book;
-    }
-
-    if ("number_of_seasons" in item || "number_of_episodes" in item) {
-      return contentTypeEnum.tv;
-    }
-
-    if ("pages" in item) return contentTypeEnum.book;
-    if ("total_tracks" in item) return contentTypeEnum.music;
-
-    // Movies have duration_minutes
-    if ("duration_minutes" in item) return contentTypeEnum.movie;
-
-    return contentTypeEnum.movie;
+    return inferContentTypeEnum(item as unknown as Record<string, unknown>);
   };
 
   const getPosterImageUrl = (item: any): string | undefined => {
