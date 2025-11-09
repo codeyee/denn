@@ -15,18 +15,17 @@ from content.permissions import IsAdminOrReadOnly
         summary='List content items',
         description='''
         Get all content items with optional filtering by source API, content type, or search.
+        Detailed information from external APIs (TMDB, IGDB, Spotify, OpenLibrary) is always included in the `source_data` field.
 
         **Optional Query Parameters:**
-        - `render_source`: Set to `true` to include detailed information from external APIs (TMDB, IGDB, Spotify, OpenLibrary) in the `source_data` field of each content item.
-        - `country`: ISO 3166-1 alpha-2 country code (e.g., US, GB, FR) to filter providers by country (only applies when render_source=true and source_api=tmdb).
+        - `country`: ISO 3166-1 alpha-2 country code (e.g., US, GB, FR) to filter providers by country (only applies when source_api=tmdb).
         ''',
         parameters=[
             OpenApiParameter('source_api', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Filter by source API (tmdb, igdb, spotify, openlibrary)'),
             OpenApiParameter('content_type', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Filter by content type (MOVIE, TV_SHOW, SEASON, GAME, ALBUM, BOOK)'),
             OpenApiParameter('external_id', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Filter by external ID'),
             OpenApiParameter('ordering', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Order by field (e.g., "-created_at", "rating_count", "-average_rating")'),
-            OpenApiParameter('render_source', OpenApiTypes.BOOL, OpenApiParameter.QUERY, required=False, description='Include external API data in response (set to true/false)'),
-            OpenApiParameter('country', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='ISO 3166-1 alpha-2 country code to filter providers by country (only applies when render_source=true and source_api=tmdb)'),
+            OpenApiParameter('country', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='ISO 3166-1 alpha-2 country code to filter providers by country (only applies when source_api=tmdb)'),
         ],
         responses={200: ContentItemSerializer(many=True)}
     ),
@@ -35,14 +34,13 @@ from content.permissions import IsAdminOrReadOnly
         summary='Get content item details',
         description='''
         Get detailed information about a specific content item.
+        Detailed information from external APIs (TMDB, IGDB, Spotify, OpenLibrary) is always included in the `source_data` field.
 
         **Optional Query Parameters:**
-        - `render_source`: Set to `true` to include detailed information from external APIs (TMDB, IGDB, Spotify, OpenLibrary) in the `source_data` field.
-        - `country`: ISO 3166-1 alpha-2 country code (e.g., US, GB, FR) to filter providers by country (only applies when render_source=true and source_api=tmdb).
+        - `country`: ISO 3166-1 alpha-2 country code (e.g., US, GB, FR) to filter providers by country (only applies when source_api=tmdb).
         ''',
         parameters=[
-            OpenApiParameter('render_source', OpenApiTypes.BOOL, OpenApiParameter.QUERY, required=False, description='Include external API data in response (set to true/false)'),
-            OpenApiParameter('country', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='ISO 3166-1 alpha-2 country code to filter providers by country (only applies when render_source=true and source_api=tmdb)')
+            OpenApiParameter('country', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='ISO 3166-1 alpha-2 country code to filter providers by country (only applies when source_api=tmdb)')
         ],
         responses={
             200: ContentItemSerializer,
@@ -149,9 +147,10 @@ class ContentItemViewSet(viewsets.ModelViewSet):
     )
     @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
     def get_or_create(self, request):
-        source_api = request.data.get('source_api')
-        external_id = request.data.get('external_id')
-        content_type = request.data.get('content_type')
+        # Read from query params as documented
+        source_api = request.query_params.get('source_api')
+        external_id = request.query_params.get('external_id')
+        content_type = request.query_params.get('content_type')
 
         if not all([source_api, external_id, content_type]):
             return Response(

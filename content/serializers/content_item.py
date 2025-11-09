@@ -28,16 +28,11 @@ class ContentItemSerializer(serializers.ModelSerializer):
 
     def get_source_data(self, obj):
         request = self.context.get('request')
+        from content.utils import fetch_source_data
 
-        if request:
-            render_source = request.query_params.get('render_source', '').lower()
-
-            if render_source == 'true':
-                from content.utils import fetch_source_data
-                country_code = request.query_params.get('country', None)
-                return fetch_source_data(obj, country_code=country_code)
-
-        return None
+        # Always fetch source data
+        country_code = request.query_params.get('country', None) if request else None
+        return fetch_source_data(obj, country_code=country_code)
 
     def validate(self, attrs):
         source_api = attrs.get('source_api')
