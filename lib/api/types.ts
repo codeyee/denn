@@ -240,12 +240,15 @@ export interface Platform {
 
 export interface VideoSearchItem {
   id: number;
-  type: "movie" | "tv";
+  type: ContentType;
   title: string;
-  original_title: string;
+  original_title: string | null;
   description: string | null;
   image_url: string | null;
   release_date: string | null;
+  authors?: Author[] | null;
+  images?: Image[];
+  platforms?: Record<string, Platform[]> | null;
 }
 
 export interface ImageVariant {
@@ -365,8 +368,10 @@ export interface BulkSeasonItem {
 
 export interface MusicSearchItem {
   id: string;
-  type: AlbumType;
+  type: ContentType;
   title: string;
+  original_title?: string | null;
+  description?: string | null;
   authors: Author[] | null;
   image_url: string | null;
   release_date: string | null;
@@ -430,13 +435,15 @@ export interface GameDetail {
 
 export interface GameSearchItem {
   id: number;
+  type: ContentType;
   title: string;
-  type: string | null;
+  original_title?: string | null;
   release_date: string | null;
   description: string | null;
   image_url: string | null;
   authors: Author[] | null;
   platforms: Platform[] | null;
+  images?: Image[];
 }
 
 export interface GameSearchResponse {
@@ -462,7 +469,9 @@ export interface BookDetail {
 
 export interface BookSearchItem {
   id: string;
+  type: ContentType;
   title: string;
+  original_title?: string | null;
   authors: Author[] | null;
   image_url: string | null;
   release_date: string | null;

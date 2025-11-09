@@ -148,6 +148,9 @@ export default function SearchPage() {
           description: item.description || undefined,
           image_url: item.image_url || undefined,
           release_date: item.release_date || undefined,
+          images: item.images,
+          authors: item.authors || undefined,
+          platforms: item.platforms || undefined,
         })) as Movie[];
 
         const tvShows: TVShow[] = tvResponse.results.map((item: VideoSearchItem) => ({
@@ -158,17 +161,22 @@ export default function SearchPage() {
           description: item.description || undefined,
           image_url: item.image_url || undefined,
           release_date: item.release_date || undefined,
+          images: item.images,
+          authors: item.authors || undefined,
+          platforms: item.platforms || undefined,
         })) as TVShow[];
 
         const games: Game[] = gameResponse.results.map((item: GameSearchItem) => ({
           id: item.id,
           title: item.title,
           type: item.type || undefined,
+          original_title: item.original_title || undefined,
           release_date: item.release_date || undefined,
           description: item.description || undefined,
           image_url: item.image_url || undefined,
           authors: item.authors || undefined,
           platforms: item.platforms || undefined,
+          images: item.images,
         }));
 
         const music: MusicAlbum[] = musicResponse.results.map(
@@ -176,23 +184,28 @@ export default function SearchPage() {
             id: item.id,
             type: item.type || undefined,
             title: item.title,
+            original_title: item.original_title || undefined,
+            description: item.description || undefined,
             authors: item.authors || undefined,
             image_url: item.image_url || undefined,
             release_date: item.release_date || undefined,
             total_tracks: item.total_tracks || undefined,
             album_type: item.album_type || undefined,
             external_url: item.external_url || undefined,
+            images: item.images,
           })
         );
 
         const books: Book[] = bookResponse.results.map((item: BookSearchItem) => ({
           id: item.id,
           title: item.title,
+          original_title: item.original_title || undefined,
           authors: item.authors || undefined,
           image_url: item.image_url || undefined,
           release_date: item.release_date || undefined,
           pages: item.pages || undefined,
           description: item.description || undefined,
+          images: item.images,
         }));
 
         setResults({
