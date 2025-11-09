@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from ..common import PaginationMetadataSerializer, AuthorSerializer
+from ..common import PaginationMetadataSerializer
 
 class MovieSearchItemSerializer(serializers.Serializer):
     id = serializers.IntegerField(
@@ -27,12 +27,6 @@ class MovieSearchItemSerializer(serializers.Serializer):
     release_date = serializers.CharField(
         allow_null=True,
         help_text="Release date in YYYY-MM-DD format"
-    )
-    authors = AuthorSerializer(
-        many=True,
-        allow_null=True,
-        required=False,
-        help_text="Production companies (not available in search results due to TMDB API limitations)"
     )
 
 class MovieSearchResponseSerializer(serializers.Serializer):
