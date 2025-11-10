@@ -170,6 +170,25 @@ class IGDBClient(CachedAPIClient):
     def get_included_game_types(self) -> str:
         return ','.join(['0', '4', '8', '9'])
 
+    def _is_web_browser_only(self, game: Dict[str, Any]) -> bool:
+        """
+        Check if a game is only available on web browser platform.
+        Returns True if the game should be filtered out (web browser only).
+        """
+        platforms = game.get('platforms')
+
+        # If no platform data, don't filter
+        if not platforms or not isinstance(platforms, list):
+            return False
+
+        # If game has multiple platforms, it's not browser-only
+        if len(platforms) > 1:
+            return False
+
+        # Check if the single platform is web browser
+        platform_name = platforms[0].get('name', '').lower() if isinstance(platforms[0], dict) else ''
+        return platform_name in ['web browser', 'browser']
+
     def search_games(self, query: str, limit: int = 50, offset: int = 0) -> Tuple[List[Dict[str, Any]], int]:
         endpoint = 'games'
         fields = self.get_fields()
@@ -186,6 +205,10 @@ class IGDBClient(CachedAPIClient):
         )
         if isinstance(data, dict):
             data = [data]
+
+        # Filter out web-browser-only games
+        data = [game for game in data if not self._is_web_browser_only(game)]
+
         return data, status_code
 
     def get_game(self, game_id: int) -> Tuple[Optional[Dict[str, Any]], int]:
@@ -230,6 +253,10 @@ class IGDBClient(CachedAPIClient):
 
             if isinstance(data, dict):
                 data = [data]
+
+            # Filter out web-browser-only games
+            data = [game for game in data if not self._is_web_browser_only(game)]
+
             return data, status_code
 
         def fetch_games_batch(batch_ids: list[int]) -> Tuple[list[Dict[str, Any]], int]:
@@ -250,6 +277,9 @@ class IGDBClient(CachedAPIClient):
                 if status_code == 200:
                     all_games.extend(games)
 
+        # Filter out web-browser-only games
+        all_games = [game for game in all_games if not self._is_web_browser_only(game)]
+
         return all_games, 200
 
     def get_popular_games(self, limit: int = 50, offset: int = 0) -> Tuple[List[Dict[str, Any]], int]:
@@ -267,6 +297,10 @@ class IGDBClient(CachedAPIClient):
         )
         if isinstance(data, dict):
             data = [data]
+
+        # Filter out web-browser-only games
+        data = [game for game in data if not self._is_web_browser_only(game)]
+
         return data, status_code
 
     def get_popularity_primitives(self, popularity_type: int, limit: int = 100) -> Tuple[List[Dict[str, Any]], int]:
@@ -325,6 +359,9 @@ class IGDBClient(CachedAPIClient):
             for game in games:
                 game_id = game.get('id')
                 if not game_id:
+                    continue
+
+                if self._is_web_browser_only(game):
                     continue
 
                 want_to_play_norm = (want_to_play_map.get(game_id, 0) / want_to_play_max) if want_to_play_max > 0 else 0
