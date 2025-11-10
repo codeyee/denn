@@ -218,7 +218,7 @@ class HomepageView(APIView):
 
     def _fetch_igdb_games(self, client: IGDBClient, mapper: IGDBMapper, limit: int) -> List[Dict]:
         try:
-            data, status = client.get_popular_games(limit, 0)
+            data, status = client.get_trending_games(limit, 0)
             if status == http_status.HTTP_200_OK and isinstance(data, list):
                 return [mapper.map_search_item(item).to_dict() for item in data]
         except Exception as e:

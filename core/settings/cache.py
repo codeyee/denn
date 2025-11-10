@@ -56,6 +56,7 @@ CACHE_TIMEOUTS = {
     'api_igdb_search': 3600 * 24,
     'api_igdb_details': 3600 * 48,
     'api_igdb_popular': 3600 * 36,
+    'api_igdb_popularity': 3600 * 24,
 
     # Spotify (Music)
     'api_spotify_search': 3600 * 24,
@@ -94,6 +95,7 @@ CACHE_KEYS = {
     'api_igdb_search': 'api:igdb:search:{query}:{limit}:{offset}',
     'api_igdb_details': 'api:igdb:details:{game_id}',
     'api_igdb_popular': 'api:igdb:popular:{limit}:{offset}',
+    'api_igdb_popularity': 'api:igdb:popularity:{popularity_type}:{limit}',
     'api_igdb_bulk': 'api:igdb:bulk:{game_ids}',
 
     'api_spotify_search': 'api:spotify:search:{query}:{search_type}:{limit}:{offset}',

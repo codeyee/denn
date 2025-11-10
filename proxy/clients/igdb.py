@@ -268,3 +268,106 @@ class IGDBClient(CachedAPIClient):
         if isinstance(data, dict):
             data = [data]
         return data, status_code
+
+    def get_popularity_primitives(self, popularity_type: int, limit: int = 100) -> Tuple[List[Dict[str, Any]], int]:
+        endpoint = 'popularity_primitives'
+        body = f'fields game_id,value,popularity_type; sort value desc; limit {limit}; where popularity_type = {popularity_type};'
+        data, status_code = self.cached_igdb_post(
+            endpoint=endpoint,
+            cache_type='api_igdb_popularity',
+            body=body,
+            operation='search',
+            popularity_type=popularity_type,
+            limit=limit
+        )
+        if isinstance(data, dict):
+            data = [data]
+        return data, status_code
+
+    def get_trending_games(
+        self,
+        limit: int = 50,
+        offset: int = 0,
+        want_to_play_weight: float = 0.7,
+        visits_weight: float = 0.3,
+        recency_boost: float = 2.5
+    ) -> Tuple[List[Dict[str, Any]], int]:
+        try:
+            current_timestamp = int(time())
+            one_year_ago = current_timestamp - (365 * 24 * 60 * 60)
+
+            # Fetch more than needed for better diversity
+            fetch_limit = min(limit * 4, 500)
+
+            # Fetch Want to Play and Visits metrics
+            want_to_play_data, want_status = self.get_popularity_primitives(2, fetch_limit)  # Want to Play
+            visits_data, visits_status = self.get_popularity_primitives(1, fetch_limit)  # IGDB Visits
+
+            # If main metric fails, fall back to popular games
+            if want_status != 200:
+                return self.get_popular_games(limit, offset)
+
+            want_to_play_map = {item['game_id']: item['value'] for item in want_to_play_data}
+            visits_map = {item['game_id']: item['value'] for item in visits_data} if visits_status == 200 else {}
+
+            # Get all unique game IDs and fetch full game details (need release dates)
+            all_game_ids = list(set(want_to_play_map.keys()) | set(visits_map.keys()))
+            games, status = self.get_bulk_games(all_game_ids)
+
+            if status != 200:
+                return games, status
+
+            # Normalize values to 0-1 range for each metric
+            want_to_play_max = max(want_to_play_map.values()) if want_to_play_map else 1
+            visits_max = max(visits_map.values()) if visits_map else 1
+
+            # Calculate weighted scores with recency boost
+            game_scores = []
+            for game in games:
+                game_id = game.get('id')
+                if not game_id:
+                    continue
+
+                want_to_play_norm = (want_to_play_map.get(game_id, 0) / want_to_play_max) if want_to_play_max > 0 else 0
+                visits_norm = (visits_map.get(game_id, 0) / visits_max) if visits_max > 0 else 0
+
+                has_want = want_to_play_norm > 0
+                has_visits = visits_norm > 0
+
+                # Calculate base weighted score
+                if has_want and has_visits:
+                    base_score = (want_to_play_weight * want_to_play_norm) + (visits_weight * visits_norm)
+                elif has_want:
+                    base_score = want_to_play_norm
+                elif has_visits:
+                    base_score = visits_norm
+                else:
+                    base_score = 0
+
+                # Apply recency boost and filter unreleased games
+                release_date = game.get('first_release_date')
+
+                # Skip unreleased games (null date or future date)
+                if release_date is None or release_date > current_timestamp:
+                    continue
+
+                # Apply recency boost to recently released games
+                multiplier = 1.0
+                if release_date >= one_year_ago:
+                    # Released in last year - apply boost
+                    multiplier = recency_boost
+
+                final_score = base_score * multiplier
+                game_scores.append((game, final_score))
+
+            # Sort by final score
+            game_scores.sort(key=lambda x: x[1], reverse=True)
+
+            # Apply offset and limit
+            result_games = [game for game, _ in game_scores[offset:offset + limit]]
+
+            return result_games, 200
+
+        except Exception as e:
+            print(f"Error fetching trending games: {e}")
+            return self.get_popular_games(limit, offset)
