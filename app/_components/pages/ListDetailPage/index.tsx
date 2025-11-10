@@ -101,7 +101,7 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
     try {
       await deleteList(listId);
       // Navigate back to lists page after deletion
-      router.push("/profile");
+      router.push("/");
     } catch (err) {
       setActionLoading(false);
       setError(err instanceof Error ? err.message : "Failed to delete list");
@@ -300,10 +300,19 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
                     );
                     const imageUrl = sourceData?.image_url;
 
+                    // For seasons, display as "TV Show Title - Season Title"
+                    const isSeason = contentItem.content_type === "SEASON";
+                    const title = isSeason &&
+                                  "tv_show_name" in sourceData &&
+                                  sourceData.tv_show_name &&
+                                  sourceData.title
+                      ? `${sourceData.tv_show_name} - ${sourceData.title}`
+                      : sourceData?.title || "Untitled";
+
                     return (
                       <ExpandableListItem
                         key={item.id}
-                        title={sourceData?.title || "Untitled"}
+                        title={title}
                         description={
                           "original_title" in sourceData &&
                           sourceData.original_title !== sourceData.title
@@ -318,10 +327,6 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
                             ? (sourceData.authors as Author[])
                                 ?.map((author) => author.name)
                                 .join(", ")
-                            : contentItem.content_type === "SEASON" &&
-                              "tv_show_name" in sourceData &&
-                              sourceData.type === "SEASON"
-                            ? sourceData.tv_show_name || undefined
                             : undefined
                         }
                         rating={item.list_rating}

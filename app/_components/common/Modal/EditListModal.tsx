@@ -133,22 +133,20 @@ export default function EditListModal({
 
           <div className="space-y-2">
             <label htmlFor="list-type" className="block text-sm font-medium">
-              List Type <span className="text-red-500">*</span>
+              List Type
             </label>
             <select
               id="list-type"
-              disabled={isLoading}
+              disabled={true}
               className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary font-sans bg-background disabled:opacity-50 disabled:cursor-not-allowed"
               {...register("listType")}
             >
               <option value={ListType.PERSONAL}>Personal</option>
               <option value={ListType.SHARED}>Shared</option>
             </select>
-            {errors.listType && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.listType.message}
-              </p>
-            )}
+            <p className="text-muted-foreground text-xs mt-1">
+              List type cannot be changed after creation
+            </p>
           </div>
 
           <div className="space-y-2">
@@ -162,7 +160,7 @@ export default function EditListModal({
               id="list-description"
               placeholder="Add a description for your list..."
               disabled={isLoading}
-              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary font-sans resize-none disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary font-sans resize-none cursor-text disabled:opacity-50 disabled:cursor-not-allowed"
               rows={3}
               {...register("description")}
             />

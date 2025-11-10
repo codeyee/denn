@@ -250,7 +250,12 @@ export default function ContentCard({ item, className }: ContentCardProps) {
     return "";
   };
 
-  const title = item.title;
+  // For seasons, display as "TV Show Title - Season Title"
+  const isSeason = item.type === "SEASON";
+  const title = isSeason && "tv_show_name" in item && item.tv_show_name
+    ? `${item.tv_show_name} - ${item.title}`
+    : item.title;
+
   const imageUrl = getPosterImageUrl(item);
   const id = String(item.id);
   const type = item.type;

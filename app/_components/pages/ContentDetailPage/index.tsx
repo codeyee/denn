@@ -478,7 +478,7 @@ export default function ContentDetailPage({
         number_of_episodes: season.number_of_episodes,
         description: season.description,
         tv_show_name: tvShow.title,
-        type: "season" as const,
+        type: "SEASON" as const,
         external_id: externalId,
         source_api: SourceApi.TMDB,
         content_type: ContentType.SEASON,
@@ -770,6 +770,24 @@ export default function ContentDetailPage({
             external_id: contentItem.external_id,
             content_type: contentItem.content_type,
           }}
+          tvShowSeasons={
+            contentItem.content_type === ContentType.TV_SHOW &&
+            detailData &&
+            "seasons" in detailData &&
+            Array.isArray(detailData.seasons) &&
+            detailData.seasons.length > 0
+              ? detailData.seasons
+              : undefined
+          }
+          tvShowId={
+            contentItem.content_type === ContentType.TV_SHOW &&
+            detailData &&
+            "seasons" in detailData &&
+            Array.isArray(detailData.seasons) &&
+            detailData.seasons.length > 0
+              ? parseInt(contentItem.external_id)
+              : undefined
+          }
           onSuccess={() => {
             console.log("Successfully added to list");
           }}

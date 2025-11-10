@@ -8,6 +8,7 @@ import { ContentType } from "@/lib/api/types";
 const ICON_MAP = {
   [ContentType.MOVIE.toLowerCase()]: Film,
   [ContentType.TV_SHOW.toLowerCase()]: Tv,
+  [ContentType.SEASON.toLowerCase()]: Tv,
   [ContentType.GAME.toLowerCase()]: Gamepad2,
   [ContentType.BOOK.toLowerCase()]: Book,
   [ContentType.ALBUM.toLowerCase()]: Music,
@@ -77,7 +78,7 @@ function Card({
   hoverContent,
   onHoverChange,
 }: CardProps) {
-  const Icon = icon || (type ? ICON_MAP[type.toLowerCase()] : Film);
+  const Icon = icon || (type ? ICON_MAP[type.toLowerCase()] || Film : Film);
   const EmptyIcon = emptyIcon || Icon;
   const previousImageRef = useRef<string | undefined>(undefined);
   const isFirstImageRef = useRef(true);
@@ -258,7 +259,7 @@ function Card({
               }}
             >
               {/* Image at the top */}
-              <div className="relative w-full aspect-[5/8] cursor-pointer">
+              <div className="relative w-full aspect-5/8 cursor-pointer">
                 {isEmpty ? (
                   <div className="absolute inset-0 flex items-center justify-center bg-empty-card">
                     {EmptyIcon && (

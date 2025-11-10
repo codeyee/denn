@@ -64,6 +64,11 @@ export default function ContentBanner({
   const isBook = item.type === "BOOK";
   const isSeason = item.type === "SEASON";
 
+  // For seasons, display as "TV Show Title - Season Title"
+  const displayTitle = isSeason && (item.tv_show_name || tvShowTitle)
+    ? `${item.tv_show_name || tvShowTitle} - ${item.title}`
+    : item.title;
+
   // Build TV show URL for season subtitle
   const getTVShowUrl = (): string | null => {
     if (!isSeason || !externalId || !sourceApi) return null;
@@ -117,24 +122,11 @@ export default function ContentBanner({
           <div className="flex items-center gap-3 mb-1 md:mb-2">
             {Icon && <Icon className="w-6 h-6 md:w-8 md:h-8 text-white/90" />}
             <h1 className="text-white font-extrabold text-2xl sm:text-3xl md:text-5xl drop-shadow-text line-clamp-2">
-              {item.title}
+              {displayTitle}
             </h1>
           </div>
-          {/* Original Title (for movies/TV), Authors/Artists (for albums/books), or TV Show Name (for seasons) */}
-          {isSeason && (item.type === "SEASON" && (item.tv_show_name || tvShowTitle)) ? (
-            <div className="mt-2 md:mt-3 text-white/85 text-sm md:text-base opacity-90 font-sans">
-              {tvShowUrl ? (
-                <button
-                  onClick={() => router.push(tvShowUrl)}
-                  className="hover:text-white underline transition-colors cursor-pointer"
-                >
-                  {item.tv_show_name || tvShowTitle}
-                </button>
-              ) : (
-                <span>{item.tv_show_name || tvShowTitle}</span>
-              )}
-            </div>
-          ) : (isAlbum || isBook) && authors ? (
+          {/* Original Title (for movies/TV), Authors/Artists (for albums/books) - skip for seasons since TV show is in title */}
+          {(isAlbum || isBook) && authors ? (
             <div className="mt-2 md:mt-3 text-white/85 text-sm md:text-base opacity-90 font-sans">
               {authors}
             </div>

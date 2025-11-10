@@ -30,7 +30,15 @@ export default function ListItemCard({
   const contentItem = item.content_item;
   const sourceData = contentItem.source_data;
   const imageUrl = sourceData?.image_url;
-  const title = sourceData?.title || "Untitled";
+
+  // For seasons, display as "TV Show Title - Season Title"
+  const isSeason = contentItem.content_type === "SEASON";
+  const title = isSeason &&
+                "tv_show_name" in sourceData &&
+                sourceData.tv_show_name &&
+                sourceData.title
+    ? `${sourceData.tv_show_name} - ${sourceData.title}`
+    : sourceData?.title || "Untitled";
 
   const ContentIcon = getContentTypeIcon(contentItem.content_type);
 
@@ -66,6 +74,10 @@ export default function ListItemCard({
   };
 
   const getSubTitle = () => {
+    // Skip subtitle for seasons since it's now in the title
+    if (contentItem.content_type === "SEASON") {
+      return "";
+    }
     if (
       "original_title" in sourceData &&
       sourceData.original_title &&
@@ -82,13 +94,6 @@ export default function ListItemCard({
       return (sourceData.authors as Author[])
         ?.map((author) => author.name)
         .join(", ");
-    }
-    if (
-      contentItem.content_type === "SEASON" &&
-      "tv_show_name" in sourceData &&
-      sourceData.type === "SEASON"
-    ) {
-      return sourceData.tv_show_name;
     }
     return "";
   };

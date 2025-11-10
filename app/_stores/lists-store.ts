@@ -179,9 +179,9 @@ export const useListsStore = create<ListsStore>((set, get) => ({
       });
 
       const { lists } = get();
-      const updatedList = response as ListWithItems;
+      // Merge the response with the existing list to preserve items array
       const updatedLists = lists.map((list) =>
-        list.id === listId ? updatedList : list
+        list.id === listId ? { ...list, ...response } : list
       );
 
       set({
