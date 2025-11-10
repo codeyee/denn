@@ -1,16 +1,21 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ContentItem } from "@/types/contentTypes";
-import { SourceApi, ContentType } from "@/lib/api/types";
+import {
+  ContentItem,
+  SourceApi,
+  ContentType,
+  Author,
+} from "@/lib/api/types";
 import { getLegacyImageUrl } from "@/lib/utils/imageUtils";
 import { formatAuthors } from "@/lib/utils/authorUtils";
-import { inferNavigationParams, CONTENT_TYPE_ICONS } from "@/lib/utils/contentTypeUtils";
+import { CONTENT_TYPE_ICONS } from "@/lib/utils/contentTypeUtils";
 import { Button } from "@/app/_components/lib/button";
 import { ListPlus, Star } from "lucide-react";
+import { Content } from "@/types";
 
 interface ContentBannerProps {
-  item: ContentItem | any;
+  item: Content;
   tvShowTitle?: string;
   externalId?: string;
   sourceApi?: SourceApi | string;
@@ -20,22 +25,31 @@ interface ContentBannerProps {
   hasUserRating?: boolean;
 }
 
-export default function ContentBanner({ item, tvShowTitle, externalId, sourceApi, onAddToList, onRateContent, isAuthenticated, hasUserRating }: ContentBannerProps) {
+export default function ContentBanner({
+  item,
+  tvShowTitle,
+  externalId,
+  sourceApi,
+  onAddToList,
+  onRateContent,
+  isAuthenticated,
+  hasUserRating,
+}: ContentBannerProps) {
   const router = useRouter();
-  const contentType = inferNavigationParams(item as Record<string, unknown>).contentType?.toLowerCase() || 'movie';
+  const contentType = item.type;
   const Icon = CONTENT_TYPE_ICONS[contentType];
   const backgroundUrl = getLegacyImageUrl(item);
 
-  const getOriginalTitle = (item: ContentItem | any): string => {
+  const getOriginalTitle = (item: Content): string => {
     if ("original_title" in item && item.original_title) {
       return item.original_title as string;
     }
     return "";
   };
 
-  const getAuthors = (item: ContentItem | any): string => {
+  const getAuthors = (item: Content): string => {
     if ("authors" in item && item.authors) {
-      return formatAuthors(item.authors);
+      return formatAuthors(item.authors as Author[]);
     }
     return "";
   };
@@ -46,10 +60,9 @@ export default function ContentBanner({ item, tvShowTitle, externalId, sourceApi
 
   // For albums and books, show authors/artists as metadata
   const authors = getAuthors(item);
-  const isAlbum = "total_tracks" in item;
-  const isBook = "pages" in item;
-  const isSeason = ("type" in item && item.type === "season") ||
-    ("number_of_episodes" in item && !("number_of_seasons" in item));
+  const isAlbum = item.type === "ALBUM";
+  const isBook = item.type === "BOOK";
+  const isSeason = item.type === "SEASON";
 
   // Build TV show URL for season subtitle
   const getTVShowUrl = (): string | null => {
@@ -72,7 +85,9 @@ export default function ContentBanner({ item, tvShowTitle, externalId, sourceApi
   if (!backgroundUrl) {
     return (
       <div className="relative w-full aspect-16/16 md:aspect-16/13 lg:aspect-16/10 xl:aspect-16/7 4xl:aspect-16/5 15xl:aspect-16/3 overflow-hidden mb-6 md:mb-10 rounded-none md:rounded-2xl bg-gray-800 flex items-center justify-center">
-        {Icon && <Icon className="w-16 h-16 md:w-24 md:h-24 text-gray-400 opacity-50" />}
+        {Icon && (
+          <Icon className="w-16 h-16 md:w-24 md:h-24 text-gray-400 opacity-50" />
+        )}
       </div>
     );
   }
@@ -106,7 +121,7 @@ export default function ContentBanner({ item, tvShowTitle, externalId, sourceApi
             </h1>
           </div>
           {/* Original Title (for movies/TV), Authors/Artists (for albums/books), or TV Show Name (for seasons) */}
-          {isSeason && (item.tv_show_name || tvShowTitle) ? (
+          {isSeason && (item.type === "SEASON" && (item.tv_show_name || tvShowTitle)) ? (
             <div className="mt-2 md:mt-3 text-white/85 text-sm md:text-base opacity-90 font-sans">
               {tvShowUrl ? (
                 <button
@@ -164,4 +179,3 @@ export default function ContentBanner({ item, tvShowTitle, externalId, sourceApi
     </div>
   );
 }
-

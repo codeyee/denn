@@ -1,6 +1,6 @@
 import Card from "../Card";
 import { LucideIcon } from "lucide-react";
-import { ProviderAttribution } from "@/types/types";
+import { ProviderAttribution } from "@/types";
 
 interface LandingCardProps {
   id: string | number;
@@ -8,7 +8,11 @@ interface LandingCardProps {
   icon: LucideIcon;
   backgroundImage: string;
   backgroundImageAlt?: string;
-  provider: ProviderAttribution;
+  provider: {
+    name: string;
+    logo: string;
+    url: string;
+  };
   className?: string;
 }
 
@@ -33,9 +37,9 @@ export default function LandingCard({
     >
       <Card.Footer>
         <span>Powered by</span>
-        {provider.href ? (
+        {provider.url ? (
           <a
-            href={provider.href}
+            href={provider.url}
             target="_blank"
             rel="noopener noreferrer"
             className="font-semibold text-white leading-none"

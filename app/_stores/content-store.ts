@@ -1,19 +1,19 @@
 import { create } from "zustand";
 import { homepageActions } from "@/lib/api";
 import {
-  Movie,
-  TVShow,
-  Game,
-  MusicAlbum,
-  Book,
-} from "@/types/contentTypes";
+  MovieDetail,
+  TVShowDetail,
+  GameDetail,
+  AlbumDetail,
+  BookDetail,
+} from "@/lib/api/types";
 
 interface ContentSuggestions {
-  movies: Movie[];
-  tvShows: TVShow[];
-  games: Game[];
-  music: MusicAlbum[];
-  books: Book[];
+  movies: MovieDetail[];
+  tvShows: TVShowDetail[];
+  games: GameDetail[];
+  music: AlbumDetail[];
+  books: BookDetail[];
 }
 
 interface ContentState {
@@ -51,24 +51,24 @@ export const useContentStore = create<ContentStore>((set, get) => ({
     // Check if we already have data and it's less than 6 hours old
     const { lastFetched } = get();
     const sixHoursInMs = 6 * 60 * 60 * 1000;
-    
+
     if (lastFetched && Date.now() - lastFetched < sixHoursInMs) {
       // Data is still fresh, no need to fetch
       return;
     }
 
     set({ isLoading: true, error: null });
-    
+
     try {
       const response = await homepageActions.getSuggestions(limit);
 
       set({
         suggestions: {
-          movies: (response.movies || []) as unknown as Movie[],
-          tvShows: (response.tv_shows || []) as unknown as TVShow[],
-          games: (response.games || []) as unknown as Game[],
-          music: (response.albums || []) as unknown as MusicAlbum[],
-          books: (response.books || []) as unknown as Book[],
+          movies: response.movies || [],
+          tvShows: response.tv_shows || [],
+          games: response.games || [],
+          music: response.albums || [],
+          books: response.books || [],
         },
         isLoading: false,
         error: null,

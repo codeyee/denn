@@ -10,7 +10,7 @@ import Input from "@/app/_components/Input";
 import { ListType } from "@/lib/api/types";
 
 // Define validation schema
-const createListSchema = z.object({
+const editListSchema = z.object({
   name: z
     .string()
     .min(1, "List name is required")
@@ -24,62 +24,73 @@ const createListSchema = z.object({
   listType: z.nativeEnum(ListType),
 });
 
-type CreateListFormData = z.infer<typeof createListSchema>;
+type EditListFormData = z.infer<typeof editListSchema>;
 
-interface CreateListModalProps {
+interface EditListModalProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  onCreateList: (
+  onUpdateList: (
     name: string,
     description?: string,
     listType?: ListType
   ) => Promise<void>;
   isLoading?: boolean;
+  initialData?: {
+    name: string;
+    description?: string;
+    listType: ListType;
+  };
 }
 
-export default function CreateListModal({
+export default function EditListModal({
   isOpen,
   onOpenChange,
-  onCreateList,
+  onUpdateList,
   isLoading,
-}: CreateListModalProps) {
+  initialData,
+}: EditListModalProps) {
   const {
     register,
     handleSubmit,
     formState: { errors },
     reset,
     setError,
-  } = useForm<CreateListFormData>({
-    resolver: zodResolver(createListSchema),
+  } = useForm<EditListFormData>({
+    resolver: zodResolver(editListSchema),
     mode: "onTouched",
     defaultValues: {
-      name: "",
-      description: "",
-      listType: ListType.PERSONAL,
+      name: initialData?.name || "",
+      description: initialData?.description || "",
+      listType: initialData?.listType || ListType.PERSONAL,
     },
   });
 
-  // Reset form when modal opens/closes
+  // Reset form when modal opens/closes or initialData changes
   useEffect(() => {
-    if (!isOpen) {
+    if (isOpen && initialData) {
+      reset({
+        name: initialData.name,
+        description: initialData.description || "",
+        listType: initialData.listType,
+      });
+    } else if (!isOpen) {
       reset();
     }
-  }, [isOpen, reset]);
+  }, [isOpen, initialData, reset]);
 
-  const onSubmit = async (data: CreateListFormData) => {
+  const onSubmit = async (data: EditListFormData) => {
     try {
-      await onCreateList(
+      await onUpdateList(
         data.name,
         data.description || undefined,
         data.listType
       );
 
-      // Reset form and close modal on success
-      reset();
+      // Close modal on success
       onOpenChange(false);
     } catch (err) {
       setError("root", {
-        message: err instanceof Error ? err.message : "Failed to create list",
+        message: err instanceof Error ? err.message : "Failed to update list",
       });
     }
   };
@@ -99,8 +110,8 @@ export default function CreateListModal({
     >
       <form onSubmit={handleSubmit(onSubmit)}>
         <Modal.Header
-          title="Create New List"
-          description="Create a new list to organize your favorite content"
+          title="Edit List"
+          description="Update your list details"
         />
 
         <Modal.Content className="space-y-6 mt-4">
@@ -173,7 +184,7 @@ export default function CreateListModal({
             Cancel
           </Button>
           <Button type="submit" disabled={isLoading}>
-            {isLoading ? "Creating..." : "Create List"}
+            {isLoading ? "Updating..." : "Update List"}
           </Button>
         </div>
       </form>

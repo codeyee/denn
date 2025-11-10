@@ -1,4 +1,4 @@
-import type { ProviderAttribution } from "@/types/types";
+import type { ProviderAttribution } from "@/types";
 
 export type BackgroundCardImage = {
   src: string;
@@ -9,7 +9,11 @@ export type ContentTypeBackground = {
   type: string;
   title: string;
   description: string;
-  provider: ProviderAttribution;
+  provider: {
+    name: string;
+    logo: string;
+    url: string;
+  };
   backgroundImage: string;
   alt: string;
   isFallback: boolean;

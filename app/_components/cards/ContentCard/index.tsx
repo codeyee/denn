@@ -3,19 +3,21 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import Card from "../Card";
-import { contentTypeEnum } from "@/types/types";
-import { ContentItem } from "@/types/contentTypes";
-import { SourceApi, ContentType } from "@/lib/api/types";
+import {
+  SourceApi,
+  ContentType,
+  Author,
+} from "@/lib/api/types";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { getCardImageUrl } from "@/lib/utils/imageUtils";
 import { formatAuthors } from "@/lib/utils/authorUtils";
-import { inferContentTypeEnum } from "@/lib/utils/contentTypeUtils";
+import { Content } from "@/types";
 import { Plus } from "lucide-react";
 import { Button } from "@/app/_components/lib/button";
 import AddToListModal from "@/app/_components/common/Modal/AddToListModal";
 
 interface ContentCardProps {
-  item: ContentItem;
+  item: Content;
   className?: string;
 }
 
@@ -25,73 +27,34 @@ export default function ContentCard({ item, className }: ContentCardProps) {
   const [isAddToListModalOpen, setIsAddToListModalOpen] = useState(false);
 
   const getNavigationUrl = (): string | null => {
-    // Navigate with external identifiers - the detail page will handle the API calls
-    // Determine source API and content type from the item
     let sourceApi: SourceApi | undefined;
     let contentType: ContentType | undefined;
     let externalId: string | undefined;
 
-    // First check if there's an explicit type field (from search results)
-    if ("type" in item && typeof item.type === "string") {
-      const itemType = item.type.toLowerCase();
-      if (itemType === "movie") {
-        sourceApi = SourceApi.TMDB;
-        contentType = ContentType.MOVIE;
-        externalId = String(item.id);
-      } else if (itemType === "tv" || itemType === "tv_show") {
-        sourceApi = SourceApi.TMDB;
-        contentType = ContentType.TV_SHOW;
-        externalId = String(item.id);
-      } else if (itemType === "album" || itemType === "music" || itemType === "ep") {
-        sourceApi = SourceApi.SPOTIFY;
-        contentType = ContentType.ALBUM;
-        externalId = String(item.id);
-      } else if (itemType === "game") {
-        sourceApi = SourceApi.IGDB;
-        contentType = ContentType.GAME;
-        externalId = String(item.id);
-      } else if (itemType === "book") {
-        sourceApi = SourceApi.OPENLIBRARY;
-        contentType = ContentType.BOOK;
-        externalId = String(item.id);
-      } else if (itemType === "season") {
-        // For seasons, use the explicit external_id, source_api, and content_type if available
-        if ("external_id" in item && item.external_id) {
-          sourceApi = ("source_api" in item && item.source_api) as SourceApi || SourceApi.TMDB;
-          contentType = ("content_type" in item && item.content_type) as ContentType || ContentType.SEASON;
-          externalId = String(item.external_id);
-        } else {
-          sourceApi = SourceApi.TMDB;
-          contentType = ContentType.SEASON;
-          externalId = String(item.id);
-        }
-      }
-    }
-
-    // If not determined by type field, check properties
-    if (!sourceApi || !contentType) {
-      if ("platforms" in item) {
-        sourceApi = SourceApi.IGDB;
-        contentType = ContentType.GAME;
-        externalId = String(item.id);
-      } else if ("total_tracks" in item) {
-        sourceApi = SourceApi.SPOTIFY;
-        contentType = ContentType.ALBUM;
-        externalId = String(item.id);
-      } else if ("pages" in item) {
-        sourceApi = SourceApi.OPENLIBRARY;
-        contentType = ContentType.BOOK;
-        externalId = String(item.id);
-      } else if ("number_of_seasons" in item || "number_of_episodes" in item) {
-        sourceApi = SourceApi.TMDB;
-        contentType = ContentType.TV_SHOW;
-        externalId = String(item.id);
-      } else {
-        // Default to movie
-        sourceApi = SourceApi.TMDB;
-        contentType = ContentType.MOVIE;
-        externalId = String(item.id);
-      }
+    if (item.type === "MOVIE") {
+      sourceApi = SourceApi.TMDB;
+      contentType = ContentType.MOVIE;
+      externalId = String(item.id);
+    } else if (item.type === "TV_SHOW") {
+      sourceApi = SourceApi.TMDB;
+      contentType = ContentType.TV_SHOW;
+      externalId = String(item.id);
+    } else if (item.type === "ALBUM") {
+      sourceApi = SourceApi.SPOTIFY;
+      contentType = ContentType.ALBUM;
+      externalId = String(item.id);
+    } else if (item.type === "GAME") {
+      sourceApi = SourceApi.IGDB;
+      contentType = ContentType.GAME;
+      externalId = String(item.id);
+    } else if (item.type === "BOOK") {
+      sourceApi = SourceApi.OPENLIBRARY;
+      contentType = ContentType.BOOK;
+      externalId = String(item.id);
+    } else if (item.type === "SEASON") {
+      sourceApi = SourceApi.TMDB;
+      contentType = ContentType.SEASON;
+      externalId = String(item.id);
     }
 
     if (sourceApi && contentType && externalId) {
@@ -102,14 +65,18 @@ export default function ContentCard({ item, className }: ContentCardProps) {
       });
       return `/content?${params.toString()}`;
     } else {
-      console.error("Missing required parameters:", { sourceApi, contentType, externalId });
+      console.error("Missing required parameters:", {
+        sourceApi,
+        contentType,
+        externalId,
+      });
       return null;
     }
   };
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    
+
     const url = getNavigationUrl();
     if (!url) {
       alert("Unable to determine content type. Please try again.");
@@ -121,7 +88,7 @@ export default function ContentCard({ item, className }: ContentCardProps) {
 
     if (isModifierClick) {
       // Open in new tab without losing focus
-      const newWindow = window.open(url, '_blank');
+      const newWindow = window.open(url, "_blank");
       if (newWindow) {
         newWindow.blur();
         window.focus();
@@ -135,10 +102,10 @@ export default function ContentCard({ item, className }: ContentCardProps) {
   const openInNewTab = (url: string) => {
     // Store reference to current window
     const currentWindow = window;
-    
+
     // Open the URL in a new tab
-    const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
-    
+    const newWindow = window.open(url, "_blank", "noopener,noreferrer");
+
     // Try to refocus the current window after a delay
     // Many browsers block this for security, but we try anyway
     if (newWindow) {
@@ -195,65 +162,68 @@ export default function ContentCard({ item, className }: ContentCardProps) {
       }, 100);
     }
   };
-  const getContentType = (): contentTypeEnum => {
-    return inferContentTypeEnum(item as unknown as Record<string, unknown>);
-  };
 
-  const getPosterImageUrl = (item: any): string | undefined => {
-    // Use the new image utility that handles both old and new image structures
+  const getPosterImageUrl = (item: Content): string | undefined => {
     return getCardImageUrl(item?.images, item?.image_url) || undefined;
   };
 
   const getFooterInfo = (): string => {
     const footerInfo: string[] = [];
 
-    if ("pages" in item && item.pages) {
+    if (item.type === "BOOK" && item.pages) {
       footerInfo.push(`${item.pages} pages`);
     }
 
-    if ("total_tracks" in item && item.total_tracks) {
-      footerInfo.push(`${item.total_tracks} ${item.total_tracks === 1 ? 'track' : 'tracks'}`);
+    if (item.type === "ALBUM" && item.total_tracks) {
+      footerInfo.push(
+        `${item.total_tracks} ${
+          item.total_tracks === 1 ? "track" : "tracks"
+        }`
+      );
     }
 
-    if ("duration_minutes" in item && (item as any).duration_minutes) {
-      const mins = (item as any).duration_minutes as number;
+    if (
+      (item.type === "MOVIE" || item.type === "ALBUM") &&
+      item.duration_minutes
+    ) {
+      const mins = item.duration_minutes as number;
       footerInfo.push(`${mins} min`);
     }
 
-    // For seasons, show episode count
-    if ("type" in item && item.type === "season") {
-      const episodes = ("number_of_episodes" in item ? (item as any).number_of_episodes : undefined) as number | undefined;
-      if (typeof episodes === 'number' && episodes > 0) {
-        footerInfo.push(`${episodes} ${episodes === 1 ? 'episode' : 'episodes'}`);
+    if (item.type === "SEASON") {
+      const episodes = item.number_of_episodes;
+      if (typeof episodes === "number" && episodes > 0) {
+        footerInfo.push(
+          `${episodes} ${episodes === 1 ? "episode" : "episodes"}`
+        );
       }
-    } else {
-      // For TV shows, show both seasons and episodes
-      const seasons = ("number_of_seasons" in item ? (item as any).number_of_seasons : undefined) as number | undefined;
-      const episodes = ("number_of_episodes" in item ? (item as any).number_of_episodes : undefined) as number | undefined;
+    } else if (item.type === "TV_SHOW") {
+      const seasons = item.number_of_seasons;
+      const episodes = item.number_of_episodes;
       if (seasons || episodes) {
         const parts: string[] = [];
-        if (typeof seasons === 'number' && seasons > 0) {
-          parts.push(`${seasons} ${seasons === 1 ? 'season' : 'seasons'}`);
+        if (typeof seasons === "number" && seasons > 0) {
+          parts.push(`${seasons} ${seasons === 1 ? "season" : "seasons"}`);
         }
-        if (typeof episodes === 'number' && episodes > 0) {
-          parts.push(`${episodes} ${episodes === 1 ? 'episode' : 'episodes'}`);
+        if (typeof episodes === "number" && episodes > 0) {
+          parts.push(
+            `${episodes} ${episodes === 1 ? "episode" : "episodes"}`
+          );
         }
-        if (parts.length) footerInfo.push(parts.join(' • '));
+        if (parts.length) footerInfo.push(parts.join(" • "));
       }
     }
 
     return footerInfo.join(" • ");
   };
 
-  const getAuthors = (): string => {
+  const getAuthorsText = (): string => {
     if ("authors" in item && item.authors && item.authors.length > 0) {
-      // For movies, TV shows, and games, show only the first author
-      const isMovie = ("type" in item && (item.type === "movie" || item.type === "MOVIE"));
-      const isTVShow = ("type" in item && (item.type === "tv" || item.type === "tv_show" || item.type === "TV_SHOW"));
-      const isGame = ("type" in item && (item.type === "game" || item.type === "GAME"));
-
-      if (isMovie || isTVShow || isGame) {
-        // Return only the first author
+      if (
+        item.type === "MOVIE" ||
+        item.type === "TV_SHOW" ||
+        item.type === "GAME"
+      ) {
         const firstAuthor = item.authors[0];
         if (typeof firstAuthor === "string") {
           return firstAuthor;
@@ -261,16 +231,13 @@ export default function ContentCard({ item, className }: ContentCardProps) {
           return firstAuthor.name;
         }
       }
-
-      // For other content types (albums, books), show all authors
-      return formatAuthors(item.authors);
+      return formatAuthors(item.authors as Author[]);
     }
     return "";
   };
 
-
   const getReleaseDate = (): string => {
-    if ("release_date" in item && item.release_date) {
+    if (item.release_date) {
       return formatReleaseDate(item.release_date);
     }
     return "";
@@ -286,14 +253,15 @@ export default function ContentCard({ item, className }: ContentCardProps) {
   const title = item.title;
   const imageUrl = getPosterImageUrl(item);
   const id = String(item.id);
-  const type = getContentType();
+  const type = item.type;
 
   const footerInfo = getFooterInfo();
-  const authors = getAuthors();
+  const authors = getAuthorsText();
   const originalTitle = getOriginalTitle();
   const releaseDate = getReleaseDate();
 
-  const originalTitleIsSameAsTitle = originalTitle.toLowerCase() === title.toLowerCase();
+  const originalTitleIsSameAsTitle =
+    originalTitle.toLowerCase() === title.toLowerCase();
 
   // Get description from item
   const getDescription = (): string => {
@@ -362,7 +330,7 @@ export default function ContentCard({ item, className }: ContentCardProps) {
 
   return (
     <>
-      <div 
+      <div
         onClick={handleClick}
         onAuxClick={handleAuxClick}
         onMouseDown={handleMouseDown}
@@ -382,7 +350,7 @@ export default function ContentCard({ item, className }: ContentCardProps) {
         aria-label={`View details for ${title}`}
       >
         <Card
-          type={type}
+          type={type as ContentType}
           id={id}
           title={title}
           backgroundImage={imageUrl || ""}
@@ -397,7 +365,7 @@ export default function ContentCard({ item, className }: ContentCardProps) {
                     {description}
                   </p>
                 )}
-                
+
                 {/* Action Button */}
                 <Button
                   onClick={handleAddToList}

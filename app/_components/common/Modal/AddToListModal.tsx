@@ -4,9 +4,9 @@ import { useState, useEffect } from "react";
 import Modal from "@/app/_components/common/Modal";
 import { Button } from "@/app/_components/lib/button";
 import { useListsStore } from "@/app/_stores/lists-store";
-import { listItemActions, listActions } from "@/lib/api";
-import { ListItemCreate } from "@/lib/api/types";
-import { List } from "@/types/contentTypes";
+import { listItemActions } from "@/lib/api";
+import { ListItemCreate, ContentType, SourceApi } from "@/lib/api/types";
+import { ListWithItems } from "@/types";
 import { Plus, Check } from "lucide-react";
 
 interface AddToListModalProps {
@@ -26,13 +26,17 @@ export default function AddToListModal({
   contentItem,
   onSuccess,
 }: AddToListModalProps) {
-  const { lists, isLoading: listsLoading, fetchLists, createList, forceRefreshLists } = useListsStore();
+  const {
+    lists,
+    isLoading: listsLoading,
+    fetchLists,
+    createList,
+    forceRefreshLists,
+  } = useListsStore();
   const [addingToListId, setAddingToListId] = useState<number | null>(null);
   const [creatingNewList, setCreatingNewList] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successListId, setSuccessListId] = useState<number | null>(null);
-  const [listStats, setListStats] = useState<Map<number, { total_items: number }>>(new Map());
-  const [fetchingStats, setFetchingStats] = useState(false);
 
   // Fetch lists when modal opens
   useEffect(() => {
@@ -44,59 +48,24 @@ export default function AddToListModal({
     }
   }, [isOpen, fetchLists]);
 
-  // Fetch stats for all lists
-  useEffect(() => {
-    const fetchStatsForLists = async () => {
-      if (!isOpen || lists.length === 0) return;
-
-      setFetchingStats(true);
-      const statsMap = new Map<number, { total_items: number }>();
-
-      try {
-        // Fetch stats for all lists in parallel
-        const statsPromises = lists.map(async (list) => {
-          try {
-            const stats = await listActions.getStats(list.id) as any;
-            return { id: list.id, stats };
-          } catch (err) {
-            console.error(`Failed to fetch stats for list ${list.id}:`, err);
-            return { id: list.id, stats: null };
-          }
-        });
-
-        const results = await Promise.all(statsPromises);
-
-        results.forEach(({ id, stats }) => {
-          if (stats && typeof stats.total_items === 'number') {
-            statsMap.set(id, { total_items: stats.total_items });
-          }
-        });
-
-        setListStats(statsMap);
-      } catch (err) {
-        console.error("Error fetching list stats:", err);
-      } finally {
-        setFetchingStats(false);
-      }
-    };
-
-    fetchStatsForLists();
-  }, [isOpen, lists]);
-
   const handleCreateNewList = async () => {
     setCreatingNewList(true);
     setError(null);
 
     try {
       // Create list with timestamp name
-      const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, -5);
+      const timestamp = new Date()
+        .toISOString()
+        .replace(/[:.]/g, "-")
+        .slice(0, -5);
       const newList = await createList(`List ${timestamp}`);
 
       // Add item to the newly created list
       await listItemActions.create(newList.id, {
-        source_api: contentItem.source_api,
+        source_api: contentItem.source_api as SourceApi,
         external_id: contentItem.external_id,
-        content_type: contentItem.content_type,
+        content_type: contentItem.content_type as ContentType,
+        status: "PENDING",
       } as ListItemCreate);
 
       // Force refresh lists to show updated data on homepage
@@ -123,9 +92,10 @@ export default function AddToListModal({
 
     try {
       await listItemActions.create(listId, {
-        source_api: contentItem.source_api,
+        source_api: contentItem.source_api as SourceApi,
         external_id: contentItem.external_id,
-        content_type: contentItem.content_type,
+        content_type: contentItem.content_type as ContentType,
+        status: "PENDING",
       } as ListItemCreate);
 
       // Force refresh lists to show updated data on homepage
@@ -140,10 +110,14 @@ export default function AddToListModal({
       }, 1500);
     } catch (err) {
       console.error("Error adding to list:", err);
-      const errorMessage = err instanceof Error ? err.message : "Failed to add to list";
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to add to list";
 
       // Check if it's a duplicate error
-      if (errorMessage.toLowerCase().includes("already") || errorMessage.toLowerCase().includes("duplicate")) {
+      if (
+        errorMessage.toLowerCase().includes("already") ||
+        errorMessage.toLowerCase().includes("duplicate")
+      ) {
         setError("This item is already in the list");
         // Refresh lists to update the UI
         await forceRefreshLists({ items_size: 4 });
@@ -164,7 +138,7 @@ export default function AddToListModal({
   };
 
   // Check if content item is already in a list
-  const isItemInList = (list: List): boolean => {
+  const isItemInList = (list: ListWithItems): boolean => {
     if (!list.items || list.items.length === 0) return false;
 
     return list.items.some((item) => {
@@ -231,17 +205,22 @@ export default function AddToListModal({
             </div>
           ) : (
             <div className="max-h-[300px] overflow-y-auto space-y-2 pr-2">
-              {lists.map((list: List) => {
+              {(lists as ListWithItems[]).map((list: ListWithItems) => {
                 const alreadyInList = isItemInList(list);
-                // Use stats from API if available, otherwise fallback to cached data
-                const stats = listStats.get(list.id);
-                const itemCount = stats?.total_items ?? (list.item_count ? parseInt(list.item_count, 10) : 0);
+                const itemCount = list.item_count
+                  ? parseInt(list.item_count, 10)
+                  : 0;
 
                 return (
                   <button
                     key={list.id}
                     onClick={() => handleAddToList(list.id)}
-                    disabled={addingToListId !== null || creatingNewList || successListId === list.id || alreadyInList}
+                    disabled={
+                      addingToListId !== null ||
+                      creatingNewList ||
+                      successListId === list.id ||
+                      alreadyInList
+                    }
                     className={`w-full text-left p-3 rounded-lg border transition-all ${
                       successListId === list.id
                         ? "bg-green-500/20 border-green-500/50"
@@ -253,7 +232,9 @@ export default function AddToListModal({
                     <div className="flex items-center justify-between">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <p className="font-medium text-white truncate">{list.name}</p>
+                          <p className="font-medium text-white truncate">
+                            {list.name}
+                          </p>
                           {alreadyInList && (
                             <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full font-sans shrink-0">
                               Already added

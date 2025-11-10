@@ -7,6 +7,8 @@ import ListItem from "./ListItem";
 interface ExpandableListItemProps {
   title: string;
   description?: string;
+  subDescription?: string;
+  rating?: number | null;
   image?: string | null;
   imageAlt?: string;
   leadingContent?: React.ReactNode;
@@ -21,6 +23,8 @@ interface ExpandableListItemProps {
 export default function ExpandableListItem({
   title,
   description,
+  subDescription,
+  rating,
   image,
   imageAlt,
   leadingContent,
@@ -44,6 +48,8 @@ export default function ExpandableListItem({
       <ListItem
         title={title}
         description={description}
+        subDescription={subDescription}
+        rating={rating}
         image={image}
         imageAlt={imageAlt}
         leadingContent={leadingContent}

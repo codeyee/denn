@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { contentItemActions, videoActions, musicActions, ratingActions } from "@/lib/api";
-import { ContentType, SourceApi, Rating, RatingCreate, ImageType, TVSeason } from "@/lib/api/types";
+import { ContentItem, ContentType, SourceApi, Rating, RatingCreate, ImageType, TVSeason } from "@/lib/api/types";
 import { getAuthorNames } from "@/lib/utils/authorUtils";
 import {
   MovieDetail,
@@ -48,9 +48,8 @@ export default function ContentDetailPage({
   const { user } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [contentItem, setContentItem] = useState<any>(null);
-  const [detailData, setDetailData] = useState<MovieDetail | TVShowDetail | TVSeasonDetail | AlbumDetail | GameDetail | BookDetail | null>(null);
-  const [tvShowTitle, setTvShowTitle] = useState<string | null>(null);
+  const [contentItem, setContentItem] = useState<ContentItem | null>(null);
+    const [detailData, setDetailData] = useState<MovieDetail | TVShowDetail | TVSeasonDetail | AlbumDetail | GameDetail | BookDetail | null>(null);  const [tvShowTitle, setTvShowTitle] = useState<string | null>(null);
   const [userRating, setUserRating] = useState<Rating | null>(null);
   const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
   const [isRatingLoading, setIsRatingLoading] = useState(false);
@@ -64,7 +63,7 @@ export default function ContentDetailPage({
         setLoading(true);
         setError(null);
 
-        let item: any;
+        let item: ContentItem;
 
         // If we have an internal content ID, fetch directly with source data
         if (contentId) {
@@ -85,7 +84,7 @@ export default function ContentDetailPage({
         setContentItem(item);
 
         // Parse source_data if it's a string
-        let sourceData: any = null;
+        let sourceData: MovieDetail | TVShowDetail | TVSeasonDetail | AlbumDetail | GameDetail | BookDetail | null = null;
         if (item.source_data) {
           sourceData = typeof item.source_data === 'string'
             ? JSON.parse(item.source_data)
@@ -96,7 +95,7 @@ export default function ContentDetailPage({
           setDetailData(sourceData);
 
           // For seasons, extract TV show name from source_data if available
-          if (item.content_type === ContentType.SEASON && sourceData.tv_show_name) {
+          if (item.content_type === ContentType.SEASON && "tv_show_name" in sourceData && sourceData.tv_show_name) {
             setTvShowTitle(sourceData.tv_show_name);
           }
         } else {
@@ -501,12 +500,11 @@ export default function ContentDetailPage({
     );
   };
 
-  // Use detailData if available, otherwise fallback to contentItem source_data
   const displayItem = detailData || (contentItem.source_data
     ? (typeof contentItem.source_data === 'string'
       ? JSON.parse(contentItem.source_data)
       : contentItem.source_data)
-    : contentItem);
+    : contentItem) as MovieDetail | TVShowDetail | TVSeasonDetail | AlbumDetail | GameDetail | BookDetail;
 
   const handleSubmitRating = async (data: RatingCreate) => {
     setIsRatingLoading(true);

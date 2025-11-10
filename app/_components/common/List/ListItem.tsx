@@ -4,6 +4,8 @@ import Image from "next/image";
 interface ListItemProps {
   title: string;
   description?: string;
+  subDescription?: string; // New prop for additional metadata
+  rating?: number | null;
   image?: string | null;
   imageAlt?: string;
   leadingContent?: React.ReactNode;
@@ -16,6 +18,8 @@ interface ListItemProps {
 export default function ListItem({
   title,
   description,
+  subDescription,
+  rating,
   image,
   imageAlt = "",
   leadingContent,
@@ -74,9 +78,19 @@ export default function ListItem({
 
             {/* Text Content */}
             <div className="flex-1 min-w-0">
-              <h3 className="text-white font-medium truncate">{title}</h3>
+              <div className="flex items-center gap-2">
+                <h3 className="text-white font-medium truncate">{title}</h3>
+                {rating && (
+                  <span className="text-yellow-400 font-medium text-sm">
+                    ★ {rating}
+                  </span>
+                )}
+              </div>
               {description && (
                 <p className="text-gray-400 text-sm truncate font-sans">{description}</p>
+              )}
+              {subDescription && (
+                <p className="text-gray-500 text-xs truncate font-sans">{subDescription}</p>
               )}
             </div>
 
@@ -150,9 +164,19 @@ export default function ListItem({
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <h3 className="text-white font-medium mb-1 truncate">{title}</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-white font-medium mb-1 truncate">{title}</h3>
+            {rating && (
+              <span className="text-yellow-400 font-medium text-sm">
+                ★ {rating}
+              </span>
+            )}
+          </div>
           {description && (
             <p className="text-gray-400 text-sm truncate">{description}</p>
+          )}
+          {subDescription && (
+            <p className="text-gray-500 text-xs truncate font-sans">{subDescription}</p>
           )}
         </div>
 

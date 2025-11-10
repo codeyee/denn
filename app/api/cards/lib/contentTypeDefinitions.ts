@@ -7,7 +7,7 @@ import {
   LucideIcon,
 } from "lucide-react";
 
-import { ProviderAttribution } from "@/types/types";
+import { ProviderAttribution } from "@/types";
 
 export type ContentTypeDefinition = {
   slug: string;
@@ -15,7 +15,11 @@ export type ContentTypeDefinition = {
   title: string;
   description: string;
   defaultBackgroundImage: string;
-  provider: ProviderAttribution;
+  provider: {
+    name: string;
+    logo: string;
+    url: string;
+  };
 };
 
 export const contentTypeDefinitions: ContentTypeDefinition[] = [
@@ -27,7 +31,8 @@ export const contentTypeDefinitions: ContentTypeDefinition[] = [
     defaultBackgroundImage: "/images/cards/movie_01.webp",
     provider: {
       name: "TMDB",
-      href: "https://www.themoviedb.org/",
+      logo: "/images/logos/tmdb.svg",
+      url: "https://www.themoviedb.org/",
     },
   },
   {
@@ -38,7 +43,8 @@ export const contentTypeDefinitions: ContentTypeDefinition[] = [
     defaultBackgroundImage: "/images/cards/tv_01.webp",
     provider: {
       name: "TMDB",
-      href: "https://www.themoviedb.org/",
+      logo: "/images/logos/tmdb.svg",
+      url: "https://www.themoviedb.org/",
     },
   },
   {
@@ -49,7 +55,8 @@ export const contentTypeDefinitions: ContentTypeDefinition[] = [
     defaultBackgroundImage: "/images/cards/game_01.jpg",
     provider: {
       name: "IGDB",
-      href: "https://www.igdb.com/",
+      logo: "/images/logos/igdb.svg",
+      url: "https://www.igdb.com/",
     },
   },
   {
@@ -60,7 +67,8 @@ export const contentTypeDefinitions: ContentTypeDefinition[] = [
     defaultBackgroundImage: "/images/cards/music_01.jpeg",
     provider: {
       name: "Spotify",
-      href: "https://www.spotify.com/",
+      logo: "/images/logos/spotify.svg",
+      url: "https://www.spotify.com/",
     },
   },
   {
@@ -70,8 +78,9 @@ export const contentTypeDefinitions: ContentTypeDefinition[] = [
     description: "Your personal reading list and reviews",
     defaultBackgroundImage: "/images/cards/book_01.jpg",
     provider: {
-      name: "OpenLibrary",
-      href: "https://openlibrary.org/",
+      name: "Open Library",
+      logo: "/images/logos/openlibrary.svg",
+      url: "https://openlibrary.org/",
     },
   },
 ];

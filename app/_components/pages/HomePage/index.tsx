@@ -11,6 +11,7 @@ import { useContentStore } from "@/app/_stores/content-store";
 import { useListsStore } from "@/app/_stores/lists-store";
 import FeaturedBanner from "./FeaturedBanner";
 import FeaturedBannerPlaceholder from "./FeaturedBannerPlaceholder";
+import { Content } from "@/types";
 
 const ITEMS_PER_CAROUSEL = undefined;
 const ITEM_TARGET_WIDTH = 250;
@@ -39,7 +40,6 @@ export default function HomePage() {
     });
   }, [fetchSuggestions, fetchLists]);
 
-  const isLoadingAny = suggestionsLoading || listsLoading;
   const hasAnyError = suggestionsError || listsError;
 
   const featuredItems = useMemo(() => {
@@ -56,7 +56,7 @@ export default function HomePage() {
       return result;
     };
 
-    const pool = [
+    const pool: Content[] = [
       ...pickRandom(suggestions.movies || [], 3),
       ...pickRandom(suggestions.tvShows || [], 3),
       ...pickRandom(suggestions.games || [], 3),
@@ -69,7 +69,12 @@ export default function HomePage() {
       [pool[i], pool[j]] = [pool[j], pool[i]];
     }
     return pool.slice(0, 10);
-  }, [suggestions.movies, suggestions.tvShows, suggestions.games, suggestions.music]);
+  }, [
+    suggestions.movies,
+    suggestions.tvShows,
+    suggestions.games,
+    suggestions.music,
+  ]);
 
   if (hasAnyError) {
     return (
@@ -85,8 +90,8 @@ export default function HomePage() {
                     ? suggestionsError
                     : suggestionsError &&
                       typeof (suggestionsError as any).message === "string"
-                      ? (suggestionsError as any).message
-                      : "Unknown error"}
+                    ? (suggestionsError as any).message
+                    : "Unknown error"}
                 </p>
               )}
               {listsError && (
@@ -96,8 +101,8 @@ export default function HomePage() {
                     ? listsError
                     : listsError &&
                       typeof (listsError as any).message === "string"
-                      ? (listsError as any).message
-                      : "Unknown error"}
+                    ? (listsError as any).message
+                    : "Unknown error"}
                 </p>
               )}
             </div>
@@ -129,7 +134,10 @@ export default function HomePage() {
               disableNavigation
             >
               {Array.from({ length: PLACEHOLDER_COUNT }).map((_, index) => (
-                <PlaceholderCard key={`list-placeholder-${index}`} index={index} />
+                <PlaceholderCard
+                  key={`list-placeholder-${index}`}
+                  index={index}
+                />
               ))}
             </Carousel>
           </section>
@@ -166,7 +174,10 @@ export default function HomePage() {
               disableNavigation
             >
               {Array.from({ length: PLACEHOLDER_COUNT }).map((_, index) => (
-                <PlaceholderCard key={`movie-placeholder-${index}`} index={index} />
+                <PlaceholderCard
+                  key={`movie-placeholder-${index}`}
+                  index={index}
+                />
               ))}
             </Carousel>
           </section>
@@ -226,7 +237,10 @@ export default function HomePage() {
               disableNavigation
             >
               {Array.from({ length: PLACEHOLDER_COUNT }).map((_, index) => (
-                <PlaceholderCard key={`game-placeholder-${index}`} index={index} />
+                <PlaceholderCard
+                  key={`game-placeholder-${index}`}
+                  index={index}
+                />
               ))}
             </Carousel>
           </section>
@@ -256,7 +270,10 @@ export default function HomePage() {
               disableNavigation
             >
               {Array.from({ length: PLACEHOLDER_COUNT }).map((_, index) => (
-                <PlaceholderCard key={`music-placeholder-${index}`} index={index} />
+                <PlaceholderCard
+                  key={`music-placeholder-${index}`}
+                  index={index}
+                />
               ))}
             </Carousel>
           </section>
@@ -286,7 +303,10 @@ export default function HomePage() {
               disableNavigation
             >
               {Array.from({ length: PLACEHOLDER_COUNT }).map((_, index) => (
-                <PlaceholderCard key={`book-placeholder-${index}`} index={index} />
+                <PlaceholderCard
+                  key={`book-placeholder-${index}`}
+                  index={index}
+                />
               ))}
             </Carousel>
           </section>

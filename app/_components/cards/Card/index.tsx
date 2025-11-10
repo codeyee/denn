@@ -3,14 +3,14 @@ import { useRef, useEffect, useState } from "react";
 import { Film, Tv, Gamepad2, Book, Music, LucideIcon } from "lucide-react";
 import { createPortal } from "react-dom";
 
-import { contentTypeEnum } from "@/types/types";
+import { ContentType } from "@/lib/api/types";
 
 const ICON_MAP = {
-  movie: Film,
-  tv: Tv,
-  game: Gamepad2,
-  book: Book,
-  music: Music,
+  [ContentType.MOVIE.toLowerCase()]: Film,
+  [ContentType.TV_SHOW.toLowerCase()]: Tv,
+  [ContentType.GAME.toLowerCase()]: Gamepad2,
+  [ContentType.BOOK.toLowerCase()]: Book,
+  [ContentType.ALBUM.toLowerCase()]: Music,
 } as const;
 
 const DEFAULT_CARD_ASPECT_RATIO = "5 / 8";
@@ -18,7 +18,7 @@ const DEFAULT_CARD_ASPECT_RATIO = "5 / 8";
 interface CardProps {
   id: string | number;
   title: string;
-  type?: contentTypeEnum;
+  type?: ContentType;
 
   className?: string;
   backgroundImage?: string;
@@ -77,7 +77,7 @@ function Card({
   hoverContent,
   onHoverChange,
 }: CardProps) {
-  const Icon = icon || (type ? ICON_MAP[type] : Film);
+  const Icon = icon || (type ? ICON_MAP[type.toLowerCase()] : Film);
   const EmptyIcon = emptyIcon || Icon;
   const previousImageRef = useRef<string | undefined>(undefined);
   const isFirstImageRef = useRef(true);

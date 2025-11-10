@@ -5,7 +5,7 @@ import { motion } from "motion/react";
 import LandingCard from "@/app/_components/cards/LandingCard";
 import { LucideIcon } from "lucide-react";
 
-import { ProviderAttribution } from "@/types/types";
+import { ProviderAttribution } from "@/types";
 import {
   contentTypeDefinitions,
   type ContentTypeDefinition,
@@ -17,7 +17,11 @@ type ContentType = {
   title: string;
   description: string;
   backgroundImage: string;
-  provider: ProviderAttribution;
+  provider: {
+    name: string;
+    logo: string;
+    url: string;
+  };
   alt: string;
   isFallback: boolean;
 };
@@ -26,7 +30,11 @@ type ContentTypeApiResponse = {
   type: string;
   title: string;
   description: string;
-  provider: ProviderAttribution;
+  provider: {
+    name: string;
+    logo: string;
+    url: string;
+  };
   backgroundImage: string;
   alt: string;
   isFallback: boolean;

@@ -7,9 +7,21 @@ import ContentCard from "../../cards/ContentCard";
 import PlaceholderCard from "../../cards/PlaceholderCard";
 import Carousel from "../../common/Carousel";
 import Footer from "../../layout/Footer";
-import { videoActions, gameActions, musicActions, bookActions } from "@/lib/api/actions";
-import type { SearchItem } from "@/lib/api/types";
-import type { Movie, TVShow, Game, MusicAlbum, Book } from "@/types/contentTypes";
+import {
+  videoActions,
+  gameActions,
+  musicActions,
+  bookActions,
+} from "@/lib/api/actions";
+import type {
+  SearchItem,
+  MovieDetail,
+  TVShowDetail,
+  GameDetail,
+  AlbumDetail,
+  BookDetail,
+  ContentType,
+} from "@/lib/api/types";
 
 const ITEMS_PER_CAROUSEL = undefined;
 const ITEM_TARGET_WIDTH = 250;
@@ -19,11 +31,11 @@ const PREV_PAGE_KEY = "denn_search_prev_page";
 const PLACEHOLDER_COUNT = 6; // Number of placeholder cards to show per category
 
 interface SearchResults {
-  movies: Movie[];
-  tvShows: TVShow[];
-  games: Game[];
-  music: MusicAlbum[];
-  books: Book[];
+  movies: MovieDetail[];
+  tvShows: TVShowDetail[];
+  games: GameDetail[];
+  music: AlbumDetail[];
+  books: BookDetail[];
 }
 
 export default function SearchPage() {
@@ -62,13 +74,16 @@ export default function SearchPage() {
 
       if (trimmedQuery !== urlQuery) {
         if (trimmedQuery) {
-          router.push(`/search?q=${encodeURIComponent(trimmedQuery)}`, { scroll: false });
+          router.push(`/search?q=${encodeURIComponent(trimmedQuery)}`, {
+            scroll: false,
+          });
           hasUserTypedRef.current = true;
         } else {
           if (hasUserTypedRef.current) {
-            const prevPage = typeof window !== "undefined" 
-              ? sessionStorage.getItem(PREV_PAGE_KEY) || "/"
-              : "/";
+            const prevPage =
+              typeof window !== "undefined"
+                ? sessionStorage.getItem(PREV_PAGE_KEY) || "/"
+                : "/";
             router.push(prevPage);
           }
         }
@@ -122,75 +137,103 @@ export default function SearchPage() {
       setError(null);
 
       try {
-        const [movieResponse, tvResponse, gameResponse, musicResponse, bookResponse] =
-          await Promise.all([
-            videoActions.searchMovies({ query: searchQueryForThisRequest, page_size: 20 }),
-            videoActions.searchTVShows({ query: searchQueryForThisRequest, page_size: 20 }),
-            gameActions.search({ query: searchQueryForThisRequest, page_size: 20 }),
-            musicActions.search({ query: searchQueryForThisRequest, page_size: 20 }),
-            bookActions.search({ query: searchQueryForThisRequest, page_size: 20 }),
-          ]);
+        const [
+          movieResponse,
+          tvResponse,
+          gameResponse,
+          musicResponse,
+          bookResponse,
+        ] = await Promise.all([
+          videoActions.searchMovies({
+            query: searchQueryForThisRequest,
+            page_size: 20,
+          }),
+          videoActions.searchTVShows({
+            query: searchQueryForThisRequest,
+            page_size: 20,
+          }),
+          gameActions.search({
+            query: searchQueryForThisRequest,
+            page_size: 20,
+          }),
+          musicActions.search({
+            query: searchQueryForThisRequest,
+            page_size: 20,
+          }),
+          bookActions.search({
+            query: searchQueryForThisRequest,
+            page_size: 20,
+          }),
+        ]);
 
         if (currentSearchQueryRef.current !== searchQueryForThisRequest) {
           return;
         }
 
-        const movies: Movie[] = movieResponse.results.map((item: SearchItem) => ({
-          id: item.id as number,
-          type: item.type,
-          title: item.title,
-          original_title: item.original_title || undefined,
-          description: item.description || undefined,
-          image_url: item.image_url || undefined,
-          release_date: item.release_date || undefined,
-          authors: item.authors || undefined,
-        })) as Movie[];
-
-        const tvShows: TVShow[] = tvResponse.results.map((item: SearchItem) => ({
-          id: item.id as number,
-          type: item.type,
-          title: item.title,
-          original_title: item.original_title || undefined,
-          description: item.description || undefined,
-          image_url: item.image_url || undefined,
-          release_date: item.release_date || undefined,
-          authors: item.authors || undefined,
-        })) as TVShow[];
-
-        const games: Game[] = gameResponse.results.map((item: SearchItem) => ({
-          id: item.id as number,
-          title: item.title,
-          type: item.type || undefined,
-          original_title: item.original_title || undefined,
-          release_date: item.release_date || undefined,
-          description: item.description || undefined,
-          image_url: item.image_url || undefined,
-          authors: item.authors || undefined,
-        }));
-
-        const music: MusicAlbum[] = musicResponse.results.map(
-          (item: SearchItem) => ({
-            id: item.id as string,
-            type: item.type || undefined,
-            title: item.title,
-            original_title: item.original_title || undefined,
-            description: item.description || undefined,
-            authors: item.authors || undefined,
-            image_url: item.image_url || undefined,
-            release_date: item.release_date || undefined,
-          })
+        const movies: MovieDetail[] = movieResponse.results.map(
+          (item: SearchItem) =>
+            ({
+              ...item,
+              type: "MOVIE",
+              images: [],
+              platforms: null,
+              tagline: null,
+              imdb_id: null,
+              duration_minutes: null,
+              status: null,
+            } as MovieDetail)
         );
 
-        const books: Book[] = bookResponse.results.map((item: SearchItem) => ({
-          id: item.id as string,
-          type: item.type || undefined,
-          title: item.title,
-          original_title: item.original_title || undefined,
-          authors: item.authors || undefined,
-          image_url: item.image_url || undefined,
-          release_date: item.release_date || undefined,
-          description: item.description || undefined,
-        }));
+        const tvShows: TVShowDetail[] = tvResponse.results.map(
+          (item: SearchItem) =>
+            ({
+              ...item,
+              type: "TV_SHOW",
+              images: [],
+              platforms: null,
+              seasons: [],
+              tagline: null,
+              imdb_id: null,
+              status: null,
+              number_of_seasons: null,
+              number_of_episodes: null,
+            } as TVShowDetail)
+        );
+
+        const games: GameDetail[] = gameResponse.results.map(
+          (item: SearchItem) =>
+            ({
+              ...item,
+              type: "GAME",
+              images: [],
+              platforms: [],
+              game_type: null,
+            } as GameDetail)
+        );
+
+        const music: AlbumDetail[] = musicResponse.results.map(
+          (item: SearchItem) =>
+            ({
+              ...item,
+              type: "ALBUM",
+              images: [],
+              tracks: [],
+              total_tracks: 0,
+              album_type: "",
+              external_url: "",
+              duration_minutes: null,
+            } as AlbumDetail)
+        );
+
+        const books: BookDetail[] = bookResponse.results.map(
+          (item: SearchItem) =>
+            ({
+              ...item,
+              type: "BOOK",
+              images: [],
+              pages: null,
+            } as BookDetail)
+        );
 
         setResults({
           movies,
@@ -202,7 +245,9 @@ export default function SearchPage() {
       } catch (err) {
         if (currentSearchQueryRef.current === searchQueryForThisRequest) {
           setError(
-            err instanceof Error ? err.message : "An error occurred while searching"
+            err instanceof Error
+              ? err.message
+              : "An error occurred while searching"
           );
           setResults({
             movies: [],
@@ -271,7 +316,10 @@ export default function SearchPage() {
                 disableNavigation
               >
                 {Array.from({ length: PLACEHOLDER_COUNT }).map((_, index) => (
-                  <PlaceholderCard key={`movie-placeholder-${index}`} index={index} />
+                  <PlaceholderCard
+                    key={`movie-placeholder-${index}`}
+                    index={index}
+                  />
                 ))}
               </Carousel>
             </section>
@@ -285,7 +333,10 @@ export default function SearchPage() {
                 disableNavigation
               >
                 {Array.from({ length: PLACEHOLDER_COUNT }).map((_, index) => (
-                  <PlaceholderCard key={`tv-placeholder-${index}`} index={index} />
+                  <PlaceholderCard
+                    key={`tv-placeholder-${index}`}
+                    index={index}
+                  />
                 ))}
               </Carousel>
             </section>
@@ -299,7 +350,10 @@ export default function SearchPage() {
                 disableNavigation
               >
                 {Array.from({ length: PLACEHOLDER_COUNT }).map((_, index) => (
-                  <PlaceholderCard key={`game-placeholder-${index}`} index={index} />
+                  <PlaceholderCard
+                    key={`game-placeholder-${index}`}
+                    index={index}
+                  />
                 ))}
               </Carousel>
             </section>
@@ -313,7 +367,10 @@ export default function SearchPage() {
                 disableNavigation
               >
                 {Array.from({ length: PLACEHOLDER_COUNT }).map((_, index) => (
-                  <PlaceholderCard key={`music-placeholder-${index}`} index={index} />
+                  <PlaceholderCard
+                    key={`music-placeholder-${index}`}
+                    index={index}
+                  />
                 ))}
               </Carousel>
             </section>
@@ -327,7 +384,10 @@ export default function SearchPage() {
                 disableNavigation
               >
                 {Array.from({ length: PLACEHOLDER_COUNT }).map((_, index) => (
-                  <PlaceholderCard key={`book-placeholder-${index}`} index={index} />
+                  <PlaceholderCard
+                    key={`book-placeholder-${index}`}
+                    index={index}
+                  />
                 ))}
               </Carousel>
             </section>
