@@ -34,7 +34,7 @@ export default function TrackListItem({
   );
 
   const trailingContent = (
-    <>
+    <div className="flex items-center gap-4">
       {duration && (
         <span className="text-white/60 text-sm">{duration}</span>
       )}
@@ -50,7 +50,7 @@ export default function TrackListItem({
           <ExternalLink className="w-4 h-4" />
         </a>
       )}
-    </>
+    </div>
   );
 
   const description = artists && artists.length > 0 ? artists.join(", ") : undefined;

@@ -62,27 +62,27 @@ export default function ListItem({
               sizes="176px"
             />
             {/* Left-to-right transparency fade like navbar gradient */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/70 to-[var(--color-list-item-background)] group-hover:to-[var(--color-list-item-background-hover)] pointer-events-none" />
+            <div className="absolute inset-0 bg-linear-to-r from-transparent via-black/70 to-list-item-background group-hover:to-list-item-background-hover pointer-events-none" />
           </div>
 
           {/* Content */}
           <div className="flex items-center flex-1 gap-3 px-4 py-3">
             {/* Leading Content */}
             {leadingContent && (
-              <div className="flex-shrink-0">{leadingContent}</div>
+              <div className="shrink-0">{leadingContent}</div>
             )}
 
             {/* Text Content */}
             <div className="flex-1 min-w-0">
               <h3 className="text-white font-medium truncate">{title}</h3>
               {description && (
-                <p className="text-gray-400 text-sm truncate">{description}</p>
+                <p className="text-gray-400 text-sm truncate font-sans">{description}</p>
               )}
             </div>
 
             {/* Trailing Content */}
             {trailingContent && (
-              <div className="flex-shrink-0 flex items-center gap-2">
+              <div className="shrink-0 flex items-center gap-2 font-sans">
                 {trailingContent}
               </div>
             )}
@@ -122,7 +122,7 @@ export default function ListItem({
   // Original layout
   return (
     <div
-      className={`bg-[var(--color-list-item-background)] rounded-lg p-4 hover:bg-[var(--color-list-item-background-hover)] ${
+      className={`bg-list-item-background rounded-lg p-4 hover:bg-list-item-background-hover ${
         isClickable ? "cursor-pointer" : ""
       } ${className}`}
       onClick={onClick}
@@ -130,12 +130,12 @@ export default function ListItem({
       <div className="flex items-center gap-4">
         {/* Leading Content (e.g., track number, index) */}
         {leadingContent && (
-          <div className="flex-shrink-0">{leadingContent}</div>
+          <div className="shrink-0">{leadingContent}</div>
         )}
 
         {/* Optional Image with Fade Effect */}
         {image && (
-          <div className="flex-shrink-0 relative w-12 h-12 rounded overflow-hidden">
+          <div className="shrink-0 relative w-12 h-12 rounded overflow-hidden">
             <Image
               src={image}
               alt={imageAlt}
@@ -144,7 +144,7 @@ export default function ListItem({
               sizes="48px"
             />
             {/* Left-to-right fade overlay */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-black/20 pointer-events-none" />
+            <div className="absolute inset-0 bg-linear-to-r from-transparent via-transparent to-black/20 pointer-events-none" />
           </div>
         )}
 
@@ -158,7 +158,7 @@ export default function ListItem({
 
         {/* Trailing Content (e.g., duration, buttons) */}
         {trailingContent && (
-          <div className="flex-shrink-0 flex items-center gap-2">
+          <div className="shrink-0 flex items-center gap-2">
             {trailingContent}
           </div>
         )}

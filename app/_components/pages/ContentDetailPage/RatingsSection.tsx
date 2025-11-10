@@ -202,7 +202,7 @@ export default function RatingsSection({
             )}
           </div>
         ) : !loading && (
-          <div className="bg-white/5 rounded-lg p-6 text-center">
+          <div className="bg-white/5 rounded-lg p-6 text-center font-sans">
             <p className="text-white/60 mb-2">No ratings to display. Be the first to rate this content!</p>
           </div>
         )}
