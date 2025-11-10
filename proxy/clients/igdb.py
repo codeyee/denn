@@ -290,11 +290,10 @@ class IGDBClient(CachedAPIClient):
         offset: int = 0,
         want_to_play_weight: float = 0.7,
         visits_weight: float = 0.3,
-        recency_boost: float = 2.5
+        max_recency_boost: float = 4.0
     ) -> Tuple[List[Dict[str, Any]], int]:
         try:
             current_timestamp = int(time())
-            one_year_ago = current_timestamp - (365 * 24 * 60 * 60)
 
             # Fetch more than needed for better diversity
             fetch_limit = min(limit * 4, 500)
@@ -351,11 +350,21 @@ class IGDBClient(CachedAPIClient):
                 if release_date is None or release_date > current_timestamp:
                     continue
 
-                # Apply recency boost to recently released games
-                multiplier = 1.0
-                if release_date >= one_year_ago:
-                    # Released in last year - apply boost
-                    multiplier = recency_boost
+                # Calculate dynamic recency boost based on how recent the game is
+                days_since_release = (current_timestamp - release_date) / (24 * 60 * 60)
+
+                if days_since_release < 30:  # Less than 1 month
+                    multiplier = max_recency_boost
+                elif days_since_release < 60:  # 1-2 months
+                    multiplier = max_recency_boost * 0.80
+                elif days_since_release < 90:  # 2-3 months
+                    multiplier = max_recency_boost * 0.60
+                elif days_since_release < 180:  # 3-6 months
+                    multiplier = max_recency_boost * 0.40
+                elif days_since_release < 365:  # 6-12 months
+                    multiplier = max_recency_boost * 0.20
+                else:  # Older than 1 year
+                    multiplier = 1.0
 
                 final_score = base_score * multiplier
                 game_scores.append((game, final_score))
