@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import Card from "../Card";
 import { contentTypeEnum } from "@/types/types";
 import { ContentItem } from "@/types/contentTypes";
@@ -10,6 +10,9 @@ import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { getCardImageUrl } from "@/lib/utils/imageUtils";
 import { formatAuthors } from "@/lib/utils/authorUtils";
 import { inferContentTypeEnum } from "@/lib/utils/contentTypeUtils";
+import { Plus } from "lucide-react";
+import { Button } from "@/app/_components/lib/button";
+import AddToListModal from "@/app/_components/common/Modal/AddToListModal";
 
 interface ContentCardProps {
   item: ContentItem;
@@ -19,6 +22,7 @@ interface ContentCardProps {
 export default function ContentCard({ item, className }: ContentCardProps) {
   const router = useRouter();
   const middleClickHandled = useRef(false);
+  const [isAddToListModalOpen, setIsAddToListModalOpen] = useState(false);
 
   const getNavigationUrl = (): string | null => {
     // Navigate with external identifiers - the detail page will handle the API calls
@@ -291,43 +295,140 @@ export default function ContentCard({ item, className }: ContentCardProps) {
 
   const originalTitleIsSameAsTitle = originalTitle.toLowerCase() === title.toLowerCase();
 
+  // Get description from item
+  const getDescription = (): string => {
+    if ("description" in item && item.description) {
+      return item.description;
+    }
+    return "";
+  };
+
+  const description = getDescription();
+
+  // Helper to get content item info for AddToListModal
+  const getContentItemForModal = () => {
+    let sourceApi: SourceApi = SourceApi.TMDB;
+    let contentType: ContentType = ContentType.MOVIE;
+    const externalId: string = String(item.id);
+
+    // Determine source API and content type from the item
+    if ("type" in item && typeof item.type === "string") {
+      const itemType = item.type.toLowerCase();
+      if (itemType === "movie") {
+        sourceApi = SourceApi.TMDB;
+        contentType = ContentType.MOVIE;
+      } else if (itemType === "tv" || itemType === "tv_show") {
+        sourceApi = SourceApi.TMDB;
+        contentType = ContentType.TV_SHOW;
+      } else if (itemType === "album" || itemType === "music" || itemType === "ep") {
+        sourceApi = SourceApi.SPOTIFY;
+        contentType = ContentType.ALBUM;
+      } else if (itemType === "game") {
+        sourceApi = SourceApi.IGDB;
+        contentType = ContentType.GAME;
+      } else if (itemType === "book") {
+        sourceApi = SourceApi.OPENLIBRARY;
+        contentType = ContentType.BOOK;
+      } else if (itemType === "season") {
+        sourceApi = SourceApi.TMDB;
+        contentType = ContentType.SEASON;
+      }
+    } else if ("platforms" in item) {
+      sourceApi = SourceApi.IGDB;
+      contentType = ContentType.GAME;
+    } else if ("total_tracks" in item) {
+      sourceApi = SourceApi.SPOTIFY;
+      contentType = ContentType.ALBUM;
+    } else if ("pages" in item) {
+      sourceApi = SourceApi.OPENLIBRARY;
+      contentType = ContentType.BOOK;
+    } else if ("number_of_seasons" in item || "number_of_episodes" in item) {
+      sourceApi = SourceApi.TMDB;
+      contentType = ContentType.TV_SHOW;
+    }
+
+    return {
+      source_api: sourceApi,
+      external_id: externalId,
+      content_type: contentType,
+    };
+  };
+
+  const handleAddToList = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsAddToListModalOpen(true);
+  };
+
   return (
-    <div 
-      onClick={handleClick}
-      onAuxClick={handleAuxClick}
-      onMouseDown={handleMouseDown}
-      className={`cursor-pointer ${className || ""}`}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          e.stopPropagation();
-          const url = getNavigationUrl();
-          if (url) {
-            router.push(url);
+    <>
+      <div 
+        onClick={handleClick}
+        onAuxClick={handleAuxClick}
+        onMouseDown={handleMouseDown}
+        className={`cursor-pointer ${className || ""}`}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            e.stopPropagation();
+            const url = getNavigationUrl();
+            if (url) {
+              router.push(url);
+            }
           }
-        }
-      }}
-      aria-label={`View details for ${title}`}
-    >
-      <Card
-        type={type}
-        id={id}
-        title={title}
-        backgroundImage={imageUrl || ""}
-        backgroundImageAlt={`${title} cover image`}
-        isEmpty={!imageUrl}
+        }}
+        aria-label={`View details for ${title}`}
       >
-        <Card.Footer>
-          <div className="flex flex-col gap-1.5">
-            {originalTitle && !originalTitleIsSameAsTitle && <div>{originalTitle}</div>}
-            {authors && <div>{authors}</div>}
-            {releaseDate && <div>{releaseDate}</div>}
-            {footerInfo && <div>{footerInfo}</div>}
-          </div>
-        </Card.Footer>
-      </Card>
-    </div>
+        <Card
+          type={type}
+          id={id}
+          title={title}
+          backgroundImage={imageUrl || ""}
+          backgroundImageAlt={`${title} cover image`}
+          isEmpty={!imageUrl}
+          hoverContent={
+            <Card.HoverContent>
+              <div className="space-y-3">
+                {/* Description */}
+                {description && (
+                  <p className="text-xs md:text-sm text-white/90 line-clamp-3">
+                    {description}
+                  </p>
+                )}
+                
+                {/* Action Button */}
+                <Button
+                  onClick={handleAddToList}
+                  variant="secondary"
+                  size="sm"
+                  className="w-full bg-white/10 hover:bg-white/20 text-white border-white/20"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add to List
+                </Button>
+              </div>
+            </Card.HoverContent>
+          }
+        >
+          <Card.Footer>
+            <div className="flex flex-col gap-1.5">
+              {originalTitle && !originalTitleIsSameAsTitle && <div>{originalTitle}</div>}
+              {authors && <div>{authors}</div>}
+              {releaseDate && <div>{releaseDate}</div>}
+              {footerInfo && <div>{footerInfo}</div>}
+            </div>
+          </Card.Footer>
+        </Card>
+      </div>
+
+      {/* Add to List Modal */}
+      <AddToListModal
+        isOpen={isAddToListModalOpen}
+        onOpenChange={setIsAddToListModalOpen}
+        contentItem={getContentItemForModal()}
+      />
+    </>
   );
 }

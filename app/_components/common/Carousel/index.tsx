@@ -123,6 +123,16 @@ export default function Carousel({
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
+        {/* Invisible blocker for left navigation area - prevents hover on cards behind arrows */}
+        <div 
+          className="absolute left-0 top-0 bottom-0 w-16 md:w-24 z-30 pointer-events-auto"
+        />
+        
+        {/* Invisible blocker for right navigation area - prevents hover on cards behind arrows */}
+        <div 
+          className="absolute right-0 top-0 bottom-0 w-16 md:w-24 z-30 pointer-events-auto"
+        />
+
         {/* Left Navigation Button */}
         <AnimatePresence>
           {showNavigation && (isMobile || isHovered) && (
@@ -131,7 +141,7 @@ export default function Carousel({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={handlePrevious}
-              className="absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-black/70 hover:bg-black/90 text-white p-2 md:p-4 rounded-r-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-white/50"
+              className="absolute left-0 top-1/2 -translate-y-1/2 z-40 bg-black/70 hover:bg-black/90 text-white p-2 md:p-4 rounded-r-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-white/50"
               aria-label="Previous items"
             >
               <ChevronLeft className="w-6 h-6 md:w-8 md:h-8" />
@@ -147,7 +157,7 @@ export default function Carousel({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={handleNext}
-              className="absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-black/70 hover:bg-black/90 text-white p-2 md:p-4 rounded-l-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-white/50"
+              className="absolute right-0 top-1/2 -translate-y-1/2 z-40 bg-black/70 hover:bg-black/90 text-white p-2 md:p-4 rounded-l-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-white/50"
               aria-label="Next items"
             >
               <ChevronRight className="w-6 h-6 md:w-8 md:h-8" />
@@ -157,7 +167,7 @@ export default function Carousel({
 
         {/* Carousel Items Container */}
         <div
-          className="overflow-x-hidden overflow-y-visible pl-4 md:pl-12 pr-4 md:pr-12 py-4"
+          className="overflow-hidden pl-4 md:pl-12 pr-4 md:pr-12 py-4"
           ref={containerRef}
         >
           <motion.div
@@ -185,8 +195,6 @@ export default function Carousel({
                         gap * visibleItems
                       }px) / ${visibleItems})`,
                     }}
-                    whileHover={{ scale: 1.05, zIndex: 10 }}
-                    transition={{ duration: 0.3 }}
                   >
                     {child}
                   </motion.div>
