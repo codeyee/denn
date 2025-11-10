@@ -120,18 +120,33 @@ function Card({
   // Only show hover content on desktop
   const shouldShowHoverContent = isDesktop && hoverContent;
 
-  // Update popover position when hovering
+  // Update popover position when hovering or scrolling
   useEffect(() => {
-    if (isHovered && cardRef.current && shouldShowHoverContent) {
-      const rect = cardRef.current.getBoundingClientRect();
+    const updatePosition = () => {
+      if (isHovered && cardRef.current && shouldShowHoverContent) {
+        const rect = cardRef.current.getBoundingClientRect();
+        
+        // Since we're using transform with origin 'center center',
+        // we position the element at the card's position, and CSS will handle centering the scale
+        setPopoverPosition({
+          top: rect.top,
+          left: rect.left,
+          width: rect.width,
+        });
+      }
+    };
+
+    updatePosition();
+
+    // Update position on scroll and resize
+    if (isHovered && shouldShowHoverContent) {
+      window.addEventListener('scroll', updatePosition, true);
+      window.addEventListener('resize', updatePosition);
       
-      // Since we're using transform with origin 'center center',
-      // we position the element at the card's position, and CSS will handle centering the scale
-      setPopoverPosition({
-        top: rect.top,
-        left: rect.left,
-        width: rect.width,
-      });
+      return () => {
+        window.removeEventListener('scroll', updatePosition, true);
+        window.removeEventListener('resize', updatePosition);
+      };
     }
   }, [isHovered, shouldShowHoverContent]);
 
