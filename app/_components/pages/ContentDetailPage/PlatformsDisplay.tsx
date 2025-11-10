@@ -24,6 +24,14 @@ export default function PlatformsDisplay({ platforms, title = "Where to Watch" }
     });
   };
 
+  // Check if there are any platforms left after filtering
+  const hasFilteredPlatforms = Object.values(platforms).some(platformList =>
+    filterPlatforms(platformList).length > 0
+  );
+
+  // Don't render if no platforms remain after filtering
+  if (!hasFilteredPlatforms) return null;
+
   return (
     <div>
       <div className="flex items-center gap-4 mb-4">

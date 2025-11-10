@@ -258,7 +258,19 @@ export default function ContentDetailPage({
     } else if (contentType === ContentType.TV_SHOW) {
       return <TVShowDetailContent tvShow={detailData as TVShowDetail} />;
     } else if (contentType === ContentType.SEASON) {
-      return <SeasonDetailContent season={detailData as TVSeasonDetail} tvShowTitle={tvShowTitle || undefined} />;
+      return (
+        <SeasonDetailContent
+          season={detailData as TVSeasonDetail}
+          tvShowTitle={tvShowTitle || undefined}
+          contentItem={contentItem}
+          userRating={userRating}
+          onRatingChange={handleRatingChange}
+          onEditRating={() => setIsRatingModalOpen(true)}
+          onDeleteRating={handleDeleteRating}
+          isRatingLoading={isRatingLoading}
+          user={user}
+        />
+      );
     } else if (contentType === ContentType.ALBUM) {
       // Extract About section from AlbumDetailContent
       const album = detailData as AlbumDetail;
@@ -638,7 +650,8 @@ export default function ContentDetailPage({
         {renderAboutSection()}
 
         {/* Unified Ratings Section - right after About/description */}
-        {contentItem && (
+        {/* Note: SEASON content type has ratings inside SeasonDetailContent (above episodes) */}
+        {contentItem && contentItem.content_type !== ContentType.SEASON && (
           <RatingsSection
             key={ratingRefreshKey}
             contentItem={contentItem}

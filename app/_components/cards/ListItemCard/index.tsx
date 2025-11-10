@@ -1,19 +1,16 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef } from "react";
 import Card from "../Card";
 import { Button } from "../../lib/button";
 import { Circle, CheckCircle, Trash2 } from "lucide-react";
 import { ListItem } from "@/types";
 import {
   ItemStatus,
-  AlbumDetail,
-  BookDetail,
-  TVSeasonDetail,
   Author,
 } from "@/lib/api/types";
 import { getContentTypeIcon } from "@/lib/utils/contentTypeUtils";
+import { formatReleaseDate } from "@/lib/utils/dateUtils";
 
 interface ListItemCardProps {
   item: ListItem;
@@ -29,7 +26,6 @@ export default function ListItemCard({
   className,
 }: ListItemCardProps) {
   const router = useRouter();
-  const middleClickHandled = useRef(false);
 
   const contentItem = item.content_item;
   const sourceData = contentItem.source_data;
@@ -97,10 +93,12 @@ export default function ListItemCard({
     return "";
   };
 
+  const subtitle = getSubTitle();
+
   return (
     <div
       onClick={handleCardClick}
-      className={`cursor-pointer relative group max-h-[400px] sm:max-h-none ${
+      className={`cursor-pointer relative group max-h-[400px] sm:max-h-none transition-all duration-200 ${
         className || ""
       }`}
       role="button"
@@ -121,6 +119,127 @@ export default function ListItemCard({
         backgroundImageAlt={`${title} cover image`}
         isEmpty={!imageUrl}
         className="h-full"
+        hoverContent={
+          <Card.HoverContent>
+            <div className="space-y-4 text-white">
+              {/* Metadata Section */}
+              <div className="space-y-3">
+                {/* Subtitle (Original Title / Authors / TV Show) */}
+                {subtitle && (
+                  <div className="text-sm text-white/80">
+                    {subtitle}
+                  </div>
+                )}
+
+                {/* Status and Order Info */}
+                <div className="flex items-center gap-3 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-white/60">Position:</span>
+                    <span className="text-sm font-semibold">#{item.list_order}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-white/60">Status:</span>
+                    <span className={`text-sm font-semibold ${
+                      item.status === ItemStatus.COMPLETED
+                        ? 'text-green-400'
+                        : 'text-yellow-400'
+                    }`}>
+                      {item.status === ItemStatus.COMPLETED ? 'Completed' : 'Pending'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Ratings Info */}
+                {(item.list_rating || item.member_rating_count > 0) && (
+                  <div className="flex items-center gap-3 flex-wrap">
+                    {item.list_rating && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-yellow-400 text-lg">★</span>
+                        <span className="text-sm font-semibold text-yellow-400">
+                          {item.list_rating}
+                        </span>
+                      </div>
+                    )}
+                    {item.member_rating_count > 0 && (
+                      <span className="text-xs text-white/60">
+                        {item.member_rating_count} {item.member_rating_count === 1 ? 'rating' : 'ratings'}
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* Dates */}
+                <div className="space-y-1.5 text-xs text-white/60">
+                  <div>
+                    <span className="text-white/50">Added:</span> {formatReleaseDate(item.added_at)}
+                  </div>
+                  {item.completed_at && (
+                    <div>
+                      <span className="text-white/50">Completed:</span> {formatReleaseDate(item.completed_at)}
+                    </div>
+                  )}
+                  {item.added_by && (
+                    <div>
+                      <span className="text-white/50">Added by:</span> {item.added_by.username}
+                    </div>
+                  )}
+                </div>
+
+                {/* Notes */}
+                {item.notes && (
+                  <div className="pt-2 border-t border-white/10">
+                    <p className="text-xs text-white/50 mb-1">Notes:</p>
+                    <p className="text-sm text-white/80 line-clamp-3">
+                      {item.notes}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2 pt-2 border-t border-white/10">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleStatus(item.id, item.status);
+                  }}
+                  title={
+                    item.status === ItemStatus.COMPLETED
+                      ? "Mark as Pending"
+                      : "Mark as Completed"
+                  }
+                  className="flex-1 cursor-pointer hover:bg-white/20 bg-white/10 border-white/20 transition-colors"
+                >
+                  {item.status === ItemStatus.COMPLETED ? (
+                    <>
+                      <Circle className="w-4 h-4 mr-2" />
+                      <span className="text-xs">Mark as Pending</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-4 h-4 mr-2 text-green-400" />
+                      <span className="text-xs">Mark Complete</span>
+                    </>
+                  )}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(item.id);
+                  }}
+                  className="cursor-pointer bg-red-500/20 hover:bg-red-500/40 text-red-400 hover:text-red-300 transition-colors"
+                  title="Remove item from list"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          </Card.HoverContent>
+        }
       >
         {/* Status Badge - Positioned absolutely over the card image */}
         {item.status && (
@@ -144,7 +263,7 @@ export default function ListItemCard({
           </div>
         </div>
 
-        {/* Footer Content */}
+        {/* Footer Content - Simple info, no buttons (buttons only in hover) */}
         <Card.Footer className="flex-col gap-2">
           {/* Metadata: Rating */}
           {item.list_rating && (
@@ -156,51 +275,11 @@ export default function ListItemCard({
           )}
 
           {/* Metadata: Original Title / Authors / TV Show Name */}
-          <div className="text-white/60 text-xs line-clamp-1">
-            {getSubTitle()}
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex gap-2 mt-2 w-full">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                onToggleStatus(item.id, item.status);
-              }}
-              title={
-                item.status === ItemStatus.COMPLETED
-                  ? "Mark as Pending"
-                  : "Mark as Completed"
-              }
-              className="flex-1 cursor-pointer hover:bg-white/20 bg-white/10 border-white/20"
-            >
-              {item.status === ItemStatus.COMPLETED ? (
-                <>
-                  <Circle className="w-4 h-4 mr-1" />
-                  <span className="text-xs">Mark as Pending</span>
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="w-4 h-4 mr-1 text-green-400" />
-                  <span className="text-xs">Mark as Completed</span>
-                </>
-              )}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete(item.id);
-              }}
-              className="cursor-pointer bg-red-500/20 hover:bg-red-500/40 text-red-400 hover:text-red-300"
-              title="Remove item"
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
-          </div>
+          {subtitle && (
+            <div className="text-white/60 text-xs line-clamp-1">
+              {subtitle}
+            </div>
+          )}
         </Card.Footer>
       </Card>
     </div>

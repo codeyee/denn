@@ -47,7 +47,7 @@ interface CardHoverContentProps {
 function Footer({ children, className }: CardFooterProps) {
   return (
     <div
-      className={`flex items-center gap-1 text-[9px] md:text-xs text-white/80 font-sans drop-shadow-text ${className}`}
+      className={`flex gap-1 text-[9px] md:text-xs text-white/80 font-sans drop-shadow-text ${className}`}
     >
       {children}
     </div>
@@ -243,12 +243,12 @@ function Card({
           {isHovered && shouldShowHoverContent && (
             <motion.div
               initial={{ opacity: 0, scale: 0, transformOrigin: 'center center' }}
-              animate={{ opacity: 1, scale: 1.25 }}
+              animate={{ opacity: 1, scale: 1.15 }}
               exit={{ opacity: 0, scale: 0 }}
               transition={{ duration: 0.25, ease: "easeInOut" }}
               onMouseEnter={handleMouseEnter}
               onMouseLeave={handleMouseLeave}
-              className="fixed rounded-2xl bg-neutral-900 shadow-2xl border border-white/10 overflow-hidden"
+              className="fixed rounded-2xl bg-neutral-900 shadow-2xl border border-white/10 overflow-hidden cursor-pointer"
               style={{
                 top: `${popoverPosition.top}px`,
                 left: `${popoverPosition.left}px`,
@@ -258,7 +258,7 @@ function Card({
               }}
             >
               {/* Image at the top */}
-              <div className="relative w-full aspect-[5/8]">
+              <div className="relative w-full aspect-[5/8] cursor-pointer">
                 {isEmpty ? (
                   <div className="absolute inset-0 flex items-center justify-center bg-empty-card">
                     {EmptyIcon && (
@@ -267,7 +267,7 @@ function Card({
                   </div>
                 ) : (
                   <div
-                    className="absolute inset-0 bg-center bg-cover"
+                    className="absolute inset-0 bg-center bg-cover cursor-pointer"
                     style={{ backgroundImage: `url(${backgroundImage})` }}
                   />
                 )}

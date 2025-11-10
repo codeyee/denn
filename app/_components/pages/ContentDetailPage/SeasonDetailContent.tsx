@@ -1,16 +1,34 @@
 "use client";
 
-import { TVSeasonDetail } from "@/lib/api/types";
+import { TVSeasonDetail, ContentItem, Rating } from "@/lib/api/types";
 import EpisodeCard from "@/app/_components/cards/EpisodeCard";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import PlatformsDisplay from "./PlatformsDisplay";
+import RatingsSection from "./RatingsSection";
 
 interface SeasonDetailContentProps {
   season: TVSeasonDetail;
   tvShowTitle?: string;
+  contentItem?: ContentItem;
+  userRating?: Rating | null;
+  onRatingChange?: () => void;
+  onEditRating?: () => void;
+  onDeleteRating?: () => void;
+  isRatingLoading?: boolean;
+  user?: { id: number } | null;
 }
 
-export default function SeasonDetailContent({ season, tvShowTitle }: SeasonDetailContentProps) {
+export default function SeasonDetailContent({
+  season,
+  tvShowTitle,
+  contentItem,
+  userRating,
+  onRatingChange,
+  onEditRating,
+  onDeleteRating,
+  isRatingLoading,
+  user,
+}: SeasonDetailContentProps) {
   const releaseDate = formatReleaseDate(season.release_date);
 
   // Get platforms grouped by country code
@@ -51,6 +69,19 @@ export default function SeasonDetailContent({ season, tvShowTitle }: SeasonDetai
           </div>
         </div>
       </div>
+
+      {/* Ratings Section - above episodes */}
+      {contentItem && (
+        <RatingsSection
+          contentItem={contentItem}
+          userRating={userRating}
+          onRatingChange={onRatingChange}
+          onEditRating={onEditRating}
+          onDeleteRating={onDeleteRating}
+          isRatingLoading={isRatingLoading}
+          user={user}
+        />
+      )}
 
       {/* Episodes Section */}
       {season.episodes && season.episodes.length > 0 && (
