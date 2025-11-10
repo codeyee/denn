@@ -13,6 +13,9 @@ interface ListsActions {
   fetchLists: (options?: {
     items_size?: number;
   }) => Promise<void>;
+  forceRefreshLists: (options?: {
+    items_size?: number;
+  }) => Promise<void>;
   fetchListItems: (listId: number, pageSize: number) => Promise<void>;
   createList: (name: string, description?: string, listType?: ListType) => Promise<List>;
   clearError: () => void;
@@ -61,6 +64,32 @@ export const useListsStore = create<ListsStore>((set, get) => ({
       isLoading: false,
     });
     throw error;
+    }
+  },
+
+  forceRefreshLists: async (options?: {
+    items_size?: number;
+  }) => {
+    set({ isLoading: true, error: null });
+
+    try {
+      const response = await listActions.list(options);
+
+      set({
+        lists: (response.results || []) as unknown as List[],
+        isLoading: false,
+        error: null,
+        lastFetched: Date.now(),
+      });
+    } catch (error) {
+      set({
+        error:
+          error instanceof Error
+            ? error.message
+            : "An error occurred while fetching lists",
+        isLoading: false,
+      });
+      throw error;
     }
   },
 

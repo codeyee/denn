@@ -22,6 +22,7 @@ import GameDetailContent from "./GameDetailContent";
 import BookDetailContent from "./BookDetailContent";
 import RatingsSection from "./RatingsSection";
 import RatingModal from "@/app/_components/common/Modal/RatingModal";
+import AddToListModal from "@/app/_components/common/Modal/AddToListModal";
 import { Star } from "lucide-react";
 import Footer from "../../layout/Footer";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
@@ -54,6 +55,7 @@ export default function ContentDetailPage({
   const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
   const [isRatingLoading, setIsRatingLoading] = useState(false);
   const [ratingRefreshKey, setRatingRefreshKey] = useState(0);
+  const [isAddToListModalOpen, setIsAddToListModalOpen] = useState(false);
   const userRatingFetchRef = useRef<{ contentItemId: number | null; userId: number | null }>({ contentItemId: null, userId: null });
 
   useEffect(() => {
@@ -602,6 +604,10 @@ export default function ContentDetailPage({
             }
             externalId={contentItem?.external_id}
             sourceApi={contentItem?.source_api}
+            onAddToList={() => setIsAddToListModalOpen(true)}
+            onRateContent={() => setIsRatingModalOpen(true)}
+            isAuthenticated={!!user}
+            hasUserRating={!!userRating}
           />
         </section>
 
@@ -740,6 +746,22 @@ export default function ContentDetailPage({
           onSubmitRating={handleSubmitRating}
           existingRating={userRating}
           isLoading={isRatingLoading}
+        />
+      )}
+
+      {/* Add to List Modal */}
+      {user && contentItem && (
+        <AddToListModal
+          isOpen={isAddToListModalOpen}
+          onOpenChange={setIsAddToListModalOpen}
+          contentItem={{
+            source_api: contentItem.source_api,
+            external_id: contentItem.external_id,
+            content_type: contentItem.content_type,
+          }}
+          onSuccess={() => {
+            console.log("Successfully added to list");
+          }}
         />
       )}
 

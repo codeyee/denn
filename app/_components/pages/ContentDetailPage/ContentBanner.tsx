@@ -6,15 +6,21 @@ import { SourceApi, ContentType } from "@/lib/api/types";
 import { getLegacyImageUrl } from "@/lib/utils/imageUtils";
 import { formatAuthors } from "@/lib/utils/authorUtils";
 import { inferNavigationParams, CONTENT_TYPE_ICONS } from "@/lib/utils/contentTypeUtils";
+import { Button } from "@/app/_components/lib/button";
+import { ListPlus, Star } from "lucide-react";
 
 interface ContentBannerProps {
   item: ContentItem | any;
   tvShowTitle?: string;
   externalId?: string;
   sourceApi?: SourceApi | string;
+  onAddToList?: () => void;
+  onRateContent?: () => void;
+  isAuthenticated?: boolean;
+  hasUserRating?: boolean;
 }
 
-export default function ContentBanner({ item, tvShowTitle, externalId, sourceApi }: ContentBannerProps) {
+export default function ContentBanner({ item, tvShowTitle, externalId, sourceApi, onAddToList, onRateContent, isAuthenticated, hasUserRating }: ContentBannerProps) {
   const router = useRouter();
   const contentType = inferNavigationParams(item as Record<string, unknown>).contentType?.toLowerCase() || 'movie';
   const Icon = CONTENT_TYPE_ICONS[contentType];
@@ -122,6 +128,37 @@ export default function ContentBanner({ item, tvShowTitle, externalId, sourceApi
               {originalTitle}
             </div>
           ) : null}
+
+          {/* Action Buttons */}
+          {isAuthenticated && (onAddToList || onRateContent) && (
+            <div className="mt-4 md:mt-6 flex gap-3">
+              {onAddToList && (
+                <Button
+                  onClick={onAddToList}
+                  className="flex items-center gap-2 cursor-pointer bg-white text-black hover:bg-white/90 font-semibold"
+                  size="lg"
+                >
+                  <ListPlus className="w-5 h-5" />
+                  Add to List
+                </Button>
+              )}
+              {onRateContent && (
+                <Button
+                  onClick={onRateContent}
+                  className={`flex items-center gap-2 cursor-pointer font-semibold ${
+                    hasUserRating
+                      ? ""
+                      : "bg-white text-black hover:bg-white/90"
+                  }`}
+                  size="lg"
+                  variant={hasUserRating ? "outline" : "default"}
+                >
+                  <Star className="w-5 h-5" />
+                  {hasUserRating ? "Edit Rating" : "Rate This"}
+                </Button>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

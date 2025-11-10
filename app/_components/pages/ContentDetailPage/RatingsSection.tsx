@@ -174,18 +174,6 @@ export default function RatingsSection({
     <div className="container mx-auto px-4 mt-8">
       <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-white">Ratings</h2>
-          {!userRating && user && onEditRating && (
-            <Button
-              onClick={onEditRating}
-              disabled={isRatingLoading}
-              variant="default"
-              size="sm"
-              className="cursor-pointer flex items-center gap-2"
-            >
-              <Star className="w-4 h-4" />
-              Rate This
-            </Button>
-          )}
       </div>
 
       {/* Ratings List */}
