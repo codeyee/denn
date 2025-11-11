@@ -19,9 +19,20 @@ from content.permissions import IsMemberOfList
 
         **Optional Query Parameters:**
         - `country`: ISO 3166-1 alpha-2 country code (e.g., US, GB, FR) to filter providers by country (only applies when source_api=tmdb).
+        - `page`: Page number (default: 1)
+        - `page_size`: Number of items per page (default: 20, max: 100). Set to 0 to fetch all items without pagination.
+
+        **Pagination:**
+        - Default: 20 items per page
+        - Maximum: 100 items per page
+        - Special: Use `page_size=0` to bypass pagination and fetch all items (useful for reordering)
+
+        **Performance Note:** Using `page_size=0` on lists with many items (>200) may impact performance. A warning will be logged for large lists.
         ''',
         parameters=[
-            OpenApiParameter('country', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='ISO 3166-1 alpha-2 country code to filter providers by country (only applies when source_api=tmdb)')
+            OpenApiParameter('country', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='ISO 3166-1 alpha-2 country code to filter providers by country (only applies when source_api=tmdb)'),
+            OpenApiParameter('page', OpenApiTypes.INT, OpenApiParameter.QUERY, required=False, description='Page number (default: 1)'),
+            OpenApiParameter('page_size', OpenApiTypes.INT, OpenApiParameter.QUERY, required=False, description='Number of items per page (default: 20, max: 100). Set to 0 to fetch all items without pagination.')
         ],
         responses={
             200: ListItemSerializer(many=True),
@@ -211,7 +222,22 @@ class ListItemViewSet(viewsets.ModelViewSet):
     @extend_schema(
         tags=['List Items'],
         summary='Reorder all items in a list',
-        description='Set a new order by passing the list of item IDs in the desired order. Positions are 1-based.',
+        description='''
+        Set a new order by passing the list of item IDs in the desired order.
+
+        **Important:** This endpoint requires ALL item IDs in the list to be included in the request.
+        If your list is paginated, first fetch all items using `GET /api/content/lists/{list_id}/items/?page_size=0`
+        to get all item IDs before calling this endpoint.
+
+        **Request Body:**
+        - Must be either a list of item IDs: `[1, 2, 3, ...]`
+        - Or an object with "order" key: `{"order": [1, 2, 3, ...]}`
+
+        **Validation:**
+        - All current list item IDs must be included
+        - No extra IDs can be included
+        - Order determines the new positions (1-based)
+        ''',
         request=None,
         responses={200: ListItemSerializer(many=True)}
     )

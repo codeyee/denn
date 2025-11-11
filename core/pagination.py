@@ -3,12 +3,38 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from collections import OrderedDict
 from typing import Optional
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class CustomPageNumberPagination(PageNumberPagination):
     page_size = 20
     page_size_query_param = 'page_size'
     max_page_size = 100
+
+    def paginate_queryset(self, queryset, request, view=None):
+        raw_page_size = request.query_params.get(self.page_size_query_param)
+
+        # If page_size is explicitly set to "0", bypass pagination and return all items
+        if raw_page_size is not None and str(raw_page_size).strip() == "0":
+            # Count total items in queryset
+            total_count = queryset.count() if hasattr(queryset, 'count') else len(queryset)
+
+            # Log warning for large lists
+            if total_count > 200:
+                logger.warning(
+                    f"Fetching all {total_count} items without pagination "
+                    f"(requested by {request.user if hasattr(request, 'user') else 'unknown'} "
+                    f"on {request.path})"
+                )
+
+            # Return None to signal DRF to skip pagination
+            # The view will handle the full queryset directly
+            return None
+
+        # Otherwise, use standard pagination
+        return super().paginate_queryset(queryset, request, view)
 
     def get_paginated_response(self, data):
         return Response(OrderedDict([
@@ -24,10 +50,6 @@ class CustomPageNumberPagination(PageNumberPagination):
         ]))
 
     def get_paginated_response_schema(self, schema):
-        """
-        Override to provide custom OpenAPI schema for paginated responses.
-        This ensures Swagger/ReDoc documentation shows the correct response format.
-        """
         return {
             'type': 'object',
             'properties': {
