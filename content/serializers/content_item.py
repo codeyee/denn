@@ -27,6 +27,10 @@ class ContentItemSerializer(serializers.ModelSerializer):
         ]
 
     def get_source_data(self, obj):
+        # Skip fetching source data if explicitly disabled in context
+        if self.context.get('skip_source_data', False):
+            return None
+
         request = self.context.get('request')
         from content.utils import fetch_source_data
 

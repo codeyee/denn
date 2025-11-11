@@ -268,14 +268,21 @@ class ListItemViewSet(viewsets.ModelViewSet):
 
         id_to_pos = {int(item_id): idx + 1 for idx, item_id in enumerate(order)}
 
-        for item in items:
-            item.list_order = id_to_pos[item.id]
-
         with transaction.atomic():
+            # Step 1: Move all items to temporary negative positions to avoid unique constraint conflicts
+            for item in items:
+                item.list_order = -item.id
+            ListItem.objects.bulk_update(items, ['list_order'])
+
+            # Step 2: Update to final positions
+            for item in items:
+                item.list_order = id_to_pos[item.id]
             ListItem.objects.bulk_update(items, ['list_order'])
 
         refreshed = self.get_queryset()
-        return Response(ListItemSerializer(refreshed, many=True, context={'request': request}).data)
+        # Skip fetching external API data during reorder for performance
+        context = {'request': request, 'skip_source_data': True}
+        return Response(ListItemSerializer(refreshed, many=True, context=context).data)
 
     @extend_schema(
         tags=['List Items'],
@@ -321,6 +328,10 @@ class ListItemViewSet(viewsets.ModelViewSet):
             return Response(ListItemSerializer(refreshed, many=True, context={'request': request}).data)
 
         with transaction.atomic():
+            # Move target item to temporary position first to avoid conflicts
+            instance.list_order = -instance.id
+            instance.save(update_fields=['list_order'])
+
             if position < old_pos:
                 # Shift up range [position, old_pos-1] by +1
                 (ListItem.objects.filter(
@@ -340,8 +351,11 @@ class ListItemViewSet(viewsets.ModelViewSet):
                     list_order=F('list_order') - 1
                 ))
 
+            # Move to final position
             instance.list_order = position
             instance.save(update_fields=['list_order'])
 
         refreshed = self.get_queryset()
-        return Response(ListItemSerializer(refreshed, many=True, context={'request': request}).data)
+        # Skip fetching external API data during move for performance
+        context = {'request': request, 'skip_source_data': True}
+        return Response(ListItemSerializer(refreshed, many=True, context=context).data)
