@@ -32,6 +32,12 @@ interface ListsActions {
     itemId: number,
     status: ItemStatus
   ) => Promise<void>;
+  reorderListItems: (
+    listId: number,
+    itemIds: number[],
+    page?: number,
+    pageSize?: number
+  ) => Promise<void>;
   clearError: () => void;
   resetLists: () => void;
 }
@@ -288,6 +294,48 @@ export const useListsStore = create<ListsStore>((set, get) => ({
         error instanceof Error
           ? error.message
           : "Failed to update list item status";
+
+      set({ error: errorMessage });
+      throw error;
+    }
+  },
+
+  reorderListItems: async (
+    listId: number,
+    itemIds: number[],
+    page?: number,
+    pageSize?: number
+  ): Promise<void> => {
+    try {
+      const response = await listItemActions.reorder(
+        listId,
+        itemIds,
+        page,
+        pageSize
+      );
+
+      // When pageSize = 0, API returns array directly instead of paginated response
+      const items = (Array.isArray(response)
+        ? response
+        : response.results || []) as unknown as ListItem[];
+
+      const { lists } = get();
+      const updatedLists = lists.map((list) => {
+        if (list.id === listId) {
+          return {
+            ...list,
+            items,
+          };
+        }
+        return list;
+      });
+
+      set({ lists: updatedLists });
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to reorder list items";
 
       set({ error: errorMessage });
       throw error;

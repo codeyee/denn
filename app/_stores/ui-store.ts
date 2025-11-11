@@ -11,11 +11,23 @@ interface ModalActions {
   toggleModal: (modalId: string) => void;
 }
 
-export type UIStore = ModalState & ModalActions;
+interface ReorderState {
+  isReorderMode: boolean;
+  reorderingListId: number | null;
+}
 
-const initialState: ModalState = {
+interface ReorderActions {
+  enterReorderMode: (listId: number) => void;
+  exitReorderMode: () => void;
+}
+
+export type UIStore = ModalState & ModalActions & ReorderState & ReorderActions;
+
+const initialState: ModalState & ReorderState = {
   isOpen: false,
   modalId: null,
+  isReorderMode: false,
+  reorderingListId: null,
 };
 
 export const useUIStore = create<UIStore>()((set) => ({
@@ -34,5 +46,13 @@ export const useUIStore = create<UIStore>()((set) => ({
       isOpen: state.modalId === modalId ? !state.isOpen : true,
       modalId,
     }));
+  },
+
+  enterReorderMode: (listId: number) => {
+    set({ isReorderMode: true, reorderingListId: listId });
+  },
+
+  exitReorderMode: () => {
+    set({ isReorderMode: false, reorderingListId: null });
   },
 }));

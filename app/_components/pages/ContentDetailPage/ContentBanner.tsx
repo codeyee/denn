@@ -10,6 +10,7 @@ import {
 import { getLegacyImageUrl } from "@/lib/utils/imageUtils";
 import { formatAuthors } from "@/lib/utils/authorUtils";
 import { CONTENT_TYPE_ICONS } from "@/lib/utils/contentTypeUtils";
+import { formatSeasonTitle } from "@/lib/utils/titleUtils";
 import { Button } from "@/app/_components/lib/button";
 import { ListPlus, Star } from "lucide-react";
 import { Content } from "@/types";
@@ -64,9 +65,9 @@ export default function ContentBanner({
   const isBook = item.type === "BOOK";
   const isSeason = item.type === "SEASON";
 
-  // For seasons, display as "TV Show Title - Season Title"
-  const displayTitle = isSeason && (item.tv_show_name || tvShowTitle)
-    ? `${item.tv_show_name || tvShowTitle} - ${item.title}`
+  // For seasons, format title to avoid redundancy
+  const displayTitle = isSeason
+    ? formatSeasonTitle(item.tv_show_name || tvShowTitle, item.title)
     : item.title;
 
   // Build TV show URL for season subtitle

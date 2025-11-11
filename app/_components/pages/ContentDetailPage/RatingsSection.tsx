@@ -47,9 +47,9 @@ export default function RatingsSection({
         });
 
         setRatings(response.results);
-        setHasNext(!!response.next);
-        setHasPrevious(!!response.previous);
-        setTotalCount(response.count);
+        setHasNext(!!response.metadata.next);
+        setHasPrevious(!!response.metadata.previous);
+        setTotalCount(response.metadata.count);
       } catch (err) {
         console.error("Error fetching ratings:", err);
         setError(err instanceof Error ? err.message : "Failed to load ratings");

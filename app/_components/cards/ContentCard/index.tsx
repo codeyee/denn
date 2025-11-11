@@ -11,6 +11,7 @@ import {
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { getCardImageUrl } from "@/lib/utils/imageUtils";
 import { formatAuthors } from "@/lib/utils/authorUtils";
+import { formatSeasonTitle } from "@/lib/utils/titleUtils";
 import { Content } from "@/types";
 import { Plus } from "lucide-react";
 import { Button } from "@/app/_components/lib/button";
@@ -250,10 +251,10 @@ export default function ContentCard({ item, className }: ContentCardProps) {
     return "";
   };
 
-  // For seasons, display as "TV Show Title - Season Title"
+  // For seasons, format title to avoid redundancy
   const isSeason = item.type === "SEASON";
-  const title = isSeason && "tv_show_name" in item && item.tv_show_name
-    ? `${item.tv_show_name} - ${item.title}`
+  const title = isSeason && "tv_show_name" in item
+    ? formatSeasonTitle(item.tv_show_name, item.title)
     : item.title;
 
   const imageUrl = getPosterImageUrl(item);

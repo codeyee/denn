@@ -244,8 +244,8 @@ export const listActions = {
 export const listItemActions = {
   list: (listId: number, page?: number, pageSize?: number, country?: string): Promise<PaginatedListItemList> => {
     const params = new URLSearchParams();
-    if (page) params.append("page", String(page));
-    if (pageSize) params.append("page_size", String(pageSize));
+    if (page !== undefined) params.append("page", String(page));
+    if (pageSize !== undefined) params.append("page_size", String(pageSize));
     const countryCode = country || getUserCountryCode();
     params.append("country", countryCode);
 
@@ -294,8 +294,8 @@ export const listItemActions = {
   move: (listId: number, itemId: number, position: number, page?: number, pageSize?: number): Promise<PaginatedListItemList> => {
     const params = new URLSearchParams();
     params.append("position", String(position));
-    if (page) params.append("page", String(page));
-    if (pageSize) params.append("page_size", String(pageSize));
+    if (page !== undefined) params.append("page", String(page));
+    if (pageSize !== undefined) params.append("page_size", String(pageSize));
 
     return api.post<PaginatedListItemList>(
       `/content/lists/${listId}/items/${itemId}/move/?${params}`,
@@ -306,12 +306,12 @@ export const listItemActions = {
 
   reorder: (listId: number, itemIds: number[], page?: number, pageSize?: number): Promise<PaginatedListItemList> => {
     const params = new URLSearchParams();
-    if (page) params.append("page", String(page));
-    if (pageSize) params.append("page_size", String(pageSize));
+    if (page !== undefined) params.append("page", String(page));
+    if (pageSize !== undefined) params.append("page_size", String(pageSize));
 
     return api.post<PaginatedListItemList>(
       `/content/lists/${listId}/items/reorder/?${params}`,
-      { item_ids: itemIds },
+      { order: itemIds },
       true
     );
   },

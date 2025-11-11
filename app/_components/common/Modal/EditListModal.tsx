@@ -132,24 +132,6 @@ export default function EditListModal({
           />
 
           <div className="space-y-2">
-            <label htmlFor="list-type" className="block text-sm font-medium">
-              List Type
-            </label>
-            <select
-              id="list-type"
-              disabled={true}
-              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary font-sans bg-background disabled:opacity-50 disabled:cursor-not-allowed"
-              {...register("listType")}
-            >
-              <option value={ListType.PERSONAL}>Personal</option>
-              <option value={ListType.SHARED}>Shared</option>
-            </select>
-            <p className="text-muted-foreground text-xs mt-1">
-              List type cannot be changed after creation
-            </p>
-          </div>
-
-          <div className="space-y-2">
             <label
               htmlFor="list-description"
               className="block text-sm font-medium"

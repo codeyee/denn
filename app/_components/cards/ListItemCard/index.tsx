@@ -11,6 +11,7 @@ import {
 } from "@/lib/api/types";
 import { getContentTypeIcon } from "@/lib/utils/contentTypeUtils";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
+import { formatSeasonTitle } from "@/lib/utils/titleUtils";
 
 interface ListItemCardProps {
   item: ListItem;
@@ -31,13 +32,10 @@ export default function ListItemCard({
   const sourceData = contentItem.source_data;
   const imageUrl = sourceData?.image_url;
 
-  // For seasons, display as "TV Show Title - Season Title"
+  // For seasons, format title to avoid redundancy
   const isSeason = contentItem.content_type === "SEASON";
-  const title = isSeason &&
-                "tv_show_name" in sourceData &&
-                sourceData.tv_show_name &&
-                sourceData.title
-    ? `${sourceData.tv_show_name} - ${sourceData.title}`
+  const title = isSeason && "tv_show_name" in sourceData
+    ? formatSeasonTitle(sourceData.tv_show_name, sourceData.title)
     : sourceData?.title || "Untitled";
 
   const ContentIcon = getContentTypeIcon(contentItem.content_type);

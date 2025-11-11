@@ -2,16 +2,33 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { listActions, listItemActions } from "@/lib/api";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  rectSortingStrategy,
+} from "@dnd-kit/sortable";
+import { listActions } from "@/lib/api";
 import { UserListDetail, ListType, ItemStatus, Author } from "@/lib/api/types";
 import { ListItem } from "@/types";
-import { ExpandableListItem, VerticalList } from "../../common/List";
+import { VerticalList } from "../../common/List";
+import { ReorderableListItem } from "../../common/List/ReorderableListItem";
+import { ReorderableListItemCard } from "../../cards/ListItemCard/ReorderableListItemCard";
 import Navbar from "../../layout/Navbar";
 import Footer from "../../layout/Footer";
 import { Button } from "../../lib/button";
 import EditListModal from "../../common/Modal/EditListModal";
 import ConfirmDialog from "../../common/Modal/ConfirmDialog";
-import ListItemCard from "../../cards/ListItemCard";
 import {
   User,
   Users,
@@ -23,13 +40,18 @@ import {
   Circle,
   List as ListIcon,
   Grid,
+  GripVertical,
+  Save,
+  X,
 } from "lucide-react";
 import {
   getContentTypeIcon,
   getContentTypeLabel,
 } from "@/lib/utils/contentTypeUtils";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
+import { formatSeasonTitle } from "@/lib/utils/titleUtils";
 import { useListsStore } from "@/app/_stores/lists-store";
+import { useUIStore } from "@/app/_stores/ui-store";
 
 interface ListDetailPageProps {
   listId: number;
@@ -51,23 +73,58 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
   // View state
   const [viewMode, setViewMode] = useState<"list" | "gallery">("list");
 
-  // Store actions
-  const { updateList, deleteList, deleteListItem, updateListItemStatus } =
-    useListsStore();
+  // Reorder state
+  const [originalItems, setOriginalItems] = useState<ListItem[]>([]);
+  const [reorderLoading, setReorderLoading] = useState(false);
 
+  // Store actions
+  const { updateList, deleteList, deleteListItem, updateListItemStatus, reorderListItems } =
+    useListsStore();
+  const { isReorderMode, enterReorderMode, exitReorderMode } = useUIStore();
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // 8px movement required before drag starts
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Handle drag end
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      setListItems((items) => {
+        const oldIndex = items.findIndex((item) => item.id === active.id);
+        const newIndex = items.findIndex((item) => item.id === over.id);
+
+        const newItems = arrayMove(items, oldIndex, newIndex);
+
+        // Update list_order for all affected items
+        return newItems.map((item, index) => ({
+          ...item,
+          list_order: index + 1,
+        }));
+      });
+    }
+  };
+
+  // Initial fetch
   useEffect(() => {
     const fetchList = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        // Fetch list details
+        // Fetch list details (includes all items)
         const listData = await listActions.get(listId);
         setList(listData);
-
-        // Fetch list items with expanded content_item data
-        const itemsResponse = await listItemActions.list(listId);
-        setListItems(itemsResponse.results as unknown as ListItem[]);
+        setListItems(listData.items);
       } catch (err) {
         console.error("Error fetching list:", err);
         setError(err instanceof Error ? err.message : "Failed to load list");
@@ -159,6 +216,38 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
       setError(
         err instanceof Error ? err.message : "Failed to update item status"
       );
+    }
+  };
+
+  // Reorder mode handlers
+  const handleEnterReorderMode = () => {
+    // Save original order for cancel
+    setOriginalItems([...listItems]);
+    enterReorderMode(listId);
+  };
+
+  const handleExitReorderMode = () => {
+    exitReorderMode();
+  };
+
+  const handleCancelReorder = () => {
+    setListItems([...originalItems]); // Restore original order
+    exitReorderMode();
+  };
+
+  const handleSaveReorder = async () => {
+    try {
+      setReorderLoading(true);
+      const itemIds = listItems.map((item) => item.id);
+      await reorderListItems(listId, itemIds);
+      exitReorderMode();
+      setOriginalItems([]);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to save reorder"
+      );
+    } finally {
+      setReorderLoading(false);
     }
   };
 
@@ -261,6 +350,7 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
                           : "text-white/60 hover:text-white"
                       }`}
                       title="List view"
+                      disabled={isReorderMode}
                     >
                       <ListIcon className="w-4 h-4" />
                     </button>
@@ -272,12 +362,28 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
                           : "text-white/60 hover:text-white"
                       }`}
                       title="Gallery view"
+                      disabled={isReorderMode}
                     >
                       <Grid className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
               </div>
+
+              {/* Reorder Mode Indicator */}
+              {isReorderMode && (
+                <div className="mb-4 p-4 bg-blue-500/20 border border-blue-500/50 rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <GripVertical className="w-5 h-5 text-blue-400" />
+                    <div>
+                      <p className="text-blue-400 font-semibold">Reorder Mode Active</p>
+                      <p className="text-blue-300/80 text-sm">
+                        Drag and drop items to reorder ({listItems.length} items).
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {listItems.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-center bg-white/5 rounded-2xl">
@@ -288,8 +394,17 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
                   </p>
                 </div>
               ) : viewMode === "list" ? (
-                <VerticalList spacing="md">
-                  {listItems.map((item) => {
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext
+                    items={listItems.map((item) => item.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <VerticalList spacing="md">
+                      {listItems.map((item) => {
                     const contentItem = item.content_item;
                     const sourceData = contentItem.source_data;
                     const ContentIcon = getContentTypeIcon(
@@ -300,18 +415,17 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
                     );
                     const imageUrl = sourceData?.image_url;
 
-                    // For seasons, display as "TV Show Title - Season Title"
+                    // For seasons, format title to avoid redundancy
                     const isSeason = contentItem.content_type === "SEASON";
-                    const title = isSeason &&
-                                  "tv_show_name" in sourceData &&
-                                  sourceData.tv_show_name &&
-                                  sourceData.title
-                      ? `${sourceData.tv_show_name} - ${sourceData.title}`
+                    const title = isSeason && "tv_show_name" in sourceData
+                      ? formatSeasonTitle(sourceData.tv_show_name, sourceData.title)
                       : sourceData?.title || "Untitled";
 
                     return (
-                      <ExpandableListItem
+                      <ReorderableListItem
                         key={item.id}
+                        id={item.id}
+                        isReorderMode={isReorderMode}
                         title={title}
                         description={
                           "original_title" in sourceData &&
@@ -477,20 +591,35 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
                         }
                       />
                     );
-                  })}
-                </VerticalList>
+                      })}
+                    </VerticalList>
+                  </SortableContext>
+                </DndContext>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 3xl:grid-cols-4 4xl:grid-cols-5 5xl:grid-cols-6 6xl:grid-cols-7 gap-4">
-                  {listItems.map((item) => (
-                    <ListItemCard
-                      key={item.id}
-                      item={item}
-                      onToggleStatus={handleToggleItemStatus}
-                      onDelete={(itemId) => setDeleteItemId(itemId)}
-                    />
-                  ))}
-                </div>
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext
+                    items={listItems.map((item) => item.id)}
+                    strategy={rectSortingStrategy}
+                  >
+                    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 3xl:grid-cols-5 4xl:grid-cols-6 5xl:grid-cols-7 6xl:grid-cols-8 gap-4">
+                      {listItems.map((item) => (
+                        <ReorderableListItemCard
+                          key={item.id}
+                          item={item}
+                          onToggleStatus={handleToggleItemStatus}
+                          onDelete={(itemId: number) => setDeleteItemId(itemId)}
+                          isReorderMode={isReorderMode}
+                        />
+                      ))}
+                    </div>
+                  </SortableContext>
+                </DndContext>
               )}
+
             </div>
 
             {/* Right Column: Sidebar - Sticky */}
@@ -501,23 +630,58 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
                   List Actions
                 </h3>
                 <div className="space-y-3">
-                  <Button
-                    onClick={() => setIsEditModalOpen(true)}
-                    className="w-full flex items-center justify-center gap-2 cursor-pointer bg-white text-black hover:bg-white/90 font-semibold"
-                    size="lg"
-                  >
-                    <Edit className="w-5 h-5" />
-                    Edit List
-                  </Button>
-                  <Button
-                    onClick={() => setIsDeleteListDialogOpen(true)}
-                    variant="destructive"
-                    className="w-full flex items-center justify-center gap-2 cursor-pointer font-semibold"
-                    size="lg"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                    Delete List
-                  </Button>
+                  {!isReorderMode ? (
+                    <>
+                      <Button
+                        onClick={handleEnterReorderMode}
+                        className="w-full flex items-center justify-center gap-2 cursor-pointer bg-blue-600 text-white hover:bg-blue-700 font-semibold"
+                        size="lg"
+                        disabled={listItems.length === 0}
+                      >
+                        <GripVertical className="w-5 h-5" />
+                        Reorder Items
+                      </Button>
+                      <Button
+                        onClick={() => setIsEditModalOpen(true)}
+                        className="w-full flex items-center justify-center gap-2 cursor-pointer bg-white text-black hover:bg-white/90 font-semibold"
+                        size="lg"
+                      >
+                        <Edit className="w-5 h-5" />
+                        Edit List
+                      </Button>
+                      <Button
+                        onClick={() => setIsDeleteListDialogOpen(true)}
+                        variant="destructive"
+                        className="w-full flex items-center justify-center gap-2 cursor-pointer font-semibold"
+                        size="lg"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                        Delete List
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button
+                        onClick={handleSaveReorder}
+                        className="w-full flex items-center justify-center gap-2 cursor-pointer bg-green-600 text-white hover:bg-green-700 font-semibold"
+                        size="lg"
+                        disabled={reorderLoading}
+                      >
+                        <Save className="w-5 h-5" />
+                        {reorderLoading ? "Saving..." : "Save Order"}
+                      </Button>
+                      <Button
+                        onClick={handleCancelReorder}
+                        variant="outline"
+                        className="w-full flex items-center justify-center gap-2 cursor-pointer font-semibold"
+                        size="lg"
+                        disabled={reorderLoading}
+                      >
+                        <X className="w-5 h-5" />
+                        Cancel
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
 

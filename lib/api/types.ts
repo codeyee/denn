@@ -144,7 +144,7 @@ export interface UserList {
 
 export interface UserListDetail extends UserList {
   members: User[];
-  items: string;
+  items: ListItem[];
 }
 
 export interface ListItem {
@@ -470,46 +470,36 @@ export interface HomepageResponse {
 }
 
 export interface PaginationMetadata {
-  count: number | null;
+  count: number;
   page_size: number;
   current_page: number;
-  total_pages: number | null;
+  total_pages: number;
   next: string | null;
   previous: string | null;
 }
 
 export interface PaginatedContentItemList {
-  count: number;
-  next: string | null;
-  previous: string | null;
+  metadata: PaginationMetadata;
   results: ContentItem[];
 }
 
 export interface PaginatedUserListList {
-  count: number;
-  next: string | null;
-  previous: string | null;
+  metadata: PaginationMetadata;
   results: UserList[];
 }
 
 export interface PaginatedListItemList {
-  count: number;
-  next: string | null;
-  previous: string | null;
+  metadata: PaginationMetadata;
   results: ListItem[];
 }
 
 export interface PaginatedListInvitationList {
-  count: number;
-  next: string | null;
-  previous: string | null;
+  metadata: PaginationMetadata;
   results: ListInvitation[];
 }
 
 export interface PaginatedRatingList {
-  count: number;
-  next: string | null;
-  previous: string | null;
+  metadata: PaginationMetadata;
   results: Rating[];
 }
 
