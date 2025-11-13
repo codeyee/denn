@@ -2,21 +2,26 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical } from "lucide-react";
 import ListItemCard from "./index";
 import { ListItem } from "@/types";
 
 interface ReorderableListItemCardProps {
   item: ListItem;
+  activeId: number | null;
   onToggleStatus: (itemId: number, currentStatus: string) => void;
   onDelete: (itemId: number) => void;
+  onRateClick?: () => void;
+  showRatingInvitation?: boolean;
   isReorderMode: boolean;
 }
 
 export function ReorderableListItemCard({
   item,
+  activeId,
   onToggleStatus,
   onDelete,
+  onRateClick,
+  showRatingInvitation,
   isReorderMode,
 }: ReorderableListItemCardProps) {
   const {
@@ -25,35 +30,33 @@ export function ReorderableListItemCard({
     setNodeRef,
     transform,
     transition,
-    isDragging,
   } = useSortable({
     id: item.id,
     disabled: !isReorderMode,
   });
 
+  const isDragging = activeId === item.id;
+
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
+    transition: transition || "transform 200ms ease",
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="relative">
-      {isReorderMode && (
-        <div
-          {...attributes}
-          {...listeners}
-          className="absolute top-2 left-2 z-10 cursor-grab active:cursor-grabbing p-2 bg-black/70 hover:bg-black/90 rounded-lg transition-colors touch-none"
-          aria-label="Drag to reorder"
-        >
-          <GripVertical className="w-5 h-5 text-white" />
-        </div>
-      )}
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...(isReorderMode ? { ...attributes, ...listeners } : {})}
+      className={`${isReorderMode && !isDragging ? "cursor-grab animate-reorder-wiggle" : ""} ${isDragging ? "cursor-grabbing opacity-0" : ""}`}
+    >
       <ListItemCard
         item={item}
         onToggleStatus={onToggleStatus}
         onDelete={onDelete}
+        onRateClick={onRateClick}
+        showRatingInvitation={showRatingInvitation}
         className={isReorderMode ? "pointer-events-none select-none" : ""}
+        disableHover={isReorderMode}
       />
     </div>
   );

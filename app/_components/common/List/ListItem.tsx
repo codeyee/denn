@@ -79,7 +79,7 @@ export default function ListItem({
             {/* Text Content */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <h3 className="text-white font-medium truncate">{title}</h3>
+                <h3 className="text-white font-medium line-clamp-3">{title}</h3>
                 {rating && (
                   <span className="text-yellow-400 font-medium text-sm">
                     ★ {rating}
@@ -87,10 +87,10 @@ export default function ListItem({
                 )}
               </div>
               {description && (
-                <p className="text-gray-400 text-sm truncate font-sans">{description}</p>
+                <p className="text-gray-400 text-sm line-clamp-3 font-sans">{description}</p>
               )}
               {subDescription && (
-                <p className="text-gray-500 text-xs truncate font-sans">{subDescription}</p>
+                <p className="text-gray-500 text-xs line-clamp-3 font-sans">{subDescription}</p>
               )}
             </div>
 
@@ -112,7 +112,7 @@ export default function ListItem({
 
           {/* Text Content */}
           <div className="flex-1 min-w-0">
-            <h3 className="text-white font-medium text-sm drop-shadow-text break-words line-clamp-2">
+            <h3 className="text-white font-medium text-sm drop-shadow-text break-words line-clamp-3">
               {title}
             </h3>
             {description && (
@@ -165,7 +165,7 @@ export default function ListItem({
         {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <h3 className="text-white font-medium mb-1 truncate">{title}</h3>
+            <h3 className="text-white font-medium mb-1 line-clamp-3">{title}</h3>
             {rating && (
               <span className="text-yellow-400 font-medium text-sm">
                 ★ {rating}
@@ -173,10 +173,10 @@ export default function ListItem({
             )}
           </div>
           {description && (
-            <p className="text-gray-400 text-sm truncate">{description}</p>
+            <p className="text-gray-400 text-sm line-clamp-3">{description}</p>
           )}
           {subDescription && (
-            <p className="text-gray-500 text-xs truncate font-sans">{subDescription}</p>
+            <p className="text-gray-500 text-xs line-clamp-3 font-sans">{subDescription}</p>
           )}
         </div>
 

@@ -8,9 +8,9 @@ interface VerticalListProps {
 
 const spacingClasses = {
   none: "space-y-0",
-  sm: "space-y-1",
-  md: "space-y-2",
-  lg: "space-y-4",
+  sm: "space-y-2",
+  md: "space-y-3",
+  lg: "space-y-5",
 };
 
 export default function VerticalList({

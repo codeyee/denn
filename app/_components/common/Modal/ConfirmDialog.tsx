@@ -84,7 +84,7 @@ export default function ConfirmDialog({
             variant="outline"
             onClick={handleCancel}
             disabled={isLoading}
-            className="flex-1"
+            className="flex-1 cursor-pointer"
           >
             {cancelText}
           </Button>
@@ -93,7 +93,7 @@ export default function ConfirmDialog({
             variant={variantStyles.confirmButtonVariant}
             onClick={handleConfirm}
             disabled={isLoading}
-            className="flex-1"
+            className="flex-1 cursor-pointer"
           >
             {isLoading ? "Processing..." : confirmText}
           </Button>

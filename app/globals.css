@@ -149,38 +149,32 @@
   --color-glare: rgba(255, 255, 255, 0.1);
 
   /* Utilities */
-  --drop-shadow-text: 0_4px_16px_rgba(0,0,0,0.6);
+  --drop-shadow-text: 0_4px_16px_rgba(0, 0, 0, 0.6);
 }
 
 @layer utilities {
   .bg-navbar-gradient {
-    background: linear-gradient(
-      to bottom,
-      var(--color-hero-gradient) 0%,
-      var(--color-hero-gradient-70) 40%,
-      var(--color-hero-gradient-40) 80%,
-      transparent 100%
-    );
+    background: linear-gradient(to bottom,
+        var(--color-hero-gradient) 0%,
+        var(--color-hero-gradient-70) 40%,
+        var(--color-hero-gradient-40) 80%,
+        transparent 100%);
   }
 
   .bg-bottom-gradient {
-    background: linear-gradient(
-      to top,
-      var(--color-hero-gradient) 0%,
-      var(--color-hero-gradient-70) 40%,
-      var(--color-hero-gradient-40) 80%,
-      transparent 100%
-    );
+    background: linear-gradient(to top,
+        var(--color-hero-gradient) 0%,
+        var(--color-hero-gradient-70) 40%,
+        var(--color-hero-gradient-40) 80%,
+        transparent 100%);
   }
 
   .bg-image-fade-right {
-    background: linear-gradient(
-      to right,
-      var(--color-hero-gradient-00) 0%,
-      var(--color-hero-gradient-40) 40%,
-      var(--color-hero-gradient-70) 80%,
-      var(--color-hero-gradient) 100%
-    );
+    background: linear-gradient(to right,
+        var(--color-hero-gradient-00) 0%,
+        var(--color-hero-gradient-40) 40%,
+        var(--color-hero-gradient-70) 80%,
+        var(--color-hero-gradient) 100%);
   }
 
   .drop-shadow-text {
@@ -192,6 +186,7 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
@@ -281,6 +276,7 @@
   0% {
     transform: translateX(-100%);
   }
+
   100% {
     transform: translateX(100%);
   }
@@ -294,9 +290,11 @@
   0% {
     background-position: 150% 150%, 0 0;
   }
+
   70% {
     background-position: -150% -150%, 0 0;
   }
+
   100% {
     background-position: -150% -150%, 0 0;
   }
@@ -306,4 +304,110 @@
   animation-delay: 0s;
   animation: glare 2s ease-in-out infinite;
   -webkit-animation: glare 2s ease-in-out infinite;
+}
+
+@keyframes reorder-wiggle {
+
+  0%,
+  100% {
+    transform: rotate(-0.15deg);
+    -webkit-transform: rotate(-0.15deg);
+    -moz-transform: rotate(-0.15deg);
+    -ms-transform: rotate(-0.15deg);
+    -o-transform: rotate(-0.15deg);
+  }
+
+  50% {
+    transform: rotate(0.15deg);
+    -webkit-transform: rotate(0.15deg);
+    -moz-transform: rotate(0.15deg);
+    -ms-transform: rotate(0.15deg);
+    -o-transform: rotate(0.15deg);
+  }
+}
+
+.animate-reorder-wiggle {
+  animation: reorder-wiggle 0.5s ease-in-out infinite;
+  -webkit-animation: reorder-wiggle 0.5s ease-in-out infinite;
+}
+
+/* Random animation delays for staggered effect */
+.animate-reorder-wiggle:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.animate-reorder-wiggle:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.animate-reorder-wiggle:nth-child(3) {
+  animation-delay: 0.2s;
+}
+
+.animate-reorder-wiggle:nth-child(4) {
+  animation-delay: 0.05s;
+}
+
+.animate-reorder-wiggle:nth-child(5) {
+  animation-delay: 0.15s;
+}
+
+.animate-reorder-wiggle:nth-child(6) {
+  animation-delay: 0.25s;
+}
+
+.animate-reorder-wiggle:nth-child(7) {
+  animation-delay: 0.3s;
+}
+
+.animate-reorder-wiggle:nth-child(8) {
+  animation-delay: 0.12s;
+}
+
+.animate-reorder-wiggle:nth-child(9) {
+  animation-delay: 0.18s;
+}
+
+.animate-reorder-wiggle:nth-child(10) {
+  animation-delay: 0.22s;
+}
+
+.animate-reorder-wiggle:nth-child(11) {
+  animation-delay: 0.08s;
+}
+
+.animate-reorder-wiggle:nth-child(12) {
+  animation-delay: 0.28s;
+}
+
+.animate-reorder-wiggle:nth-child(13) {
+  animation-delay: 0.14s;
+}
+
+.animate-reorder-wiggle:nth-child(14) {
+  animation-delay: 0.19s;
+}
+
+.animate-reorder-wiggle:nth-child(15) {
+  animation-delay: 0.24s;
+}
+
+.animate-reorder-wiggle:nth-child(16) {
+  animation-delay: 0.06s;
+}
+
+.animate-reorder-wiggle:nth-child(17) {
+  animation-delay: 0.16s;
+}
+
+.animate-reorder-wiggle:nth-child(18) {
+  animation-delay: 0.26s;
+}
+
+.animate-reorder-wiggle:nth-child(19) {
+  animation-delay: 0.11s;
+}
+
+.animate-reorder-wiggle:nth-child(20) {
+  animation-delay: 0.21s;
 }

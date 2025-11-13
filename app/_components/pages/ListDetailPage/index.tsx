@@ -10,6 +10,9 @@ import {
   useSensor,
   useSensors,
   DragEndEvent,
+  DragStartEvent,
+  DragOverEvent,
+  DragOverlay,
 } from "@dnd-kit/core";
 import {
   arrayMove,
@@ -18,7 +21,7 @@ import {
   verticalListSortingStrategy,
   rectSortingStrategy,
 } from "@dnd-kit/sortable";
-import { listActions } from "@/lib/api";
+import { listActions, ratingActions } from "@/lib/api";
 import { UserListDetail, ListType, ItemStatus, Author } from "@/lib/api/types";
 import { ListItem } from "@/types";
 import { VerticalList } from "../../common/List";
@@ -29,6 +32,7 @@ import Footer from "../../layout/Footer";
 import { Button } from "../../lib/button";
 import EditListModal from "../../common/Modal/EditListModal";
 import ConfirmDialog from "../../common/Modal/ConfirmDialog";
+import RateItemModal from "../../common/Modal/RateItemModal";
 import {
   User,
   Users,
@@ -43,6 +47,8 @@ import {
   GripVertical,
   Save,
   X,
+  Lock,
+  Star,
 } from "lucide-react";
 import {
   getContentTypeIcon,
@@ -50,8 +56,10 @@ import {
 } from "@/lib/utils/contentTypeUtils";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { formatSeasonTitle } from "@/lib/utils/titleUtils";
+import { formatUserDisplayNameWithUsername } from "@/lib/utils/userUtils";
 import { useListsStore } from "@/app/_stores/lists-store";
 import { useUIStore } from "@/app/_stores/ui-store";
+import { useAuthStore } from "@/app/_stores/auth-store";
 
 interface ListDetailPageProps {
   listId: number;
@@ -69,6 +77,8 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
   const [isDeleteListDialogOpen, setIsDeleteListDialogOpen] = useState(false);
   const [deleteItemId, setDeleteItemId] = useState<number | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [ratingModalItem, setRatingModalItem] = useState<ListItem | null>(null);
+  const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
 
   // View state
   const [viewMode, setViewMode] = useState<"list" | "gallery">("list");
@@ -76,11 +86,14 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
   // Reorder state
   const [originalItems, setOriginalItems] = useState<ListItem[]>([]);
   const [reorderLoading, setReorderLoading] = useState(false);
+  const [activeId, setActiveId] = useState<number | null>(null);
+  const [overId, setOverId] = useState<number | null>(null);
 
   // Store actions
   const { updateList, deleteList, deleteListItem, updateListItemStatus, reorderListItems } =
     useListsStore();
   const { isReorderMode, enterReorderMode, exitReorderMode } = useUIStore();
+  const { user: currentUser } = useAuthStore();
 
   // Drag and drop sensors
   const sensors = useSensors(
@@ -94,11 +107,18 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
     })
   );
 
-  // Handle drag end
-  const handleDragEnd = (event: DragEndEvent) => {
+  // Handle drag start
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as number);
+  };
+
+  // Handle drag over - update visual order in real-time
+  const handleDragOver = (event: DragOverEvent) => {
     const { active, over } = event;
 
     if (over && active.id !== over.id) {
+      setOverId(over.id as number);
+
       setListItems((items) => {
         const oldIndex = items.findIndex((item) => item.id === active.id);
         const newIndex = items.findIndex((item) => item.id === over.id);
@@ -111,6 +131,23 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
           list_order: index + 1,
         }));
       });
+    }
+  };
+
+  // Handle drag end
+  const handleDragEnd = (event: DragEndEvent) => {
+    // Reset activeId and overId after drag ends
+    setActiveId(null);
+    setOverId(null);
+  };
+
+  // Handle drag cancel
+  const handleDragCancel = () => {
+    setActiveId(null);
+    setOverId(null);
+    // Restore original order if in reorder mode
+    if (isReorderMode && originalItems.length > 0) {
+      setListItems([...originalItems]);
     }
   };
 
@@ -171,13 +208,7 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
       await deleteListItem(listId, itemId);
       // Remove item from local state
       setListItems((prev) => prev.filter((item) => item.id !== itemId));
-      // Update item count in list
-      if (list) {
-        setList({
-          ...list,
-          item_count: String(parseInt(list.item_count || "0") - 1),
-        });
-      }
+      // No need to manually update item_count, we'll use listItems.length
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete item");
     } finally {
@@ -212,10 +243,69 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
             : item
         )
       );
+
+      // If marking as completed, check if user should rate the item
+      if (newStatus === ItemStatus.COMPLETED && currentUser) {
+        const item = listItems.find(i => i.id === itemId);
+        if (item) {
+          // Check if user has already rated this item
+          const hasUserRated = item.member_ratings &&
+            Array.isArray(item.member_ratings) &&
+            item.member_ratings.some((rating: any) =>
+              rating.user?.id === currentUser.id
+            );
+
+          // Show rating modal if user hasn't rated yet
+          if (!hasUserRated) {
+            setRatingModalItem(item);
+            setIsRatingModalOpen(true);
+          }
+        }
+      }
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to update item status"
       );
+    }
+  };
+
+  // Rating handler
+  const handleRateItem = async (rating: number) => {
+    if (!ratingModalItem || !currentUser) return;
+
+    try {
+      const contentItem = ratingModalItem.content_item;
+      await ratingActions.create({
+        source_api: contentItem.source_api,
+        external_id: String(contentItem.external_id),
+        content_type: contentItem.content_type,
+        score: String(rating),
+      });
+
+      // Update local state to reflect the new rating
+      setListItems((prev) =>
+        prev.map((item) =>
+          item.id === ratingModalItem.id
+            ? {
+                ...item,
+                member_rating_count: item.member_rating_count + 1,
+                member_ratings: [
+                  ...(Array.isArray(item.member_ratings) ? item.member_ratings : []),
+                  {
+                    user: currentUser,
+                    rating: rating,
+                  },
+                ],
+              }
+            : item
+        )
+      );
+
+      // Refetch list to get updated ratings
+      const listData = await listActions.get(listId);
+      setListItems(listData.items);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to rate item");
     }
   };
 
@@ -249,6 +339,22 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
     } finally {
       setReorderLoading(false);
     }
+  };
+
+  // Helper to check if user should be invited to rate an item
+  const shouldInviteToRate = (item: ListItem): boolean => {
+    if (!currentUser || item.status !== ItemStatus.COMPLETED) {
+      return false;
+    }
+
+    // Check if user has already rated this item
+    const hasUserRated = item.member_ratings &&
+      Array.isArray(item.member_ratings) &&
+      item.member_ratings.some((rating: any) =>
+        rating.user?.id === currentUser.id
+      );
+
+    return !hasUserRated;
   };
 
   if (loading) {
@@ -297,10 +403,11 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
   }
 
   const isShared = list.list_type === ListType.SHARED;
-  const ListTypeIcon = isShared ? Users : User;
+  const ListTypeIcon = isShared ? Users : Lock;
   const listTypeLabel = isShared ? "Shared List" : "Personal List";
   const memberCount = list.member_count || (list.members?.length || 0).toString();
-  const itemCount = list.item_count || listItems.length.toString();
+  // Use listItems.length directly as source of truth for item count
+  const itemCount = listItems.length;
   const completedCount = listItems.filter(
     (item) => item.status === ItemStatus.COMPLETED
   ).length;
@@ -338,7 +445,7 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
                 <h2 className="text-2xl font-bold text-white">Items</h2>
                 <div className="flex items-center gap-3">
                   <div className="text-white/60 text-sm">
-                    {itemCount} {parseInt(itemCount) === 1 ? "item" : "items"}
+                    {itemCount} {itemCount === 1 ? "item" : "items"}
                   </div>
                   {/* View Toggle */}
                   <div className="flex gap-1 bg-white/5 rounded-lg p-1">
@@ -370,20 +477,6 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
                 </div>
               </div>
 
-              {/* Reorder Mode Indicator */}
-              {isReorderMode && (
-                <div className="mb-4 p-4 bg-blue-500/20 border border-blue-500/50 rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <GripVertical className="w-5 h-5 text-blue-400" />
-                    <div>
-                      <p className="text-blue-400 font-semibold">Reorder Mode Active</p>
-                      <p className="text-blue-300/80 text-sm">
-                        Drag and drop items to reorder ({listItems.length} items).
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
 
               {listItems.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-center bg-white/5 rounded-2xl">
@@ -397,7 +490,10 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
                 <DndContext
                   sensors={sensors}
                   collisionDetection={closestCenter}
+                  onDragStart={handleDragStart}
+                  onDragOver={handleDragOver}
                   onDragEnd={handleDragEnd}
+                  onDragCancel={handleDragCancel}
                 >
                   <SortableContext
                     items={listItems.map((item) => item.id)}
@@ -408,9 +504,6 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
                     const contentItem = item.content_item;
                     const sourceData = contentItem.source_data;
                     const ContentIcon = getContentTypeIcon(
-                      contentItem.content_type
-                    );
-                    const contentTypeLabel = getContentTypeLabel(
                       contentItem.content_type
                     );
                     const imageUrl = sourceData?.image_url;
@@ -425,6 +518,7 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
                       <ReorderableListItem
                         key={item.id}
                         id={item.id}
+                        activeId={activeId}
                         isReorderMode={isReorderMode}
                         title={title}
                         description={
@@ -479,97 +573,10 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
                                 ★ {item.list_rating}
                               </div>
                             )}
-                            {/* Action Buttons */}
-                            <div className="flex gap-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleToggleItemStatus(item.id, item.status);
-                                }}
-                                title={
-                                  item.status === ItemStatus.COMPLETED
-                                    ? "Mark as Pending"
-                                    : "Mark as Completed"
-                                }
-                                className="cursor-pointer hover:bg-white/10"
-                              >
-                                {item.status === ItemStatus.COMPLETED ? (
-                                  <Circle className="w-5 h-5" />
-                                ) : (
-                                  <CheckCircle className="w-5 h-5 text-green-400" />
-                                )}
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setDeleteItemId(item.id);
-                                }}
-                                className="cursor-pointer hover:bg-red-500/10 text-red-400 hover:text-red-300"
-                                title="Remove item"
-                              >
-                                <Trash2 className="w-5 h-5" />
-                              </Button>
-                            </div>
                           </div>
                         }
                         expandedContent={
                           <div className="space-y-3">
-                            {"description" in sourceData &&
-                              sourceData.description && (
-                                <div>
-                                  <h4 className="text-white/80 font-semibold text-sm mb-1">
-                                    Description
-                                  </h4>
-                                  <p className="text-white/60 text-sm leading-relaxed">
-                                    {sourceData.description}
-                                  </p>
-                                </div>
-                              )}
-
-                            <div className="grid grid-cols-2 gap-3 text-sm">
-                              <div>
-                                <span className="text-white/60">Type:</span>
-                                <span className="text-white ml-2">
-                                  {contentTypeLabel}
-                                </span>
-                              </div>
-                              {sourceData?.release_date && (
-                                <div>
-                                  <span className="text-white/60">
-                                    Release Date:
-                                  </span>
-                                  <span className="text-white ml-2">
-                                    {formatReleaseDate(
-                                      sourceData.release_date
-                                    )}
-                                  </span>
-                                </div>
-                              )}
-                              {"duration_minutes" in sourceData &&
-                                sourceData.duration_minutes && (
-                                  <div>
-                                    <span className="text-white/60">
-                                      Duration:
-                                    </span>
-                                    <span className="text-white ml-2">
-                                      {sourceData.duration_minutes} min
-                                    </span>
-                                  </div>
-                                )}
-                              {item.added_at && (
-                                <div>
-                                  <span className="text-white/60">Added:</span>
-                                  <span className="text-white ml-2">
-                                    {formatReleaseDate(item.added_at)}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-
                             {item.notes && (
                               <div>
                                 <h4 className="text-white/80 font-semibold text-sm mb-1">
@@ -581,11 +588,156 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
                               </div>
                             )}
 
-                            <div className="pt-2 border-t border-white/10">
-                              <p className="text-white/60 text-xs">
-                                Added by{" "}
-                                {item.added_by.username || item.added_by.email}
-                              </p>
+                            {/* List Item Metadata */}
+                            <div className="pt-2 border-t border-white/10 space-y-2">
+                              <h4 className="text-white/80 font-semibold text-sm mb-2">
+                                List Item Details
+                              </h4>
+                              <div className="grid grid-cols-2 gap-3 text-xs">
+                                <div>
+                                  <span className="text-white/60">Added by:</span>
+                                  {(() => {
+                                    const { displayName, username } = formatUserDisplayNameWithUsername(item.added_by);
+                                    return (
+                                      <>
+                                        <p className="text-white mt-0.5">
+                                          {displayName}
+                                        </p>
+                                        {username && (
+                                          <p className="text-white/50 text-xs">
+                                            @{username}
+                                          </p>
+                                        )}
+                                      </>
+                                    );
+                                  })()}
+                                </div>
+                                {item.added_at && (
+                                  <div>
+                                    <span className="text-white/60">Added on:</span>
+                                    <p className="text-white mt-0.5">
+                                      {formatReleaseDate(item.added_at)}
+                                    </p>
+                                  </div>
+                                )}
+                                {item.list_rating && (
+                                  <div>
+                                    <span className="text-white/60">List Rating:</span>
+                                    <p className="text-yellow-400 mt-0.5 font-medium">
+                                      ★ {item.list_rating}
+                                    </p>
+                                  </div>
+                                )}
+                                {item.completed_at && (
+                                  <div>
+                                    <span className="text-white/60">Completed on:</span>
+                                    <p className="text-white mt-0.5">
+                                      {formatReleaseDate(item.completed_at)}
+                                    </p>
+                                  </div>
+                                )}
+                                {item.member_rating_count > 0 && (
+                                  <div>
+                                    <span className="text-white/60">Member Ratings:</span>
+                                    <p className="text-white mt-0.5">
+                                      {item.member_rating_count} {item.member_rating_count === 1 ? 'rating' : 'ratings'}
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Member Ratings List */}
+                              {item.member_ratings && Array.isArray(item.member_ratings) && item.member_ratings.length > 0 && (
+                                <div className="pt-2 mt-2 border-t border-white/10">
+                                  <span className="text-white/60 text-xs">All Member Ratings:</span>
+                                  <div className="mt-2 space-y-2">
+                                    {item.member_ratings.map((rating: any, idx: number) => (
+                                      <div key={idx} className="flex items-center justify-between bg-white/5 rounded px-2 py-1.5">
+                                        <span className="text-white/80 text-xs">
+                                          {rating.user?.username || rating.user?.email || 'Unknown User'}
+                                        </span>
+                                        <span className="text-yellow-400 text-xs font-medium">
+                                          ★ {rating.rating}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Rating Invitation */}
+                            {shouldInviteToRate(item) && (
+                              <div className="pt-3 mt-3 border-t border-white/10">
+                                <div className="bg-yellow-600/10 border border-yellow-600/30 rounded-lg p-3">
+                                  <div className="flex items-start gap-2">
+                                    <Star className="w-5 h-5 text-yellow-400 shrink-0 mt-0.5" />
+                                    <div className="flex-1">
+                                      <p className="text-yellow-400 font-semibold text-sm">
+                                        Rate this item
+                                      </p>
+                                      <p className="text-yellow-300/80 text-xs mt-1">
+                                        You've completed this item! Share your rating with the list.
+                                      </p>
+                                    </div>
+                                    <Button
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setRatingModalItem(item);
+                                        setIsRatingModalOpen(true);
+                                      }}
+                                      className="shrink-0 bg-yellow-600 hover:bg-yellow-700 text-white cursor-pointer"
+                                    >
+                                      Rate Now
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Action Buttons */}
+                            <div className="flex gap-2 pt-2">
+                              <Button
+                                size="lg"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleToggleItemStatus(item.id, item.status);
+                                }}
+                                title={
+                                  item.status === ItemStatus.COMPLETED
+                                    ? "Mark as Pending"
+                                    : "Mark as Completed"
+                                }
+                                className={`flex-1 cursor-pointer font-semibold ${
+                                  item.status === ItemStatus.COMPLETED
+                                    ? "bg-white/10 hover:bg-white/20 text-white border border-white/20"
+                                    : "bg-green-600 hover:bg-green-700 text-white"
+                                }`}
+                              >
+                                {item.status === ItemStatus.COMPLETED ? (
+                                  <>
+                                    <Circle className="w-5 h-5 mr-2" />
+                                    Mark as Pending
+                                  </>
+                                ) : (
+                                  <>
+                                    <CheckCircle className="w-5 h-5 mr-2" />
+                                    Mark Complete
+                                  </>
+                                )}
+                              </Button>
+                              <Button
+                                size="lg"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDeleteItemId(item.id);
+                                }}
+                                className="cursor-pointer bg-red-600/20 hover:bg-red-600/40 text-red-400 hover:text-red-300 border border-red-600/30"
+                                title="Remove item"
+                              >
+                                <Trash2 className="w-5 h-5" />
+                              </Button>
                             </div>
                           </div>
                         }
@@ -594,12 +746,96 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
                       })}
                     </VerticalList>
                   </SortableContext>
+                  <DragOverlay>
+                    {activeId ? (
+                      (() => {
+                        const item = listItems.find((i) => i.id === activeId);
+                        if (!item) return null;
+
+                        const contentItem = item.content_item;
+                        const sourceData = contentItem.source_data;
+                        const ContentIcon = getContentTypeIcon(
+                          contentItem.content_type
+                        );
+                        const imageUrl = sourceData?.image_url;
+
+                        const isSeason = contentItem.content_type === "SEASON";
+                        const title = isSeason && "tv_show_name" in sourceData
+                          ? formatSeasonTitle(sourceData.tv_show_name, sourceData.title)
+                          : sourceData?.title || "Untitled";
+
+                        return (
+                          <div className="opacity-80 shadow-2xl pointer-events-none">
+                            <ReorderableListItem
+                              id={item.id}
+                              activeId={null}
+                              isReorderMode={true}
+                              title={title}
+                              description={
+                                "original_title" in sourceData &&
+                                sourceData.original_title !== sourceData.title
+                                  ? sourceData.original_title
+                                  : undefined
+                              }
+                              subDescription={
+                                (contentItem.content_type === "ALBUM" ||
+                                  contentItem.content_type === "BOOK") &&
+                                "authors" in sourceData &&
+                                sourceData.authors
+                                  ? (sourceData.authors as Author[])
+                                      ?.map((author) => author.name)
+                                      .join(", ")
+                                  : undefined
+                              }
+                              rating={item.list_rating}
+                              image={imageUrl}
+                              imageAlt={sourceData?.title}
+                              imageFullHeight={true}
+                              leadingContent={
+                                <div className="flex items-center gap-3">
+                                  <div className="text-white/60 text-sm font-mono w-8 text-center">
+                                    #{item.list_order}
+                                  </div>
+                                  <ContentIcon className="w-5 h-5 text-white/60" />
+                                </div>
+                              }
+                              trailingContent={
+                                <div className="flex items-center gap-3">
+                                  {item.status && (
+                                    <div
+                                      className={`px-3 py-1.5 rounded-full text-xs font-semibold ${
+                                        item.status === ItemStatus.COMPLETED
+                                          ? "bg-green-500/20 text-green-400 border border-green-500/30"
+                                          : "bg-white/10 text-white/80 border border-white/20"
+                                      }`}
+                                    >
+                                      {item.status === ItemStatus.COMPLETED
+                                        ? "COMPLETED"
+                                        : "PENDING"}
+                                    </div>
+                                  )}
+                                  {item.list_rating && (
+                                    <div className="text-yellow-400 text-sm font-medium">
+                                      ★ {item.list_rating}
+                                    </div>
+                                  )}
+                                </div>
+                              }
+                            />
+                          </div>
+                        );
+                      })()
+                    ) : null}
+                  </DragOverlay>
                 </DndContext>
               ) : (
                 <DndContext
                   sensors={sensors}
                   collisionDetection={closestCenter}
+                  onDragStart={handleDragStart}
+                  onDragOver={handleDragOver}
                   onDragEnd={handleDragEnd}
+                  onDragCancel={handleDragCancel}
                 >
                   <SortableContext
                     items={listItems.map((item) => item.id)}
@@ -610,13 +846,44 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
                         <ReorderableListItemCard
                           key={item.id}
                           item={item}
+                          activeId={activeId}
                           onToggleStatus={handleToggleItemStatus}
                           onDelete={(itemId: number) => setDeleteItemId(itemId)}
+                          onRateClick={() => {
+                            setRatingModalItem(item);
+                            setIsRatingModalOpen(true);
+                          }}
+                          showRatingInvitation={shouldInviteToRate(item)}
                           isReorderMode={isReorderMode}
                         />
                       ))}
                     </div>
                   </SortableContext>
+                  <DragOverlay>
+                    {activeId ? (
+                      (() => {
+                        const item = listItems.find((i) => i.id === activeId);
+                        if (!item) return null;
+
+                        return (
+                          <div className="opacity-80 shadow-2xl pointer-events-none">
+                            <ReorderableListItemCard
+                              item={item}
+                              activeId={null}
+                              onToggleStatus={handleToggleItemStatus}
+                              onDelete={(itemId: number) => setDeleteItemId(itemId)}
+                              onRateClick={() => {
+                                setRatingModalItem(item);
+                                setIsRatingModalOpen(true);
+                              }}
+                              showRatingInvitation={shouldInviteToRate(item)}
+                              isReorderMode={true}
+                            />
+                          </div>
+                        );
+                      })()
+                    ) : null}
+                  </DragOverlay>
                 </DndContext>
               )}
 
@@ -716,24 +983,19 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
                       {pendingCount}
                     </span>
                   </div>
-                  {itemCount !== "0" && (
+                  {itemCount > 0 && (
                     <div className="pt-3 border-t border-white/10">
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-white/60">Completion Rate</span>
                         <span className="text-white font-bold">
-                          {Math.round(
-                            (completedCount / parseInt(itemCount)) * 100
-                          )}
-                          %
+                          {Math.round((completedCount / itemCount) * 100)}%
                         </span>
                       </div>
                       <div className="mt-2 w-full bg-white/10 rounded-full h-2">
                         <div
                           className="bg-green-500 h-2 rounded-full transition-all"
                           style={{
-                            width: `${
-                              (completedCount / parseInt(itemCount)) * 100
-                            }%`,
+                            width: `${(completedCount / itemCount) * 100}%`,
                           }}
                         />
                       </div>
@@ -750,9 +1012,21 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
                     <User className="w-4 h-4 text-white/60 mt-0.5" />
                     <div className="flex-1">
                       <div className="text-white/60">Owner</div>
-                      <div className="text-white font-medium">
-                        {list.owner.username || list.owner.email}
-                      </div>
+                      {(() => {
+                        const { displayName, username } = formatUserDisplayNameWithUsername(list.owner);
+                        return (
+                          <>
+                            <div className="text-white font-medium">
+                              {displayName}
+                            </div>
+                            {username && (
+                              <div className="text-white/50 text-xs">
+                                @{username}
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
                   {isShared && (
@@ -786,24 +1060,27 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
                     Members
                   </h3>
                   <div className="space-y-2">
-                    {list.members.map((member) => (
-                      <div
-                        key={member.id}
-                        className="flex items-center gap-3 p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors"
-                      >
-                        <User className="w-5 h-5 text-white/60" />
-                        <div>
-                          <p className="text-white font-medium">
-                            {member.username || member.email}
-                          </p>
-                          {member.first_name && member.last_name && (
-                            <p className="text-white/60 text-sm">
-                              {member.first_name} {member.last_name}
+                    {list.members.map((member) => {
+                      const { displayName, username } = formatUserDisplayNameWithUsername(member);
+                      return (
+                        <div
+                          key={member.id}
+                          className="flex items-center gap-3 p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors"
+                        >
+                          <User className="w-5 h-5 text-white/60" />
+                          <div>
+                            <p className="text-white font-medium">
+                              {displayName}
                             </p>
-                          )}
+                            {username && (
+                              <p className="text-white/60 text-sm">
+                                @{username}
+                              </p>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -859,6 +1136,25 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
         variant="danger"
         isLoading={actionLoading}
       />
+
+      {/* Rate Item Modal */}
+      {ratingModalItem && (
+        <RateItemModal
+          isOpen={isRatingModalOpen}
+          onOpenChange={setIsRatingModalOpen}
+          onRate={handleRateItem}
+          itemTitle={
+            ratingModalItem.content_item.content_type === "SEASON" &&
+            "tv_show_name" in ratingModalItem.content_item.source_data
+              ? formatSeasonTitle(
+                  ratingModalItem.content_item.source_data.tv_show_name,
+                  ratingModalItem.content_item.source_data.title
+                )
+              : ratingModalItem.content_item.source_data?.title || "this item"
+          }
+          isLoading={actionLoading}
+        />
+      )}
     </>
   );
 }

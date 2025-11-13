@@ -33,6 +33,7 @@ interface CardProps {
   children?: React.ReactNode;
   hoverContent?: React.ReactNode;
   onHoverChange?: (isHovered: boolean) => void;
+  disableHover?: boolean;
 }
 
 interface CardFooterProps {
@@ -77,6 +78,7 @@ function Card({
   children,
   hoverContent,
   onHoverChange,
+  disableHover = false,
 }: CardProps) {
   const Icon = icon || (type ? ICON_MAP[type.toLowerCase()] || Film : Film);
   const EmptyIcon = emptyIcon || Icon;
@@ -118,15 +120,15 @@ function Card({
     }
   }, [isHovered, onHoverChange]);
 
-  // Only show hover content on desktop
-  const shouldShowHoverContent = isDesktop && hoverContent;
+  // Only show hover content on desktop and if hover is not disabled
+  const shouldShowHoverContent = isDesktop && hoverContent && !disableHover;
 
   // Update popover position when hovering or scrolling
   useEffect(() => {
     const updatePosition = () => {
       if (isHovered && cardRef.current && shouldShowHoverContent) {
         const rect = cardRef.current.getBoundingClientRect();
-        
+
         // Since we're using transform with origin 'center center',
         // we position the element at the card's position, and CSS will handle centering the scale
         setPopoverPosition({
@@ -143,7 +145,7 @@ function Card({
     if (isHovered && shouldShowHoverContent) {
       window.addEventListener('scroll', updatePosition, true);
       window.addEventListener('resize', updatePosition);
-      
+
       return () => {
         window.removeEventListener('scroll', updatePosition, true);
         window.removeEventListener('resize', updatePosition);
@@ -152,14 +154,16 @@ function Card({
   }, [isHovered, shouldShowHoverContent]);
 
   const handleMouseEnter = () => {
-    // Only enable hover on desktop
-    if (isDesktop) {
+    // Only enable hover on desktop and if hover is not disabled
+    if (isDesktop && !disableHover) {
       setIsHovered(true);
     }
   };
 
   const handleMouseLeave = () => {
-    setIsHovered(false);
+    if (!disableHover) {
+      setIsHovered(false);
+    }
   };
 
   return (
@@ -167,12 +171,14 @@ function Card({
       <motion.div
         ref={cardRef}
         key={id}
-        className={`w-full ${className}`}
+        className={`w-full ${className} ${disableHover ? 'pointer-events-none' : ''}`}
         style={noAspectRatio ? undefined : { aspectRatio: DEFAULT_CARD_ASPECT_RATIO }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
+        {...(!disableHover && {
+          onMouseEnter: handleMouseEnter,
+          onMouseLeave: handleMouseLeave,
+        })}
       >
         <motion.div 
           className="relative overflow-visible rounded-2xl h-full bg-transparent backdrop-blur-lg p-0! border-none!"
@@ -226,7 +232,7 @@ function Card({
               {/* Title section */}
               <div className="flex items-center gap-2 md:gap-3 text-white mb-1 md:mb-2">
                 <Icon className="w-4 h-4 md:w-6 md:h-6 shrink-0 drop-shadow-text" />
-                <span className="text-sm md:text-xl font-bold drop-shadow-text line-clamp-2 wrap-break-word">
+                <span className="text-sm md:text-xl font-bold drop-shadow-text line-clamp-3 wrap-break-word">
                   {title}
                 </span>
               </div>
@@ -287,7 +293,7 @@ function Card({
                 <div className="absolute bottom-0 left-0 right-0 z-10 px-4 md:px-6 pb-4 md:pb-6 pt-3 md:pt-5">
                   <div className="flex items-center gap-2 md:gap-3 text-white">
                     <Icon className="w-4 h-4 md:w-6 md:h-6 shrink-0 drop-shadow-text" />
-                    <span className="text-sm md:text-xl font-bold drop-shadow-text line-clamp-2 wrap-break-word">
+                    <span className="text-sm md:text-xl font-bold drop-shadow-text line-clamp-3 wrap-break-word">
                       {title}
                     </span>
                   </div>

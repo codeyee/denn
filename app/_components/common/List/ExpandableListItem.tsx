@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
 import ListItem from "./ListItem";
 
 interface ExpandableListItemProps {
@@ -54,25 +53,11 @@ export default function ExpandableListItem({
         imageAlt={imageAlt}
         leadingContent={leadingContent}
         imageFullHeight={imageFullHeight}
+        onClick={expandedContent ? handleToggle : undefined}
+        className={expandedContent ? "cursor-pointer" : ""}
         trailingContent={
           <div className="flex items-center gap-2">
             {trailingContent}
-            {expandedContent && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleToggle();
-                }}
-                className="text-white/60 hover:text-white transition-colors p-1"
-                aria-label={isExpanded ? "Collapse" : "Expand"}
-              >
-                {isExpanded ? (
-                  <ChevronUp className="w-5 h-5" />
-                ) : (
-                  <ChevronDown className="w-5 h-5" />
-                )}
-              </button>
-            )}
           </div>
         }
       />

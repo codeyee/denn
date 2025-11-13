@@ -78,7 +78,7 @@ export default function EpisodeCard({ episode, className = "" }: EpisodeCardProp
             {/* Title section */}
             <div className="flex items-center gap-2 md:gap-3 text-white mb-2 md:mb-3">
               <Tv className="w-5 h-5 md:w-6 md:h-6 shrink-0 drop-shadow-text" />
-              <span className="text-base md:text-lg font-bold drop-shadow-text line-clamp-2">
+              <span className="text-base md:text-lg font-bold drop-shadow-text line-clamp-3">
                 {title}
               </span>
             </div>

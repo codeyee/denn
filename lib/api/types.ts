@@ -1,3 +1,5 @@
+import type { ContentItemData } from "@/types";
+
 export interface EmailLogin {
   email: string;
   password: string;
@@ -151,15 +153,15 @@ export interface ListItem {
   id: number;
   user_list: number;
   list_order: number;
-  content_item: string;
+  content_item: ContentItemData;
   added_by: User;
   status: ItemStatus;
   added_at: string;
   completed_at: string | null;
   notes: string | null;
-  member_ratings: string;
-  list_rating: string;
-  member_rating_count: string;
+  member_ratings: unknown[];
+  list_rating: number | null;
+  member_rating_count: number;
 }
 
 export interface ListItemCreate {

@@ -2,12 +2,12 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical } from "lucide-react";
 import ExpandableListItem from "./ExpandableListItem";
 import { ReactNode } from "react";
 
 interface ReorderableListItemProps {
   id: number;
+  activeId: number | null;
   title: string;
   description?: string;
   subDescription?: string;
@@ -23,6 +23,7 @@ interface ReorderableListItemProps {
 
 export function ReorderableListItem({
   id,
+  activeId,
   isReorderMode,
   leadingContent,
   trailingContent,
@@ -34,7 +35,6 @@ export function ReorderableListItem({
     setNodeRef,
     transform,
     transition,
-    isDragging,
   } = useSortable({
     id: id,
     disabled: !isReorderMode,
@@ -42,37 +42,29 @@ export function ReorderableListItem({
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
+    transition: transition || "transform 200ms ease",
   };
 
-  // In reorder mode, show drag handle as leading content and hide trailing actions
-  const reorderLeadingContent = isReorderMode ? (
-    <div className="flex items-center gap-3">
-      <button
-        {...attributes}
-        {...listeners}
-        className="cursor-grab active:cursor-grabbing p-2 hover:bg-white/10 rounded transition-colors touch-none"
-        aria-label="Drag to reorder"
-      >
-        <GripVertical className="w-5 h-5 text-white/60" />
-      </button>
-      {leadingContent}
-    </div>
-  ) : (
-    leadingContent
-  );
-
+  // In reorder mode, hide trailing content and make entire item draggable
   const reorderTrailingContent = isReorderMode ? null : trailingContent;
 
+  const isDragging = activeId === id;
+
   return (
-    <div ref={setNodeRef} style={style}>
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...(isReorderMode ? { ...attributes, ...listeners } : {})}
+      className={`${isReorderMode && !isDragging ? "cursor-grab animate-reorder-wiggle" : ""} ${isDragging ? "cursor-grabbing opacity-0" : ""}`}
+    >
       <ExpandableListItem
         {...props}
         image={props.image ?? undefined}
         imageAlt={props.imageAlt ?? undefined}
-        leadingContent={reorderLeadingContent}
+        leadingContent={leadingContent}
         trailingContent={reorderTrailingContent}
+        // Disable expand functionality in reorder mode
+        expandedContent={isReorderMode ? undefined : props.expandedContent}
       />
     </div>
   );

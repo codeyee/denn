@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import Card from "../Card";
 import { Button } from "../../lib/button";
-import { Circle, CheckCircle, Trash2 } from "lucide-react";
+import { Circle, CheckCircle, Trash2, Star } from "lucide-react";
 import { ListItem } from "@/types";
 import {
   ItemStatus,
@@ -12,19 +12,26 @@ import {
 import { getContentTypeIcon } from "@/lib/utils/contentTypeUtils";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { formatSeasonTitle } from "@/lib/utils/titleUtils";
+import { formatUserDisplayName } from "@/lib/utils/userUtils";
 
 interface ListItemCardProps {
   item: ListItem;
   onToggleStatus: (itemId: number, currentStatus: string) => void;
   onDelete: (itemId: number) => void;
+  onRateClick?: () => void;
+  showRatingInvitation?: boolean;
   className?: string;
+  disableHover?: boolean;
 }
 
 export default function ListItemCard({
   item,
   onToggleStatus,
   onDelete,
+  onRateClick,
+  showRatingInvitation = false,
   className,
+  disableHover = false,
 }: ListItemCardProps) {
   const router = useRouter();
 
@@ -122,6 +129,7 @@ export default function ListItemCard({
         backgroundImageAlt={`${title} cover image`}
         isEmpty={!imageUrl}
         className="h-full"
+        disableHover={disableHover}
         hoverContent={
           <Card.HoverContent>
             <div className="space-y-4 text-white">
@@ -134,56 +142,63 @@ export default function ListItemCard({
                   </div>
                 )}
 
-                {/* Status and Order Info */}
+                {/* Position and Status Info */}
                 <div className="flex items-center gap-3 flex-wrap">
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-white/60">Position:</span>
                     <span className="text-sm font-semibold">#{item.list_order}</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-white/60">Status:</span>
-                    <span className={`text-sm font-semibold ${
-                      item.status === ItemStatus.COMPLETED
-                        ? 'text-green-400'
-                        : 'text-yellow-400'
-                    }`}>
-                      {item.status === ItemStatus.COMPLETED ? 'Completed' : 'Pending'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Ratings Info */}
-                {(item.list_rating || item.member_rating_count > 0) && (
-                  <div className="flex items-center gap-3 flex-wrap">
-                    {item.list_rating && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-yellow-400 text-lg">★</span>
-                        <span className="text-sm font-semibold text-yellow-400">
-                          {item.list_rating}
-                        </span>
-                      </div>
-                    )}
-                    {item.member_rating_count > 0 && (
-                      <span className="text-xs text-white/60">
-                        {item.member_rating_count} {item.member_rating_count === 1 ? 'rating' : 'ratings'}
-                      </span>
-                    )}
-                  </div>
-                )}
-
-                {/* Dates */}
-                <div className="space-y-1.5 text-xs text-white/60">
-                  <div>
-                    <span className="text-white/50">Added:</span> {formatReleaseDate(item.added_at)}
-                  </div>
-                  {item.completed_at && (
-                    <div>
-                      <span className="text-white/50">Completed:</span> {formatReleaseDate(item.completed_at)}
+                  {/* Status badge as tag component (consistent with non-hover) */}
+                  {item.status && (
+                    <div
+                      className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
+                        item.status === ItemStatus.COMPLETED
+                          ? "bg-green-500/20 text-green-400 border border-green-500/30"
+                          : "bg-white/10 text-white/80 border border-white/20"
+                      }`}
+                    >
+                      {item.status === ItemStatus.COMPLETED ? "COMPLETED" : "PENDING"}
                     </div>
                   )}
+                </div>
+
+                {/* List Item Details */}
+                <div className="space-y-2 text-xs">
+                  {/* Added by */}
                   {item.added_by && (
                     <div>
-                      <span className="text-white/50">Added by:</span> {item.added_by.username}
+                      <span className="text-white/50">Added by:</span>{" "}
+                      <span className="text-white/80">
+                        {formatUserDisplayName(item.added_by)}
+                      </span>
+                    </div>
+                  )}
+                  {/* Added on */}
+                  <div>
+                    <span className="text-white/50">Added on:</span>{" "}
+                    <span className="text-white/80">{formatReleaseDate(item.added_at)}</span>
+                  </div>
+                  {/* Completed on */}
+                  {item.completed_at && (
+                    <div>
+                      <span className="text-white/50">Completed on:</span>{" "}
+                      <span className="text-white/80">{formatReleaseDate(item.completed_at)}</span>
+                    </div>
+                  )}
+                  {/* List Rating */}
+                  {item.list_rating && (
+                    <div>
+                      <span className="text-white/50">List Rating:</span>{" "}
+                      <span className="text-yellow-400 font-medium">★ {item.list_rating}</span>
+                    </div>
+                  )}
+                  {/* Member Rating Count */}
+                  {item.member_rating_count > 0 && (
+                    <div>
+                      <span className="text-white/50">Member Ratings:</span>{" "}
+                      <span className="text-white/80">
+                        {item.member_rating_count} {item.member_rating_count === 1 ? 'rating' : 'ratings'}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -199,10 +214,35 @@ export default function ListItemCard({
                 )}
               </div>
 
+              {/* Rating Invitation */}
+              {showRatingInvitation && onRateClick && (
+                <div className="pt-2 mt-2 border-t border-white/10">
+                  <div className="bg-yellow-600/10 border border-yellow-600/30 rounded-lg p-2">
+                    <div className="flex items-center gap-2">
+                      <Star className="w-4 h-4 text-yellow-400 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-yellow-400 font-semibold text-xs">
+                          Rate this item
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onRateClick();
+                        }}
+                        className="shrink-0 bg-yellow-600 hover:bg-yellow-700 text-white cursor-pointer px-2 py-1 text-xs"
+                      >
+                        Rate
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Action Buttons */}
               <div className="flex gap-2 pt-2 border-t border-white/10">
                 <Button
-                  variant="outline"
                   size="sm"
                   onClick={(e) => {
                     e.stopPropagation();
@@ -213,7 +253,11 @@ export default function ListItemCard({
                       ? "Mark as Pending"
                       : "Mark as Completed"
                   }
-                  className="flex-1 cursor-pointer hover:bg-white/20 bg-white/10 border-white/20 transition-colors"
+                  className={`flex-1 cursor-pointer font-semibold transition-colors ${
+                    item.status === ItemStatus.COMPLETED
+                      ? "bg-white/10 hover:bg-white/20 text-white border border-white/20"
+                      : "bg-green-600 hover:bg-green-700 text-white"
+                  }`}
                 >
                   {item.status === ItemStatus.COMPLETED ? (
                     <>
@@ -222,19 +266,18 @@ export default function ListItemCard({
                     </>
                   ) : (
                     <>
-                      <CheckCircle className="w-4 h-4 mr-2 text-green-400" />
+                      <CheckCircle className="w-4 h-4 mr-2" />
                       <span className="text-xs">Mark Complete</span>
                     </>
                   )}
                 </Button>
                 <Button
-                  variant="ghost"
                   size="sm"
                   onClick={(e) => {
                     e.stopPropagation();
                     onDelete(item.id);
                   }}
-                  className="cursor-pointer bg-red-500/20 hover:bg-red-500/40 text-red-400 hover:text-red-300 transition-colors"
+                  className="cursor-pointer bg-red-600/20 hover:bg-red-600/40 text-red-400 hover:text-red-300 border border-red-600/30 transition-colors"
                   title="Remove item from list"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -279,7 +322,7 @@ export default function ListItemCard({
 
           {/* Metadata: Original Title / Authors / TV Show Name */}
           {subtitle && (
-            <div className="text-white/60 text-xs line-clamp-1">
+            <div className="text-white/60 text-xs line-clamp-3">
               {subtitle}
             </div>
           )}

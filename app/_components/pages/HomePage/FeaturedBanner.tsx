@@ -222,7 +222,7 @@ export default function FeaturedBanner({
         <div className="w-full px-4 md:px-12 pb-16 md:pb-20">
           <div className="flex items-center gap-3 mb-1 md:mb-2">
             {Icon && <Icon className="w-6 h-6 md:w-8 md:h-8 text-white/90" />}
-            <h2 className="text-white font-extrabold text-2xl sm:text-3xl md:text-5xl drop-shadow-text line-clamp-2">
+            <h2 className="text-white font-extrabold text-2xl sm:text-3xl md:text-5xl drop-shadow-text line-clamp-3">
               {current.title}
             </h2>
           </div>
@@ -250,7 +250,7 @@ export default function FeaturedBanner({
           </div>
 
           {"description" in current && current.description && (
-            <p className="mt-2 md:mt-3 text-white/90 max-w-3xl line-clamp-3 md:line-clamp-2 md:text-base font-sans text-xs">
+            <p className="mt-2 md:mt-3 text-white/90 max-w-3xl md:line-clamp-3 md:text-base font-sans text-xs">
               {current.description}
             </p>
           )}

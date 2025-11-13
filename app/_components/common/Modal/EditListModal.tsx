@@ -67,7 +67,7 @@ export default function EditListModal({
 
   // Reset form when modal opens/closes or initialData changes
   useEffect(() => {
-    if (isOpen && initialData) {
+    if (isOpen && initialData && !isLoading) {
       reset({
         name: initialData.name,
         description: initialData.description || "",
@@ -76,7 +76,7 @@ export default function EditListModal({
     } else if (!isOpen) {
       reset();
     }
-  }, [isOpen, initialData, reset]);
+  }, [isOpen, initialData, reset, isLoading]);
 
   const onSubmit = async (data: EditListFormData) => {
     try {
@@ -160,10 +160,11 @@ export default function EditListModal({
             variant="outline"
             onClick={handleClose}
             disabled={isLoading}
+            className="cursor-pointer"
           >
             Cancel
           </Button>
-          <Button type="submit" disabled={isLoading}>
+          <Button type="submit" disabled={isLoading} className="cursor-pointer">
             {isLoading ? "Updating..." : "Update List"}
           </Button>
         </div>
