@@ -22,7 +22,7 @@ import {
 } from "@dnd-kit/sortable";
 import { listActions, ratingActions } from "@/lib/api";
 import { UserListDetail, ListType, ItemStatus, Author } from "@/lib/api/types";
-import { ListItem } from "@/types";
+import { ListItem, MemberRating } from "@/types";
 import { VerticalList } from "../../common/List";
 import { ReorderableListItem } from "../../common/List/ReorderableListItem";
 import { ReorderableListItemCard } from "../../cards/ListItemCard/ReorderableListItemCard";
@@ -178,16 +178,12 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
 
   // Handle drag end
   const handleDragEnd = () => {
-    // Reset activeId and overId after drag ends
     setActiveId(null);
-    setOverId(null);
   };
 
   // Handle drag cancel
   const handleDragCancel = () => {
     setActiveId(null);
-    setOverId(null);
-    // Restore original order if in reorder mode
     if (isReorderMode && originalItems.length > 0) {
       setListItems([...originalItems]);
     }
