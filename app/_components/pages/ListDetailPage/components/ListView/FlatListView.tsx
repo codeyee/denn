@@ -5,7 +5,7 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { ListItem } from "@/types";
-import { VerticalList } from "../../../../common/List";
+import { VerticalList } from "../../../../common/lists/VerticalList";
 import { ListItemRenderer } from "../ListItemRenderer";
 
 interface FlatListViewProps {
