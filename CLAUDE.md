@@ -874,6 +874,182 @@ app/_components/
 
 ---
 
+### File and Folder Organization Rules
+
+#### CRITICAL RULE #5: Single-File Folders (FORBIDDEN)
+
+**Rule:** If a folder contains ONLY an `index.tsx` file with no other files, delete the folder and create a standalone component file instead.
+
+```typescript
+// ❌ BAD: Unnecessary folder nesting
+app/_components/cards/ContentCard/
+└── index.tsx (only file in folder)
+
+// ✅ GOOD: Flat structure for single-file components
+app/_components/cards/ContentCard.tsx
+```
+
+**When Folders Are Required:**
+- ✅ Component has multiple files (index.tsx + hooks + components + utils)
+- ✅ Component has sub-components or related files
+- ✅ Component has test files or storybook stories
+
+**When to Flatten:**
+- ❌ Folder contains ONLY index.tsx
+- ❌ No other related files exist
+- ❌ No plans to add sub-components
+
+**Examples from this project that need flattening:**
+```bash
+# Current (BAD):
+app/_components/cards/ContentCard/index.tsx
+app/_components/cards/ListCard/index.tsx
+app/_components/common/Carousel/index.tsx
+app/_components/common/Dropdown/index.tsx
+
+# Should be (GOOD):
+app/_components/cards/ContentCard.tsx
+app/_components/cards/ListCard.tsx
+app/_components/common/Carousel.tsx
+app/_components/common/Dropdown.tsx
+```
+
+**Migration Steps:**
+1. Move `ComponentFolder/index.tsx` → `ComponentFolder.tsx`
+2. Update all imports in other files
+3. Delete empty folder
+4. Verify no broken imports
+
+---
+
+#### CRITICAL RULE #6: Helper Function Organization
+
+**Rule:** If a file exports only ONE main function/component, ALL private/helper functions MUST be placed at the END of the file, after the main export.
+
+```typescript
+// ❌ BAD: Helper functions scattered throughout
+function helperA() { /* ... */ }
+
+export function MainComponent() {
+  return <div>{helperA()}</div>;
+}
+
+function helperB() { /* ... */ }
+
+// ✅ GOOD: All helpers at the end
+export function MainComponent() {
+  return <div>{helperA()}</div>;
+}
+
+function helperA() { /* ... */ }
+
+function helperB() { /* ... */ }
+```
+
+**File Organization Template:**
+```typescript
+// 1. Imports
+import { something } from 'somewhere';
+
+// 2. Type definitions (interfaces, types)
+interface Props {
+  value: string;
+}
+
+// 3. Constants (if only used in this file)
+const MAX_ITEMS = 10;
+
+// 4. Main exported function/component
+export function MainComponent({ value }: Props) {
+  const processed = processValue(value);
+  return <div>{processed}</div>;
+}
+
+// 5. Helper functions (private, not exported)
+function processValue(value: string): string {
+  return value.trim().toUpperCase();
+}
+
+function validateValue(value: string): boolean {
+  return value.length > 0;
+}
+```
+
+**Benefits:**
+- Main export is immediately visible
+- Clear separation of public API vs internal helpers
+- Easier to identify what can be extracted to utils
+- Consistent reading pattern across codebase
+
+---
+
+#### CRITICAL RULE #7: Configuration Files (AVOID)
+
+**Rule:** AVOID creating separate `config.ts` files. If configuration is used in ONLY ONE file, define it as a constant directly in that file.
+
+```typescript
+// ❌ BAD: Separate config file for single-use config
+// File: HomePage/config.ts
+export const HOME_PAGE_CONFIG = {
+  carouselCount: 6,
+  autoRotateDelay: 5000,
+};
+
+// File: HomePage/index.tsx
+import { HOME_PAGE_CONFIG } from './config';
+// Only used here, nowhere else
+
+// ✅ GOOD: Config defined where it's used
+// File: HomePage/index.tsx
+const HOME_PAGE_CONFIG = {
+  carouselCount: 6,
+  autoRotateDelay: 5000,
+} as const;
+
+export function HomePage() {
+  // Use config directly
+}
+```
+
+**When Config Files ARE Appropriate:**
+- ✅ Configuration used in 3+ files
+- ✅ Environment-specific configuration
+- ✅ Feature flags shared across features
+- ✅ API endpoints used across services
+
+**When to Inline Config:**
+- ❌ Used in only 1-2 files
+- ❌ Component-specific constants
+- ❌ Simple value mappings
+
+**Correct Locations for Shared Config:**
+```
+lib/
+├── config/
+│   ├── api.ts              # API endpoints (used everywhere)
+│   ├── features.ts         # Feature flags (used everywhere)
+│   └── environment.ts      # Env variables (used everywhere)
+└── utils/
+    ├── contentTypeUtils.ts # Content type mapping (used in 5+ files)
+    └── navigationUtils.ts  # Navigation utilities (used in 4+ files)
+```
+
+**Example of Proper Inlining:**
+```typescript
+// File: ListDetailPage/components/ListSidebar.tsx
+const GROUPING_OPTIONS = [
+  { value: 'status', label: 'Status' },
+  { value: 'type', label: 'Type' },
+  { value: 'rating', label: 'Rating' },
+] as const;
+
+export function ListSidebar() {
+  // Use GROUPING_OPTIONS here only
+}
+```
+
+---
+
 ### TypeScript Best Practices
 
 #### 1. Type Safety (STRICT)
