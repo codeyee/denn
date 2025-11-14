@@ -6,7 +6,7 @@ import { useSearchQuery } from "./hooks/useSearchQuery";
 import { useSearchResults } from "./hooks/useSearchResults";
 import { SearchInput } from "./components/SearchInput";
 import { SearchResultsSection } from "./components/SearchResultsSection";
-import { EmptyState } from "./components/EmptyState";
+import { EmptyState } from "../../common/EmptyState";
 import { LoadingCarousel } from "../../common/LoadingCarousel";
 
 export default function SearchPage() {

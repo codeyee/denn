@@ -4,8 +4,15 @@ import CreateListCard from "@/app/_components/cards/CreateListCard";
 import Carousel from "@/app/_components/common/Carousel";
 import { LoadingCarousel } from "@/app/_components/common/LoadingCarousel";
 import { Content } from "@/types";
-import { List } from "@/lib/api/types";
-import { CONTENT_SECTIONS } from "../config";
+import { UserList } from "@/lib/api/types";
+
+const CONTENT_SECTIONS = [
+  { key: 'movies', title: 'Popular Movies' },
+  { key: 'tvShows', title: 'Popular TV Shows' },
+  { key: 'games', title: 'Popular Games' },
+  { key: 'music', title: 'Popular Music' },
+  { key: 'books', title: 'Popular Books' },
+];
 
 interface ContentCarouselsProps {
   suggestions: {
@@ -15,7 +22,7 @@ interface ContentCarouselsProps {
     music: Content[];
     books: Content[];
   };
-  lists: List[];
+  lists: UserList[];
   suggestionsLoading: boolean;
   listsLoading: boolean;
   createList: (name: string) => void;
@@ -26,6 +33,34 @@ interface CarouselSectionProps {
   items: Content[];
   isLoading: boolean;
   keyPrefix: string;
+}
+
+export function ContentCarousels({
+  suggestions,
+  lists,
+  suggestionsLoading,
+  listsLoading,
+  createList,
+}: ContentCarouselsProps) {
+  return (
+    <>
+      <ListsCarousel
+        lists={lists}
+        isLoading={listsLoading}
+        createList={createList}
+      />
+
+      {CONTENT_SECTIONS.map(({ key, title }) => (
+        <CarouselSection
+          key={key}
+          title={title}
+          items={suggestions[key as keyof typeof suggestions]}
+          isLoading={suggestionsLoading}
+          keyPrefix={key}
+        />
+      ))}
+    </>
+  );
 }
 
 function CarouselSection({
@@ -60,7 +95,7 @@ function ListsCarousel({
   isLoading,
   createList,
 }: {
-  lists: List[];
+  lists: UserList[];
   isLoading: boolean;
   createList: (name: string) => void;
 }) {
@@ -72,6 +107,10 @@ function ListsCarousel({
     return null;
   }
 
+  const handleCreateList = async (name: string) => {
+    await createList(name);
+  };
+
   return (
     <section className="mb-4 md:mb-8">
       <Carousel title="Your Lists">
@@ -79,39 +118,11 @@ function ListsCarousel({
           ...lists.map((list) => <ListCard key={`list-${list.id}`} list={list} />),
           <CreateListCard
             key="create-list"
-            onCreateList={createList}
+            onCreateList={handleCreateList}
             isLoading={isLoading}
           />,
         ]}
       </Carousel>
     </section>
-  );
-}
-
-export function ContentCarousels({
-  suggestions,
-  lists,
-  suggestionsLoading,
-  listsLoading,
-  createList,
-}: ContentCarouselsProps) {
-  return (
-    <>
-      <ListsCarousel
-        lists={lists}
-        isLoading={listsLoading}
-        createList={createList}
-      />
-
-      {CONTENT_SECTIONS.map(({ key, title }) => (
-        <CarouselSection
-          key={key}
-          title={title}
-          items={suggestions[key as keyof typeof suggestions]}
-          isLoading={suggestionsLoading}
-          keyPrefix={key}
-        />
-      ))}
-    </>
   );
 }

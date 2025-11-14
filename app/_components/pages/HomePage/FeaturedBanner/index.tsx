@@ -18,12 +18,7 @@ interface FeaturedBannerProps {
   autoRotateMs?: number;
 }
 
-const DEFAULT_AUTO_ROTATE_MS = 6000;
-
-export default function FeaturedBanner({
-  items,
-  autoRotateMs = DEFAULT_AUTO_ROTATE_MS,
-}: FeaturedBannerProps) {
+export default function FeaturedBanner({ items, autoRotateMs = 5000 }: FeaturedBannerProps) {
   const router = useRouter();
 
   const validItems = useMemo(

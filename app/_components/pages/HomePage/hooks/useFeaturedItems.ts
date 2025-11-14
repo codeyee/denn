@@ -1,6 +1,31 @@
 import { useMemo } from "react";
 import { Content } from "@/types";
-import { FEATURED_BANNER_CONFIG } from "../config";
+
+const FEATURED_ITEMS_COUNT = 20;
+const  ITEMS_PER_CONTENT_TYPE = 4;
+
+interface UseFeaturedItemsParams {
+  movies: Content[];
+  tvShows: Content[];
+  games: Content[];
+  music: Content[];
+}
+
+export function useFeaturedItems({ movies, tvShows, games, music }: UseFeaturedItemsParams) {
+  const featuredItems = useMemo(() => {
+    const pool: Content[] = [
+      ...pickRandom(movies || [], ITEMS_PER_CONTENT_TYPE),
+      ...pickRandom(tvShows || [], ITEMS_PER_CONTENT_TYPE),
+      ...pickRandom(games || [], ITEMS_PER_CONTENT_TYPE),
+      ...pickRandom(music || [], ITEMS_PER_CONTENT_TYPE),
+    ];
+
+    const shuffled = shuffleArray(pool);
+    return shuffled.slice(0, FEATURED_ITEMS_COUNT);
+  }, [movies, tvShows, games, music]);
+
+  return { featuredItems };
+}
 
 function pickRandom<T>(arr: T[], n: number): T[] {
   const available = arr.slice();
@@ -23,35 +48,4 @@ function shuffleArray<T>(array: T[]): T[] {
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
   return shuffled;
-}
-
-interface UseFeaturedItemsParams {
-  movies: Content[];
-  tvShows: Content[];
-  games: Content[];
-  music: Content[];
-}
-
-export function useFeaturedItems({
-  movies,
-  tvShows,
-  games,
-  music,
-}: UseFeaturedItemsParams) {
-  const featuredItems = useMemo(() => {
-    const { ITEMS_PER_CONTENT_TYPE, FEATURED_ITEMS_COUNT } =
-      FEATURED_BANNER_CONFIG;
-
-    const pool: Content[] = [
-      ...pickRandom(movies || [], ITEMS_PER_CONTENT_TYPE),
-      ...pickRandom(tvShows || [], ITEMS_PER_CONTENT_TYPE),
-      ...pickRandom(games || [], ITEMS_PER_CONTENT_TYPE),
-      ...pickRandom(music || [], ITEMS_PER_CONTENT_TYPE),
-    ];
-
-    const shuffled = shuffleArray(pool);
-    return shuffled.slice(0, FEATURED_ITEMS_COUNT);
-  }, [movies, tvShows, games, music]);
-
-  return { featuredItems };
 }

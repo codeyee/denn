@@ -5,8 +5,8 @@ import FeaturedBanner from "./FeaturedBanner";
 import FeaturedBannerPlaceholder from "./FeaturedBannerPlaceholder";
 import { useHomeData } from "./hooks/useHomeData";
 import { useFeaturedItems } from "./hooks/useFeaturedItems";
-import { ErrorState } from "./components/ErrorState";
-import { EmptyState } from "./components/EmptyState";
+import { ErrorState } from "../../common/ErrorState";
+import { EmptyState } from "../../common/EmptyState";
 import { ContentCarousels } from "./components/ContentCarousels";
 
 export default function HomePage() {
@@ -30,10 +30,15 @@ export default function HomePage() {
   });
 
   if (hasAnyError) {
+    const errors = [
+      { label: "Content", error: suggestionsError },
+      { label: "Lists", error: listsError },
+    ];
+
     return (
       <ErrorState
-        suggestionsError={suggestionsError}
-        listsError={listsError}
+        errors={errors}
+        fullScreen
       />
     );
   }
