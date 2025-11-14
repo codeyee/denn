@@ -138,19 +138,115 @@ class SpotifyClient(CachedAPIClient):
         return {'albums': all_albums}, 200
 
     def get_new_releases(self, limit: int = 20, offset: int = 0) -> Tuple[Dict[str, Any], int]:
-        endpoint = 'browse/new-releases'
-        params = {
-            'limit': limit,
-            'offset': offset
-        }
-        return self.cached_get(
-            endpoint=endpoint,
-            cache_type='api_spotify_new_releases',
-            params=params,
-            operation='search',
-            limit=limit,
-            offset=offset
-        )
+        cache_key = self._generate_cache_key('api_spotify_new_releases', limit=limit, offset=offset)
+        cached_response = self._get_cached_response(cache_key)
+        if cached_response is not None:
+            return cached_response
+
+        try:
+            # Fetch from charts API
+            charts_url = "https://charts-spotify-com-service.spotify.com/public/v0/charts"
+            timeout = self._get_timeout('search')
+            response = requests.get(charts_url, timeout=timeout)
+            response.raise_for_status()
+            charts_data = response.json()
+
+            # Extract album entries from charts response
+            albums_list = self._parse_chart_albums(charts_data)
+
+            # Apply pagination
+            start_idx = offset
+            end_idx = offset + limit
+            paginated_albums = albums_list[start_idx:end_idx]
+
+            # Format response to match Spotify API structure
+            result = {
+                'albums': {
+                    'items': paginated_albums,
+                    'total': len(albums_list),
+                    'limit': limit,
+                    'offset': offset
+                }
+            }
+
+            # Cache the result
+            cache_timeout = self._get_cache_timeout('api_spotify_new_releases')
+            self._cache_response(cache_key, result, 200, cache_timeout)
+
+            return result, 200
+
+        except Exception as e:
+            print(f"Error fetching Spotify charts: {e}")
+            return {'albums': {'items': [], 'total': 0, 'limit': limit, 'offset': offset}}, 500
+
+    def _parse_chart_albums(self, charts_data: Dict[str, Any]) -> list[Dict[str, Any]]:
+        try:
+            # Get chartEntryViewResponses[1] which contains albums
+            chart_responses = charts_data.get('chartEntryViewResponses', [])
+            if len(chart_responses) < 2:
+                return []
+
+            albums_chart = chart_responses[1]
+            entries = albums_chart.get('entries', [])
+
+            albums = []
+            for entry in entries:
+                album_metadata = entry.get('albumMetadata', {})
+                if not album_metadata:
+                    continue
+
+                # Extract album ID from URI (format: "spotify:album:ID")
+                album_uri = album_metadata.get('albumUri', '')
+                album_id = album_uri.split(':')[-1] if album_uri else None
+                if not album_id:
+                    continue
+
+                # Convert chart format to Spotify API format
+                album = {
+                    'id': album_id,
+                    'name': album_metadata.get('albumName', ''),
+                    'album_type': 'album',  # Charts only show albums, not singles
+                    'images': [],
+                    'artists': [],
+                    'release_date': album_metadata.get('releaseDate', ''),
+                    'external_urls': {
+                        'spotify': f'https://open.spotify.com/album/{album_id}'
+                    }
+                }
+
+                # Add image if available
+                display_image = album_metadata.get('displayImageUri')
+                if display_image:
+                    album['images'] = [
+                        {'url': display_image, 'height': 640, 'width': 640},
+                        {'url': display_image, 'height': 300, 'width': 300},
+                        {'url': display_image, 'height': 64, 'width': 64}
+                    ]
+
+                # Add artists
+                artists_data = album_metadata.get('artists', [])
+                for artist in artists_data:
+                    artist_name = artist.get('name')
+                    artist_uri = artist.get('spotifyUri', '')
+                    artist_id = artist_uri.split(':')[-1] if artist_uri else None
+
+                    if artist_name:
+                        album['artists'].append({
+                            'name': artist_name,
+                            'id': artist_id,
+                            'uri': artist_uri,
+                            'external_urls': {
+                                'spotify': f'https://open.spotify.com/artist/{artist_id}'
+                            } if artist_id else {}
+                        })
+
+                albums.append(album)
+
+            return albums
+
+        except Exception as e:
+            print(f"Error parsing chart albums: {e}")
+            return []
 
     def get_featured_playlists(self, limit: int = 20, offset: int = 0) -> Tuple[Dict[str, Any], int]:
         endpoint = 'browse/featured-playlists'

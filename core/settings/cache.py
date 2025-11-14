@@ -61,7 +61,7 @@ CACHE_TIMEOUTS = {
     # Spotify (Music)
     'api_spotify_search': 3600 * 24,
     'api_spotify_details': 3600 * 48,
-    'api_spotify_new_releases': 3600 * 36,
+    'api_spotify_new_releases': 3600 * 48,
 
     # TMDB (Movies/TV)
     'api_tmdb_search': 3600 * 24,
