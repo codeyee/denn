@@ -3,7 +3,7 @@
 import { GameDetail, Platform } from "@/lib/api/types";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { formatAuthors } from "@/lib/utils/authorUtils";
-import PlatformsDisplay from "./PlatformsDisplay";
+import PlatformsDisplay from "./Platforms/PlatformsDisplay";
 
 interface GameDetailContentProps {
   game: GameDetail;
@@ -14,9 +14,8 @@ export default function GameDetailContent({ game }: GameDetailContentProps) {
 
   // Convert game platforms to the format expected by PlatformsDisplay
   // Use empty string as country code since games don't have regional platforms
-  const platformsByCountry: Record<string, Platform[]> = game.platforms && game.platforms.length > 0
-    ? { "": game.platforms }
-    : {};
+  const platformsByCountry: Record<string, Platform[]> =
+    game.platforms && game.platforms.length > 0 ? { "": game.platforms } : {};
 
   return (
     <div className="container mx-auto px-4 mt-8">
@@ -27,7 +26,9 @@ export default function GameDetailContent({ game }: GameDetailContentProps) {
         {/* Left column - Description */}
         <div className="lg:col-span-2">
           {game.description && (
-            <p className="text-gray-300 mb-6 leading-relaxed font-sans">{game.description}</p>
+            <p className="text-gray-300 mb-6 leading-relaxed font-sans">
+              {game.description}
+            </p>
           )}
 
           <div className="space-y-2">
@@ -40,7 +41,9 @@ export default function GameDetailContent({ game }: GameDetailContentProps) {
             {game.authors && game.authors.length > 0 && (
               <div>
                 <span className="text-white/60 font-bold">Developers:</span>
-                <span className="text-white ml-2 font-sans">{formatAuthors(game.authors)}</span>
+                <span className="text-white ml-2 font-sans">
+                  {formatAuthors(game.authors)}
+                </span>
               </div>
             )}
           </div>
@@ -48,7 +51,10 @@ export default function GameDetailContent({ game }: GameDetailContentProps) {
 
         {/* Right column - Where to Play */}
         <div className="lg:col-span-1">
-          <PlatformsDisplay platforms={platformsByCountry} title="Where to Play" />
+          <PlatformsDisplay
+            platforms={platformsByCountry}
+            title="Where to Play"
+          />
         </div>
       </div>
     </div>

@@ -3,7 +3,7 @@
 import { TVSeasonDetail, ContentItem, Rating } from "@/lib/api/types";
 import EpisodeCard from "@/app/_components/cards/EpisodeCard";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
-import PlatformsDisplay from "./PlatformsDisplay";
+import PlatformsDisplay from "./Platforms/PlatformsDisplay";
 import RatingsSection from "./RatingsSection";
 
 interface SeasonDetailContentProps {
@@ -44,20 +44,26 @@ export default function SeasonDetailContent({
           {/* Left column - Description */}
           <div className="lg:col-span-2">
             {season.description && (
-              <p className="text-gray-300 mb-6 leading-relaxed font-sans">{season.description}</p>
+              <p className="text-gray-300 mb-6 leading-relaxed font-sans">
+                {season.description}
+              </p>
             )}
 
             <div className="space-y-2">
               {releaseDate && (
                 <div>
                   <span className="text-white/60 font-bold">Release Date:</span>
-                  <span className="text-white ml-2 font-sans">{releaseDate}</span>
+                  <span className="text-white ml-2 font-sans">
+                    {releaseDate}
+                  </span>
                 </div>
               )}
               {season.number_of_episodes !== undefined && (
                 <div>
                   <span className="text-white/60 font-bold">Episodes:</span>
-                  <span className="text-white ml-2 font-sans">{season.number_of_episodes}</span>
+                  <span className="text-white ml-2 font-sans">
+                    {season.number_of_episodes}
+                  </span>
                 </div>
               )}
             </div>

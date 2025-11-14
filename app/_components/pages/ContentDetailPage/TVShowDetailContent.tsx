@@ -3,14 +3,17 @@
 import { TVShowDetail } from "@/lib/api/types";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { formatAuthors } from "@/lib/utils/authorUtils";
-import PlatformsDisplay from "./PlatformsDisplay";
+import PlatformsDisplay from "./Platforms/PlatformsDisplay";
 
 interface TVShowDetailContentProps {
   tvShow: TVShowDetail;
 }
 
-export default function TVShowDetailContent({ tvShow }: TVShowDetailContentProps) {
-  const status = tvShow.status === "Returning Series" ? "Currently in emission" : "Ended";
+export default function TVShowDetailContent({
+  tvShow,
+}: TVShowDetailContentProps) {
+  const status =
+    tvShow.status === "Returning Series" ? "Currently in emission" : "Ended";
   const releaseDate = formatReleaseDate(tvShow.release_date);
 
   // Get platforms grouped by country code
@@ -25,10 +28,14 @@ export default function TVShowDetailContent({ tvShow }: TVShowDetailContentProps
         {/* Left column - Description */}
         <div className="lg:col-span-2">
           {tvShow.tagline && (
-            <p className="text-white/80 italic mb-4 font-sans">"{tvShow.tagline}"</p>
+            <p className="text-white/80 italic mb-4 font-sans">
+              "{tvShow.tagline}"
+            </p>
           )}
           {tvShow.description && (
-            <p className="text-gray-300 mb-6 leading-relaxed font-sans">{tvShow.description}</p>
+            <p className="text-gray-300 mb-6 leading-relaxed font-sans">
+              {tvShow.description}
+            </p>
           )}
 
           <div className="space-y-2">
@@ -47,19 +54,25 @@ export default function TVShowDetailContent({ tvShow }: TVShowDetailContentProps
             {tvShow.number_of_seasons !== undefined && (
               <div>
                 <span className="text-white/60 font-bold">Seasons:</span>
-                <span className="text-white ml-2 font-sans">{tvShow.number_of_seasons}</span>
+                <span className="text-white ml-2 font-sans">
+                  {tvShow.number_of_seasons}
+                </span>
               </div>
             )}
             {tvShow.number_of_episodes !== undefined && (
               <div>
                 <span className="text-white/60 font-bold">Episodes:</span>
-                <span className="text-white ml-2 font-sans">{tvShow.number_of_episodes}</span>
+                <span className="text-white ml-2 font-sans">
+                  {tvShow.number_of_episodes}
+                </span>
               </div>
             )}
             {tvShow.authors && tvShow.authors.length > 0 && (
               <div>
                 <span className="text-white/60 font-bold">Production:</span>
-                <span className="text-white ml-2 font-sans">{formatAuthors(tvShow.authors)}</span>
+                <span className="text-white ml-2 font-sans">
+                  {formatAuthors(tvShow.authors)}
+                </span>
               </div>
             )}
           </div>
@@ -90,4 +103,3 @@ export default function TVShowDetailContent({ tvShow }: TVShowDetailContentProps
     </div>
   );
 }
-
