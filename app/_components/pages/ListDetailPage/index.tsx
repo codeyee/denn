@@ -9,6 +9,7 @@ import ConfirmDialog from "../../common/Modal/ConfirmDialog";
 import RateItemModal from "../../common/Modal/RateItemModal";
 import { ItemStatus } from "@/lib/api/types";
 import { ListItem, MemberRating } from "@/types";
+import { GroupBy } from "@/types/listView";
 import { formatSeasonTitle } from "@/lib/utils/titleUtils";
 import { useAuthStore } from "@/app/_stores/auth-store";
 
@@ -42,14 +43,15 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
 
   const preferences = useListPreferences(listId);
   const {
-    primaryGroup,
-    secondaryGroup,
+    groupBy,
     sortBy,
     sortOrder,
     pageSize,
     currentPage,
-    setPrimaryGroup,
-    setSecondaryGroup,
+    setGroupBy,
+    addGroupBy,
+    removeGroupBy,
+    clearGroupBy,
     setSortBy,
     setSortOrder,
     setPageSize,
@@ -76,8 +78,7 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
 
   const processedData = useListGrouping({
     listItems,
-    primaryGroup,
-    secondaryGroup,
+    groupBy,
     sortBy,
     sortOrder,
     currentPage,
@@ -102,17 +103,31 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
     };
   }, [currentUser]);
 
-  const handlePrimaryGroupChange = (group: typeof primaryGroup) => {
-    setPrimaryGroup(group);
+  // Compute primary and secondary groups from groupBy array for UI compatibility
+  const primaryGroup = groupBy[0] || "none";
+  const secondaryGroup = groupBy[1] || "none";
+
+  const handlePrimaryGroupChange = (group: GroupBy) => {
+    if (group === "none") {
+      clearGroupBy();
+    } else {
+      // Replace first group, keep rest
+      const newGroupBy = [group, ...groupBy.slice(1)];
+      setGroupBy(newGroupBy);
+    }
     setCurrentPage(1);
     pagination.resetPagination();
-    if (group === "none") {
-      setSecondaryGroup("none");
-    }
   };
 
-  const handleSecondaryGroupChange = (group: typeof secondaryGroup) => {
-    setSecondaryGroup(group);
+  const handleSecondaryGroupChange = (group: GroupBy) => {
+    if (group === "none") {
+      // Remove secondary group, keep only primary
+      setGroupBy(groupBy.slice(0, 1));
+    } else {
+      // Set or replace secondary group
+      const newGroupBy = [groupBy[0] || "none", group];
+      setGroupBy(newGroupBy.filter(g => g !== "none"));
+    }
     setCurrentPage(1);
     pagination.resetPagination();
   };

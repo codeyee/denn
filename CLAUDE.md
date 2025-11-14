@@ -200,6 +200,193 @@ Required environment variables:
 
 ## CODE QUALITY GUIDELINES - MANDATORY
 
+### CRITICAL RULE #1: MINIMAL COMMENTING POLICY
+
+#### The Golden Rule of Comments
+
+**CODE MUST BE SELF-EXPLANATORY. Comments are a code smell indicating poor naming or structure.**
+
+#### When Comments Are FORBIDDEN
+
+❌ **NEVER** add comments for:
+- Variable declarations with clear names
+- Function calls that are self-explanatory
+- Simple conditionals or loops
+- Obvious return statements
+- Standard React patterns (useState, useEffect, etc.)
+- Import statements
+- Interface/type definitions with clear names
+
+**Examples of FORBIDDEN comments:**
+
+```typescript
+// ❌ BAD: Unnecessary comments
+// Set the user state
+const [user, setUser] = useState<User | null>(null);
+
+// Fetch data from API
+const data = await fetchContent(id);
+
+// Check if user is logged in
+if (user) {
+  // Navigate to dashboard
+  router.push('/dashboard');
+}
+
+// Return the component
+return <div>...</div>;
+```
+
+**Examples of GOOD self-documenting code:**
+
+```typescript
+// ✅ GOOD: No comments needed
+const [user, setUser] = useState<User | null>(null);
+const content = await fetchContent(contentId);
+const isAuthenticated = Boolean(user);
+
+if (isAuthenticated) {
+  router.push('/dashboard');
+}
+
+return <ContentCard content={content} />;
+```
+
+#### When Comments Are ALLOWED (Rare Cases Only)
+
+✅ Comments are **ONLY** acceptable for:
+
+1. **Complex algorithms or business logic**
+   ```typescript
+   // ✅ ACCEPTABLE: Explains WHY, not WHAT
+   // TMDB API requires rate limiting: max 40 requests/10 seconds
+   // We batch requests and delay to stay under this limit
+   await batchWithRateLimit(requests, { maxPerWindow: 40, windowMs: 10000 });
+   ```
+
+2. **Non-obvious workarounds or hacks**
+   ```typescript
+   // ✅ ACCEPTABLE: Explains unexpected solution
+   // Safari doesn't support IntersectionObserver with sticky elements
+   // Using scroll event as fallback for iOS devices
+   useEffect(() => {
+     if (isSafari) {
+       window.addEventListener('scroll', handleStickyScroll);
+     }
+   }, []);
+   ```
+
+3. **Performance optimizations**
+   ```typescript
+   // ✅ ACCEPTABLE: Explains performance decision
+   // Virtualization required: lists can contain 1000+ items
+   // Rendering all items causes 5+ second lag on mobile devices
+   return <VirtualizedList items={items} />;
+   ```
+
+4. **Security considerations**
+   ```typescript
+   // ✅ ACCEPTABLE: Documents security reasoning
+   // Input sanitization prevents XSS attacks via user-generated list descriptions
+   // Backend also validates, but client-side prevents most injection attempts
+   const sanitizedDescription = DOMPurify.sanitize(userInput);
+   ```
+
+5. **JSDoc for public API/reusable components** (concise only)
+   ```typescript
+   /**
+    * Reusable card component for displaying content items.
+    * Handles hover states, navigation, and external API attribution.
+    */
+   export function ContentCard({ content, variant = 'default' }: ContentCardProps) {
+     // ...
+   }
+   ```
+
+#### How to Eliminate Comments
+
+Instead of commenting, use these techniques:
+
+1. **Extract to well-named functions**
+   ```typescript
+   // ❌ BAD
+   // Calculate average rating from all user ratings
+   const avg = ratings.reduce((sum, r) => sum + r.value, 0) / ratings.length;
+
+   // ✅ GOOD
+   const averageRating = calculateAverageRating(ratings);
+
+   function calculateAverageRating(ratings: Rating[]): number {
+     if (ratings.length === 0) return 0;
+     const sum = ratings.reduce((total, rating) => total + rating.value, 0);
+     return sum / ratings.length;
+   }
+   ```
+
+2. **Use descriptive variable names**
+   ```typescript
+   // ❌ BAD
+   const d = new Date(); // Current date
+   const ms = d.getTime(); // Milliseconds since epoch
+   const s = ms / 1000; // Convert to seconds
+
+   // ✅ GOOD
+   const currentDate = new Date();
+   const millisecondsSinceEpoch = currentDate.getTime();
+   const secondsSinceEpoch = millisecondsSinceEpoch / 1000;
+   ```
+
+3. **Extract complex conditions to well-named variables**
+   ```typescript
+   // ❌ BAD
+   // Check if content is completed and rated
+   if (item.status === 'COMPLETED' && item.rating && item.rating > 0) {
+     // ...
+   }
+
+   // ✅ GOOD
+   const isCompletedAndRated = (
+     item.status === 'COMPLETED' &&
+     item.rating !== null &&
+     item.rating > 0
+   );
+
+   if (isCompletedAndRated) {
+     // ...
+   }
+   ```
+
+4. **Use TypeScript types as documentation**
+   ```typescript
+   // ❌ BAD
+   // User object containing authentication data
+   interface User {
+     id: string; // Unique identifier
+     email: string; // User's email address
+     name: string; // Display name
+   }
+
+   // ✅ GOOD
+   interface AuthenticatedUser {
+     userId: string;
+     emailAddress: string;
+     displayName: string;
+   }
+   ```
+
+#### Comment Review Checklist
+
+Before adding ANY comment, ask:
+- [ ] Can I rename variables/functions to make this clearer?
+- [ ] Can I extract this to a well-named function?
+- [ ] Can I use TypeScript types to document this?
+- [ ] Is this comment explaining WHAT (bad) or WHY (potentially good)?
+- [ ] Would this be obvious to another developer reading the code?
+
+**If you answer YES to any of the first 3 questions, DO NOT add the comment. Refactor instead.**
+
+---
+
 ### SOLID Principles (CRITICAL - ALWAYS ENFORCE)
 
 #### 1. Single Responsibility Principle (SRP) - HIGHEST PRIORITY
@@ -894,6 +1081,12 @@ Before considering any component complete, verify:
 - [ ] Keyboard navigation support
 - [ ] Focus management
 
+**Comments:**
+- [ ] No unnecessary comments
+- [ ] Code is self-documenting
+- [ ] Only complex logic has comments (rare)
+- [ ] Comments explain WHY, not WHAT
+
 **Testing Readiness:**
 - [ ] Component is easily testable
 - [ ] Logic separated from UI
@@ -1079,18 +1272,18 @@ export function useListReordering(listId: string) {
 
 ### Summary: The Golden Rules
 
-1. **NEVER** create components over 200 lines
-2. **NEVER** repeat code more than once
-3. **ALWAYS** extract complex logic to custom hooks
-4. **ALWAYS** extract reusable UI to sub-components
-5. **ALWAYS** use proper TypeScript types (never 'any')
-6. **ALWAYS** follow Single Responsibility Principle
-7. **ALWAYS** check for existing utilities before creating new ones
-8. **ALWAYS** create utility functions for shared logic
-9. **ALWAYS** use composition over inheritance
+1. **NEVER** add unnecessary comments (code must be self-explanatory)
+2. **NEVER** create components over 200 lines
+3. **NEVER** repeat code more than once
+4. **NEVER** use `any` type or type assertions
+5. **ALWAYS** extract complex logic to custom hooks
+6. **ALWAYS** extract reusable UI to sub-components
+7. **ALWAYS** use proper TypeScript types
+8. **ALWAYS** follow Single Responsibility Principle
+9. **ALWAYS** check for existing utilities before creating new ones
 10. **ALWAYS** write self-documenting code with clear names
 
-**Remember:** Clean code is not about being clever, it's about being clear and maintainable.
+**Remember:** Clean code is not about being clever, it's about being clear and maintainable. Self-documenting code eliminates the need for comments.
 
 ---
 

@@ -20,7 +20,7 @@ export default function Carousel({
   className = "",
   itemsPerView,
   gap = 16,
-  targetCardWidth = 200,
+  targetCardWidth = 250,
   disableNavigation = false,
 }: CarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
