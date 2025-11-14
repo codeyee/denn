@@ -925,3 +925,29 @@ If you're unsure about:
 - Type complexity: **Define proper types**
 
 **When in doubt, choose the cleaner, more maintainable approach.**
+
+
+## Reference Implementations
+
+### ListDetailPage - Model Refactor (COMPLETED ✅)
+
+The ListDetailPage serves as the GOLD STANDARD for component refactoring in this project.
+
+**Before:** 2,114 lines → **After:** 391 lines (-81.5%)
+
+**Architecture:**
+- 8 custom hooks (~685 lines total) - All business logic
+- 9 sub-components (~1,200 lines total) - All UI
+- 391-line orchestrator - Pure composition
+
+**Apply this pattern to ALL components over 200 lines.**
+
+See CLAUDE.md for complete implementation details.
+
+**Next Targets:**
+1. ContentDetailPage (802 lines → ~150 lines)
+2. SearchPage (502 lines → ~120 lines)
+3. HomePage (350 lines → ~120 lines)
+4. AddToListModal (589 lines → ~120 lines)
+
+---

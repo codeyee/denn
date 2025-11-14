@@ -145,24 +145,114 @@ function sortGroups(
   }
 }
 
+/**
+ * Groups items by composite attributes (e.g., "MOVIE - 5 Stars - COMPLETED")
+ * @param items - Items to group
+ * @param groupByAttrs - Array of GroupBy attributes (max 4)
+ * @returns Grouped items with composite keys
+ */
+export function groupItemsComposite(
+  items: ListItem[],
+  groupByAttrs: GroupBy[]
+): GroupedItems<ListItem>[] {
+  // No grouping
+  if (groupByAttrs.length === 0 || (groupByAttrs.length === 1 && groupByAttrs[0] === 'none')) {
+    return [{
+      groupKey: 'all',
+      groupLabel: 'All Items',
+      items,
+      count: items.length,
+      groupAttributes: [],
+    }];
+  }
+
+  // Filter out 'none' values
+  const validAttrs = groupByAttrs.filter(attr => attr !== 'none');
+  if (validAttrs.length === 0) {
+    return [{
+      groupKey: 'all',
+      groupLabel: 'All Items',
+      items,
+      count: items.length,
+      groupAttributes: [],
+    }];
+  }
+
+  // Build composite groups
+  const groups: Map<string, { items: ListItem[]; attributes: string[] }> = new Map();
+
+  items.forEach((item) => {
+    const attributes: string[] = [];
+    const labels: string[] = [];
+
+    validAttrs.forEach((groupBy) => {
+      let value: string;
+      let label: string;
+
+      switch (groupBy) {
+        case 'status':
+          value = item.status;
+          label = getStatusLabel(item.status);
+          break;
+
+        case 'content_type':
+          value = item.content_item.content_type;
+          label = getContentTypeLabel(item.content_item.content_type);
+          break;
+
+        case 'date_added':
+          value = getDateAddedLabel(item.added_at);
+          label = value;
+          break;
+
+        case 'rating':
+          value = getRatingRangeLabel(item.list_rating);
+          label = value;
+          break;
+
+        default:
+          value = 'unknown';
+          label = 'Unknown';
+      }
+
+      attributes.push(value);
+      labels.push(label);
+    });
+
+    // Create composite key and label
+    const groupKey = attributes.join(' - ');
+    const groupLabel = labels.join(' • ');
+
+    if (!groups.has(groupKey)) {
+      groups.set(groupKey, { items: [], attributes });
+    }
+    groups.get(groupKey)!.items.push(item);
+  });
+
+  // Convert to array
+  const result: GroupedItems<ListItem>[] = Array.from(groups.entries()).map(
+    ([groupKey, { items, attributes }]) => ({
+      groupKey,
+      groupLabel: groupKey,
+      items,
+      count: items.length,
+      groupAttributes: attributes,
+    })
+  );
+
+  // Sort groups alphabetically by key
+  return result.sort((a, b) => a.groupKey.localeCompare(b.groupKey));
+}
+
+// Legacy function for backwards compatibility
 export function groupItems(
   items: ListItem[],
   primaryGroup: GroupBy,
   secondaryGroup: GroupBy
 ): GroupedItems<ListItem>[] {
-  // First, apply primary grouping
-  const primaryGroups = groupItemsByCriterion(items, primaryGroup);
-
-  // If no secondary grouping or same as primary, return primary groups
-  if (secondaryGroup === 'none' || secondaryGroup === primaryGroup) {
-    return primaryGroups;
-  }
-
-  // Apply secondary grouping within each primary group
-  return primaryGroups.map((primaryGroup) => ({
-    ...primaryGroup,
-    subGroups: groupItemsByCriterion(primaryGroup.items, secondaryGroup),
-  }));
+  // Convert to composite grouping
+  const groupBy = [primaryGroup, secondaryGroup].filter(g => g !== 'none');
+  return groupItemsComposite(items, groupBy);
 }
 
 export function sortItems(
