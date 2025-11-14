@@ -7,18 +7,18 @@ interface SearchInputProps {
   onUserTyped?: () => void;
 }
 
-/**
- * Mobile search input component
- * - Auto-focuses on mobile devices
- * - Styled with backdrop blur and focus ring
- * - Only visible on screens below lg breakpoint
- */
 export function SearchInput({
   value,
   onChange,
   inputRef,
   onUserTyped,
 }: SearchInputProps) {
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onChange(e.target.value);
+    onUserTyped?.();
+  };
+
   return (
     <div className="lg:hidden container mx-auto px-4 mt-8 pt-24 pb-4">
       <div className="relative">
@@ -27,10 +27,7 @@ export function SearchInput({
           ref={inputRef}
           type="text"
           value={value}
-          onChange={(e) => {
-            onChange(e.target.value);
-            onUserTyped?.();
-          }}
+          onChange={handleChange}
           placeholder="Search for movies, TV shows, games..."
           className="w-full pl-12 pr-4 py-3 bg-white/10 backdrop-blur-lg border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white/40 transition-all"
         />

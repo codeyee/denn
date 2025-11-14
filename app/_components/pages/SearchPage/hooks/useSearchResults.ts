@@ -1,24 +1,7 @@
 import { useState, useEffect, useRef } from "react";
-import {
-  videoActions,
-  gameActions,
-  musicActions,
-  bookActions,
-} from "@/lib/api/actions";
-import type {
-  MovieDetail,
-  TVShowDetail,
-  GameDetail,
-  AlbumDetail,
-  BookDetail,
-} from "@/lib/api/types";
-import {
-  transformMovieResults,
-  transformTVShowResults,
-  transformGameResults,
-  transformMusicResults,
-  transformBookResults,
-} from "../utils";
+import { videoActions, gameActions, musicActions, bookActions } from "@/lib/api/actions"; 
+import type { MovieDetail, TVShowDetail, GameDetail, AlbumDetail, BookDetail } from "@/lib/api/types";
+import { transformMovieResults, transformTVShowResults, transformGameResults, transformMusicResults, transformBookResults } from "../utils";
 
 export interface SearchResults {
   movies: MovieDetail[];
@@ -43,14 +26,6 @@ const EMPTY_RESULTS: SearchResults = {
   books: [],
 };
 
-/**
- * Manages search API calls and result processing
- * Handles:
- * - Parallel API calls to all content sources
- * - Result transformation and type mapping
- * - Loading and error states
- * - Race condition prevention
- */
 export function useSearchResults(query: string): UseSearchResultsReturn {
   const [results, setResults] = useState<SearchResults>(EMPTY_RESULTS);
   const [isLoading, setIsLoading] = useState(false);
@@ -75,34 +50,13 @@ export function useSearchResults(query: string): UseSearchResultsReturn {
       setError(null);
 
       try {
-        // Parallel API calls for all content types
-        const [
-          movieResponse,
-          tvResponse,
-          gameResponse,
-          musicResponse,
-          bookResponse,
-        ] = await Promise.all([
-          videoActions.searchMovies({
-            query: searchQueryForThisRequest,
-            page_size: 20,
-          }),
-          videoActions.searchTVShows({
-            query: searchQueryForThisRequest,
-            page_size: 20,
-          }),
-          gameActions.search({
-            query: searchQueryForThisRequest,
-            page_size: 20,
-          }),
-          musicActions.search({
-            query: searchQueryForThisRequest,
-            page_size: 20,
-          }),
-          bookActions.search({
-            query: searchQueryForThisRequest,
-            page_size: 20,
-          }),
+        // Parallel API calls
+        const [movieResponse, tvResponse, gameResponse, musicResponse, bookResponse] = await Promise.all([
+          videoActions.searchMovies({ query: searchQueryForThisRequest, page_size: 20 }),
+          videoActions.searchTVShows({ query: searchQueryForThisRequest, page_size: 20 }),
+          gameActions.search({ query: searchQueryForThisRequest, page_size: 20 }),
+          musicActions.search({ query: searchQueryForThisRequest, page_size: 20 }),
+          bookActions.search({ query: searchQueryForThisRequest, page_size: 20 }),
         ]);
 
         // Check if this is still the current search (prevent race conditions)
@@ -110,7 +64,6 @@ export function useSearchResults(query: string): UseSearchResultsReturn {
           return;
         }
 
-        // Transform results to proper types
         setResults({
           movies: transformMovieResults(movieResponse.results),
           tvShows: transformTVShowResults(tvResponse.results),
@@ -121,11 +74,7 @@ export function useSearchResults(query: string): UseSearchResultsReturn {
       } catch (err) {
         // Only update error if this is still the current search
         if (currentSearchQueryRef.current === searchQueryForThisRequest) {
-          setError(
-            err instanceof Error
-              ? err.message
-              : "An error occurred while searching"
-          );
+          setError(err instanceof Error ? err.message : "An error occurred while searching");
           setResults(EMPTY_RESULTS);
         }
       } finally {
@@ -139,12 +88,13 @@ export function useSearchResults(query: string): UseSearchResultsReturn {
     performSearch();
   }, [query]);
 
-  const hasResults =
+  const hasResults = (
     results.movies.length > 0 ||
     results.tvShows.length > 0 ||
     results.games.length > 0 ||
     results.music.length > 0 ||
-    results.books.length > 0;
+    results.books.length > 0
+  );
 
   return {
     results,

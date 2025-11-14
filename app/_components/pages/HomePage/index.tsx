@@ -15,7 +15,7 @@ import { Content } from "@/types";
 
 const ITEMS_PER_CAROUSEL = undefined;
 const ITEM_TARGET_WIDTH = 250;
-const PLACEHOLDER_COUNT = 6;
+const PLACEHOLDER_COUNT = 10;
 
 export default function HomePage() {
   const {

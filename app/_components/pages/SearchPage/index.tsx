@@ -4,25 +4,12 @@ import { useRef } from "react";
 import Footer from "../../layout/Footer";
 import { useSearchQuery } from "./hooks/useSearchQuery";
 import { useSearchResults } from "./hooks/useSearchResults";
-import {
-  SearchInput,
-  SearchResultsSection,
-  LoadingSection,
-  EmptyState,
-} from "./components";
+import { SearchInput } from "./components/SearchInput";
+import { SearchResultsSection } from "./components/SearchResultsSection";
+import { EmptyState } from "./components/EmptyState";
+import { LoadingCarousel } from "../../common/LoadingCarousel";
 
-const ITEMS_PER_CAROUSEL = undefined;
-const ITEM_TARGET_WIDTH = 250;
-
-/**
- * SearchPage - Main orchestrator component
- * Responsibilities:
- * - Coordinate hooks for search query and results
- * - Render appropriate UI based on state (loading, error, results, empty)
- * - Manage layout and page structure
- */
 export default function SearchPage() {
-  // Search query management (URL sync, debouncing)
   const {
     searchQuery,
     debouncedQuery,
@@ -30,19 +17,15 @@ export default function SearchPage() {
     mobileInputRef,
   } = useSearchQuery();
 
-  // Track if user has typed for loading state logic
   const hasUserTypedRef = useRef(false);
+
   const handleUserTyped = () => {
     hasUserTypedRef.current = true;
   };
 
-  // Search results management (API calls, data transformation)
-  const { results, isLoading, error, hasResults } =
-    useSearchResults(debouncedQuery);
+  const { results, isLoading, error, hasResults } = useSearchResults(debouncedQuery);
 
-  // Determine which state to show
-  const showLoading =
-    isLoading || (searchQuery.trim() && !hasResults && !error);
+  const showLoading = isLoading || (searchQuery.trim() && !hasResults && !error);
   const showResults = !isLoading && !error && debouncedQuery.trim();
   const showInitialState = !searchQuery.trim() && !isLoading && !error;
 
@@ -70,67 +53,22 @@ export default function SearchPage() {
         {/* Loading State with Placeholders */}
         {showLoading && (
           <>
-            <LoadingSection
-              title="Movies"
-              itemsPerView={ITEMS_PER_CAROUSEL}
-              targetCardWidth={ITEM_TARGET_WIDTH}
-            />
-            <LoadingSection
-              title="TV Shows"
-              itemsPerView={ITEMS_PER_CAROUSEL}
-              targetCardWidth={ITEM_TARGET_WIDTH}
-            />
-            <LoadingSection
-              title="Games"
-              itemsPerView={ITEMS_PER_CAROUSEL}
-              targetCardWidth={ITEM_TARGET_WIDTH}
-            />
-            <LoadingSection
-              title="Music"
-              itemsPerView={ITEMS_PER_CAROUSEL}
-              targetCardWidth={ITEM_TARGET_WIDTH}
-            />
-            <LoadingSection
-              title="Books"
-              itemsPerView={ITEMS_PER_CAROUSEL}
-              targetCardWidth={ITEM_TARGET_WIDTH}
-            />
+            <LoadingCarousel title="Movies" />
+            <LoadingCarousel title="TV Shows" />
+            <LoadingCarousel title="Games" />
+            <LoadingCarousel title="Music" />
+            <LoadingCarousel title="Books" />
           </>
         )}
 
         {/* Results Section */}
         {showResults && (
           <>
-            <SearchResultsSection
-              title="Movies"
-              items={results.movies}
-              itemsPerView={ITEMS_PER_CAROUSEL}
-              targetCardWidth={ITEM_TARGET_WIDTH}
-            />
-            <SearchResultsSection
-              title="TV Shows"
-              items={results.tvShows}
-              itemsPerView={ITEMS_PER_CAROUSEL}
-              targetCardWidth={ITEM_TARGET_WIDTH}
-            />
-            <SearchResultsSection
-              title="Games"
-              items={results.games}
-              itemsPerView={ITEMS_PER_CAROUSEL}
-              targetCardWidth={ITEM_TARGET_WIDTH}
-            />
-            <SearchResultsSection
-              title="Music"
-              items={results.music}
-              itemsPerView={ITEMS_PER_CAROUSEL}
-              targetCardWidth={ITEM_TARGET_WIDTH}
-            />
-            <SearchResultsSection
-              title="Books"
-              items={results.books}
-              itemsPerView={ITEMS_PER_CAROUSEL}
-              targetCardWidth={ITEM_TARGET_WIDTH}
-            />
+            <SearchResultsSection title="Movies" items={results.movies} />
+            <SearchResultsSection title="TV Shows" items={results.tvShows} />
+            <SearchResultsSection title="Games" items={results.games} />
+            <SearchResultsSection title="Music" items={results.music} />
+            <SearchResultsSection title="Books" items={results.books} />
 
             {/* No Results State */}
             {!hasResults && <EmptyState type="no-results" query={debouncedQuery} />}

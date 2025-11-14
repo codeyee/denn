@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 
-const SEARCH_DEBOUNCE_MS = 300;
+const SEARCH_DEBOUNCE_MS = 500;
 const PREV_PAGE_KEY = "denn_search_prev_page";
 
 interface UseSearchQueryReturn {
@@ -12,14 +12,6 @@ interface UseSearchQueryReturn {
   mobileInputRef: React.RefObject<HTMLInputElement>;
 }
 
-/**
- * Manages search query state with URL synchronization and debouncing
- * Handles:
- * - Reading query from URL params
- * - Debouncing user input
- * - Syncing query to URL
- * - Navigation back when query is cleared
- */
 export function useSearchQuery(): UseSearchQueryReturn {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -31,7 +23,6 @@ export function useSearchQuery(): UseSearchQueryReturn {
   const hasUserTypedRef = useRef(false);
   const mobileInputRef = useRef<HTMLInputElement>(null);
 
-  // Initialize from URL params
   useEffect(() => {
     const queryFromUrl = searchParams.get("q") || "";
     setSearchQuery(queryFromUrl);
@@ -78,7 +69,7 @@ export function useSearchQuery(): UseSearchQueryReturn {
     const queryFromUrl = searchParams.get("q") || "";
     const timer = setTimeout(() => {
       setDebouncedQuery(queryFromUrl);
-    }, 500); // Longer delay for actual search
+    }, SEARCH_DEBOUNCE_MS);
 
     return () => clearTimeout(timer);
   }, [searchParams]);
@@ -97,6 +88,6 @@ export function useSearchQuery(): UseSearchQueryReturn {
     debouncedQuery,
     setSearchQuery,
     hasUserTyped: hasUserTypedRef.current,
-    mobileInputRef,
+    mobileInputRef: mobileInputRef as React.RefObject<HTMLInputElement>,
   };
-}
+};
