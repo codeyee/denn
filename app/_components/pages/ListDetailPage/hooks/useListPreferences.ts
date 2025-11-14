@@ -1,22 +1,24 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   GroupBy,
   SortBy,
   SortOrder,
   PageSize,
   DEFAULT_LIST_VIEW_PREFERENCES,
+  MAX_GROUPING_ATTRIBUTES,
 } from "@/types/listView";
 import { loadPreferences, savePreferences } from "../utils";
 
 interface UseListPreferencesReturn {
-  primaryGroup: GroupBy;
-  secondaryGroup: GroupBy;
+  groupBy: GroupBy[];
   sortBy: SortBy;
   sortOrder: SortOrder;
   pageSize: PageSize;
   currentPage: number;
-  setPrimaryGroup: (group: GroupBy) => void;
-  setSecondaryGroup: (group: GroupBy) => void;
+  setGroupBy: (groupBy: GroupBy[]) => void;
+  addGroupBy: (group: GroupBy) => void;
+  removeGroupBy: (index: number) => void;
+  clearGroupBy: () => void;
   setSortBy: (sortBy: SortBy) => void;
   setSortOrder: (order: SortOrder) => void;
   setPageSize: (size: PageSize) => void;
@@ -24,11 +26,8 @@ interface UseListPreferencesReturn {
 }
 
 export function useListPreferences(listId: number): UseListPreferencesReturn {
-  const [primaryGroup, setPrimaryGroup] = useState<GroupBy>(
-    DEFAULT_LIST_VIEW_PREFERENCES.primaryGroup
-  );
-  const [secondaryGroup, setSecondaryGroup] = useState<GroupBy>(
-    DEFAULT_LIST_VIEW_PREFERENCES.secondaryGroup
+  const [groupBy, setGroupBy] = useState<GroupBy[]>(
+    DEFAULT_LIST_VIEW_PREFERENCES.groupBy
   );
   const [sortBy, setSortBy] = useState<SortBy>(
     DEFAULT_LIST_VIEW_PREFERENCES.sortBy
@@ -43,36 +42,79 @@ export function useListPreferences(listId: number): UseListPreferencesReturn {
     DEFAULT_LIST_VIEW_PREFERENCES.currentPage
   );
 
+  // Load preferences on mount or when listId changes
   useEffect(() => {
     const preferences = loadPreferences(listId);
-    setPrimaryGroup(preferences.primaryGroup);
-    setSecondaryGroup(preferences.secondaryGroup);
+
+    // Backwards compatibility: convert old primaryGroup/secondaryGroup to groupBy array
+    if ('primaryGroup' in preferences && 'secondaryGroup' in preferences) {
+      const legacy = preferences as any;
+      const groupByArray: GroupBy[] = [];
+
+      if (legacy.primaryGroup && legacy.primaryGroup !== 'none') {
+        groupByArray.push(legacy.primaryGroup);
+      }
+      if (legacy.secondaryGroup && legacy.secondaryGroup !== 'none') {
+        groupByArray.push(legacy.secondaryGroup);
+      }
+
+      setGroupBy(groupByArray);
+    } else {
+      setGroupBy(preferences.groupBy || []);
+    }
+
     setSortBy(preferences.sortBy);
     setSortOrder(preferences.sortOrder);
     setCurrentPage(preferences.currentPage);
     setPageSize(preferences.pageSize);
   }, [listId]);
 
+  // Save preferences whenever they change
   useEffect(() => {
     savePreferences(listId, {
-      primaryGroup,
-      secondaryGroup,
+      groupBy,
       sortBy,
       sortOrder,
       currentPage,
       pageSize,
     });
-  }, [listId, primaryGroup, secondaryGroup, sortBy, sortOrder, currentPage, pageSize]);
+  }, [listId, groupBy, sortBy, sortOrder, currentPage, pageSize]);
+
+  // Add a grouping attribute
+  const addGroupBy = useCallback((group: GroupBy) => {
+    setGroupBy((prev) => {
+      // Don't add if already present or at max limit
+      if (prev.includes(group) || prev.length >= MAX_GROUPING_ATTRIBUTES) {
+        return prev;
+      }
+      // Don't add 'none'
+      if (group === 'none') {
+        return prev;
+      }
+      return [...prev, group];
+    });
+  }, []);
+
+  // Remove a grouping attribute by index
+  const removeGroupBy = useCallback((index: number) => {
+    setGroupBy((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
+  // Clear all grouping
+  const clearGroupBy = useCallback(() => {
+    setGroupBy([]);
+  }, []);
 
   return {
-    primaryGroup,
-    secondaryGroup,
+    groupBy,
     sortBy,
     sortOrder,
     pageSize,
     currentPage,
-    setPrimaryGroup,
-    setSecondaryGroup,
+    setGroupBy,
+    addGroupBy,
+    removeGroupBy,
+    clearGroupBy,
     setSortBy,
     setSortOrder,
     setPageSize,
