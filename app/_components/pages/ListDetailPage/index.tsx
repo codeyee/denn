@@ -56,7 +56,7 @@ import {
 } from "lucide-react";
 import {
   getContentTypeIcon,
-} from "@/lib/utils/contentTypeUtils";
+} from "@/lib/utils/contentTypeIcons";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { formatSeasonTitle } from "@/lib/utils/titleUtils";
 import { formatUserDisplayNameWithUsername } from "@/lib/utils/userUtils";

@@ -9,7 +9,7 @@ import {
 } from "@/lib/api/types";
 import { getLegacyImageUrl } from "@/lib/utils/imageUtils";
 import { formatAuthors } from "@/lib/utils/authorUtils";
-import { CONTENT_TYPE_ICONS } from "@/lib/utils/contentTypeUtils";
+import { CONTENT_TYPE_ICONS } from "@/lib/utils/contentTypeIcons";
 import { formatSeasonTitle } from "@/lib/utils/titleUtils";
 import { buildContentUrl } from "@/lib/utils/navigationUtils";
 import { Button } from "@/app/_components/lib/button";

@@ -9,7 +9,7 @@ import {
   ItemStatus,
   Author,
 } from "@/lib/api/types";
-import { getContentTypeIcon } from "@/lib/utils/contentTypeUtils";
+import { getContentTypeIcon } from "@/lib/utils/contentTypeIcons";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { formatSeasonTitle } from "@/lib/utils/titleUtils";
 import { formatUserDisplayName } from "@/lib/utils/userUtils";
