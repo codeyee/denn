@@ -1,4 +1,4 @@
-import Card from "../Card";
+import Card from "./Card";
 import { LucideIcon } from "lucide-react";
 import { Provider } from "@/app/api/cards/lib/contentTypeDefinitions";
 
