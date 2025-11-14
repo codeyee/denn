@@ -86,3 +86,5 @@ export interface ListItem {
 }
 
 export type ListWithItems = UserList & { items?: ListItem[] };
+
+export type { MemberRating };
