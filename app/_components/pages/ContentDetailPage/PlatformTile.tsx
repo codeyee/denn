@@ -1,18 +1,21 @@
 "use client";
 
 import { Platform } from "@/lib/api/types";
+import { getPlatformImageUrl } from "@/lib/utils/platformImageOverrides";
 
 interface PlatformTileProps {
   platform: Platform;
 }
 
 export default function PlatformTile({ platform }: PlatformTileProps) {
+  const imageUrl = getPlatformImageUrl(platform.title, platform.image_url);
+
   return (
     <div className="flex flex-col items-center gap-2">
       <div className="relative w-14 h-14 rounded-lg overflow-hidden bg-white/10">
-        {platform.image_url && (
+        {imageUrl && (
           <img
-            src={platform.image_url}
+            src={imageUrl}
             alt={platform.title}
             className="w-full h-full object-cover"
           />
