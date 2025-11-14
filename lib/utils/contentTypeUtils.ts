@@ -1,66 +1,50 @@
 import { ContentType, SourceApi } from "@/lib/api/types";
 
 /**
- * Content type configuration mapping
- * Maps content types to their source APIs and provides centralized configuration
+ * Configuration mapping content types to their source APIs
+ * This eliminates duplication of source API mapping logic across components
  */
 export const CONTENT_TYPE_CONFIG: Record<
   ContentType,
   {
     sourceApi: SourceApi;
-    contentType: ContentType;
-    label: string;
-    pluralLabel: string;
+    displayName: string;
   }
 > = {
   [ContentType.MOVIE]: {
     sourceApi: SourceApi.TMDB,
-    contentType: ContentType.MOVIE,
-    label: "Movie",
-    pluralLabel: "Movies",
+    displayName: "Movie",
   },
   [ContentType.TV_SHOW]: {
     sourceApi: SourceApi.TMDB,
-    contentType: ContentType.TV_SHOW,
-    label: "TV Show",
-    pluralLabel: "TV Shows",
+    displayName: "TV Show",
   },
   [ContentType.SEASON]: {
     sourceApi: SourceApi.TMDB,
-    contentType: ContentType.SEASON,
-    label: "Season",
-    pluralLabel: "Seasons",
+    displayName: "Season",
   },
   [ContentType.GAME]: {
     sourceApi: SourceApi.IGDB,
-    contentType: ContentType.GAME,
-    label: "Game",
-    pluralLabel: "Games",
+    displayName: "Game",
   },
   [ContentType.ALBUM]: {
     sourceApi: SourceApi.SPOTIFY,
-    contentType: ContentType.ALBUM,
-    label: "Album",
-    pluralLabel: "Albums",
+    displayName: "Album",
   },
   [ContentType.BOOK]: {
     sourceApi: SourceApi.OPENLIBRARY,
-    contentType: ContentType.BOOK,
-    label: "Book",
-    pluralLabel: "Books",
+    displayName: "Book",
   },
   [ContentType.PERSON]: {
     sourceApi: SourceApi.TMDB,
-    contentType: ContentType.PERSON,
-    label: "Person",
-    pluralLabel: "People",
+    displayName: "Person",
   },
 };
 
 /**
  * Get the source API for a given content type
- * @param type - Content type string
- * @returns Source API enum value
+ * @param type - Content type (can be string or ContentType enum)
+ * @returns SourceApi enum value, defaults to TMDB if type is unknown
  */
 export function getSourceApi(type: string | ContentType): SourceApi {
   const contentType = type as ContentType;
@@ -68,43 +52,35 @@ export function getSourceApi(type: string | ContentType): SourceApi {
 }
 
 /**
- * Get the ContentType enum from a string
- * @param type - Content type string
- * @returns ContentType enum value
+ * Get the display name for a content type
+ * @param type - Content type (can be string or ContentType enum)
+ * @returns Human-readable display name
  */
-export function getContentType(type: string): ContentType {
-  const contentType = type as ContentType;
-  return CONTENT_TYPE_CONFIG[contentType]?.contentType ?? ContentType.MOVIE;
-}
-
-/**
- * Get the human-readable label for a content type
- * @param type - Content type
- * @param plural - Whether to return plural form
- * @returns Human-readable label
- */
-export function getContentTypeLabel(
-  type: ContentType,
-  plural: boolean = false
+export function getContentTypeDisplayName(
+  type: string | ContentType
 ): string {
-  const config = CONTENT_TYPE_CONFIG[type];
-  if (!config) return type;
-  return plural ? config.pluralLabel : config.label;
+  const contentType = type as ContentType;
+  return CONTENT_TYPE_CONFIG[contentType]?.displayName ?? type;
 }
 
 /**
  * Check if a content type is valid
- * @param type - Content type string
- * @returns True if valid content type
+ * @param type - Content type to check
+ * @returns true if the content type is valid
  */
 export function isValidContentType(type: string): type is ContentType {
   return type in CONTENT_TYPE_CONFIG;
 }
 
 /**
- * Get all available content types
- * @returns Array of all ContentType values
+ * Get all content types for a specific source API
+ * @param sourceApi - Source API to filter by
+ * @returns Array of ContentType values
  */
-export function getAllContentTypes(): ContentType[] {
-  return Object.keys(CONTENT_TYPE_CONFIG) as ContentType[];
+export function getContentTypesBySourceApi(
+  sourceApi: SourceApi
+): ContentType[] {
+  return Object.entries(CONTENT_TYPE_CONFIG)
+    .filter(([_, config]) => config.sourceApi === sourceApi)
+    .map(([type, _]) => type as ContentType);
 }
