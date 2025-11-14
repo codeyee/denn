@@ -26,7 +26,7 @@ import AddToListModal from "@/app/_components/common/modals/AddToListModal";
 import { Star } from "lucide-react";
 import Footer from "../../layout/Footer";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
-import { VerticalList } from "@/app/_components/common/List";
+import { VerticalList } from "@/app/_components/common/lists/VerticalList";
 import TrackListItem from "@/app/_components/common/lists/TrackListItem";
 import Carousel from "@/app/_components/common/ui/Carousel";
 import ContentCard from "@/app/_components/cards/ContentCard";
