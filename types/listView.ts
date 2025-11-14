@@ -21,8 +21,7 @@ export type SortOrder = 'asc' | 'desc';
 export type PageSize = 10 | 20 | 50 | 'all';
 
 export interface ListViewPreferences {
-  primaryGroup: GroupBy;
-  secondaryGroup: GroupBy;
+  groupBy: GroupBy[];  // Composite grouping: up to 4 attributes
   sortBy: SortBy;
   sortOrder: SortOrder;
   pageSize: PageSize;
@@ -30,20 +29,22 @@ export interface ListViewPreferences {
 }
 
 export const DEFAULT_LIST_VIEW_PREFERENCES: ListViewPreferences = {
-  primaryGroup: 'none',
-  secondaryGroup: 'none',
+  groupBy: [],  // No grouping by default
   sortBy: 'list_order',
   sortOrder: 'asc',
   pageSize: 20,
   currentPage: 1,
 };
 
+// Maximum number of grouping attributes for performance
+export const MAX_GROUPING_ATTRIBUTES = 4;
+
 export interface GroupedItems<T> {
-  groupKey: string;
-  groupLabel: string;
+  groupKey: string;        // Composite key: "MOVIE-5 Stars-COMPLETED"
+  groupLabel: string;      // Human-readable label
   items: T[];
   count: number;
-  subGroups?: GroupedItems<T>[];
+  groupAttributes: string[]; // Individual attribute values for this group
 }
 
 export interface PaginatedResult<T> {
