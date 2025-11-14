@@ -11,6 +11,7 @@ import { getLegacyImageUrl } from "@/lib/utils/imageUtils";
 import { formatAuthors } from "@/lib/utils/authorUtils";
 import { CONTENT_TYPE_ICONS } from "@/lib/utils/contentTypeUtils";
 import { formatSeasonTitle } from "@/lib/utils/titleUtils";
+import { buildContentUrl } from "@/lib/utils/navigationUtils";
 import { Button } from "@/app/_components/lib/button";
 import { ListPlus, Star } from "lucide-react";
 import { Content } from "@/types";
@@ -77,13 +78,11 @@ export default function ContentBanner({
     const [tvId] = externalId.split(":");
     if (!tvId) return null;
 
-    const params = new URLSearchParams({
-      external_id: tvId,
-      source_api: String(sourceApi).toLowerCase(),
-      content_type: ContentType.TV_SHOW,
+    return buildContentUrl({
+      externalId: tvId,
+      sourceApi: sourceApi as SourceApi,
+      contentType: ContentType.TV_SHOW,
     });
-
-    return `/content?${params.toString()}`;
   };
 
   const tvShowUrl = getTVShowUrl();
