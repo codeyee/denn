@@ -9,10 +9,12 @@ import {
   ItemStatus,
   Author,
 } from "@/lib/api/types";
-import { getContentTypeIcon } from "@/lib/utils/contentTypeUtils";
+import { getContentTypeIcon } from "@/lib/utils/contentTypeIcons";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { formatSeasonTitle } from "@/lib/utils/titleUtils";
 import { formatUserDisplayName } from "@/lib/utils/userUtils";
+import { buildContentUrl } from "@/lib/utils/navigationUtils";
+import { StatusBadge } from "@/app/_components/common/StatusBadge";
 
 interface ListItemCardProps {
   item: ListItem;
@@ -57,12 +59,11 @@ export default function ListItemCard({
     e.stopPropagation();
 
     // Navigate to content detail page
-    const params = new URLSearchParams({
-      external_id: String(contentItem.external_id),
-      source_api: contentItem.source_api,
-      content_type: contentItem.content_type,
+    const url = buildContentUrl({
+      externalId: String(contentItem.external_id),
+      sourceApi: contentItem.source_api,
+      contentType: contentItem.content_type,
     });
-    const url = `/content?${params.toString()}`;
 
     // Check for Ctrl/Cmd+click to open in new tab
     const isModifierClick = e.ctrlKey || e.metaKey;
@@ -150,15 +151,7 @@ export default function ListItemCard({
                   </div>
                   {/* Status badge as tag component (consistent with non-hover) */}
                   {item.status && (
-                    <div
-                      className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
-                        item.status === ItemStatus.COMPLETED
-                          ? "bg-green-500/20 text-green-400 border border-green-500/30"
-                          : "bg-white/10 text-white/80 border border-white/20"
-                      }`}
-                    >
-                      {item.status === ItemStatus.COMPLETED ? "COMPLETED" : "PENDING"}
-                    </div>
+                    <StatusBadge status={item.status} size="sm" />
                   )}
                 </div>
 
@@ -290,15 +283,10 @@ export default function ListItemCard({
         {/* Status Badge - Positioned absolutely over the card image */}
         {item.status && (
           <div className="absolute top-3 right-3 z-20">
-            <div
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold backdrop-blur-sm ${
-                item.status === ItemStatus.COMPLETED
-                  ? "bg-green-500/80 text-white border border-green-400/50"
-                  : "bg-white/20 text-white border border-white/30"
-              }`}
-            >
-              {item.status === ItemStatus.COMPLETED ? "COMPLETED" : "PENDING"}
-            </div>
+            <StatusBadge
+              status={item.status}
+              className="backdrop-blur-sm"
+            />
           </div>
         )}
 

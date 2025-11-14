@@ -19,6 +19,8 @@ import { getLegacyImageUrl } from "@/lib/utils/imageUtils";
 import Noise from "@/app/_components/lib/Animations/Noise";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { Content } from "@/types";
+import { getSourceApi } from "@/lib/utils/contentTypeUtils";
+import { navigateToContent } from "@/lib/utils/navigationUtils";
 
 type FeaturedBannerProps = {
   items: Content[];
@@ -40,40 +42,15 @@ export default function FeaturedBanner({
   const router = useRouter();
 
   const handleViewDetails = (item: Content) => {
-    let sourceApi: SourceApi | undefined;
-    let contentType: ContentType | undefined;
-    let externalId: string | number | undefined;
+    const contentType = item.type as ContentType;
+    const sourceApi = getSourceApi(contentType);
+    const externalId = String(item.id);
 
-    if (item.type === "MOVIE") {
-      sourceApi = SourceApi.TMDB;
-      contentType = ContentType.MOVIE;
-      externalId = String(item.id);
-    } else if (item.type === "TV_SHOW") {
-      sourceApi = SourceApi.TMDB;
-      contentType = ContentType.TV_SHOW;
-      externalId = String(item.id);
-    } else if (item.type === "ALBUM") {
-      sourceApi = SourceApi.SPOTIFY;
-      contentType = ContentType.ALBUM;
-      externalId = String(item.id);
-    } else if (item.type === "GAME") {
-      sourceApi = SourceApi.IGDB;
-      contentType = ContentType.GAME;
-      externalId = String(item.id);
-    } else if (item.type === "BOOK") {
-      sourceApi = SourceApi.OPENLIBRARY;
-      contentType = ContentType.BOOK;
-      externalId = String(item.id);
-    }
-
-    if (sourceApi && contentType && externalId) {
-      const params = new URLSearchParams({
-        external_id: String(externalId),
-        source_api: String(sourceApi),
-        content_type: String(contentType),
-      });
-      router.push(`/content?${params.toString()}`);
-    }
+    navigateToContent(router, {
+      externalId,
+      sourceApi,
+      contentType,
+    });
   };
 
   const getBestImageUrl = (item: Content): string | undefined => {

@@ -16,6 +16,8 @@ import { Content } from "@/types";
 import { Plus } from "lucide-react";
 import { Button } from "@/app/_components/lib/button";
 import AddToListModal from "@/app/_components/common/Modal/AddToListModal";
+import { getSourceApi } from "@/lib/utils/contentTypeUtils";
+import { buildContentUrl } from "@/lib/utils/navigationUtils";
 
 interface ContentCardProps {
   item: Content;
@@ -28,49 +30,18 @@ export default function ContentCard({ item, className }: ContentCardProps) {
   const [isAddToListModalOpen, setIsAddToListModalOpen] = useState(false);
 
   const getNavigationUrl = (): string | null => {
-    let sourceApi: SourceApi | undefined;
-    let contentType: ContentType | undefined;
-    let externalId: string | undefined;
+    try {
+      const contentType = item.type as ContentType;
+      const sourceApi = getSourceApi(contentType);
+      const externalId = String(item.id);
 
-    if (item.type === "MOVIE") {
-      sourceApi = SourceApi.TMDB;
-      contentType = ContentType.MOVIE;
-      externalId = String(item.id);
-    } else if (item.type === "TV_SHOW") {
-      sourceApi = SourceApi.TMDB;
-      contentType = ContentType.TV_SHOW;
-      externalId = String(item.id);
-    } else if (item.type === "ALBUM") {
-      sourceApi = SourceApi.SPOTIFY;
-      contentType = ContentType.ALBUM;
-      externalId = String(item.id);
-    } else if (item.type === "GAME") {
-      sourceApi = SourceApi.IGDB;
-      contentType = ContentType.GAME;
-      externalId = String(item.id);
-    } else if (item.type === "BOOK") {
-      sourceApi = SourceApi.OPENLIBRARY;
-      contentType = ContentType.BOOK;
-      externalId = String(item.id);
-    } else if (item.type === "SEASON") {
-      sourceApi = SourceApi.TMDB;
-      contentType = ContentType.SEASON;
-      externalId = String(item.id);
-    }
-
-    if (sourceApi && contentType && externalId) {
-      const params = new URLSearchParams({
-        external_id: externalId,
-        source_api: sourceApi,
-        content_type: contentType,
-      });
-      return `/content?${params.toString()}`;
-    } else {
-      console.error("Missing required parameters:", {
+      return buildContentUrl({
+        externalId,
         sourceApi,
         contentType,
-        externalId,
       });
+    } catch (error) {
+      console.error("Failed to build navigation URL:", error);
       return null;
     }
   };
