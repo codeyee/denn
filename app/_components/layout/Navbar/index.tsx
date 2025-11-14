@@ -15,7 +15,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-} from "@/app/_components/common/Dropdown";
+} from "@/app/_components/common/ui/Dropdown";
 import { useSettings } from "@/app/_hooks/useSettings";
 
 const SEARCH_DEBOUNCE_MS = 300;

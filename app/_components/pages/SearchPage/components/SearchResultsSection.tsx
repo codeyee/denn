@@ -1,5 +1,5 @@
 import ContentCard from "../../../cards/ContentCard";
-import Carousel from "../../../common/Carousel";
+import Carousel from "../../../common/ui/Carousel";
 import type {
   MovieDetail,
   TVShowDetail,

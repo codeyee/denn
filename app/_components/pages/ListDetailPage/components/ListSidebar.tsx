@@ -14,7 +14,7 @@ import {
 import { UserListDetail, ListType } from "@/lib/api/types";
 import { GroupBy, SortBy } from "@/types/listView";
 import { Button } from "../../../lib/button";
-import { Select } from "../../../common/Select";
+import { Select } from "../../../common/ui/Select";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { formatUserDisplayNameWithUsername } from "@/lib/utils/userUtils";
 

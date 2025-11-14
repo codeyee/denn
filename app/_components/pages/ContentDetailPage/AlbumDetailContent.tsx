@@ -2,7 +2,7 @@
 
 import { AlbumDetail, Track } from "@/lib/api/types";
 import { VerticalList } from "@/app/_components/common/List";
-import TrackListItem from "@/app/_components/common/List/TrackListItem";
+import TrackListItem from "@/app/_components/common/lists/TrackListItem";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { getAuthorNames } from "@/lib/utils/authorUtils";
 

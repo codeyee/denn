@@ -14,7 +14,7 @@ import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { formatSeasonTitle } from "@/lib/utils/titleUtils";
 import { formatUserDisplayName } from "@/lib/utils/userUtils";
 import { buildContentUrl } from "@/lib/utils/navigationUtils";
-import { StatusBadge } from "@/app/_components/common/StatusBadge";
+import { StatusBadge } from "@/app/_components/common/ui/StatusBadge";
 
 interface ListItemCardProps {
   item: ListItem;

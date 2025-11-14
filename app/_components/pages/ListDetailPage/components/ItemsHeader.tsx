@@ -1,7 +1,7 @@
 import { Package } from "lucide-react";
 import { GroupBy, SortOrder, PageSize } from "@/types/listView";
-import { Select } from "../../../common/Select";
-import { PaginationControls } from "../../../common/PaginationControls";
+import { Select } from "../../../common/ui/Select";
+import { PaginationControls } from "../../../common/ui/PaginationControls";
 import { ViewModeToggle } from "./ViewModeToggle";
 
 interface ItemsHeaderProps {

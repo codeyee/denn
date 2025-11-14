@@ -1,7 +1,7 @@
 import { Star } from "lucide-react";
 import { ListItem, MemberRating } from "@/types";
 import { Author, ItemStatus } from "@/lib/api/types";
-import { ReorderableListItem } from "../../../common/List/ReorderableListItem";
+import { ReorderableListItem } from "../../../common/lists/ReorderableListItem";
 import { Button } from "../../../lib/button";
 import { getContentTypeIcon } from "@/lib/utils/contentTypeIcons";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";

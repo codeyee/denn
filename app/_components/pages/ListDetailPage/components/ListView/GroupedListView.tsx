@@ -1,7 +1,7 @@
 import { ListItem } from "@/types";
 import { GroupedItems, SortOrder, PageSize } from "@/types/listView";
-import { Select } from "../../../../common/Select";
-import { PaginationControls } from "../../../../common/PaginationControls";
+import { Select } from "../../../../common/ui/Select";
+import { PaginationControls } from "../../../../common/ui/PaginationControls";
 import { VerticalList } from "../../../../common/List";
 import { ListItemRenderer } from "../ListItemRenderer";
 import { paginateGroup, paginateSubGroup, paginateSubGroups } from "../../utils";

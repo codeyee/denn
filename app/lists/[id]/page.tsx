@@ -2,7 +2,7 @@
 
 import { use } from "react";
 import ListDetailPage from "@/app/_components/pages/ListDetailPage";
-import { ProtectedRoute } from "@/app/_components/common/ProtectedRoute";
+import { ProtectedRoute } from "@/app/_components/common/providers/ProtectedRoute";
 
 export default function ListPage({
   params,

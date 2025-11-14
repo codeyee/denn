@@ -5,8 +5,8 @@ import FeaturedBanner from "./FeaturedBanner";
 import FeaturedBannerPlaceholder from "./FeaturedBannerPlaceholder";
 import { useHomeData } from "./hooks/useHomeData";
 import { useFeaturedItems } from "./hooks/useFeaturedItems";
-import { ErrorState } from "../../common/ErrorState";
-import { EmptyState } from "../../common/EmptyState";
+import { ErrorState } from "../../common/state/ErrorState";
+import { EmptyState } from "../../common/state/EmptyState";
 import { ContentCarousels } from "./components/ContentCarousels";
 
 export default function HomePage() {

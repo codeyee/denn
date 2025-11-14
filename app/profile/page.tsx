@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense } from "react";
-import { ProtectedRoute } from "@/app/_components/common/ProtectedRoute";
+import { ProtectedRoute } from "@/app/_components/common/providers/ProtectedRoute";
 import { useAuth } from "@/app/_hooks/useAuth";
 import { Button } from "@/app/_components/lib/button";
 import { Card } from "@/app/_components/lib/card";
