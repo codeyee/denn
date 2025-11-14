@@ -11,6 +11,7 @@ import {
   UserList,
   TVSeasonDetail,
 } from "@/lib/api/types";
+import { MemberRating } from "./listView";
 
 export type Content =
   | MovieDetail
@@ -79,7 +80,7 @@ export interface ListItem {
   added_at: string;
   completed_at: string | null;
   notes: string | null;
-  member_ratings: unknown[];
+  member_ratings: MemberRating[];
   list_rating: number | null;
   member_rating_count: number;
 }

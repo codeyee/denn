@@ -362,6 +362,43 @@ export function paginateSubGroup(
   };
 }
 
+export function paginateSubGroups(
+    subGroups: GroupedItems<ListItem>[],
+    subGroupPage: number,
+    pageSize: PageSize
+  ): {
+    paginatedSubGroups: GroupedItems<ListItem>[];
+    totalPages: number;
+    startIndex: number;
+    endIndex: number;
+  } {
+    const totalItems = subGroups.length;
+
+    // Handle 'all' case
+    if (pageSize === 'all') {
+      return {
+        paginatedSubGroups: subGroups,
+        totalPages: 1,
+        startIndex: 0,
+        endIndex: totalItems,
+      };
+    }
+
+    const numericPageSize = pageSize as number;
+    const totalPages = Math.max(1, Math.ceil(totalItems / numericPageSize));
+    const validPage = Math.max(1, Math.min(subGroupPage, totalPages));
+
+    const startIndex = (validPage - 1) * numericPageSize;
+    const endIndex = Math.min(startIndex + numericPageSize, totalItems);
+
+    return {
+      paginatedSubGroups: subGroups.slice(startIndex, endIndex),
+      totalPages,
+      startIndex,
+      endIndex,
+    };
+  }
+
 export function paginateGroupedItems(
   groups: GroupedItems<ListItem>[],
   currentPage: number,

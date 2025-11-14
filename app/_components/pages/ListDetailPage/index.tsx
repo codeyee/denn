@@ -9,7 +9,6 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-  DragEndEvent,
   DragStartEvent,
   DragOverEvent,
   DragOverlay,
@@ -76,8 +75,9 @@ import {
   sortItems,
   sortGroupedItems,
   paginateItems,
-  paginateGroupedItems,
   paginateGroup,
+  paginateSubGroup,
+  paginateSubGroups,
   loadPreferences,
   savePreferences,
 } from "./utils";
@@ -126,12 +126,12 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
 
   // Per-group pagination state (groupKey -> currentPage)
   const [groupPages, setGroupPages] = useState<Record<string, number>>({});
+  const [subGroupPages, setSubGroupPages] = useState<Record<string, number>>({});
 
   // Reorder state
   const [originalItems, setOriginalItems] = useState<ListItem[]>([]);
   const [reorderLoading, setReorderLoading] = useState(false);
   const [activeId, setActiveId] = useState<number | null>(null);
-  const [overId, setOverId] = useState<number | null>(null);
 
   // Store actions
   const { updateList, deleteList, deleteListItem, updateListItemStatus, reorderListItems } =
@@ -161,8 +161,6 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
     const { active, over } = event;
 
     if (over && active.id !== over.id) {
-      setOverId(over.id as number);
-
       setListItems((items) => {
         const oldIndex = items.findIndex((item) => item.id === active.id);
         const newIndex = items.findIndex((item) => item.id === over.id);
@@ -179,7 +177,7 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
   };
 
   // Handle drag end
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = () => {
     // Reset activeId and overId after drag ends
     setActiveId(null);
     setOverId(null);
@@ -320,7 +318,7 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
           // Check if user has already rated this item
           const hasUserRated = item.member_ratings &&
             Array.isArray(item.member_ratings) &&
-            item.member_ratings.some((rating: any) =>
+            item.member_ratings.some((rating: MemberRating) =>
               rating.user?.id === currentUser.id
             );
 
@@ -385,9 +383,7 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
     enterReorderMode(listId);
   };
 
-  const handleExitReorderMode = () => {
-    exitReorderMode();
-  };
+
 
   const handleCancelReorder = () => {
     setListItems([...originalItems]); // Restore original order
@@ -419,7 +415,7 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
     // Check if user has already rated this item
     const hasUserRated = item.member_ratings &&
       Array.isArray(item.member_ratings) &&
-      item.member_ratings.some((rating: any) =>
+      item.member_ratings.some((rating: MemberRating) =>
         rating.user?.id === currentUser.id
       );
 
@@ -452,12 +448,35 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
       // Apply sorting within groups
       grouped = sortGroupedItems(grouped, sortBy, sortOrder);
 
-      // Apply pagination
-      const paginated = paginateGroupedItems(grouped, currentPage, pageSize);
+      // If secondary grouping is active, paginate the primary groups
+      if (secondaryGroup !== "none") {
+        const paginated = paginateItems(grouped, currentPage, pageSize);
+        return {
+          displayItems: [],
+          groupedItems: paginated.items,
+          paginationInfo: {
+            currentPage: paginated.currentPage,
+            pageSize: paginated.pageSize,
+            totalItems: paginated.totalItems,
+            totalPages: paginated.totalPages,
+            startIndex: paginated.startIndex,
+            endIndex: paginated.endIndex,
+          },
+        };
+      }
+
+      // Apply pagination to all items if no secondary grouping
+      const allItems = grouped.flatMap(g => g.items);
+      const paginated = paginateItems(allItems, currentPage, pageSize);
+
+      // Re-group the paginated items
+      const paginatedGrouped = groupItems(paginated.items, primaryGroup, secondaryGroup);
+      const sortedPaginatedGrouped = sortGroupedItems(paginatedGrouped, sortBy, sortOrder);
+
 
       return {
         displayItems: [],
-        groupedItems: paginated.items,
+        groupedItems: sortedPaginatedGrouped,
         paginationInfo: {
           currentPage: paginated.currentPage,
           pageSize: paginated.pageSize,
@@ -500,6 +519,8 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
   const handlePrimaryGroupChange = (group: GroupBy) => {
     setPrimaryGroup(group);
     setCurrentPage(1); // Reset to first page
+    setGroupPages({});
+    setSubGroupPages({});
     // If switching to "none", also reset secondary
     if (group === "none") {
       setSecondaryGroup("none");
@@ -509,16 +530,22 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
   const handleSecondaryGroupChange = (group: GroupBy) => {
     setSecondaryGroup(group);
     setCurrentPage(1); // Reset to first page
+    setGroupPages({});
+    setSubGroupPages({});
   };
 
   const handleSortByChange = (newSortBy: SortBy) => {
     setSortBy(newSortBy);
     setCurrentPage(1); // Reset to first page
+    setGroupPages({});
+    setSubGroupPages({});
   };
 
   const handleSortOrderChange = (order: SortOrder) => {
     setSortOrder(order);
     setCurrentPage(1); // Reset to first page
+    setGroupPages({});
+    setSubGroupPages({});
   };
 
   const handlePageChange = (page: number) => {
@@ -528,6 +555,8 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
   const handlePageSizeChange = (size: PageSize) => {
     setPageSize(size);
     setCurrentPage(1); // Reset to first page
+    setGroupPages({});
+    setSubGroupPages({});
   };
 
   if (loading) {
@@ -732,8 +761,11 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
                   <div className="space-y-6">
                     {processedData.groupedItems.map((group) => {
                       const groupPage = groupPages[group.groupKey] || 1;
-                      const pagination = paginateGroup(group, groupPage, pageSize);
-                      const { paginatedItems, totalPages: groupTotalPages } = pagination;
+                      const subGroupPagination = group.subGroups ? paginateSubGroups(group.subGroups, groupPage, pageSize) : { paginatedSubGroups: [], totalPages: 0 };
+                      const { paginatedSubGroups, totalPages: subGroupTotalPages } = subGroupPagination;
+
+                      const itemPagination = !group.subGroups ? paginateGroup(group, groupPage, pageSize) : { paginatedItems: [], totalPages: 0 };
+                      const { paginatedItems, totalPages: groupTotalPages } = itemPagination;
 
                       return (
                         <div key={group.groupKey} className="space-y-4">
@@ -768,7 +800,7 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
                                   <option value={50}>50</option>
                                   <option value="all">All</option>
                                 </Select>
-                                {(pageSize !== 'all' && groupTotalPages > 1) && (
+                                {(pageSize !== 'all' && (group.subGroups ? subGroupTotalPages > 1 : groupTotalPages > 1)) && (
                                   <>
                                     <button
                                       onClick={() => setGroupPages(prev => ({ ...prev, [group.groupKey]: 1 }))}
@@ -787,19 +819,19 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
                                       <ChevronLeft className="w-3 h-3" />
                                     </button>
                                     <span className="text-xs text-white/60 px-1">
-                                      {groupPage}/{groupTotalPages}
+                                      {groupPage}/{group.subGroups ? subGroupTotalPages : groupTotalPages}
                                     </span>
                                     <button
                                       onClick={() => setGroupPages(prev => ({ ...prev, [group.groupKey]: groupPage + 1 }))}
-                                      disabled={groupPage === groupTotalPages}
+                                      disabled={groupPage === (group.subGroups ? subGroupTotalPages : groupTotalPages)}
                                       className="p-1 rounded cursor-pointer bg-white/5 hover:bg-white/10 text-white border border-white/20 disabled:opacity-30 disabled:cursor-not-allowed"
                                       title="Next page"
                                     >
                                       <ChevronRight className="w-3 h-3" />
                                     </button>
                                     <button
-                                      onClick={() => setGroupPages(prev => ({ ...prev, [group.groupKey]: groupTotalPages }))}
-                                      disabled={groupPage === groupTotalPages}
+                                      onClick={() => setGroupPages(prev => ({ ...prev, [group.groupKey]: (group.subGroups ? subGroupTotalPages : groupTotalPages) }))}
+                                      disabled={groupPage === (group.subGroups ? subGroupTotalPages : groupTotalPages)}
                                       className="p-1 rounded cursor-pointer bg-white/5 hover:bg-white/10 text-white border border-white/20 disabled:opacity-30 disabled:cursor-not-allowed"
                                       title="Last page"
                                     >
@@ -814,13 +846,12 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
                         {/* Sub-groups or items */}
                         {group.subGroups ? (
                           <div className="space-y-4 pl-4">
-                            {group.subGroups.map((subGroup) => {
-                              // Filter sub-groups to only show items that are in the paginated set
-                              const itemsInPaginatedSet = subGroup.items.filter(item =>
-                                paginatedItems.some(pItem => pItem.id === item.id)
-                              );
+                            {paginatedSubGroups.map((subGroup) => {
+                              const subGroupPageKey = `${group.groupKey}-${subGroup.groupKey}`;
+                              const subGroupPage = subGroupPages[subGroupPageKey] || 1;
+                              const { paginatedItems: subGroupPaginatedItems, totalPages: subGroupItemsTotalPages } = paginateSubGroup(subGroup, subGroupPage, pageSize);
 
-                              return itemsInPaginatedSet.length > 0 ? (
+                              return (
                               <div key={subGroup.groupKey} className="space-y-2">
                                 {/* Sub-group Header */}
                                 <div className="flex items-center gap-2 text-white/80">
@@ -830,11 +861,50 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
                                   <span className="text-xs text-white/50">
                                     ({subGroup.count})
                                   </span>
+                                  {(pageSize !== 'all' && subGroupItemsTotalPages > 1) && (
+                                    <div className="flex items-center gap-1">
+                                      <button
+                                        onClick={() => setSubGroupPages(prev => ({ ...prev, [subGroupPageKey]: 1 }))}
+                                        disabled={subGroupPage === 1}
+                                        className="p-1 rounded cursor-pointer bg-white/5 hover:bg-white/10 text-white border border-white/20 disabled:opacity-30 disabled:cursor-not-allowed"
+                                        title="First page"
+                                      >
+                                        <ChevronsLeft className="w-3 h-3" />
+                                      </button>
+                                      <button
+                                        onClick={() => setSubGroupPages(prev => ({ ...prev, [subGroupPageKey]: subGroupPage - 1 }))}
+                                        disabled={subGroupPage === 1}
+                                        className="p-1 rounded cursor-pointer bg-white/5 hover:bg-white/10 text-white border border-white/20 disabled:opacity-30 disabled:cursor-not-allowed"
+                                        title="Previous page"
+                                      >
+                                        <ChevronLeft className="w-3 h-3" />
+                                      </button>
+                                      <span className="text-xs text-white/60 px-1">
+                                        {subGroupPage}/{subGroupItemsTotalPages}
+                                      </span>
+                                      <button
+                                        onClick={() => setSubGroupPages(prev => ({ ...prev, [subGroupPageKey]: subGroupPage + 1 }))}
+                                        disabled={subGroupPage === subGroupItemsTotalPages}
+                                        className="p-1 rounded cursor-pointer bg-white/5 hover:bg-white/10 text-white border border-white/20 disabled:opacity-30 disabled:cursor-not-allowed"
+                                        title="Next page"
+                                      >
+                                        <ChevronRight className="w-3 h-3" />
+                                      </button>
+                                      <button
+                                        onClick={() => setSubGroupPages(prev => ({ ...prev, [subGroupPageKey]: subGroupItemsTotalPages }))}
+                                        disabled={subGroupPage === subGroupItemsTotalPages}
+                                        className="p-1 rounded cursor-pointer bg-white/5 hover:bg-white/10 text-white border border-white/20 disabled:opacity-30 disabled:cursor-not-allowed"
+                                        title="Last page"
+                                      >
+                                        <ChevronsRight className="w-3 h-3" />
+                                      </button>
+                                    </div>
+                                  )}
                                 </div>
 
                                 {/* Sub-group Items */}
                                 <VerticalList spacing="md">
-                                  {itemsInPaginatedSet.map((item) => {
+                                  {subGroupPaginatedItems.map((item) => {
                                     const contentItem = item.content_item;
                                     const sourceData = contentItem.source_data;
                                     const ContentIcon = getContentTypeIcon(
@@ -910,7 +980,7 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
                                                   Member Ratings
                                                 </h4>
                                                 <div className="space-y-1">
-                                                  {item.member_ratings.map((rating: any, idx: number) => (
+                                                  {item.member_ratings.map((rating: MemberRating, idx: number) => (
                                                     <div key={idx} className="flex items-center gap-2 text-sm">
                                                       <span className="text-white/60">
                                                         {rating.user?.username || 'Unknown'}
@@ -983,7 +1053,7 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
                                   })}
                                 </VerticalList>
                               </div>
-                              ) : null;
+                              );
                             })}
                           </div>
                         ) : (
@@ -1058,26 +1128,25 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
                                           )}
                                         </div>
                                       </div>
-                                      {item.member_ratings && Array.isArray(item.member_ratings) && item.member_ratings.length > 0 && (
-                                        <div>
-                                          <h4 className="text-sm font-semibold text-white/80 mb-2">
-                                            Member Ratings
-                                          </h4>
-                                          <div className="space-y-1">
-                                            {item.member_ratings.map((rating: any, idx: number) => (
-                                              <div key={idx} className="flex items-center gap-2 text-sm">
-                                                <span className="text-white/60">
-                                                  {rating.user?.username || 'Unknown'}
-                                                </span>
-                                                <span className="text-yellow-400">
-                                                  ★ {rating.rating}
-                                                </span>
-                                              </div>
-                                            ))}
-                                          </div>
-                                        </div>
-                                      )}
-                                      <div className="flex gap-2 pt-2">
+                                                                                  {item.member_ratings && Array.isArray(item.member_ratings) && item.member_ratings.length > 0 && (
+                                                                                    <div>
+                                                                                      <h4 className="text-sm font-semibold text-white/80 mb-2">
+                                                                                        Member Ratings
+                                                                                      </h4>
+                                                                                      <div className="space-y-1">
+                                                                                        {item.member_ratings.map((rating: MemberRating, idx: number) => (
+                                                                                          <div key={idx} className="flex items-center gap-2 text-sm">
+                                                                                            <span className="text-white/60">
+                                                                                              {rating.user?.username || 'Unknown'}
+                                                                                            </span>
+                                                                                            <span className="text-yellow-400">
+                                                                                              ★ {rating.rating}
+                                                                                            </span>
+                                                                                          </div>
+                                                                                        ))}
+                                                                                      </div>
+                                                                                    </div>
+                                                                                  )}                                      <div className="flex gap-2 pt-2">
                                         <Button
                                           size="sm"
                                           variant="outline"
@@ -1307,8 +1376,7 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
                                 <div className="pt-2 mt-2 border-t border-white/10">
                                   <span className="text-white/60 text-xs">All Member Ratings:</span>
                                   <div className="mt-2 space-y-2">
-                                    {item.member_ratings.map((rating: any, idx: number) => (
-                                      <div key={idx} className="flex items-center justify-between bg-white/5 rounded px-2 py-1.5">
+                                                                                  {item.member_ratings.map((rating: MemberRating, idx: number) => (                                      <div key={idx} className="flex items-center justify-between bg-white/5 rounded px-2 py-1.5">
                                         <span className="text-white/80 text-xs">
                                           {rating.user?.username || rating.user?.email || 'Unknown User'}
                                         </span>

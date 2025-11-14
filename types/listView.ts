@@ -1,3 +1,5 @@
+import { User } from "@/lib/api/types";
+
 export type GroupBy =
   | 'none'
   | 'status'
@@ -52,4 +54,9 @@ export interface PaginatedResult<T> {
   totalPages: number;
   startIndex: number;
   endIndex: number;
+}
+
+export interface MemberRating {
+  user: User;
+  rating: number;
 }
