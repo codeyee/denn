@@ -1,9 +1,10 @@
 import { motion, AnimatePresence } from "motion/react";
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect } from "react";
 import { Film, Tv, Gamepad2, Book, Music, LucideIcon } from "lucide-react";
 import { createPortal } from "react-dom";
 
 import { ContentType } from "@/lib/api/types";
+import { useCardHover } from "./hooks/useCardHover";
 
 const ICON_MAP = {
   [ContentType.MOVIE.toLowerCase()]: Film,
@@ -84,26 +85,20 @@ function Card({
   const EmptyIcon = emptyIcon || Icon;
   const previousImageRef = useRef<string | undefined>(undefined);
   const isFirstImageRef = useRef(true);
-  const [isHovered, setIsHovered] = useState(false);
-  const [popoverPosition, setPopoverPosition] = useState({ top: 0, left: 0, width: 0 });
-  const [isDesktop, setIsDesktop] = useState(false);
-  const cardRef = useRef<HTMLDivElement>(null);
 
-  // Detect if we're on desktop (1024px and above)
-  useEffect(() => {
-    const checkScreenSize = () => {
-      setIsDesktop(window.innerWidth >= 1024);
-    };
-    
-    // Check on mount
-    checkScreenSize();
-    
-    // Add listener for resize
-    window.addEventListener('resize', checkScreenSize);
-    return () => window.removeEventListener('resize', checkScreenSize);
-  }, []);
+  const {
+    cardRef,
+    isHovered,
+    popoverPosition,
+    shouldShowHoverContent,
+    handleMouseEnter,
+    handleMouseLeave,
+  } = useCardHover({
+    disableHover,
+    hasHoverContent: !!hoverContent,
+    onHoverChange,
+  });
 
-  // Update refs after render to track image changes
   useEffect(() => {
     if (previousImageRef.current !== backgroundImage) {
       if (previousImageRef.current !== undefined) {
@@ -112,59 +107,6 @@ function Card({
       previousImageRef.current = backgroundImage;
     }
   }, [backgroundImage]);
-
-  // Notify parent of hover state changes
-  useEffect(() => {
-    if (onHoverChange) {
-      onHoverChange(isHovered);
-    }
-  }, [isHovered, onHoverChange]);
-
-  // Only show hover content on desktop and if hover is not disabled
-  const shouldShowHoverContent = isDesktop && hoverContent && !disableHover;
-
-  // Update popover position when hovering or scrolling
-  useEffect(() => {
-    const updatePosition = () => {
-      if (isHovered && cardRef.current && shouldShowHoverContent) {
-        const rect = cardRef.current.getBoundingClientRect();
-
-        // Since we're using transform with origin 'center center',
-        // we position the element at the card's position, and CSS will handle centering the scale
-        setPopoverPosition({
-          top: rect.top,
-          left: rect.left,
-          width: rect.width,
-        });
-      }
-    };
-
-    updatePosition();
-
-    // Update position on scroll and resize
-    if (isHovered && shouldShowHoverContent) {
-      window.addEventListener('scroll', updatePosition, true);
-      window.addEventListener('resize', updatePosition);
-
-      return () => {
-        window.removeEventListener('scroll', updatePosition, true);
-        window.removeEventListener('resize', updatePosition);
-      };
-    }
-  }, [isHovered, shouldShowHoverContent]);
-
-  const handleMouseEnter = () => {
-    // Only enable hover on desktop and if hover is not disabled
-    if (isDesktop && !disableHover) {
-      setIsHovered(true);
-    }
-  };
-
-  const handleMouseLeave = () => {
-    if (!disableHover) {
-      setIsHovered(false);
-    }
-  };
 
   return (
     <>
