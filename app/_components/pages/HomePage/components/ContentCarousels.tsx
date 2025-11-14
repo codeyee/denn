@@ -1,11 +1,11 @@
 import ContentCard from "@/app/_components/cards/ContentCard";
-import PlaceholderCard from "@/app/_components/cards/PlaceholderCard";
 import ListCard from "@/app/_components/cards/ListCard";
 import CreateListCard from "@/app/_components/cards/CreateListCard";
 import Carousel from "@/app/_components/common/Carousel";
+import { LoadingCarousel } from "@/app/_components/common/LoadingCarousel";
 import { Content } from "@/types";
 import { List } from "@/lib/api/types";
-import { CAROUSEL_CONFIG, CONTENT_SECTIONS } from "../config";
+import { CONTENT_SECTIONS } from "../config";
 
 interface ContentCarouselsProps {
   suggestions: {
@@ -34,27 +34,8 @@ function CarouselSection({
   isLoading,
   keyPrefix,
 }: CarouselSectionProps) {
-  const { ITEMS_PER_CAROUSEL, ITEM_TARGET_WIDTH, PLACEHOLDER_COUNT } =
-    CAROUSEL_CONFIG;
-
   if (isLoading) {
-    return (
-      <section className="mb-4 md:mb-8">
-        <Carousel
-          title={title}
-          itemsPerView={ITEMS_PER_CAROUSEL}
-          targetCardWidth={ITEM_TARGET_WIDTH}
-          disableNavigation
-        >
-          {Array.from({ length: PLACEHOLDER_COUNT }).map((_, index) => (
-            <PlaceholderCard
-              key={`${keyPrefix}-placeholder-${index}`}
-              index={index}
-            />
-          ))}
-        </Carousel>
-      </section>
-    );
+    return <LoadingCarousel title={title} />;
   }
 
   if (items.length === 0) {
@@ -65,8 +46,6 @@ function CarouselSection({
     <section className="mb-4 md:mb-8">
       <Carousel
         title={title}
-        itemsPerView={ITEMS_PER_CAROUSEL}
-        targetCardWidth={ITEM_TARGET_WIDTH}
       >
         {items.map((item) => (
           <ContentCard key={`${keyPrefix}-${item.id}`} item={item} />
@@ -85,24 +64,8 @@ function ListsCarousel({
   isLoading: boolean;
   createList: (name: string) => void;
 }) {
-  const { ITEMS_PER_CAROUSEL, ITEM_TARGET_WIDTH, PLACEHOLDER_COUNT } =
-    CAROUSEL_CONFIG;
-
   if (isLoading) {
-    return (
-      <section className="mb-4 md:mb-8">
-        <Carousel
-          title="Your Lists"
-          itemsPerView={ITEMS_PER_CAROUSEL}
-          targetCardWidth={ITEM_TARGET_WIDTH}
-          disableNavigation
-        >
-          {Array.from({ length: PLACEHOLDER_COUNT }).map((_, index) => (
-            <PlaceholderCard key={`list-placeholder-${index}`} index={index} />
-          ))}
-        </Carousel>
-      </section>
-    );
+    return <LoadingCarousel title="Your Lists" />;
   }
 
   if (lists.length === 0 && !isLoading) {
@@ -111,11 +74,7 @@ function ListsCarousel({
 
   return (
     <section className="mb-4 md:mb-8">
-      <Carousel
-        title="Your Lists"
-        itemsPerView={ITEMS_PER_CAROUSEL}
-        targetCardWidth={ITEM_TARGET_WIDTH}
-      >
+      <Carousel title="Your Lists">
         {[
           ...lists.map((list) => <ListCard key={`list-${list.id}`} list={list} />),
           <CreateListCard

@@ -42,11 +42,10 @@ export default function HomePage() {
     <div className="relative w-full min-h-screen bg-background-logged-in">
       <div className="pt-30 pb-20">
         <section className="-mt-30 mb-6 md:mb-10 relative z-0">
-          {suggestionsLoading || featuredItems.length === 0 ? (
-            <FeaturedBannerPlaceholder />
-          ) : (
-            <FeaturedBanner items={featuredItems} />
-          )}
+          {suggestionsLoading || featuredItems.length === 0
+            ? <FeaturedBannerPlaceholder />
+            : <FeaturedBanner items={featuredItems} />
+          }
         </section>
 
         <ContentCarousels
