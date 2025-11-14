@@ -80,7 +80,7 @@ export default function TypesSection() {
                 icon={type.icon}
                 backgroundImage={type.backgroundImage}
                 backgroundImageAlt={type.alt}
-                provider={type.provider}
+                providers={type.providers}
               />
             </motion.div>
           ))}

@@ -1,13 +1,9 @@
-import {
-  Film,
-  Tv,
-  Gamepad2,
-  Book,
-  Music,
-  LucideIcon,
-} from "lucide-react";
+import { Film, Tv, Gamepad2, Book, Music, LucideIcon } from "lucide-react";
 
-import { ProviderAttribution } from "@/types";
+export type Provider = {
+  name: string;
+  url: string;
+};
 
 export type ContentTypeDefinition = {
   slug: string;
@@ -15,11 +11,7 @@ export type ContentTypeDefinition = {
   title: string;
   description: string;
   defaultBackgroundImage: string;
-  provider: {
-    name: string;
-    logo: string;
-    url: string;
-  };
+  provider: Provider | Provider[];
 };
 
 export const contentTypeDefinitions: ContentTypeDefinition[] = [
@@ -29,11 +21,16 @@ export const contentTypeDefinitions: ContentTypeDefinition[] = [
     title: "Movies",
     description: "Track your favorite films and discover new ones",
     defaultBackgroundImage: "/images/cards/movie_01.webp",
-    provider: {
-      name: "TMDB",
-      logo: "/images/logos/tmdb.svg",
-      url: "https://www.themoviedb.org/",
-    },
+    provider: [
+      {
+        name: "TMDB",
+        url: "https://www.themoviedb.org/",
+      },
+      {
+        name: "JustWatch",
+        url: "https://www.justwatch.com",
+      },
+    ],
   },
   {
     slug: "tv-shows",
@@ -41,11 +38,16 @@ export const contentTypeDefinitions: ContentTypeDefinition[] = [
     title: "TV Shows",
     description: "Keep up with series across all platforms",
     defaultBackgroundImage: "/images/cards/tv_01.webp",
-    provider: {
-      name: "TMDB",
-      logo: "/images/logos/tmdb.svg",
-      url: "https://www.themoviedb.org/",
-    },
+    provider: [
+      {
+        name: "TMDB",
+        url: "https://www.themoviedb.org/",
+      },
+      {
+        name: "JustWatch",
+        url: "https://www.justwatch.com",
+      },
+    ],
   },
   {
     slug: "games",
@@ -55,7 +57,6 @@ export const contentTypeDefinitions: ContentTypeDefinition[] = [
     defaultBackgroundImage: "/images/cards/game_01.jpg",
     provider: {
       name: "IGDB",
-      logo: "/images/logos/igdb.svg",
       url: "https://www.igdb.com/",
     },
   },
@@ -67,7 +68,6 @@ export const contentTypeDefinitions: ContentTypeDefinition[] = [
     defaultBackgroundImage: "/images/cards/music_01.jpeg",
     provider: {
       name: "Spotify",
-      logo: "/images/logos/spotify.svg",
       url: "https://www.spotify.com/",
     },
   },
@@ -79,7 +79,6 @@ export const contentTypeDefinitions: ContentTypeDefinition[] = [
     defaultBackgroundImage: "/images/cards/book_01.jpg",
     provider: {
       name: "Open Library",
-      logo: "/images/logos/openlibrary.svg",
       url: "https://openlibrary.org/",
     },
   },

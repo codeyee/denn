@@ -1,6 +1,6 @@
 import Card from "../Card";
 import { LucideIcon } from "lucide-react";
-import { ProviderAttribution } from "@/types";
+import { Provider } from "@/app/api/cards/lib/contentTypeDefinitions";
 
 interface LandingCardProps {
   id: string | number;
@@ -8,11 +8,7 @@ interface LandingCardProps {
   icon: LucideIcon;
   backgroundImage: string;
   backgroundImageAlt?: string;
-  provider: {
-    name: string;
-    logo: string;
-    url: string;
-  };
+  providers: Provider[];
   className?: string;
 }
 
@@ -22,7 +18,7 @@ export default function LandingCard({
   icon,
   backgroundImage,
   backgroundImageAlt,
-  provider,
+  providers,
   className = "",
 }: LandingCardProps) {
   return (
@@ -37,21 +33,30 @@ export default function LandingCard({
     >
       <Card.Footer>
         <span>Powered by</span>
-        {provider.url ? (
-          <a
-            href={provider.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-semibold text-white leading-none"
-            aria-label={`Powered by ${provider.name}`}
-          >
-            {provider.name}
-          </a>
-        ) : (
-          <span className="font-semibold text-white leading-none">
-            {provider.name}
-          </span>
-        )}
+        <div className="flex items-center gap-2 flex-wrap">
+          {providers.map((provider, index) => (
+            <span key={provider.name} className="flex items-center gap-1">
+              {provider.url ? (
+                <a
+                  href={provider.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold text-white leading-none hover:underline"
+                  aria-label={`Powered by ${provider.name}`}
+                >
+                  {provider.name}
+                </a>
+              ) : (
+                <span className="font-semibold text-white leading-none">
+                  {provider.name}
+                </span>
+              )}
+              {index < providers.length - 1 && (
+                <span className="text-white/60">•</span>
+              )}
+            </span>
+          ))}
+        </div>
       </Card.Footer>
     </Card>
   );
