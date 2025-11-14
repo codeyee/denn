@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   DndContext,
@@ -49,10 +49,13 @@ import {
   X,
   Lock,
   Star,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
 } from "lucide-react";
 import {
   getContentTypeIcon,
-  getContentTypeLabel,
 } from "@/lib/utils/contentTypeUtils";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { formatSeasonTitle } from "@/lib/utils/titleUtils";
@@ -60,6 +63,24 @@ import { formatUserDisplayNameWithUsername } from "@/lib/utils/userUtils";
 import { useListsStore } from "@/app/_stores/lists-store";
 import { useUIStore } from "@/app/_stores/ui-store";
 import { useAuthStore } from "@/app/_stores/auth-store";
+import { Select } from "../../common/Select";
+import {
+  GroupBy,
+  SortBy,
+  SortOrder,
+  PageSize,
+  DEFAULT_LIST_VIEW_PREFERENCES,
+} from "@/types/listView";
+import {
+  groupItems,
+  sortItems,
+  sortGroupedItems,
+  paginateItems,
+  paginateGroupedItems,
+  paginateGroup,
+  loadPreferences,
+  savePreferences,
+} from "./utils";
 
 interface ListDetailPageProps {
   listId: number;
@@ -82,6 +103,29 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
 
   // View state
   const [viewMode, setViewMode] = useState<"list" | "gallery">("list");
+
+  // List view preferences state
+  const [primaryGroup, setPrimaryGroup] = useState<GroupBy>(
+    DEFAULT_LIST_VIEW_PREFERENCES.primaryGroup
+  );
+  const [secondaryGroup, setSecondaryGroup] = useState<GroupBy>(
+    DEFAULT_LIST_VIEW_PREFERENCES.secondaryGroup
+  );
+  const [sortBy, setSortBy] = useState<SortBy>(
+    DEFAULT_LIST_VIEW_PREFERENCES.sortBy
+  );
+  const [sortOrder, setSortOrder] = useState<SortOrder>(
+    DEFAULT_LIST_VIEW_PREFERENCES.sortOrder
+  );
+  const [currentPage, setCurrentPage] = useState<number>(
+    DEFAULT_LIST_VIEW_PREFERENCES.currentPage
+  );
+  const [pageSize, setPageSize] = useState<PageSize>(
+    DEFAULT_LIST_VIEW_PREFERENCES.pageSize
+  );
+
+  // Per-group pagination state (groupKey -> currentPage)
+  const [groupPages, setGroupPages] = useState<Record<string, number>>({});
 
   // Reorder state
   const [originalItems, setOriginalItems] = useState<ListItem[]>([]);
@@ -172,6 +216,31 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
 
     fetchList();
   }, [listId]);
+
+  // Load preferences from localStorage on mount
+  useEffect(() => {
+    const preferences = loadPreferences(listId);
+    setPrimaryGroup(preferences.primaryGroup);
+    setSecondaryGroup(preferences.secondaryGroup);
+    setSortBy(preferences.sortBy);
+    setSortOrder(preferences.sortOrder);
+    setCurrentPage(preferences.currentPage);
+    setPageSize(preferences.pageSize);
+  }, [listId]);
+
+  // Save preferences to localStorage when they change
+  useEffect(() => {
+    if (list) {
+      savePreferences(listId, {
+        primaryGroup,
+        secondaryGroup,
+        sortBy,
+        sortOrder,
+        currentPage,
+        pageSize,
+      });
+    }
+  }, [listId, primaryGroup, secondaryGroup, sortBy, sortOrder, currentPage, pageSize, list]);
 
   // Handler functions
   const handleUpdateList = async (
@@ -357,6 +426,110 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
     return !hasUserRated;
   };
 
+  // Process items: group → sort → paginate
+  const processedData = useMemo(() => {
+    // In reorder mode, show all items without grouping/sorting/pagination
+    if (isReorderMode) {
+      return {
+        displayItems: listItems,
+        groupedItems: null,
+        paginationInfo: {
+          currentPage: 1,
+          pageSize: listItems.length as PageSize,
+          totalItems: listItems.length,
+          totalPages: 1,
+          startIndex: 0,
+          endIndex: listItems.length,
+        },
+      };
+    }
+
+    // Apply grouping
+    const hasGrouping = primaryGroup !== "none";
+    if (hasGrouping) {
+      let grouped = groupItems(listItems, primaryGroup, secondaryGroup);
+
+      // Apply sorting within groups
+      grouped = sortGroupedItems(grouped, sortBy, sortOrder);
+
+      // Apply pagination
+      const paginated = paginateGroupedItems(grouped, currentPage, pageSize);
+
+      return {
+        displayItems: [],
+        groupedItems: paginated.items,
+        paginationInfo: {
+          currentPage: paginated.currentPage,
+          pageSize: paginated.pageSize,
+          totalItems: paginated.totalItems,
+          totalPages: paginated.totalPages,
+          startIndex: paginated.startIndex,
+          endIndex: paginated.endIndex,
+        },
+      };
+    } else {
+      // No grouping: flat list
+      const sorted = sortItems(listItems, sortBy, sortOrder);
+      const paginated = paginateItems(sorted, currentPage, pageSize);
+
+      return {
+        displayItems: paginated.items,
+        groupedItems: null,
+        paginationInfo: {
+          currentPage: paginated.currentPage,
+          pageSize: paginated.pageSize,
+          totalItems: paginated.totalItems,
+          totalPages: paginated.totalPages,
+          startIndex: paginated.startIndex,
+          endIndex: paginated.endIndex,
+        },
+      };
+    }
+  }, [
+    listItems,
+    primaryGroup,
+    secondaryGroup,
+    sortBy,
+    sortOrder,
+    currentPage,
+    pageSize,
+    isReorderMode,
+  ]);
+
+  // Handlers for list view controls
+  const handlePrimaryGroupChange = (group: GroupBy) => {
+    setPrimaryGroup(group);
+    setCurrentPage(1); // Reset to first page
+    // If switching to "none", also reset secondary
+    if (group === "none") {
+      setSecondaryGroup("none");
+    }
+  };
+
+  const handleSecondaryGroupChange = (group: GroupBy) => {
+    setSecondaryGroup(group);
+    setCurrentPage(1); // Reset to first page
+  };
+
+  const handleSortByChange = (newSortBy: SortBy) => {
+    setSortBy(newSortBy);
+    setCurrentPage(1); // Reset to first page
+  };
+
+  const handleSortOrderChange = (order: SortOrder) => {
+    setSortOrder(order);
+    setCurrentPage(1); // Reset to first page
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handlePageSizeChange = (size: PageSize) => {
+    setPageSize(size);
+    setCurrentPage(1); // Reset to first page
+  };
+
   if (loading) {
     return (
       <>
@@ -441,39 +614,105 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
           <div className="flex flex-col md:flex-row gap-6 lg:gap-8">
             {/* Left Column: List Items */}
             <div className="flex-1 min-w-0 pb-8 order-2 md:order-1">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-white">Items</h2>
-                <div className="flex items-center gap-3">
+              <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <h2 className="text-2xl font-bold text-white">Items</h2>
                   <div className="text-white/60 text-sm">
                     {itemCount} {itemCount === 1 ? "item" : "items"}
                   </div>
-                  {/* View Toggle */}
-                  <div className="flex gap-1 bg-white/5 rounded-lg p-1">
-                    <button
-                      onClick={() => setViewMode("list")}
-                      className={`p-2 rounded transition-colors cursor-pointer ${
-                        viewMode === "list"
-                          ? "bg-white/10 text-white"
-                          : "text-white/60 hover:text-white"
-                      }`}
-                      title="List view"
-                      disabled={isReorderMode}
-                    >
-                      <ListIcon className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => setViewMode("gallery")}
-                      className={`p-2 rounded transition-colors cursor-pointer ${
-                        viewMode === "gallery"
-                          ? "bg-white/10 text-white"
-                          : "text-white/60 hover:text-white"
-                      }`}
-                      title="Gallery view"
-                      disabled={isReorderMode}
-                    >
-                      <Grid className="w-4 h-4" />
-                    </button>
-                  </div>
+                  {/* Pagination controls when NOT grouped */}
+                  {primaryGroup === "none" && !isReorderMode && (
+                    <div className="flex items-center gap-1">
+                      <Select
+                        value={sortOrder}
+                        onChange={(e) => handleSortOrderChange(e.target.value as SortOrder)}
+                        className="px-2 py-1 text-xs rounded cursor-pointer bg-white/5 hover:bg-white/10 text-white border border-white/20"
+                      >
+                        <option value="asc">↑ Asc</option>
+                        <option value="desc">↓ Desc</option>
+                      </Select>
+                      <Select
+                        value={pageSize}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          handlePageSizeChange(val === 'all' ? 'all' : Number(val) as PageSize);
+                        }}
+                        className="px-2 py-1 text-xs rounded cursor-pointer bg-white/5 hover:bg-white/10 text-white border border-white/20"
+                      >
+                        <option value={10}>10</option>
+                        <option value={20}>20</option>
+                        <option value={50}>50</option>
+                        <option value="all">All</option>
+                      </Select>
+                      {pageSize !== 'all' && processedData.paginationInfo.totalPages > 1 && (
+                        <>
+                          <button
+                            onClick={() => handlePageChange(1)}
+                            disabled={currentPage === 1}
+                            className="p-1 rounded cursor-pointer bg-white/5 hover:bg-white/10 text-white border border-white/20 disabled:opacity-30 disabled:cursor-not-allowed"
+                            title="First page"
+                          >
+                            <ChevronsLeft className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={() => handlePageChange(currentPage - 1)}
+                            disabled={currentPage === 1}
+                            className="p-1 rounded cursor-pointer bg-white/5 hover:bg-white/10 text-white border border-white/20 disabled:opacity-30 disabled:cursor-not-allowed"
+                            title="Previous page"
+                          >
+                            <ChevronLeft className="w-3 h-3" />
+                          </button>
+                          <span className="text-xs text-white/60 px-1">
+                            {currentPage}/{processedData.paginationInfo.totalPages}
+                          </span>
+                          <button
+                            onClick={() => handlePageChange(currentPage + 1)}
+                            disabled={currentPage === processedData.paginationInfo.totalPages}
+                            className="p-1 rounded cursor-pointer bg-white/5 hover:bg-white/10 text-white border border-white/20 disabled:opacity-30 disabled:cursor-not-allowed"
+                            title="Next page"
+                          >
+                            <ChevronRight className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={() => handlePageChange(processedData.paginationInfo.totalPages)}
+                            disabled={currentPage === processedData.paginationInfo.totalPages}
+                            className="p-1 rounded cursor-pointer bg-white/5 hover:bg-white/10 text-white border border-white/20 disabled:opacity-30 disabled:cursor-not-allowed"
+                            title="Last page"
+                          >
+                            <ChevronsRight className="w-3 h-3" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* View Toggle */}
+                <div className="flex gap-1 bg-white/5 rounded-lg p-1">
+                  <button
+                    onClick={() => setViewMode("list")}
+                    className={`p-2 rounded transition-colors cursor-pointer ${
+                      viewMode === "list"
+                        ? "bg-white/10 text-white"
+                        : "text-white/60 hover:text-white"
+                    }`}
+                    title="List view"
+                    disabled={isReorderMode}
+                  >
+                    <ListIcon className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setViewMode("gallery")}
+                    className={`p-2 rounded transition-colors cursor-pointer ${
+                      viewMode === "gallery"
+                        ? "bg-white/10 text-white"
+                        : "text-white/60 hover:text-white"
+                    }`}
+                    title="Gallery view"
+                    disabled={isReorderMode}
+                  >
+                    <Grid className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
 
@@ -487,20 +726,437 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
                   </p>
                 </div>
               ) : viewMode === "list" ? (
-                <DndContext
-                  sensors={sensors}
-                  collisionDetection={closestCenter}
-                  onDragStart={handleDragStart}
-                  onDragOver={handleDragOver}
-                  onDragEnd={handleDragEnd}
-                  onDragCancel={handleDragCancel}
-                >
-                  <SortableContext
-                    items={listItems.map((item) => item.id)}
-                    strategy={verticalListSortingStrategy}
+                // List View
+                processedData.groupedItems ? (
+                  // Grouped view
+                  <div className="space-y-6">
+                    {processedData.groupedItems.map((group) => {
+                      const groupPage = groupPages[group.groupKey] || 1;
+                      const pagination = paginateGroup(group, groupPage, pageSize);
+                      const { paginatedItems, totalPages: groupTotalPages } = pagination;
+
+                      return (
+                        <div key={group.groupKey} className="space-y-4">
+                          {/* Group Header with Inline Controls */}
+                          <div className="flex items-center pb-2 border-b border-white/10 flex-wrap gap-2">
+                            <h3 className="text-lg font-semibold text-white">
+                              {group.groupLabel}
+                            </h3>
+                            <span className="text-sm text-white/60">
+                              ({group.count} {group.count === 1 ? 'item' : 'items'})
+                            </span>
+                            {!isReorderMode && (
+                              <div className="flex items-center gap-1">
+                                <Select
+                                  value={sortOrder}
+                                  onChange={(e) => handleSortOrderChange(e.target.value as SortOrder)}
+                                  className="px-2 py-1 text-xs rounded cursor-pointer bg-white/5 hover:bg-white/10 text-white border border-white/20"
+                                >
+                                  <option value="asc">↑ Asc</option>
+                                  <option value="desc">↓ Desc</option>
+                                </Select>
+                                <Select
+                                  value={pageSize}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    handlePageSizeChange(val === 'all' ? 'all' : Number(val) as PageSize);
+                                  }}
+                                  className="px-2 py-1 text-xs rounded cursor-pointer bg-white/5 hover:bg-white/10 text-white border border-white/20"
+                                >
+                                  <option value={10}>10</option>
+                                  <option value={20}>20</option>
+                                  <option value={50}>50</option>
+                                  <option value="all">All</option>
+                                </Select>
+                                {(pageSize !== 'all' && groupTotalPages > 1) && (
+                                  <>
+                                    <button
+                                      onClick={() => setGroupPages(prev => ({ ...prev, [group.groupKey]: 1 }))}
+                                      disabled={groupPage === 1}
+                                      className="p-1 rounded cursor-pointer bg-white/5 hover:bg-white/10 text-white border border-white/20 disabled:opacity-30 disabled:cursor-not-allowed"
+                                      title="First page"
+                                    >
+                                      <ChevronsLeft className="w-3 h-3" />
+                                    </button>
+                                    <button
+                                      onClick={() => setGroupPages(prev => ({ ...prev, [group.groupKey]: groupPage - 1 }))}
+                                      disabled={groupPage === 1}
+                                      className="p-1 rounded cursor-pointer bg-white/5 hover:bg-white/10 text-white border border-white/20 disabled:opacity-30 disabled:cursor-not-allowed"
+                                      title="Previous page"
+                                    >
+                                      <ChevronLeft className="w-3 h-3" />
+                                    </button>
+                                    <span className="text-xs text-white/60 px-1">
+                                      {groupPage}/{groupTotalPages}
+                                    </span>
+                                    <button
+                                      onClick={() => setGroupPages(prev => ({ ...prev, [group.groupKey]: groupPage + 1 }))}
+                                      disabled={groupPage === groupTotalPages}
+                                      className="p-1 rounded cursor-pointer bg-white/5 hover:bg-white/10 text-white border border-white/20 disabled:opacity-30 disabled:cursor-not-allowed"
+                                      title="Next page"
+                                    >
+                                      <ChevronRight className="w-3 h-3" />
+                                    </button>
+                                    <button
+                                      onClick={() => setGroupPages(prev => ({ ...prev, [group.groupKey]: groupTotalPages }))}
+                                      disabled={groupPage === groupTotalPages}
+                                      className="p-1 rounded cursor-pointer bg-white/5 hover:bg-white/10 text-white border border-white/20 disabled:opacity-30 disabled:cursor-not-allowed"
+                                      title="Last page"
+                                    >
+                                      <ChevronsRight className="w-3 h-3" />
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                        {/* Sub-groups or items */}
+                        {group.subGroups ? (
+                          <div className="space-y-4 pl-4">
+                            {group.subGroups.map((subGroup) => {
+                              // Filter sub-groups to only show items that are in the paginated set
+                              const itemsInPaginatedSet = subGroup.items.filter(item =>
+                                paginatedItems.some(pItem => pItem.id === item.id)
+                              );
+
+                              return itemsInPaginatedSet.length > 0 ? (
+                              <div key={subGroup.groupKey} className="space-y-2">
+                                {/* Sub-group Header */}
+                                <div className="flex items-center gap-2 text-white/80">
+                                  <h4 className="text-base font-medium">
+                                    {subGroup.groupLabel}
+                                  </h4>
+                                  <span className="text-xs text-white/50">
+                                    ({subGroup.count})
+                                  </span>
+                                </div>
+
+                                {/* Sub-group Items */}
+                                <VerticalList spacing="md">
+                                  {itemsInPaginatedSet.map((item) => {
+                                    const contentItem = item.content_item;
+                                    const sourceData = contentItem.source_data;
+                                    const ContentIcon = getContentTypeIcon(
+                                      contentItem.content_type
+                                    );
+                                    const imageUrl = sourceData?.image_url;
+
+                                    const isSeason = contentItem.content_type === "SEASON";
+                                    const title = isSeason && "tv_show_name" in sourceData
+                                      ? formatSeasonTitle(sourceData.tv_show_name, sourceData.title)
+                                      : sourceData?.title || "Untitled";
+
+                                    return (
+                                      <ReorderableListItem
+                                        key={item.id}
+                                        id={item.id}
+                                        activeId={activeId}
+                                        isReorderMode={isReorderMode}
+                                        title={title}
+                                        description={
+                                          "original_title" in sourceData &&
+                                          sourceData.original_title !== sourceData.title
+                                            ? sourceData.original_title
+                                            : undefined
+                                        }
+                                        subDescription={
+                                          (contentItem.content_type === "ALBUM" ||
+                                            contentItem.content_type === "BOOK") &&
+                                          "authors" in sourceData &&
+                                          sourceData.authors
+                                            ? (sourceData.authors as Author[])
+                                                ?.map((author) => author.name)
+                                                .join(", ")
+                                            : undefined
+                                        }
+                                        rating={item.list_rating}
+                                        image={imageUrl}
+                                        imageAlt={sourceData?.title}
+                                        imageFullHeight={true}
+                                        leadingContent={
+                                          <div className="flex items-center gap-3">
+                                            <div className="text-white/60 text-sm font-mono w-8 text-center">
+                                              #{item.list_order}
+                                            </div>
+                                            <ContentIcon className="w-5 h-5 text-white/60 shrink-0" />
+                                          </div>
+                                        }
+                                        expandedContent={
+                                          <div className="space-y-4">
+                                            {item.notes && (
+                                              <div>
+                                                <h4 className="text-sm font-semibold text-white/80 mb-2">
+                                                  Notes
+                                                </h4>
+                                                <p className="text-white/60 text-sm">{item.notes}</p>
+                                              </div>
+                                            )}
+                                            <div>
+                                              <h4 className="text-sm font-semibold text-white/80 mb-2">
+                                                Details
+                                              </h4>
+                                              <div className="space-y-1 text-sm text-white/60">
+                                                <p>Added by {item.added_by.username}</p>
+                                                <p>Added on {formatReleaseDate(item.added_at)}</p>
+                                                {item.completed_at && (
+                                                  <p>Completed on {formatReleaseDate(item.completed_at)}</p>
+                                                )}
+                                              </div>
+                                            </div>
+                                            {item.member_ratings && Array.isArray(item.member_ratings) && item.member_ratings.length > 0 && (
+                                              <div>
+                                                <h4 className="text-sm font-semibold text-white/80 mb-2">
+                                                  Member Ratings
+                                                </h4>
+                                                <div className="space-y-1">
+                                                  {item.member_ratings.map((rating: any, idx: number) => (
+                                                    <div key={idx} className="flex items-center gap-2 text-sm">
+                                                      <span className="text-white/60">
+                                                        {rating.user?.username || 'Unknown'}
+                                                      </span>
+                                                      <span className="text-yellow-400">
+                                                        ★ {rating.rating}
+                                                      </span>
+                                                    </div>
+                                                  ))}
+                                                </div>
+                                              </div>
+                                            )}
+                                            <div className="flex gap-2 pt-2">
+                                              <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => handleToggleItemStatus(item.id, item.status)}
+                                              >
+                                                {item.status === ItemStatus.COMPLETED
+                                                  ? "Mark Pending"
+                                                  : "Mark Complete"}
+                                              </Button>
+                                              {shouldInviteToRate(item) && (
+                                                <Button
+                                                  size="sm"
+                                                  variant="outline"
+                                                  onClick={() => {
+                                                    setRatingModalItem(item);
+                                                    setIsRatingModalOpen(true);
+                                                  }}
+                                                >
+                                                  <Star className="w-4 h-4 mr-1" />
+                                                  Rate
+                                                </Button>
+                                              )}
+                                              <Button
+                                                size="sm"
+                                                variant="destructive"
+                                                onClick={() => setDeleteItemId(item.id)}
+                                              >
+                                                Delete
+                                              </Button>
+                                            </div>
+                                          </div>
+                                        }
+                                        trailingContent={
+                                          <div className="flex items-center gap-3">
+                                            {item.status && (
+                                              <div
+                                                className={`px-3 py-1.5 rounded-full text-xs font-semibold ${
+                                                  item.status === ItemStatus.COMPLETED
+                                                    ? "bg-green-500/20 text-green-400 border border-green-500/30"
+                                                    : "bg-white/10 text-white/80 border border-white/20"
+                                                }`}
+                                              >
+                                                {item.status === ItemStatus.COMPLETED
+                                                  ? "COMPLETED"
+                                                  : "PENDING"}
+                                              </div>
+                                            )}
+                                            {item.list_rating && (
+                                              <div className="text-yellow-400 text-sm font-medium">
+                                                ★ {item.list_rating}
+                                              </div>
+                                            )}
+                                          </div>
+                                        }
+                                      />
+                                    );
+                                  })}
+                                </VerticalList>
+                              </div>
+                              ) : null;
+                            })}
+                          </div>
+                        ) : (
+                          <VerticalList spacing="md">
+                            {paginatedItems.map((item) => {
+                              const contentItem = item.content_item;
+                              const sourceData = contentItem.source_data;
+                              const ContentIcon = getContentTypeIcon(
+                                contentItem.content_type
+                              );
+                              const imageUrl = sourceData?.image_url;
+
+                              const isSeason = contentItem.content_type === "SEASON";
+                              const title = isSeason && "tv_show_name" in sourceData
+                                ? formatSeasonTitle(sourceData.tv_show_name, sourceData.title)
+                                : sourceData?.title || "Untitled";
+
+                              return (
+                                <ReorderableListItem
+                                  key={item.id}
+                                  id={item.id}
+                                  activeId={activeId}
+                                  isReorderMode={isReorderMode}
+                                  title={title}
+                                  description={
+                                    "original_title" in sourceData &&
+                                    sourceData.original_title !== sourceData.title
+                                      ? sourceData.original_title
+                                      : undefined
+                                  }
+                                  subDescription={
+                                    (contentItem.content_type === "ALBUM" ||
+                                      contentItem.content_type === "BOOK") &&
+                                    "authors" in sourceData &&
+                                    sourceData.authors
+                                      ? (sourceData.authors as Author[])
+                                          ?.map((author) => author.name)
+                                          .join(", ")
+                                      : undefined
+                                  }
+                                  rating={item.list_rating}
+                                  image={imageUrl}
+                                  imageAlt={sourceData?.title}
+                                  imageFullHeight={true}
+                                  leadingContent={
+                                    <div className="flex items-center gap-3">
+                                      <div className="text-white/60 text-sm font-mono w-8 text-center">
+                                        #{item.list_order}
+                                      </div>
+                                      <ContentIcon className="w-5 h-5 text-white/60 shrink-0" />
+                                    </div>
+                                  }
+                                  expandedContent={
+                                    <div className="space-y-4">
+                                      {item.notes && (
+                                        <div>
+                                          <h4 className="text-sm font-semibold text-white/80 mb-2">
+                                            Notes
+                                          </h4>
+                                          <p className="text-white/60 text-sm">{item.notes}</p>
+                                        </div>
+                                      )}
+                                      <div>
+                                        <h4 className="text-sm font-semibold text-white/80 mb-2">
+                                          Details
+                                        </h4>
+                                        <div className="space-y-1 text-sm text-white/60">
+                                          <p>Added by {item.added_by.username}</p>
+                                          <p>Added on {formatReleaseDate(item.added_at)}</p>
+                                          {item.completed_at && (
+                                            <p>Completed on {formatReleaseDate(item.completed_at)}</p>
+                                          )}
+                                        </div>
+                                      </div>
+                                      {item.member_ratings && Array.isArray(item.member_ratings) && item.member_ratings.length > 0 && (
+                                        <div>
+                                          <h4 className="text-sm font-semibold text-white/80 mb-2">
+                                            Member Ratings
+                                          </h4>
+                                          <div className="space-y-1">
+                                            {item.member_ratings.map((rating: any, idx: number) => (
+                                              <div key={idx} className="flex items-center gap-2 text-sm">
+                                                <span className="text-white/60">
+                                                  {rating.user?.username || 'Unknown'}
+                                                </span>
+                                                <span className="text-yellow-400">
+                                                  ★ {rating.rating}
+                                                </span>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+                                      <div className="flex gap-2 pt-2">
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => handleToggleItemStatus(item.id, item.status)}
+                                        >
+                                          {item.status === ItemStatus.COMPLETED
+                                            ? "Mark Pending"
+                                            : "Mark Complete"}
+                                        </Button>
+                                        {shouldInviteToRate(item) && (
+                                          <Button
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={() => {
+                                              setRatingModalItem(item);
+                                              setIsRatingModalOpen(true);
+                                            }}
+                                          >
+                                            <Star className="w-4 h-4 mr-1" />
+                                            Rate
+                                          </Button>
+                                        )}
+                                        <Button
+                                          size="sm"
+                                          variant="destructive"
+                                          onClick={() => setDeleteItemId(item.id)}
+                                        >
+                                          Delete
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  }
+                                  trailingContent={
+                                    <div className="flex items-center gap-3">
+                                      {item.status && (
+                                        <div
+                                          className={`px-3 py-1.5 rounded-full text-xs font-semibold ${
+                                            item.status === ItemStatus.COMPLETED
+                                              ? "bg-green-500/20 text-green-400 border border-green-500/30"
+                                              : "bg-white/10 text-white/80 border border-white/20"
+                                          }`}
+                                        >
+                                          {item.status === ItemStatus.COMPLETED
+                                            ? "COMPLETED"
+                                            : "PENDING"}
+                                        </div>
+                                      )}
+                                      {item.list_rating && (
+                                        <div className="text-yellow-400 text-sm font-medium">
+                                          ★ {item.list_rating}
+                                        </div>
+                                      )}
+                                    </div>
+                                  }
+                                />
+                              );
+                            })}
+                          </VerticalList>
+                        )}
+                      </div>
+                    );
+                    })}
+                  </div>
+                ) : (
+                  // Flat view (no grouping) or reorder mode
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragStart={handleDragStart}
+                    onDragOver={handleDragOver}
+                    onDragEnd={handleDragEnd}
+                    onDragCancel={handleDragCancel}
                   >
-                    <VerticalList spacing="md">
-                      {listItems.map((item) => {
+                    <SortableContext
+                      items={processedData.displayItems.map((item) => item.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <VerticalList spacing="md">
+                        {processedData.displayItems.map((item) => {
                     const contentItem = item.content_item;
                     const sourceData = contentItem.source_data;
                     const ContentIcon = getContentTypeIcon(
@@ -828,21 +1484,175 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
                     ) : null}
                   </DragOverlay>
                 </DndContext>
+                )
               ) : (
-                <DndContext
-                  sensors={sensors}
-                  collisionDetection={closestCenter}
-                  onDragStart={handleDragStart}
-                  onDragOver={handleDragOver}
-                  onDragEnd={handleDragEnd}
-                  onDragCancel={handleDragCancel}
-                >
-                  <SortableContext
-                    items={listItems.map((item) => item.id)}
-                    strategy={rectSortingStrategy}
+                // Gallery View
+                processedData.groupedItems ? (
+                  // Grouped gallery view
+                  <div className="space-y-8">
+                    {processedData.groupedItems.map((group) => {
+                      const groupPage = groupPages[group.groupKey] || 1;
+                      const pagination = paginateGroup(group, groupPage, pageSize);
+                      const { paginatedItems, totalPages: groupTotalPages } = pagination;
+
+                      return (
+                        <div key={group.groupKey} className="space-y-4">
+                          {/* Group Header with Inline Controls */}
+                          <div className="flex items-center pb-2 border-b border-white/10 flex-wrap gap-2">
+                            <h3 className="text-lg font-semibold text-white">
+                              {group.groupLabel}
+                            </h3>
+                            <span className="text-sm text-white/60">
+                              ({group.count} {group.count === 1 ? 'item' : 'items'})
+                            </span>
+                            {!isReorderMode && (
+                              <div className="flex items-center gap-1">
+                                <Select
+                                  value={sortOrder}
+                                  onChange={(e) => handleSortOrderChange(e.target.value as SortOrder)}
+                                  className="px-2 py-1 text-xs rounded cursor-pointer bg-white/5 hover:bg-white/10 text-white border border-white/20"
+                                >
+                                  <option value="asc">↑ Asc</option>
+                                  <option value="desc">↓ Desc</option>
+                                </Select>
+                                <Select
+                                  value={pageSize}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    handlePageSizeChange(val === 'all' ? 'all' : Number(val) as PageSize);
+                                  }}
+                                  className="px-2 py-1 text-xs rounded cursor-pointer bg-white/5 hover:bg-white/10 text-white border border-white/20"
+                                >
+                                  <option value={10}>10</option>
+                                  <option value={20}>20</option>
+                                  <option value={50}>50</option>
+                                  <option value="all">All</option>
+                                </Select>
+                                {(pageSize !== 'all' && groupTotalPages > 1) && (
+                                  <>
+                                    <button
+                                      onClick={() => setGroupPages(prev => ({ ...prev, [group.groupKey]: 1 }))}
+                                      disabled={groupPage === 1}
+                                      className="p-1 rounded cursor-pointer bg-white/5 hover:bg-white/10 text-white border border-white/20 disabled:opacity-30 disabled:cursor-not-allowed"
+                                      title="First page"
+                                    >
+                                      <ChevronsLeft className="w-3 h-3" />
+                                    </button>
+                                    <button
+                                      onClick={() => setGroupPages(prev => ({ ...prev, [group.groupKey]: groupPage - 1 }))}
+                                      disabled={groupPage === 1}
+                                      className="p-1 rounded cursor-pointer bg-white/5 hover:bg-white/10 text-white border border-white/20 disabled:opacity-30 disabled:cursor-not-allowed"
+                                      title="Previous page"
+                                    >
+                                      <ChevronLeft className="w-3 h-3" />
+                                    </button>
+                                    <span className="text-xs text-white/60 px-1">
+                                      {groupPage}/{groupTotalPages}
+                                    </span>
+                                    <button
+                                      onClick={() => setGroupPages(prev => ({ ...prev, [group.groupKey]: groupPage + 1 }))}
+                                      disabled={groupPage === groupTotalPages}
+                                      className="p-1 rounded cursor-pointer bg-white/5 hover:bg-white/10 text-white border border-white/20 disabled:opacity-30 disabled:cursor-not-allowed"
+                                      title="Next page"
+                                    >
+                                      <ChevronRight className="w-3 h-3" />
+                                    </button>
+                                    <button
+                                      onClick={() => setGroupPages(prev => ({ ...prev, [group.groupKey]: groupTotalPages }))}
+                                      disabled={groupPage === groupTotalPages}
+                                      className="p-1 rounded cursor-pointer bg-white/5 hover:bg-white/10 text-white border border-white/20 disabled:opacity-30 disabled:cursor-not-allowed"
+                                      title="Last page"
+                                    >
+                                      <ChevronsRight className="w-3 h-3" />
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                        {/* Sub-groups or items */}
+                        {group.subGroups ? (
+                          <div className="space-y-6 pl-4">
+                            {group.subGroups.map((subGroup) => {
+                              // Filter sub-groups to only show items that are in the paginated set
+                              const itemsInPaginatedSet = subGroup.items.filter(item =>
+                                paginatedItems.some(pItem => pItem.id === item.id)
+                              );
+
+                              return itemsInPaginatedSet.length > 0 ? (
+                              <div key={subGroup.groupKey} className="space-y-3">
+                                {/* Sub-group Header */}
+                                <div className="flex items-center gap-2 text-white/80">
+                                  <h4 className="text-base font-medium">
+                                    {subGroup.groupLabel}
+                                  </h4>
+                                  <span className="text-xs text-white/50">
+                                    ({subGroup.count})
+                                  </span>
+                                </div>
+
+                                {/* Sub-group Items Grid */}
+                                <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 3xl:grid-cols-5 4xl:grid-cols-6 5xl:grid-cols-7 6xl:grid-cols-8 gap-4">
+                                  {itemsInPaginatedSet.map((item) => (
+                                    <ReorderableListItemCard
+                                      key={item.id}
+                                      item={item}
+                                      activeId={null}
+                                      onToggleStatus={handleToggleItemStatus}
+                                      onDelete={(itemId: number) => setDeleteItemId(itemId)}
+                                      onRateClick={() => {
+                                        setRatingModalItem(item);
+                                        setIsRatingModalOpen(true);
+                                      }}
+                                      showRatingInvitation={shouldInviteToRate(item)}
+                                      isReorderMode={false}
+                                    />
+                                  ))}
+                                </div>
+                              </div>
+                              ) : null;
+                            })}
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 3xl:grid-cols-5 4xl:grid-cols-6 5xl:grid-cols-7 6xl:grid-cols-8 gap-4">
+                            {paginatedItems.map((item) => (
+                              <ReorderableListItemCard
+                                key={item.id}
+                                item={item}
+                                activeId={null}
+                                onToggleStatus={handleToggleItemStatus}
+                                onDelete={(itemId: number) => setDeleteItemId(itemId)}
+                                onRateClick={() => {
+                                  setRatingModalItem(item);
+                                  setIsRatingModalOpen(true);
+                                }}
+                                showRatingInvitation={shouldInviteToRate(item)}
+                                isReorderMode={false}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                    })}
+                  </div>
+                ) : (
+                  // Flat gallery view or reorder mode
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragStart={handleDragStart}
+                    onDragOver={handleDragOver}
+                    onDragEnd={handleDragEnd}
+                    onDragCancel={handleDragCancel}
                   >
-                    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 3xl:grid-cols-5 4xl:grid-cols-6 5xl:grid-cols-7 6xl:grid-cols-8 gap-4">
-                      {listItems.map((item) => (
+                    <SortableContext
+                      items={processedData.displayItems.map((item) => item.id)}
+                      strategy={rectSortingStrategy}
+                    >
+                      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 3xl:grid-cols-5 4xl:grid-cols-6 5xl:grid-cols-7 6xl:grid-cols-8 gap-4">
+                        {processedData.displayItems.map((item) => (
                         <ReorderableListItemCard
                           key={item.id}
                           item={item}
@@ -883,8 +1693,9 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
                         );
                       })()
                     ) : null}
-                  </DragOverlay>
-                </DndContext>
+                    </DragOverlay>
+                  </DndContext>
+                )
               )}
 
             </div>
@@ -1001,6 +1812,81 @@ export default function ListDetailPage({ listId }: ListDetailPageProps) {
                       </div>
                     </div>
                   )}
+                </div>
+              </div>
+
+              {/* List Controls Card */}
+              <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+                <h3 className="text-xl font-bold text-white mb-4">View Options</h3>
+                <div className="space-y-4">
+                  {/* Grouping Section */}
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-semibold text-foreground/80">Grouping</h4>
+                    <div className="space-y-2">
+                      <div>
+                        <label className="text-xs text-muted-foreground mb-1 block">
+                          Primary
+                        </label>
+                        <Select
+                          value={primaryGroup}
+                          onChange={(e) => handlePrimaryGroupChange(e.target.value as GroupBy)}
+                          disabled={isReorderMode}
+                          className="w-full px-3 py-2 text-sm rounded-md cursor-pointer bg-white/5 hover:bg-white/10 text-white border border-white/20 disabled:opacity-50"
+                        >
+                          <option value="none">No Grouping</option>
+                          <option value="status">Status</option>
+                          <option value="content_type">Content Type</option>
+                          <option value="date_added">Date Added</option>
+                          <option value="rating">Rating</option>
+                        </Select>
+                      </div>
+                      {primaryGroup !== "none" && (
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1 block">
+                            Secondary (optional)
+                          </label>
+                          <Select
+                            value={secondaryGroup}
+                            onChange={(e) => handleSecondaryGroupChange(e.target.value as GroupBy)}
+                            disabled={isReorderMode}
+                            className="w-full px-3 py-2 text-sm rounded-md cursor-pointer bg-white/5 hover:bg-white/10 text-white border border-white/20 disabled:opacity-50"
+                          >
+                            <option value="none">No Grouping</option>
+                            {primaryGroup !== "status" && <option value="status">Status</option>}
+                            {primaryGroup !== "content_type" && <option value="content_type">Content Type</option>}
+                            {primaryGroup !== "date_added" && <option value="date_added">Date Added</option>}
+                            {primaryGroup !== "rating" && <option value="rating">Rating</option>}
+                          </Select>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Sorting Section */}
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-semibold text-foreground/80">Sorting</h4>
+                    <div className="space-y-2">
+                      <div>
+                        <label className="text-xs text-muted-foreground mb-1 block">
+                          Sort by
+                        </label>
+                        <Select
+                          value={sortBy}
+                          onChange={(e) => handleSortByChange(e.target.value as SortBy)}
+                          disabled={isReorderMode}
+                          className="w-full px-3 py-2 text-sm rounded-md cursor-pointer bg-white/5 hover:bg-white/10 text-white border border-white/20 disabled:opacity-50"
+                        >
+                          <option value="list_order">Default Order</option>
+                          <option value="added_at">Date Added</option>
+                          <option value="name">Name</option>
+                          <option value="completed_at">Completed Date</option>
+                          <option value="list_rating">Rating</option>
+                          <option value="added_by">Added By</option>
+                          <option value="content_type">Type</option>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 

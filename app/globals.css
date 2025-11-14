@@ -411,3 +411,23 @@
 .animate-reorder-wiggle:nth-child(20) {
   animation-delay: 0.21s;
 }
+
+/* Custom Select Styling */
+.custom-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+.custom-select option {
+  background-color: rgb(23 23 23);
+  color: white;
+  padding: 8px;
+}
+
+.custom-select option:hover,
+.custom-select option:focus,
+.custom-select option:checked {
+  background-color: rgb(38 38 38);
+  color: white;
+}
