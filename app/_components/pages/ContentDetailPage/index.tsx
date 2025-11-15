@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { contentItemActions, videoActions, musicActions, ratingActions } from "@/lib/api";
 import { ContentItem, ContentType, SourceApi, Rating, RatingCreate, ImageType, TVSeason } from "@/lib/api/types";
 import { getAuthorNames } from "@/lib/utils/authorUtils";
@@ -314,9 +315,11 @@ export function ContentDetailPage({
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer"
                 >
-                  <img
+                  <Image
                     src="/images/logos/spotify.svg"
                     alt="Spotify"
+                    width={28}
+                    height={28}
                     className="h-7 w-auto"
                   />
                 </a>
@@ -449,10 +452,12 @@ export function ContentDetailPage({
               className="relative overflow-hidden rounded-2xl"
               style={{ aspectRatio: "16 / 9" }}
             >
-              <img
+              <Image
                 src={image.src}
                 alt={image.alt}
-                className="w-full h-full object-cover"
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
               />
             </div>
           ))}

@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 interface PlatformFlagProps {
   countryCode: string;
   size?: number;
@@ -15,10 +17,12 @@ export function PlatformFlag({
       title={countryCode}
       style={{ width: size, height: size }}
     >
-      <img
+      <Image
         src={`https://flagsapi.com/${countryCode}/flat/64.png`}
         alt={countryCode}
         title={countryCode}
+        width={size}
+        height={size}
         className="h-14 w-auto object-cover"
       />
     </div>

@@ -23,6 +23,11 @@ const nextConfig: NextConfig = {
         hostname: 'covers.openlibrary.org',
         pathname: '/b/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'flagsapi.com',
+        pathname: '/**',
+      },
     ],
   },
 };

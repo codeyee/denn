@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Platform } from "@/lib/api/types";
 import { getPlatformImageUrl } from "@/lib/utils/platformImageOverrides";
 
@@ -14,10 +15,13 @@ export function PlatformTile({ platform }: PlatformTileProps) {
     <div className="flex flex-col items-center gap-2">
       <div className="relative w-14 h-14 rounded-lg overflow-hidden bg-white/10">
         {imageUrl && (
-          <img
+          <Image
             src={imageUrl}
             alt={platform.title}
+            width={56}
+            height={56}
             className="w-full h-full object-cover"
+            unoptimized={imageUrl.startsWith('https://upload.wikimedia.org')}
           />
         )}
       </div>
