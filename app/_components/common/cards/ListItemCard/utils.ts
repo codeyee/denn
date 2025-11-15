@@ -1,4 +1,5 @@
-import { ListItem, Author } from "@/types";
+import { ListItem } from "@/types";
+import { Author } from "@/lib/api/types";
 import { formatSeasonTitle } from "@/lib/utils/titleUtils";
 
 export function getListItemTitle(item: ListItem): string {
@@ -6,10 +7,9 @@ export function getListItemTitle(item: ListItem): string {
   const sourceData = contentItem.source_data;
 
   const isSeason = contentItem.content_type === "SEASON";
-  const title =
-    isSeason && "tv_show_name" in sourceData
-      ? formatSeasonTitle(sourceData.tv_show_name, sourceData.title)
-      : sourceData?.title || "Untitled";
+  const title = isSeason && "tv_show_name" in sourceData
+    ? formatSeasonTitle(sourceData.tv_show_name, sourceData.title)
+    : sourceData?.title || "Untitled";
 
   return title;
 }

@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { Modal } from "@/app/_components/common/modals/Modal";
 import { Button } from "@/app/_components/common/ui/Button";
 import { useListsStore } from "@/app/_stores/lists-store";
-import { ContentType, SourceApi, TVSeason } from "@/lib/api/types";
+import { ContentType, TVSeason } from "@/lib/api/types";
 import { ListWithItems } from "@/types";
 import { useListOperations } from "./hooks/useListOperations";
 import { useSeasonSelection } from "./hooks/useSeasonSelection";
@@ -52,7 +52,6 @@ export function AddToListModal({
   const seasonSelection = useSeasonSelection(tvShowSeasons);
 
   const phases = useModalPhases({
-    isOpen,
     isMultiSeasonShow
   });
 
@@ -63,7 +62,8 @@ export function AddToListModal({
       seasonSelection.resetSelection();
       phases.resetPhases();
     }
-  }, [isOpen]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, fetchLists, operations.setError, seasonSelection.resetSelection, phases.resetPhases]);
 
   const handleClose = () => {
     if (!operations.addingToListId && !operations.creatingNewList) {
