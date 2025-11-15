@@ -6,8 +6,8 @@ import { Navbar } from "../../layout/Navbar";
 import { Footer } from "../../layout/Footer";
 import { EditListModal } from "../../common/modals/EditListModal";
 import { ConfirmDialog } from "../../common/modals/ConfirmDialog";
-import { RateItemModal } from "../../common/modals/RateItemModal";
-import { ItemStatus } from "@/lib/types";
+import { RatingModal } from "../../common/modals/RatingModal";
+import { ItemStatus, Rating, RatingCreate } from "@/lib/types";
 import { ListItem, MemberRating } from "@/lib/types";
 import { GroupBy } from "@/lib/types/listView";
 import { formatSeasonTitle } from "@/lib/utils/titleUtils";
@@ -99,6 +99,34 @@ export function ListDetailPage({ listId }: ListDetailPageProps) {
       return !hasUserRated;
     };
   }, [currentUser]);
+
+  // Extract user's existing rating from ratingModalItem
+  const userExistingRating = useMemo((): Rating | null => {
+    if (!modals.ratingModalItem || !currentUser) return null;
+
+    const memberRating = modals.ratingModalItem.member_ratings?.find(
+      (mr: MemberRating) => mr.user?.id === currentUser.id
+    );
+
+    if (!memberRating) return null;
+
+    // Convert MemberRating to Rating format for RatingModal
+    return {
+      id: 0, // Not used by RatingModal for new ratings
+      user: currentUser,
+      content_item: modals.ratingModalItem.content_item,
+      score: String(memberRating.rating),
+      comment: null, // MemberRating doesn't have comments
+      created_at: "",
+      updated_at: "",
+    };
+  }, [modals.ratingModalItem, currentUser]);
+
+  // Wrapper function to handle rating submission
+  const handleRatingSubmit = async (data: RatingCreate) => {
+    if (!modals.ratingModalItem) return;
+    await actions.handleSubmitRating(modals.ratingModalItem, data);
+  };
 
   // Compute primary and secondary groups from groupBy array for UI compatibility
   const primaryGroup = groupBy[0] || "none";
@@ -378,23 +406,15 @@ export function ListDetailPage({ listId }: ListDetailPageProps) {
         isLoading={actions.actionLoading}
       />
 
-      {modals.ratingModalItem && (
-        <RateItemModal
+      {currentUser && modals.ratingModalItem && (
+        <RatingModal
           isOpen={modals.isRatingModalOpen}
-          onOpenChange={modals.closeRatingModal}
-          onRate={(rating) =>
-            actions.handleRateItem(modals.ratingModalItem!, rating)
-          }
-          itemTitle={
-            modals.ratingModalItem.content_item.content_type === "SEASON" &&
-            "tv_show_name" in modals.ratingModalItem.content_item.source_data
-              ? formatSeasonTitle(
-                  modals.ratingModalItem.content_item.source_data.tv_show_name,
-                  modals.ratingModalItem.content_item.source_data.title
-                )
-              : modals.ratingModalItem.content_item.source_data?.title ||
-                "this item"
-          }
+          onOpenChange={(open) => {
+            if (!open) modals.closeRatingModal();
+          }}
+          onSubmitRating={handleRatingSubmit}
+          existingRating={userExistingRating}
+          contentItem={modals.ratingModalItem.content_item}
           isLoading={actions.actionLoading}
         />
       )}

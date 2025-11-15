@@ -7,7 +7,7 @@ import * as z from "zod";
 import { Modal } from "@/app/_components/common/modals/Modal";
 import { Button } from "@/app/_components/common/ui/Button";
 import { StarRating } from "@/app/_components/common/ui/StarRating";
-import { ContentType, Rating, RatingCreate, SourceApi } from "@/lib/types";
+import { ContentType, Rating, RatingCreate, SourceApi, ContentItem } from "@/lib/types";
 
 // Define validation schema
 const ratingSchema = z.object({
@@ -29,6 +29,7 @@ interface RatingModalProps {
   onOpenChange: (open: boolean) => void;
   onSubmitRating: (data: RatingCreate) => Promise<void>;
   existingRating?: Rating | null;
+  contentItem?: ContentItem | null;
   isLoading?: boolean;
 }
 
@@ -37,6 +38,7 @@ export function RatingModal({
   onOpenChange,
   onSubmitRating,
   existingRating,
+  contentItem,
   isLoading,
 }: RatingModalProps) {
   const {
@@ -75,12 +77,18 @@ export function RatingModal({
 
   const onSubmit = async (data: RatingFormData) => {
     try {
+      // Use contentItem if provided, otherwise fall back to existingRating.content_item
+      const item = contentItem || existingRating?.content_item;
+      if (!item) {
+        throw new Error("No content item available for rating");
+      }
+
       await onSubmitRating({
         score: data.score.toString(),
         comment: data.comment || null,
-        source_api: existingRating?.content_item.source_api as SourceApi,
-        external_id: existingRating?.content_item.external_id as string,
-        content_type: existingRating?.content_item.content_type as ContentType,
+        source_api: item.source_api as SourceApi,
+        external_id: item.external_id as string,
+        content_type: item.content_type as ContentType,
       });
 
       // Reset form and close modal on success
