@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from content.models import UserList
-from .user import UserSerializer
+from .user import UserSerializer, MemberSerializer
 
 
 class UserListSerializer(serializers.ModelSerializer):
@@ -44,8 +44,9 @@ class UserListSerializer(serializers.ModelSerializer):
 
 class UserListDetailSerializer(serializers.ModelSerializer):
     owner = UserSerializer(read_only=True)
-    members = UserSerializer(many=True, read_only=True)
+    members = serializers.SerializerMethodField()
     items = serializers.SerializerMethodField()
+    item_count = serializers.SerializerMethodField()
 
     class Meta:
         model = UserList
@@ -58,6 +59,7 @@ class UserListDetailSerializer(serializers.ModelSerializer):
             'owner',
             'members',
             'items',
+            'item_count',
             'created_at',
             'updated_at',
         ]
@@ -69,6 +71,34 @@ class UserListDetailSerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at',
         ]
+
+    def get_members(self, obj):
+        """Return all members including the owner with is_owner flag"""
+        # Get all existing members
+        members_qs = obj.members.all()
+
+        # Check if owner is already in members
+        member_ids = list(members_qs.values_list('id', flat=True))
+
+        # If owner is not in members, add them
+        if obj.owner.id not in member_ids:
+            # Combine owner with existing members
+            from django.contrib.auth.models import User
+            members_list = list(members_qs)
+            members_list.insert(0, obj.owner)  # Add owner at the beginning
+        else:
+            members_list = list(members_qs)
+
+        # Serialize with context containing the user_list for is_owner calculation
+        return MemberSerializer(
+            members_list,
+            many=True,
+            context={'user_list': obj}
+        ).data
+
+    def get_item_count(self, obj):
+        """Return total count of items in the list"""
+        return obj.items.count()
 
     def get_items(self, obj):
         from .list_item import ListItemSerializer
