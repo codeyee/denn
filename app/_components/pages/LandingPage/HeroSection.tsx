@@ -1,7 +1,7 @@
 "use client";
 
-import { BlurText } from "@/app/_components/lib/TextAnimations/BlurText";
-import { GradientText } from "@/app/_components/lib/TextAnimations/GradientText";
+import { BlurText } from "./components/TextAnimations/BlurText";
+import { GradientText } from "./components/TextAnimations/GradientText";
 import { Badge } from "@/app/_components/lib/badge";
 import { Button } from "@/app/_components/lib/button";
 import { useState } from "react";

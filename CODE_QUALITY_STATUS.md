@@ -27,6 +27,12 @@ The codebase demonstrates **strong adherence** to CLAUDE.md standards with sever
 - **4 single-file folders** (FORBIDDEN per RULE #5)
 - **240 type assertions** across 67 files (needs review)
 
+### Recent Improvements ✅ (Just Completed)
+- ✅ **Deleted 2 unused lib components** (avatar.tsx, tabs.tsx - 119 lines removed)
+- ✅ **Relocated DomeGallery** to LandingPage/components (page-specific placement)
+- ✅ **Relocated TextAnimations** to LandingPage/components (only used there)
+- ✅ **Cleaned up lib/ folder** - Now contains only widely-used Radix UI wrappers
+
 ---
 
 ## 🚨 CRITICAL RULE VIOLATIONS
@@ -441,6 +447,44 @@ ListDetailPage/
 - **Average File Size**: ~159 lines (good!)
 - **Files Over 200 Lines**: 7 files (6.5% - needs improvement)
 - **Files Over 300 Lines**: 3 files (2.8% - critical)
+
+### File Distribution by Category
+
+| Category | Files | Lines | Avg Size | Status |
+|----------|-------|-------|----------|--------|
+| Components | 80 | ~13,117 | 164 | ✅ Good avg |
+| Hooks | 6 | 324 | 54 | ✅ Excellent |
+| Stores | 5 | 752 | 150 | ✅ Good |
+| API/Utils | 16 | 1,965 | 123 | ✅ Good |
+| Types | 3 | 210 | 70 | ✅ Excellent |
+
+### Directory Organization
+
+```
+app/
+├── _components/              # 80 files, ~13,117 lines
+│   ├── cards/               # ContentCard, ListCard, ListItemCard, Card
+│   ├── common/              # Modals, UI components, lists
+│   ├── forms/               # LoginForm, RegisterForm
+│   ├── layout/              # Navbar, Footer
+│   ├── lib/                 # Radix UI wrappers (button, card, dialog, etc.)
+│   └── pages/               # Page-specific components
+│       ├── LandingPage/     # Hero, TypesSection, Background, DomeGallery
+│       ├── HomePage/        # ContentCarousels, FeaturedBanner
+│       ├── ListDetailPage/  # ⭐ GOLD STANDARD (hooks + components)
+│       ├── ContentDetailPage/
+│       └── SearchPage/
+├── _hooks/                  # 6 custom hooks (useApi, useAuth, etc.)
+├── _stores/                 # 5 Zustand stores (auth, content, lists, ui, settings)
+├── _providers/              # StoreProvider
+└── [routes]/                # Next.js pages
+
+lib/
+├── api/                     # API client, actions, types
+└── utils/                   # navigationUtils, contentTypeUtils, imageUtils, etc.
+
+types/                       # TypeScript definitions
+```
 
 ### CLAUDE.md Compliance Scores
 
