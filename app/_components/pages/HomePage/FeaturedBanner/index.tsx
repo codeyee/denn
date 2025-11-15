@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
-import { Noise } from "@/app/_components/common/animations/Noise";
+import { Noise } from "@/app/_components/common/Noise";
 import { Content } from "@/types";
 import { ContentType } from "@/lib/api/types";
 import { getSourceApi } from "@/lib/utils/contentTypeUtils";

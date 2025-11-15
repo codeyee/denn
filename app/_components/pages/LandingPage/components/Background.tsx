@@ -2,7 +2,7 @@
 
 import { ReactNode, useEffect, useRef, useState } from "react";
 import { DomeGallery } from "./DomeGallery";
-import { Noise } from "@/app/_components/common/animations/Noise";
+import { Noise } from "@/app/_components/common/Noise";
 
 export type BackgroundCardImage = {
   src: string;

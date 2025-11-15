@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useRef } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import { useCarouselScroll } from "./hooks/useCarouselScroll";
 
 interface CarouselProps {
   children: React.ReactNode;
@@ -23,88 +24,25 @@ export function Carousel({
   targetCardWidth = 250,
   disableNavigation = false,
 }: CarouselProps) {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isHovered, setIsHovered] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Convert children to array for easier manipulation
   const items = Array.isArray(children) ? children : [children];
   const totalItems = items.length;
 
-  // Calculate how many items can be displayed at once
-  const [visibleItems, setVisibleItems] = useState(itemsPerView || 4);
-
-  // Responsive adjustment
-  useEffect(() => {
-    const handleResize = () => {
-      const width = window.innerWidth;
-      setIsMobile(width < 768);
-
-      // If itemsPerView is explicitly set, use breakpoint logic
-      if (itemsPerView !== undefined) {
-        if (width < 640) {
-          setVisibleItems(2);
-        } else if (width < 768) {
-          setVisibleItems(2);
-        } else if (width < 1024) {
-          setVisibleItems(3);
-        } else {
-          setVisibleItems(itemsPerView);
-        }
-      } else {
-        // Calculate based on available width and target card width
-        // Account for padding (12px * 2 on each side = 48px on mobile, 96px on desktop)
-        const horizontalPadding = width < 768 ? 32 : 96;
-        const availableWidth = width - horizontalPadding;
-
-        // Calculate how many cards can fit: (availableWidth + gap) / (targetCardWidth + gap)
-        const calculatedItems = Math.floor(
-          (availableWidth + gap) / (targetCardWidth + gap)
-        );
-
-        // Ensure at least 2 items on mobile, at least 3 on tablet, and reasonable max
-        if (width < 640) {
-          setVisibleItems(Math.max(2, Math.min(calculatedItems, 3)));
-        } else if (width < 768) {
-          setVisibleItems(Math.max(2, Math.min(calculatedItems, 4)));
-        } else if (width < 1024) {
-          setVisibleItems(Math.max(3, Math.min(calculatedItems, 6)));
-        } else {
-          setVisibleItems(Math.max(4, Math.min(calculatedItems, 10)));
-        }
-      }
-    };
-
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, [itemsPerView, targetCardWidth, gap]);
-
-  // Calculate the maximum index for scrolling
-  const maxIndex = Math.max(0, totalItems - visibleItems);
-
-  // Navigate to previous items
-  const handlePrevious = useCallback(() => {
-    setCurrentIndex((prev) => {
-      // Cyclic behavior: if at the start, go to the end
-      if (prev === 0) {
-        return maxIndex;
-      }
-      return Math.max(0, prev - visibleItems);
-    });
-  }, [maxIndex, visibleItems]);
-
-  // Navigate to next items
-  const handleNext = useCallback(() => {
-    setCurrentIndex((prev) => {
-      // Cyclic behavior: if at the end, go to the start
-      if (prev >= maxIndex) {
-        return 0;
-      }
-      return Math.min(maxIndex, prev + visibleItems);
-    });
-  }, [maxIndex, visibleItems]);
+  const {
+    currentIndex,
+    isHovered,
+    isMobile,
+    visibleItems,
+    setIsHovered,
+    handlePrevious,
+    handleNext,
+  } = useCarouselScroll({
+    totalItems,
+    itemsPerView,
+    targetCardWidth,
+    gap,
+  });
 
   const showNavigation = !disableNavigation && totalItems > visibleItems;
 
