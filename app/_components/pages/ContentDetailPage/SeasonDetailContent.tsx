@@ -79,7 +79,6 @@ export function SeasonDetailContent({
         <RatingsSection
           contentItem={contentItem}
           userRating={userRating}
-          onRatingChange={onRatingChange}
           onEditRating={onEditRating}
           onDeleteRating={onDeleteRating}
           isRatingLoading={isRatingLoading}

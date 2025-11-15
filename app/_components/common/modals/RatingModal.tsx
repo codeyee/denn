@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Modal } from "@/app/_components/common/modals/Modal";
@@ -46,7 +46,7 @@ export function RatingModal({
     reset,
     setError,
     setValue,
-    watch,
+    control,
   } = useForm<RatingFormData>({
     resolver: zodResolver(ratingSchema),
     mode: "onTouched",
@@ -56,7 +56,7 @@ export function RatingModal({
     },
   });
 
-  const score = watch("score");
+  const score = useWatch({ control, name: "score" }) ?? 0;
 
   // Reset form when modal opens/closes or existingRating changes
   useEffect(() => {

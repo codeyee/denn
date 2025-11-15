@@ -1,15 +1,5 @@
 import { Image } from "@/lib/api/types";
 
-interface LegacyImageItem {
-    images?: {
-        artworks?: Array<{ original?: string; standard?: string }>;
-        screenshots?: Array<{ original?: string; standard?: string }>;
-        backdrop?: { original?: string; standard?: string };
-        poster?: { original?: string; standard?: string };
-    } | Image[];
-    image_url?: string;
-}
-
 export function getImageUrl(
     images: Image[] | undefined | null,
     type: string,
@@ -72,41 +62,4 @@ export function getCardImageUrl(
     if (gallery) return gallery;
 
     return imageUrl || null;
-}
-
-export function getLegacyImageUrl(item: LegacyImageItem): string | undefined {
-    if (item?.images) {
-        const images = item.images;
-
-        if (Array.isArray(images)) {
-            return getBannerImageUrl(images, item.image_url) || undefined;
-        }
-
-        if (Array.isArray(images?.artworks) && images.artworks.length > 0) {
-            const first = images.artworks[0];
-            if (first?.original) return first.original;
-            if (first?.standard) return first.standard;
-        }
-
-        if (
-            Array.isArray(images?.screenshots) &&
-            images.screenshots.length > 0
-        ) {
-            const first = images.screenshots[0];
-            if (first?.original) return first.original;
-            if (first?.standard) return first.standard;
-        }
-
-        if (images.backdrop) {
-            if (images.backdrop.original) return images.backdrop.original;
-            if (images.backdrop.standard) return images.backdrop.standard;
-        }
-
-        if (images.poster) {
-            if (images.poster.original) return images.poster.original;
-            if (images.poster.standard) return images.poster.standard;
-        }
-    }
-
-    return item?.image_url || undefined;
 }

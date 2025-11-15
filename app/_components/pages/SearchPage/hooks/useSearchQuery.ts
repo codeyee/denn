@@ -9,7 +9,7 @@ interface UseSearchQueryReturn {
   debouncedQuery: string;
   setSearchQuery: (query: string) => void;
   hasUserTyped: boolean;
-  mobileInputRef: React.RefObject<HTMLInputElement>;
+  mobileInputRef: React.RefObject<HTMLInputElement | null>;
 }
 
 export function useSearchQuery(): UseSearchQueryReturn {

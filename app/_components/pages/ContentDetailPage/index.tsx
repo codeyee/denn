@@ -656,7 +656,6 @@ export function ContentDetailPage({
             key={ratingRefreshKey}
             contentItem={contentItem}
             userRating={userRating}
-            onRatingChange={handleRatingChange}
             onEditRating={() => setIsRatingModalOpen(true)}
             onDeleteRating={handleDeleteRating}
             isRatingLoading={isRatingLoading}

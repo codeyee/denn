@@ -5,6 +5,7 @@ import { List as ListIcon, Package, Lock, Users } from "lucide-react";
 import { Card } from "./Card";
 import { ListType } from "@/lib/api/types";
 import { ListWithItems, SourceData } from "@/types";
+import { getCardImageUrl } from "@/lib/utils/imageUtils";
 
 interface ListCardProps {
   list: ListWithItems;
@@ -37,19 +38,13 @@ export function ListCard({ list, className }: ListCardProps) {
 
   const footerInfo = isShared ? memberInfo + " • " + itemInfo : itemInfo;
 
-  // Collect all images from list items (memoized to prevent unnecessary recalculations)
   const backgroundImages = useMemo(() => {
     const images: string[] = [];
     if (hasItems) {
       list.items!.forEach((item) => {
         if (item?.content_item?.source_data) {
           const sourceData = item.content_item.source_data as SourceData;
-          // Try different possible image fields from different content types
-          const image = sourceData.image_url ||
-                       sourceData.poster_path ||
-                       sourceData.cover_url ||
-                       sourceData.cover ||
-                       sourceData.images?.[0]?.image_url;
+          const image = getCardImageUrl(sourceData.images, sourceData.image_url);
           if (image) {
             images.push(image);
           }

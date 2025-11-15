@@ -52,11 +52,3 @@ export function getContentTypeDisplayName(
 export function isValidContentType(type: string): type is ContentType {
   return type in CONTENT_TYPE_CONFIG;
 }
-
-export function getContentTypesBySourceApi(
-  sourceApi: SourceApi
-): ContentType[] {
-  return Object.entries(CONTENT_TYPE_CONFIG)
-    .filter(([_, config]) => config.sourceApi === sourceApi)
-    .map(([type, _]) => type as ContentType);
-}

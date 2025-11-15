@@ -40,11 +40,12 @@ export const DEFAULT_LIST_VIEW_PREFERENCES: ListViewPreferences = {
 export const MAX_GROUPING_ATTRIBUTES = 4;
 
 export interface GroupedItems<T> {
-  groupKey: string;        // Composite key: "MOVIE-5 Stars-COMPLETED"
-  groupLabel: string;      // Human-readable label
+  groupKey: string;
+  groupLabel: string;
   items: T[];
   count: number;
-  groupAttributes: string[]; // Individual attribute values for this group
+  groupAttributes: string[];
+  subGroups?: GroupedItems<T>[];
 }
 
 export interface PaginatedResult<T> {

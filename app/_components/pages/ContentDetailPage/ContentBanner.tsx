@@ -1,7 +1,7 @@
 "use client";
 
 import { SourceApi, Author } from "@/lib/api/types";
-import { getLegacyImageUrl, LegacyImageItem } from "@/lib/utils/imageUtils";
+import { getBannerImageUrl } from "@/lib/utils/imageUtils";
 import { formatAuthors } from "@/lib/utils/authorUtils";
 import { CONTENT_TYPE_ICONS } from "@/lib/utils/contentTypeIcons";
 import { formatSeasonTitle } from "@/lib/utils/titleUtils";
@@ -30,7 +30,7 @@ export function ContentBanner({
 }: ContentBannerProps) {
   const contentType = item.type;
   const Icon = CONTENT_TYPE_ICONS[contentType];
-  const backgroundUrl = getLegacyImageUrl(item as LegacyImageItem);
+  const backgroundUrl = getBannerImageUrl(item.images, item.image_url) || undefined;
 
   const getOriginalTitle = (item: Content): string => {
     if ("original_title" in item && item.original_title) {

@@ -45,7 +45,7 @@ export function useListItemActions({
     try {
       await updateList(listId, name, description, listType);
       const listData = await listActions.get(listId);
-      setListItems(listData.items);
+      setListItems(listData.items as ListItem[]);
     } finally {
       setActionLoading(false);
     }
@@ -143,17 +143,17 @@ export function useListItemActions({
                     ? prevItem.member_ratings
                     : []),
                   {
-                    user: { id: currentUserId } as Partial<User>,
+                    user: { id: currentUserId } as User,
                     rating: rating,
                   },
-                ],
+                ] as MemberRating[],
               }
             : prevItem
         )
       );
 
       const listData = await listActions.get(listId);
-      setListItems(listData.items);
+      setListItems(listData.items as ListItem[]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to rate item");
     }

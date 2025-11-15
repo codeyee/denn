@@ -29,7 +29,6 @@ export function RatingsSection({
   const [page, setPage] = useState(1);
   const [hasNext, setHasNext] = useState(false);
   const [hasPrevious, setHasPrevious] = useState(false);
-  const [_, setTotalCount] = useState(0);
 
   useEffect(() => {
     const fetchRatings = async () => {
@@ -47,7 +46,6 @@ export function RatingsSection({
         setRatings(response.results);
         setHasNext(!!response.metadata.next);
         setHasPrevious(!!response.metadata.previous);
-        setTotalCount(response.metadata.count);
       } catch (err) {
         console.error("Error fetching ratings:", err);
         setError(err instanceof Error ? err.message : "Failed to load ratings");

@@ -3,7 +3,7 @@ import { Search } from "lucide-react";
 interface SearchInputProps {
   value: string;
   onChange: (value: string) => void;
-  inputRef?: React.RefObject<HTMLInputElement>;
+  inputRef?: React.RefObject<HTMLInputElement | null>;
   onUserTyped?: () => void;
 }
 
