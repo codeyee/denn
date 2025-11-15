@@ -9,7 +9,7 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, rectSortingStrategy } from "@dnd-kit/sortable";
 import { ListItem } from "@/types";
-import { ReorderableListItemCard } from "../../../../cards/ListItemCard/ReorderableListItemCard";
+import { ReorderableListItemCard } from "../../../../common/cards/ListItemCard/ReorderableListItemCard";
 
 interface FlatGalleryViewProps {
   items: ListItem[];

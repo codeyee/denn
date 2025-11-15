@@ -1,8 +1,8 @@
 "use client";
 
 import { ReactNode, useEffect, useRef, useState } from "react";
-import { DomeGallery } from "./components/DomeGallery/DomeGallery";
-import { Noise } from "@/app/_components/lib/Animations/Noise";
+import { DomeGallery } from "./DomeGallery";
+import { Noise } from "@/app/_components/common/animations/Noise";
 
 export type BackgroundCardImage = {
   src: string;

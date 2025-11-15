@@ -30,7 +30,7 @@ import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { VerticalList } from "@/app/_components/common/lists/VerticalList";
 import { TrackListItem } from "@/app/_components/common/lists/TrackListItem";
 import { Carousel } from "@/app/_components/common/ui/Carousel";
-import { ContentCard } from "@/app/_components/cards/ContentCard";
+import { ContentCard } from "@/app/_components/common/cards/ContentCard";
 import { Content } from "@/types";
 
 interface ContentDetailPageProps {

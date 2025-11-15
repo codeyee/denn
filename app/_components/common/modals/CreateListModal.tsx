@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Modal } from "@/app/_components/common/modals/Modal";
 import { Button } from "@/app/_components/lib/button";
-import { Input } from "@/app/_components/Input";
+import { Input } from "@/app/_components/common/ui/Input";
 import { ListType } from "@/lib/api/types";
 
 // Define validation schema

@@ -1,6 +1,6 @@
-import { ContentCard } from "@/app/_components/cards/ContentCard";
-import { ListCard } from "@/app/_components/cards/ListCard";
-import { CreateListCard } from "@/app/_components/cards/CreateListCard";
+import { ContentCard } from "@/app/_components/common/cards/ContentCard";
+import { ListCard } from "@/app/_components/common/cards/ListCard";
+import { CreateListCard } from "@/app/_components/common/cards/CreateListCard";
 import { Carousel } from "@/app/_components/common/ui/Carousel";
 import { LoadingCarousel } from "@/app/_components/common/state/LoadingCarousel";
 import { Content } from "@/types";
