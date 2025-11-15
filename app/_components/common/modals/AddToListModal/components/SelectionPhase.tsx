@@ -27,36 +27,36 @@ export function SelectionPhase({
 }: SelectionPhaseProps) {
   return (
     <div className="space-y-4">
-      <div className="space-y-3">
-        <label className="flex items-start gap-3 p-4 rounded-lg border-2 border-white/10 hover:bg-white/5 hover:border-white/20 cursor-pointer transition-all">
+      <div className="flex flex-col space-y-3">
+        <label className="flex items-start gap-3 p-3 sm:p-4 rounded-lg border-2 border-white/10 hover:bg-white/5 hover:border-white/20 cursor-pointer transition-all min-h-[44px]">
           <input
             type="radio"
             name="addMode"
             value="show"
             checked={addMode === 'show'}
             onChange={() => setAddMode('show')}
-            className="mt-1 cursor-pointer"
+            className="mt-1 cursor-pointer shrink-0"
           />
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <div className="font-semibold text-white text-base">Add TV Show</div>
-            <div className="text-sm text-white/60 mt-1">
+            <div className="text-sm text-white/60 mt-1 break-words">
               Add the complete TV show as a single item to track and rate the series as a whole
             </div>
           </div>
         </label>
 
-        <label className="flex items-start gap-3 p-4 rounded-lg border-2 border-white/10 hover:bg-white/5 hover:border-white/20 cursor-pointer transition-all">
+        <label className="flex items-start gap-3 p-3 sm:p-4 rounded-lg border-2 border-white/10 hover:bg-white/5 hover:border-white/20 cursor-pointer transition-all min-h-[44px]">
           <input
             type="radio"
             name="addMode"
             value="seasons"
             checked={addMode === 'seasons'}
             onChange={() => setAddMode('seasons')}
-            className="mt-1 cursor-pointer"
+            className="mt-1 cursor-pointer shrink-0"
           />
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <div className="font-semibold text-white text-base">Add Individual Seasons</div>
-            <div className="text-sm text-white/60 mt-1">
+            <div className="text-sm text-white/60 mt-1 break-words">
               Choose specific seasons to track and rate individually for more granular management
             </div>
           </div>

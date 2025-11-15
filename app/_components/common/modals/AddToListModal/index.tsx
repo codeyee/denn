@@ -172,28 +172,28 @@ export function AddToListModal({
       </Modal.Content>
 
       {!operations.successListId && (
-        <div className="flex justify-between gap-3 mt-6">
+        <div className="flex flex-col sm:flex-row justify-between gap-3 mt-6">
           {isMultiSeasonShow && phases.modalPhase === 'lists' && (
             <Button
               type="button"
               variant="outline"
               onClick={() => phases.handleBackToSelection(operations.setError)}
               disabled={operations.addingToListId !== null || operations.creatingNewList}
-              className="cursor-pointer"
+              className="cursor-pointer min-h-[44px]"
             >
               Back
             </Button>
           )}
 
-          {(!isMultiSeasonShow || phases.modalPhase === 'selection') && <div />}
+          {(!isMultiSeasonShow || phases.modalPhase === 'selection') && <div className="hidden sm:block" />}
 
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
             <Button
               type="button"
               variant="outline"
               onClick={handleClose}
               disabled={operations.addingToListId !== null || operations.creatingNewList}
-              className="cursor-pointer"
+              className="cursor-pointer min-h-[44px]"
             >
               Cancel
             </Button>
@@ -207,7 +207,7 @@ export function AddToListModal({
                   operations.setError
                 )}
                 disabled={phases.addMode === 'seasons' && seasonSelection.selectedSeasons.size === 0}
-                className="cursor-pointer"
+                className="cursor-pointer min-h-[44px]"
               >
                 Continue
               </Button>
