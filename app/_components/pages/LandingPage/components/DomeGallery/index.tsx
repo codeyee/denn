@@ -99,7 +99,6 @@ export function DomeGallery({
     frameRef,
     viewerRef,
     scrimRef,
-    sphereRef,
     rotationRef,
     segments,
     enlargeTransitionMs,
