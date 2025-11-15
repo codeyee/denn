@@ -2,7 +2,7 @@ import { Star } from "lucide-react";
 import { ListItem, MemberRating } from "@/types";
 import { Author, ItemStatus } from "@/lib/api/types";
 import { ReorderableListItem } from "../../../common/lists/ReorderableListItem";
-import { Button } from "../../../lib/button";
+import { Button } from "@/app/_components/common/ui/Button";
 import { CONTENT_TYPE_ICONS } from "@/lib/utils/contentTypeIcons";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { formatSeasonTitle } from "@/lib/utils/titleUtils";

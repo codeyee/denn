@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { Card } from "../Card";
-import { Button } from "../../../lib/button";
+import { Button } from "@/app/_components/common/ui/Button";
 import { Circle, CheckCircle, Trash2, Star } from "lucide-react";
 import { ListItem } from "@/types";
 import {

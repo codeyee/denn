@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { UserListDetail, ListType } from "@/lib/api/types";
 import { GroupBy, SortBy } from "@/types/listView";
-import { Button } from "../../../lib/button";
+import { Button } from "@/app/_components/common/ui/Button";
 import { Select } from "../../../common/ui/Select";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { formatUserDisplayNameWithUsername } from "@/lib/utils/userUtils";
