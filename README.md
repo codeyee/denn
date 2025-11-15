@@ -10,6 +10,24 @@ A modern, feature-rich frontend for managing and discovering multi-media content
 
 ---
 
+## 📚 Sprint-Based Documentation
+
+**🎯 Current Sprint:** Sprint 1 (Week 1-2) - Critical Blockers
+
+**For Developers:**
+- 👨‍💻 **Frontend Tasks** → [`docs/PHASE_1_MVP_SPRINT_1/FRONTEND.md`](./docs/PHASE_1_MVP_SPRINT_1/FRONTEND.md)
+- ⚙️ **Backend Tasks** → [`docs/PHASE_1_MVP_SPRINT_1/BACKEND.md`](./docs/PHASE_1_MVP_SPRINT_1/BACKEND.md)
+- 🔄 **Coordination** → [`docs/PHASE_1_MVP_SPRINT_1/COORDINATION.md`](./docs/PHASE_1_MVP_SPRINT_1/COORDINATION.md)
+
+**Documentation Index:**
+- 📖 **Overview** → [`docs/README.md`](./docs/README.md) - Complete documentation structure
+- 🔗 **Quick Links** → [`docs/INDEX.md`](./docs/INDEX.md) - Fast navigation
+- 📏 **Coding Standards** → [`docs/PROJECT_GUIDELINES/GUIDELINES.md`](./docs/PROJECT_GUIDELINES/GUIDELINES.md)
+
+**All project documentation is organized by sprints in the [`docs/`](./docs) folder.**
+
+---
+
 ## 🚀 Features
 
 ### Current Features
