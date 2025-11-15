@@ -5,11 +5,19 @@ from .user import UserSerializer
 
 class MemberRatingSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
+    is_owner = serializers.SerializerMethodField()
 
     class Meta:
         model = Rating
-        fields = ['user', 'score', 'comment', 'created_at', 'updated_at']
+        fields = ['user', 'score', 'comment', 'created_at', 'updated_at', 'is_owner']
         read_only_fields = fields
+
+    def get_is_owner(self, obj):
+        """Determine if this rating's user is the owner of the list"""
+        user_list = self.context.get('user_list')
+        if user_list:
+            return obj.user.id == user_list.owner.id
+        return False
 
 class ListItemSerializer(serializers.ModelSerializer):
     content_item = serializers.SerializerMethodField()
@@ -55,23 +63,39 @@ class ListItemSerializer(serializers.ModelSerializer):
     def get_member_ratings(self, obj):
         if obj.status != ListItem.Status.COMPLETED: return []
 
+        # Get all members including owner
         list_members = obj.user_list.members.all()
+        member_ids = list(list_members.values_list('id', flat=True))
+
+        # Ensure owner is included in the member IDs
+        if obj.user_list.owner.id not in member_ids:
+            member_ids.append(obj.user_list.owner.id)
 
         member_ratings = Rating.objects.filter(
             content_item=obj.content_item,
-            user__in=list_members
+            user_id__in=member_ids
         ).select_related('user')
 
-        return MemberRatingSerializer(member_ratings, many=True).data
+        return MemberRatingSerializer(
+            member_ratings,
+            many=True,
+            context={'user_list': obj.user_list}
+        ).data
 
     def get_list_rating(self, obj):
         if obj.status != ListItem.Status.COMPLETED: return None
 
+        # Get all members including owner
         list_members = obj.user_list.members.all()
+        member_ids = list(list_members.values_list('id', flat=True))
+
+        # Ensure owner is included in the member IDs
+        if obj.user_list.owner.id not in member_ids:
+            member_ids.append(obj.user_list.owner.id)
 
         member_ratings = Rating.objects.filter(
             content_item=obj.content_item,
-            user__in=list_members
+            user_id__in=member_ids
         )
 
         if not member_ratings.exists(): return None
@@ -84,11 +108,17 @@ class ListItemSerializer(serializers.ModelSerializer):
     def get_member_rating_count(self, obj):
         if obj.status != ListItem.Status.COMPLETED: return 0
 
+        # Get all members including owner
         list_members = obj.user_list.members.all()
+        member_ids = list(list_members.values_list('id', flat=True))
+
+        # Ensure owner is included in the member IDs
+        if obj.user_list.owner.id not in member_ids:
+            member_ids.append(obj.user_list.owner.id)
 
         return Rating.objects.filter(
             content_item=obj.content_item,
-            user__in=list_members
+            user_id__in=member_ids
         ).count()
 
 class ListItemCreateSerializer(serializers.ModelSerializer):

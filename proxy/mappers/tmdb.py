@@ -1,5 +1,6 @@
 from typing import Dict, Any, Optional, List, Tuple
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timedelta
 from rest_framework import status as http_status
 from proxy.models.base import Images, Platform, Author
 from proxy.models.movie import Movie
@@ -20,6 +21,51 @@ def build_image_url(path: Optional[str], size: str = 'w500') -> Optional[str]:
 class TMDBMapper:
     def __init__(self, client: TMDBClient):
         self.client = client
+
+    def _is_valid_season(self, season_data: Dict[str, Any]) -> bool:
+        """
+        Filter out invalid TV show seasons based on episode count and air date.
+
+        Rules:
+        - Filter out if episode_count == 0
+        - Filter out if episode_count == 1 AND air_date is null
+        - Filter out if episode_count == 1 AND air_date > (today + 1 day)
+        - Filter out if air_date is null AND episode_count < 2
+        - Allow if episode_count >= 2 (regardless of air date)
+        - Allow if air_date <= (today + 1 day)
+        """
+        episode_count = season_data.get('episode_count', 0)
+        air_date_str = season_data.get('air_date')
+
+        # Filter out seasons with 0 episodes
+        if episode_count == 0:
+            return False
+
+        # Parse air_date if it exists
+        air_date = None
+        if air_date_str:
+            try:
+                air_date = datetime.strptime(air_date_str, '%Y-%m-%d').date()
+            except (ValueError, TypeError):
+                air_date = None
+
+        # Calculate tomorrow (today + 1 day) for timezone margin
+        tomorrow = (datetime.now() + timedelta(days=1)).date()
+
+        # Filter out if no air date and less than 2 episodes
+        if not air_date and episode_count < 2:
+            return False
+
+        # Filter out if 1 episode and no air date
+        if episode_count == 1 and not air_date:
+            return False
+
+        # Filter out if 1 episode and air date is in the future (beyond tomorrow)
+        if episode_count == 1 and air_date and air_date > tomorrow:
+            return False
+
+        # Allow all other cases
+        return True
 
     def _process_images_data(self, images_data: Optional[Dict[str, Any]]) -> List[Dict[str, str]]:
         additional_galleries = []
@@ -327,8 +373,14 @@ class TMDBMapper:
             images_data
         )
 
+        # Filter out invalid seasons before mapping
+        valid_seasons_data = [
+            season for season in tv_data.get('seasons', [])
+            if self._is_valid_season(season)
+        ]
+
         seasons = [
-            self.map_season(season) for season in tv_data.get('seasons', [])
+            self.map_season(season) for season in valid_seasons_data
         ]
 
         imdb_id = None

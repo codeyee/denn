@@ -2,7 +2,7 @@ from .content_item import ContentItemSerializer
 from .user_list import UserListSerializer, UserListDetailSerializer
 from .list_item import ListItemSerializer, ListItemCreateSerializer
 from .rating import RatingSerializer, RatingCreateSerializer
-from .user import UserSerializer
+from .user import UserSerializer, MemberSerializer
 from .list_invitation import (
     ListInvitationSerializer,
     ListInvitationCreateSerializer,
@@ -18,6 +18,7 @@ __all__ = [
     'RatingSerializer',
     'RatingCreateSerializer',
     'UserSerializer',
+    'MemberSerializer',
     'ListInvitationSerializer',
     'ListInvitationCreateSerializer',
     'ListInvitationResponseSerializer',
