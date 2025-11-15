@@ -11,8 +11,8 @@ export function ListItemPlaceholder({ index = 0 }: ListItemPlaceholderProps) {
         style={{
           background: `linear-gradient(-45deg,
             transparent 40%,
-            rgba(255, 255, 255, 0.03) 45%,
-            rgba(255, 255, 255, 0.03) 55%,
+            var(--color-glare) 45%,
+            var(--color-glare) 55%,
             transparent 60%)`,
           backgroundSize: "200% 200%",
           backgroundRepeat: "no-repeat",

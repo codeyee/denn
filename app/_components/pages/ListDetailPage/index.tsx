@@ -7,9 +7,9 @@ import { Footer } from "../../layout/Footer";
 import { EditListModal } from "../../common/modals/EditListModal";
 import { ConfirmDialog } from "../../common/modals/ConfirmDialog";
 import { RatingModal } from "../../common/modals/RatingModal";
-import { ListItemPlaceholder } from "../../common/cards/ListItemPlaceholder";
+import { ListItemPlaceholder } from "../../common/lists/ListItemPlaceholder";
 import { VerticalList } from "../../common/lists/VerticalList";
-import { ItemStatus, Rating, RatingCreate } from "@/lib/types";
+import { ItemStatus, Rating, RatingCreate, ContentItem } from "@/lib/types";
 import { ListItem, MemberRating } from "@/lib/types";
 import { GroupBy } from "@/lib/types/listView";
 import { formatSeasonTitle } from "@/lib/utils/titleUtils";
@@ -24,7 +24,14 @@ import { useListStats } from "./hooks/useListStats";
 import { useListPagination } from "./hooks/useListPagination";
 import { useListGrouping } from "./hooks/useListGrouping";
 
-import { ListHeader, ListSidebar, ItemsHeader } from "./components";
+import {
+  ListHeader,
+  ListSidebar,
+  ItemsHeader,
+  ListHeaderPlaceholder,
+  ItemsHeaderPlaceholder,
+  ListSidebarPlaceholder,
+} from "./components";
 import { FlatListView } from "./components/ListView/FlatListView";
 import { GroupedListView } from "./components/ListView/GroupedListView";
 import { FlatGalleryView } from "./components/GalleryView/FlatGalleryView";
@@ -116,7 +123,7 @@ export function ListDetailPage({ listId }: ListDetailPageProps) {
     return {
       id: 0, // Not used by RatingModal for new ratings
       user: currentUser,
-      content_item: modals.ratingModalItem.content_item,
+      content_item: modals.ratingModalItem.content_item as unknown as ContentItem,
       score: String(memberRating.rating),
       comment: null, // MemberRating doesn't have comments
       created_at: "",
@@ -182,19 +189,30 @@ export function ListDetailPage({ listId }: ListDetailPageProps) {
       <>
         <Navbar />
         <div className="relative w-full min-h-screen bg-background-logged-in">
-          <div className="container mx-auto px-4 md:px-6 lg:px-8 pt-8 pb-20">
+          <div className="container mx-auto px-4 mt-8 pt-30 pb-8">
             {/* Header skeleton */}
-            <div className="mb-8">
-              <div className="h-8 bg-white/10 rounded w-64 mb-4" />
-              <div className="h-4 bg-white/5 rounded w-48" />
-            </div>
+            <ListHeaderPlaceholder />
 
-            {/* List items skeleton */}
-            <VerticalList spacing="md">
-              {Array.from({ length: 8 }).map((_, index) => (
-                <ListItemPlaceholder key={`placeholder-${index}`} index={index} />
-              ))}
-            </VerticalList>
+            <div className="flex flex-col md:flex-row gap-6 lg:gap-8">
+              {/* Main Content */}
+              <div className="flex-1 min-w-0 pb-8 order-2 md:order-1">
+                {/* Items header skeleton */}
+                <ItemsHeaderPlaceholder />
+
+                {/* List items skeleton */}
+                <VerticalList spacing="md">
+                  {Array.from({ length: 20 }).map((_, index) => (
+                    <ListItemPlaceholder
+                      key={`placeholder-${index}`}
+                      index={index}
+                    />
+                  ))}
+                </VerticalList>
+              </div>
+
+              {/* Sidebar skeleton */}
+              <ListSidebarPlaceholder />
+            </div>
           </div>
         </div>
         <Footer />
@@ -422,7 +440,7 @@ export function ListDetailPage({ listId }: ListDetailPageProps) {
           }}
           onSubmitRating={handleRatingSubmit}
           existingRating={userExistingRating}
-          contentItem={modals.ratingModalItem.content_item}
+          contentItem={modals.ratingModalItem.content_item as unknown as ContentItem}
           isLoading={actions.actionLoading}
         />
       )}

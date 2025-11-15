@@ -60,8 +60,7 @@ export function ListSidebar({
   onSortByChange,
 }: ListSidebarProps) {
   const isShared = list.list_type === ListType.SHARED;
-  const memberCount =
-    list.member_count || (list.members?.length || 0).toString();
+  const memberCount = (list.members?.length || 0).toString();
 
   return (
     <div className="w-full md:w-80 lg:w-96 shrink-0 space-y-6 order-1 md:order-2 md:sticky md:top-24 md:self-start md:max-h-[calc(100vh-8rem)] md:overflow-y-auto">
