@@ -10,7 +10,7 @@ import {
 import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { useListsStore } from "@/app/_stores/lists-store";
 import { useUIStore } from "@/app/_stores/ui-store";
-import { ListItem } from "@/types";
+import { ListItem } from "@/lib/types";
 
 interface UseListReorderingOptions {
   listId: number;

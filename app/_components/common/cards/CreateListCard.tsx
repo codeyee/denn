@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { CreateListModal } from "@/app/_components/common/modals/CreateListModal";
-import { ListType } from "@/lib/api/types";
+import { ListType } from "@/lib/types";
 
 const CARD_ASPECT_RATIO = "5 / 8";
 

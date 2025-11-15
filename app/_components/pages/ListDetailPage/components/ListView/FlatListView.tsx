@@ -8,7 +8,7 @@ import {
   SensorOptions,
 } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { ListItem } from "@/types";
+import { ListItem } from "@/lib/types";
 import { VerticalList } from "../../../../common/lists/VerticalList";
 import { ListItemRenderer } from "../ListItemRenderer";
 

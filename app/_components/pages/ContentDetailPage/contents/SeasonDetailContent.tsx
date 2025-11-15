@@ -1,6 +1,6 @@
 "use client";
 
-import { TVSeasonDetail, ContentItem, Rating } from "@/lib/api/types";
+import { TVSeasonDetail, ContentItem, Rating } from "@/lib/types";
 import { EpisodeCard } from "@/app/_components/common/cards/EpisodeCard";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { PlatformsDisplay } from "../platforms/PlatformsDisplay";

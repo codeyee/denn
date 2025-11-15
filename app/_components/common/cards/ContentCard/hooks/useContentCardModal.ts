@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
-import { ContentType } from "@/lib/api/types";
-import { Content } from "@/types";
+import { ContentType } from "@/lib/types";
+import { Content } from "@/lib/types";
 import { getSourceApi } from "@/lib/utils/contentTypeUtils";
 
 export function useContentCardModal(item: Content) {

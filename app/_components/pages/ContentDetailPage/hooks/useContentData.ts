@@ -10,7 +10,7 @@ import {
   AlbumDetail,
   GameDetail,
   BookDetail
-} from "@/lib/api/types";
+} from "@/lib/types";
 
 interface UseContentDataParams {
   contentId?: number;

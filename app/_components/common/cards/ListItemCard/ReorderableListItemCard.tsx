@@ -3,7 +3,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { ListItemCard } from "./index";
-import { ListItem } from "@/types";
+import { ListItem } from "@/lib/types";
 
 interface ReorderableListItemCardProps {
   item: ListItem;

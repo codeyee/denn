@@ -1,5 +1,5 @@
-import { ListItem } from "@/types";
-import { GroupedItems, SortOrder, PageSize } from "@/types/listView";
+import { ListItem } from "@/lib/types";
+import { GroupedItems, SortOrder, PageSize } from "@/lib/types/listView";
 import { Select } from "../../../../common/ui/Select";
 import { PaginationControls } from "../../../../common/ui/PaginationControls";
 import { ReorderableListItemCard } from "../../../../common/cards/ListItemCard/ReorderableListItemCard";

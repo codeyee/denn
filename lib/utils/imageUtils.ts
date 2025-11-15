@@ -1,4 +1,4 @@
-import { Image, ImageType, ImageSize } from "@/lib/api/types";
+import { Image, ImageType, ImageSize } from "@/lib/types";
 
 function getFallbackSize(size: ImageSize): ImageSize {
   return size === ImageSize.ORIGINAL ? ImageSize.STANDARD : ImageSize.ORIGINAL;

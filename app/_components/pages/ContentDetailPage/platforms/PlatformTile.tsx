@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Platform } from "@/lib/api/types";
+import { Platform } from "@/lib/types";
 import { getPlatformImageUrl } from "@/lib/utils/platformUtils";
 
 interface PlatformTileProps {

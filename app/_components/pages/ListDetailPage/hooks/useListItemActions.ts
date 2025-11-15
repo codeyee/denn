@@ -2,8 +2,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useListsStore } from "@/app/_stores/lists-store";
 import { listActions, ratingActions } from "@/lib/api";
-import { ListType, ItemStatus, User } from "@/lib/api/types";
-import { ListItem, MemberRating } from "@/types";
+import { ListType, ItemStatus, User } from "@/lib/types";
+import { ListItem, MemberRating } from "@/lib/types";
 
 interface UseListItemActionsOptions {
   listId: number;

@@ -3,8 +3,8 @@ import { useState, useEffect, useMemo } from "react";
 import { List as ListIcon, Package, Lock, Users } from "lucide-react";
 
 import { Card } from "./Card";
-import { ListType } from "@/lib/api/types";
-import { ListWithItems, SourceData } from "@/types";
+import { ListType } from "@/lib/types";
+import { ListWithItems, SourceData } from "@/lib/types";
 import { getCardImageUrl } from "@/lib/utils/imageUtils";
 
 interface ListCardProps {

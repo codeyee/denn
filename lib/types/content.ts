@@ -5,13 +5,10 @@ import {
   GameDetail,
   BookDetail,
   ContentType,
-  SourceApi,
-  User,
-  ItemStatus,
   UserList,
   TVSeasonDetail,
-} from "@/lib/api/types";
-import { MemberRating } from "./listView";
+  ListItem,
+} from "./api";
 
 export type Content =
   | MovieDetail
@@ -51,40 +48,4 @@ export const providerAttribution = {
 
 export type ProviderAttribution = typeof providerAttribution;
 
-export type SourceData =
-  | MovieDetail
-  | TVShowDetail
-  | AlbumDetail
-  | GameDetail
-  | BookDetail
-  | TVSeasonDetail;
-
-export interface ContentItemData {
-  id: number;
-  source_api: SourceApi;
-  external_id: string;
-  content_type: ContentType;
-  rating_count: number;
-  average_rating: number | null;
-  created_at: string;
-  source_data: SourceData;
-}
-
-export interface ListItem {
-  id: number;
-  user_list: number;
-  list_order: number;
-  content_item: ContentItemData;
-  added_by: User;
-  status: ItemStatus;
-  added_at: string;
-  completed_at: string | null;
-  notes: string | null;
-  member_ratings: MemberRating[];
-  list_rating: number | null;
-  member_rating_count: number;
-}
-
 export type ListWithItems = UserList & { items?: ListItem[] };
-
-export type { MemberRating };

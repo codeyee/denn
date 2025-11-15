@@ -7,7 +7,7 @@ import * as z from "zod";
 import { Modal } from "@/app/_components/common/modals/Modal";
 import { Button } from "@/app/_components/common/ui/Button";
 import { Input } from "@/app/_components/common/ui/Input";
-import { ListType } from "@/lib/api/types";
+import { ListType } from "@/lib/types";
 
 // Define validation schema
 const editListSchema = z.object({

@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/app/_stores/auth-store";
-import { ContentType, TVShowDetail } from "@/lib/api/types";
+import { ContentType, TVShowDetail } from "@/lib/types";
 import { useContentData } from "./hooks/useContentData";
 import { useUserRating } from "./hooks/useUserRating";
 import { useContentModals } from "./hooks/useContentModals";

@@ -1,5 +1,5 @@
-import { ListItem } from "@/types";
-import { Author } from "@/lib/api/types";
+import { ListItem } from "@/lib/types";
+import { Author } from "@/lib/types";
 import { formatSeasonTitle } from "@/lib/utils/titleUtils";
 
 export function getListItemTitle(item: ListItem): string {

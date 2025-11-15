@@ -1,13 +1,13 @@
 "use client";
 
-import { SourceApi, Author } from "@/lib/api/types";
+import { SourceApi, Author } from "@/lib/types";
 import { getBannerImageUrl } from "@/lib/utils/imageUtils";
 import { formatAuthors } from "@/lib/utils/authorUtils";
 import { CONTENT_TYPE_ICONS } from "@/lib/icons/contentTypeIcons";
 import { formatSeasonTitle } from "@/lib/utils/titleUtils";
 import { Button } from "@/app/_components/common/ui/Button";
 import { ListPlus, Star } from "lucide-react";
-import { Content } from "@/types";
+import { Content } from "@/lib/types";
 
 interface ContentBannerProps {
   item: Content;

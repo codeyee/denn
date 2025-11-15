@@ -1,4 +1,4 @@
-import { GroupBy, SortOrder, PageSize } from "@/types/listView";
+import { GroupBy, SortOrder, PageSize } from "@/lib/types/listView";
 import { Select } from "../../../common/ui/Select";
 import { PaginationControls } from "../../../common/ui/PaginationControls";
 import { ViewModeToggle } from "./ViewModeToggle";

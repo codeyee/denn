@@ -1,4 +1,4 @@
-import type { ContentItemData } from "@/types";
+import type { MemberRating } from "./listView";
 
 export interface EmailLogin {
   email: string;
@@ -159,7 +159,7 @@ export interface ListItem {
   added_at: string;
   completed_at: string | null;
   notes: string | null;
-  member_ratings: unknown[];
+  member_ratings: MemberRating[];
   list_rating: number | null;
   member_rating_count: number;
 }
@@ -240,7 +240,6 @@ export interface Platform {
   actions?: ProviderAction[] | null;
 }
 
-// Unified search item for all content types
 export interface SearchItem {
   id: number | string;
   type: ContentType;
@@ -404,7 +403,6 @@ export interface MusicSuggestionsResponse {
   count: number;
 }
 
-// Bulk response types are now just arrays
 export type BulkMoviesResponse = MovieDetail[];
 export type BulkTVShowsResponse = TVShowDetail[];
 export type BulkAlbumsResponse = AlbumDetail[];
@@ -461,6 +459,25 @@ export interface BulkBookItem {
   data: BookDetail | null;
   status_code: number;
   error: string | null;
+}
+
+export type SourceData =
+  | MovieDetail
+  | TVShowDetail
+  | AlbumDetail
+  | GameDetail
+  | BookDetail
+  | TVSeasonDetail;
+
+export interface ContentItemData {
+  id: number;
+  source_api: SourceApi;
+  external_id: string;
+  content_type: ContentType;
+  rating_count: number;
+  average_rating: number | null;
+  created_at: string;
+  source_data: SourceData;
 }
 
 export interface HomepageResponse {

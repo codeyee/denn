@@ -6,7 +6,7 @@ import {
   PageSize,
   ListViewPreferences,
   MAX_GROUPING_ATTRIBUTES,
-} from "@/types/listView";
+} from "@/lib/types/listView";
 import { loadPreferences, savePreferences } from "../utils";
 
 interface UseListPreferencesReturn {

@@ -1,5 +1,5 @@
-import { Content } from "@/types";
-import { Author } from "@/lib/api/types";
+import { Content } from "@/lib/types";
+import { Author } from "@/lib/types";
 import { getCardImageUrl } from "@/lib/utils/imageUtils";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { formatAuthors } from "@/lib/utils/authorUtils";

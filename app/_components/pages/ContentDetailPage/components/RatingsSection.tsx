@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { ratingActions } from "@/lib/api";
-import { Rating, PaginatedRatingList, ContentItem } from "@/lib/api/types";
+import { Rating, PaginatedRatingList, ContentItem } from "@/lib/types";
 import { Button } from "@/app/_components/common/ui/Button";
 import { Pencil, Trash2, Star } from "lucide-react";
 

@@ -3,8 +3,8 @@ import { ListCard } from "@/app/_components/common/cards/ListCard";
 import { CreateListCard } from "@/app/_components/common/cards/CreateListCard";
 import { Carousel } from "@/app/_components/common/ui/Carousel";
 import { LoadingCarousel } from "@/app/_components/common/state/LoadingCarousel";
-import { Content } from "@/types";
-import { UserList } from "@/lib/api/types";
+import { Content } from "@/lib/types";
+import { UserList } from "@/lib/types";
 
 const CONTENT_SECTIONS = [
   { key: 'movies', title: 'Popular Movies' },

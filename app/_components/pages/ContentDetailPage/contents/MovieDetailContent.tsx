@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { MovieDetail } from "@/lib/api/types";
+import { MovieDetail } from "@/lib/types";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { formatAuthors } from "@/lib/utils/authorUtils";
 import { PlatformsDisplay } from "../platforms/PlatformsDisplay";

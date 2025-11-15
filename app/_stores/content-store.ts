@@ -6,7 +6,7 @@ import {
   GameDetail,
   AlbumDetail,
   BookDetail,
-} from "@/lib/api/types";
+} from "@/lib/types";
 
 interface ContentSuggestions {
   movies: MovieDetail[];

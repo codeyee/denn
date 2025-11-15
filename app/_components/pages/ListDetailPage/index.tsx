@@ -7,9 +7,9 @@ import { Footer } from "../../layout/Footer";
 import { EditListModal } from "../../common/modals/EditListModal";
 import { ConfirmDialog } from "../../common/modals/ConfirmDialog";
 import { RateItemModal } from "../../common/modals/RateItemModal";
-import { ItemStatus } from "@/lib/api/types";
-import { ListItem, MemberRating } from "@/types";
-import { GroupBy } from "@/types/listView";
+import { ItemStatus } from "@/lib/types";
+import { ListItem, MemberRating } from "@/lib/types";
+import { GroupBy } from "@/lib/types/listView";
 import { formatSeasonTitle } from "@/lib/utils/titleUtils";
 import { useAuthStore } from "@/app/_stores/auth-store";
 

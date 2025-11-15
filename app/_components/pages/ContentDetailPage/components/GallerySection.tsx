@@ -9,7 +9,7 @@ import {
   AlbumDetail,
   BookDetail,
   TVSeasonDetail
-} from "@/lib/api/types";
+} from "@/lib/types";
 
 interface GallerySectionProps {
   detailData: MovieDetail | TVShowDetail | AlbumDetail | GameDetail | BookDetail | TVSeasonDetail | null;

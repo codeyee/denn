@@ -7,7 +7,7 @@ import {
   GameDetail,
   BookDetail,
   TVSeasonDetail
-} from "@/lib/api/types";
+} from "@/lib/types";
 import { getAuthorNames } from "@/lib/utils/authorUtils";
 import { VerticalList } from "@/app/_components/common/lists/VerticalList";
 import { TrackListItem } from "@/app/_components/common/lists/TrackListItem";

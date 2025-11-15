@@ -1,0 +1,48 @@
+import { api } from "../api";
+import { buildQueryString } from "../utils/queryParams";
+import type {
+  UserList,
+  UserListDetail,
+  PaginatedUserListList,
+  ListQueryParams,
+} from "@/lib/types";
+
+export const listActions = {
+  list: (params?: ListQueryParams): Promise<PaginatedUserListList> => {
+    const query = buildQueryString({
+      params,
+      addCountry: true,
+      country: params?.country,
+    });
+    return api.get<PaginatedUserListList>(`/content/lists/${query}`, true);
+  },
+
+  get: (id: number, country?: string): Promise<UserListDetail> => {
+    const query = buildQueryString({ addCountry: true, country });
+    return api.get<UserListDetail>(`/content/lists/${id}/${query}`, true);
+  },
+
+  create: (list: {
+    name: string;
+    description?: string | null;
+    list_type: string;
+  }): Promise<UserList> => {
+    return api.post<UserList>("/content/lists/", list, true);
+  },
+
+  update: (id: number, list: Partial<UserList>): Promise<UserList> => {
+    return api.put<UserList>(`/content/lists/${id}/`, list, true);
+  },
+
+  patch: (id: number, list: Partial<UserList>): Promise<UserList> => {
+    return api.patch<UserList>(`/content/lists/${id}/`, list, true);
+  },
+
+  delete: (id: number): Promise<void> => {
+    return api.delete(`/content/lists/${id}/`, true) as Promise<void>;
+  },
+
+  getStats: (id: number): Promise<unknown> => {
+    return api.get(`/content/lists/${id}/stats/`, true);
+  },
+};

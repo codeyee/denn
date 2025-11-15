@@ -1,6 +1,6 @@
 import { Star } from "lucide-react";
-import { ListItem, MemberRating } from "@/types";
-import { Author, ItemStatus } from "@/lib/api/types";
+import { ListItem, MemberRating } from "@/lib/types";
+import { Author, ItemStatus } from "@/lib/types";
 import { ReorderableListItem } from "../../../common/lists/ReorderableListItem";
 import { Button } from "@/app/_components/common/ui/Button";
 import { CONTENT_TYPE_ICONS } from "@/lib/icons/contentTypeIcons";

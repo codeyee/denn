@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { videoActions, gameActions, musicActions, bookActions } from "@/lib/api/actions"; 
-import type { MovieDetail, TVShowDetail, GameDetail, AlbumDetail, BookDetail } from "@/lib/api/types";
+import type { MovieDetail, TVShowDetail, GameDetail, AlbumDetail, BookDetail } from "@/lib/types";
 import { transformMovieResults, transformTVShowResults, transformGameResults, transformMusicResults, transformBookResults } from "../utils";
 
 export interface SearchResults {

@@ -9,10 +9,10 @@ import {
   GameDetail,
   BookDetail,
   TVSeasonDetail
-} from "@/lib/api/types";
+} from "@/lib/types";
 import { Carousel } from "@/app/_components/common/ui/Carousel";
 import { ContentCard } from "@/app/_components/common/cards/ContentCard";
-import { Content } from "@/types";
+import { Content } from "@/lib/types";
 
 interface SeasonsSectionProps {
   detailData: MovieDetail | TVShowDetail | AlbumDetail | GameDetail | BookDetail | TVSeasonDetail | null;

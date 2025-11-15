@@ -1,6 +1,6 @@
 import Image from "next/image";
-import { TVSeason } from "@/lib/api/types";
-import { ListWithItems } from "@/types";
+import { TVSeason } from "@/lib/types";
+import { ListWithItems } from "@/lib/types";
 
 interface SelectionPhaseProps {
   addMode: 'show' | 'seasons';

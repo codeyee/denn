@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { TVShowDetail } from "@/lib/api/types";
+import { TVShowDetail } from "@/lib/types";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { formatAuthors } from "@/lib/utils/authorUtils";
 import { PlatformsDisplay } from "../platforms/PlatformsDisplay";

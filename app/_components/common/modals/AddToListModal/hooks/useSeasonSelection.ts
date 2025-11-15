@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { TVSeason } from "@/lib/api/types";
+import { TVSeason } from "@/lib/types";
 
 interface UseSeasonSelectionReturn {
   selectedSeasons: Set<number>;

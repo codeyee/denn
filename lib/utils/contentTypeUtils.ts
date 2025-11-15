@@ -1,4 +1,4 @@
-import { ContentType, SourceApi } from "@/lib/api/types";
+import { ContentType, SourceApi } from "@/lib/types";
 
 interface ContentTypeConfig {
   sourceApi: SourceApi;

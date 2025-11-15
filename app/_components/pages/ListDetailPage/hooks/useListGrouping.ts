@@ -1,12 +1,12 @@
 import { useMemo } from "react";
-import { ListItem } from "@/types";
+import { ListItem } from "@/lib/types";
 import {
   GroupBy,
   SortBy,
   SortOrder,
   PageSize,
   GroupedItems,
-} from "@/types/listView";
+} from "@/lib/types/listView";
 import {
   groupItemsComposite,
   sortItems,

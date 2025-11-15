@@ -1,4 +1,4 @@
-import { User } from "@/lib/api/types";
+import { User } from "@/lib/types";
 
 function hasName(user: User): boolean {
   const hasFirstName = Boolean(user.first_name?.trim());

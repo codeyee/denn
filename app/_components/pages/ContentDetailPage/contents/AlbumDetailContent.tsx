@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { AlbumDetail } from "@/lib/api/types";
+import { AlbumDetail } from "@/lib/types";
 import { VerticalList } from "@/app/_components/common/lists/VerticalList";
 import { TrackListItem } from "@/app/_components/common/lists/TrackListItem";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";

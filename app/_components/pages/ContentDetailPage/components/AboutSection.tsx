@@ -10,7 +10,7 @@ import {
   ContentType,
   Rating,
   User
-} from "@/lib/api/types";
+} from "@/lib/types";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { MovieDetailContent } from "../contents/MovieDetailContent";
 import { TVShowDetailContent } from "../contents/TVShowDetailContent";

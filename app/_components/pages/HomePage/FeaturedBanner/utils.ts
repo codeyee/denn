@@ -1,4 +1,4 @@
-import { Content } from "@/types";
+import { Content } from "@/lib/types";
 import { getBannerImageUrl } from "@/lib/utils/imageUtils";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 

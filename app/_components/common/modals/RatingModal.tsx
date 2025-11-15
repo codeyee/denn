@@ -7,7 +7,7 @@ import * as z from "zod";
 import { Modal } from "@/app/_components/common/modals/Modal";
 import { Button } from "@/app/_components/common/ui/Button";
 import { StarRating } from "@/app/_components/common/ui/StarRating";
-import { ContentType, Rating, RatingCreate, SourceApi } from "@/lib/api/types";
+import { ContentType, Rating, RatingCreate, SourceApi } from "@/lib/types";
 
 // Define validation schema
 const ratingSchema = z.object({

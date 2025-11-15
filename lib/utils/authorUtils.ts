@@ -1,4 +1,4 @@
-import { Author, Platform } from "@/lib/api/types";
+import { Author, Platform } from "@/lib/types";
 
 function isEmptyArray(arr: unknown): arr is null | undefined {
   return !arr || !Array.isArray(arr) || arr.length === 0;

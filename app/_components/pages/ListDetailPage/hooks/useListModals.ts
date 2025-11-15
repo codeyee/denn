@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ListItem } from "@/types";
+import { ListItem } from "@/lib/types";
 
 interface UseListModalsReturn {
   isEditModalOpen: boolean;

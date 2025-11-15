@@ -3,7 +3,7 @@ import { useRef, useEffect } from "react";
 import { Film, Tv, Gamepad2, Book, Music, LucideIcon } from "lucide-react";
 import { createPortal } from "react-dom";
 
-import { ContentType } from "@/lib/api/types";
+import { ContentType } from "@/lib/types";
 import { useCardHover } from "./hooks/useCardHover";
 
 const ICON_MAP = {

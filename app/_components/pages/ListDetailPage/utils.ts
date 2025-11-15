@@ -1,5 +1,5 @@
-import { ListItem, SourceData } from '@/types';
-import { ContentType, ItemStatus } from '@/lib/api/types';
+import { ListItem, SourceData } from '@/lib/types';
+import { ContentType, ItemStatus } from '@/lib/types';
 import {
   GroupBy,
   SortBy,
@@ -9,7 +9,7 @@ import {
   PaginatedResult,
   ListViewPreferences,
   DEFAULT_LIST_VIEW_PREFERENCES,
-} from '@/types/listView';
+} from '@/lib/types/listView';
 
 export function getItemTitle(item: ListItem): string {
   const sourceData = item.content_item.source_data as SourceData;

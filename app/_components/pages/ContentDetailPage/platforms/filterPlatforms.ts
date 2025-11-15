@@ -1,6 +1,6 @@
 "use client";
 
-import { Platform } from "@/lib/api/types";
+import { Platform } from "@/lib/types";
 
 export const filterPlatforms = (platformList: Platform[]) => {
   const excludeTerms = [

@@ -10,7 +10,7 @@ import {
   ContentItem,
   ContentType,
   Rating
-} from "@/lib/api/types";
+} from "@/lib/types";
 
 interface ContentHeaderProps {
   displayItem: MovieDetail | TVShowDetail | TVSeasonDetail | AlbumDetail | GameDetail | BookDetail;

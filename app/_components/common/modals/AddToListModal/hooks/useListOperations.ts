@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { useListsStore } from "@/app/_stores/lists-store";
 import { listItemActions } from "@/lib/api";
-import { ListItemCreate, ContentType, SourceApi, TVSeason } from "@/lib/api/types";
+import { ListItemCreate, ContentType, SourceApi, TVSeason } from "@/lib/types";
 
 interface UseListOperationsParams {
   contentItem: {

@@ -8,7 +8,7 @@ import {
   SensorOptions,
 } from "@dnd-kit/core";
 import { SortableContext, rectSortingStrategy } from "@dnd-kit/sortable";
-import { ListItem } from "@/types";
+import { ListItem } from "@/lib/types";
 import { ReorderableListItemCard } from "../../../../common/cards/ListItemCard/ReorderableListItemCard";
 
 interface FlatGalleryViewProps {

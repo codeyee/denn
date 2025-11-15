@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Content } from "@/types";
+import { Content } from "@/lib/types";
 
 const FEATURED_ITEMS_COUNT = 20;
 const  ITEMS_PER_CONTENT_TYPE = 4;

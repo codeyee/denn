@@ -1,8 +1,8 @@
 import { Button } from "@/app/_components/common/ui/Button";
 import { StatusBadge } from "@/app/_components/common/ui/StatusBadge";
 import { Circle, CheckCircle, Trash2, Star } from "lucide-react";
-import { ListItem } from "@/types";
-import { ItemStatus } from "@/lib/api/types";
+import { ListItem } from "@/lib/types";
+import { ItemStatus } from "@/lib/types";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { formatUserDisplayName } from "@/lib/utils/userUtils";
 import { Card } from "../../Card";

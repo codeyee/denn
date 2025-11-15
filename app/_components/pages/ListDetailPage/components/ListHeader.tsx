@@ -1,5 +1,5 @@
 import { Users, Lock } from "lucide-react";
-import { UserListDetail, ListType } from "@/lib/api/types";
+import { UserListDetail, ListType } from "@/lib/types";
 
 interface ListHeaderProps {
   list: UserListDetail;

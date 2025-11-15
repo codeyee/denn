@@ -1,4 +1,4 @@
-import type { SearchItem, MovieDetail, TVShowDetail, GameDetail, AlbumDetail, BookDetail } from "@/lib/api/types";
+import type { SearchItem, MovieDetail, TVShowDetail, GameDetail, AlbumDetail, BookDetail } from "@/lib/types";
 
 export function transformMovieResults(results: SearchItem[]): MovieDetail[] {
   return results.map((item) => ({

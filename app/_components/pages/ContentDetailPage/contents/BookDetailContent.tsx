@@ -1,6 +1,6 @@
 "use client";
 
-import { BookDetail } from "@/lib/api/types";
+import { BookDetail } from "@/lib/types";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { formatAuthors } from "@/lib/utils/authorUtils";
 

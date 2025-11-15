@@ -1,6 +1,6 @@
 "use client";
 
-import { Platform } from "@/lib/api/types";
+import { Platform } from "@/lib/types";
 import { PlatformFlag } from "./PlatformFlag";
 import { PlatformCountryRow } from "./PlatformCountryRow";
 import { hasFilteredPlatforms } from "./filterPlatforms";

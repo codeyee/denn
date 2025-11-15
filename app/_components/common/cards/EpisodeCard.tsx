@@ -3,7 +3,7 @@
 import { motion, AnimatePresence } from "motion/react";
 import { useRef, useEffect, useState } from "react";
 import { Tv } from "lucide-react";
-import { TVEpisode } from "@/lib/api/types";
+import { TVEpisode } from "@/lib/types";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 
 interface EpisodeCardProps {

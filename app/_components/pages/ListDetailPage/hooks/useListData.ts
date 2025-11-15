@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { listActions } from "@/lib/api";
-import { UserListDetail } from "@/lib/api/types";
-import { ListItem } from "@/types";
+import { UserListDetail } from "@/lib/types";
+import { ListItem } from "@/lib/types";
 
 interface UseListDataReturn {
   loading: boolean;

@@ -2,9 +2,9 @@
 
 import { useMemo } from "react";
 import { Card } from "../Card";
-import { ContentType } from "@/lib/api/types";
+import { ContentType } from "@/lib/types";
 import { formatSeasonTitle } from "@/lib/utils/titleUtils";
-import { Content } from "@/types";
+import { Content } from "@/lib/types";
 import { Plus } from "lucide-react";
 import { Button } from "@/app/_components/common/ui/Button";
 import { AddToListModal } from "@/app/_components/common/modals/AddToListModal";

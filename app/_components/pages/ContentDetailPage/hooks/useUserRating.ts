@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { ratingActions, contentItemActions } from "@/lib/api";
-import { Rating, RatingCreate, ContentItem, User } from "@/lib/api/types";
+import { Rating, RatingCreate, ContentItem, User } from "@/lib/types";
 
 interface UseUserRatingParams {
   contentItem: ContentItem | null;

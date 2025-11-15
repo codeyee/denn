@@ -1,4 +1,4 @@
-import { User } from "@/lib/api/types";
+import { User } from "./api";
 
 export type GroupBy =
   | 'none'

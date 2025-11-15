@@ -1,4 +1,4 @@
-import { ContentItem, SourceApi } from "@/lib/api/types";
+import { ContentItem, SourceApi } from "@/lib/types";
 
 interface ApiAttributionProps {
   contentItem: ContentItem;

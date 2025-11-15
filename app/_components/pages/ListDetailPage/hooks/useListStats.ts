@@ -1,6 +1,6 @@
 import { useMemo } from "react";
-import { ItemStatus } from "@/lib/api/types";
-import { ListItem } from "@/types";
+import { ItemStatus } from "@/lib/types";
+import { ListItem } from "@/lib/types";
 
 interface UseListStatsReturn {
   itemCount: number;

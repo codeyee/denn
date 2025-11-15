@@ -1,4 +1,4 @@
-import { ContentType, SourceApi } from "@/lib/api/types";
+import { ContentType, SourceApi } from "@/lib/types";
 import type { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import { getSourceApi, isValidContentType } from "./contentTypeUtils";
 

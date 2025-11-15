@@ -1,5 +1,5 @@
-import { Content } from "@/types";
-import { ContentType } from "@/lib/api/types";
+import { Content } from "@/lib/types";
+import { ContentType } from "@/lib/types";
 import { Film, Tv, Gamepad2, Book, Music, LucideIcon } from "lucide-react";
 import { Button } from "@/app/_components/common/ui/Button";
 import {

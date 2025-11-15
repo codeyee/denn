@@ -1,7 +1,7 @@
 import { Button } from "@/app/_components/common/ui/Button";
-import { ListWithItems } from "@/types";
+import { ListWithItems } from "@/lib/types";
 import { Plus, Check } from "lucide-react";
-import { TVSeason } from "@/lib/api/types";
+import { TVSeason } from "@/lib/types";
 
 interface ListsPhaseProps {
   lists: ListWithItems[];

@@ -1,6 +1,6 @@
 "use client";
 
-import { GameDetail, Platform } from "@/lib/api/types";
+import { GameDetail, Platform } from "@/lib/types";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { formatAuthors } from "@/lib/utils/authorUtils";
 import { PlatformsDisplay } from "../platforms/PlatformsDisplay";
