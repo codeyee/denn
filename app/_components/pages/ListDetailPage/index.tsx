@@ -7,6 +7,8 @@ import { Footer } from "../../layout/Footer";
 import { EditListModal } from "../../common/modals/EditListModal";
 import { ConfirmDialog } from "../../common/modals/ConfirmDialog";
 import { RatingModal } from "../../common/modals/RatingModal";
+import { ListItemPlaceholder } from "../../common/cards/ListItemPlaceholder";
+import { VerticalList } from "../../common/lists/VerticalList";
 import { ItemStatus, Rating, RatingCreate } from "@/lib/types";
 import { ListItem, MemberRating } from "@/lib/types";
 import { GroupBy } from "@/lib/types/listView";
@@ -180,13 +182,19 @@ export function ListDetailPage({ listId }: ListDetailPageProps) {
       <>
         <Navbar />
         <div className="relative w-full min-h-screen bg-background-logged-in">
-          <div className="container mx-auto px-4 mt-8 py-20">
-            <div className="flex items-center justify-center min-h-[400px]">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-                <p className="text-gray-400">Loading list...</p>
-              </div>
+          <div className="container mx-auto px-4 md:px-6 lg:px-8 pt-8 pb-20">
+            {/* Header skeleton */}
+            <div className="mb-8">
+              <div className="h-8 bg-white/10 rounded w-64 mb-4" />
+              <div className="h-4 bg-white/5 rounded w-48" />
             </div>
+
+            {/* List items skeleton */}
+            <VerticalList spacing="md">
+              {Array.from({ length: 8 }).map((_, index) => (
+                <ListItemPlaceholder key={`placeholder-${index}`} index={index} />
+              ))}
+            </VerticalList>
           </div>
         </div>
         <Footer />
