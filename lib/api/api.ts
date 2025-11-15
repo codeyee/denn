@@ -184,30 +184,33 @@ export async function apiRequest<T = unknown>(
 }
 
 export const api = {
-  get: <T = unknown>(endpoint: string, requiresAuth = false) =>
-    apiRequest<T>(endpoint, { method: "GET", requiresAuth }),
+  get: <T = unknown>(endpoint: string, requiresAuth = false, signal?: AbortSignal) =>
+    apiRequest<T>(endpoint, { method: "GET", requiresAuth, signal }),
 
-  post: <T = unknown>(endpoint: string, data?: unknown, requiresAuth = false) =>
+  post: <T = unknown>(endpoint: string, data?: unknown, requiresAuth = false, signal?: AbortSignal) =>
     apiRequest<T>(endpoint, {
       method: "POST",
       body: data ? JSON.stringify(data) : undefined,
       requiresAuth,
+      signal,
     }),
 
-  put: <T = unknown>(endpoint: string, data?: unknown, requiresAuth = false) =>
+  put: <T = unknown>(endpoint: string, data?: unknown, requiresAuth = false, signal?: AbortSignal) =>
     apiRequest<T>(endpoint, {
       method: "PUT",
       body: data ? JSON.stringify(data) : undefined,
       requiresAuth,
+      signal,
     }),
 
-  patch: <T = unknown>(endpoint: string, data?: unknown, requiresAuth = false) =>
+  patch: <T = unknown>(endpoint: string, data?: unknown, requiresAuth = false, signal?: AbortSignal) =>
     apiRequest<T>(endpoint, {
       method: "PATCH",
       body: data ? JSON.stringify(data) : undefined,
       requiresAuth,
+      signal,
     }),
 
-  delete: <T = unknown>(endpoint: string, requiresAuth = false) =>
-    apiRequest<T>(endpoint, { method: "DELETE", requiresAuth }),
+  delete: <T = unknown>(endpoint: string, requiresAuth = false, signal?: AbortSignal) =>
+    apiRequest<T>(endpoint, { method: "DELETE", requiresAuth, signal }),
 };

@@ -7,7 +7,7 @@ import type {
 } from "@/lib/types";
 
 export const bookActions = {
-  search: (params: BookSearchParams): Promise<BookSearchResponse> => {
+  search: (params: BookSearchParams, signal?: AbortSignal): Promise<BookSearchResponse> => {
     const queryParams = new URLSearchParams();
     queryParams.append("query", params.query);
     if (params.page) queryParams.append("page", String(params.page));
@@ -15,7 +15,8 @@ export const bookActions = {
 
     return api.get<BookSearchResponse>(
       `/proxy/books/search?${queryParams}`,
-      true
+      true,
+      signal
     );
   },
 
