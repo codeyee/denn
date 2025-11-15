@@ -1,9 +1,10 @@
 import { motion, AnimatePresence } from "motion/react";
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect } from "react";
 import { Film, Tv, Gamepad2, Book, Music, LucideIcon } from "lucide-react";
 import { createPortal } from "react-dom";
 
 import { ContentType } from "@/lib/api/types";
+import { useCardHover } from "./hooks/useCardHover";
 
 const ICON_MAP = {
   [ContentType.MOVIE.toLowerCase()]: Film,
@@ -84,26 +85,20 @@ function Card({
   const EmptyIcon = emptyIcon || Icon;
   const previousImageRef = useRef<string | undefined>(undefined);
   const isFirstImageRef = useRef(true);
-  const [isHovered, setIsHovered] = useState(false);
-  const [popoverPosition, setPopoverPosition] = useState({ top: 0, left: 0, width: 0 });
-  const [isDesktop, setIsDesktop] = useState(false);
-  const cardRef = useRef<HTMLDivElement>(null);
 
-  // Detect if we're on desktop (1024px and above)
-  useEffect(() => {
-    const checkScreenSize = () => {
-      setIsDesktop(window.innerWidth >= 1024);
-    };
-    
-    // Check on mount
-    checkScreenSize();
-    
-    // Add listener for resize
-    window.addEventListener('resize', checkScreenSize);
-    return () => window.removeEventListener('resize', checkScreenSize);
-  }, []);
+  const {
+    cardRef,
+    isHovered,
+    popoverPosition,
+    shouldShowHoverContent,
+    handleMouseEnter,
+    handleMouseLeave,
+  } = useCardHover({
+    disableHover,
+    hasHoverContent: !!hoverContent,
+    onHoverChange,
+  });
 
-  // Update refs after render to track image changes
   useEffect(() => {
     if (previousImageRef.current !== backgroundImage) {
       if (previousImageRef.current !== undefined) {
@@ -112,59 +107,6 @@ function Card({
       previousImageRef.current = backgroundImage;
     }
   }, [backgroundImage]);
-
-  // Notify parent of hover state changes
-  useEffect(() => {
-    if (onHoverChange) {
-      onHoverChange(isHovered);
-    }
-  }, [isHovered, onHoverChange]);
-
-  // Only show hover content on desktop and if hover is not disabled
-  const shouldShowHoverContent = isDesktop && hoverContent && !disableHover;
-
-  // Update popover position when hovering or scrolling
-  useEffect(() => {
-    const updatePosition = () => {
-      if (isHovered && cardRef.current && shouldShowHoverContent) {
-        const rect = cardRef.current.getBoundingClientRect();
-
-        // Since we're using transform with origin 'center center',
-        // we position the element at the card's position, and CSS will handle centering the scale
-        setPopoverPosition({
-          top: rect.top,
-          left: rect.left,
-          width: rect.width,
-        });
-      }
-    };
-
-    updatePosition();
-
-    // Update position on scroll and resize
-    if (isHovered && shouldShowHoverContent) {
-      window.addEventListener('scroll', updatePosition, true);
-      window.addEventListener('resize', updatePosition);
-
-      return () => {
-        window.removeEventListener('scroll', updatePosition, true);
-        window.removeEventListener('resize', updatePosition);
-      };
-    }
-  }, [isHovered, shouldShowHoverContent]);
-
-  const handleMouseEnter = () => {
-    // Only enable hover on desktop and if hover is not disabled
-    if (isDesktop && !disableHover) {
-      setIsHovered(true);
-    }
-  };
-
-  const handleMouseLeave = () => {
-    if (!disableHover) {
-      setIsHovered(false);
-    }
-  };
 
   return (
     <>
@@ -180,7 +122,7 @@ function Card({
           onMouseLeave: handleMouseLeave,
         })}
       >
-        <motion.div 
+        <motion.div
           className="relative overflow-visible rounded-2xl h-full bg-transparent backdrop-blur-lg p-0! border-none!"
           style={{
             zIndex: isHovered && hoverContent ? 100 : 1,
@@ -190,59 +132,58 @@ function Card({
           }}
           transition={{ duration: 0.3, ease: "easeOut" }}
         >
-        <div className="relative overflow-hidden rounded-2xl h-full">
-          {/* Background layer */}
-          {isEmpty ? (
-            <div
-              className="absolute inset-0 flex items-center justify-center bg-empty-card"
-              aria-label={backgroundImageAlt || "Empty list"}
-            >
-              {EmptyIcon && (
-                <EmptyIcon className="w-16 h-16 md:w-20 md:h-20 text-gray-400 opacity-50" />
-              )}
-            </div>
-          ) : (
-            <AnimatePresence>
-              <motion.div
-                key={backgroundImage}
-                className="absolute inset-0 bg-center bg-cover"
-                style={{ backgroundImage: `url(${backgroundImage})` }}
-                aria-label={backgroundImageAlt}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.5, ease: "easeInOut" }}
-              />
-            </AnimatePresence>
-          )}
-
-          {/* Overlay layer */}
-          {!isEmpty && <div className="absolute inset-0 bg-black/20 md:bg-black/20" />}
-          <div
-            className={`absolute inset-x-0 bottom-0 h-[55%] md:h-[55%] bg-linear-to-t ${
-              isEmpty
-                ? "from-gray-700/80 via-gray-600/40 to-transparent"
-                : "from-black/95 via-black/60 to-transparent md:from-black/95 md:via-black/40 md:to-transparent"
-            }`}
-          />
-
-          {/* Content layer */}
-          <div className="relative z-10 h-full flex flex-col">
-            <div className="mt-auto w-full px-4 md:px-6 pb-4 md:pb-6 pt-3 md:pt-5 space-y-2 md:space-y-4">
-              {/* Title section */}
-              <div className="flex items-center gap-2 md:gap-3 text-white mb-1 md:mb-2">
-                <Icon className="w-4 h-4 md:w-6 md:h-6 shrink-0 drop-shadow-text" />
-                <span className="text-sm md:text-xl font-bold drop-shadow-text line-clamp-3 wrap-break-word">
-                  {title}
-                </span>
+          <div className="relative overflow-hidden rounded-2xl h-full">
+            {/* Background layer */}
+            {isEmpty ? (
+              <div
+                className="absolute inset-0 flex items-center justify-center bg-empty-card"
+                aria-label={backgroundImageAlt || "Empty list"}
+              >
+                {EmptyIcon && (
+                  <EmptyIcon className="w-16 h-16 md:w-20 md:h-20 text-gray-400 opacity-50" />
+                )}
               </div>
+            ) : (
+              <AnimatePresence>
+                <motion.div
+                  key={backgroundImage}
+                  className="absolute inset-0 bg-center bg-cover"
+                  style={{ backgroundImage: `url(${backgroundImage})` }}
+                  aria-label={backgroundImageAlt}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.5, ease: "easeInOut" }}
+                />
+              </AnimatePresence>
+            )}
 
-              {children}
+            {/* Overlay layer */}
+            {!isEmpty && <div className="absolute inset-0 bg-black/20 md:bg-black/20" />}
+            <div
+              className={`absolute inset-x-0 bottom-0 h-[55%] md:h-[55%] bg-linear-to-t ${isEmpty
+                  ? "from-gray-700/80 via-gray-600/40 to-transparent"
+                  : "from-black/95 via-black/60 to-transparent md:from-black/95 md:via-black/40 md:to-transparent"
+                }`}
+            />
+
+            {/* Content layer */}
+            <div className="relative z-10 h-full flex flex-col">
+              <div className="mt-auto w-full px-4 md:px-6 pb-4 md:pb-6 pt-3 md:pt-5 space-y-2 md:space-y-4">
+                {/* Title section */}
+                <div className="flex items-center gap-2 md:gap-3 text-white mb-1 md:mb-2">
+                  <Icon className="w-4 h-4 md:w-6 md:h-6 shrink-0 drop-shadow-text" />
+                  <span className="text-sm md:text-xl font-bold drop-shadow-text line-clamp-3 wrap-break-word">
+                    {title}
+                  </span>
+                </div>
+
+                {children}
+              </div>
             </div>
           </div>
-        </div>
+        </motion.div>
       </motion.div>
-    </motion.div>
 
       {/* Hover Popover - rendered as portal to avoid carousel clipping */}
       {typeof window !== 'undefined' && createPortal(
@@ -278,17 +219,16 @@ function Card({
                     style={{ backgroundImage: `url(${backgroundImage})` }}
                   />
                 )}
-                
+
                 {/* Overlay and gradient */}
                 {!isEmpty && <div className="absolute inset-0 bg-black/20" />}
                 <div
-                  className={`absolute inset-x-0 bottom-0 h-[55%] bg-linear-to-t ${
-                    isEmpty
+                  className={`absolute inset-x-0 bottom-0 h-[55%] bg-linear-to-t ${isEmpty
                       ? "from-gray-700/80 via-gray-600/40 to-transparent"
                       : "from-black/95 via-black/60 to-transparent"
-                  }`}
+                    }`}
                 />
-                
+
                 {/* Title overlay on image */}
                 <div className="absolute bottom-0 left-0 right-0 z-10 px-4 md:px-6 pb-4 md:pb-6 pt-3 md:pt-5">
                   <div className="flex items-center gap-2 md:gap-3 text-white">
@@ -299,7 +239,7 @@ function Card({
                   </div>
                 </div>
               </div>
-              
+
               {/* Hover content below image */}
               {hoverContent}
             </motion.div>
@@ -314,4 +254,4 @@ function Card({
 Card.Footer = Footer;
 Card.HoverContent = HoverContent;
 
-export default Card;
+export { Card };

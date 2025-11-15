@@ -5,7 +5,7 @@ interface PlatformFlagProps {
   size?: number;
 }
 
-export default function PlatformFlag({
+export function PlatformFlag({
   countryCode,
   size = 28,
 }: PlatformFlagProps) {

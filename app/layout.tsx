@@ -1,6 +1,6 @@
-import { ThemeProvider } from "@/app/_components/common/ThemeProvider";
+import { ThemeProvider } from "@/app/_components/common/providers/ThemeProvider";
 import { StoreProvider } from "@/app/_providers/StoreProvider";
-import { CountryProvider } from "@/app/_components/common/CountryProvider";
+import { CountryProvider } from "@/app/_components/common/providers/CountryProvider";
 
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";

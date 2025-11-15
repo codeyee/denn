@@ -1,8 +1,8 @@
 "use client";
 
-import { AlbumDetail, Track } from "@/lib/api/types";
-import { VerticalList } from "@/app/_components/common/List";
-import TrackListItem from "@/app/_components/common/List/TrackListItem";
+import { AlbumDetail } from "@/lib/api/types";
+import { VerticalList } from "@/app/_components/common/lists/VerticalList";
+import { TrackListItem } from "@/app/_components/common/lists/TrackListItem";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { getAuthorNames } from "@/lib/utils/authorUtils";
 
@@ -17,7 +17,7 @@ function formatDuration(seconds: number | null): string {
   return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
 
-export default function AlbumDetailContent({ album }: AlbumDetailContentProps) {
+export function AlbumDetailContent({ album }: AlbumDetailContentProps) {
   const releaseDate = formatReleaseDate(album.release_date);
   return (
     <div className="container mx-auto px-4 mt-8">

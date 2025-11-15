@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
-import Noise from "@/app/_components/lib/Animations/Noise";
+import { Noise } from "@/app/_components/lib/Animations/Noise";
 import { Content } from "@/types";
 import { ContentType } from "@/lib/api/types";
 import { getSourceApi } from "@/lib/utils/contentTypeUtils";
@@ -18,7 +18,7 @@ interface FeaturedBannerProps {
   autoRotateMs?: number;
 }
 
-export default function FeaturedBanner({ items, autoRotateMs = 5000 }: FeaturedBannerProps) {
+export function FeaturedBanner({ items, autoRotateMs = 5000 }: FeaturedBannerProps) {
   const router = useRouter();
 
   const validItems = useMemo(

@@ -1,8 +1,8 @@
 "use client";
 
 import { Platform } from "@/lib/api/types";
-import PlatformFlag from "./PlatformFlag";
-import PlatformCountryRow from "./PlatformCountryRow";
+import { PlatformFlag } from "./PlatformFlag";
+import { PlatformCountryRow } from "./PlatformCountryRow";
 import { hasFilteredPlatforms } from "./filterPlatforms";
 
 interface PlatformsDisplayProps {
@@ -10,7 +10,7 @@ interface PlatformsDisplayProps {
   title?: string;
 }
 
-export default function PlatformsDisplay({
+export function PlatformsDisplay({
   platforms,
   title = "Where to Watch",
 }: PlatformsDisplayProps) {

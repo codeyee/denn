@@ -4,6 +4,7 @@ import {
   type ContentTypeDefinition,
 } from "@/app/api/cards/lib/contentTypeDefinitions";
 import { LucideIcon } from "lucide-react";
+import { Provider } from "@/app/api/cards/lib/contentTypeDefinitions";
 
 export type ContentType = {
   slug: string;
@@ -11,11 +12,7 @@ export type ContentType = {
   title: string;
   description: string;
   backgroundImage: string;
-  provider: {
-    name: string;
-    logo: string;
-    url: string;
-  };
+  providers: Provider[];
   alt: string;
   isFallback: boolean;
 };
@@ -24,11 +21,8 @@ type ContentTypeApiResponse = {
   type: string;
   title: string;
   description: string;
-  provider: {
-    name: string;
-    logo: string;
-    url: string;
-  };
+  provider?: Provider | Provider[];
+  providers?: Provider[];
   backgroundImage: string;
   alt: string;
   isFallback: boolean;
@@ -75,12 +69,16 @@ export function useContentTypes() {
 function createDefaultContentType(
   definition: ContentTypeDefinition,
 ): ContentType {
+  const providers = Array.isArray(definition.provider)
+    ? definition.provider
+    : [definition.provider];
+
   return {
     slug: definition.slug,
     icon: definition.icon,
     title: definition.title,
     description: definition.description,
-    provider: definition.provider,
+    providers,
     backgroundImage: definition.defaultBackgroundImage,
     alt: formatAltFromPath(definition.defaultBackgroundImage, definition.title),
     isFallback: true,
@@ -123,10 +121,13 @@ async function fetchContentTypes(
         return defaultContentType;
       }
 
+      const apiProviders = data.providers ?? (data.provider ? (Array.isArray(data.provider) ? data.provider : [data.provider]) : null);
+      const providers = apiProviders ?? defaultContentType.providers;
+
       return {
         ...defaultContentType,
         backgroundImage: data.backgroundImage ?? defaultContentType.backgroundImage,
-        provider: data.provider ?? defaultContentType.provider,
+        providers,
         alt: data.alt ?? defaultContentType.alt,
         isFallback: data.isFallback ?? defaultContentType.isFallback,
       };

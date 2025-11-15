@@ -7,7 +7,7 @@ interface PlatformTileProps {
   platform: Platform;
 }
 
-export default function PlatformTile({ platform }: PlatformTileProps) {
+export function PlatformTile({ platform }: PlatformTileProps) {
   const imageUrl = getPlatformImageUrl(platform.title, platform.image_url);
 
   return (

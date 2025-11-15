@@ -1,8 +1,8 @@
 "use client";
 
 import { Suspense } from "react";
-import Navbar from "@/app/_components/layout/Navbar";
-import SearchPage from "@/app/_components/pages/SearchPage";
+import { Navbar } from "@/app/_components/layout/Navbar";
+import { SearchPage } from "@/app/_components/pages/SearchPage";
 import { useAuth } from "@/app/_hooks/useAuth";
 
 export default function Search() {

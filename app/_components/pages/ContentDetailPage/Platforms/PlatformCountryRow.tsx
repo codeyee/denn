@@ -2,14 +2,14 @@
 
 import { Platform } from "@/lib/api/types";
 import { filterPlatforms } from "./filterPlatforms";
-import PlatformTile from "./PlatformTile";
+import { PlatformTile } from "./PlatformTile";
 
 interface PlatformCountryRowProps {
   countryCode: string;
   platformList: Platform[];
 }
 
-export default function PlatformCountryRow({
+export function PlatformCountryRow({
   countryCode,
   platformList,
 }: PlatformCountryRowProps) {

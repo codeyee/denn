@@ -14,22 +14,22 @@ import {
   BookDetail
 } from "@/lib/api/types";
 import { useAuthStore } from "@/app/_stores/auth-store";
-import ContentBanner from "./ContentBanner";
-import MovieDetailContent from "./MovieDetailContent";
-import TVShowDetailContent from "./TVShowDetailContent";
-import SeasonDetailContent from "./SeasonDetailContent";
-import GameDetailContent from "./GameDetailContent";
-import BookDetailContent from "./BookDetailContent";
-import RatingsSection from "./RatingsSection";
-import RatingModal from "@/app/_components/common/Modal/RatingModal";
-import AddToListModal from "@/app/_components/common/Modal/AddToListModal";
+import { ContentBanner } from "./ContentBanner";
+import { MovieDetailContent } from "./MovieDetailContent";
+import { TVShowDetailContent } from "./TVShowDetailContent";
+import { SeasonDetailContent } from "./SeasonDetailContent";
+import { GameDetailContent } from "./GameDetailContent";
+import { BookDetailContent } from "./BookDetailContent";
+import { RatingsSection } from "./RatingsSection";
+import { RatingModal } from "@/app/_components/common/modals/RatingModal";
+import { AddToListModal } from "@/app/_components/common/modals/AddToListModal";
 import { Star } from "lucide-react";
-import Footer from "../../layout/Footer";
+import { Footer } from "../../layout/Footer";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
-import { VerticalList } from "@/app/_components/common/List";
-import TrackListItem from "@/app/_components/common/List/TrackListItem";
-import Carousel from "@/app/_components/common/Carousel";
-import ContentCard from "@/app/_components/cards/ContentCard";
+import { VerticalList } from "@/app/_components/common/lists/VerticalList";
+import { TrackListItem } from "@/app/_components/common/lists/TrackListItem";
+import { Carousel } from "@/app/_components/common/ui/Carousel";
+import { ContentCard } from "@/app/_components/cards/ContentCard";
 
 interface ContentDetailPageProps {
   contentId?: number;
@@ -38,7 +38,7 @@ interface ContentDetailPageProps {
   contentType?: string;
 }
 
-export default function ContentDetailPage({
+export function ContentDetailPage({
   contentId,
   externalId,
   sourceApi,

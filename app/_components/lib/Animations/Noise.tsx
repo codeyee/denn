@@ -8,13 +8,13 @@ interface NoiseProps {
   patternAlpha?: number;
 }
 
-const Noise: React.FC<NoiseProps> = ({
+export function Noise({
   patternSize = 250,
   patternScaleX = 1,
   patternScaleY = 1,
   patternRefreshInterval = 2,
   patternAlpha = 15
-}) => {
+}: NoiseProps) {
   const grainRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
@@ -81,5 +81,3 @@ const Noise: React.FC<NoiseProps> = ({
     />
   );
 };
-
-export default Noise;

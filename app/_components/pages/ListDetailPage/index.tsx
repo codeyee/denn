@@ -2,11 +2,11 @@
 
 import { useState, useMemo } from "react";
 import { Package } from "lucide-react";
-import Navbar from "../../layout/Navbar";
-import Footer from "../../layout/Footer";
-import EditListModal from "../../common/Modal/EditListModal";
-import ConfirmDialog from "../../common/Modal/ConfirmDialog";
-import RateItemModal from "../../common/Modal/RateItemModal";
+import { Navbar } from "../../layout/Navbar";
+import { Footer } from "../../layout/Footer";
+import { EditListModal } from "../../common/modals/EditListModal";
+import { ConfirmDialog } from "../../common/modals/ConfirmDialog";
+import { RateItemModal } from "../../common/modals/RateItemModal";
 import { ItemStatus } from "@/lib/api/types";
 import { ListItem, MemberRating } from "@/types";
 import { GroupBy } from "@/types/listView";
@@ -32,7 +32,7 @@ interface ListDetailPageProps {
   listId: number;
 }
 
-export default function ListDetailPage({ listId }: ListDetailPageProps) {
+export function ListDetailPage({ listId }: ListDetailPageProps) {
   const [viewMode, setViewMode] = useState<"list" | "gallery">("list");
   const { user: currentUser } = useAuthStore();
 

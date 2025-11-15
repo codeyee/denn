@@ -5,15 +5,16 @@ export type BackgroundCardImage = {
   alt: string;
 };
 
+export type Provider = {
+  name: string;
+  url: string;
+};
+
 export type ContentTypeBackground = {
   type: string;
   title: string;
   description: string;
-  provider: {
-    name: string;
-    logo: string;
-    url: string;
-  };
+  provider: Provider | Provider[];
   backgroundImage: string;
   alt: string;
   isFallback: boolean;

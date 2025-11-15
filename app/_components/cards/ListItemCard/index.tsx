@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import Card from "../Card";
+import { Card } from "../Card";
 import { Button } from "../../lib/button";
 import { Circle, CheckCircle, Trash2, Star } from "lucide-react";
 import { ListItem } from "@/types";
@@ -14,7 +14,7 @@ import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { formatSeasonTitle } from "@/lib/utils/titleUtils";
 import { formatUserDisplayName } from "@/lib/utils/userUtils";
 import { buildContentUrl } from "@/lib/utils/navigationUtils";
-import { StatusBadge } from "@/app/_components/common/StatusBadge";
+import { StatusBadge } from "@/app/_components/common/ui/StatusBadge";
 
 interface ListItemCardProps {
   item: ListItem;
@@ -26,7 +26,7 @@ interface ListItemCardProps {
   disableHover?: boolean;
 }
 
-export default function ListItemCard({
+export function ListItemCard({
   item,
   onToggleStatus,
   onDelete,
@@ -151,7 +151,7 @@ export default function ListItemCard({
                   </div>
                   {/* Status badge as tag component (consistent with non-hover) */}
                   {item.status && (
-                    <StatusBadge status={item.status} size="sm" />
+                    <StatusBadge status={item.status} variant="compact" />
                   )}
                 </div>
 

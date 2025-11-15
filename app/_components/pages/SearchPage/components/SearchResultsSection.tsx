@@ -1,12 +1,6 @@
-import ContentCard from "../../../cards/ContentCard";
-import Carousel from "../../../common/Carousel";
-import type {
-  MovieDetail,
-  TVShowDetail,
-  GameDetail,
-  AlbumDetail,
-  BookDetail,
-} from "@/lib/api/types";
+import { ContentCard } from "../../../cards/ContentCard";
+import { Carousel } from "../../../common/ui/Carousel";
+import type { MovieDetail, TVShowDetail, GameDetail, AlbumDetail, BookDetail } from "@/lib/api/types";
 
 type ContentItem =
   | MovieDetail
