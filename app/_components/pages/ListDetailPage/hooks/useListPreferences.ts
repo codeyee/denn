@@ -25,6 +25,15 @@ interface UseListPreferencesReturn {
   setCurrentPage: (page: number) => void;
 }
 
+interface LegacyPreferences {
+  primaryGroup?: string;
+  secondaryGroup?: string;
+  sortBy: SortBy;
+  sortOrder: SortOrder;
+  pageSize: PageSize;
+  currentPage: number;
+}
+
 export function useListPreferences(listId: number): UseListPreferencesReturn {
   const [groupBy, setGroupBy] = useState<GroupBy[]>(
     DEFAULT_LIST_VIEW_PREFERENCES.groupBy
@@ -46,9 +55,10 @@ export function useListPreferences(listId: number): UseListPreferencesReturn {
   useEffect(() => {
     const preferences = loadPreferences(listId);
 
-    // Backwards compatibility: convert old primaryGroup/secondaryGroup to groupBy array
+    let computedGroupBy: GroupBy[];
+
     if ('primaryGroup' in preferences && 'secondaryGroup' in preferences) {
-      const legacy = preferences as any;
+      const legacy = preferences as LegacyPreferences;
       const groupByArray: GroupBy[] = [];
 
       if (legacy.primaryGroup && legacy.primaryGroup !== 'none') {
@@ -58,14 +68,20 @@ export function useListPreferences(listId: number): UseListPreferencesReturn {
         groupByArray.push(legacy.secondaryGroup);
       }
 
-      setGroupBy(groupByArray);
+      computedGroupBy = groupByArray;
     } else {
-      setGroupBy(preferences.groupBy || []);
+      computedGroupBy = preferences.groupBy || [];
     }
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setGroupBy(computedGroupBy);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSortBy(preferences.sortBy);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSortOrder(preferences.sortOrder);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentPage(preferences.currentPage);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPageSize(preferences.pageSize);
   }, [listId]);
 

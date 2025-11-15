@@ -1,5 +1,15 @@
 import { Image } from "@/lib/api/types";
 
+interface LegacyImageItem {
+    images?: {
+        artworks?: Array<{ original?: string; standard?: string }>;
+        screenshots?: Array<{ original?: string; standard?: string }>;
+        backdrop?: { original?: string; standard?: string };
+        poster?: { original?: string; standard?: string };
+    } | Image[];
+    image_url?: string;
+}
+
 export function getImageUrl(
     images: Image[] | undefined | null,
     type: string,
@@ -64,7 +74,7 @@ export function getCardImageUrl(
     return imageUrl || null;
 }
 
-export function getLegacyImageUrl(item: any): string | undefined {
+export function getLegacyImageUrl(item: LegacyImageItem): string | undefined {
     if (item?.images) {
         const images = item.images;
 

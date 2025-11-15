@@ -4,7 +4,7 @@ import { List as ListIcon, Package, Lock, Users } from "lucide-react";
 
 import { Card } from "./Card";
 import { ListType } from "@/lib/api/types";
-import { ListWithItems } from "@/types";
+import { ListWithItems, SourceData } from "@/types";
 
 interface ListCardProps {
   list: ListWithItems;
@@ -43,7 +43,7 @@ export function ListCard({ list, className }: ListCardProps) {
     if (hasItems) {
       list.items!.forEach((item) => {
         if (item?.content_item?.source_data) {
-          const sourceData = item.content_item.source_data as any;
+          const sourceData = item.content_item.source_data as SourceData;
           // Try different possible image fields from different content types
           const image = sourceData.image_url ||
                        sourceData.poster_path ||

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useListsStore } from "@/app/_stores/lists-store";
 import { listActions, ratingActions } from "@/lib/api";
-import { ListType, ItemStatus } from "@/lib/api/types";
+import { ListType, ItemStatus, User } from "@/lib/api/types";
 import { ListItem, MemberRating } from "@/types";
 
 interface UseListItemActionsOptions {
@@ -143,7 +143,7 @@ export function useListItemActions({
                     ? prevItem.member_ratings
                     : []),
                   {
-                    user: { id: currentUserId } as any,
+                    user: { id: currentUserId } as Partial<User>,
                     rating: rating,
                   },
                 ],

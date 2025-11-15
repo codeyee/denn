@@ -12,13 +12,6 @@ interface TrackListItemProps {
   image?: string | null;
 }
 
-function formatDuration(seconds: number | null): string {
-  if (!seconds) return "";
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return `${mins}:${secs.toString().padStart(2, "0")}`;
-}
-
 export function TrackListItem({
   trackNumber,
   title,

@@ -1,4 +1,5 @@
 import { Star } from "lucide-react";
+import { useMemo } from "react";
 import { ListItem, MemberRating } from "@/types";
 import { Author, ItemStatus } from "@/lib/api/types";
 import { ReorderableListItem } from "../../../common/lists/ReorderableListItem";
@@ -6,7 +7,6 @@ import { Button } from "../../../lib/button";
 import { getContentTypeIcon } from "@/lib/utils/contentTypeIcons";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { formatSeasonTitle } from "@/lib/utils/titleUtils";
-import { formatUserDisplayNameWithUsername } from "@/lib/utils/userUtils";
 
 interface ListItemRendererProps {
   item: ListItem;
@@ -29,7 +29,7 @@ export function ListItemRenderer({
 }: ListItemRendererProps) {
   const contentItem = item.content_item;
   const sourceData = contentItem.source_data;
-  const ContentIcon = getContentTypeIcon(contentItem.content_type);
+  const ContentIcon = useMemo(() => getContentTypeIcon(contentItem.content_type), [contentItem.content_type]);
   const imageUrl = sourceData?.image_url;
 
   const isSeason = contentItem.content_type === "SEASON";

@@ -117,7 +117,7 @@ export function ListItemCard({
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
-          handleCardClick(e as any);
+          handleCardClick(e as unknown as React.MouseEvent);
         }
       }}
       aria-label={`View details for ${title}`}

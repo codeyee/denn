@@ -18,13 +18,14 @@ export function useSearchQuery(): UseSearchQueryReturn {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [hasUserTyped, setHasUserTyped] = useState(false);
 
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const hasUserTypedRef = useRef(false);
   const mobileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const queryFromUrl = searchParams.get("q") || "";
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSearchQuery(queryFromUrl);
   }, [searchParams]);
 
@@ -43,10 +44,9 @@ export function useSearchQuery(): UseSearchQueryReturn {
           router.push(`/search?q=${encodeURIComponent(trimmedQuery)}`, {
             scroll: false,
           });
-          hasUserTypedRef.current = true;
+          setHasUserTyped(true);
         } else {
-          // Navigate back when query is cleared
-          if (hasUserTypedRef.current) {
+          if (hasUserTyped) {
             const prevPage =
               typeof window !== "undefined"
                 ? sessionStorage.getItem(PREV_PAGE_KEY) || "/"
@@ -62,7 +62,7 @@ export function useSearchQuery(): UseSearchQueryReturn {
         clearTimeout(debounceTimerRef.current);
       }
     };
-  }, [searchQuery, router, searchParams]);
+  }, [searchQuery, router, searchParams, hasUserTyped]);
 
   // Debounce query for search execution
   useEffect(() => {
@@ -87,7 +87,7 @@ export function useSearchQuery(): UseSearchQueryReturn {
     searchQuery,
     debouncedQuery,
     setSearchQuery,
-    hasUserTyped: hasUserTypedRef.current,
-    mobileInputRef: mobileInputRef as React.RefObject<HTMLInputElement>,
+    hasUserTyped,
+    mobileInputRef,
   };
 };

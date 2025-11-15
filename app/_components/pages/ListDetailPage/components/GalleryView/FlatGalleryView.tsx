@@ -2,6 +2,10 @@ import {
   DndContext,
   closestCenter,
   DragOverlay,
+  DragStartEvent,
+  DragOverEvent,
+  SensorDescriptor,
+  SensorOptions,
 } from "@dnd-kit/core";
 import { SortableContext, rectSortingStrategy } from "@dnd-kit/sortable";
 import { ListItem } from "@/types";
@@ -11,9 +15,9 @@ interface FlatGalleryViewProps {
   items: ListItem[];
   activeId: number | null;
   isReorderMode: boolean;
-  sensors: any;
-  onDragStart: (event: any) => void;
-  onDragOver: (event: any) => void;
+  sensors: SensorDescriptor<SensorOptions>[];
+  onDragStart: (event: DragStartEvent) => void;
+  onDragOver: (event: DragOverEvent) => void;
   onDragEnd: () => void;
   onDragCancel: () => void;
   onToggleStatus: (itemId: number, currentStatus: string) => void;

@@ -84,16 +84,14 @@ export function ContentCard({ item, className }: ContentCardProps) {
       // Use a delay to allow the tab to start loading
       setTimeout(() => {
         try {
-          // Try to blur the new window
           newWindow.blur();
-        } catch (e) {
+        } catch {
           // Ignored - browser security restriction
         }
-        // Try to focus the current window
         setTimeout(() => {
           try {
             currentWindow.focus();
-          } catch (e) {
+          } catch {
             // Ignored - browser security restriction
           }
         }, 50);

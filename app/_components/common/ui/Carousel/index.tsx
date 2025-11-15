@@ -184,8 +184,9 @@ export function Carousel({
           >
             <AnimatePresence mode="popLayout">
               {items.map((child, index) => {
-                // Extract key from child if it exists, otherwise fallback to index
-                const childKey = (child as any)?.key || `carousel-item-${index}`;
+                const childKey = (typeof child === 'object' && child !== null && 'key' in child && typeof child.key === 'string')
+                  ? child.key
+                  : `carousel-item-${index}`;
                 return (
                   <motion.div
                     key={childKey}

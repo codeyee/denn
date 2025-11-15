@@ -458,7 +458,7 @@ export function AddToListModal({
             </div>
           ) : lists.length === 0 ? (
             <div className="text-center py-8 text-white/60">
-              <p className="text-sm">You don't have any lists yet.</p>
+              <p className="text-sm">You don&apos;t have any lists yet.</p>
               <p className="text-sm">Create one to get started!</p>
             </div>
           ) : (

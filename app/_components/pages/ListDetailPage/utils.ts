@@ -1,4 +1,4 @@
-import { ListItem } from '@/types';
+import { ListItem, SourceData } from '@/types';
 import { ContentType, ItemStatus } from '@/lib/api/types';
 import {
   GroupBy,
@@ -12,7 +12,7 @@ import {
 } from '@/types/listView';
 
 export function getItemTitle(item: ListItem): string {
-  const sourceData = item.content_item.source_data as any;
+  const sourceData = item.content_item.source_data as SourceData;
   return sourceData.title || sourceData.name || 'Untitled';
 }
 

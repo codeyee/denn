@@ -26,7 +26,7 @@ function DropdownMenu({ children }: { children: React.ReactNode }) {
   )
 
   // Extract align from content props
-  const contentAlign = React.isValidElement(content) && (content.props as any)?.align ? (content.props as any).align : "start"
+  const contentAlign = React.isValidElement(content) && (content.props as { align?: "start" | "center" | "end" })?.align ? (content.props as { align?: "start" | "center" | "end" }).align : "start"
 
   React.useEffect(() => {
     if (!open) return
@@ -108,7 +108,6 @@ function DropdownMenuTrigger({
 function DropdownMenuContent({
   children,
   className,
-  align = "start",
   ...props
 }: React.ComponentProps<"div"> & {
   align?: "start" | "center" | "end"

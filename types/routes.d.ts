@@ -10,7 +10,7 @@ type Routes = AppRoutes | PageRoutes | LayoutRoutes | RedirectRoutes | RewriteRo
 
 
 interface ParamMap {
-  "/": {}
+  "/": Record<string, never>
 }
 
 
