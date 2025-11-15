@@ -1,9 +1,7 @@
-# Sprint 1 - Backend Tasks (Week 1-2)
+# Sprint 1 - Backend Tasks
 
 > **Sprint Goal:** Implement critical API fixes that unblock frontend features
-> **Duration:** 2 weeks
 > **Team:** Backend
-> **Coordination:** See [COORDINATION.md](./COORDINATION.md) for frontend dependencies
 
 ---
 
@@ -73,7 +71,7 @@
 **Priority:** 🔴 CRITICAL (BLOCKS FE-203)
 **Estimate:** 3 days
 **Owner:** _Assign_
-**Frontend Impact:** Prevents users from adding incomplete/unreleased seasons
+**Frontend Impact:** Prevents users from adding unreleased seasons
 
 **Current Issue:**
 API returns seasons with 0 episodes, no air date, or future dates.
@@ -91,7 +89,7 @@ DO NOT return seasons where:
 
 **Example:**
 ```json
-// BEFORE
+// BEFORE (considering we are on 2025-11-30)
 {
   "seasons": [
     {"season_number": 1, "episode_count": 7, "air_date": "2008-01-20"},  // ✅ Valid
@@ -102,7 +100,7 @@ DO NOT return seasons where:
   ]
 }
 
-// AFTER
+// AFTER (considering we are on 2025-11-30)
 {
   "seasons": [
     {"season_number": 1, "episode_count": 7, "air_date": "2008-01-20"},
@@ -216,7 +214,7 @@ def filter_valid_seasons(seasons):
 **Frontend Impact:** Homepage shows correct total item counts
 
 **Current Issue:**
-`item_count` returns the preview size instead of actual total count.
+`item_count` returns the preview size (or null) instead of actual total count.
 
 **Request:**
 ```http
@@ -228,7 +226,7 @@ GET /api/lists/?items_size=6
 {
   "id": 1,
   "name": "My Watchlist",
-  "item_count": "6",  // ❌ Should be actual total (e.g., 47)
+  "item_count": "6"/null,  // ❌ Should be actual total (e.g., 47)
   "items": [...]  // 6 items
 }
 ```
@@ -258,30 +256,6 @@ GET /api/lists/?items_size=6
 - [ ] List with 0 items → count=0
 - [ ] List with 5 items, items_size=10 → count=5
 
----
-
-## 📊 Sprint 1 Backend Summary
-
-| Priority | Tasks | Est. Days |
-|----------|-------|-----------|
-| 🔴 Critical | 2 | 5.0 |
-| 🟡 High | 2 | 3.0 |
-| **Total** | **4** | **8.0** |
-
-**Recommended Allocation:**
-- 2 developers × 4 days each = 8 days
-- OR 1 developer × 8 days (full sprint)
-
----
-
-## 🔗 Related Documents
-
-- **Frontend Tasks:** [FRONTEND.md](./FRONTEND.md)
-- **Coordination:** [COORDINATION.md](./COORDINATION.md)
-- **Complete API Spec:** [../REFERENCE/BACKEND_API_SPEC.md](../REFERENCE/BACKEND_API_SPEC.md)
-
----
-
 ## ✅ Definition of Done
 
 A task is complete when:
@@ -308,9 +282,3 @@ A task is complete when:
 - BE-102: Filtering reduces response size (compatible)
 - BE-103: Adding ratings is backward compatible
 - BE-104: Fixing count is backward compatible
-
----
-
-**Sprint Start:** Week 1 Monday
-**Sprint End:** Week 2 Friday
-**Next Sprint:** [Sprint 2](../PHASE_1_MVP_SPRINT_2/BACKEND.md)

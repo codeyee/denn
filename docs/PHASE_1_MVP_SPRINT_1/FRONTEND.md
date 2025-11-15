@@ -1,9 +1,7 @@
-# Sprint 1 - Frontend Tasks (Week 1-2)
+# Sprint 1 - Frontend Tasks
 
 > **Sprint Goal:** Fix critical blockers that prevent core functionality
-> **Duration:** 2 weeks
 > **Team:** Frontend
-> **Coordination:** See [COORDINATION.md](./COORDINATION.md) for backend dependencies
 
 ---
 
@@ -76,7 +74,7 @@ Only show prompt if `userRating` is null or undefined.
 
 ---
 
-### FE-103: Fix AddToListModal Mobile Overflow
+### FE-103: Fix AddToListModal Mobile/Small screens Overflow
 **Priority:** 🔴 HIGH
 **Estimate:** 0.5 days
 **Owner:** _Assign_
@@ -90,7 +88,7 @@ Only show prompt if `userRating` is null or undefined.
 **Action:**
 Make buttons stack vertically on mobile using responsive CSS.
 
-**CSS Fix:**
+**CSS pseudo-fix: (REMEMBER TO USE TAILWIND)**
 ```css
 /* Desktop: horizontal */
 .tv-show-actions {
@@ -107,15 +105,10 @@ Make buttons stack vertically on mobile using responsive CSS.
 ```
 
 **Acceptance Criteria:**
-- [ ] Buttons stack vertically on mobile (<768px)
+- [ ] Buttons stack vertically on mobile/small screens
 - [ ] Buttons stay horizontal on desktop
 - [ ] No overflow on any screen size
 - [ ] Touch targets are adequate (min 44px)
-
-**Testing:**
-- [ ] iPhone SE (375px) - buttons stack
-- [ ] iPad (768px) - buttons horizontal
-- [ ] Desktop - buttons horizontal
 
 ---
 
@@ -133,7 +126,7 @@ When user types quickly, previous search requests aren't cancelled, causing race
 **Action:**
 Use AbortController to cancel in-flight requests when user types.
 
-**Implementation:**
+**Implementation pseudo-code:**
 ```typescript
 useEffect(() => {
   const controller = new AbortController();
@@ -162,7 +155,7 @@ useEffect(() => {
 
 ---
 
-## 🟢 NICE-TO-HAVE Tasks (If Time Permits)
+## 🟢 NICE-TO-HAVE Tasks
 
 ### FE-105: Add Loading Skeletons for List Items
 **Priority:** 🟢 LOW
@@ -195,7 +188,7 @@ Show skeleton placeholders while items are fetching (like homepage).
 **Dependencies:** None
 
 **Current Issue:**
-When search returns 0 results for a content type, entire section disappears.
+When search returns 0 results for a content type, entire section disappears, breaking layout for user (user expects to have content types on certain order)
 
 **File:** `app/_components/pages/SearchPage/index.tsx`
 
@@ -217,7 +210,7 @@ Show "No movies found" message instead of hiding section.
 **Dependencies:** None
 
 **Current Issue:**
-Pagination button styling broken in grouped view.
+Pagination button styling broken in grouped view. Replicate style of Select List/Gallery buttons of ListDetailPage
 
 **File:** `app/_components/pages/ListDetailPage/components/ListSidebar.tsx`
 
@@ -229,30 +222,9 @@ Fix CSS for pagination controls in grouped mode.
 - [ ] Works in both flat and grouped views
 - [ ] Responsive on mobile
 
----
-
-## 📊 Sprint 1 Frontend Summary
-
-| Priority | Tasks | Est. Days |
-|----------|-------|-----------|
-| 🔴 Critical | 3 | 2.0 |
-| 🟡 Medium | 1 | 1.0 |
-| 🟢 Low | 3 | 2.5 |
-| **Total** | **7** | **5.5** |
-
 **Recommended Focus:**
 Complete FE-101 through FE-104 (critical + medium) = 3 days
 Remaining time for nice-to-haves and testing.
-
----
-
-## 🔗 Related Documents
-
-- **Backend Tasks:** [BACKEND.md](./BACKEND.md)
-- **Coordination:** [COORDINATION.md](./COORDINATION.md)
-- **Guidelines:** [../PROJECT_GUIDELINES/GUIDELINES.md](../PROJECT_GUIDELINES/GUIDELINES.md)
-
----
 
 ## ✅ Definition of Done
 
@@ -263,9 +235,3 @@ A task is complete when:
 - [ ] Code reviewed by 1+ teammate
 - [ ] Follows GUIDELINES.md standards
 - [ ] Merged to feature branch
-
----
-
-**Sprint Start:** Week 1 Monday
-**Sprint End:** Week 2 Friday
-**Next Sprint:** [Sprint 2](../PHASE_1_MVP_SPRINT_2/FRONTEND.md)

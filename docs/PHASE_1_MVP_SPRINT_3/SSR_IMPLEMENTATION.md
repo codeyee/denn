@@ -57,22 +57,22 @@
                   │
                   ▼
 ┌─────────────────────────────────────────────┐
-│ Next.js Server fetches /api/cards          │
-│ SERVER-SIDE (before sending HTML)          │
+│ Next.js Server fetches /api/cards           │
+│ SERVER-SIDE (before sending HTML)           │
 └─────────────────┬───────────────────────────┘
                   │
                   ▼
 ┌─────────────────────────────────────────────┐
-│ Server renders full HTML with images       │
-│ Sends complete page to client              │
+│ Server renders full HTML with images        │
+│ Sends complete page to client               │
 └─────────────────┬───────────────────────────┘
                   │
                   ▼
 ┌─────────────────────────────────────────────┐
-│ User sees full content immediately         │
-│ React hydrates in background               │
-│ DOMContentLoaded: 0.5-1 second             │
-│ LCP: 1-2 seconds                           │
+│ User sees full content immediately          │
+│ React hydrates in background                │
+│ DOMContentLoaded: 0.5-1 second              │
+│ LCP: 1-2 seconds                            │
 └─────────────────────────────────────────────┘
 ```
 
@@ -109,16 +109,8 @@ async function getBackgroundImages() {
   const apiUrl = process.env.API_URL || 'http://localhost:3000';
 
   const res = await fetch(`${apiUrl}/api/cards`, {
-    // Caching strategy (choose one):
-
-    // Option 1: Static (build time, revalidate periodically)
-    next: { revalidate: 3600 }, // Revalidate every hour
-
-    // Option 2: Always fresh (like getServerSideProps)
-    // cache: 'no-store',
-
-    // Option 3: Cache forever (like getStaticProps)
-    // cache: 'force-cache',
+    // Caching strategy:
+    next: { revalidate: 3600 * 24 }, // Revalidate every day
   });
 
   if (!res.ok) {
@@ -280,44 +272,6 @@ async function getBackgroundImages() {
 - Best of both worlds (static + dynamic)
 
 **Use case:** Images don't change very often
-
----
-
-### Option 2: Server-Side Rendering (SSR)
-
-```typescript
-async function getBackgroundImages() {
-  const res = await fetch(`${apiUrl}/api/cards`, {
-    cache: 'no-store', // Always fetch fresh
-  });
-  return res.json();
-}
-```
-
-**Benefits:**
-- Always fresh data
-- Still server-rendered (better than client fetch)
-
-**Use case:** Data changes frequently and must be latest
-
----
-
-### Option 3: Static Site Generation (SSG)
-
-```typescript
-async function getBackgroundImages() {
-  const res = await fetch(`${apiUrl}/api/cards`, {
-    cache: 'force-cache', // Cache forever
-  });
-  return res.json();
-}
-```
-
-**Benefits:**
-- Ultra-fast (pre-rendered at build time)
-- Perfect Lighthouse score
-
-**Use case:** Data rarely/never changes
 
 ---
 
