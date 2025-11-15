@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   GroupBy,
   SortBy,
   SortOrder,
   PageSize,
-  DEFAULT_LIST_VIEW_PREFERENCES,
+  ListViewPreferences,
   MAX_GROUPING_ATTRIBUTES,
 } from "@/types/listView";
 import { loadPreferences, savePreferences } from "../utils";
@@ -34,50 +34,60 @@ interface LegacyPreferences {
   currentPage: number;
 }
 
-export function useListPreferences(listId: number): UseListPreferencesReturn {
-  const [groupBy, setGroupBy] = useState<GroupBy[]>(
-    DEFAULT_LIST_VIEW_PREFERENCES.groupBy
-  );
-  const [sortBy, setSortBy] = useState<SortBy>(
-    DEFAULT_LIST_VIEW_PREFERENCES.sortBy
-  );
-  const [sortOrder, setSortOrder] = useState<SortOrder>(
-    DEFAULT_LIST_VIEW_PREFERENCES.sortOrder
-  );
-  const [pageSize, setPageSize] = useState<PageSize>(
-    DEFAULT_LIST_VIEW_PREFERENCES.pageSize
-  );
-  const [currentPage, setCurrentPage] = useState<number>(
-    DEFAULT_LIST_VIEW_PREFERENCES.currentPage
-  );
+function computeGroupByFromPreferences(preferences: LegacyPreferences | ListViewPreferences): GroupBy[] {
+  if ('primaryGroup' in preferences && 'secondaryGroup' in preferences) {
+    const legacy = preferences as LegacyPreferences;
+    const groupByArray: GroupBy[] = [];
 
-  // Load preferences on mount or when listId changes
-  useEffect(() => {
-    const preferences = loadPreferences(listId);
-
-    let computedGroupBy: GroupBy[];
-
-    if ('primaryGroup' in preferences && 'secondaryGroup' in preferences) {
-      const legacy = preferences as LegacyPreferences;
-      const groupByArray: GroupBy[] = [];
-
-      if (legacy.primaryGroup && legacy.primaryGroup !== 'none') {
-        groupByArray.push(legacy.primaryGroup as GroupBy);
-      }
-      if (legacy.secondaryGroup && legacy.secondaryGroup !== 'none') {
-        groupByArray.push(legacy.secondaryGroup as GroupBy);
-      }
-
-      computedGroupBy = groupByArray;
-    } else {
-      computedGroupBy = preferences.groupBy || [];
+    if (legacy.primaryGroup && legacy.primaryGroup !== 'none') {
+      groupByArray.push(legacy.primaryGroup as GroupBy);
+    }
+    if (legacy.secondaryGroup && legacy.secondaryGroup !== 'none') {
+      groupByArray.push(legacy.secondaryGroup as GroupBy);
     }
 
-    setGroupBy(computedGroupBy);
-    setSortBy(preferences.sortBy);
-    setSortOrder(preferences.sortOrder);
-    setCurrentPage(preferences.currentPage);
-    setPageSize(preferences.pageSize);
+    return groupByArray;
+  }
+  return (preferences as ListViewPreferences).groupBy || [];
+}
+
+function getInitialPreferences(listId: number) {
+  const preferences = loadPreferences(listId);
+  return {
+    groupBy: computeGroupByFromPreferences(preferences),
+    sortBy: preferences.sortBy,
+    sortOrder: preferences.sortOrder,
+    pageSize: preferences.pageSize,
+    currentPage: preferences.currentPage,
+  };
+}
+
+export function useListPreferences(listId: number): UseListPreferencesReturn {
+  const previousListIdRef = useRef(listId);
+
+  const initialPrefsRef = useRef<ReturnType<typeof getInitialPreferences> | null>(null);
+  if (initialPrefsRef.current === null) {
+    initialPrefsRef.current = getInitialPreferences(listId);
+  }
+
+  const [groupBy, setGroupBy] = useState<GroupBy[]>(initialPrefsRef.current.groupBy);
+  const [sortBy, setSortBy] = useState<SortBy>(initialPrefsRef.current.sortBy);
+  const [sortOrder, setSortOrder] = useState<SortOrder>(initialPrefsRef.current.sortOrder);
+  const [pageSize, setPageSize] = useState<PageSize>(initialPrefsRef.current.pageSize);
+  const [currentPage, setCurrentPage] = useState<number>(initialPrefsRef.current.currentPage);
+
+  useEffect(() => {
+    if (previousListIdRef.current !== listId) {
+      const preferences = loadPreferences(listId);
+      const computedGroupBy = computeGroupByFromPreferences(preferences);
+
+      setGroupBy(computedGroupBy);
+      setSortBy(preferences.sortBy);
+      setSortOrder(preferences.sortOrder);
+      setCurrentPage(preferences.currentPage);
+      setPageSize(preferences.pageSize);
+      previousListIdRef.current = listId;
+    }
   }, [listId]);
 
   // Save preferences whenever they change
