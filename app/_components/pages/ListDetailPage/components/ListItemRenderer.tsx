@@ -3,7 +3,7 @@ import { ListItem, MemberRating } from "@/types";
 import { Author, ItemStatus } from "@/lib/api/types";
 import { ReorderableListItem } from "../../../common/lists/ReorderableListItem";
 import { Button } from "@/app/_components/common/ui/Button";
-import { CONTENT_TYPE_ICONS } from "@/lib/utils/contentTypeIcons";
+import { CONTENT_TYPE_ICONS } from "@/lib/icons/contentTypeIcons";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { formatSeasonTitle } from "@/lib/utils/titleUtils";
 import { Film } from "lucide-react";

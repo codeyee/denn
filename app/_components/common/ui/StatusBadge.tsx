@@ -1,5 +1,5 @@
 import { ItemStatus } from "@/lib/api/types";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/tailwindUtils";
 
 interface StatusBadgeProps {
   status: ItemStatus;

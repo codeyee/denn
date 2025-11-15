@@ -1,9 +1,23 @@
 import { useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 
+const MIDDLE_CLICK_RESET_DELAY = 100;
+const BACKGROUND_TAB_FOCUS_DELAY = 50;
+
 interface UseSmartNavigationOptions {
   backgroundTab?: boolean;
   onNavigationError?: (error: Error) => void;
+}
+
+function handleNavigationError(
+  onNavigationError?: (error: Error) => void
+): void {
+  const error = new Error("Unable to determine navigation URL");
+  if (onNavigationError) {
+    onNavigationError(error);
+  } else {
+    alert("Unable to determine content type. Please try again.");
+  }
 }
 
 export function useSmartNavigation(
@@ -16,27 +30,39 @@ export function useSmartNavigation(
 
   const openInBackgroundTab = useCallback(
     (url: string) => {
-      const currentWindow = window;
       const newWindow = window.open(url, "_blank", "noopener,noreferrer");
 
       if (newWindow && backgroundTab) {
         setTimeout(() => {
           try {
-            newWindow.blur();
+            window.focus();
           } catch {
             // Browser security restriction
           }
-          setTimeout(() => {
-            try {
-              currentWindow.focus();
-            } catch {
-              // Browser security restriction
-            }
-          }, 50);
-        }, 200);
+        }, BACKGROUND_TAB_FOCUS_DELAY);
       }
     },
     [backgroundTab]
+  );
+
+  const resetMiddleClickFlag = useCallback(() => {
+    setTimeout(() => {
+      middleClickHandled.current = false;
+    }, MIDDLE_CLICK_RESET_DELAY);
+  }, []);
+
+  const handleMiddleClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      middleClickHandled.current = true;
+      const url = getUrl();
+      if (url) {
+        openInBackgroundTab(url);
+      }
+      resetMiddleClickFlag();
+    },
+    [getUrl, openInBackgroundTab, resetMiddleClickFlag]
   );
 
   const handleClick = useCallback(
@@ -45,64 +71,37 @@ export function useSmartNavigation(
 
       const url = getUrl();
       if (!url) {
-        const error = new Error("Unable to determine navigation URL");
-        if (onNavigationError) {
-          onNavigationError(error);
-        } else {
-          alert("Unable to determine content type. Please try again.");
-        }
+        handleNavigationError(onNavigationError);
         return;
       }
 
       const isModifierClick = e.ctrlKey || e.metaKey;
 
       if (isModifierClick) {
-        const newWindow = window.open(url, "_blank");
-        if (newWindow && backgroundTab) {
-          newWindow.blur();
-          window.focus();
-        }
+        openInBackgroundTab(url);
       } else {
         router.push(url);
       }
     },
-    [getUrl, router, backgroundTab, onNavigationError]
+    [getUrl, router, openInBackgroundTab, onNavigationError]
   );
 
   const handleAuxClick = useCallback(
     (e: React.MouseEvent) => {
       if (e.button === 1) {
-        e.preventDefault();
-        e.stopPropagation();
-        middleClickHandled.current = true;
-        const url = getUrl();
-        if (url) {
-          openInBackgroundTab(url);
-        }
-        setTimeout(() => {
-          middleClickHandled.current = false;
-        }, 100);
+        handleMiddleClick(e);
       }
     },
-    [getUrl, openInBackgroundTab]
+    [handleMiddleClick]
   );
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
       if (e.button === 1 && !middleClickHandled.current) {
-        e.preventDefault();
-        e.stopPropagation();
-        middleClickHandled.current = true;
-        const url = getUrl();
-        if (url) {
-          openInBackgroundTab(url);
-        }
-        setTimeout(() => {
-          middleClickHandled.current = false;
-        }, 100);
+        handleMiddleClick(e);
       }
     },
-    [getUrl, openInBackgroundTab]
+    [handleMiddleClick]
   );
 
   const handleKeyDown = useCallback(

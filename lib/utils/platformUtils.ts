@@ -1,12 +1,3 @@
-/**
- * Platform Image Overrides
- *
- * This file contains custom image URLs for gaming platforms to replace
- * low-quality or missing images from the API.
- *
- * The key should match the platform.title value exactly.
- */
-
 export const platformImageOverrides: Record<string, string> = {
   // PlayStation Platforms
   "PlayStation 5":
@@ -84,23 +75,10 @@ export const platformImageOverrides: Record<string, string> = {
     "https://upload.wikimedia.org/wikipedia/commons/3/35/Meta_Quest_logo.svg",
 };
 
-/**
- * Get the platform image URL, using override if available
- * @param platformTitle - The platform title from the API
- * @param originalImageUrl - The original image URL from the API
- * @returns The image URL to use (override or original)
- */
 export function getPlatformImageUrl(
   platformTitle: string,
   originalImageUrl: string | null
 ): string | null {
-  // Check if there's an override for this platform
   const override = platformImageOverrides[platformTitle];
-
-  if (override) {
-    return override;
-  }
-
-  // Return the original image URL if no override exists
-  return originalImageUrl;
+  return override ?? originalImageUrl;
 }

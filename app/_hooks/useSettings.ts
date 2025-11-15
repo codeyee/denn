@@ -6,9 +6,7 @@ export function useSettings() {
   const { animationsEnabled, toggleAnimations } = useSettingsStore();
 
   return {
-    settings: {
-      animationsEnabled,
-    },
+    settings: { animationsEnabled },
     isLoading: false,
     toggleAnimations,
   };

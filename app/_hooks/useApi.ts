@@ -1,6 +1,7 @@
 "use client";
 
 import { apiRequest } from "@/lib/api/api";
+import { getErrorMessage } from "@/lib/utils/typeGuards";
 import { useCallback, useState } from "react";
 
 interface UseApiOptions {
@@ -34,10 +35,10 @@ export function useApi<T = unknown>(
         onSuccess?.(responseData);
         return responseData;
       } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : "An error occurred";
+        const errorMessage = getErrorMessage(err);
+        const errorInstance = err instanceof Error ? err : new Error(errorMessage);
         setError(errorMessage);
-        onError?.(err instanceof Error ? err : new Error(errorMessage));
+        onError?.(errorInstance);
         throw err;
       } finally {
         setIsLoading(false);

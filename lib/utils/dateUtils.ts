@@ -1,18 +1,17 @@
-export function formatReleaseDate(
-    dateString: string | null | undefined
-): string {
-    if (!dateString) {
-        return "";
-    }
+const DATE_LOCALE = "en-US";
+const DATE_FORMAT_OPTIONS: Intl.DateTimeFormatOptions = {
+  year: "numeric",
+  month: "short",
+  day: "numeric",
+};
 
-    try {
-        const date = new Date(dateString);
-        return date.toLocaleDateString("en-US", {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-        });
-    } catch {
-        return dateString;
-    }
+export function formatReleaseDate(dateString: string | null | undefined): string {
+  if (!dateString) return "";
+
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleDateString(DATE_LOCALE, DATE_FORMAT_OPTIONS);
+  } catch {
+    return dateString;
+  }
 }

@@ -3,7 +3,7 @@
 import { useMemo, useCallback } from "react";
 import { Card } from "../Card";
 import { ListItem } from "@/types";
-import { getContentTypeIcon } from "@/lib/utils/contentTypeIcons";
+import { getContentTypeIcon } from "@/lib/icons/contentTypeIcons";
 import { buildContentUrl } from "@/lib/utils/navigationUtils";
 import { StatusBadge } from "@/app/_components/common/ui/StatusBadge";
 import { useSmartNavigation } from "@/app/_hooks/useSmartNavigation";

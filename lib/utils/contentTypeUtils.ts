@@ -1,12 +1,11 @@
 import { ContentType, SourceApi } from "@/lib/api/types";
 
-export const CONTENT_TYPE_CONFIG: Record<
-  ContentType,
-  {
-    sourceApi: SourceApi;
-    displayName: string;
-  }
-> = {
+interface ContentTypeConfig {
+  sourceApi: SourceApi;
+  displayName: string;
+}
+
+export const CONTENT_TYPE_CONFIG: Record<ContentType, ContentTypeConfig> = {
   [ContentType.MOVIE]: {
     sourceApi: SourceApi.TMDB,
     displayName: "Movie",
@@ -37,18 +36,20 @@ export const CONTENT_TYPE_CONFIG: Record<
   },
 };
 
-export function getSourceApi(type: string | ContentType): SourceApi {
-  const contentType = type as ContentType;
-  return CONTENT_TYPE_CONFIG[contentType]?.sourceApi ?? SourceApi.TMDB;
-}
-
-export function getContentTypeDisplayName(
-  type: string | ContentType
-): string {
-  const contentType = type as ContentType;
-  return CONTENT_TYPE_CONFIG[contentType]?.displayName ?? type;
-}
-
 export function isValidContentType(type: string): type is ContentType {
   return type in CONTENT_TYPE_CONFIG;
+}
+
+export function getSourceApi(type: string | ContentType): SourceApi {
+  if (isValidContentType(type)) {
+    return CONTENT_TYPE_CONFIG[type]?.sourceApi ?? SourceApi.TMDB;
+  }
+  return SourceApi.TMDB;
+}
+
+export function getContentTypeDisplayName(type: string | ContentType): string {
+  if (isValidContentType(type)) {
+    return CONTENT_TYPE_CONFIG[type]?.displayName ?? type;
+  }
+  return type;
 }

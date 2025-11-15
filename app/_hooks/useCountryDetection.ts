@@ -2,47 +2,27 @@
 
 import { useEffect, useState } from "react";
 import { useSettingsStore } from "@/app/_stores/settings-store";
-import { DEFAULT_COUNTRY } from "@/lib/utils/countryUtils";
-import Cookies from "js-cookie";
+import { DEFAULT_COUNTRY, detectCountryFromCloudflare, getCountryFromCookie } from "@/lib/utils/countryUtils";
 
 export function useCountryDetection() {
     const { countryCode, setCountryCode } = useSettingsStore();
     const [isDetecting, setIsDetecting] = useState(false);
 
     useEffect(() => {
-        const detectCountry = async () => {
-            if (countryCode) {
-                return;
-            }
+        if (countryCode) return;
 
+        const detectCountry = async () => {
             setIsDetecting(true);
 
             try {
-                const cookieCountry = Cookies.get("user-country");
-                if (cookieCountry && cookieCountry !== "XX") {
+                const cookieCountry = getCountryFromCookie();
+                if (cookieCountry) {
                     setCountryCode(cookieCountry);
-                    setIsDetecting(false);
                     return;
                 }
 
-                const response = await fetch(
-                    "https://www.cloudflare.com/cdn-cgi/trace"
-                );
-                const data = await response.text();
-
-                const lines = data.split("\n");
-                const locLine = lines.find((line) => line.startsWith("loc="));
-
-                if (locLine) {
-                    const country = locLine.split("=")[1].trim();
-                    if (country && country !== "XX") {
-                        setCountryCode(country);
-                        setIsDetecting(false);
-                        return;
-                    }
-                }
-
-                setCountryCode(DEFAULT_COUNTRY);
+                const detectedCountry = await detectCountryFromCloudflare();
+                setCountryCode(detectedCountry);
             } catch (error) {
                 console.error("Failed to detect country:", error);
                 setCountryCode(DEFAULT_COUNTRY);
