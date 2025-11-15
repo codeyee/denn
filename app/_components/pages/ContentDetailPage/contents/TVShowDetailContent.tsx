@@ -4,7 +4,7 @@ import Image from "next/image";
 import { TVShowDetail } from "@/lib/api/types";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { formatAuthors } from "@/lib/utils/authorUtils";
-import { PlatformsDisplay } from "./Platforms/PlatformsDisplay";
+import { PlatformsDisplay } from "../platforms/PlatformsDisplay";
 
 interface TVShowDetailContentProps {
   tvShow: TVShowDetail;
