@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useCallback } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import Image from 'next/image';
 import { useGesture } from '@use-gesture/react';
-import { buildItems, clamp, DEFAULTS, DEFAULT_IMAGES } from './utils';
+import { buildItems, DEFAULTS } from './utils';
 import { DOME_GALLERY_STYLES } from './styles';
 import { useScrollLock } from './hooks/useScrollLock';
 import { useDomeRotation } from './hooks/useDomeRotation';
@@ -33,7 +33,7 @@ export type DomeGalleryProps = {
 };
 
 export function DomeGallery({
-  images = DEFAULT_IMAGES,
+  images = [],
   fit = 0.5,
   fitBasis = 'auto',
   minRadius = 600,
