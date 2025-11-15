@@ -1,7 +1,6 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 
 interface UseModalPhasesParams {
-  isOpen: boolean;
   isMultiSeasonShow: boolean;
 }
 
@@ -19,18 +18,12 @@ interface UseModalPhasesReturn {
 }
 
 export function useModalPhases({
-  isOpen,
   isMultiSeasonShow
 }: UseModalPhasesParams): UseModalPhasesReturn {
-  const [modalPhase, setModalPhase] = useState<'selection' | 'lists'>('selection');
+  const [modalPhase, setModalPhase] = useState<'selection' | 'lists'>(
+    isMultiSeasonShow ? 'selection' : 'lists'
+  );
   const [addMode, setAddMode] = useState<'show' | 'seasons'>('show');
-
-  useEffect(() => {
-    if (isOpen) {
-      setAddMode('show');
-      setModalPhase(isMultiSeasonShow ? 'selection' : 'lists');
-    }
-  }, [isOpen, isMultiSeasonShow]);
 
   const handleContinueToLists = useCallback((
     currentAddMode: 'show' | 'seasons',

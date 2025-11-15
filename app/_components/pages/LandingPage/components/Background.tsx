@@ -2,7 +2,7 @@
 
 import { ReactNode, useEffect, useRef, useState } from "react";
 import { DomeGallery } from "./DomeGallery";
-import { Noise } from "@/app/_components/common/animations/Noise";
+import { Noise } from "@/app/_components/common/Noise";
 
 export type BackgroundCardImage = {
   src: string;
@@ -103,19 +103,18 @@ export function Background({
           {backgroundImages.length > 0 && (
             <DomeGallery
               images={backgroundImages}
-            fit={0.6}
-            fitBasis="auto"
-            minRadius={600}
-            maxRadius={Infinity}
-            padFactor={0.25}
-            overlayBlurColor="var(--color-overlay-blur)"
-            maxVerticalRotationDeg={5}
-            dragSensitivity={20}
-            enlargeTransitionMs={300}
-            segments={35}
-            dragDampening={2}
-            openedImageWidth="600px"
-            openedImageHeight="600px"
+              fit={0.6}
+              fitBasis="auto"
+              minRadius={600}
+              maxRadius={Infinity}
+              padFactor={0.25}
+              overlayBlurColor="var(--color-overlay-blur)"
+              maxVerticalRotationDeg={5}
+              enlargeTransitionMs={300}
+              segments={35}
+              dragDampening={2}
+              openedImageWidth="600px"
+              openedImageHeight="600px"
               imageBorderRadius="20px"
               openedImageBorderRadius="20px"
               grayscale={false}

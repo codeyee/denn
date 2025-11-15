@@ -4,14 +4,12 @@ import { clamp, wrapAngleSigned } from '../utils';
 interface UseDomeRotationParams {
   sphereRef: React.RefObject<HTMLDivElement | null>;
   maxVerticalRotationDeg: number;
-  dragSensitivity: number;
   dragDampening: number;
 }
 
 export function useDomeRotation({
   sphereRef,
   maxVerticalRotationDeg,
-  dragSensitivity,
   dragDampening
 }: UseDomeRotationParams) {
   const rotationRef = useRef({ x: 0, y: 0 });

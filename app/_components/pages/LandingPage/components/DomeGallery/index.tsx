@@ -20,7 +20,6 @@ export type DomeGalleryProps = {
   padFactor?: number;
   overlayBlurColor?: string;
   maxVerticalRotationDeg?: number;
-  dragSensitivity?: number;
   enlargeTransitionMs?: number;
   segments?: number;
   dragDampening?: number;
@@ -41,7 +40,6 @@ export function DomeGallery({
   padFactor = 0.25,
   overlayBlurColor = 'var(--color-overlay-blur)',
   maxVerticalRotationDeg = DEFAULTS.maxVerticalRotationDeg,
-  dragSensitivity = DEFAULTS.dragSensitivity,
   enlargeTransitionMs = DEFAULTS.enlargeTransitionMs,
   segments = DEFAULTS.segments,
   dragDampening = 2,
@@ -72,7 +70,6 @@ export function DomeGallery({
   } = useDomeRotation({
     sphereRef,
     maxVerticalRotationDeg,
-    dragSensitivity,
     dragDampening
   });
 
@@ -102,7 +99,6 @@ export function DomeGallery({
     frameRef,
     viewerRef,
     scrimRef,
-    sphereRef,
     rotationRef,
     segments,
     enlargeTransitionMs,

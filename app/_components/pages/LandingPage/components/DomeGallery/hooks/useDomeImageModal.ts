@@ -7,7 +7,6 @@ interface UseDomeImageModalParams {
   frameRef: React.RefObject<HTMLDivElement | null>;
   viewerRef: React.RefObject<HTMLDivElement | null>;
   scrimRef: React.RefObject<HTMLDivElement | null>;
-  sphereRef: React.RefObject<HTMLDivElement | null>;
   rotationRef: React.MutableRefObject<{ x: number; y: number }>;
   segments: number;
   enlargeTransitionMs: number;
@@ -26,7 +25,6 @@ export function useDomeImageModal({
   frameRef,
   viewerRef,
   scrimRef,
-  sphereRef,
   rotationRef,
   segments,
   enlargeTransitionMs,
@@ -179,7 +177,6 @@ export function useDomeImageModal({
     mainRef,
     frameRef,
     viewerRef,
-    sphereRef,
     rotationRef,
     segments,
     enlargeTransitionMs,
