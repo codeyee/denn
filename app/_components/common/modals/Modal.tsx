@@ -7,7 +7,7 @@ import {
   DialogHeader as ShadcnDialogHeader,
   DialogTitle,
   DialogDescription,
-} from "@/app/_components/lib/dialog";
+} from "@/app/_components/common/modals/Dialog";
 
 interface ModalProps {
   isOpen: boolean;

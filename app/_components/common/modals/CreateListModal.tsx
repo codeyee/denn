@@ -5,8 +5,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Modal } from "@/app/_components/common/modals/Modal";
-import { Button } from "@/app/_components/lib/button";
-import { Input } from "@/app/_components/common/ui/Input";
+import { Button } from "@/app/_components/common/Button";
+import { Input } from "@/app/_components/Input";
 import { ListType } from "@/lib/api/types";
 
 // Define validation schema
