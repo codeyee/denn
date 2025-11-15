@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { MovieDetail } from "@/lib/api/types";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { formatAuthors } from "@/lib/utils/authorUtils";
@@ -24,7 +25,7 @@ export function MovieDetailContent({ movie }: MovieDetailContentProps) {
         {/* Left column - Description */}
         <div className="lg:col-span-2">
           {movie.tagline && (
-            <p className="text-white/80 italic mb-4 font-sans">"{movie.tagline}"</p>
+            <p className="text-white/80 italic mb-4 font-sans">&quot;{movie.tagline}&quot;</p>
           )}
           {movie.description && (
             <p className="text-gray-300 mb-6 leading-relaxed font-sans">{movie.description}</p>
@@ -65,9 +66,11 @@ export function MovieDetailContent({ movie }: MovieDetailContentProps) {
                 rel="noopener noreferrer"
                 className="flex flex-row gap-2 hover:opacity-80 transition-opacity cursor-pointer"
               >
-                <img
+                <Image
                   src="/images/logos/imdb.svg"
                   alt="IMDb"
+                  width={28}
+                  height={28}
                   className="h-7 w-auto"
                 />
               </a>

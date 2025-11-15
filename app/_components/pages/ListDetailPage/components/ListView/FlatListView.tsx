@@ -1,4 +1,12 @@
-import { DndContext, closestCenter, DragOverlay } from "@dnd-kit/core";
+import {
+  DndContext,
+  closestCenter,
+  DragOverlay,
+  DragStartEvent,
+  DragOverEvent,
+  SensorDescriptor,
+  SensorOptions,
+} from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { ListItem } from "@/types";
 import { VerticalList } from "../../../../common/lists/VerticalList";
@@ -8,9 +16,9 @@ interface FlatListViewProps {
   items: ListItem[];
   activeId: number | null;
   isReorderMode: boolean;
-  sensors: any;
-  onDragStart: (event: any) => void;
-  onDragOver: (event: any) => void;
+  sensors: SensorDescriptor<SensorOptions>[];
+  onDragStart: (event: DragStartEvent) => void;
+  onDragOver: (event: DragOverEvent) => void;
   onDragEnd: () => void;
   onDragCancel: () => void;
   onToggleStatus: (itemId: number, currentStatus: string) => void;

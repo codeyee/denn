@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { contentItemActions, videoActions, musicActions, ratingActions } from "@/lib/api";
 import { ContentItem, ContentType, SourceApi, Rating, RatingCreate, ImageType, TVSeason } from "@/lib/api/types";
 import { getAuthorNames } from "@/lib/utils/authorUtils";
@@ -30,6 +31,7 @@ import { VerticalList } from "@/app/_components/common/lists/VerticalList";
 import { TrackListItem } from "@/app/_components/common/lists/TrackListItem";
 import { Carousel } from "@/app/_components/common/ui/Carousel";
 import { ContentCard } from "@/app/_components/cards/ContentCard";
+import { Content } from "@/types";
 
 interface ContentDetailPageProps {
   contentId?: number;
@@ -261,10 +263,8 @@ export function ContentDetailPage({
       return (
         <SeasonDetailContent
           season={detailData as TVSeasonDetail}
-          tvShowTitle={tvShowTitle || undefined}
           contentItem={contentItem}
           userRating={userRating}
-          onRatingChange={handleRatingChange}
           onEditRating={() => setIsRatingModalOpen(true)}
           onDeleteRating={handleDeleteRating}
           isRatingLoading={isRatingLoading}
@@ -315,9 +315,11 @@ export function ContentDetailPage({
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer"
                 >
-                  <img
+                  <Image
                     src="/images/logos/spotify.svg"
                     alt="Spotify"
+                    width={28}
+                    height={28}
                     className="h-7 w-auto"
                   />
                 </a>
@@ -450,10 +452,12 @@ export function ContentDetailPage({
               className="relative overflow-hidden rounded-2xl"
               style={{ aspectRatio: "16 / 9" }}
             >
-              <img
+              <Image
                 src={image.src}
                 alt={image.alt}
-                className="w-full h-full object-cover"
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
               />
             </div>
           ))}
@@ -503,7 +507,7 @@ export function ContentDetailPage({
                     seasonItem.release_date === null
                       ? undefined
                       : seasonItem.release_date,
-                } as any}
+                } as unknown as Content}
               />
             );
           })}
@@ -574,33 +578,6 @@ export function ContentDetailPage({
     }
   };
 
-  const handleRatingChange = () => {
-    // Refresh ratings section
-    setRatingRefreshKey((prev) => prev + 1);
-
-    // Refresh content item to get updated stats
-    contentItemActions.get(contentItem.id).then((updatedItem) => {
-      setContentItem(updatedItem);
-    });
-
-    // Refresh user rating
-    if (user?.id) {
-      ratingActions.list({
-        content_item_id: contentItem.id,
-        user_id: user.id,
-        page_size: 1,
-      }).then((ratingsResponse) => {
-        if (ratingsResponse.results.length > 0) {
-          setUserRating(ratingsResponse.results[0]);
-        } else {
-          setUserRating(null);
-        }
-      }).catch((err) => {
-        console.warn("Could not refresh user rating:", err);
-      });
-    }
-  };
-
   return (
     <div className="relative w-full min-h-screen bg-background-logged-in">
       <div className="pt-30 pb-20">
@@ -656,7 +633,6 @@ export function ContentDetailPage({
             key={ratingRefreshKey}
             contentItem={contentItem}
             userRating={userRating}
-            onRatingChange={handleRatingChange}
             onEditRating={() => setIsRatingModalOpen(true)}
             onDeleteRating={handleDeleteRating}
             isRatingLoading={isRatingLoading}

@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { listActions, listItemActions } from "@/lib/api";
-import { UserList, ListType, ItemStatus } from "@/lib/api/types";
+import { ListType, ItemStatus } from "@/lib/api/types";
 import { ListWithItems, ListItem } from "@/types";
 
 interface ListsState {

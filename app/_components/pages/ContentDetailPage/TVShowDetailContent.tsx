@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { TVShowDetail } from "@/lib/api/types";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { formatAuthors } from "@/lib/utils/authorUtils";
@@ -29,7 +30,7 @@ export function TVShowDetailContent({
         <div className="lg:col-span-2">
           {tvShow.tagline && (
             <p className="text-white/80 italic mb-4 font-sans">
-              "{tvShow.tagline}"
+              &quot;{tvShow.tagline}&quot;
             </p>
           )}
           {tvShow.description && (
@@ -85,9 +86,11 @@ export function TVShowDetailContent({
                 rel="noopener noreferrer"
                 className="flex flex-row gap-2 hover:opacity-80 transition-opacity cursor-pointer"
               >
-                <img
+                <Image
                   src="/images/logos/imdb.svg"
                   alt="IMDb"
+                  width={28}
+                  height={28}
                   className="h-7 w-auto"
                 />
               </a>

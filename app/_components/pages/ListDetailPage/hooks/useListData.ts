@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { listActions } from "@/lib/api";
 import { UserListDetail } from "@/lib/api/types";
 import { ListItem } from "@/types";
@@ -18,25 +18,25 @@ export function useListData(listId: number): UseListDataReturn {
   const [list, setList] = useState<UserListDetail | null>(null);
   const [listItems, setListItems] = useState<ListItem[]>([]);
 
-  const fetchList = async () => {
+  const fetchList = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
       const listData = await listActions.get(listId);
       setList(listData);
-      setListItems(listData.items);
+      setListItems(listData.items as ListItem[]);
     } catch (err) {
       console.error("Error fetching list:", err);
       setError(err instanceof Error ? err.message : "Failed to load list");
     } finally {
       setLoading(false);
     }
-  };
+  }, [listId]);
 
   useEffect(() => {
     fetchList();
-  }, [listId]);
+  }, [fetchList]);
 
   return {
     loading,

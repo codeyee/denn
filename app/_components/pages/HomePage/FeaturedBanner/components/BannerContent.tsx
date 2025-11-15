@@ -1,6 +1,6 @@
 import { Content } from "@/types";
 import { ContentType } from "@/lib/api/types";
-import { Film, Tv, Gamepad2, Book, Music } from "lucide-react";
+import { Film, Tv, Gamepad2, Book, Music, LucideIcon } from "lucide-react";
 import { Button } from "@/app/_components/lib/button";
 import {
   getAuthors,
@@ -11,7 +11,7 @@ import {
   isOriginalTitleSame,
 } from "../utils";
 
-const TYPE_ICON_MAP: Record<string, any> = {
+const TYPE_ICON_MAP: Record<string, LucideIcon> = {
   [ContentType.MOVIE]: Film,
   [ContentType.TV_SHOW]: Tv,
   [ContentType.GAME]: Gamepad2,

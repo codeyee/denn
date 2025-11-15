@@ -1,5 +1,3 @@
-import type { ProviderAttribution } from "@/types";
-
 export type BackgroundCardImage = {
   src: string;
   alt: string;

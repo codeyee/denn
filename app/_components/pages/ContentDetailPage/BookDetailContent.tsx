@@ -16,7 +16,7 @@ export function BookDetailContent({ book }: BookDetailContentProps) {
         <div className="mb-10">
           <h2 className="text-2xl font-bold text-white mb-6">About</h2>
           {book.description && (
-            <p className="text-gray-300 mb-4 leading-relaxed font-sans">"{book.description}..."</p>
+            <p className="text-gray-300 mb-4 leading-relaxed font-sans">&quot;{book.description}...&quot;</p>
           )}
 
           <div className="mt-6 space-y-2">

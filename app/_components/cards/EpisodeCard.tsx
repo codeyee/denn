@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "motion/react";
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { Tv } from "lucide-react";
 import { TVEpisode } from "@/lib/api/types";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
@@ -13,13 +13,13 @@ interface EpisodeCardProps {
 
 export function EpisodeCard({ episode, className = "" }: EpisodeCardProps) {
   const previousImageRef = useRef<string | undefined>(undefined);
-  const isFirstImageRef = useRef(true);
+  const [isFirstImage, setIsFirstImage] = useState(true);
 
-  // Update refs after render to track image changes
   useEffect(() => {
     if (previousImageRef.current !== episode.image_url) {
       if (previousImageRef.current !== undefined) {
-        isFirstImageRef.current = false;
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setIsFirstImage(false);
       }
       previousImageRef.current = episode.image_url || undefined;
     }
@@ -39,7 +39,6 @@ export function EpisodeCard({ episode, className = "" }: EpisodeCardProps) {
       transition={{ duration: 0.3, ease: "easeInOut" }}
     >
       <div className="relative overflow-hidden rounded-2xl h-full bg-transparent backdrop-blur-lg p-0! border-none!">
-        {/* Background layer */}
         {imageUrl ? (
           <AnimatePresence>
             <motion.div
@@ -47,7 +46,7 @@ export function EpisodeCard({ episode, className = "" }: EpisodeCardProps) {
               className="absolute inset-0 bg-center bg-cover"
               style={{ backgroundImage: `url(${imageUrl})` }}
               aria-label={`${title} cover image`}
-              initial={isFirstImageRef.current ? { opacity: 1 } : { opacity: 0 }}
+              initial={isFirstImage ? { opacity: 1 } : { opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.5, ease: "easeInOut" }}

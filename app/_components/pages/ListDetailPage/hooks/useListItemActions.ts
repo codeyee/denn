@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useListsStore } from "@/app/_stores/lists-store";
 import { listActions, ratingActions } from "@/lib/api";
-import { ListType, ItemStatus } from "@/lib/api/types";
+import { ListType, ItemStatus, User } from "@/lib/api/types";
 import { ListItem, MemberRating } from "@/types";
 
 interface UseListItemActionsOptions {
@@ -45,7 +45,7 @@ export function useListItemActions({
     try {
       await updateList(listId, name, description, listType);
       const listData = await listActions.get(listId);
-      setListItems(listData.items);
+      setListItems(listData.items as ListItem[]);
     } finally {
       setActionLoading(false);
     }
@@ -143,17 +143,17 @@ export function useListItemActions({
                     ? prevItem.member_ratings
                     : []),
                   {
-                    user: { id: currentUserId } as any,
+                    user: { id: currentUserId } as User,
                     rating: rating,
                   },
-                ],
+                ] as MemberRating[],
               }
             : prevItem
         )
       );
 
       const listData = await listActions.get(listId);
-      setListItems(listData.items);
+      setListItems(listData.items as ListItem[]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to rate item");
     }

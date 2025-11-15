@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useCallback } from 'react';
+import Image from 'next/image';
 import { useGesture } from '@use-gesture/react';
 
 type ImageItem = string | { src: string; alt?: string };
@@ -345,7 +346,7 @@ export function DomeGallery({
         stopInertia();
 
         const evt = event as PointerEvent;
-        pointerTypeRef.current = (evt.pointerType as any) || 'mouse';
+        pointerTypeRef.current = (evt.pointerType === 'touch' || evt.pointerType === 'pen' ? evt.pointerType : 'mouse') || 'mouse';
         if (pointerTypeRef.current === 'touch') evt.preventDefault();
         if (pointerTypeRef.current === 'touch') lockScroll();
         draggingRef.current = true;
@@ -450,7 +451,7 @@ export function DomeGallery({
         parent.style.setProperty('--rot-y-delta', `0deg`);
         parent.style.setProperty('--rot-x-delta', `0deg`);
         el.style.visibility = '';
-        (el.style as any).zIndex = 0;
+        el.style.zIndex = '0';
         focusedElRef.current = null;
         rootRef.current?.removeAttribute('data-enlarging');
         openingRef.current = false;
@@ -527,7 +528,7 @@ export function DomeGallery({
         requestAnimationFrame(() => {
           el.style.visibility = '';
           el.style.opacity = '0';
-          (el.style as any).zIndex = 0;
+          el.style.zIndex = '0';
           focusedElRef.current = null;
           rootRef.current?.removeAttribute('data-enlarging');
 
@@ -613,7 +614,7 @@ export function DomeGallery({
       height: tileR.height
     };
     el.style.visibility = 'hidden';
-    (el.style as any).zIndex = 0;
+    el.style.zIndex = '0';
     const overlay = document.createElement('div');
     overlay.className = 'enlarge';
     overlay.style.cssText = `position:absolute; left:${frameR.left - mainR.left}px; top:${frameR.top - mainR.top}px; width:${frameR.width}px; height:${frameR.height}px; opacity:0; z-index:30; will-change:transform,opacity; transform-origin:top left; transition:transform ${enlargeTransitionMs}ms ease, opacity ${enlargeTransitionMs}ms ease; border-radius:${openedImageBorderRadius}; overflow:hidden; box-shadow:0 10px 30px var(--color-shadow-box);`;
@@ -792,13 +793,13 @@ export function DomeGallery({
         className="sphere-root relative w-full h-full"
         style={
           {
-            ['--segments-x' as any]: segments,
-            ['--segments-y' as any]: segments,
-            ['--overlay-blur-color' as any]: overlayBlurColor,
-            ['--tile-radius' as any]: imageBorderRadius,
-            ['--enlarge-radius' as any]: openedImageBorderRadius,
-            ['--image-filter' as any]: grayscale ? 'grayscale(1)' : 'none'
-          } as React.CSSProperties
+            '--segments-x': segments,
+            '--segments-y': segments,
+            '--overlay-blur-color': overlayBlurColor,
+            '--tile-radius': imageBorderRadius,
+            '--enlarge-radius': openedImageBorderRadius,
+            '--image-filter': grayscale ? 'grayscale(1)' : 'none'
+          } as React.CSSProperties & Record<string, string | number>
         }
       >
         <main
@@ -823,15 +824,15 @@ export function DomeGallery({
                   data-size-y={it.sizeY}
                   style={
                     {
-                      ['--offset-x' as any]: it.x,
-                      ['--offset-y' as any]: it.y,
-                      ['--item-size-x' as any]: it.sizeX,
-                      ['--item-size-y' as any]: it.sizeY,
+                      '--offset-x': it.x,
+                      '--offset-y': it.y,
+                      '--item-size-x': it.sizeX,
+                      '--item-size-y': it.sizeY,
                       top: '-999px',
                       bottom: '-999px',
                       left: '-999px',
                       right: '-999px'
-                    } as React.CSSProperties
+                    } as React.CSSProperties & Record<string, string | number>
                   }
                 >
                   <div
@@ -861,15 +862,17 @@ export function DomeGallery({
                       backgroundColor: placeholderColor
                     }}
                   >
-                    <img
+                    <Image
                       src={it.src}
-                      draggable={false}
                       alt={it.alt}
-                      className="w-full h-full object-cover pointer-events-none"
+                      fill
+                      className="object-cover pointer-events-none"
                       style={{
                         backfaceVisibility: 'hidden',
                         filter: `var(--image-filter, ${grayscale ? 'grayscale(1)' : 'none'})`
                       }}
+                      sizes="(max-width: 768px) 25vw, 20vw"
+                      unoptimized
                     />
                   </div>
                 </div>

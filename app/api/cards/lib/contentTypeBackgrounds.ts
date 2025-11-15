@@ -27,7 +27,7 @@ function selectImage(availableImages: BackgroundCardImage[] | undefined, fallbac
 export function getRandomContentTypeBackgrounds(): ContentTypeBackground[] {
   const imagesByCategory = getImagesByCategory();
 
-  return contentTypeDefinitions.map(({ icon: _icon, defaultBackgroundImage, ...type }) => {
+  return contentTypeDefinitions.map(({ defaultBackgroundImage, ...type }) => {
     const fallbackFileName = path.basename(defaultBackgroundImage);
     const lookupKeys = [
       getCategoryFromFileName(fallbackFileName ?? ""),

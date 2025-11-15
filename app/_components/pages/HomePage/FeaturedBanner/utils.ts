@@ -1,9 +1,9 @@
 import { Content } from "@/types";
-import { getLegacyImageUrl } from "@/lib/utils/imageUtils";
+import { getBannerImageUrl } from "@/lib/utils/imageUtils";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 
 export function getBestImageUrl(item: Content): string | undefined {
-  return getLegacyImageUrl(item);
+  return getBannerImageUrl(item.images, item.image_url) || undefined;
 }
 
 export function getFooterInfo(item: Content): string {

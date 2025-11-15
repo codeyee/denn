@@ -36,8 +36,7 @@ export function ListDetailPage({ listId }: ListDetailPageProps) {
   const [viewMode, setViewMode] = useState<"list" | "gallery">("list");
   const { user: currentUser } = useAuthStore();
 
-  const { loading, error, list, listItems, setListItems, refetch } =
-    useListData(listId);
+  const { loading, error, list, listItems, setListItems } = useListData(listId);
 
   const modals = useListModals();
 
@@ -49,8 +48,6 @@ export function ListDetailPage({ listId }: ListDetailPageProps) {
     pageSize,
     currentPage,
     setGroupBy,
-    addGroupBy,
-    removeGroupBy,
     clearGroupBy,
     setSortBy,
     setSortOrder,

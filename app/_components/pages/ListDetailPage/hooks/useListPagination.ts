@@ -1,5 +1,4 @@
 import { useState, useCallback } from "react";
-import { PageSize } from "@/types/listView";
 
 interface UseListPaginationReturn {
   currentPage: number;

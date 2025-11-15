@@ -120,6 +120,7 @@ export async function apiRequest<T = unknown>(
           const retriedText = await response.text();
           return retriedText as unknown as T;
         } catch (e) {
+          console.error("Token refresh failed", e);
         }
       }
 

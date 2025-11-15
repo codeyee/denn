@@ -1,17 +1,10 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import {
-  ContentItem,
-  SourceApi,
-  ContentType,
-  Author,
-} from "@/lib/api/types";
-import { getLegacyImageUrl } from "@/lib/utils/imageUtils";
+import { SourceApi, Author } from "@/lib/api/types";
+import { getBannerImageUrl } from "@/lib/utils/imageUtils";
 import { formatAuthors } from "@/lib/utils/authorUtils";
 import { CONTENT_TYPE_ICONS } from "@/lib/utils/contentTypeIcons";
 import { formatSeasonTitle } from "@/lib/utils/titleUtils";
-import { buildContentUrl } from "@/lib/utils/navigationUtils";
 import { Button } from "@/app/_components/lib/button";
 import { ListPlus, Star } from "lucide-react";
 import { Content } from "@/types";
@@ -30,17 +23,14 @@ interface ContentBannerProps {
 export function ContentBanner({
   item,
   tvShowTitle,
-  externalId,
-  sourceApi,
   onAddToList,
   onRateContent,
   isAuthenticated,
   hasUserRating,
 }: ContentBannerProps) {
-  const router = useRouter();
   const contentType = item.type;
   const Icon = CONTENT_TYPE_ICONS[contentType];
-  const backgroundUrl = getLegacyImageUrl(item);
+  const backgroundUrl = getBannerImageUrl(item.images, item.image_url) || undefined;
 
   const getOriginalTitle = (item: Content): string => {
     if ("original_title" in item && item.original_title) {
@@ -70,22 +60,6 @@ export function ContentBanner({
   const displayTitle = isSeason
     ? formatSeasonTitle(item.tv_show_name || tvShowTitle, item.title)
     : item.title;
-
-  // Build TV show URL for season subtitle
-  const getTVShowUrl = (): string | null => {
-    if (!isSeason || !externalId || !sourceApi) return null;
-
-    const [tvId] = externalId.split(":");
-    if (!tvId) return null;
-
-    return buildContentUrl({
-      externalId: tvId,
-      sourceApi: sourceApi as SourceApi,
-      contentType: ContentType.TV_SHOW,
-    });
-  };
-
-  const tvShowUrl = getTVShowUrl();
 
   if (!backgroundUrl) {
     return (

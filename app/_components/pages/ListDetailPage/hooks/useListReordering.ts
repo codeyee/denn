@@ -1,7 +1,5 @@
 import { useState, useCallback } from "react";
 import {
-  DndContext,
-  closestCenter,
   KeyboardSensor,
   PointerSensor,
   useSensor,

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { AlbumDetail } from "@/lib/api/types";
 import { VerticalList } from "@/app/_components/common/lists/VerticalList";
 import { TrackListItem } from "@/app/_components/common/lists/TrackListItem";
@@ -53,22 +54,24 @@ export function AlbumDetailContent({ album }: AlbumDetailContentProps) {
             )}
         </div>
 
-        {album.external_url && (
-          <div className="mt-6">
-            <a
-              href={album.external_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer"
-            >
-              <img
-                src="/images/logos/spotify.svg"
-                alt="Spotify"
-                className="h-7 w-auto"
-              />
-            </a>
-          </div>
-        )}
+            {album.external_url && (
+              <div className="mt-6">
+                <a
+                  href={album.external_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer"
+                >
+                  <Image
+                    src="/images/logos/spotify.svg"
+                    alt="Spotify"
+                    width={28}
+                    height={28}
+                    className="h-7 w-auto"
+                  />
+                </a>
+              </div>
+            )}
       </div>
 
       {/* Tracks Section */}
