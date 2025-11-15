@@ -3,11 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { Card } from "../Card";
-import {
-  SourceApi,
-  ContentType,
-  Author,
-} from "@/lib/api/types";
+import { SourceApi, ContentType, Author } from "@/lib/api/types";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { getCardImageUrl } from "@/lib/utils/imageUtils";
 import { formatAuthors } from "@/lib/utils/authorUtils";

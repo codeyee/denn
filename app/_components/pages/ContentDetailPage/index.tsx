@@ -30,6 +30,7 @@ import { VerticalList } from "@/app/_components/common/lists/VerticalList";
 import { TrackListItem } from "@/app/_components/common/lists/TrackListItem";
 import { Carousel } from "@/app/_components/common/ui/Carousel";
 import { ContentCard } from "@/app/_components/cards/ContentCard";
+import { Content } from "@/types";
 
 interface ContentDetailPageProps {
   contentId?: number;
@@ -261,7 +262,6 @@ export function ContentDetailPage({
       return (
         <SeasonDetailContent
           season={detailData as TVSeasonDetail}
-          tvShowTitle={tvShowTitle || undefined}
           contentItem={contentItem}
           userRating={userRating}
           onRatingChange={handleRatingChange}
@@ -503,7 +503,7 @@ export function ContentDetailPage({
                     seasonItem.release_date === null
                       ? undefined
                       : seasonItem.release_date,
-                } as any}
+                } as unknown as Content}
               />
             );
           })}

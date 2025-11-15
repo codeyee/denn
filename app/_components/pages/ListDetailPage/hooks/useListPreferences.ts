@@ -62,10 +62,10 @@ export function useListPreferences(listId: number): UseListPreferencesReturn {
       const groupByArray: GroupBy[] = [];
 
       if (legacy.primaryGroup && legacy.primaryGroup !== 'none') {
-        groupByArray.push(legacy.primaryGroup);
+        groupByArray.push(legacy.primaryGroup as GroupBy);
       }
       if (legacy.secondaryGroup && legacy.secondaryGroup !== 'none') {
-        groupByArray.push(legacy.secondaryGroup);
+        groupByArray.push(legacy.secondaryGroup as GroupBy);
       }
 
       computedGroupBy = groupByArray;
@@ -73,15 +73,10 @@ export function useListPreferences(listId: number): UseListPreferencesReturn {
       computedGroupBy = preferences.groupBy || [];
     }
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setGroupBy(computedGroupBy);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSortBy(preferences.sortBy);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSortOrder(preferences.sortOrder);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentPage(preferences.currentPage);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPageSize(preferences.pageSize);
   }, [listId]);
 

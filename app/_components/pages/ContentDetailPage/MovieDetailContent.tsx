@@ -24,7 +24,7 @@ export function MovieDetailContent({ movie }: MovieDetailContentProps) {
         {/* Left column - Description */}
         <div className="lg:col-span-2">
           {movie.tagline && (
-            <p className="text-white/80 italic mb-4 font-sans">"{movie.tagline}"</p>
+            <p className="text-white/80 italic mb-4 font-sans">&quot;{movie.tagline}&quot;</p>
           )}
           {movie.description && (
             <p className="text-gray-300 mb-6 leading-relaxed font-sans">{movie.description}</p>

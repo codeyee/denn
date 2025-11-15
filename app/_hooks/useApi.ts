@@ -1,6 +1,5 @@
 "use client";
 
-import { useAuthStore } from "@/app/_stores/auth-store";
 import { apiRequest } from "@/lib/api/api";
 import { useCallback, useState } from "react";
 
@@ -10,10 +9,6 @@ interface UseApiOptions {
   onError?: (error: Error) => void;
 }
 
-/**
- * Custom hook for making API requests with automatic auth token handling
- * Provides loading and error states
- */
 export function useApi<T = unknown>(
   endpoint: string,
   options: UseApiOptions = {}
@@ -22,7 +17,6 @@ export function useApi<T = unknown>(
   const [data, setData] = useState<T | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const accessToken = useAuthStore((state) => state.accessToken);
 
   const execute = useCallback(
     async (method: string = "GET", body?: unknown) => {
@@ -49,7 +43,7 @@ export function useApi<T = unknown>(
         setIsLoading(false);
       }
     },
-    [endpoint, requiresAuth, accessToken, onSuccess, onError]
+    [endpoint, requiresAuth, onSuccess, onError]
   );
 
   const get = useCallback(() => execute("GET"), [execute]);

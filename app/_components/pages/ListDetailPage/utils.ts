@@ -55,6 +55,7 @@ export function groupItemsByCriterion(
       groupLabel: 'All Items',
       items,
       count: items.length,
+      groupAttributes: [],
     }];
   }
 
@@ -62,32 +63,26 @@ export function groupItemsByCriterion(
 
   items.forEach((item) => {
     let groupKey: string;
-    let groupLabel: string;
 
     switch (groupBy) {
       case 'status':
         groupKey = item.status;
-        groupLabel = getStatusLabel(item.status);
         break;
 
       case 'content_type':
         groupKey = item.content_item.content_type;
-        groupLabel = getContentTypeLabel(item.content_item.content_type);
         break;
 
       case 'date_added':
         groupKey = getDateAddedLabel(item.added_at);
-        groupLabel = groupKey;
         break;
 
       case 'rating':
         groupKey = getRatingRangeLabel(item.list_rating);
-        groupLabel = groupKey;
         break;
 
       default:
         groupKey = 'unknown';
-        groupLabel = 'Unknown';
     }
 
     if (!groups.has(groupKey)) {
@@ -103,6 +98,7 @@ export function groupItemsByCriterion(
       groupLabel: groupKey,
       items,
       count: items.length,
+      groupAttributes: [],
     })
   );
 
@@ -221,7 +217,6 @@ export function groupItemsComposite(
 
     // Create composite key and label
     const groupKey = attributes.join(' - ');
-    const groupLabel = labels.join(' • ');
 
     if (!groups.has(groupKey)) {
       groups.set(groupKey, { items: [], attributes });

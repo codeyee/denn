@@ -8,7 +8,6 @@ import { RatingsSection } from "./RatingsSection";
 
 interface SeasonDetailContentProps {
   season: TVSeasonDetail;
-  tvShowTitle?: string;
   contentItem?: ContentItem;
   userRating?: Rating | null;
   onRatingChange?: () => void;
@@ -20,7 +19,6 @@ interface SeasonDetailContentProps {
 
 export function SeasonDetailContent({
   season,
-  tvShowTitle,
   contentItem,
   userRating,
   onRatingChange,

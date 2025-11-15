@@ -9,7 +9,6 @@ import { Pencil, Trash2, Star } from "lucide-react";
 interface RatingsSectionProps {
   contentItem: ContentItem;
   userRating?: Rating | null;
-  onRatingChange?: () => void;
   onEditRating?: () => void;
   onDeleteRating?: () => void;
   isRatingLoading?: boolean;
@@ -19,7 +18,6 @@ interface RatingsSectionProps {
 export function RatingsSection({
   contentItem,
   userRating,
-  onRatingChange,
   onEditRating,
   onDeleteRating,
   isRatingLoading,
@@ -31,7 +29,7 @@ export function RatingsSection({
   const [page, setPage] = useState(1);
   const [hasNext, setHasNext] = useState(false);
   const [hasPrevious, setHasPrevious] = useState(false);
-  const [totalCount, setTotalCount] = useState(0);
+  const [_, setTotalCount] = useState(0);
 
   useEffect(() => {
     const fetchRatings = async () => {

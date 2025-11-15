@@ -29,7 +29,7 @@ export function TVShowDetailContent({
         <div className="lg:col-span-2">
           {tvShow.tagline && (
             <p className="text-white/80 italic mb-4 font-sans">
-              "{tvShow.tagline}"
+              &quot;{tvShow.tagline}&quot;
             </p>
           )}
           {tvShow.description && (
