@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "motion/react";
-import { Separator } from "@/app/_components/common/Separator";
+import { Separator } from "@/app/_components/common/ui/Separator";
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 60 },

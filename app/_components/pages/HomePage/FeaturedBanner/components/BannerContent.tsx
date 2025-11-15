@@ -1,7 +1,7 @@
 import { Content } from "@/types";
 import { ContentType } from "@/lib/api/types";
 import { Film, Tv, Gamepad2, Book, Music, LucideIcon } from "lucide-react";
-import { Button } from "@/app/_components/common/Button";
+import { Button } from "@/app/_components/common/ui/Button";
 import {
   getAuthors,
   getReleaseDate,

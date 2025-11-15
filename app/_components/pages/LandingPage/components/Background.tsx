@@ -1,7 +1,7 @@
 "use client";
 
 import { ReactNode, useEffect, useRef, useState } from "react";
-import { DomeGallery } from "./components/DomeGallery/DomeGallery";
+import { DomeGallery } from "./DomeGallery";
 import { Noise } from "@/app/_components/common/animations/Noise";
 
 export type BackgroundCardImage = {

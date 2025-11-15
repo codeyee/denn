@@ -5,7 +5,7 @@ import { getBannerImageUrl } from "@/lib/utils/imageUtils";
 import { formatAuthors } from "@/lib/utils/authorUtils";
 import { CONTENT_TYPE_ICONS } from "@/lib/utils/contentTypeIcons";
 import { formatSeasonTitle } from "@/lib/utils/titleUtils";
-import { Button } from "@/app/_components/common/Button";
+import { Button } from "@/app/_components/common/ui/Button";
 import { ListPlus, Star } from "lucide-react";
 import { Content } from "@/types";
 

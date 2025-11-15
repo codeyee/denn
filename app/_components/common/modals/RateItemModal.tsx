@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Modal } from "@/app/_components/common/modals/Modal";
-import { Button } from "@/app/_components/common/Button";
+import { Button } from "@/app/_components/common/ui/Button";
 import { Star } from "lucide-react";
 
 interface RateItemModalProps {

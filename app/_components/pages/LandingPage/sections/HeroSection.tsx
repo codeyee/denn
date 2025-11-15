@@ -1,9 +1,9 @@
 "use client";
 
-import { BlurText } from "./components/TextAnimations/BlurText";
-import { GradientText } from "./components/TextAnimations/GradientText";
-import { Badge } from "@/app/_components/common/Badge";
-import { Button } from "@/app/_components/common/Button";
+import { BlurText } from "../components/BlurText";
+import { GradientText } from "../components/GradientText";
+import { Badge } from "@/app/_components/common/ui/Badge";
+import { Button } from "@/app/_components/common/ui/Button";
 import { useState } from "react";
 import {
   Film,
@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useSettings } from "@/app/_hooks/useSettings";
-import { Background } from "./Background";
+import { Background } from "../components/Background";
 
 export function HeroSection() {
   const [introDone, setIntroDone] = useState(false);

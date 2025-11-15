@@ -2,9 +2,9 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Button } from "@/app/_components/common/Button";
-import { Card } from "@/app/_components/common/Card";
-import { Input } from "@/app/_components/Input";
+import { Button } from "@/app/_components/common/ui/Button";
+import { Card } from "@/app/_components/common/ui/Card";
+import { Input } from "@/app/_components/common/ui/Input";
 import { useAuth } from "@/app/_hooks/useAuth";
 import { useEffect } from "react";
 import Link from "next/link";

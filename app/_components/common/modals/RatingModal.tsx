@@ -5,7 +5,7 @@ import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Modal } from "@/app/_components/common/modals/Modal";
-import { Button } from "@/app/_components/common/Button";
+import { Button } from "@/app/_components/common/ui/Button";
 import { StarRating } from "@/app/_components/common/ui/StarRating";
 import { ContentType, Rating, RatingCreate, SourceApi } from "@/lib/api/types";
 

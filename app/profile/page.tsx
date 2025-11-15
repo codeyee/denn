@@ -3,8 +3,8 @@
 import { Suspense } from "react";
 import { ProtectedRoute } from "@/app/_components/common/providers/ProtectedRoute";
 import { useAuth } from "@/app/_hooks/useAuth";
-import { Button } from "@/app/_components/common/Button";
-import { Card } from "@/app/_components/common/Card";
+import { Button } from "@/app/_components/common/ui/Button";
+import { Card } from "@/app/_components/common/ui/Card";
 import { Navbar } from "@/app/_components/layout/Navbar";
 import { Footer } from "@/app/_components/layout/Footer";
 

@@ -6,8 +6,8 @@ import {
   NavigationMenu,
   NavigationMenuItem,
   NavigationMenuList,
-} from "@/app/_components/common/NavigationMenu";
-import { Button } from "@/app/_components/common/Button";
+} from "@/app/_components/common/ui/NavigationMenu";
+import { Button } from "@/app/_components/common/ui/Button";
 import { useAuth } from "@/app/_hooks/useAuth";
 import { Settings, Search, User, LogOut, LogIn, UserPlus } from "lucide-react";
 import {
