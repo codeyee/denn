@@ -663,6 +663,88 @@ export function HomePage() {
 
 ---
 
+### CRITICAL RULE #8: Named Exports (MANDATORY)
+
+**Rule:** ALL components, functions, and utilities MUST use named exports. NEVER use `export default` except for Next.js framework files (`page.tsx`, `layout.tsx`, `route.ts`).
+
+**Why Named Exports?**
+- ✅ Better for refactoring (IDE can find all usages)
+- ✅ Explicit imports prevent naming confusion
+- ✅ Better tree-shaking and code splitting
+- ✅ Autocomplete works more reliably
+- ✅ Prevents accidental naming inconsistencies
+- ✅ Easier to grep and search codebase
+
+**Examples:**
+
+```typescript
+// ❌ BAD: Default exports
+export default function LoginForm() {
+  return <form>...</form>;
+}
+
+export default Card;
+
+export default function HomePage() {
+  return <div>...</div>;
+}
+
+// ✅ GOOD: Named exports
+export function LoginForm() {
+  return <form>...</form>;
+}
+
+export { Card };
+
+export function HomePage() {
+  return <div>...</div>;
+}
+```
+
+**Framework Exceptions (ONLY these):**
+```typescript
+// ✅ ALLOWED: Next.js page components
+// app/page.tsx
+export default function Page() {
+  return <HomePage />;  // HomePage itself uses named export
+}
+
+// ✅ ALLOWED: Next.js layouts
+// app/layout.tsx
+export default function RootLayout({ children }) {
+  return <html>...</html>;
+}
+
+// ✅ ALLOWED: Next.js route handlers
+// app/api/route.ts
+export async function GET(request: Request) {
+  return Response.json({ data: [] });
+}
+```
+
+**Import Pattern:**
+```typescript
+// ❌ BAD: Default import
+import Card from './Card';
+import LoginForm from '../forms/LoginForm';
+
+// ✅ GOOD: Named import
+import { Card } from './Card';
+import { LoginForm } from '../forms/LoginForm';
+```
+
+**Migration from Default to Named:**
+1. Change `export default` to `export` (or `export { ComponentName }`)
+2. Update all imports from `import X from './X'` to `import { X } from './X'`
+3. Verify no build errors
+
+**Enforcement:**
+- ALL new code MUST use named exports
+- When refactoring existing code, convert to named exports
+- Only exception: Next.js framework files (page.tsx, layout.tsx, route.ts)
+
+---
+
 ## TypeScript Requirements (STRICT MODE)
 
 ### 1. Type Safety (NO EXCEPTIONS)
