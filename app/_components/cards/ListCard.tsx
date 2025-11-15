@@ -2,7 +2,7 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect, useMemo } from "react";
 import { List as ListIcon, Package, Lock, Users } from "lucide-react";
 
-import Card from "./Card";
+import { Card } from "./Card";
 import { ListType } from "@/lib/api/types";
 import { ListWithItems } from "@/types";
 

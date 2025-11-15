@@ -1,7 +1,7 @@
 "use client";
 
-import BlurText from "@/app/_components/lib/TextAnimations/BlurText";
-import GradientText from "@/app/_components/lib/TextAnimations/GradientText";
+import { BlurText } from "@/app/_components/lib/TextAnimations/BlurText";
+import { GradientText } from "@/app/_components/lib/TextAnimations/GradientText";
 import { Badge } from "@/app/_components/lib/badge";
 import { Button } from "@/app/_components/lib/button";
 import { useState } from "react";
@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useSettings } from "@/app/_hooks/useSettings";
-import Background from "./Background";
+import { Background } from "./Background";
 
 export function HeroSection() {
   const [introDone, setIntroDone] = useState(false);

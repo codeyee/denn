@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import Card from "../Card";
+import { Card } from "../Card";
 import { Button } from "../../lib/button";
 import { Circle, CheckCircle, Trash2, Star } from "lucide-react";
 import { ListItem } from "@/types";

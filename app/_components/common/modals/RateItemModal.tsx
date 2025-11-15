@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Modal from "@/app/_components/common/modals/Modal";
+import { Modal } from "@/app/_components/common/modals/Modal";
 import { Button } from "@/app/_components/lib/button";
 import { Star } from "lucide-react";
 
@@ -13,7 +13,7 @@ interface RateItemModalProps {
   isLoading?: boolean;
 }
 
-export default function RateItemModal({
+export function RateItemModal({
   isOpen,
   onOpenChange,
   onRate,

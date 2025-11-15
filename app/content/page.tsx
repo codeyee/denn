@@ -3,7 +3,7 @@
 import { Suspense, use, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Navbar } from "@/app/_components/layout/Navbar";
-import ContentDetailPage from "@/app/_components/pages/ContentDetailPage";
+import { ContentDetailPage } from "@/app/_components/pages/ContentDetailPage";
 import { ProtectedRoute } from "@/app/_components/common/providers/ProtectedRoute";
 
 function ContentPageContent({

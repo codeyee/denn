@@ -1,6 +1,6 @@
 "use client";
 
-import Modal from "@/app/_components/common/modals/Modal";
+import { Modal } from "@/app/_components/common/modals/Modal";
 import { Button } from "@/app/_components/lib/button";
 import { AlertTriangle } from "lucide-react";
 

@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/app/_components/lib/button";
 import { Card } from "@/app/_components/lib/card";
-import Input from "@/app/_components/Input";
+import { Input } from "@/app/_components/Input";
 import { useAuth } from "@/app/_hooks/useAuth";
 import { useEffect } from "react";
 import Link from "next/link";
@@ -34,7 +34,7 @@ const registerSchema = z
 
 type RegisterFormData = z.infer<typeof registerSchema>;
 
-export default function RegisterForm() {
+export function RegisterForm() {
   const { register: registerUser, isLoading, error, clearError } = useAuth();
 
   const {

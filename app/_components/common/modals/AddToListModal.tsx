@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import Modal from "@/app/_components/common/modals/Modal";
+import { Modal } from "@/app/_components/common/modals/Modal";
 import { Button } from "@/app/_components/lib/button";
 import { useListsStore } from "@/app/_stores/lists-store";
 import { listItemActions } from "@/lib/api";

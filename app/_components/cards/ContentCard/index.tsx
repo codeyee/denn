@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
-import Card from "../Card";
+import { Card } from "../Card";
 import {
   SourceApi,
   ContentType,

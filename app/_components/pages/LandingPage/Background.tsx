@@ -1,8 +1,8 @@
 "use client";
 
 import { ReactNode, useEffect, useRef, useState } from "react";
-import DomeGalleryBase from "@/app/_components/lib/DomeGallery/DomeGallery";
-import Noise from "@/app/_components/lib/Animations/Noise";
+import { DomeGallery } from "@/app/_components/lib/DomeGallery/DomeGallery";
+import { Noise } from "@/app/_components/lib/Animations/Noise";
 
 export type BackgroundCardImage = {
   src: string;
@@ -20,7 +20,7 @@ type BackgroundProps = {
   noiseRefreshInterval?: number; // Frames between noise updates
 };
 
-export default function Background({
+export function Background({
   overlayOpacity = 0.3,
   overlayColor = "var(--color-hero-gradient)",
   children,
@@ -101,7 +101,7 @@ export default function Background({
           className="absolute w-[140vw] h-full -left-[20vw]"
         >
           {backgroundImages.length > 0 && (
-            <DomeGalleryBase
+            <DomeGallery
               images={backgroundImages}
             fit={0.6}
             fitBasis="auto"

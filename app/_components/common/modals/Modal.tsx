@@ -66,4 +66,4 @@ function Modal({
 Modal.Header = Header;
 Modal.Content = Content;
 
-export default Modal;
+export { Modal };

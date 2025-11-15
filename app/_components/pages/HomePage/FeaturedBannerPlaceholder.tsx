@@ -1,4 +1,4 @@
-export default function FeaturedBannerPlaceholder() {
+export function FeaturedBannerPlaceholder() {
   return (
     <div className="relative w-full aspect-16/16 md:aspect-16/13 lg:aspect-16/10 xl:aspect-16/7 4xl:aspect-16/5 15xl:aspect-16/3 overflow-hidden mb-6 md:mb-10 rounded-none md:rounded-2xl">
       {/* Empty card background to mirror PlaceholderCard */}

@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import Modal from "@/app/_components/common/modals/Modal";
+import { Modal } from "@/app/_components/common/modals/Modal";
 import { Button } from "@/app/_components/lib/button";
-import StarRating from "@/app/_components/common/ui/StarRating";
+import { StarRating } from "@/app/_components/common/ui/StarRating";
 import { ContentType, Rating, RatingCreate, SourceApi } from "@/lib/api/types";
 
 // Define validation schema
@@ -32,7 +32,7 @@ interface RatingModalProps {
   isLoading?: boolean;
 }
 
-export default function RatingModal({
+export function RatingModal({
   isOpen,
   onOpenChange,
   onSubmitRating,

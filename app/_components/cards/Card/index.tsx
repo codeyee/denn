@@ -254,4 +254,4 @@ function Card({
 Card.Footer = Footer;
 Card.HoverContent = HoverContent;
 
-export default Card;
+export { Card };

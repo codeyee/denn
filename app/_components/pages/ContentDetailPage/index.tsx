@@ -21,7 +21,7 @@ import { SeasonDetailContent } from "./SeasonDetailContent";
 import { GameDetailContent } from "./GameDetailContent";
 import { BookDetailContent } from "./BookDetailContent";
 import { RatingsSection } from "./RatingsSection";
-import RatingModal from "@/app/_components/common/modals/RatingModal";
+import { RatingModal } from "@/app/_components/common/modals/RatingModal";
 import { AddToListModal } from "@/app/_components/common/modals/AddToListModal";
 import { Star } from "lucide-react";
 import { Footer } from "../../layout/Footer";
@@ -38,7 +38,7 @@ interface ContentDetailPageProps {
   contentType?: string;
 }
 
-export default function ContentDetailPage({
+export function ContentDetailPage({
   contentId,
   externalId,
   sourceApi,

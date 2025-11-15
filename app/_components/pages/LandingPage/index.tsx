@@ -5,7 +5,7 @@ import { TypesSection } from "./TypesSection";
 import { FeaturesSection } from "./FeaturesSection";
 import { Footer } from "../../layout/Footer";
 
-export default function LandingPage() {
+export function LandingPage() {
   return (
     <>
       {/* Snap-scroll container */}

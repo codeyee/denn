@@ -10,7 +10,7 @@ interface GradientTextProps {
   backdropBlur?: boolean;
 }
 
-export default function GradientText({
+export function GradientText({
   children,
   className = '',
   colors = ['#ffaa40', '#9c40ff', '#ffaa40'],

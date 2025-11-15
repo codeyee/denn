@@ -11,7 +11,7 @@ interface StarRatingProps {
   size?: number;
 }
 
-export default function StarRating({
+export function StarRating({
   value,
   onChange,
   maxStars = 5,
