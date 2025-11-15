@@ -11,7 +11,7 @@ interface EpisodeCardProps {
   className?: string;
 }
 
-export default function EpisodeCard({ episode, className = "" }: EpisodeCardProps) {
+export function EpisodeCard({ episode, className = "" }: EpisodeCardProps) {
   const previousImageRef = useRef<string | undefined>(undefined);
   const isFirstImageRef = useRef(true);
 

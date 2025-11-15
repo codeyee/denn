@@ -1,5 +1,5 @@
-import Carousel from "../ui/Carousel";
-import PlaceholderCard from "../../cards/PlaceholderCard";
+import { Carousel } from "../ui/Carousel";
+import { PlaceholderCard } from "../../cards/PlaceholderCard";
 
 interface LoadingCarouselProps {
   title: string;

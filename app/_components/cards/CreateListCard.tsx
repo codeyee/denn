@@ -12,7 +12,7 @@ interface CreateListCardProps {
   isLoading?: boolean;
 }
 
-export default function CreateListCard({ onCreateList, isLoading }: CreateListCardProps) {
+export function CreateListCard({ onCreateList, isLoading }: CreateListCardProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleClick = () => {

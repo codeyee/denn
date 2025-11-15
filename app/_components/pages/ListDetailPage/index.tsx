@@ -2,10 +2,10 @@
 
 import { useState, useMemo } from "react";
 import { Package } from "lucide-react";
-import Navbar from "../../layout/Navbar";
-import Footer from "../../layout/Footer";
+import { Navbar } from "../../layout/Navbar";
+import { Footer } from "../../layout/Footer";
 import EditListModal from "../../common/modals/EditListModal";
-import ConfirmDialog from "../../common/modals/ConfirmDialog";
+import { ConfirmDialog } from "../../common/modals/ConfirmDialog";
 import RateItemModal from "../../common/modals/RateItemModal";
 import { ItemStatus } from "@/lib/api/types";
 import { ListItem, MemberRating } from "@/types";

@@ -2,7 +2,7 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import ExpandableListItem from "./ExpandableListItem";
+import { ExpandableListItem } from "./ExpandableListItem";
 import { ReactNode } from "react";
 
 interface ReorderableListItemProps {

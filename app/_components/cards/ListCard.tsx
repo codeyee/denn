@@ -11,7 +11,7 @@ interface ListCardProps {
   className?: string;
 }
 
-export default function ListCard({ list, className }: ListCardProps) {
+export function ListCard({ list, className }: ListCardProps) {
   const router = useRouter();
   const id = String(list.id);
   const title = list.name;

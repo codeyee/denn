@@ -11,7 +11,7 @@ const fadeInUp = {
   },
 };
 
-export default function Footer() {
+export function Footer() {
   return (
     <motion.div
       className="w-full max-w-screen-2xl mx-auto px-8 pb-8 pt-10"

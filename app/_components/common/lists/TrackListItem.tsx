@@ -1,7 +1,7 @@
 "use client";
 
 import { ExternalLink } from "lucide-react";
-import ListItem from "./ListItem";
+import { ListItem } from "./ListItem";
 
 interface TrackListItemProps {
   trackNumber: number;
@@ -19,7 +19,7 @@ function formatDuration(seconds: number | null): string {
   return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
 
-export default function TrackListItem({
+export function TrackListItem({
   trackNumber,
   title,
   artists,

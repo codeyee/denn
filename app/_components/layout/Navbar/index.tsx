@@ -21,7 +21,7 @@ import { useSettings } from "@/app/_hooks/useSettings";
 const SEARCH_DEBOUNCE_MS = 300;
 const PREV_PAGE_KEY = "denn_search_prev_page";
 
-export default function Navbar() {
+export function Navbar() {
   const { user, isAuthenticated, logout } = useAuth();
   const { settings, toggleAnimations } = useSettings();
   const router = useRouter();

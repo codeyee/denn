@@ -14,7 +14,7 @@ interface CarouselProps {
   disableNavigation?: boolean;
 }
 
-export default function Carousel({
+export function Carousel({
   children,
   title,
   className = "",

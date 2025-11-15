@@ -1,10 +1,10 @@
 "use client";
 
 import { TVSeasonDetail, ContentItem, Rating } from "@/lib/api/types";
-import EpisodeCard from "@/app/_components/cards/EpisodeCard";
+import { EpisodeCard } from "@/app/_components/cards/EpisodeCard";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
-import PlatformsDisplay from "./Platforms/PlatformsDisplay";
-import RatingsSection from "./RatingsSection";
+import { PlatformsDisplay } from "./Platforms/PlatformsDisplay";
+import { RatingsSection } from "./RatingsSection";
 
 interface SeasonDetailContentProps {
   season: TVSeasonDetail;
@@ -18,7 +18,7 @@ interface SeasonDetailContentProps {
   user?: { id: number } | null;
 }
 
-export default function SeasonDetailContent({
+export function SeasonDetailContent({
   season,
   tvShowTitle,
   contentItem,

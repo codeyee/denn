@@ -3,13 +3,13 @@
 import { MovieDetail } from "@/lib/api/types";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { formatAuthors } from "@/lib/utils/authorUtils";
-import PlatformsDisplay from "./Platforms/PlatformsDisplay";
+import { PlatformsDisplay } from "./Platforms/PlatformsDisplay";
 
 interface MovieDetailContentProps {
   movie: MovieDetail;
 }
 
-export default function MovieDetailContent({ movie }: MovieDetailContentProps) {
+export function MovieDetailContent({ movie }: MovieDetailContentProps) {
   const releaseDate = formatReleaseDate(movie.release_date);
 
   // Get platforms grouped by country code

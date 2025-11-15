@@ -15,7 +15,7 @@ import { formatSeasonTitle } from "@/lib/utils/titleUtils";
 import { Content } from "@/types";
 import { Plus } from "lucide-react";
 import { Button } from "@/app/_components/lib/button";
-import AddToListModal from "@/app/_components/common/modals/AddToListModal";
+import { AddToListModal } from "@/app/_components/common/modals/AddToListModal";
 import { getSourceApi } from "@/lib/utils/contentTypeUtils";
 import { buildContentUrl } from "@/lib/utils/navigationUtils";
 
@@ -24,7 +24,7 @@ interface ContentCardProps {
   className?: string;
 }
 
-export default function ContentCard({ item, className }: ContentCardProps) {
+export function ContentCard({ item, className }: ContentCardProps) {
   const router = useRouter();
   const middleClickHandled = useRef(false);
   const [isAddToListModalOpen, setIsAddToListModalOpen] = useState(false);

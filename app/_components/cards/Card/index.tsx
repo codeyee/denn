@@ -122,7 +122,7 @@ function Card({
           onMouseLeave: handleMouseLeave,
         })}
       >
-        <motion.div 
+        <motion.div
           className="relative overflow-visible rounded-2xl h-full bg-transparent backdrop-blur-lg p-0! border-none!"
           style={{
             zIndex: isHovered && hoverContent ? 100 : 1,
@@ -132,59 +132,58 @@ function Card({
           }}
           transition={{ duration: 0.3, ease: "easeOut" }}
         >
-        <div className="relative overflow-hidden rounded-2xl h-full">
-          {/* Background layer */}
-          {isEmpty ? (
-            <div
-              className="absolute inset-0 flex items-center justify-center bg-empty-card"
-              aria-label={backgroundImageAlt || "Empty list"}
-            >
-              {EmptyIcon && (
-                <EmptyIcon className="w-16 h-16 md:w-20 md:h-20 text-gray-400 opacity-50" />
-              )}
-            </div>
-          ) : (
-            <AnimatePresence>
-              <motion.div
-                key={backgroundImage}
-                className="absolute inset-0 bg-center bg-cover"
-                style={{ backgroundImage: `url(${backgroundImage})` }}
-                aria-label={backgroundImageAlt}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.5, ease: "easeInOut" }}
-              />
-            </AnimatePresence>
-          )}
-
-          {/* Overlay layer */}
-          {!isEmpty && <div className="absolute inset-0 bg-black/20 md:bg-black/20" />}
-          <div
-            className={`absolute inset-x-0 bottom-0 h-[55%] md:h-[55%] bg-linear-to-t ${
-              isEmpty
-                ? "from-gray-700/80 via-gray-600/40 to-transparent"
-                : "from-black/95 via-black/60 to-transparent md:from-black/95 md:via-black/40 md:to-transparent"
-            }`}
-          />
-
-          {/* Content layer */}
-          <div className="relative z-10 h-full flex flex-col">
-            <div className="mt-auto w-full px-4 md:px-6 pb-4 md:pb-6 pt-3 md:pt-5 space-y-2 md:space-y-4">
-              {/* Title section */}
-              <div className="flex items-center gap-2 md:gap-3 text-white mb-1 md:mb-2">
-                <Icon className="w-4 h-4 md:w-6 md:h-6 shrink-0 drop-shadow-text" />
-                <span className="text-sm md:text-xl font-bold drop-shadow-text line-clamp-3 wrap-break-word">
-                  {title}
-                </span>
+          <div className="relative overflow-hidden rounded-2xl h-full">
+            {/* Background layer */}
+            {isEmpty ? (
+              <div
+                className="absolute inset-0 flex items-center justify-center bg-empty-card"
+                aria-label={backgroundImageAlt || "Empty list"}
+              >
+                {EmptyIcon && (
+                  <EmptyIcon className="w-16 h-16 md:w-20 md:h-20 text-gray-400 opacity-50" />
+                )}
               </div>
+            ) : (
+              <AnimatePresence>
+                <motion.div
+                  key={backgroundImage}
+                  className="absolute inset-0 bg-center bg-cover"
+                  style={{ backgroundImage: `url(${backgroundImage})` }}
+                  aria-label={backgroundImageAlt}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.5, ease: "easeInOut" }}
+                />
+              </AnimatePresence>
+            )}
 
-              {children}
+            {/* Overlay layer */}
+            {!isEmpty && <div className="absolute inset-0 bg-black/20 md:bg-black/20" />}
+            <div
+              className={`absolute inset-x-0 bottom-0 h-[55%] md:h-[55%] bg-linear-to-t ${isEmpty
+                  ? "from-gray-700/80 via-gray-600/40 to-transparent"
+                  : "from-black/95 via-black/60 to-transparent md:from-black/95 md:via-black/40 md:to-transparent"
+                }`}
+            />
+
+            {/* Content layer */}
+            <div className="relative z-10 h-full flex flex-col">
+              <div className="mt-auto w-full px-4 md:px-6 pb-4 md:pb-6 pt-3 md:pt-5 space-y-2 md:space-y-4">
+                {/* Title section */}
+                <div className="flex items-center gap-2 md:gap-3 text-white mb-1 md:mb-2">
+                  <Icon className="w-4 h-4 md:w-6 md:h-6 shrink-0 drop-shadow-text" />
+                  <span className="text-sm md:text-xl font-bold drop-shadow-text line-clamp-3 wrap-break-word">
+                    {title}
+                  </span>
+                </div>
+
+                {children}
+              </div>
             </div>
           </div>
-        </div>
+        </motion.div>
       </motion.div>
-    </motion.div>
 
       {/* Hover Popover - rendered as portal to avoid carousel clipping */}
       {typeof window !== 'undefined' && createPortal(
@@ -220,17 +219,16 @@ function Card({
                     style={{ backgroundImage: `url(${backgroundImage})` }}
                   />
                 )}
-                
+
                 {/* Overlay and gradient */}
                 {!isEmpty && <div className="absolute inset-0 bg-black/20" />}
                 <div
-                  className={`absolute inset-x-0 bottom-0 h-[55%] bg-linear-to-t ${
-                    isEmpty
+                  className={`absolute inset-x-0 bottom-0 h-[55%] bg-linear-to-t ${isEmpty
                       ? "from-gray-700/80 via-gray-600/40 to-transparent"
                       : "from-black/95 via-black/60 to-transparent"
-                  }`}
+                    }`}
                 />
-                
+
                 {/* Title overlay on image */}
                 <div className="absolute bottom-0 left-0 right-0 z-10 px-4 md:px-6 pb-4 md:pb-6 pt-3 md:pt-5">
                   <div className="flex items-center gap-2 md:gap-3 text-white">
@@ -241,7 +239,7 @@ function Card({
                   </div>
                 </div>
               </div>
-              
+
               {/* Hover content below image */}
               {hoverContent}
             </motion.div>

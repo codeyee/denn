@@ -12,7 +12,7 @@ interface LandingCardProps {
   className?: string;
 }
 
-export default function LandingCard({
+export function LandingCard({
   id,
   title,
   icon,

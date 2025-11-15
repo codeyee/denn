@@ -2,7 +2,7 @@
 
 import { Suspense } from "react";
 import dynamic from "next/dynamic";
-import Navbar from "@/app/_components/layout/Navbar";
+import { Navbar } from "@/app/_components/layout/Navbar";
 import HomePage from "@/app/_components/pages/HomePage";
 import { useAuth } from "@/app/_hooks/useAuth";
 

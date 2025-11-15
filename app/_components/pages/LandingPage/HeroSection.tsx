@@ -18,7 +18,7 @@ import Link from "next/link";
 import { useSettings } from "@/app/_hooks/useSettings";
 import Background from "./Background";
 
-export default function HeroSection() {
+export function HeroSection() {
   const [introDone, setIntroDone] = useState(false);
   const { settings } = useSettings();
 

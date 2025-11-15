@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import ListItem from "./ListItem";
+import { ListItem } from "./ListItem";
 
 interface ExpandableListItemProps {
   title: string;
@@ -19,7 +19,7 @@ interface ExpandableListItemProps {
   imageFullHeight?: boolean; // New prop
 }
 
-export default function ExpandableListItem({
+export function ExpandableListItem({
   title,
   description,
   subDescription,

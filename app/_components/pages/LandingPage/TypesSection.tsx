@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "motion/react";
-import LandingCard from "@/app/_components/cards/LandingCard";
+import { LandingCard } from "@/app/_components/cards/LandingCard";
 import { useContentTypes } from "./hooks/useContentTypes";
 
 const ANIMATION_VARIANTS = {
@@ -39,7 +39,7 @@ const LAYOUT_CLASSES = [
   "md:mx-auto lg:col-span-4 lg:col-start-7 xl:col-span-1 xl:col-start-auto",
 ] as const;
 
-export default function TypesSection() {
+export function TypesSection() {
   const contentTypes = useContentTypes();
 
   return (

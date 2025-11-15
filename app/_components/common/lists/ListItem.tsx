@@ -15,7 +15,7 @@ interface ListItemProps {
   imageFullHeight?: boolean; // New prop for full-height image
 }
 
-export default function ListItem({
+export function ListItem({
   title,
   description,
   subDescription,
@@ -51,13 +51,13 @@ export default function ListItem({
           />
           {/* Darker overlay for mobile */}
           <div className="absolute inset-0 bg-black/60" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/40 to-transparent" />
         </div>
 
         {/* Desktop: Side-by-side layout with solid background */}
-        <div className="hidden md:flex items-stretch min-h-[100px] bg-[var(--color-list-item-background)] group-hover:bg-[var(--color-list-item-background-hover)]">
+        <div className="hidden md:flex items-stretch min-h-[100px] bg-list-item-background group-hover:bg-list-item-background-hover">
           {/* Full-height Image with fade - wider for backdrop 16:9 aspect ratio */}
-          <div className="relative w-44 flex-shrink-0">
+          <div className="relative w-44 shrink-0">
             <Image
               src={image}
               alt={imageAlt}
@@ -107,12 +107,12 @@ export default function ListItem({
         <div className="relative z-10 flex items-center gap-3 px-4 py-3 min-h-[100px] md:hidden">
           {/* Leading Content */}
           {leadingContent && (
-            <div className="flex-shrink-0">{leadingContent}</div>
+            <div className="shrink-0">{leadingContent}</div>
           )}
 
           {/* Text Content */}
           <div className="flex-1 min-w-0">
-            <h3 className="text-white font-medium text-sm drop-shadow-text break-words line-clamp-3">
+            <h3 className="text-white font-medium text-sm drop-shadow-text wrap-break-word line-clamp-3">
               {title}
             </h3>
             {description && (
@@ -124,7 +124,7 @@ export default function ListItem({
 
           {/* Trailing Content */}
           {trailingContent && (
-            <div className="flex-shrink-0 flex items-center gap-2">
+            <div className="shrink-0 flex items-center gap-2">
               {trailingContent}
             </div>
           )}

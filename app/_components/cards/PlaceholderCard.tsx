@@ -3,7 +3,7 @@ interface PlaceholderCardProps {
   className?: string;
 }
 
-export default function PlaceholderCard({ index = 0, className = "" }: PlaceholderCardProps) {
+export function PlaceholderCard({ index = 0, className = "" }: PlaceholderCardProps) {
   return (
     <div
       className={`w-full ${className}`}

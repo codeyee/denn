@@ -1,6 +1,6 @@
 "use client";
 
-import Footer from "../../layout/Footer";
+import { Footer } from "../../layout/Footer";
 import FeaturedBanner from "./FeaturedBanner";
 import FeaturedBannerPlaceholder from "./FeaturedBannerPlaceholder";
 import { useHomeData } from "./hooks/useHomeData";

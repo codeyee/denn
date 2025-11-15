@@ -27,7 +27,7 @@ interface ContentBannerProps {
   hasUserRating?: boolean;
 }
 
-export default function ContentBanner({
+export function ContentBanner({
   item,
   tvShowTitle,
   externalId,

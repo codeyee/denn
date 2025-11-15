@@ -79,7 +79,7 @@ const scaleIn = {
   },
 };
 
-export default function FeaturesSection() {
+export function FeaturesSection() {
   return (
     <div className="w-full max-w-7xl mx-auto px-4 py-15">
       <div className="space-y-12">

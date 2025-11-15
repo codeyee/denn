@@ -18,12 +18,12 @@ interface AddToListModalProps {
     external_id: string;
     content_type: string;
   };
-  tvShowSeasons?: TVSeason[];  // Array of seasons if content is multi-season TV show
-  tvShowId?: number;            // TV show ID for season external_id formatting
+  tvShowSeasons?: TVSeason[];
+  tvShowId?: number;
   onSuccess?: () => void;
 }
 
-export default function AddToListModal({
+export function AddToListModal({
   isOpen,
   onOpenChange,
   contentItem,

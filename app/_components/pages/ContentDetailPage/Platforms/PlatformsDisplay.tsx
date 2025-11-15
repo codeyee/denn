@@ -10,7 +10,7 @@ interface PlatformsDisplayProps {
   title?: string;
 }
 
-export default function PlatformsDisplay({
+export function PlatformsDisplay({
   platforms,
   title = "Where to Watch",
 }: PlatformsDisplayProps) {

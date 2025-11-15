@@ -16,7 +16,7 @@ interface ConfirmDialogProps {
   isLoading?: boolean;
 }
 
-export default function ConfirmDialog({
+export function ConfirmDialog({
   isOpen,
   onOpenChange,
   onConfirm,

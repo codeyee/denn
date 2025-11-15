@@ -13,7 +13,7 @@ const spacingClasses = {
   lg: "space-y-5",
 };
 
-export default function VerticalList({
+export function VerticalList({
   children,
   className = "",
   spacing = "md",

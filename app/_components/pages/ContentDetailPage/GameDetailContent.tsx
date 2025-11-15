@@ -3,13 +3,13 @@
 import { GameDetail, Platform } from "@/lib/api/types";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { formatAuthors } from "@/lib/utils/authorUtils";
-import PlatformsDisplay from "./Platforms/PlatformsDisplay";
+import { PlatformsDisplay } from "./Platforms/PlatformsDisplay";
 
 interface GameDetailContentProps {
   game: GameDetail;
 }
 
-export default function GameDetailContent({ game }: GameDetailContentProps) {
+export function GameDetailContent({ game }: GameDetailContentProps) {
   const releaseDate = formatReleaseDate(game.release_date);
 
   // Convert game platforms to the format expected by PlatformsDisplay

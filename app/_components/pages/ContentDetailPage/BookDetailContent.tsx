@@ -8,7 +8,7 @@ interface BookDetailContentProps {
   book: BookDetail;
 }
 
-export default function BookDetailContent({ book }: BookDetailContentProps) {
+export function BookDetailContent({ book }: BookDetailContentProps) {
   const releaseDate = formatReleaseDate(book.release_date);
   return (
     <>

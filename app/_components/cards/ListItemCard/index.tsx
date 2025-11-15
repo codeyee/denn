@@ -26,7 +26,7 @@ interface ListItemCardProps {
   disableHover?: boolean;
 }
 
-export default function ListItemCard({
+export function ListItemCard({
   item,
   onToggleStatus,
   onDelete,
@@ -151,7 +151,7 @@ export default function ListItemCard({
                   </div>
                   {/* Status badge as tag component (consistent with non-hover) */}
                   {item.status && (
-                    <StatusBadge status={item.status} size="sm" />
+                    <StatusBadge status={item.status} variant="compact" />
                   )}
                 </div>
 

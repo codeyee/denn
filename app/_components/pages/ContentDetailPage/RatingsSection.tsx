@@ -16,7 +16,7 @@ interface RatingsSectionProps {
   user?: { id: number } | null;
 }
 
-export default function RatingsSection({
+export function RatingsSection({
   contentItem,
   userRating,
   onRatingChange,

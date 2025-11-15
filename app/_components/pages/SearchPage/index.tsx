@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import Footer from "../../layout/Footer";
+import { Footer } from "../../layout/Footer";
 import { useSearchQuery } from "./hooks/useSearchQuery";
 import { useSearchResults } from "./hooks/useSearchResults";
 import { SearchInput } from "./components/SearchInput";
@@ -9,7 +9,7 @@ import { SearchResultsSection } from "./components/SearchResultsSection";
 import { EmptyState } from "../../common/state/EmptyState";
 import { LoadingCarousel } from "../../common/state/LoadingCarousel";
 
-export default function SearchPage() {
+export function SearchPage() {
   const {
     searchQuery,
     debouncedQuery,
