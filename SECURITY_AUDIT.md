@@ -4,6 +4,11 @@
 > **Auditor:** Claude Code Automated Analysis
 > **Status:** Pre-Open Source Release
 > **Severity Levels:** 🔴 Critical | 🟠 High | 🟡 Medium | 🟢 Low
+>
+> **⚠️ IMPLEMENTATION TIMING:**
+> - **Friends & Family MVP:** Only fix issues that cause crashes/data loss
+> - **POST-MVP:** Apply all security hardening before public/open source release
+> - **Note:** Most vulnerabilities are LOW RISK for controlled friends & family release
 
 ---
 

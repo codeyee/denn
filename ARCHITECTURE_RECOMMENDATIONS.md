@@ -3,6 +3,8 @@
 > **Document Version:** 1.0
 > **Date:** 2025-11-15
 > **Purpose:** Technical recommendations for production-grade architecture
+> **⚠️ IMPLEMENTATION TIMING:** POST-MVP (After Friends & Family Launch)
+> **Priority:** Apply these improvements AFTER gathering user feedback from MVP release
 
 ---
 

@@ -6,6 +6,23 @@
 
 ---
 
+## ⚡ IMPLEMENTATION STRATEGY
+
+**🎯 PHASE 1: MVP (Friends & Family Release) - PRIORITY**
+Focus on features, bugfixes, and UX improvements. See **[TODO_MVP.md](./TODO_MVP.md)** for detailed MVP tasks.
+
+**🔧 PHASE 2: Post-MVP Optimization (After User Feedback)**
+Apply architectural improvements and security hardening from this document.
+
+**Key Notes:**
+- **LandingPage/DomeGallery:** Uses internal API (`/api/cards`) for images - will be converted to SSR for performance + SEO
+- **Security fixes:** Will be applied POST-MVP (except critical production blockers)
+- **Component refactoring:** Will be applied POST-MVP (unless blocking features)
+
+**For MVP tasks, see: [TODO_MVP.md](./TODO_MVP.md)**
+
+---
+
 ## 📋 Table of Contents
 
 - [🚨 CRITICAL - Security & Stability](#-critical---security--stability)
