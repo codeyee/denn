@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   GroupBy,
   SortBy,
@@ -63,75 +63,85 @@ function getInitialPreferences(listId: number) {
 }
 
 export function useListPreferences(listId: number): UseListPreferencesReturn {
-  const previousListIdRef = useRef(listId);
+  const [preferences, setPreferences] = useState(() => getInitialPreferences(listId));
+  const [currentListId, setCurrentListId] = useState(listId);
 
-  const initialPrefsRef = useRef<ReturnType<typeof getInitialPreferences> | null>(null);
-  if (initialPrefsRef.current === null) {
-    initialPrefsRef.current = getInitialPreferences(listId);
+  // Adjust state during render when listId changes
+  if (listId !== currentListId) {
+    const newPreferences = loadPreferences(listId);
+    const computedGroupBy = computeGroupByFromPreferences(newPreferences);
+
+    setPreferences({
+      groupBy: computedGroupBy,
+      sortBy: newPreferences.sortBy,
+      sortOrder: newPreferences.sortOrder,
+      currentPage: newPreferences.currentPage,
+      pageSize: newPreferences.pageSize,
+    });
+    setCurrentListId(listId);
   }
-
-  const [groupBy, setGroupBy] = useState<GroupBy[]>(initialPrefsRef.current.groupBy);
-  const [sortBy, setSortBy] = useState<SortBy>(initialPrefsRef.current.sortBy);
-  const [sortOrder, setSortOrder] = useState<SortOrder>(initialPrefsRef.current.sortOrder);
-  const [pageSize, setPageSize] = useState<PageSize>(initialPrefsRef.current.pageSize);
-  const [currentPage, setCurrentPage] = useState<number>(initialPrefsRef.current.currentPage);
-
-  useEffect(() => {
-    if (previousListIdRef.current !== listId) {
-      const preferences = loadPreferences(listId);
-      const computedGroupBy = computeGroupByFromPreferences(preferences);
-
-      setGroupBy(computedGroupBy);
-      setSortBy(preferences.sortBy);
-      setSortOrder(preferences.sortOrder);
-      setCurrentPage(preferences.currentPage);
-      setPageSize(preferences.pageSize);
-      previousListIdRef.current = listId;
-    }
-  }, [listId]);
 
   // Save preferences whenever they change
   useEffect(() => {
-    savePreferences(listId, {
-      groupBy,
-      sortBy,
-      sortOrder,
-      currentPage,
-      pageSize,
-    });
-  }, [listId, groupBy, sortBy, sortOrder, currentPage, pageSize]);
+    savePreferences(listId, preferences);
+  }, [listId, preferences]);
+
+  // Wrapper setters that update the preferences object
+  const setGroupBy = useCallback((groupBy: GroupBy[]) => {
+    setPreferences((prev) => ({ ...prev, groupBy }));
+  }, []);
+
+  const setSortBy = useCallback((sortBy: SortBy) => {
+    setPreferences((prev) => ({ ...prev, sortBy }));
+  }, []);
+
+  const setSortOrder = useCallback((sortOrder: SortOrder) => {
+    setPreferences((prev) => ({ ...prev, sortOrder }));
+  }, []);
+
+  const setPageSize = useCallback((pageSize: PageSize) => {
+    setPreferences((prev) => ({ ...prev, pageSize }));
+  }, []);
+
+  const setCurrentPage = useCallback((currentPage: number) => {
+    setPreferences((prev) => ({ ...prev, currentPage }));
+  }, []);
 
   // Add a grouping attribute
   const addGroupBy = useCallback((group: GroupBy) => {
-    setGroupBy((prev) => {
+    setPreferences((prev) => {
+      const currentGroupBy = prev.groupBy;
       // Don't add if already present or at max limit
-      if (prev.includes(group) || prev.length >= MAX_GROUPING_ATTRIBUTES) {
+      if (currentGroupBy.includes(group) || currentGroupBy.length >= MAX_GROUPING_ATTRIBUTES) {
         return prev;
       }
       // Don't add 'none'
       if (group === 'none') {
         return prev;
       }
-      return [...prev, group];
+      return { ...prev, groupBy: [...currentGroupBy, group] };
     });
   }, []);
 
   // Remove a grouping attribute by index
   const removeGroupBy = useCallback((index: number) => {
-    setGroupBy((prev) => prev.filter((_, i) => i !== index));
+    setPreferences((prev) => ({
+      ...prev,
+      groupBy: prev.groupBy.filter((_, i) => i !== index),
+    }));
   }, []);
 
   // Clear all grouping
   const clearGroupBy = useCallback(() => {
-    setGroupBy([]);
+    setPreferences((prev) => ({ ...prev, groupBy: [] }));
   }, []);
 
   return {
-    groupBy,
-    sortBy,
-    sortOrder,
-    pageSize,
-    currentPage,
+    groupBy: preferences.groupBy,
+    sortBy: preferences.sortBy,
+    sortOrder: preferences.sortOrder,
+    pageSize: preferences.pageSize,
+    currentPage: preferences.currentPage,
     setGroupBy,
     addGroupBy,
     removeGroupBy,
