@@ -23,7 +23,7 @@ export function ListHeader({ list }: ListHeaderProps) {
       </div>
 
       {list.description && (
-        <p className="text-gray-300 text-lg mb-4">{list.description}</p>
+        <p className="text-gray-300 text-lg mb-4 font-sans">{list.description}</p>
       )}
     </div>
   );

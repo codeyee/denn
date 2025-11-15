@@ -288,6 +288,8 @@ export function ListDetailPage({ listId }: ListDetailPageProps) {
                     sortOrder={sortOrder}
                     pageSize={pageSize}
                     isReorderMode={reordering.isReorderMode}
+                    list={list}
+                    currentUserId={currentUser?.id}
                     onGroupPageChange={(groupKey, page) =>
                       pagination.setGroupPages((prev) => ({
                         ...prev,
@@ -312,6 +314,8 @@ export function ListDetailPage({ listId }: ListDetailPageProps) {
                     items={processedData.displayItems}
                     activeId={reordering.activeId}
                     isReorderMode={reordering.isReorderMode}
+                    list={list}
+                    currentUserId={currentUser?.id}
                     sensors={reordering.sensors}
                     onDragStart={reordering.handleDragStart}
                     onDragOver={reordering.handleDragOver}
@@ -330,6 +334,8 @@ export function ListDetailPage({ listId }: ListDetailPageProps) {
                   sortOrder={sortOrder}
                   pageSize={pageSize}
                   isReorderMode={reordering.isReorderMode}
+                  list={list}
+                  currentUserId={currentUser?.id}
                   onGroupPageChange={(groupKey, page) =>
                     pagination.setGroupPages((prev) => ({
                       ...prev,
@@ -348,6 +354,8 @@ export function ListDetailPage({ listId }: ListDetailPageProps) {
                   items={processedData.displayItems}
                   activeId={reordering.activeId}
                   isReorderMode={reordering.isReorderMode}
+                  list={list}
+                  currentUserId={currentUser?.id}
                   sensors={reordering.sensors}
                   onDragStart={reordering.handleDragStart}
                   onDragOver={reordering.handleDragOver}

@@ -8,13 +8,15 @@ import {
   SensorOptions,
 } from "@dnd-kit/core";
 import { SortableContext, rectSortingStrategy } from "@dnd-kit/sortable";
-import { ListItem } from "@/lib/types";
+import { ListItem, UserListDetail } from "@/lib/types";
 import { ReorderableListItemCard } from "../../../../common/cards/ListItemCard/ReorderableListItemCard";
 
 interface FlatGalleryViewProps {
   items: ListItem[];
   activeId: number | null;
   isReorderMode: boolean;
+  list: UserListDetail;
+  currentUserId?: number;
   sensors: SensorDescriptor<SensorOptions>[];
   onDragStart: (event: DragStartEvent) => void;
   onDragOver: (event: DragOverEvent) => void;
@@ -30,6 +32,8 @@ export function FlatGalleryView({
   items,
   activeId,
   isReorderMode,
+  list,
+  currentUserId,
   sensors,
   onDragStart,
   onDragOver,
@@ -61,6 +65,8 @@ export function FlatGalleryView({
               key={item.id}
               item={item}
               activeId={activeId}
+              list={list}
+              currentUserId={currentUserId}
               onToggleStatus={onToggleStatus}
               onDelete={onDelete}
               onRateClick={() => onRate(item)}
@@ -76,6 +82,8 @@ export function FlatGalleryView({
             <ReorderableListItemCard
               item={activeItem}
               activeId={null}
+              list={list}
+              currentUserId={currentUserId}
               onToggleStatus={onToggleStatus}
               onDelete={onDelete}
               onRateClick={() => onRate(activeItem)}

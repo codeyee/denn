@@ -59,5 +59,9 @@ export interface PaginatedResult<T> {
 
 export interface MemberRating {
   user: User;
-  rating: number;
+  score: string | number;
+  comment: string | null;
+  created_at: string;
+  updated_at: string;
+  is_owner: boolean;
 }

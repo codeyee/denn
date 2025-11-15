@@ -8,7 +8,7 @@ import {
   SensorOptions,
 } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { ListItem } from "@/lib/types";
+import { ListItem, UserListDetail } from "@/lib/types";
 import { VerticalList } from "../../../../common/lists/VerticalList";
 import { ListItemRenderer } from "../ListItemRenderer";
 
@@ -16,6 +16,8 @@ interface FlatListViewProps {
   items: ListItem[];
   activeId: number | null;
   isReorderMode: boolean;
+  list: UserListDetail;
+  currentUserId?: number;
   sensors: SensorDescriptor<SensorOptions>[];
   onDragStart: (event: DragStartEvent) => void;
   onDragOver: (event: DragOverEvent) => void;
@@ -31,6 +33,8 @@ export function FlatListView({
   items,
   activeId,
   isReorderMode,
+  list,
+  currentUserId,
   sensors,
   onDragStart,
   onDragOver,
@@ -63,6 +67,8 @@ export function FlatListView({
               item={item}
               activeId={activeId}
               isReorderMode={isReorderMode}
+              list={list}
+              currentUserId={currentUserId}
               onToggleStatus={onToggleStatus}
               onDelete={onDelete}
               onRate={onRate}
@@ -78,6 +84,8 @@ export function FlatListView({
               item={activeItem}
               activeId={null}
               isReorderMode={true}
+              list={list}
+              currentUserId={currentUserId}
               onToggleStatus={onToggleStatus}
               onDelete={onDelete}
               onRate={onRate}

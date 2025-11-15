@@ -2,16 +2,20 @@
 
 import { useMemo, useCallback } from "react";
 import { Card } from "../Card";
-import { ListItem } from "@/lib/types";
+import { ListItem, UserListDetail } from "@/lib/types";
 import { getContentTypeIcon } from "@/lib/icons/contentTypeIcons";
 import { buildContentUrl } from "@/lib/utils/navigationUtils";
 import { StatusBadge } from "@/app/_components/common/ui/StatusBadge";
+import { RatingBadge } from "@/app/_components/common/ui/RatingBadge";
 import { useSmartNavigation } from "@/app/_hooks/useSmartNavigation";
 import { getListItemTitle, getListItemSubtitle } from "./utils";
 import { ListItemCardHover } from "./components/ListItemCardHover";
+import { getRatingBadgeData } from "@/app/_components/pages/ListDetailPage/utils";
 
 interface ListItemCardProps {
   item: ListItem;
+  list: UserListDetail;
+  currentUserId?: number;
   onToggleStatus: (itemId: number, currentStatus: string) => void;
   onDelete: (itemId: number) => void;
   onRateClick?: () => void;
@@ -22,6 +26,8 @@ interface ListItemCardProps {
 
 export function ListItemCard({
   item,
+  list,
+  currentUserId,
   onToggleStatus,
   onDelete,
   onRateClick,
@@ -38,6 +44,12 @@ export function ListItemCard({
   const ContentIcon = useMemo(
     () => getContentTypeIcon(contentItem.content_type),
     [contentItem.content_type]
+  );
+
+  // Get rating badge data
+  const ratingData = useMemo(
+    () => getRatingBadgeData(item, list, currentUserId),
+    [item, list, currentUserId]
   );
 
   const getNavigationUrl = useCallback(() => {
@@ -85,6 +97,8 @@ export function ListItemCard({
           <ListItemCardHover
             item={item}
             subtitle={subtitle}
+            list={list}
+            currentUserId={currentUserId}
             onToggleStatus={onToggleStatus}
             onDelete={onDelete}
             onRateClick={onRateClick}
@@ -92,15 +106,31 @@ export function ListItemCard({
           />
         }
       >
-        {/* Status Badge - Positioned absolutely over the card image */}
-        {item.status && (
-          <div className="absolute top-3 right-3 z-20">
+        {/* Badges - Positioned absolutely over the card image */}
+        <div className="absolute top-3 right-3 z-20 flex flex-col items-end gap-2">
+          {item.status && (
             <StatusBadge
               status={item.status}
-              className="backdrop-blur-sm"
+              className="backdrop-blur-md bg-black/40 shadow-lg"
             />
-          </div>
-        )}
+          )}
+          {ratingData.showUserRating && (
+            <RatingBadge
+              rating={ratingData.userRating}
+              variant="user"
+              size="compact"
+              className="backdrop-blur-md bg-black/40 shadow-lg"
+            />
+          )}
+          {ratingData.showListRating && (
+            <RatingBadge
+              rating={ratingData.listRating}
+              variant="list"
+              size="compact"
+              className="backdrop-blur-md bg-black/40 shadow-lg"
+            />
+          )}
+        </div>
 
         {/* Item Number Badge - Positioned absolutely over the card image */}
         <div className="absolute top-3 left-3 z-20">
@@ -111,15 +141,6 @@ export function ListItemCard({
 
         {/* Footer Content - Simple info, no buttons (buttons only in hover) */}
         <Card.Footer className="flex-col gap-2">
-          {/* Metadata: Rating */}
-          {item.list_rating && (
-            <div className="flex items-center gap-2 text-xs text-yellow-400 font-medium">
-              <span className="text-yellow-400 font-medium">
-                ★ {item.list_rating}
-              </span>
-            </div>
-          )}
-
           {/* Metadata: Original Title / Authors / TV Show Name */}
           {subtitle && (
             <div className="text-white/60 text-xs line-clamp-3">

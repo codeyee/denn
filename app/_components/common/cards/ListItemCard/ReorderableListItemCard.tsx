@@ -3,11 +3,13 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { ListItemCard } from "./index";
-import { ListItem } from "@/lib/types";
+import { ListItem, UserListDetail } from "@/lib/types";
 
 interface ReorderableListItemCardProps {
   item: ListItem;
   activeId: number | null;
+  list: UserListDetail;
+  currentUserId?: number;
   onToggleStatus: (itemId: number, currentStatus: string) => void;
   onDelete: (itemId: number) => void;
   onRateClick?: () => void;
@@ -18,6 +20,8 @@ interface ReorderableListItemCardProps {
 export function ReorderableListItemCard({
   item,
   activeId,
+  list,
+  currentUserId,
   onToggleStatus,
   onDelete,
   onRateClick,
@@ -51,6 +55,8 @@ export function ReorderableListItemCard({
     >
       <ListItemCard
         item={item}
+        list={list}
+        currentUserId={currentUserId}
         onToggleStatus={onToggleStatus}
         onDelete={onDelete}
         onRateClick={onRateClick}

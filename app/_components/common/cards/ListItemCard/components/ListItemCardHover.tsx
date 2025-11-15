@@ -1,15 +1,18 @@
 import { Button } from "@/app/_components/common/ui/Button";
 import { StatusBadge } from "@/app/_components/common/ui/StatusBadge";
 import { Circle, CheckCircle, Trash2, Star } from "lucide-react";
-import { ListItem } from "@/lib/types";
+import { ListItem, UserListDetail } from "@/lib/types";
 import { ItemStatus } from "@/lib/types";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { formatUserDisplayName } from "@/lib/utils/userUtils";
+import { isPersonalList } from "@/app/_components/pages/ListDetailPage/utils";
 import { Card } from "../../Card";
 
 interface ListItemCardHoverProps {
   item: ListItem;
   subtitle: string;
+  list: UserListDetail;
+  currentUserId?: number;
   onToggleStatus: (itemId: number, currentStatus: string) => void;
   onDelete: (itemId: number) => void;
   onRateClick?: () => void;
@@ -19,11 +22,14 @@ interface ListItemCardHoverProps {
 export function ListItemCardHover({
   item,
   subtitle,
+  list,
+  currentUserId,
   onToggleStatus,
   onDelete,
   onRateClick,
   showRatingInvitation = false,
 }: ListItemCardHoverProps) {
+  const personal = isPersonalList(list);
   return (
     <Card.HoverContent>
       <div className="space-y-4 text-white">
@@ -39,7 +45,7 @@ export function ListItemCardHover({
           </div>
 
           <div className="space-y-2 text-xs">
-            {item.added_by && (
+            {!personal && item.added_by && (
               <div>
                 <span className="text-white/50">Added by:</span>{" "}
                 <span className="text-white/80">
@@ -61,17 +67,9 @@ export function ListItemCardHover({
                 </span>
               </div>
             )}
-            {item.list_rating && (
+            {!personal && item.member_rating_count > 0 && (
               <div>
-                <span className="text-white/50">List Rating:</span>{" "}
-                <span className="text-yellow-400 font-medium">
-                   {item.list_rating}
-                </span>
-              </div>
-            )}
-            {item.member_rating_count > 0 && (
-              <div>
-                <span className="text-white/50">Member Ratings:</span>{" "}
+                <span className="text-white/50">Ratings:</span>{" "}
                 <span className="text-white/80">
                   {item.member_rating_count}{" "}
                   {item.member_rating_count === 1 ? "rating" : "ratings"}

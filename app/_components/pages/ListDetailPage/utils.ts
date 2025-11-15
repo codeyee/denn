@@ -554,3 +554,54 @@ export function savePreferences(
     console.error('Failed to save list view preferences:', error);
   }
 }
+
+export function isPersonalList(list: { owner: { id: number }; members?: Array<{ id: number }> }): boolean {
+  if (!list.members || list.members.length === 0) return true;
+  return list.members.length === 1 && list.members[0].id === list.owner.id;
+}
+
+export function getUserRating(item: ListItem, userId: number | undefined): number | null {
+  if (!userId || !item.member_ratings || !Array.isArray(item.member_ratings)) {
+    return null;
+  }
+
+  const userRating = item.member_ratings.find(mr => mr.user?.id === userId);
+  if (!userRating) return null;
+
+  // API returns 'score' as a string, parse it to number
+  const score = typeof userRating.score === 'string' ? parseFloat(userRating.score) : userRating.score;
+  return typeof score === 'number' && !isNaN(score) ? score : null;
+}
+
+export function getRatingBadgeData(
+  item: ListItem,
+  list: { owner: { id: number }; members?: Array<{ id: number }> },
+  currentUserId?: number
+): {
+  showUserRating: boolean;
+  userRating: number | null;
+  showListRating: boolean;
+  listRating: number | null;
+} {
+  const personal = isPersonalList(list);
+  const userRating = getUserRating(item, currentUserId);
+  const listRating = item.list_rating;
+
+  if (personal) {
+    // Personal list: show only list rating (which is the same as user's rating)
+    return {
+      showUserRating: false,
+      userRating: null,
+      showListRating: true,
+      listRating,
+    };
+  } else {
+    // Shared list: show both user rating and list average
+    return {
+      showUserRating: true,
+      userRating,
+      showListRating: true,
+      listRating,
+    };
+  }
+}

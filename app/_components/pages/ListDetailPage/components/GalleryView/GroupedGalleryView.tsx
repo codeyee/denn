@@ -1,4 +1,4 @@
-import { ListItem } from "@/lib/types";
+import { ListItem, UserListDetail } from "@/lib/types";
 import { GroupedItems, SortOrder, PageSize } from "@/lib/types/listView";
 import { Select } from "../../../../common/ui/Select";
 import { PaginationControls } from "../../../../common/ui/PaginationControls";
@@ -11,6 +11,8 @@ interface GroupedGalleryViewProps {
   sortOrder: SortOrder;
   pageSize: PageSize;
   isReorderMode: boolean;
+  list: UserListDetail;
+  currentUserId?: number;
   onGroupPageChange: (groupKey: string, page: number) => void;
   onSortOrderChange: (order: SortOrder) => void;
   onPageSizeChange: (size: PageSize) => void;
@@ -26,6 +28,8 @@ export function GroupedGalleryView({
   sortOrder,
   pageSize,
   isReorderMode,
+  list,
+  currentUserId,
   onGroupPageChange,
   onSortOrderChange,
   onPageSizeChange,
@@ -120,6 +124,8 @@ export function GroupedGalleryView({
                             key={item.id}
                             item={item}
                             activeId={null}
+                            list={list}
+                            currentUserId={currentUserId}
                             onToggleStatus={onToggleStatus}
                             onDelete={onDelete}
                             onRateClick={() => onRate(item)}
@@ -139,6 +145,8 @@ export function GroupedGalleryView({
                     key={item.id}
                     item={item}
                     activeId={null}
+                    list={list}
+                    currentUserId={currentUserId}
                     onToggleStatus={onToggleStatus}
                     onDelete={onDelete}
                     onRateClick={() => onRate(item)}
