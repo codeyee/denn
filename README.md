@@ -21,7 +21,6 @@ A modern, feature-rich frontend for managing and discovering multi-media content
 - **📱 Responsive Design:** Fully responsive interface with custom breakpoints (3xl to 15xl)
 - **🌙 Dark Mode:** Beautiful dark mode support with next-themes
 - **✨ Smooth Animations:** GSAP and Motion animations for enhanced user experience
-- **🎨 Modern UI:** Built with Radix UI primitives and Tailwind CSS v4
 - **🔄 State Persistence:** User preferences and auth state persisted across sessions
 
 ### Coming Soon
