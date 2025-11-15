@@ -1,4 +1,4 @@
-# Coding Standards & Best Practices
+# Coding Standards & Best Practices - Guidelines
 
 This document defines MANDATORY coding standards for this Next.js project. All code must comply with these standards.
 

@@ -2,7 +2,7 @@
 
 This document provides comprehensive guidelines for AI assistants (specifically Cursor) working with this Next.js codebase. These guidelines are **MANDATORY** and override any default behaviors.
 
-> **📘 Code Quality Standards:** All code must follow the standards in **[CODING_STANDARDS.md](./CODING_STANDARDS.md)**. This includes SOLID principles, DRY enforcement, component size limits (<200 lines), and TypeScript strict mode.
+> **📘 Code Quality Standards:** All code must follow the standards in **[GUIDELINES.md](./GUIDELINES.md)**. This includes SOLID principles, DRY enforcement, component size limits (<200 lines), and TypeScript strict mode.
 
 ---
 
@@ -28,7 +28,7 @@ npm run lint         # Run ESLint
 
 ---
 
-## Critical Rules (From CODING_STANDARDS.md)
+## Critical Rules (From GUIDELINES.md)
 
 ### 1. Component Size Limits (MANDATORY)
 - ✅ **Maximum: 200 lines** (HARD LIMIT)
@@ -290,7 +290,7 @@ export default function DetailPage({ data }: Props) {
 - ✅ Complete SOLID compliance
 - ✅ All components under 350 lines
 
-See [CODING_STANDARDS.md](./CODING_STANDARDS.md) for complete implementation details.
+See [GUIDELINES.md](./GUIDELINES.md) for complete implementation details.
 
 ---
 
@@ -321,4 +321,4 @@ If you're unsure about:
 
 ---
 
-**For complete details, always refer to [CODING_STANDARDS.md](./CODING_STANDARDS.md)**
+**For complete details, always refer to [GUIDELINES.md](./GUIDELINES.md)**

@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-> **📘 Code Quality Standards:** All code must follow the standards in **[CODING_STANDARDS.md](./CODING_STANDARDS.md)**. This includes SOLID principles, DRY enforcement, component size limits (<200 lines), and TypeScript strict mode.
+> **📘 Code Quality Standards:** All code must follow the standards in **[GUIDELINES.md](./GUIDELINES.md)**. This includes SOLID principles, DRY enforcement, component size limits (<200 lines), and TypeScript strict mode.
 
 ---
 
@@ -228,7 +228,7 @@ Required environment variables:
 
 ## 📋 Quick Reference
 
-**For detailed coding standards, see [CODING_STANDARDS.md](./CODING_STANDARDS.md):**
+**For detailed coding standards, see [GUIDELINES.md](./GUIDELINES.md):**
 - Component size limits (<200 lines)
 - SOLID principles with examples
 - DRY enforcement (zero tolerance for duplication)
@@ -247,7 +247,7 @@ Required environment variables:
 
 ---
 
-## Target Component Architecture (from CODING_STANDARDS.md)
+## Target Component Architecture (from GUIDELINES.md)
 
 ```
 app/_components/pages/FeaturePage/

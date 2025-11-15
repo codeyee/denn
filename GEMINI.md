@@ -2,7 +2,7 @@
 
 This document provides guidelines for Gemini AI when working with this Next.js codebase.
 
-> **📘 Code Quality Standards:** All code must follow the standards in **[CODING_STANDARDS.md](./CODING_STANDARDS.md)**. This includes SOLID principles, DRY enforcement, component size limits (<200 lines), and TypeScript strict mode.
+> **📘 Code Quality Standards:** All code must follow the standards in **[GUIDELINES.md](./GUIDELINES.md)**. This includes SOLID principles, DRY enforcement, component size limits (<200 lines), and TypeScript strict mode.
 
 ---
 
@@ -68,7 +68,7 @@ Component-based architecture with clear separation of concerns:
 
 **Coding Style:**
 - ESLint enforces consistent style
-- See [CODING_STANDARDS.md](./CODING_STANDARDS.md) for detailed rules
+- See [GUIDELINES.md](./GUIDELINES.md) for detailed rules
 
 **State Management:**
 - Zustand for global state
@@ -81,7 +81,7 @@ Component-based architecture with clear separation of concerns:
 
 **Component Organization:**
 - By feature and type (cards, common, forms, layout, pages)
-- Maximum 200 lines per component (see CODING_STANDARDS.md)
+- Maximum 200 lines per component (see GUIDELINES.md)
 - Extract logic to custom hooks in `hooks/` subdirectory
 - Extract UI to sub-components in `components/` subdirectory
 
@@ -93,7 +93,7 @@ Component-based architecture with clear separation of concerns:
 
 ## 📋 Code Quality Standards
 
-**MANDATORY - See [CODING_STANDARDS.md](./CODING_STANDARDS.md) for details:**
+**MANDATORY - See [GUIDELINES.md](./GUIDELINES.md) for details:**
 
 1. **Component Size Limits**
    - Maximum: 200 lines (HARD LIMIT)
@@ -153,7 +153,7 @@ app/_components/pages/FeaturePage/
 
 **Reference Implementation:**
 - ListDetailPage: 2,114 lines → 391 lines (-81.5%)
-- See CODING_STANDARDS.md for full breakdown
+- See GUIDELINES.md for full breakdown
 
 ---
 
