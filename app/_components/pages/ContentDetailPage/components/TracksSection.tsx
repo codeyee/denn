@@ -4,35 +4,30 @@ import {
   ContentType,
   MovieDetail,
   TVShowDetail,
-  TVSeasonDetail,
   GameDetail,
-  BookDetail
+  BookDetail,
+  TVSeasonDetail
 } from "@/lib/api/types";
 import { getAuthorNames } from "@/lib/utils/authorUtils";
 import { VerticalList } from "@/app/_components/common/lists/VerticalList";
 import { TrackListItem } from "@/app/_components/common/lists/TrackListItem";
 
-type DetailData = MovieDetail | TVShowDetail | TVSeasonDetail | AlbumDetail | GameDetail | BookDetail | null;
-
 interface TracksSectionProps {
-  detailData: DetailData;
+  detailData: MovieDetail | TVShowDetail | AlbumDetail | GameDetail | BookDetail | TVSeasonDetail | null;
   contentItem: ContentItem;
 }
 
-function isAlbumDetail(data: DetailData): data is AlbumDetail {
-  return data !== null && 'type' in data && data.type === 'ALBUM';
-}
-
 export function TracksSection({ detailData, contentItem }: TracksSectionProps) {
-  if (contentItem.content_type !== ContentType.ALBUM || !isAlbumDetail(detailData)) return null;
+  if (contentItem.content_type !== ContentType.ALBUM || !detailData) return null;
 
-  if (!detailData.tracks || detailData.tracks.length === 0) return null;
+  const album = detailData as AlbumDetail;
+  if (!album.tracks || album.tracks.length === 0) return null;
 
   return (
     <div className="container mx-auto px-4 mt-8">
       <h2 className="text-2xl font-bold text-white mb-6">Tracks</h2>
       <VerticalList spacing="md">
-        {detailData.tracks.map((track) => (
+        {album.tracks.map((track) => (
           <TrackListItem
             key={track.id}
             trackNumber={track.track_number}
@@ -40,7 +35,7 @@ export function TracksSection({ detailData, contentItem }: TracksSectionProps) {
             artists={track.authors ? getAuthorNames(track.authors) : undefined}
             duration={track.duration_seconds ? formatDuration(track.duration_seconds) : undefined}
             externalUrl={track.external_url || undefined}
-            image={detailData.image_url || null}
+            image={album.image_url || null}
           />
         ))}
       </VerticalList>

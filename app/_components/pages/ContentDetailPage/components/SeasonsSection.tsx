@@ -5,30 +5,25 @@ import {
   ContentType,
   SourceApi,
   MovieDetail,
-  TVSeasonDetail,
   AlbumDetail,
   GameDetail,
-  BookDetail
+  BookDetail,
+  TVSeasonDetail
 } from "@/lib/api/types";
 import { Carousel } from "@/app/_components/common/ui/Carousel";
 import { ContentCard } from "@/app/_components/common/cards/ContentCard";
 import { Content } from "@/types";
 
-type DetailData = MovieDetail | TVShowDetail | TVSeasonDetail | AlbumDetail | GameDetail | BookDetail | null;
-
 interface SeasonsSectionProps {
-  detailData: DetailData;
+  detailData: MovieDetail | TVShowDetail | AlbumDetail | GameDetail | BookDetail | TVSeasonDetail | null;
   contentItem: ContentItem;
 }
 
-function isTVShowDetail(data: DetailData): data is TVShowDetail {
-  return data !== null && 'type' in data && data.type === 'TV_SHOW';
-}
-
 export function SeasonsSection({ detailData, contentItem }: SeasonsSectionProps) {
-  if (contentItem.content_type !== ContentType.TV_SHOW || !isTVShowDetail(detailData)) return null;
+  if (contentItem.content_type !== ContentType.TV_SHOW || !detailData) return null;
 
-  if (!detailData.seasons || detailData.seasons.length === 0) return null;
+  const tvShow = detailData as TVShowDetail;
+  if (!tvShow.seasons || tvShow.seasons.length === 0) return null;
 
   return (
     <div className="mt-8">
@@ -37,8 +32,8 @@ export function SeasonsSection({ detailData, contentItem }: SeasonsSectionProps)
         itemsPerView={undefined}
         targetCardWidth={250}
       >
-        {detailData.seasons.map((season) => {
-          const seasonItem = createSeasonItem(season, detailData);
+        {tvShow.seasons.map((season) => {
+          const seasonItem = createSeasonItem(season, tvShow);
           return (
             <ContentCard
               key={season.id}
