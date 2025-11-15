@@ -12,7 +12,7 @@ import { TracksSection } from "./components/TracksSection";
 import { GallerySection } from "./components/GallerySection";
 import { SeasonsSection } from "./components/SeasonsSection";
 import { ApiAttribution } from "./components/ApiAttribution";
-import { RatingsSection } from "./RatingsSection";
+import { RatingsSection } from "./components/RatingsSection";
 import { RatingModal } from "@/app/_components/common/modals/RatingModal";
 import { AddToListModal } from "@/app/_components/common/modals/AddToListModal";
 import { Footer } from "../../layout/Footer";

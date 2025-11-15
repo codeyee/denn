@@ -1,5 +1,5 @@
 import { Star } from "lucide-react";
-import { ContentBanner } from "../ContentBanner";
+import { ContentBanner } from "./ContentBanner";
 import {
   MovieDetail,
   TVShowDetail,

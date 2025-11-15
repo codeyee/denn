@@ -5,12 +5,29 @@ import {
   GameDetail,
   ContentItem,
   ContentType,
-  ImageType
+  ImageType,
+  TVSeasonDetail,
+  AlbumDetail,
+  BookDetail
 } from "@/lib/api/types";
 
+type DetailData = MovieDetail | TVShowDetail | TVSeasonDetail | AlbumDetail | GameDetail | BookDetail | null;
+
 interface GallerySectionProps {
-  detailData: MovieDetail | TVShowDetail | GameDetail | null;
+  detailData: DetailData;
   contentItem: ContentItem;
+}
+
+function isMovieDetail(data: DetailData): data is MovieDetail {
+  return data !== null && 'type' in data && data.type === 'MOVIE';
+}
+
+function isTVShowDetail(data: DetailData): data is TVShowDetail {
+  return data !== null && 'type' in data && data.type === 'TV_SHOW';
+}
+
+function isGameDetail(data: DetailData): data is GameDetail {
+  return data !== null && 'type' in data && data.type === 'GAME';
 }
 
 export function GallerySection({ detailData, contentItem }: GallerySectionProps) {
@@ -19,6 +36,10 @@ export function GallerySection({ detailData, contentItem }: GallerySectionProps)
   const contentType = contentItem.content_type;
 
   if (contentType === ContentType.SEASON) return null;
+
+  if (!isMovieDetail(detailData) && !isTVShowDetail(detailData) && !isGameDetail(detailData)) {
+    return null;
+  }
 
   const galleryImages = extractGalleryImages(detailData, contentType);
 
@@ -55,13 +76,12 @@ function extractGalleryImages(
   let title = "";
   let images: { src: string; alt: string }[] = [];
 
-  if (contentType === ContentType.MOVIE) {
-    const movie = detailData as MovieDetail;
-    title = movie.title;
-    images = movie.images
+  if (contentType === ContentType.MOVIE && 'type' in detailData && detailData.type === 'MOVIE') {
+    title = detailData.title;
+    images = detailData.images
       ? Array.from(
           new Map(
-            movie.images
+            detailData.images
               .filter(img => img.type === ImageType.GALLERY && img.size === "STANDARD")
               .map(img => [img.image_url, img])
           ).values()
@@ -70,13 +90,12 @@ function extractGalleryImages(
           alt: `${title} gallery image ${index + 1}`,
         }))
       : [];
-  } else if (contentType === ContentType.TV_SHOW) {
-    const tvShow = detailData as TVShowDetail;
-    title = tvShow.title;
-    images = tvShow.images
+  } else if (contentType === ContentType.TV_SHOW && 'type' in detailData && detailData.type === 'TV_SHOW') {
+    title = detailData.title;
+    images = detailData.images
       ? Array.from(
           new Map(
-            tvShow.images
+            detailData.images
               .filter(img => img.type === ImageType.GALLERY && img.size === "STANDARD")
               .map(img => [img.image_url, img])
           ).values()
@@ -85,13 +104,12 @@ function extractGalleryImages(
           alt: `${title} gallery image ${index + 1}`,
         }))
       : [];
-  } else if (contentType === ContentType.GAME) {
-    const game = detailData as GameDetail;
-    title = game.title;
-    images = game.images
+  } else if (contentType === ContentType.GAME && 'type' in detailData && detailData.type === 'GAME') {
+    title = detailData.title;
+    images = detailData.images
       ? Array.from(
           new Map(
-            game.images
+            detailData.images
               .filter(img => img.type === ImageType.GALLERY && img.size === "STANDARD")
               .map(img => [img.image_url, img])
           ).values()

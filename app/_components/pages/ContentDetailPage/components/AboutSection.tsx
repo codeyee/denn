@@ -12,11 +12,11 @@ import {
   User
 } from "@/lib/api/types";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
-import { MovieDetailContent } from "../MovieDetailContent";
-import { TVShowDetailContent } from "../TVShowDetailContent";
-import { SeasonDetailContent } from "../SeasonDetailContent";
-import { GameDetailContent } from "../GameDetailContent";
-import { BookDetailContent } from "../BookDetailContent";
+import { MovieDetailContent } from "../contents/MovieDetailContent";
+import { TVShowDetailContent } from "../contents/TVShowDetailContent";
+import { SeasonDetailContent } from "../contents/SeasonDetailContent";
+import { GameDetailContent } from "../contents/GameDetailContent";
+import { BookDetailContent } from "../contents/BookDetailContent";
 
 interface AboutSectionProps {
   detailData: MovieDetail | TVShowDetail | TVSeasonDetail | AlbumDetail | GameDetail | BookDetail | null;
