@@ -10,7 +10,6 @@ interface SeasonDetailContentProps {
   season: TVSeasonDetail;
   contentItem?: ContentItem;
   userRating?: Rating | null;
-  onRatingChange?: () => void;
   onEditRating?: () => void;
   onDeleteRating?: () => void;
   isRatingLoading?: boolean;
@@ -21,7 +20,6 @@ export function SeasonDetailContent({
   season,
   contentItem,
   userRating,
-  onRatingChange,
   onEditRating,
   onDeleteRating,
   isRatingLoading,

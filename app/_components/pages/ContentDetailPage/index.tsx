@@ -264,7 +264,6 @@ export function ContentDetailPage({
           season={detailData as TVSeasonDetail}
           contentItem={contentItem}
           userRating={userRating}
-          onRatingChange={handleRatingChange}
           onEditRating={() => setIsRatingModalOpen(true)}
           onDeleteRating={handleDeleteRating}
           isRatingLoading={isRatingLoading}
@@ -571,33 +570,6 @@ export function ContentDetailPage({
       console.error("Error deleting rating:", err);
     } finally {
       setIsRatingLoading(false);
-    }
-  };
-
-  const handleRatingChange = () => {
-    // Refresh ratings section
-    setRatingRefreshKey((prev) => prev + 1);
-
-    // Refresh content item to get updated stats
-    contentItemActions.get(contentItem.id).then((updatedItem) => {
-      setContentItem(updatedItem);
-    });
-
-    // Refresh user rating
-    if (user?.id) {
-      ratingActions.list({
-        content_item_id: contentItem.id,
-        user_id: user.id,
-        page_size: 1,
-      }).then((ratingsResponse) => {
-        if (ratingsResponse.results.length > 0) {
-          setUserRating(ratingsResponse.results[0]);
-        } else {
-          setUserRating(null);
-        }
-      }).catch((err) => {
-        console.warn("Could not refresh user rating:", err);
-      });
     }
   };
 
