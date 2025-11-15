@@ -167,6 +167,15 @@ export async function apiRequest<T = unknown>(
 
     return parseResponse<T>(response, isJson);
   } catch (error) {
+    if (error instanceof TypeError && error.message === "Failed to fetch") {
+      const errorMessage = `Network error: Unable to connect to ${url}. Please check if the backend server is running and accessible.`;
+      console.error(errorMessage, {
+        url,
+        apiBaseUrl: API_BASE_URL,
+        endpoint,
+      });
+      throw new Error(errorMessage);
+    }
     if (error instanceof Error) {
       throw error;
     }

@@ -138,14 +138,13 @@ export interface UserList {
   description: string | null;
   list_type: ListType;
   owner: User;
-  member_count: string;
+  members?: User[];
   item_count: string;
   created_at: string;
   updated_at: string;
 }
 
 export interface UserListDetail extends UserList {
-  members: User[];
   items: ListItem[];
 }
 

@@ -23,14 +23,10 @@ export function ListCard({ list, className }: ListCardProps) {
   // Calculate actual item count from items array
   const actualItemCount = list.items?.length || 0;
   const itemCount = list.item_count || String(actualItemCount);
-  const memberCount = list.member_count || "1"; // Default to 1 (owner)
+  const memberCount = (list.members?.length || 1); // Default to 1 (owner)
 
-  const memberInfo = `${memberCount} ${
-    parseInt(memberCount) === 1 ? "member" : "members"
-  }`;
-  const itemInfo = `${itemCount} ${
-    parseInt(itemCount) === 1 ? "item" : "items"
-  }`;
+  const memberInfo = `${memberCount} ${memberCount === 1 ? "member" : "members"}`;
+  const itemInfo = `${itemCount} ${parseInt(itemCount) === 1 ? "item" : "items"}`;
 
   const isShared = list.list_type === ListType.SHARED;
   const ListTypeIcon = isShared ? Users : Lock;
