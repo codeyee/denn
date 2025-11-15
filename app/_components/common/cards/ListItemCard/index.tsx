@@ -98,7 +98,6 @@ export function ListItemCard({
             item={item}
             subtitle={subtitle}
             list={list}
-            currentUserId={currentUserId}
             onToggleStatus={onToggleStatus}
             onDelete={onDelete}
             onRateClick={onRateClick}

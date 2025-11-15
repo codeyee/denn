@@ -12,7 +12,6 @@ import { VerticalList } from "../../common/lists/VerticalList";
 import { ItemStatus, Rating, RatingCreate, ContentItem } from "@/lib/types";
 import { ListItem, MemberRating } from "@/lib/types";
 import { GroupBy } from "@/lib/types/listView";
-import { formatSeasonTitle } from "@/lib/utils/titleUtils";
 import { useAuthStore } from "@/app/_stores/auth-store";
 
 import { useListData } from "./hooks/useListData";
@@ -119,13 +118,12 @@ export function ListDetailPage({ listId }: ListDetailPageProps) {
 
     if (!memberRating) return null;
 
-    // Convert MemberRating to Rating format for RatingModal
     return {
-      id: 0, // Not used by RatingModal for new ratings
+      id: 0,
       user: currentUser,
       content_item: modals.ratingModalItem.content_item as unknown as ContentItem,
-      score: String(memberRating.rating),
-      comment: null, // MemberRating doesn't have comments
+      score: String(memberRating.score),
+      comment: null,
       created_at: "",
       updated_at: "",
     };

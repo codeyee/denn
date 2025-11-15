@@ -12,7 +12,6 @@ interface ListItemCardHoverProps {
   item: ListItem;
   subtitle: string;
   list: UserListDetail;
-  currentUserId?: number;
   onToggleStatus: (itemId: number, currentStatus: string) => void;
   onDelete: (itemId: number) => void;
   onRateClick?: () => void;
@@ -23,7 +22,6 @@ export function ListItemCardHover({
   item,
   subtitle,
   list,
-  currentUserId,
   onToggleStatus,
   onDelete,
   onRateClick,
