@@ -8,20 +8,20 @@ export type GroupBy =
   | 'rating';
 
 export type SortBy =
-  | 'list_order'      // Default order
-  | 'added_at'        // Date added
-  | 'name'            // Alphabetical by content title
-  | 'completed_at'    // Completion date
-  | 'list_rating'     // List rating
-  | 'added_by'        // User who added the item
-  | 'content_type';   // Content type (Movie, TV Show, etc.)
+  | 'list_order'    // Default order
+  | 'added_at'      // Date added
+  | 'name'          // Alphabetical by content title
+  | 'completed_at'  // Completion date
+  | 'list_rating'   // List rating
+  | 'added_by'      // User who added the item
+  | 'content_type'; // Content type (Movie, TV Show, etc.)
 
 export type SortOrder = 'asc' | 'desc';
 
 export type PageSize = 10 | 20 | 50 | 'all';
 
 export interface ListViewPreferences {
-  groupBy: GroupBy[];  // Composite grouping: up to 4 attributes
+  groupBy: GroupBy[]; // Composite grouping: up to 4 attributes
   sortBy: SortBy;
   sortOrder: SortOrder;
   pageSize: PageSize;
@@ -29,14 +29,13 @@ export interface ListViewPreferences {
 }
 
 export const DEFAULT_LIST_VIEW_PREFERENCES: ListViewPreferences = {
-  groupBy: [],  // No grouping by default
+  groupBy: [], // No grouping by default
   sortBy: 'list_order',
   sortOrder: 'asc',
   pageSize: 20,
   currentPage: 1,
 };
 
-// Maximum number of grouping attributes for performance
 export const MAX_GROUPING_ATTRIBUTES = 4;
 
 export interface GroupedItems<T> {

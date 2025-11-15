@@ -1,6 +1,10 @@
 import { useAuthStore } from "@/app/_stores/auth-store";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+const CONTENT_TYPE_JSON = "application/json";
+const DEFAULT_ERROR_DETAILS = "No error details";
+const HTTP_STATUS_UNAUTHORIZED = 401;
+const HTTP_STATUS_NO_CONTENT = 204;
 
 let refreshPromise: Promise<void> | null = null;
 
@@ -15,7 +19,7 @@ async function performTokenRefresh(): Promise<void> {
 
     const response = await fetch(`${API_BASE_URL}/auth/token/refresh/`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": CONTENT_TYPE_JSON },
       body: JSON.stringify({ refresh: refreshToken }),
     });
 
@@ -44,6 +48,53 @@ interface RequestConfig extends RequestInit {
   requiresAuth?: boolean;
 }
 
+function isJsonResponse(contentType: string | null): boolean {
+  return contentType?.includes(CONTENT_TYPE_JSON) ?? false;
+}
+
+function extractErrorMessage(errorData: Record<string, unknown>): string {
+  if (typeof errorData.message === "string" && errorData.message) {
+    return errorData.message;
+  }
+  if (typeof errorData.detail === "string" && errorData.detail) {
+    return errorData.detail;
+  }
+  if (typeof errorData.error === "string" && errorData.error) {
+    return errorData.error;
+  }
+  return JSON.stringify(errorData);
+}
+
+function createErrorResponse(status: number, errorMessage: string): Error {
+  return new Error(`Request failed (${status}): ${errorMessage}`);
+}
+
+async function handleErrorResponse(
+  response: Response,
+  isJson: boolean
+): Promise<never> {
+  if (isJson) {
+    const errorData = await response.json().catch(() => ({}));
+    const errorMessage = extractErrorMessage(errorData);
+    throw createErrorResponse(response.status, errorMessage);
+  }
+  throw createErrorResponse(
+    response.status,
+    response.statusText || DEFAULT_ERROR_DETAILS
+  );
+}
+
+async function parseResponse<T>(response: Response, isJson: boolean): Promise<T> {
+  if (response.status === HTTP_STATUS_NO_CONTENT) {
+    return {} as T;
+  }
+  if (isJson) {
+    return (await response.json()) as T;
+  }
+  const text = await response.text();
+  return text as T;
+}
+
 export async function apiRequest<T = unknown>(
   endpoint: string,
   config: RequestConfig = {}
@@ -51,7 +102,7 @@ export async function apiRequest<T = unknown>(
   const { requiresAuth = false, headers = {}, ...rest } = config;
 
   const requestHeaders: Record<string, string> = {
-    "Content-Type": "application/json",
+    "Content-Type": CONTENT_TYPE_JSON,
   };
 
   if (headers) {
@@ -75,14 +126,14 @@ export async function apiRequest<T = unknown>(
     let response = await fetch(url, {
       ...rest,
       headers: requestHeaders,
+      signal: rest.signal,
     });
 
-    // Handle non-JSON responses
     const contentType = response.headers.get("content-type");
-    const isJson = contentType?.includes("application/json");
+    const isJson = isJsonResponse(contentType);
 
     if (!response.ok) {
-      if (requiresAuth && response.status === 401) {
+      if (requiresAuth && response.status === HTTP_STATUS_UNAUTHORIZED) {
         try {
           await performTokenRefresh();
 
@@ -95,56 +146,26 @@ export async function apiRequest<T = unknown>(
           response = await fetch(url, {
             ...rest,
             headers: newHeaders,
+            signal: rest.signal,
           });
 
           const retriedContentType = response.headers.get("content-type");
-          const retriedIsJson = retriedContentType?.includes("application/json");
+          const retriedIsJson = isJsonResponse(retriedContentType);
+
           if (!response.ok) {
-            if (retriedIsJson) {
-              const retryErrorData = await response.json().catch(() => ({}));
-              const errorMessage = retryErrorData.message
-                || retryErrorData.detail
-                || retryErrorData.error
-                || JSON.stringify(retryErrorData);
-              throw new Error(`Request failed (${response.status}): ${errorMessage}`);
-            }
-            throw new Error(`Request failed (${response.status}): ${response.statusText || 'No error details'}`);
+            await handleErrorResponse(response, retriedIsJson);
           }
 
-          if (response.status === 204) {
-            return {} as T;
-          }
-          if (retriedIsJson) {
-            return (await response.json()) as T;
-          }
-          const retriedText = await response.text();
-          return retriedText as unknown as T;
+          return parseResponse<T>(response, retriedIsJson);
         } catch (e) {
           console.error("Token refresh failed", e);
         }
       }
 
-      if (isJson) {
-        const errorData = await response.json();
-        const errorMessage = errorData.message
-          || errorData.detail
-          || errorData.error
-          || JSON.stringify(errorData);
-        throw new Error(`Request failed (${response.status}): ${errorMessage}`);
-      }
-      throw new Error(`Request failed (${response.status}): ${response.statusText || 'No error details'}`);
+      await handleErrorResponse(response, isJson);
     }
 
-    if (response.status === 204) {
-      return {} as T;
-    }
-
-    if (isJson) {
-      return await response.json();
-    }
-
-    const text = await response.text();
-    return text as unknown as T;
+    return parseResponse<T>(response, isJson);
   } catch (error) {
     if (error instanceof Error) {
       throw error;
