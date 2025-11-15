@@ -56,16 +56,6 @@ member_rating_count = count(member_ratings)
 
 **Affected Endpoints:**
 - `GET /api/lists/{id}/items/`
-
-**Database Optimization:**
-```python
-# Use Django aggregation to avoid N+1
-from django.db.models import Avg, Count
-
-items = ListItem.objects.filter(list_id=list_id).annotate(
-    list_rating=Avg('member_ratings__rating'),
-    member_rating_count=Count('member_ratings')
-)
 ```
 
 **Acceptance Criteria:**
@@ -95,31 +85,27 @@ items = ListItem.objects.filter(list_id=list_id).annotate(
 **Current Issue:**
 Frontend makes 5 separate API calls for each search:
 ```
-GET /api/content/search/?type=MOVIE&q=inception
-GET /api/content/search/?type=TV_SHOW&q=inception
-GET /api/content/search/?type=GAME&q=inception
-GET /api/content/search/?type=MUSIC&q=inception
-GET /api/content/search/?type=BOOK&q=inception
+GET /api/content/movies/search/?query=inception
+GET /api/content/tv/search/?query=inception
+GET /api/content/games/search/?query=inception
+GET /api/content/albums/search/?query=inception
+GET /api/content/books/search/?query=inception
 ```
 
 **New Endpoint:**
-`POST /api/content/multi-search/`
+`POST /api/content/search/multi/...`
 
 **Request:**
 ```json
-POST /api/content/multi-search/
-{
-  "query": "inception",
-  "content_types": ["MOVIE", "TV_SHOW", "GAME", "MUSIC", "BOOK"],
-  "limit_per_type": 10
-}
+GET /api/content/search/multi/?query=inception&types=MOVIES,TV_SHOWS,GAMES?limit=10
 ```
+
+NOTE: if not types specified, search in all (["MOVIES", "TV_SHOWS", "GAMES", "ALBUMS", "BOOKS"])
+NOTE: Limit is a Limit-per-type, so 10 of each one for example. Default 20
 
 **Response:**
 ```json
 {
-  "query": "inception",
-  "results": {
     "movies": [
       {
         "id": 1,
@@ -148,16 +134,10 @@ POST /api/content/multi-search/
       }
     ],
     "books": []
-  },
-  "total_results": 3,
-  "search_time_ms": 245
 }
 ```
 
-**Parameters:**
-- `query` (required, string): Search term
-- `content_types` (optional, array): Types to search (default: all)
-- `limit_per_type` (optional, integer): Max results per type (default: 10)
+NOTE: BAse yourself in /homepage response
 
 **Implementation:**
 ```python
@@ -175,15 +155,7 @@ async def multi_search(request):
 
     results = await asyncio.gather(*tasks)
 
-    return {
-        'query': query,
-        'results': {
-            'movies': results[0],
-            'tv_shows': results[1],
-            # ...
-        },
-        'total_results': sum(len(r) for r in results)
-    }
+    return ...
 ```
 
 **Acceptance Criteria:**
@@ -207,7 +179,6 @@ async def multi_search(request):
 **Performance Target:**
 - Total search time < 500ms for all 5 types
 - Uses connection pooling for external APIs
-- Caches recent searches (optional)
 
 ---
 
@@ -359,8 +330,7 @@ Returns unreleased content:
 {
   "results": [
     {"title": "Movie A", "release_date": "2020-01-15"},  // ✅ Released
-    {"title": "Movie B", "release_date": null},          // ❌ TBA
-    {"title": "Movie C", "release_date": "2026-06-01"}   // ❌ Future
+    {"title": "Movie B", "release_date": "2026-06-01"}   // ❌ Future
   ]
 }
 ```
@@ -371,21 +341,20 @@ Returns unreleased content:
   "results": [
     {"title": "Movie A", "release_date": "2020-01-15"}
   ]
-  // Movies B and C filtered out
+  // Movie B filtered out
 }
 ```
 
 **Filtering Rules:**
 DO NOT return content where:
-- `release_date` is null
 - `release_date` > (today + 1 day)  // 1-day timezone margin
 
 **Exception:**
 For TV shows, filter by **series first air date**, not episode dates.
 
 **Affected Endpoints:**
-- `GET /api/content/search/`
-- `GET /api/content/` (all listing endpoints)
+- `GET /api/{content}/search/`
+- `GET /api/{content}/` (all listing endpoints)
 
 **Implementation:**
 ```python
@@ -415,22 +384,6 @@ GET /api/content/search/?q=inception&include_unreleased=true
 - [ ] TV shows filtered by series date
 - [ ] Tests for edge cases
 
----
-
-## 📊 Sprint 2 Backend Summary
-
-| Priority | Tasks | Est. Days |
-|----------|-------|-----------|
-| 🔴 Critical | 1 | 3.0 |
-| 🟡 High | 2 | 6.0 |
-| 🟢 Medium | 2 | 3.0 |
-| **Total** | **5** | **12.0** |
-
-**Recommended Allocation:**
-- 2 developers × 6 days = 12 days (exactly fits sprint)
-
----
-
 ## 🔗 Dependencies
 
 **FROM Sprint 1 (Must be complete):**
@@ -446,26 +399,6 @@ GET /api/content/search/?q=inception&include_unreleased=true
 
 ---
 
-## 🧪 Testing Requirements
-
-### Unit Tests
-- [ ] Calculated ratings with various scenarios
-- [ ] Multi-search with different parameters
-- [ ] Duplicate detection logic
-- [ ] Release date filtering edge cases
-
-### Integration Tests
-- [ ] End-to-end multi-search flow
-- [ ] Duplicate prevention with real database
-- [ ] Performance test for calculated ratings (100+ items)
-
-### Performance Tests
-- [ ] Multi-search completes in <500ms
-- [ ] Calculated ratings don't cause N+1 queries
-- [ ] Load test: 100 concurrent searches
-
----
-
 ## 📋 Definition of Done
 
 A task is complete when:
@@ -478,8 +411,3 @@ A task is complete when:
 - [ ] Deployed to staging
 - [ ] Frontend team notified
 
----
-
-**Sprint Start:** Week 3 Monday
-**Sprint End:** Week 4 Friday
-**Next Sprint:** [Sprint 3 Backend](../PHASE_1_MVP_SPRINT_3/BACKEND.md)

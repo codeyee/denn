@@ -3,7 +3,6 @@
 > **Sprint Goal:** Integrate backend improvements and build core UX features
 > **Duration:** 2 weeks
 > **Team:** Frontend
-> **Backend Dependency:** Sprint 1 & 2 Backend MUST be complete and deployed
 
 ---
 
@@ -29,7 +28,7 @@
 **Uses Backend:** BE-203 (duplicate validation)
 
 **Current UX Issues:**
-- Redundant "Cancel" button (X button exists)
+- Redundant "Cancel" button (X and DONE button exists)
 - Two-step process: select list → click "Add"
 - Modal closes after adding (can't add to multiple lists)
 - No visual feedback for which lists contain the item
@@ -64,7 +63,7 @@
 1. Checked = item is in list
 2. Click checkbox → instantly add/remove (no "Add" button)
 3. Modal stays open (add to multiple lists)
-4. Auto-closes after 2s of inactivity OR click X
+4. Closes on click X/DONE or outside modal.
 
 **Changes:**
 ```typescript
@@ -94,7 +93,6 @@
 - [ ] Replace select dropdown with checkbox list
 - [ ] Remove "Cancel" and "Add" buttons
 - [ ] Add list metadata display (type, count, last updated)
-- [ ] Implement auto-close after 2s inactivity
 - [ ] Use BE-203 to check if item already in list
 - [ ] Show loading state while adding/removing
 - [ ] Error handling for BE-203 duplicate errors
@@ -127,7 +125,7 @@
 **Uses Backend:** None (client-side grouping)
 
 **Current Behavior:**
-- Single-level grouping with select dropdowns
+- Single-level/double grouping with select dropdowns
 - Can't group by multiple criteria
 - Confusing UI
 
@@ -152,19 +150,19 @@
 
 **Result (Status → Content Type):**
 ```
-📊 PENDING (45 items)
-  ├─ 🎬 Movies (20)
-  │   ├─ Inception
-  │   ├─ The Matrix
-  │   └─ ...
-  ├─ 📺 TV Shows (15)
-  │   ├─ Breaking Bad
-  │   └─ ...
-  └─ 🎮 Games (10)
-
-✅ COMPLETED (30 items)
-  ├─ 🎬 Movies (18)
-  └─ 📺 TV Shows (12)
+📊 PENDING - 🎬 MOVIES (20 items)
+├─ Inception
+├─ The Matrix
+└─ ...
+📊 PENDING - 📺 TV SHOWS (15 items)
+├─ Breaking Bad
+└─ ...
+📊 PENDING - 📺 Games (10 items)
+└─ ...
+✅ COMPLETED - 🎬 MOVIES (30 items)
+└─ ...
+✅ COMPLETED - :book: Books (30 items)
+└─ ...
 ```
 
 **File:** `app/_components/pages/ListDetailPage/components/ListSidebar.tsx`
@@ -197,21 +195,21 @@ function groupItems(items: ListItem[], groups: GroupBy[]) {
 
 **Acceptance Criteria:**
 - [ ] Checkboxes instead of select dropdowns
-- [ ] Multi-level grouping (up to 3 levels)
+- [ ] Multi-select grouping - Only one level ("flat") (up to 3 attributes)
 - [ ] Collapsible group headers
 - [ ] Shows item count per group
 - [ ] "Clear All" button
-- [ ] Persisted to preferences (localStorage)
+- [ ] REMOVE Persistence to preferences (localStorage)
 - [ ] Smooth animations on expand/collapse
 - [ ] Works with pagination
 - [ ] Mobile responsive
 
 **Testing:**
 - [ ] Select 1 group → items grouped
-- [ ] Select 2 groups → nested grouping
-- [ ] Select 3 groups → 3-level nesting
+- [ ] Select 2 groups → items grouped by 2 conditions
+- [ ] Select 3 groups → items grouped by 3 conditions
 - [ ] Uncheck group → re-groups remaining
-- [ ] Clear all → flat list
+- [ ] Clear all → fully flat list
 - [ ] Refresh page → groups persist
 
 ---
@@ -237,17 +235,15 @@ const books = await api.get(`/content/search/?type=BOOK&q=${query}`);
 Single API call:
 ```typescript
 // ✅ FAST: 1 request
-const results = await api.post('/content/multi-search/', {
-  query,
-  content_types: ['MOVIE', 'TV_SHOW', 'GAME', 'MUSIC', 'BOOK'],
-  limit_per_type: 10
-});
+const results = await api.get('/content/search/multi/?query=inception?limit=20')
 
-// results.results.movies
-// results.results.tv_shows
-// results.results.games
+// results.movies
+// results.tv_shows
+// results.games
 // etc.
 ```
+
+NOTE: BAse yourself in /homepage response but with SearchItems in every list.
 
 **File:** `app/_components/pages/SearchPage/index.tsx`
 
@@ -267,12 +263,7 @@ function useMultiSearch(query: string) {
 
     const search = async () => {
       try {
-        const data = await api.post('/content/multi-search/', {
-          query,
-          content_types: ['MOVIE', 'TV_SHOW', 'GAME', 'MUSIC', 'BOOK'],
-          limit_per_type: 10
-        }, { signal: controller.signal });
-
+        const data = await api.get(..., { signal: controller.signal });
         setResults(data);
       } catch (err) {
         if (err.name !== 'AbortError') {
@@ -296,24 +287,14 @@ function useMultiSearch(query: string) {
 ```
 
 **Acceptance Criteria:**
-- [ ] Uses POST /api/content/multi-search/
+- [ ] Uses GET /api/content/search/multi/...
 - [ ] Single request instead of 5
-- [ ] Debounced (300ms)
+- [ ] Debounced (500ms)
 - [ ] Cancels previous request when user types
 - [ ] Shows loading state
 - [ ] Error handling
 - [ ] TypeScript interfaces for response
 - [ ] Works with existing search UI
-
-**Testing:**
-- [ ] Search "inception" → all types searched
-- [ ] Type quickly → only last search completes
-- [ ] Network tab shows 1 POST request
-- [ ] Results display correctly
-- [ ] Empty results handled gracefully
-
-**Performance Target:**
-- Search time: <500ms (down from ~2s with 5 requests)
 
 ---
 
@@ -387,7 +368,6 @@ Show user-friendly error toast:
 ```
 ┌─────────────────────────────────────────┐
 │ ℹ️  This item is already in "Watchlist" │
-│    Added on Jan 15, 2024                │
 └─────────────────────────────────────────┘
 ```
 
@@ -401,7 +381,7 @@ const handleAddToList = async (listId: number) => {
     if (error.response?.data?.error === 'DUPLICATE_ITEM') {
       const existing = error.response.data.existing_item;
       showToast(
-        `This item is already in this list (added ${formatDate(existing.added_at)})`,
+        `This item is already in this list`,
         'info'
       );
     } else {
@@ -505,37 +485,7 @@ function ListItemSkeleton() {
 - [ ] Pulse animation
 - [ ] Shows 10 skeletons while loading
 - [ ] Smooth transition to real content
-
----
-
-## 📊 Sprint 2 Frontend Summary
-
-| Priority | Tasks | Est. Days |
-|----------|-------|-----------|
-| 🔴 Critical | 3 | 9.0 |
-| 🟡 High | 2 | 2.0 |
-| 🟢 Medium | 2 | 1.5 |
-| **Total** | **7** | **12.5** |
-
-**Recommended Focus:**
-Complete critical tasks first (9 days), then high priority (2 days).
-If time permits, add polish tasks.
-
----
-
-## 🔗 Backend Dependencies
-
-**Required from Backend Sprint 1-2:**
-- ✅ BE-201: Calculated ratings
-- ✅ BE-202: Multi-search endpoint
-- ✅ BE-203: Duplicate validation
-
-**Testing with Backend:**
-- Use staging backend environment
-- Coordinate with backend team for API testing
-- Report any API issues immediately
-
----
+- [ ] Loading skeletons based on **Placeholder.tsx files of Frontend (Card, FeatureBanner, etc)
 
 ## ✅ Definition of Done
 
@@ -546,9 +496,3 @@ If time permits, add polish tasks.
 - [ ] Code reviewed by teammate
 - [ ] Backend integration tested
 - [ ] Merged to feature branch
-
----
-
-**Sprint Start:** Week 5 Monday (AFTER Backend Sprints 1-2)
-**Sprint End:** Week 6 Friday
-**Next Sprint:** [Sprint 3 Frontend](../PHASE_1_MVP_SPRINT_3/FRONTEND.md)
