@@ -11,7 +11,7 @@ import type {
 } from "@/lib/types";
 
 export const videoActions = {
-  searchMovies: (params: VideoSearchParams): Promise<VideoSearchResponse> => {
+  searchMovies: (params: VideoSearchParams, signal?: AbortSignal): Promise<VideoSearchResponse> => {
     const queryParams = new URLSearchParams();
     queryParams.append("query", params.query);
     if (params.page) queryParams.append("page", String(params.page));
@@ -19,11 +19,12 @@ export const videoActions = {
 
     return api.get<VideoSearchResponse>(
       `/proxy/movies/search?${queryParams}`,
-      true
+      true,
+      signal
     );
   },
 
-  searchTVShows: (params: VideoSearchParams): Promise<VideoSearchResponse> => {
+  searchTVShows: (params: VideoSearchParams, signal?: AbortSignal): Promise<VideoSearchResponse> => {
     const queryParams = new URLSearchParams();
     queryParams.append("query", params.query);
     if (params.page) queryParams.append("page", String(params.page));
@@ -31,7 +32,8 @@ export const videoActions = {
 
     return api.get<VideoSearchResponse>(
       `/proxy/tv-shows/search?${queryParams}`,
-      true
+      true,
+      signal
     );
   },
 

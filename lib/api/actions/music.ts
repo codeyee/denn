@@ -7,7 +7,7 @@ import type {
 } from "@/lib/types";
 
 export const musicActions = {
-  search: (params: MusicSearchParams): Promise<MusicSearchResponse> => {
+  search: (params: MusicSearchParams, signal?: AbortSignal): Promise<MusicSearchResponse> => {
     const queryParams = new URLSearchParams();
     queryParams.append("query", params.query);
     if (params.page) queryParams.append("page", String(params.page));
@@ -15,7 +15,8 @@ export const musicActions = {
 
     return api.get<MusicSearchResponse>(
       `/proxy/albums/search?${queryParams}`,
-      true
+      true,
+      signal
     );
   },
 

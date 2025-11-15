@@ -52,32 +52,34 @@ export function GroupedGalleryView({
                 ({group.count} {group.count === 1 ? "item" : "items"})
               </span>
               {!isReorderMode && (
-                <div className="flex items-center gap-1">
-                  <Select
-                    value={sortOrder}
-                    onChange={(e) =>
-                      onSortOrderChange(e.target.value as SortOrder)
-                    }
-                    className="px-2 py-1 text-xs rounded cursor-pointer bg-white/5 hover:bg-white/10 text-white border border-white/20"
-                  >
-                    <option value="asc">↑ Asc</option>
-                    <option value="desc">↓ Desc</option>
-                  </Select>
-                  <Select
-                    value={pageSize}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      onPageSizeChange(
-                        val === "all" ? "all" : (Number(val) as PageSize)
-                      );
-                    }}
-                    className="px-2 py-1 text-xs rounded cursor-pointer bg-white/5 hover:bg-white/10 text-white border border-white/20"
-                  >
-                    <option value={10}>10</option>
-                    <option value={20}>20</option>
-                    <option value={50}>50</option>
-                    <option value="all">All</option>
-                  </Select>
+                <div className="flex items-center gap-2">
+                  <div className="inline-flex items-center gap-1 bg-white/5 rounded-lg p-1">
+                    <Select
+                      value={sortOrder}
+                      onChange={(e) =>
+                        onSortOrderChange(e.target.value as SortOrder)
+                      }
+                      className="px-2 py-1 text-xs rounded cursor-pointer bg-transparent hover:bg-white/10 text-white/60 hover:text-white transition-colors border-0"
+                    >
+                      <option value="asc">↑ Asc</option>
+                      <option value="desc">↓ Desc</option>
+                    </Select>
+                    <Select
+                      value={pageSize}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        onPageSizeChange(
+                          val === "all" ? "all" : (Number(val) as PageSize)
+                        );
+                      }}
+                      className="px-2 py-1 text-xs rounded cursor-pointer bg-transparent hover:bg-white/10 text-white/60 hover:text-white transition-colors border-0"
+                    >
+                      <option value={10}>10</option>
+                      <option value={20}>20</option>
+                      <option value={50}>50</option>
+                      <option value="all">All</option>
+                    </Select>
+                  </div>
                   {pageSize !== "all" && groupTotalPages > 1 && (
                     <PaginationControls
                       currentPage={groupPage}

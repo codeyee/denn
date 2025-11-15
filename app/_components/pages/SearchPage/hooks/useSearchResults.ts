@@ -34,6 +34,10 @@ export function useSearchResults(query: string): UseSearchResultsReturn {
   const currentSearchQueryRef = useRef<string>("");
 
   useEffect(() => {
+    // Create AbortController for this search request
+    const controller = new AbortController();
+    const { signal } = controller;
+
     const performSearch = async () => {
       // Clear results if no query
       if (!query.trim()) {
@@ -50,13 +54,13 @@ export function useSearchResults(query: string): UseSearchResultsReturn {
       setError(null);
 
       try {
-        // Parallel API calls
+        // Parallel API calls with abort signal
         const [movieResponse, tvResponse, gameResponse, musicResponse, bookResponse] = await Promise.all([
-          videoActions.searchMovies({ query: searchQueryForThisRequest, page_size: 20 }),
-          videoActions.searchTVShows({ query: searchQueryForThisRequest, page_size: 20 }),
-          gameActions.search({ query: searchQueryForThisRequest, page_size: 20 }),
-          musicActions.search({ query: searchQueryForThisRequest, page_size: 20 }),
-          bookActions.search({ query: searchQueryForThisRequest, page_size: 20 }),
+          videoActions.searchMovies({ query: searchQueryForThisRequest, page_size: 20 }, signal),
+          videoActions.searchTVShows({ query: searchQueryForThisRequest, page_size: 20 }, signal),
+          gameActions.search({ query: searchQueryForThisRequest, page_size: 20 }, signal),
+          musicActions.search({ query: searchQueryForThisRequest, page_size: 20 }, signal),
+          bookActions.search({ query: searchQueryForThisRequest, page_size: 20 }, signal),
         ]);
 
         // Check if this is still the current search (prevent race conditions)
@@ -72,6 +76,11 @@ export function useSearchResults(query: string): UseSearchResultsReturn {
           books: transformBookResults(bookResponse.results),
         });
       } catch (err) {
+        // Ignore abort errors (expected when user types quickly)
+        if (err instanceof Error && err.name === 'AbortError') {
+          return;
+        }
+
         // Only update error if this is still the current search
         if (currentSearchQueryRef.current === searchQueryForThisRequest) {
           setError(err instanceof Error ? err.message : "An error occurred while searching");
@@ -86,6 +95,11 @@ export function useSearchResults(query: string): UseSearchResultsReturn {
     };
 
     performSearch();
+
+    // Cleanup: abort pending request when query changes or component unmounts
+    return () => {
+      controller.abort();
+    };
   }, [query]);
 
   const hasResults = (

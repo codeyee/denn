@@ -22,45 +22,65 @@ export function PaginationControls({
   }
 
   return (
-    <div className={cn("flex items-center gap-1", className)}>
+    <div className={cn("inline-flex items-center gap-1 bg-white/5 rounded-lg p-1", className)}>
       <button
         onClick={() => onPageChange(1)}
         disabled={isFirstPage}
-        className="p-1 rounded cursor-pointer bg-white/5 hover:bg-white/10 text-white border border-white/20 disabled:opacity-30 disabled:cursor-not-allowed"
+        className={cn(
+          "p-1.5 rounded transition-colors cursor-pointer",
+          isFirstPage
+            ? "text-white/30 cursor-not-allowed"
+            : "text-white/60 hover:text-white hover:bg-white/10"
+        )}
         title="First page"
         aria-label="Go to first page"
       >
-        <ChevronsLeft className="w-3 h-3" />
+        <ChevronsLeft className="w-4 h-4" />
       </button>
       <button
         onClick={() => onPageChange(currentPage - 1)}
         disabled={isFirstPage}
-        className="p-1 rounded cursor-pointer bg-white/5 hover:bg-white/10 text-white border border-white/20 disabled:opacity-30 disabled:cursor-not-allowed"
+        className={cn(
+          "p-1.5 rounded transition-colors cursor-pointer",
+          isFirstPage
+            ? "text-white/30 cursor-not-allowed"
+            : "text-white/60 hover:text-white hover:bg-white/10"
+        )}
         title="Previous page"
         aria-label="Go to previous page"
       >
-        <ChevronLeft className="w-3 h-3" />
+        <ChevronLeft className="w-4 h-4" />
       </button>
-      <span className="text-xs text-white/60 px-1 min-w-[60px] text-center">
+      <span className="text-xs text-white font-medium px-2 min-w-[60px] text-center">
         {currentPage}/{totalPages}
       </span>
       <button
         onClick={() => onPageChange(currentPage + 1)}
         disabled={isLastPage}
-        className="p-1 rounded cursor-pointer bg-white/5 hover:bg-white/10 text-white border border-white/20 disabled:opacity-30 disabled:cursor-not-allowed"
+        className={cn(
+          "p-1.5 rounded transition-colors cursor-pointer",
+          isLastPage
+            ? "text-white/30 cursor-not-allowed"
+            : "text-white/60 hover:text-white hover:bg-white/10"
+        )}
         title="Next page"
         aria-label="Go to next page"
       >
-        <ChevronRight className="w-3 h-3" />
+        <ChevronRight className="w-4 h-4" />
       </button>
       <button
         onClick={() => onPageChange(totalPages)}
         disabled={isLastPage}
-        className="p-1 rounded cursor-pointer bg-white/5 hover:bg-white/10 text-white border border-white/20 disabled:opacity-30 disabled:cursor-not-allowed"
+        className={cn(
+          "p-1.5 rounded transition-colors cursor-pointer",
+          isLastPage
+            ? "text-white/30 cursor-not-allowed"
+            : "text-white/60 hover:text-white hover:bg-white/10"
+        )}
         title="Last page"
         aria-label="Go to last page"
       >
-        <ChevronsRight className="w-3 h-3" />
+        <ChevronsRight className="w-4 h-4" />
       </button>
     </div>
   );

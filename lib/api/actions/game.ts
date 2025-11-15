@@ -7,7 +7,7 @@ import type {
 } from "@/lib/types";
 
 export const gameActions = {
-  search: (params: GameSearchParams): Promise<GameSearchResponse> => {
+  search: (params: GameSearchParams, signal?: AbortSignal): Promise<GameSearchResponse> => {
     const queryParams = new URLSearchParams();
     queryParams.append("query", params.query);
     if (params.page) queryParams.append("page", String(params.page));
@@ -15,7 +15,8 @@ export const gameActions = {
 
     return api.get<GameSearchResponse>(
       `/proxy/games/search?${queryParams}`,
-      true
+      true,
+      signal
     );
   },
 

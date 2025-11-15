@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useListsStore } from "@/app/_stores/lists-store";
 import { listActions, ratingActions } from "@/lib/api";
-import { ListType, ItemStatus, User } from "@/lib/types";
+import { ListType, ItemStatus, User, RatingCreate } from "@/lib/types";
 import { ListItem, MemberRating } from "@/lib/types";
 
 interface UseListItemActionsOptions {
@@ -20,7 +20,7 @@ interface UseListItemActionsReturn {
   handleDeleteList: () => Promise<void>;
   handleDeleteItem: (itemId: number) => Promise<void>;
   handleToggleItemStatus: (itemId: number, currentStatus: string) => Promise<void>;
-  handleRateItem: (item: ListItem, rating: number) => Promise<void>;
+  handleSubmitRating: (item: ListItem, data: RatingCreate) => Promise<void>;
 }
 
 export function useListItemActions({
@@ -120,18 +120,13 @@ export function useListItemActions({
     }
   };
 
-  const handleRateItem = async (item: ListItem, rating: number) => {
+  const handleSubmitRating = async (item: ListItem, data: RatingCreate) => {
     if (!currentUserId) return;
 
     try {
-      const contentItem = item.content_item;
-      await ratingActions.create({
-        source_api: contentItem.source_api,
-        external_id: String(contentItem.external_id),
-        content_type: contentItem.content_type,
-        score: String(rating),
-      });
+      await ratingActions.create(data);
 
+      // Optimistically update the list items
       setListItems((prev) =>
         prev.map((prevItem) =>
           prevItem.id === item.id
@@ -144,7 +139,7 @@ export function useListItemActions({
                     : []),
                   {
                     user: { id: currentUserId } as User,
-                    rating: rating,
+                    rating: parseFloat(data.score),
                   },
                 ] as MemberRating[],
               }
@@ -152,10 +147,12 @@ export function useListItemActions({
         )
       );
 
+      // Fetch fresh data to ensure consistency
       const listData = await listActions.get(listId);
       setListItems(listData.items as ListItem[]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to rate item");
+      throw err;
     }
   };
 
@@ -166,6 +163,6 @@ export function useListItemActions({
     handleDeleteList,
     handleDeleteItem,
     handleToggleItemStatus,
-    handleRateItem,
+    handleSubmitRating,
   };
 }
