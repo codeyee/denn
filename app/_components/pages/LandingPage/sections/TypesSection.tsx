@@ -1,8 +1,8 @@
 "use client";
 
 import { motion } from "motion/react";
-import { LandingCard } from "@/app/_components/cards/LandingCard";
-import { useContentTypes } from "./hooks/useContentTypes";
+import { LandingCard } from "@/app/_components/common/cards/LandingCard";
+import { useContentTypes } from "../hooks/useContentTypes";
 
 const ANIMATION_VARIANTS = {
   fadeInUp: {

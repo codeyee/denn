@@ -1,8 +1,8 @@
 "use client";
 
-import { HeroSection } from "./HeroSection";
-import { TypesSection } from "./TypesSection";
-import { FeaturesSection } from "./FeaturesSection";
+import { HeroSection } from "./sections/HeroSection";
+import { TypesSection } from "./sections/TypesSection";
+import { FeaturesSection } from "./sections/FeaturesSection";
 import { Footer } from "../../layout/Footer";
 
 export function LandingPage() {

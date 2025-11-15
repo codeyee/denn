@@ -1,4 +1,4 @@
-import { ContentCard } from "../../../cards/ContentCard";
+import { ContentCard } from "../../../common/cards/ContentCard";
 import { Carousel } from "../../../common/ui/Carousel";
 import type { MovieDetail, TVShowDetail, GameDetail, AlbumDetail, BookDetail } from "@/lib/api/types";
 
