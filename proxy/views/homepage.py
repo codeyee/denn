@@ -18,8 +18,9 @@ from proxy.mappers.spotify import SpotifyMapper
 from proxy.mappers.tmdb import TMDBMapper
 from proxy.serializers import HomepageResponseSerializer, ErrorResponseSerializer
 
+from proxy.views.base import DynamicFieldsMixin
 
-class HomepageView(APIView):
+class HomepageView(DynamicFieldsMixin, APIView):
 
     CACHE_CONFIG = {
         'cache_type': 'homepage',
@@ -96,6 +97,10 @@ class HomepageView(APIView):
         movies, tv, games, albums, books = self._enrich_data(movies, tv, games, albums, books, country)
 
         response_data = self._format_response(movies, tv, games, albums, books)
+        
+        # Apply dynamic fields
+        response_data = self.apply_dynamic_fields(response_data, request)
+        
         return Response(response_data, status=http_status.HTTP_200_OK)
 
     def _get_valid_params(self, request) -> Tuple[int, Optional[str]]:
