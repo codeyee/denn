@@ -22,13 +22,25 @@ from rest_flex_fields.views import FlexFieldsMixin
         **Optional Query Parameters:**
         - `items_size`: Number of items to include per list (0 or not set = don't fetch items, >0 = fetch that many items, default: 0)
         - `country`: ISO 3166-1 alpha-2 country code (e.g., US, GB, FR) to filter providers by country (only applies when source_api=tmdb).
-        - `fields`: Comma-separated list of fields to include.
-        - `omit`: Comma-separated list of fields to exclude.
-        - `expand`: Comma-separated list of relationships to expand (e.g., `owner`, `items`).
+
+        **Dynamic Fields (drf-flex-fields):**
+        - `fields`: Comma-separated list of fields to include
+        - `omit`: Comma-separated list of fields to exclude
+        - `expand`: Comma-separated list of relationships to expand
+
+        **Examples:**
+        - `?fields=id,name,list_type` - Return only basic list info
+        - `?omit=created_at,updated_at` - Exclude timestamp fields
+        - `?expand=owner` - Expand owner relationship with full user details
+        - `?expand=items&items_size=5` - Expand first 5 items with full details
+        - `?expand=owner,members&fields=id,name,owner,members` - Expand relationships and limit fields
         ''',
         parameters=[
             OpenApiParameter('items_size', OpenApiTypes.INT, OpenApiParameter.QUERY, required=False, description='Number of items to include per list (0 or not set = no items, >0 = fetch that many items, default: 0)'),
-            OpenApiParameter('country', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='ISO 3166-1 alpha-2 country code to filter providers by country (only applies when source_api=tmdb)')
+            OpenApiParameter('country', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='ISO 3166-1 alpha-2 country code to filter providers by country (only applies when source_api=tmdb)'),
+            OpenApiParameter('fields', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Comma-separated list of fields to include (e.g., "id,name,list_type")'),
+            OpenApiParameter('omit', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Comma-separated list of fields to exclude (e.g., "created_at,updated_at")'),
+            OpenApiParameter('expand', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Comma-separated list of relationships to expand (e.g., "owner,items,members")')
         ],
         responses={200: UserListSerializer(many=True)}
     ),
@@ -41,12 +53,23 @@ from rest_flex_fields.views import FlexFieldsMixin
 
         **Optional Query Parameters:**
         - `country`: ISO 3166-1 alpha-2 country code (e.g., US, GB, FR) to filter providers by country (only applies when source_api=tmdb).
-        - `fields`: Comma-separated list of fields to include.
-        - `omit`: Comma-separated list of fields to exclude.
-        - `expand`: Comma-separated list of relationships to expand.
+
+        **Dynamic Fields (drf-flex-fields):**
+        - `fields`: Comma-separated list of fields to include
+        - `omit`: Comma-separated list of fields to exclude
+        - `expand`: Comma-separated list of relationships to expand
+
+        **Examples:**
+        - `?fields=id,name,items` - Return only basic list info with items
+        - `?expand=owner,members` - Expand owner and members relationships
+        - `?omit=items` - Exclude items from response
+        - `?expand=items&fields=id,name,items.id,items.status` - Expand items but limit fields
         ''',
         parameters=[
-            OpenApiParameter('country', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='ISO 3166-1 alpha-2 country code to filter providers by country (only applies when source_api=tmdb)')
+            OpenApiParameter('country', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='ISO 3166-1 alpha-2 country code to filter providers by country (only applies when source_api=tmdb)'),
+            OpenApiParameter('fields', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Comma-separated list of fields to include'),
+            OpenApiParameter('omit', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Comma-separated list of fields to exclude'),
+            OpenApiParameter('expand', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Comma-separated list of relationships to expand (e.g., "owner,items,members")')
         ],
         responses={
             200: UserListDetailSerializer,

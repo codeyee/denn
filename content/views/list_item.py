@@ -23,21 +23,37 @@ from rest_flex_fields.views import FlexFieldsMixin
         - `country`: ISO 3166-1 alpha-2 country code (e.g., US, GB, FR) to filter providers by country (only applies when source_api=tmdb).
         - `page`: Page number (default: 1)
         - `page_size`: Number of items per page (default: 20, max: 100). Set to 0 to fetch all items without pagination.
-        - `fields`: Comma-separated list of fields to include (e.g., `id,status`).
-        - `omit`: Comma-separated list of fields to exclude.
-        - `expand`: Comma-separated list of relationships to expand (e.g., `content_item`).
+
+        **Dynamic Fields (drf-flex-fields):**
+        - `fields`: Comma-separated list of fields to include
+        - `omit`: Comma-separated list of fields to exclude
+        - `expand`: Comma-separated list of relationships to expand (e.g., `content_item`, `user_list`, `added_by`)
+        - `source_fields`: Comma-separated list of fields to include from external API data (supports dot notation)
 
         **Pagination:**
         - Default: 20 items per page
         - Maximum: 100 items per page
         - Special: Use `page_size=0` to bypass pagination and fetch all items (useful for reordering)
 
+        **Examples:**
+        - `?fields=id,status,notes` - Return only basic item info
+        - `?omit=member_ratings` - Exclude member ratings from response
+        - `?expand=content_item` - Expand content_item relationship with full details
+        - `?expand=content_item&fields=id,status,content_item.source_data` - Expand content item and only return source data
+        - `?expand=content_item&source_fields=title,cover.url` - Expand content and filter external API data to only title and cover URL
+        - `?expand=content_item,added_by&fields=id,content_item,added_by.username` - Expand multiple relationships with field selection
+        - `?source_fields=title,release_date,genres.name` - Filter source_data to specific fields (works with dot notation for nested data)
+
         **Performance Note:** Using `page_size=0` on lists with many items (>200) may impact performance. A warning will be logged for large lists.
         ''',
         parameters=[
             OpenApiParameter('country', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='ISO 3166-1 alpha-2 country code to filter providers by country (only applies when source_api=tmdb)'),
             OpenApiParameter('page', OpenApiTypes.INT, OpenApiParameter.QUERY, required=False, description='Page number (default: 1)'),
-            OpenApiParameter('page_size', OpenApiTypes.INT, OpenApiParameter.QUERY, required=False, description='Number of items per page (default: 20, max: 100). Set to 0 to fetch all items without pagination.')
+            OpenApiParameter('page_size', OpenApiTypes.INT, OpenApiParameter.QUERY, required=False, description='Number of items per page (default: 20, max: 100). Set to 0 to fetch all items without pagination.'),
+            OpenApiParameter('fields', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Comma-separated list of fields to include (e.g., "id,status")'),
+            OpenApiParameter('omit', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Comma-separated list of fields to exclude'),
+            OpenApiParameter('expand', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Comma-separated list of relationships to expand (e.g., "content_item,added_by")'),
+            OpenApiParameter('source_fields', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Comma-separated list of fields to include from external API source_data. Supports dot notation (e.g., "title,cover.url,genres.name")')
         ],
         responses={
             200: ListItemSerializer(many=True),
@@ -54,12 +70,25 @@ from rest_flex_fields.views import FlexFieldsMixin
 
         **Optional Query Parameters:**
         - `country`: ISO 3166-1 alpha-2 country code (e.g., US, GB, FR) to filter providers by country (only applies when source_api=tmdb).
-        - `fields`: Comma-separated list of fields to include.
-        - `omit`: Comma-separated list of fields to exclude.
-        - `expand`: Comma-separated list of relationships to expand.
+
+        **Dynamic Fields (drf-flex-fields):**
+        - `fields`: Comma-separated list of fields to include
+        - `omit`: Comma-separated list of fields to exclude
+        - `expand`: Comma-separated list of relationships to expand
+        - `source_fields`: Filter external API source_data to specific fields
+
+        **Examples:**
+        - `?fields=id,status,content_item` - Return basic item info with content item
+        - `?expand=content_item,added_by` - Expand content item and user who added it
+        - `?source_fields=title,cover.url,runtime` - Filter source_data to specific fields only
+        - `?expand=content_item&source_fields=title,genres.name,providers.provider_name` - Expand and filter nested external API data
         ''',
         parameters=[
-            OpenApiParameter('country', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='ISO 3166-1 alpha-2 country code to filter providers by country (only applies when source_api=tmdb)')
+            OpenApiParameter('country', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='ISO 3166-1 alpha-2 country code to filter providers by country (only applies when source_api=tmdb)'),
+            OpenApiParameter('fields', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Comma-separated list of fields to include'),
+            OpenApiParameter('omit', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Comma-separated list of fields to exclude'),
+            OpenApiParameter('expand', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Comma-separated list of relationships to expand'),
+            OpenApiParameter('source_fields', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Filter source_data fields. Supports dot notation (e.g., "title,cover.url")')
         ],
         responses={200: ListItemSerializer}
     ),
