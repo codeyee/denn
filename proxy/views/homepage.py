@@ -64,11 +64,15 @@ class HomepageView(DynamicFieldsMixin, APIView):
         Use the `fields` parameter to select specific fields and reduce response payload size.
         Supports dot notation for nested fields across all content types.
 
+        **Image Size Limiting:**
+        - `images_size` - Limit the number of images returned in image lists.
+
         **Examples:**
         - `?fields=movies,tv_shows` - Return only movies and TV shows sections
         - `?fields=movies.id,movies.title,games.id,games.name` - Get specific fields from multiple categories
         - `?fields=movies.cover.url,tv_shows.cover.url` - Get only cover URLs from movies and TV shows
         - `?limit=5&fields=movies.id,movies.title,movies.cover.url` - Combine limit with field selection
+        - `?images_size=4` - Limit images to 4 per list
 
         **Note:** Field filtering is applied to the entire response structure. You can filter both top-level categories (movies, tv_shows, games, albums, books) and their nested fields.
         ''',
@@ -93,6 +97,13 @@ class HomepageView(DynamicFieldsMixin, APIView):
                 OpenApiParameter.QUERY,
                 required=False,
                 description='Comma-separated list of fields to include. Supports dot notation for nested fields (e.g., "movies.id,movies.title,tv_shows.cover.url")'
+            ),
+            OpenApiParameter(
+                'images_size',
+                OpenApiTypes.INT,
+                OpenApiParameter.QUERY,
+                required=False,
+                description='Maximum number of images to return in the images list (default: 18)'
             )
         ],
         responses={
@@ -106,14 +117,14 @@ class HomepageView(DynamicFieldsMixin, APIView):
     )
     def get(self, request):
         try:
-            limit, country = self._get_valid_params(request)
+            limit, country, images_size = self._get_valid_params(request)
         except InvalidParameterException as e:
             return Response({'error': str(e)}, status=http_status.HTTP_400_BAD_REQUEST)
 
         self.clients = self._initialize_clients()
 
         movies, tv, games, albums, books = self._fetch_initial_data(limit, country)
-        movies, tv, games, albums, books = self._enrich_data(movies, tv, games, albums, books, country)
+        movies, tv, games, albums, books = self._enrich_data(movies, tv, games, albums, books, country, images_size)
 
         response_data = self._format_response(movies, tv, games, albums, books)
         
@@ -122,10 +133,11 @@ class HomepageView(DynamicFieldsMixin, APIView):
         
         return Response(response_data, status=http_status.HTTP_200_OK)
 
-    def _get_valid_params(self, request) -> Tuple[int, Optional[str]]:
+    def _get_valid_params(self, request) -> Tuple[int, Optional[str], int]:
         limit = self._validate_limit(request)
         country = self._validate_country(request)
-        return limit, country
+        images_size = self._validate_images_size(request)
+        return limit, country, images_size
 
     def _validate_limit(self, request) -> int:
         try:
@@ -141,6 +153,15 @@ class HomepageView(DynamicFieldsMixin, APIView):
         if country and (len(country) != 2 or not country.isalpha()):
             raise InvalidParameterException('Country must be a valid ISO 3166-1 alpha-2 code')
         return country.upper() if country else None
+
+    def _validate_images_size(self, request) -> int:
+        try:
+            images_size = int(request.query_params.get('images_size', 18))
+            if images_size < 0:
+                raise InvalidParameterException('images_size must be a positive integer')
+            return images_size
+        except ValueError:
+            raise InvalidParameterException('images_size must be a valid integer')
 
     def _initialize_clients(self) -> Dict[str, Any]:
         clients = {}
@@ -307,7 +328,7 @@ class HomepageView(DynamicFieldsMixin, APIView):
             print(f"Error fetching OpenLibrary books: {e}")
         return []
 
-    def _enrich_data(self, movies: List, tv: List, games: List, albums: List, books: List, country: Optional[str]) -> Tuple[List, List, List, List, List]:
+    def _enrich_data(self, movies: List, tv: List, games: List, albums: List, books: List, country: Optional[str], images_size: int) -> Tuple[List, List, List, List, List]:
         with ThreadPoolExecutor(max_workers=10) as executor:
             tmdb_movie_futures = self._launch_tmdb_enrichment(
                 executor,
@@ -352,11 +373,11 @@ class HomepageView(DynamicFieldsMixin, APIView):
             spotify_map = self._get_future_result_safe(spotify_future, {})
             openlibrary_map = self._get_future_result_safe(openlibrary_future, {})
 
-            movies = self._process_tmdb_enrichment(movies, tmdb_movie_futures)
-            tv = self._process_tmdb_enrichment(tv, tmdb_tv_futures)
-            games = self._apply_details_map(games, igdb_map)
-            albums = self._apply_details_map(albums, spotify_map)
-            books = self._apply_details_map(books, openlibrary_map)
+            movies = self._process_tmdb_enrichment(movies, tmdb_movie_futures, images_size)
+            tv = self._process_tmdb_enrichment(tv, tmdb_tv_futures, images_size)
+            games = self._apply_details_map(games, igdb_map, images_size)
+            albums = self._apply_details_map(albums, spotify_map, images_size)
+            books = self._apply_details_map(books, openlibrary_map, images_size)
 
         return movies, tv, games, albums, books
 
@@ -377,7 +398,7 @@ class HomepageView(DynamicFieldsMixin, APIView):
                 f"Error launching TMDB enrichment for {mapper_method_name}: {e}")
         return futures
 
-    def _process_tmdb_enrichment(self, items: List, futures: Dict) -> List[Dict]:
+    def _process_tmdb_enrichment(self, items: List, futures: Dict, images_size: int) -> List[Dict]:
         if not futures:
             return items
 
@@ -390,12 +411,13 @@ class HomepageView(DynamicFieldsMixin, APIView):
             try:
                 detail_obj, status = fut.result()
                 if status == http_status.HTTP_200_OK and detail_obj:
-                    enriched_items[idx] = detail_obj.to_dict()
+                    enriched_items[idx] = detail_obj.to_dict(images_size=images_size)
             except Exception as e:
                 print(f"Error resolving TMDB detail for {item_id}: {e}")
         return enriched_items
 
-    def _fetch_bulk_details(self, items: List, client: Optional[object], mapper: Optional[object], client_method_name: str, item_id_key: str, result_id_key: str, result_list_key: Optional[str] = None) -> Dict[str, Dict]:
+    def _fetch_bulk_details(self, items: List, client: Optional[object], mapper: Optional[object], client_method_name: str, item_id_key: str, result_id_key: str, result_list_key: Optional[str] = None) -> Dict[str, object]:
+        # Note: Returns object (Model instance), not Dict, so we can call to_dict with images_size later
         if not client or not mapper or not items:
             return {}
 
@@ -420,15 +442,15 @@ class HomepageView(DynamicFieldsMixin, APIView):
             for item_data in results_list:
                 item_id = item_data.get(result_id_key)
                 if item_id:
-                    details_map[str(item_id)] = mapper.map_detail(
-                        item_data).to_dict()
+                    # Map to model object, don't call to_dict() here
+                    details_map[str(item_id)] = mapper.map_detail(item_data)
             return details_map
 
         except Exception as e:
             print(f"Error fetching bulk details for {client_method_name}: {e}")
             return {}
 
-    def _fetch_openlibrary_books_details(self, books: List, client: Optional[OpenLibraryClient], mapper: Optional[OpenLibraryMapper]) -> Dict[str, Dict]:
+    def _fetch_openlibrary_books_details(self, books: List, client: Optional[OpenLibraryClient], mapper: Optional[OpenLibraryMapper]) -> Dict[str, object]:
         if not client or not mapper or not books:
             return {}
 
@@ -452,7 +474,8 @@ class HomepageView(DynamicFieldsMixin, APIView):
 
                 try:
                     bid = key.split('/')[-1]
-                    details_map[bid] = mapper.map_detail(book_data).to_dict()
+                    # Map to model object, don't call to_dict() here
+                    details_map[bid] = mapper.map_detail(book_data)
                 except Exception:
                     continue
             return details_map
@@ -461,7 +484,7 @@ class HomepageView(DynamicFieldsMixin, APIView):
             print(f"Error fetching OpenLibrary details: {e}")
             return {}
 
-    def _apply_details_map(self, items: List, details_map: Dict) -> List[Dict]:
+    def _apply_details_map(self, items: List, details_map: Dict, images_size: int) -> List[Dict]:
         if not details_map:
             return items
 
@@ -469,7 +492,13 @@ class HomepageView(DynamicFieldsMixin, APIView):
         for idx, item in enumerate(enriched_items):
             item_id = item.get('id')
             if item_id and str(item_id) in details_map:
-                enriched_items[idx] = details_map[str(item_id)]
+                # Call to_dict with images_size here
+                obj = details_map[str(item_id)]
+                if hasattr(obj, 'to_dict'):
+                    enriched_items[idx] = obj.to_dict(images_size=images_size)
+                elif isinstance(obj, dict):
+                     # Fallback if it's already a dict (shouldn't happen with updated logic)
+                     enriched_items[idx] = obj
         return enriched_items
 
     def _format_response(self, movies: List, tv: List, games: List, albums: List, books: List) -> Dict[str, List]:
