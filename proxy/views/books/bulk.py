@@ -33,7 +33,16 @@ class BookBulkView(OpenLibraryBaseView):
     @extend_schema(
         tags=['Proxy - Books'],
         summary='Bulk get book details',
-        description='Retrieve detailed information about multiple books from OpenLibrary in a single request. Returns a list of book details. Use OpenLibrary work IDs (e.g., "OL28346580W").',
+        description='''
+        Retrieve detailed information about multiple books from OpenLibrary in a single request. Returns a list of book details. Use OpenLibrary work IDs (e.g., "OL28346580W").
+
+        **Dynamic Field Selection:**
+        Use the `fields` parameter to optimize the response by selecting only the fields you need.
+
+        **Examples:**
+        - `?ids=OL28346580W,OL45883W&fields=id,title,author_name` - Get basic info for multiple books
+        - `?ids=OL28346580W,OL45883W&fields=id,title,cover.url` - Include cover URLs
+        ''',
         parameters=[
             OpenApiParameter(
                 'ids',
@@ -41,6 +50,13 @@ class BookBulkView(OpenLibraryBaseView):
                 OpenApiParameter.QUERY,
                 required=True,
                 description='Comma-separated list of OpenLibrary work IDs (e.g., "OL28346580W,OL45883W,OL82563W")'
+            ),
+            OpenApiParameter(
+                'fields',
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
+                required=False,
+                description='Comma-separated list of fields to include. Supports dot notation for nested fields (e.g., "id,title,cover.url")'
             )
         ],
         responses={
@@ -63,4 +79,5 @@ class BookBulkView(OpenLibraryBaseView):
             if result['status_code'] == 200 and result['data']:
                 books.append(mapper.map_detail(result['data']).to_dict())
 
+        books = self.apply_dynamic_fields(books, request)
         return Response(books, status=http_status.HTTP_200_OK)

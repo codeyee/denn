@@ -38,11 +38,21 @@ class GameSearchView(IGDBBaseView):
         Search for video games by title using IGDB.
 
         Note: IGDB doesn't provide total result counts, so count and total_pages may be null.
+
+        **Dynamic Field Selection:**
+        Use the `fields` parameter to select specific fields and reduce response payload size.
+        Supports dot notation for nested fields.
+
+        **Examples:**
+        - `?fields=id,name,release_date` - Return only basic info
+        - `?fields=id,name,cover.url` - Include nested cover URL
+        - `?fields=id,name,genres.name` - Get all genre names from genres array
         ''',
         parameters=[
             OpenApiParameter('query', OpenApiTypes.STR, required=True, description='Search query'),
             OpenApiParameter('page_size', OpenApiTypes.INT, description='Results per page (1-500, default: 20)'),
-            OpenApiParameter('page', OpenApiTypes.INT, description='Page number (default: 1)')
+            OpenApiParameter('page', OpenApiTypes.INT, description='Page number (default: 1)'),
+            OpenApiParameter('fields', OpenApiTypes.STR, required=False, description='Comma-separated list of fields to include. Supports dot notation for nested fields (e.g., "id,name,cover.url")')
         ],
         responses={
             200: GameSearchResponseSerializer,
@@ -68,6 +78,9 @@ class GameSearchView(IGDBBaseView):
             return Response(data, status=status_code)
 
         results = [mapper.map_search_item(item).to_dict() for item in data]
+
+        # Apply dynamic fields to the results list
+        results = self.apply_dynamic_fields(results, request)
 
         # IGDB doesn't provide totals, so we pass None for total_results
         metadata = build_pagination_metadata(

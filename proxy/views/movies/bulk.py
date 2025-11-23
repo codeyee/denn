@@ -43,7 +43,16 @@ class MovieBulkView(TMDBBaseView):
     @extend_schema(
         tags=['Proxy - Movies'],
         summary='Bulk get movie details',
-        description='Retrieve detailed information about multiple movies from TMDB in a single request. Returns a list of movie details.',
+        description='''
+        Retrieve detailed information about multiple movies from TMDB in a single request. Returns a list of movie details.
+
+        **Dynamic Field Selection:**
+        Use the `fields` parameter to optimize the response by selecting only the fields you need.
+
+        **Examples:**
+        - `?ids=550,680&fields=id,title,release_date` - Get basic info for multiple movies
+        - `?ids=550,680&fields=id,title,cover.url&country=US` - Include cover URLs and US providers
+        ''',
         parameters=[
             OpenApiParameter(
                 'ids',
@@ -58,6 +67,13 @@ class MovieBulkView(TMDBBaseView):
                 OpenApiParameter.QUERY,
                 required=False,
                 description='ISO 3166-1 alpha-2 country code (e.g., US, GB, FR) to filter providers by country'
+            ),
+            OpenApiParameter(
+                'fields',
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
+                required=False,
+                description='Comma-separated list of fields to include. Supports dot notation for nested fields (e.g., "id,title,cover.url")'
             )
         ],
         responses={

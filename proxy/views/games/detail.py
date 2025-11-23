@@ -12,9 +12,21 @@ class GameDetailView(IGDBBaseView):
     @extend_schema(
         tags=['Proxy - Games'],
         summary='Get game details',
-        description='Retrieve detailed information about a specific game from IGDB.',
+        description='''
+        Retrieve detailed information about a specific game from IGDB.
+
+        **Dynamic Field Selection:**
+        Use the `fields` parameter to select specific fields and reduce response payload size.
+        Supports dot notation for nested fields.
+
+        **Examples:**
+        - `?fields=id,name,summary` - Return only basic info
+        - `?fields=id,name,cover.url,screenshots.url` - Include specific image URLs
+        - `?fields=id,name,genres.name,platforms.name` - Get only specific nested fields
+        ''',
         parameters=[
-            OpenApiParameter('game_id', OpenApiTypes.INT, OpenApiParameter.PATH, required=True, description='IGDB game ID')
+            OpenApiParameter('game_id', OpenApiTypes.INT, OpenApiParameter.PATH, required=True, description='IGDB game ID'),
+            OpenApiParameter('fields', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Comma-separated list of fields to include. Supports dot notation for nested fields (e.g., "id,name,cover.url")')
         ],
         responses={
             200: GameDetailSerializer,
@@ -37,9 +49,13 @@ class GameDetailView(IGDBBaseView):
 
         if isinstance(data, list) and len(data) > 0:
             game = mapper.map_detail(data[0])
-            return Response(game.to_dict(), status=http_status.HTTP_200_OK)
+            game_dict = game.to_dict()
+            game_dict = self.apply_dynamic_fields(game_dict, request)
+            return Response(game_dict, status=http_status.HTTP_200_OK)
         elif isinstance(data, dict):
             game = mapper.map_detail(data)
-            return Response(game.to_dict(), status=http_status.HTTP_200_OK)
+            game_dict = game.to_dict()
+            game_dict = self.apply_dynamic_fields(game_dict, request)
+            return Response(game_dict, status=http_status.HTTP_200_OK)
 
         raise NotFoundException('Game')

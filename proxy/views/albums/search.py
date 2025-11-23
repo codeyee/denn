@@ -38,11 +38,21 @@ class AlbumSearchView(SpotifyBaseView):
         Search for music albums on Spotify.
 
         Results are filtered to show only albums and EPs (excludes singles).
+
+        **Dynamic Field Selection:**
+        Use the `fields` parameter to select specific fields and reduce response payload size.
+        Supports dot notation for nested fields.
+
+        **Examples:**
+        - `?fields=id,name,release_date` - Return only basic info
+        - `?fields=id,name,cover.url` - Include nested cover URL
+        - `?fields=id,name,artists.name` - Get all artist names from artists array
         ''',
         parameters=[
             OpenApiParameter('query', OpenApiTypes.STR, required=True, description='Search query'),
             OpenApiParameter('page_size', OpenApiTypes.INT, description='Results per page (1-50, default: 20)'),
-            OpenApiParameter('page', OpenApiTypes.INT, description='Page number (default: 1)')
+            OpenApiParameter('page', OpenApiTypes.INT, description='Page number (default: 1)'),
+            OpenApiParameter('fields', OpenApiTypes.STR, required=False, description='Comma-separated list of fields to include. Supports dot notation for nested fields (e.g., "id,name,cover.url")')
         ],
         responses={
             200: AlbumSearchResponseSerializer,
@@ -74,6 +84,9 @@ class AlbumSearchView(SpotifyBaseView):
             if album_type != 'single':
                 search_item = mapper.map_search_item(album)
                 filtered_albums.append(search_item.to_dict())
+
+        # Apply dynamic fields to the results list
+        filtered_albums = self.apply_dynamic_fields(filtered_albums, request)
 
         metadata = build_pagination_metadata(
             request=request,

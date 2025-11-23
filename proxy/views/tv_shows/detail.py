@@ -13,7 +13,21 @@ class TVShowDetailView(TMDBBaseView):
     @extend_schema(
         tags=['Proxy - TV Shows'],
         summary='Get TV show details',
-        description='Retrieve detailed information about a specific TV show including all seasons.',
+        description='''
+        Retrieve detailed information about a specific TV show including all seasons.
+
+        **Expand Parameter:**
+        - `expand=seasons` - Fetch full season details with all episodes (equivalent to calling /season/:season_number for each season)
+
+        **Dynamic Field Selection:**
+        - `fields` - Select specific fields to return, reducing payload size. Supports dot notation.
+
+        **Examples:**
+        - `?expand=seasons` - Get TV show with full season and episode details
+        - `?fields=id,title,seasons.name,seasons.episodes.title` - Get specific nested fields from expanded seasons
+        - `?expand=seasons&fields=id,title,seasons.episodes.title&country=US` - Combine expand, fields, and country filter
+        - `?fields=id,title,cover.url,external_ids.imdb_id` - Get only basic info with cover and IMDB ID
+        ''',
         parameters=[
             OpenApiParameter(
                 'tv_id',
@@ -28,6 +42,20 @@ class TVShowDetailView(TMDBBaseView):
                 OpenApiParameter.QUERY,
                 required=False,
                 description='ISO 3166-1 alpha-2 country code (e.g., US, GB, FR) to filter providers by country'
+            ),
+            OpenApiParameter(
+                'expand',
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
+                required=False,
+                description='Comma-separated list of relationships to expand. Options: "seasons" (fetches full season details with episodes)'
+            ),
+            OpenApiParameter(
+                'fields',
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
+                required=False,
+                description='Comma-separated list of fields to include. Supports dot notation for nested fields (e.g., "id,title,seasons.episodes.title")'
             )
         ],
         responses={

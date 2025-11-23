@@ -42,7 +42,17 @@ class TVShowBulkView(TMDBBaseView):
     @extend_schema(
         tags=['Proxy - TV Shows'],
         summary='Bulk get TV show details',
-        description='Retrieve detailed information about multiple TV shows from TMDB in a single request. Returns a list of TV show details.',
+        description='''
+        Retrieve detailed information about multiple TV shows from TMDB in a single request. Returns a list of TV show details.
+
+        **Dynamic Field Selection:**
+        Use the `fields` parameter to optimize the response by selecting only the fields you need.
+
+        **Examples:**
+        - `?ids=1396,1668&fields=id,title,first_air_date` - Get basic info for multiple TV shows
+        - `?ids=1396,1668&fields=id,title,cover.url&country=US` - Include cover URLs and US providers
+        - `?ids=1396,1668&fields=id,title,seasons.name` - Include season names only
+        ''',
         parameters=[
             OpenApiParameter(
                 'ids',
@@ -57,6 +67,13 @@ class TVShowBulkView(TMDBBaseView):
                 OpenApiParameter.QUERY,
                 required=False,
                 description='ISO 3166-1 alpha-2 country code (e.g., US, GB, FR) to filter providers by country'
+            ),
+            OpenApiParameter(
+                'fields',
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
+                required=False,
+                description='Comma-separated list of fields to include. Supports dot notation for nested fields (e.g., "id,title,cover.url")'
             )
         ],
         responses={

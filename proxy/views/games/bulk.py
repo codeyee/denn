@@ -33,7 +33,17 @@ class GameBulkView(IGDBBaseView):
     @extend_schema(
         tags=['Proxy - Games'],
         summary='Bulk get game details',
-        description='Retrieve detailed information about multiple games from IGDB in a single request.',
+        description='''
+        Retrieve detailed information about multiple games from IGDB in a single request.
+
+        **Dynamic Field Selection:**
+        Use the `fields` parameter to optimize the response by selecting only the fields you need.
+
+        **Examples:**
+        - `?ids=25076,1020&fields=id,name,release_date` - Get basic info for multiple games
+        - `?ids=25076,1020&fields=id,name,cover.url` - Include cover URLs
+        - `?ids=25076,1020&fields=id,name,genres.name,platforms.name` - Include specific nested fields
+        ''',
         parameters=[
             OpenApiParameter(
                 'ids',
@@ -41,6 +51,13 @@ class GameBulkView(IGDBBaseView):
                 OpenApiParameter.QUERY,
                 required=True,
                 description='Comma-separated list of IGDB game IDs (e.g., "25076,1020,19560")'
+            ),
+            OpenApiParameter(
+                'fields',
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
+                required=False,
+                description='Comma-separated list of fields to include. Supports dot notation for nested fields (e.g., "id,name,cover.url")'
             )
         ],
         responses={
@@ -63,6 +80,7 @@ class GameBulkView(IGDBBaseView):
 
         if isinstance(data, list):
             games = [mapper.map_detail(game).to_dict() for game in data]
+            games = self.apply_dynamic_fields(games, request)
             return Response(games, status=http_status.HTTP_200_OK)
 
         return Response(data, status=status_code)
