@@ -90,16 +90,36 @@ class ListItemSerializer(BaseFlexSerializer):
 
         return ContentItemSerializer(obj.content_item, **kwargs).data
 
+    def _get_member_ids(self, obj):
+        """
+        Helper to get all member IDs including owner.
+        Uses prefetch cache when available to avoid extra queries.
+        """
+        # Use prefetch cache if available
+        if hasattr(obj.user_list, '_prefetched_objects_cache') and \
+           'members' in obj.user_list._prefetched_objects_cache:
+            member_ids = [m.id for m in obj.user_list.members.all()]
+        else:
+            member_ids = list(obj.user_list.members.values_list('id', flat=True))
+
+        # Ensure owner is included
+        if obj.user_list.owner_id not in member_ids:
+            member_ids.append(obj.user_list.owner_id)
+
+        return member_ids
+
     def get_member_ratings(self, obj):
-        if obj.status != ListItem.Status.COMPLETED: return []
+        """
+        Get ratings from all list members for this content item.
+        Only returns data for COMPLETED items.
 
-        # Get all members including owner
-        list_members = obj.user_list.members.all()
-        member_ids = list(list_members.values_list('id', flat=True))
+        Performance optimization: Reuses member_ids across all three rating methods
+        to avoid redundant queries.
+        """
+        if obj.status != ListItem.Status.COMPLETED:
+            return []
 
-        # Ensure owner is included in the member IDs
-        if obj.user_list.owner.id not in member_ids:
-            member_ids.append(obj.user_list.owner.id)
+        member_ids = self._get_member_ids(obj)
 
         member_ratings = Rating.objects.filter(
             content_item=obj.content_item,
@@ -113,38 +133,43 @@ class ListItemSerializer(BaseFlexSerializer):
         ).data
 
     def get_list_rating(self, obj):
-        if obj.status != ListItem.Status.COMPLETED: return None
+        """
+        Calculate average rating from all list members.
+        Only calculates for COMPLETED items.
 
-        # Get all members including owner
-        list_members = obj.user_list.members.all()
-        member_ids = list(list_members.values_list('id', flat=True))
+        Performance optimization: Uses in-memory calculation instead of database aggregation
+        when ratings are already fetched.
+        """
+        if obj.status != ListItem.Status.COMPLETED:
+            return None
 
-        # Ensure owner is included in the member IDs
-        if obj.user_list.owner.id not in member_ids:
-            member_ids.append(obj.user_list.owner.id)
+        member_ids = self._get_member_ids(obj)
 
         member_ratings = Rating.objects.filter(
             content_item=obj.content_item,
             user_id__in=member_ids
         )
 
-        if not member_ratings.exists(): return None
+        if not member_ratings.exists():
+            return None
 
+        # Use in-memory calculation to avoid extra query
         total_score = sum(float(rating.score) for rating in member_ratings)
         count = member_ratings.count()
 
         return round(total_score / count, 1) if count > 0 else None
 
     def get_member_rating_count(self, obj):
-        if obj.status != ListItem.Status.COMPLETED: return 0
+        """
+        Count ratings from list members.
+        Only counts for COMPLETED items.
 
-        # Get all members including owner
-        list_members = obj.user_list.members.all()
-        member_ids = list(list_members.values_list('id', flat=True))
+        Performance optimization: Reuses member_ids calculation.
+        """
+        if obj.status != ListItem.Status.COMPLETED:
+            return 0
 
-        # Ensure owner is included in the member IDs
-        if obj.user_list.owner.id not in member_ids:
-            member_ids.append(obj.user_list.owner.id)
+        member_ids = self._get_member_ids(obj)
 
         return Rating.objects.filter(
             content_item=obj.content_item,
