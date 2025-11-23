@@ -66,7 +66,29 @@ class ListItemSerializer(BaseFlexSerializer):
         }
 
     def get_content_item(self, obj):
-        return ContentItemSerializer(obj.content_item, context=self.context).data
+        kwargs = {'context': self.context}
+        request = self.context.get('request')
+
+        if request:
+            query_fields = request.query_params.get('fields', '')
+            query_expand = request.query_params.get('expand', '')
+
+            # Check for content_item.
+            fields = [f[13:] for f in query_fields.split(',') if f.strip().startswith('content_item.')]
+            expand = [f[13:] for f in query_expand.split(',') if f.strip().startswith('content_item.')]
+
+            # Check for items.content_item. (fallback/support for nested usage if manual pass failed or just to be robust)
+            if not fields:
+                fields = [f[19:] for f in query_fields.split(',') if f.strip().startswith('items.content_item.')]
+            if not expand:
+                expand = [f[19:] for f in query_expand.split(',') if f.strip().startswith('items.content_item.')]
+
+            if fields:
+                kwargs['fields'] = fields
+            if expand:
+                kwargs['expand'] = expand
+
+        return ContentItemSerializer(obj.content_item, **kwargs).data
 
     def get_member_ratings(self, obj):
         if obj.status != ListItem.Status.COMPLETED: return []
@@ -216,4 +238,3 @@ class ListItemCreateSerializer(serializers.ModelSerializer):
         )
 
         return list_item
-
