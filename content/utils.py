@@ -11,39 +11,39 @@ from proxy.views.albums.detail import AlbumDetailView
 from proxy.views.books.detail import BookDetailView
 
 
-def fetch_source_data(content_item: ContentItem, country_code: Optional[str] = None) -> Optional[Dict[str, Any]]:
+def fetch_source_data(content_item: ContentItem, country_code: Optional[str] = None, images_size: Optional[int] = None) -> Optional[Dict[str, Any]]:
     source_api = content_item.source_api
     external_id = content_item.external_id
     content_type = content_item.content_type
 
     try:
         if source_api == ContentItem.SourceAPI.TMDB:
-            return _fetch_tmdb_data(external_id, content_type, country_code=country_code)
+            return _fetch_tmdb_data(external_id, content_type, country_code=country_code, images_size=images_size)
 
         elif source_api == ContentItem.SourceAPI.IGDB:
-            return _fetch_igdb_data(external_id)
+            return _fetch_igdb_data(external_id, images_size=images_size)
 
         elif source_api == ContentItem.SourceAPI.SPOTIFY:
-            return _fetch_spotify_data(external_id)
+            return _fetch_spotify_data(external_id, images_size=images_size)
 
         elif source_api == ContentItem.SourceAPI.OPENLIBRARY:
-            return _fetch_openlibrary_data(external_id)
+            return _fetch_openlibrary_data(external_id, images_size=images_size)
     except Exception:
         return None
 
     return None
 
 
-def _fetch_tmdb_data(external_id: str, content_type: str, country_code: Optional[str] = None) -> Optional[Dict[str, Any]]:
+def _fetch_tmdb_data(external_id: str, content_type: str, country_code: Optional[str] = None, images_size: Optional[int] = None) -> Optional[Dict[str, Any]]:
     try:
         if content_type == ContentItem.ContentType.MOVIE:
-            return _fetch_tmdb_movie_data(external_id, country_code)
+            return _fetch_tmdb_movie_data(external_id, country_code, images_size=images_size)
 
         elif content_type == ContentItem.ContentType.TV_SHOW:
-            return _fetch_tmdb_tv_show_data(external_id, country_code)
+            return _fetch_tmdb_tv_show_data(external_id, country_code, images_size=images_size)
 
         elif content_type == ContentItem.ContentType.SEASON:
-            return _fetch_tmdb_season_data(external_id, country_code)
+            return _fetch_tmdb_season_data(external_id, country_code, images_size=images_size)
 
     except Exception:
         pass
@@ -51,11 +51,17 @@ def _fetch_tmdb_data(external_id: str, content_type: str, country_code: Optional
     return None
 
 
-def _fetch_tmdb_movie_data(external_id: str, country_code: Optional[str] = None) -> Optional[Dict[str, Any]]:
+def _fetch_tmdb_movie_data(external_id: str, country_code: Optional[str] = None, images_size: Optional[int] = None) -> Optional[Dict[str, Any]]:
     try:
         view = MovieDetailView()
         factory = APIRequestFactory()
-        factory_request = factory.get(f'/api/proxy/movies/{external_id}/', {'country': country_code} if country_code else {})
+        params = {}
+        if country_code:
+            params['country'] = country_code
+        if images_size is not None:
+            params['images_size'] = str(images_size)
+            
+        factory_request = factory.get(f'/api/proxy/movies/{external_id}/', params)
         request = Request(factory_request)
 
         response = view.get(request, movie_id=external_id)
@@ -67,11 +73,17 @@ def _fetch_tmdb_movie_data(external_id: str, country_code: Optional[str] = None)
     return None
 
 
-def _fetch_tmdb_tv_show_data(external_id: str, country_code: Optional[str] = None) -> Optional[Dict[str, Any]]:
+def _fetch_tmdb_tv_show_data(external_id: str, country_code: Optional[str] = None, images_size: Optional[int] = None) -> Optional[Dict[str, Any]]:
     try:
         view = TVShowDetailView()
         factory = APIRequestFactory()
-        factory_request = factory.get(f'/api/proxy/tv-shows/{external_id}/', {'country': country_code} if country_code else {})
+        params = {}
+        if country_code:
+            params['country'] = country_code
+        if images_size is not None:
+            params['images_size'] = str(images_size)
+
+        factory_request = factory.get(f'/api/proxy/tv-shows/{external_id}/', params)
         request = Request(factory_request)
 
         response = view.get(request, tv_id=external_id)
@@ -83,7 +95,7 @@ def _fetch_tmdb_tv_show_data(external_id: str, country_code: Optional[str] = Non
     return None
 
 
-def _fetch_tmdb_season_data(external_id: str, country_code: Optional[str] = None) -> Optional[Dict[str, Any]]:
+def _fetch_tmdb_season_data(external_id: str, country_code: Optional[str] = None, images_size: Optional[int] = None) -> Optional[Dict[str, Any]]:
     try:
         parts = external_id.split(':')
         if len(parts) == 2:
@@ -92,7 +104,13 @@ def _fetch_tmdb_season_data(external_id: str, country_code: Optional[str] = None
 
             view = TVSeasonDetailView()
             factory = APIRequestFactory()
-            factory_request = factory.get(f'/api/proxy/tv-shows/{tv_id}/seasons/{season_number}/', {'country': country_code} if country_code else {})
+            params = {}
+            if country_code:
+                params['country'] = country_code
+            if images_size is not None:
+                params['images_size'] = str(images_size)
+                
+            factory_request = factory.get(f'/api/proxy/tv-shows/{tv_id}/seasons/{season_number}/', params)
             request = Request(factory_request)
 
             response = view.get(request, tv_id=tv_id, season_number=season_number)
@@ -104,11 +122,15 @@ def _fetch_tmdb_season_data(external_id: str, country_code: Optional[str] = None
     return None
 
 
-def _fetch_igdb_data(external_id: str) -> Optional[Dict[str, Any]]:
+def _fetch_igdb_data(external_id: str, images_size: Optional[int] = None) -> Optional[Dict[str, Any]]:
     try:
         view = GameDetailView()
         factory = APIRequestFactory()
-        factory_request = factory.get(f'/api/proxy/games/{external_id}/')
+        params = {}
+        if images_size is not None:
+            params['images_size'] = str(images_size)
+
+        factory_request = factory.get(f'/api/proxy/games/{external_id}/', params)
         request = Request(factory_request)
 
         response = view.get(request, game_id=external_id)
@@ -120,11 +142,15 @@ def _fetch_igdb_data(external_id: str) -> Optional[Dict[str, Any]]:
     return None
 
 
-def _fetch_spotify_data(external_id: str) -> Optional[Dict[str, Any]]:
+def _fetch_spotify_data(external_id: str, images_size: Optional[int] = None) -> Optional[Dict[str, Any]]:
     try:
         view = AlbumDetailView()
         factory = APIRequestFactory()
-        factory_request = factory.get(f'/api/proxy/albums/{external_id}/')
+        params = {}
+        if images_size is not None:
+            params['images_size'] = str(images_size)
+
+        factory_request = factory.get(f'/api/proxy/albums/{external_id}/', params)
         request = Request(factory_request)
 
         response = view.get(request, album_id=external_id)
@@ -136,11 +162,15 @@ def _fetch_spotify_data(external_id: str) -> Optional[Dict[str, Any]]:
     return None
 
 
-def _fetch_openlibrary_data(external_id: str) -> Optional[Dict[str, Any]]:
+def _fetch_openlibrary_data(external_id: str, images_size: Optional[int] = None) -> Optional[Dict[str, Any]]:
     try:
         view = BookDetailView()
         factory = APIRequestFactory()
-        factory_request = factory.get(f'/api/proxy/books/{external_id}/')
+        params = {}
+        if images_size is not None:
+            params['images_size'] = str(images_size)
+
+        factory_request = factory.get(f'/api/proxy/books/{external_id}/', params)
         request = Request(factory_request)
 
         response = view.get(request, book_id=external_id)

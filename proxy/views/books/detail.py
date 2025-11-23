@@ -13,20 +13,24 @@ class BookDetailView(OpenLibraryBaseView):
         tags=['Proxy - Books'],
         summary='Get book details',
         description='''
-        Retrieve detailed information about a specific book from OpenLibrary using the work key.
+        Retrieve detailed information about a specific book from OpenLibrary.
 
         **Dynamic Field Selection:**
         Use the `fields` parameter to select specific fields and reduce response payload size.
         Supports dot notation for nested fields.
+        
+        **Image Size Limiting:**
+        - `images_size` - Limit the number of images returned in image lists.
 
         **Examples:**
-        - `?fields=id,title,author_name` - Return only basic book info
-        - `?fields=id,title,cover.url,author_name` - Get specific fields with cover
-        - `?fields=id,title,description,publish_year` - Get selected fields only
+        - `?fields=id,title,description` - Return only basic info
+        - `?fields=id,title,cover.url` - Include cover image
+        - `?images_size=4` - Limit images to 4 per list
         ''',
         parameters=[
-            OpenApiParameter('book_id', OpenApiTypes.STR, OpenApiParameter.PATH, required=True, description='OpenLibrary work key (e.g., "OL82563W")'),
-            OpenApiParameter('fields', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Comma-separated list of fields to include. Supports dot notation for nested fields (e.g., "id,title,cover.url")')
+            OpenApiParameter('book_id', OpenApiTypes.STR, OpenApiParameter.PATH, required=True, description='OpenLibrary work ID'),
+            OpenApiParameter('fields', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Comma-separated list of fields to include. Supports dot notation for nested fields (e.g., "id,title,cover.url")'),
+            OpenApiParameter('images_size', OpenApiTypes.INT, OpenApiParameter.QUERY, required=False, description='Maximum number of images to return in the images list (default: 18)')
         ],
         responses={
             200: BookDetailSerializer,
@@ -36,18 +40,19 @@ class BookDetailView(OpenLibraryBaseView):
     def get(self, request, book_id: str):
         client = self.get_client()
         mapper = self.get_mapper()
+        images_size = int(request.query_params.get('images_size', 18))
 
-        data, status_code = client.search_by_key(key=book_id)
+        data, status_code = client.get_book(book_id=book_id)
 
         if status_code != http_status.HTTP_200_OK:
             if status_code == http_status.HTTP_404_NOT_FOUND:
                 raise NotFoundException('Book')
             return Response(data, status=status_code)
 
-        if 'docs' in data and len(data['docs']) > 0:
-            book = mapper.map_detail(data['docs'][0])
-            book_dict = book.to_dict()
-            book_dict = self.apply_dynamic_fields(book_dict, request)
-            return Response(book_dict, status=http_status.HTTP_200_OK)
+        if not data:
+            raise NotFoundException('Book')
 
-        raise NotFoundException('Book')
+        book = mapper.map_detail(data)
+        book_dict = book.to_dict(images_size=images_size)
+        book_dict = self.apply_dynamic_fields(book_dict, request)
+        return Response(book_dict, status=http_status.HTTP_200_OK)

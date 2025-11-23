@@ -21,12 +21,16 @@ class TVShowDetailView(TMDBBaseView):
 
         **Dynamic Field Selection:**
         - `fields` - Select specific fields to return, reducing payload size. Supports dot notation.
+        
+        **Image Size Limiting:**
+        - `images_size` - Limit the number of images returned in image lists.
 
         **Examples:**
         - `?expand=seasons` - Get TV show with full season and episode details
         - `?fields=id,title,seasons.name,seasons.episodes.title` - Get specific nested fields from expanded seasons
         - `?expand=seasons&fields=id,title,seasons.episodes.title&country=US` - Combine expand, fields, and country filter
         - `?fields=id,title,cover.url,external_ids.imdb_id` - Get only basic info with cover and IMDB ID
+        - `?images_size=4` - Limit images to 4 per list
         ''',
         parameters=[
             OpenApiParameter(
@@ -56,6 +60,13 @@ class TVShowDetailView(TMDBBaseView):
                 OpenApiParameter.QUERY,
                 required=False,
                 description='Comma-separated list of fields to include. Supports dot notation for nested fields (e.g., "id,title,seasons.episodes.title")'
+            ),
+            OpenApiParameter(
+                'images_size',
+                OpenApiTypes.INT,
+                OpenApiParameter.QUERY,
+                required=False,
+                description='Maximum number of images to return in the images list (default: 18)'
             )
         ],
         responses={
@@ -69,6 +80,7 @@ class TVShowDetailView(TMDBBaseView):
         country = request.query_params.get('country', None)
         expand_param = request.query_params.get('expand', '')
         expand_seasons = 'seasons' in expand_param.split(',')
+        images_size = int(request.query_params.get('images_size', 18))
 
         tv_show, status_code = mapper.get_tv_show_complete(
             tv_id=int(tv_id),
@@ -78,6 +90,6 @@ class TVShowDetailView(TMDBBaseView):
         if status_code != http_status.HTTP_200_OK or not tv_show:
             raise NotFoundException('TV show')
 
-        data = tv_show.to_dict()
+        data = tv_show.to_dict(images_size=images_size)
         data = self.apply_dynamic_fields(data, request)
         return Response(data, status=http_status.HTTP_200_OK)
