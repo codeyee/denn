@@ -50,7 +50,7 @@ class UserListSerializer(BaseFlexSerializer):
 
         return value
 
-class UserListDetailSerializer(serializers.ModelSerializer):
+class UserListDetailSerializer(BaseFlexSerializer):
     owner = UserSerializer(read_only=True)
     members = serializers.SerializerMethodField()
     items = serializers.SerializerMethodField()
@@ -121,4 +121,31 @@ class UserListDetailSerializer(serializers.ModelSerializer):
             except (ValueError, TypeError):
                 pass
 
-        return ListItemSerializer(items, many=True, context=self.context).data
+        # Helper to parse flex fields for nested serializer
+        kwargs = {'context': self.context}
+        request = self.context.get('request')
+
+        if request:
+            # Parse fields
+            query_fields = request.query_params.get('fields')
+            if query_fields:
+                # Filter fields starting with 'items.' and strip prefix
+                fields = [
+                    f[6:] for f in query_fields.split(',') 
+                    if f.strip().startswith('items.')
+                ]
+                if fields:
+                    kwargs['fields'] = fields
+
+            # Parse expand
+            query_expand = request.query_params.get('expand')
+            if query_expand:
+                # Filter expand starting with 'items.' and strip prefix
+                expand = [
+                    f[6:] for f in query_expand.split(',') 
+                    if f.strip().startswith('items.')
+                ]
+                if expand:
+                    kwargs['expand'] = expand
+
+        return ListItemSerializer(items, many=True, **kwargs).data
