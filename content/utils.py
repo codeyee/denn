@@ -108,7 +108,8 @@ def _fetch_igdb_data(external_id: str) -> Optional[Dict[str, Any]]:
     try:
         view = GameDetailView()
         factory = APIRequestFactory()
-        request = factory.get(f'/api/proxy/games/{external_id}/')
+        factory_request = factory.get(f'/api/proxy/games/{external_id}/')
+        request = Request(factory_request)
 
         response = view.get(request, game_id=external_id)
         if response.status_code == http_status.HTTP_200_OK:
@@ -123,7 +124,8 @@ def _fetch_spotify_data(external_id: str) -> Optional[Dict[str, Any]]:
     try:
         view = AlbumDetailView()
         factory = APIRequestFactory()
-        request = factory.get(f'/api/proxy/albums/{external_id}/')
+        factory_request = factory.get(f'/api/proxy/albums/{external_id}/')
+        request = Request(factory_request)
 
         response = view.get(request, album_id=external_id)
         if response.status_code == http_status.HTTP_200_OK:
@@ -138,7 +140,8 @@ def _fetch_openlibrary_data(external_id: str) -> Optional[Dict[str, Any]]:
     try:
         view = BookDetailView()
         factory = APIRequestFactory()
-        request = factory.get(f'/api/proxy/books/{external_id}/')
+        factory_request = factory.get(f'/api/proxy/books/{external_id}/')
+        request = Request(factory_request)
 
         response = view.get(request, book_id=external_id)
         if response.status_code == http_status.HTTP_200_OK:
