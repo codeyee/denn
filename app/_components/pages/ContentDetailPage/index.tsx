@@ -150,6 +150,7 @@ export function ContentDetailPage({
           onOpenChange={modals.setIsRatingModalOpen}
           onSubmitRating={rating.handleSubmitRating}
           existingRating={rating.userRating}
+          contentItem={contentItem}
           isLoading={rating.isRatingLoading}
         />
       )}
@@ -165,19 +166,19 @@ export function ContentDetailPage({
           }}
           tvShowSeasons={
             contentItem.content_type === ContentType.TV_SHOW &&
-            detailData &&
-            "seasons" in detailData &&
-            Array.isArray(detailData.seasons) &&
-            detailData.seasons.length > 0
+              detailData &&
+              "seasons" in detailData &&
+              Array.isArray(detailData.seasons) &&
+              detailData.seasons.length > 0
               ? (detailData as TVShowDetail).seasons
               : undefined
           }
           tvShowId={
             contentItem.content_type === ContentType.TV_SHOW &&
-            detailData &&
-            "seasons" in detailData &&
-            Array.isArray(detailData.seasons) &&
-            detailData.seasons.length > 0
+              detailData &&
+              "seasons" in detailData &&
+              Array.isArray(detailData.seasons) &&
+              detailData.seasons.length > 0
               ? parseInt(contentItem.external_id)
               : undefined
           }
