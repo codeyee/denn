@@ -43,7 +43,7 @@ class Season:
     episodes: List[Episode] = field(default_factory=list)
     platforms: Optional[Dict[str, List[Platform]]] = None
 
-    def to_dict(self) -> Dict:
+    def to_dict(self, images_size: int = 18) -> Dict:
         result = {
             'id': self.id,
             'type': self.content_type,
@@ -57,7 +57,7 @@ class Season:
         }
 
         if self.images:
-            result['images'] = self.images.to_dict()
+            result['images'] = self.images.to_dict(images_size=images_size)
 
         if self.platforms:
             result['platforms'] = {
@@ -90,7 +90,7 @@ class TVShow:
     platforms: Optional[Dict[str, List[Platform]]] = None
     seasons: List[Season] = field(default_factory=list)
 
-    def to_dict(self) -> Dict:
+    def to_dict(self, images_size: int = 18) -> Dict:
         result = {
             'id': self.id,
             'type': self.content_type,
@@ -110,7 +110,7 @@ class TVShow:
             result['authors'] = [author.to_dict() for author in self.authors]
 
         if self.images:
-            result['images'] = self.images.to_dict()
+            result['images'] = self.images.to_dict(images_size=images_size)
 
         if self.platforms:
             result['platforms'] = {
@@ -119,5 +119,5 @@ class TVShow:
             }
 
         if self.seasons:
-            result['seasons'] = [season.to_dict() for season in self.seasons]
+            result['seasons'] = [season.to_dict(images_size=images_size) for season in self.seasons]
         return result

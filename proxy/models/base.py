@@ -39,7 +39,7 @@ class Images:
     gallery_original: Optional[str] = None
     additional_galleries: Union[List[Dict[str, str]], List[str]] = field(default_factory=list)
 
-    def to_dict(self) -> List[Dict]:
+    def to_dict(self, images_size: int = 18) -> List[Dict]:
         images = []
         if self.poster_standard:
             images.append({
@@ -65,27 +65,34 @@ class Images:
                 'size': ImageSize.ORIGINAL,
                 'image_url': self.gallery_original
             })
-        for gallery_item in self.additional_galleries[:8]:
+        for gallery_item in self.additional_galleries:
+            if len(images) >= images_size:
+                break
+
             if isinstance(gallery_item, dict):
                 if gallery_item.get('standard'):
-                    images.append({
-                        'type': ImageType.GALLERY,
-                        'size': ImageSize.STANDARD,
-                        'image_url': gallery_item['standard']
-                    })
+                    if len(images) < images_size:
+                        images.append({
+                            'type': ImageType.GALLERY,
+                            'size': ImageSize.STANDARD,
+                            'image_url': gallery_item['standard']
+                        })
                 if gallery_item.get('original'):
+                    if len(images) < images_size:
+                        images.append({
+                            'type': ImageType.GALLERY,
+                            'size': ImageSize.ORIGINAL,
+                            'image_url': gallery_item['original']
+                        })
+            elif isinstance(gallery_item, str):
+                if len(images) < images_size:
                     images.append({
                         'type': ImageType.GALLERY,
                         'size': ImageSize.ORIGINAL,
-                        'image_url': gallery_item['original']
+                        'image_url': gallery_item
                     })
-            elif isinstance(gallery_item, str):
-                images.append({
-                    'type': ImageType.GALLERY,
-                    'size': ImageSize.ORIGINAL,
-                    'image_url': gallery_item
-                })
-        return images
+
+        return images[:images_size]
 
 
 @dataclass

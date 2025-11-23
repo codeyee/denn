@@ -16,7 +16,7 @@ class Game:
     platforms: Optional[List[Platform]] = None
     images: Optional[Images] = None
 
-    def to_dict(self) -> Dict:
+    def to_dict(self, images_size: int = 18) -> Dict:
         result = {
             'id': self.id,
             'type': self.content_type,
@@ -34,8 +34,6 @@ class Game:
             result['platforms'] = [p.to_dict() for p in self.platforms]
 
         if self.images:
-            result['images'] = self.images.to_dict()
+            result['images'] = self.images.to_dict(images_size=images_size)
 
         return result
-
-

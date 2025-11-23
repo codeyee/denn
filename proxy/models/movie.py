@@ -20,7 +20,7 @@ class Movie:
     images: Optional[Images] = None
     platforms: Optional[Dict[str, List[Platform]]] = None
 
-    def to_dict(self) -> Dict:
+    def to_dict(self, images_size: int = 18) -> Dict:
         result = {
             'id': self.id,
             'type': self.content_type,
@@ -39,7 +39,7 @@ class Movie:
             result['authors'] = [author.to_dict() for author in self.authors]
 
         if self.images:
-            result['images'] = self.images.to_dict()
+            result['images'] = self.images.to_dict(images_size=images_size)
 
         if self.platforms:
             result['platforms'] = {

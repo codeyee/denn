@@ -40,7 +40,7 @@ class Album:
     images: Optional[Images] = None
     tracks: List[Track] = field(default_factory=list)
 
-    def to_dict(self) -> Dict:
+    def to_dict(self, images_size: int = 18) -> Dict:
         result = {
             'id': self.id,
             'type': self.content_type,
@@ -57,11 +57,9 @@ class Album:
             result['authors'] = [author.to_dict() for author in self.authors]
 
         if self.images:
-            result['images'] = self.images.to_dict()
+            result['images'] = self.images.to_dict(images_size=images_size)
 
         if self.tracks:
             result['tracks'] = [track.to_dict() for track in self.tracks]
 
         return result
-
-
