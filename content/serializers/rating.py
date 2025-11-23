@@ -2,8 +2,9 @@ from rest_framework import serializers
 from content.models import Rating, ContentItem
 from .content_item import ContentItemSerializer
 from .user import UserSerializer
+from core.serializers import BaseFlexSerializer
 
-class RatingSerializer(serializers.ModelSerializer):
+class RatingSerializer(BaseFlexSerializer):
     content_item = ContentItemSerializer(read_only=True)
     user = UserSerializer(read_only=True)
 
@@ -27,6 +28,11 @@ class RatingSerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at'
         ]
+
+        expandable_fields = {
+            'content_item': (ContentItemSerializer, {'many': False}),
+            'user': (UserSerializer, {'many': False}),
+        }
 
 class RatingCreateSerializer(serializers.ModelSerializer):
     source_api = serializers.ChoiceField(

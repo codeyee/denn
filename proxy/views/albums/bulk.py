@@ -33,7 +33,16 @@ class AlbumBulkView(SpotifyBaseView):
     @extend_schema(
         tags=['Proxy - Albums'],
         summary='Bulk get album details',
-        description='Retrieve detailed information about multiple albums from Spotify in a single request. Maximum 20 albums per request. Returns a list of album details.',
+        description='''
+        Retrieve detailed information about multiple albums from Spotify in a single request. Maximum 20 albums per request. Returns a list of album details.
+
+        **Dynamic Field Selection:**
+        Use the `fields` parameter to optimize the response by selecting only the fields you need.
+
+        **Examples:**
+        - `?ids=7ycBtnsMtyVbbwTfJwRjSP,1ATL5GLyefJaxhQzSPVrLX&fields=id,name,release_date` - Get basic info for multiple albums
+        - `?ids=7ycBtnsMtyVbbwTfJwRjSP,1ATL5GLyefJaxhQzSPVrLX&fields=id,name,cover.url,tracks.name` - Include cover and track names
+        ''',
         parameters=[
             OpenApiParameter(
                 'ids',
@@ -41,6 +50,13 @@ class AlbumBulkView(SpotifyBaseView):
                 OpenApiParameter.QUERY,
                 required=True,
                 description='Comma-separated list of Spotify album IDs (e.g., "7ycBtnsMtyVbbwTfJwRjSP,1ATL5GLyefJaxhQzSPVrLX")'
+            ),
+            OpenApiParameter(
+                'fields',
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
+                required=False,
+                description='Comma-separated list of fields to include. Supports dot notation for nested fields (e.g., "id,name,cover.url")'
             )
         ],
         responses={
@@ -67,4 +83,5 @@ class AlbumBulkView(SpotifyBaseView):
             if album is not None:
                 normalized_albums.append(mapper.map_detail(album).to_dict())
 
+        normalized_albums = self.apply_dynamic_fields(normalized_albums, request)
         return Response(normalized_albums, status=http_status.HTTP_200_OK)

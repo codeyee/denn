@@ -414,54 +414,92 @@ class TMDBMapper:
         )
 
     def get_movie_complete(self, movie_id: int, country: Optional[str] = None) -> Tuple[Optional[Movie], int]:
-        with ThreadPoolExecutor(max_workers=4) as executor:
-            movie_future = executor.submit(self.client.get_movie_details, movie_id)
-            external_ids_future = executor.submit(self.client.get_movie_external_ids, movie_id)
-            watch_providers_future = executor.submit(self.client.get_movie_watch_providers, movie_id)
-            images_future = executor.submit(self.client.get_movie_images, movie_id)
+        append_to_response = 'external_ids,watch/providers,images'
+        movie_data, status_code = self.client.get_movie_details(movie_id, append_to_response=append_to_response)
 
-            movie_data, movie_status = movie_future.result()
-            if movie_status != http_status.HTTP_200_OK:
-                return None, movie_status
+        if status_code != http_status.HTTP_200_OK:
+            return None, status_code
 
-            external_ids_data, external_ids_status = external_ids_future.result()
-            platforms_data, watch_providers_status = watch_providers_future.result()
-            images_data, images_status = images_future.result()
+        external_ids_data = movie_data.get('external_ids')
+        platforms_data = movie_data.get('watch/providers')
+        images_data = movie_data.get('images')
 
-            movie = self.map_movie(
-                movie_data,
-                external_ids_data if external_ids_status == http_status.HTTP_200_OK else None,
-                platforms_data if watch_providers_status == http_status.HTTP_200_OK else None,
-                images_data if images_status == http_status.HTTP_200_OK else None,
-                country
-            )
+        movie = self.map_movie(
+            movie_data,
+            external_ids_data,
+            platforms_data,
+            images_data,
+            country
+        )
 
-            return movie, http_status.HTTP_200_OK
+        return movie, http_status.HTTP_200_OK
 
-    def get_tv_show_complete(self, tv_id: int, country: Optional[str] = None) -> Tuple[Optional[TVShow], int]:
-        with ThreadPoolExecutor(max_workers=4) as executor:
-            tv_future = executor.submit(self.client.get_tv_details, tv_id)
-            external_ids_future = executor.submit(self.client.get_tv_external_ids, tv_id)
-            watch_providers_future = executor.submit(self.client.get_tv_watch_providers, tv_id)
-            images_future = executor.submit(self.client.get_tv_images, tv_id)
+    def get_tv_show_complete(
+        self,
+        tv_id: int,
+        country: Optional[str] = None,
+        expand_seasons: bool = False
+    ) -> Tuple[Optional[TVShow], int]:
+        append_to_response = 'external_ids,watch/providers,images'
+        tv_data, status_code = self.client.get_tv_details(tv_id, append_to_response=append_to_response)
 
-            tv_data, tv_status = tv_future.result()
-            if tv_status != http_status.HTTP_200_OK:
-                return None, tv_status
+        if status_code != http_status.HTTP_200_OK:
+            return None, status_code
 
-            external_ids_data, external_ids_status = external_ids_future.result()
-            platforms_data, watch_providers_status = watch_providers_future.result()
-            images_data, images_status = images_future.result()
+        external_ids_data = tv_data.get('external_ids')
+        platforms_data = tv_data.get('watch/providers')
+        images_data = tv_data.get('images')
 
-            tv_show = self.map_tv_show(
-                tv_data,
-                external_ids_data if external_ids_status == http_status.HTTP_200_OK else None,
-                platforms_data if watch_providers_status == http_status.HTTP_200_OK else None,
-                images_data if images_status == http_status.HTTP_200_OK else None,
-                country
-            )
+        tv_show = self.map_tv_show(
+            tv_data,
+            external_ids_data,
+            platforms_data,
+            images_data,
+            country
+        )
 
-            return tv_show, http_status.HTTP_200_OK
+        if expand_seasons and tv_show.seasons:
+            # Fetch full season details in parallel
+            season_requests = [
+                {'tv_id': tv_id, 'season_number': season.season_number}
+                for season in tv_show.seasons
+            ]
+            
+            # Use get_bulk_seasons for efficiency if available, or manual parallel fetch
+            # Since get_bulk_seasons exists in TMDBClient, let's use it.
+            # However, get_bulk_seasons returns a list of results.
+            
+            # We need to fetch full season details including episodes
+            # The current map_season in map_tv_show only used summary data.
+            # We need to replace the summary seasons with detailed seasons.
+            
+            detailed_seasons_results, _ = self.client.get_bulk_seasons(season_requests)
+            
+            detailed_seasons_map = {}
+            for result in detailed_seasons_results:
+                if result['status_code'] == 200:
+                    s_data = result['data']
+                    # We need to map this season data. 
+                    # Note: map_season expects tv_show_name etc.
+                    detailed_season = self.map_season(
+                        s_data,
+                        tv_show_name=tv_show.title,
+                        tv_show_backdrop_path=tv_data.get('backdrop_path'),
+                        country=country
+                    )
+                    detailed_seasons_map[result['season_number']] = detailed_season
+
+            # Update tv_show.seasons with detailed versions where available
+            updated_seasons = []
+            for season in tv_show.seasons:
+                if season.season_number in detailed_seasons_map:
+                    updated_seasons.append(detailed_seasons_map[season.season_number])
+                else:
+                    updated_seasons.append(season)
+            
+            tv_show.seasons = updated_seasons
+
+        return tv_show, http_status.HTTP_200_OK
 
     def get_season_complete(
         self,

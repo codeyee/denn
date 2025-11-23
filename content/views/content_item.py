@@ -8,6 +8,7 @@ from drf_spectacular.types import OpenApiTypes
 from content.models import ContentItem
 from content.serializers import ContentItemSerializer
 from content.permissions import IsAdminOrReadOnly
+from rest_flex_fields.views import FlexFieldsMixin
 
 @extend_schema_view(
     list=extend_schema(
@@ -19,6 +20,17 @@ from content.permissions import IsAdminOrReadOnly
 
         **Optional Query Parameters:**
         - `country`: ISO 3166-1 alpha-2 country code (e.g., US, GB, FR) to filter providers by country (only applies when source_api=tmdb).
+
+        **Dynamic Fields (drf-flex-fields):**
+        - `fields`: Comma-separated list of fields to include
+        - `omit`: Comma-separated list of fields to exclude
+        - `source_fields`: Filter source_data to specific fields (supports dot notation)
+
+        **Examples:**
+        - `?fields=id,source_api,external_id` - Return only basic fields
+        - `?omit=source_data` - Exclude external API data
+        - `?source_fields=title,cover.url` - Filter source_data to specific fields
+        - `?source_api=tmdb&content_type=MOVIE&fields=id,source_data&source_fields=title,release_date` - Filter and select fields
         ''',
         parameters=[
             OpenApiParameter('source_api', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Filter by source API (tmdb, igdb, spotify, openlibrary)'),
@@ -26,6 +38,9 @@ from content.permissions import IsAdminOrReadOnly
             OpenApiParameter('external_id', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Filter by external ID'),
             OpenApiParameter('ordering', OpenApiTypes.STR, OpenApiParameter.QUERY, description='Order by field (e.g., "-created_at", "rating_count", "-average_rating")'),
             OpenApiParameter('country', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='ISO 3166-1 alpha-2 country code to filter providers by country (only applies when source_api=tmdb)'),
+            OpenApiParameter('fields', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Comma-separated list of fields to include'),
+            OpenApiParameter('omit', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Comma-separated list of fields to exclude'),
+            OpenApiParameter('source_fields', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Filter source_data fields. Supports dot notation (e.g., "title,cover.url")'),
         ],
         responses={200: ContentItemSerializer(many=True)}
     ),
@@ -38,9 +53,21 @@ from content.permissions import IsAdminOrReadOnly
 
         **Optional Query Parameters:**
         - `country`: ISO 3166-1 alpha-2 country code (e.g., US, GB, FR) to filter providers by country (only applies when source_api=tmdb).
+
+        **Dynamic Fields (drf-flex-fields):**
+        - `fields`: Comma-separated list of fields to include
+        - `omit`: Comma-separated list of fields to exclude
+        - `source_fields`: Filter source_data to specific fields
+
+        **Examples:**
+        - `?fields=id,source_api,source_data` - Return only specific fields
+        - `?source_fields=title,cover.url,runtime` - Filter external API data
         ''',
         parameters=[
-            OpenApiParameter('country', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='ISO 3166-1 alpha-2 country code to filter providers by country (only applies when source_api=tmdb)')
+            OpenApiParameter('country', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='ISO 3166-1 alpha-2 country code to filter providers by country (only applies when source_api=tmdb)'),
+            OpenApiParameter('fields', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Comma-separated list of fields to include'),
+            OpenApiParameter('omit', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Comma-separated list of fields to exclude'),
+            OpenApiParameter('source_fields', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Filter source_data fields. Supports dot notation'),
         ],
         responses={
             200: ContentItemSerializer,
@@ -106,7 +133,7 @@ from content.permissions import IsAdminOrReadOnly
         }
     )
 )
-class ContentItemViewSet(viewsets.ModelViewSet):
+class ContentItemViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
     queryset = ContentItem.objects.all().order_by('-created_at')
     serializer_class = ContentItemSerializer
     permission_classes = [IsAuthenticated, IsAdminOrReadOnly]
@@ -114,6 +141,7 @@ class ContentItemViewSet(viewsets.ModelViewSet):
     ordering_fields = ['created_at', 'rating_count', 'average_rating']
     ordering = ['-created_at']
     search_fields = ['external_id']
+    permit_list_expands = []
 
     def get_queryset(self):
         queryset = super().get_queryset()

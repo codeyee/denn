@@ -13,7 +13,19 @@ class MovieDetailView(TMDBBaseView):
     @extend_schema(
         tags=['Proxy - Movies'],
         summary='Get movie details',
-        description='Retrieve detailed information about a specific movie from TMDB.',
+        description='''
+        Retrieve detailed information about a specific movie from TMDB.
+
+        **Optional Query Parameters:**
+        - `country`: ISO 3166-1 alpha-2 country code (e.g., US, GB, FR) to filter providers by country.
+        - `fields`: Comma-separated list of fields to include. Supports dot notation for nested fields.
+
+        **Dynamic Field Selection Examples:**
+        - `?fields=id,title,description` - Return only basic info
+        - `?fields=id,title,cover.url,backdrop.url` - Include specific image URLs
+        - `?fields=id,title,providers.provider_name` - Get all provider names
+        - `?fields=id,runtime,external_ids.imdb_id` - Include runtime and IMDB ID only
+        ''',
         parameters=[
             OpenApiParameter(
                 'movie_id',
@@ -28,6 +40,13 @@ class MovieDetailView(TMDBBaseView):
                 OpenApiParameter.QUERY,
                 required=False,
                 description='ISO 3166-1 alpha-2 country code (e.g., US, GB, FR) to filter providers by country'
+            ),
+            OpenApiParameter(
+                'fields',
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
+                required=False,
+                description='Comma-separated list of fields to include. Supports dot notation for nested fields (e.g., "id,title,cover.url")'
             )
         ],
         responses={
@@ -47,4 +66,6 @@ class MovieDetailView(TMDBBaseView):
         if status_code != http_status.HTTP_200_OK or not movie:
             raise NotFoundException('Movie')
 
-        return Response(movie.to_dict(), status=http_status.HTTP_200_OK)
+        data = movie.to_dict()
+        data = self.apply_dynamic_fields(data, request)
+        return Response(data, status=http_status.HTTP_200_OK)

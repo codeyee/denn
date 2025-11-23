@@ -3,8 +3,9 @@ from content.models import ListInvitation, UserList
 from django.contrib.auth.models import User
 from .user import UserSerializer
 from .user_list import UserListSerializer
+from core.serializers import BaseFlexSerializer
 
-class ListInvitationSerializer(serializers.ModelSerializer):
+class ListInvitationSerializer(BaseFlexSerializer):
     inviter = UserSerializer(read_only=True)
     invitee = UserSerializer(read_only=True)
     user_list = UserListSerializer(read_only=True)
@@ -31,6 +32,12 @@ class ListInvitationSerializer(serializers.ModelSerializer):
             'created_at',
             'responded_at',
         ]
+
+        expandable_fields = {
+            'inviter': (UserSerializer, {'many': False}),
+            'invitee': (UserSerializer, {'many': False}),
+            'user_list': (UserListSerializer, {'many': False}),
+        }
 
 class ListInvitationCreateSerializer(serializers.ModelSerializer):
     username = serializers.CharField(

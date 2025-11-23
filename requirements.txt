@@ -9,6 +9,7 @@ django-cors-headers==4.9.0
 django-redis==6.0.0
 djangorestframework==3.16.1
 djangorestframework_simplejwt==5.5.1
+drf-flex-fields==1.0.2
 drf-spectacular==0.28.0
 gunicorn==23.0.0
 idna==3.11

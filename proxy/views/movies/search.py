@@ -56,7 +56,18 @@ class MovieSearchView(TMDBBaseView):
     @extend_schema(
         tags=['Proxy - Movies'],
         summary='Search movies',
-        description='Search for movies by title using TMDB.',
+        description='''
+        Search for movies by title using TMDB.
+
+        **Dynamic Field Selection:**
+        Use the `fields` parameter to select specific fields and reduce response payload size.
+        Supports dot notation for nested fields (e.g., `cover.url`, `external_ids.imdb_id`).
+
+        **Examples:**
+        - `?fields=id,title,release_date` - Return only basic info
+        - `?fields=id,title,cover.url` - Include nested cover URL
+        - `?fields=id,title,genres.name` - Get all genre names from genres array
+        ''',
         parameters=[
             OpenApiParameter(
                 'query', OpenApiTypes.STR,
@@ -75,6 +86,12 @@ class MovieSearchView(TMDBBaseView):
                 OpenApiParameter.QUERY,
                 required=False,
                 description='Number of results per page (1-50, default: 20)'
+            ),
+            OpenApiParameter(
+                'fields', OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
+                required=False,
+                description='Comma-separated list of fields to include. Supports dot notation for nested fields (e.g., "id,title,cover.url")'
             )
         ],
         responses={
@@ -95,4 +112,9 @@ class MovieSearchView(TMDBBaseView):
             return Response(data, status=status_code)
 
         transformed_data = self.filter_and_transform_results(data, mapper, request, page_size)
+        
+        # Apply dynamic fields to the results list
+        if 'results' in transformed_data:
+            transformed_data['results'] = self.apply_dynamic_fields(transformed_data['results'], request)
+            
         return Response(transformed_data, status=http_status.HTTP_200_OK)

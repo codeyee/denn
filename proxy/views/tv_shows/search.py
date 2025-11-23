@@ -55,7 +55,18 @@ class TVShowSearchView(TMDBBaseView):
     @extend_schema(
         tags=['Proxy - TV Shows'],
         summary='Search TV shows',
-        description='Search for TV shows by title using TMDB.',
+        description='''
+        Search for TV shows by title using TMDB.
+
+        **Dynamic Field Selection:**
+        Use the `fields` parameter to select specific fields and reduce response payload size.
+        Supports dot notation for nested fields.
+
+        **Examples:**
+        - `?fields=id,title,first_air_date` - Return only basic info
+        - `?fields=id,title,cover.url` - Include nested cover URL
+        - `?fields=id,title,genres.name` - Get all genre names from genres array
+        ''',
         parameters=[
             OpenApiParameter(
                 'query', OpenApiTypes.STR,
@@ -74,6 +85,12 @@ class TVShowSearchView(TMDBBaseView):
                 OpenApiParameter.QUERY,
                 required=False,
                 description='Number of results per page (1-50, default: 20)'
+            ),
+            OpenApiParameter(
+                'fields', OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
+                required=False,
+                description='Comma-separated list of fields to include. Supports dot notation for nested fields (e.g., "id,title,cover.url")'
             )
         ],
         responses={
@@ -94,4 +111,9 @@ class TVShowSearchView(TMDBBaseView):
             return Response(data, status=status_code)
 
         transformed_data = self.filter_and_transform_results(data, mapper, request, page_size)
+
+        # Apply dynamic fields to the results list
+        if 'results' in transformed_data:
+            transformed_data['results'] = self.apply_dynamic_fields(transformed_data['results'], request)
+
         return Response(transformed_data, status=http_status.HTTP_200_OK)

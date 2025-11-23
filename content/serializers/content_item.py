@@ -1,7 +1,8 @@
 from rest_framework import serializers
 from content.models import ContentItem
+from core.serializers import BaseFlexSerializer
 
-class ContentItemSerializer(serializers.ModelSerializer):
+class ContentItemSerializer(BaseFlexSerializer):
     source_data = serializers.SerializerMethodField()
 
     class Meta:
@@ -36,7 +37,57 @@ class ContentItemSerializer(serializers.ModelSerializer):
 
         # Always fetch source data
         country_code = request.query_params.get('country', None) if request else None
-        return fetch_source_data(obj, country_code=country_code)
+        data = fetch_source_data(obj, country_code=country_code)
+
+        if not data:
+            return None
+
+        # Handle source_fields filtering
+        if request:
+            source_fields = request.query_params.get('source_fields')
+            if source_fields:
+                fields = [f.strip() for f in source_fields.split(',')]
+                return self._pick_source_fields(data, fields)
+
+        return data
+
+    def _pick_source_fields(self, data, fields):
+        """
+        Pick specific fields from the source data using dot notation.
+        Example: fields=['title', 'cover.url', 'genres.0.name']
+        """
+        result = {}
+        for field in fields:
+            parts = field.split('.')
+            value = data
+            for part in parts:
+                if isinstance(value, dict):
+                    value = value.get(part)
+                elif isinstance(value, list):
+                    try:
+                        idx = int(part)
+                        if 0 <= idx < len(value):
+                            value = value[idx]
+                        else:
+                            value = None
+                    except ValueError:
+                        value = None
+                else:
+                    value = None
+                
+                if value is None:
+                    break
+            
+            if value is not None:
+                # Reconstruct the nested structure in the result
+                current = result
+                for i, part in enumerate(parts[:-1]):
+                    if part not in current:
+                        current[part] = {}
+                    current = current[part]
+                current[parts[-1]] = value
+        
+        return result
 
     def validate(self, attrs):
         source_api = attrs.get('source_api')

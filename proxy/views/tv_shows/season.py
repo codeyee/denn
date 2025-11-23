@@ -22,7 +22,18 @@ class TVSeasonDetailView(TMDBBaseView):
     @extend_schema(
         tags=['Proxy - TV Shows'],
         summary='Get TV season details',
-        description='Retrieve detailed information about a specific season including all episodes.',
+        description='''
+        Retrieve detailed information about a specific season including all episodes.
+
+        **Dynamic Field Selection:**
+        Use the `fields` parameter to select specific fields and reduce response payload size.
+        Supports dot notation for nested fields.
+
+        **Examples:**
+        - `?fields=id,name,air_date` - Return only basic season info
+        - `?fields=id,name,episodes.title,episodes.episode_number` - Get season with specific episode fields only
+        - `?fields=episodes.title,episodes.air_date` - Get only episode titles and air dates
+        ''',
         parameters=[
             OpenApiParameter(
                 'tv_id',
@@ -44,6 +55,13 @@ class TVSeasonDetailView(TMDBBaseView):
                 OpenApiParameter.QUERY,
                 required=False,
                 description='ISO 3166-1 alpha-2 country code (e.g., US, GB, FR) to filter providers by country'
+            ),
+            OpenApiParameter(
+                'fields',
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
+                required=False,
+                description='Comma-separated list of fields to include. Supports dot notation for nested fields (e.g., "id,episodes.title")'
             )
         ],
         responses={
@@ -67,4 +85,6 @@ class TVSeasonDetailView(TMDBBaseView):
         if status_code != http_status.HTTP_200_OK or not season:
             raise NotFoundException(ContentType.SEASON)
 
-        return Response(season.to_dict(), status=http_status.HTTP_200_OK)
+        data = season.to_dict()
+        data = self.apply_dynamic_fields(data, request)
+        return Response(data, status=http_status.HTTP_200_OK)

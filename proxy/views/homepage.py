@@ -18,8 +18,9 @@ from proxy.mappers.spotify import SpotifyMapper
 from proxy.mappers.tmdb import TMDBMapper
 from proxy.serializers import HomepageResponseSerializer, ErrorResponseSerializer
 
+from proxy.views.base import DynamicFieldsMixin
 
-class HomepageView(APIView):
+class HomepageView(DynamicFieldsMixin, APIView):
 
     CACHE_CONFIG = {
         'cache_type': 'homepage',
@@ -58,6 +59,18 @@ class HomepageView(APIView):
         summary='Get homepage suggestions',
         description='''
         Get aggregated suggestions from all categories for homepage display.
+
+        **Dynamic Field Selection:**
+        Use the `fields` parameter to select specific fields and reduce response payload size.
+        Supports dot notation for nested fields across all content types.
+
+        **Examples:**
+        - `?fields=movies,tv_shows` - Return only movies and TV shows sections
+        - `?fields=movies.id,movies.title,games.id,games.name` - Get specific fields from multiple categories
+        - `?fields=movies.cover.url,tv_shows.cover.url` - Get only cover URLs from movies and TV shows
+        - `?limit=5&fields=movies.id,movies.title,movies.cover.url` - Combine limit with field selection
+
+        **Note:** Field filtering is applied to the entire response structure. You can filter both top-level categories (movies, tv_shows, games, albums, books) and their nested fields.
         ''',
         parameters=[
             OpenApiParameter(
@@ -73,6 +86,13 @@ class HomepageView(APIView):
                 OpenApiParameter.QUERY,
                 required=False,
                 description='ISO 3166-1 alpha-2 country code (e.g., US, CO)'
+            ),
+            OpenApiParameter(
+                'fields',
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
+                required=False,
+                description='Comma-separated list of fields to include. Supports dot notation for nested fields (e.g., "movies.id,movies.title,tv_shows.cover.url")'
             )
         ],
         responses={
@@ -96,6 +116,10 @@ class HomepageView(APIView):
         movies, tv, games, albums, books = self._enrich_data(movies, tv, games, albums, books, country)
 
         response_data = self._format_response(movies, tv, games, albums, books)
+        
+        # Apply dynamic fields
+        response_data = self.apply_dynamic_fields(response_data, request)
+        
         return Response(response_data, status=http_status.HTTP_200_OK)
 
     def _get_valid_params(self, request) -> Tuple[int, Optional[str]]:

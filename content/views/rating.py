@@ -7,6 +7,7 @@ from drf_spectacular.types import OpenApiTypes
 from content.models import Rating, ContentItem
 from content.serializers import RatingSerializer, RatingCreateSerializer
 from content.permissions import IsOwnerOfRating
+from rest_flex_fields.views import FlexFieldsMixin
 
 @extend_schema_view(
     list=extend_schema(
@@ -15,18 +16,31 @@ from content.permissions import IsOwnerOfRating
         description='''
         List all ratings with optional filtering.
 
-        Query Parameters:
+        **Query Parameters:**
         - `content_item_id`: Filter by content item ID
         - `user_id`: Filter by user ID
         - `source_api` + `external_id`: Filter by external content
         - `stats_only=true`: Return only statistics instead of ratings list
+
+        **Dynamic Fields (drf-flex-fields):**
+        - `fields`: Comma-separated list of fields to include
+        - `omit`: Comma-separated list of fields to exclude
+        - `expand`: Expand relationships (content_item, user)
+
+        **Examples:**
+        - `?fields=id,score,comment` - Return only basic rating info
+        - `?expand=content_item,user` - Expand content item and user details
+        - `?expand=content_item&fields=id,score,content_item.source_data` - Expand and filter fields
         ''',
         parameters=[
             OpenApiParameter('content_item_id', OpenApiTypes.INT, description='Filter by content item'),
             OpenApiParameter('user_id', OpenApiTypes.INT, description='Filter by user'),
             OpenApiParameter('source_api', OpenApiTypes.STR, description='External API source', enum=['tmdb', 'spotify', 'igdb', 'openlibrary']),
             OpenApiParameter('external_id', OpenApiTypes.STR, description='External ID'),
-            OpenApiParameter('stats_only', OpenApiTypes.BOOL, description='Return only statistics')
+            OpenApiParameter('stats_only', OpenApiTypes.BOOL, description='Return only statistics'),
+            OpenApiParameter('fields', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Comma-separated list of fields to include'),
+            OpenApiParameter('omit', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Comma-separated list of fields to exclude'),
+            OpenApiParameter('expand', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Expand relationships (e.g., "content_item,user")'),
         ],
         responses={
             200: RatingSerializer(many=True),
@@ -105,8 +119,9 @@ from content.permissions import IsOwnerOfRating
         responses={204: None}
     )
 )
-class RatingViewSet(viewsets.ModelViewSet):
+class RatingViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
+    permit_list_expands = ['content_item', 'user']
 
     def get_queryset(self):
         queryset = Rating.objects.select_related('user', 'content_item').order_by('-created_at')

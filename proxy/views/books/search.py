@@ -34,11 +34,23 @@ class BookSearchView(OpenLibraryBaseView):
     @extend_schema(
         tags=['Proxy - Books'],
         summary='Search books',
-        description='Search for books by title, author, or ISBN using OpenLibrary.',
+        description='''
+        Search for books by title, author, or ISBN using OpenLibrary.
+
+        **Dynamic Field Selection:**
+        Use the `fields` parameter to select specific fields and reduce response payload size.
+        Supports dot notation for nested fields.
+
+        **Examples:**
+        - `?fields=id,title,author_name` - Return only basic info
+        - `?fields=id,title,cover.url` - Include nested cover URL
+        - `?fields=id,title,author_name,publish_year` - Get specific fields only
+        ''',
         parameters=[
             OpenApiParameter('query', OpenApiTypes.STR, required=True, description='Search query (title, author, or ISBN)'),
             OpenApiParameter('page_size', OpenApiTypes.INT, description='Results per page (1-50, default: 20)'),
-            OpenApiParameter('page', OpenApiTypes.INT, description='Page number (default: 1)')
+            OpenApiParameter('page', OpenApiTypes.INT, description='Page number (default: 1)'),
+            OpenApiParameter('fields', OpenApiTypes.STR, required=False, description='Comma-separated list of fields to include. Supports dot notation for nested fields (e.g., "id,title,cover.url")')
         ],
         responses={
             200: BookSearchResponseSerializer,
@@ -62,6 +74,9 @@ class BookSearchView(OpenLibraryBaseView):
             return Response(data, status=status_code)
 
         results = [mapper.map_search_item(item).to_dict() for item in data['docs']]
+
+        # Apply dynamic fields to the results list
+        results = self.apply_dynamic_fields(results, request)
 
         metadata = build_pagination_metadata(
             request=request,

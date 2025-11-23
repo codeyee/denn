@@ -3,6 +3,8 @@ from content.models import ListItem, ContentItem, Rating
 from .content_item import ContentItemSerializer
 from .user import UserSerializer
 
+from core.serializers import BaseFlexSerializer
+
 class MemberRatingSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     is_owner = serializers.SerializerMethodField()
@@ -19,7 +21,7 @@ class MemberRatingSerializer(serializers.ModelSerializer):
             return obj.user.id == user_list.owner.id
         return False
 
-class ListItemSerializer(serializers.ModelSerializer):
+class ListItemSerializer(BaseFlexSerializer):
     content_item = serializers.SerializerMethodField()
     added_by = UserSerializer(read_only=True)
     member_ratings = serializers.SerializerMethodField()
@@ -56,6 +58,12 @@ class ListItemSerializer(serializers.ModelSerializer):
             'list_rating',
             'member_rating_count',
         ]
+
+        expandable_fields = {
+            'content_item': (ContentItemSerializer, {'many': False}),
+            'user_list': ('content.serializers.UserListSerializer', {'many': False}),
+            'added_by': (UserSerializer, {'many': False}),
+        }
 
     def get_content_item(self, obj):
         return ContentItemSerializer(obj.content_item, context=self.context).data

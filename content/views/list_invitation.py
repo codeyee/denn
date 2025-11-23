@@ -11,6 +11,7 @@ from content.serializers import (
     ListInvitationCreateSerializer,
     ListInvitationResponseSerializer
 )
+from rest_flex_fields.views import FlexFieldsMixin
 
 @extend_schema_view(
     list=extend_schema(
@@ -19,15 +20,28 @@ from content.serializers import (
         description='''
         List invitations received or sent by the current user.
 
-        Query Parameters:
+        **Query Parameters:**
         - `sent=true`: Show invitations sent by the user
         - `list_id`: Filter by specific list (owner only)
         - `status`: Filter by invitation status (PENDING)
+
+        **Dynamic Fields (drf-flex-fields):**
+        - `fields`: Comma-separated list of fields to include
+        - `omit`: Comma-separated list of fields to exclude
+        - `expand`: Expand relationships (inviter, invitee, user_list)
+
+        **Examples:**
+        - `?fields=id,status,created_at` - Return only basic invitation info
+        - `?expand=user_list` - Expand list details
+        - `?expand=inviter,invitee&fields=id,inviter,invitee` - Expand users and limit fields
         ''',
         parameters=[
             OpenApiParameter('sent', OpenApiTypes.BOOL, description='Show sent invitations instead of received'),
             OpenApiParameter('list_id', OpenApiTypes.INT, description='Filter by list ID'),
-            OpenApiParameter('status', OpenApiTypes.STR, description='Filter by status', enum=['PENDING'])
+            OpenApiParameter('status', OpenApiTypes.STR, description='Filter by status', enum=['PENDING']),
+            OpenApiParameter('fields', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Comma-separated list of fields to include'),
+            OpenApiParameter('omit', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Comma-separated list of fields to exclude'),
+            OpenApiParameter('expand', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Expand relationships (e.g., "inviter,invitee,user_list")'),
         ],
         responses={200: ListInvitationSerializer(many=True)}
     ),
@@ -75,8 +89,9 @@ from content.serializers import (
         }
     )
 )
-class ListInvitationViewSet(viewsets.ModelViewSet):
+class ListInvitationViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
+    permit_list_expands = ['inviter', 'invitee', 'user_list']
 
     def get_queryset(self):
         user = self.request.user
