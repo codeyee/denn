@@ -9,6 +9,8 @@ from content.models import UserList
 from content.serializers import UserListSerializer, UserListDetailSerializer
 from content.permissions import IsOwnerOrReadOnly
 
+from rest_flex_fields.views import FlexFieldsMixin
+
 @extend_schema_view(
     list=extend_schema(
         tags=['Lists Management'],
@@ -20,6 +22,9 @@ from content.permissions import IsOwnerOrReadOnly
         **Optional Query Parameters:**
         - `items_size`: Number of items to include per list (0 or not set = don't fetch items, >0 = fetch that many items, default: 0)
         - `country`: ISO 3166-1 alpha-2 country code (e.g., US, GB, FR) to filter providers by country (only applies when source_api=tmdb).
+        - `fields`: Comma-separated list of fields to include.
+        - `omit`: Comma-separated list of fields to exclude.
+        - `expand`: Comma-separated list of relationships to expand (e.g., `owner`, `items`).
         ''',
         parameters=[
             OpenApiParameter('items_size', OpenApiTypes.INT, OpenApiParameter.QUERY, required=False, description='Number of items to include per list (0 or not set = no items, >0 = fetch that many items, default: 0)'),
@@ -36,6 +41,9 @@ from content.permissions import IsOwnerOrReadOnly
 
         **Optional Query Parameters:**
         - `country`: ISO 3166-1 alpha-2 country code (e.g., US, GB, FR) to filter providers by country (only applies when source_api=tmdb).
+        - `fields`: Comma-separated list of fields to include.
+        - `omit`: Comma-separated list of fields to exclude.
+        - `expand`: Comma-separated list of relationships to expand.
         ''',
         parameters=[
             OpenApiParameter('country', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='ISO 3166-1 alpha-2 country code to filter providers by country (only applies when source_api=tmdb)')
@@ -100,8 +108,9 @@ from content.permissions import IsOwnerOrReadOnly
         }
     )
 )
-class UserListViewSet(viewsets.ModelViewSet):
+class UserListViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
+    permit_list_expands = ['owner', 'items', 'members']
 
     def get_queryset(self):
         user = self.request.user

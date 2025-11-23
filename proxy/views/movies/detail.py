@@ -47,4 +47,6 @@ class MovieDetailView(TMDBBaseView):
         if status_code != http_status.HTTP_200_OK or not movie:
             raise NotFoundException('Movie')
 
-        return Response(movie.to_dict(), status=http_status.HTTP_200_OK)
+        data = movie.to_dict()
+        data = self.apply_dynamic_fields(data, request)
+        return Response(data, status=http_status.HTTP_200_OK)

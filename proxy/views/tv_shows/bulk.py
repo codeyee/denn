@@ -82,4 +82,5 @@ class TVShowBulkView(TMDBBaseView):
                 if status == http_status.HTTP_200_OK and tv_show:
                     results.append(tv_show.to_dict())
 
+        results = self.apply_dynamic_fields(results, request)
         return Response(results, status=http_status.HTTP_200_OK)

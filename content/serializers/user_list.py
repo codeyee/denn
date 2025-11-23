@@ -3,7 +3,9 @@ from content.models import UserList
 from .user import UserSerializer, MemberSerializer
 
 
-class UserListSerializer(serializers.ModelSerializer):
+from core.serializers import BaseFlexSerializer
+
+class UserListSerializer(BaseFlexSerializer):
     owner = UserSerializer(read_only=True)
     member_count = serializers.SerializerMethodField()
     item_count = serializers.SerializerMethodField()
@@ -29,6 +31,12 @@ class UserListSerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at',
         ]
+
+        expandable_fields = {
+            'owner': (UserSerializer, {'many': False}),
+            'items': ('content.serializers.ListItemSerializer', {'many': True}),
+            'members': (MemberSerializer, {'many': True}),
+        }
 
     def get_member_count(self, obj):
         return obj.members.count()

@@ -95,4 +95,9 @@ class MovieSearchView(TMDBBaseView):
             return Response(data, status=status_code)
 
         transformed_data = self.filter_and_transform_results(data, mapper, request, page_size)
+        
+        # Apply dynamic fields to the results list
+        if 'results' in transformed_data:
+            transformed_data['results'] = self.apply_dynamic_fields(transformed_data['results'], request)
+            
         return Response(transformed_data, status=http_status.HTTP_200_OK)

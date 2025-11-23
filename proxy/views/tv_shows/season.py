@@ -67,4 +67,6 @@ class TVSeasonDetailView(TMDBBaseView):
         if status_code != http_status.HTTP_200_OK or not season:
             raise NotFoundException(ContentType.SEASON)
 
-        return Response(season.to_dict(), status=http_status.HTTP_200_OK)
+        data = season.to_dict()
+        data = self.apply_dynamic_fields(data, request)
+        return Response(data, status=http_status.HTTP_200_OK)

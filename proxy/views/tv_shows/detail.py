@@ -39,12 +39,17 @@ class TVShowDetailView(TMDBBaseView):
         client = self.get_client()
         mapper = TMDBMapper(client)
         country = request.query_params.get('country', None)
+        expand_param = request.query_params.get('expand', '')
+        expand_seasons = 'seasons' in expand_param.split(',')
 
         tv_show, status_code = mapper.get_tv_show_complete(
             tv_id=int(tv_id),
-            country=country
+            country=country,
+            expand_seasons=expand_seasons
         )
         if status_code != http_status.HTTP_200_OK or not tv_show:
             raise NotFoundException('TV show')
 
-        return Response(tv_show.to_dict(), status=http_status.HTTP_200_OK)
+        data = tv_show.to_dict()
+        data = self.apply_dynamic_fields(data, request)
+        return Response(data, status=http_status.HTTP_200_OK)

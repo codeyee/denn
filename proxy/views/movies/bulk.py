@@ -83,4 +83,5 @@ class MovieBulkView(TMDBBaseView):
                 if status == http_status.HTTP_200_OK and movie:
                     results.append(movie.to_dict())
 
+        results = self.apply_dynamic_fields(results, request)
         return Response(results, status=http_status.HTTP_200_OK)

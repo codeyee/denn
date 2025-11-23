@@ -44,22 +44,34 @@ class TMDBClient(CachedAPIClient):
             page=page
         )
 
-    def get_movie_details(self, movie_id: int) -> Tuple[Dict[str, Any], int]:
+    def get_movie_details(self, movie_id: int, append_to_response: Optional[str] = None) -> Tuple[Dict[str, Any], int]:
         endpoint = f'movie/{movie_id}'
+        params = {}
+        if append_to_response:
+            params['append_to_response'] = append_to_response
+            
         return self.cached_get(
             endpoint=endpoint,
             cache_type='api_tmdb_details',
+            params=params,
             operation='details',
-            movie_id=movie_id
+            movie_id=movie_id,
+            append_to_response=append_to_response
         )
 
-    def get_tv_details(self, tv_id: int) -> Tuple[Dict[str, Any], int]:
+    def get_tv_details(self, tv_id: int, append_to_response: Optional[str] = None) -> Tuple[Dict[str, Any], int]:
         endpoint = f'tv/{tv_id}'
+        params = {}
+        if append_to_response:
+            params['append_to_response'] = append_to_response
+
         return self.cached_get(
             endpoint=endpoint,
             cache_type='api_tmdb_details',
+            params=params,
             operation='details',
-            tv_id=tv_id
+            tv_id=tv_id,
+            append_to_response=append_to_response
         )
 
     def get_season_details(self, tv_id: int, season_number: int) -> Tuple[Dict[str, Any], int]:

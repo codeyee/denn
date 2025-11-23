@@ -9,6 +9,8 @@ from content.models import ListItem, UserList
 from content.serializers import ListItemSerializer, ListItemCreateSerializer
 from content.permissions import IsMemberOfList
 
+from rest_flex_fields.views import FlexFieldsMixin
+
 @extend_schema_view(
     list=extend_schema(
         tags=['List Items'],
@@ -21,6 +23,9 @@ from content.permissions import IsMemberOfList
         - `country`: ISO 3166-1 alpha-2 country code (e.g., US, GB, FR) to filter providers by country (only applies when source_api=tmdb).
         - `page`: Page number (default: 1)
         - `page_size`: Number of items per page (default: 20, max: 100). Set to 0 to fetch all items without pagination.
+        - `fields`: Comma-separated list of fields to include (e.g., `id,status`).
+        - `omit`: Comma-separated list of fields to exclude.
+        - `expand`: Comma-separated list of relationships to expand (e.g., `content_item`).
 
         **Pagination:**
         - Default: 20 items per page
@@ -49,6 +54,9 @@ from content.permissions import IsMemberOfList
 
         **Optional Query Parameters:**
         - `country`: ISO 3166-1 alpha-2 country code (e.g., US, GB, FR) to filter providers by country (only applies when source_api=tmdb).
+        - `fields`: Comma-separated list of fields to include.
+        - `omit`: Comma-separated list of fields to exclude.
+        - `expand`: Comma-separated list of relationships to expand.
         ''',
         parameters=[
             OpenApiParameter('country', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='ISO 3166-1 alpha-2 country code to filter providers by country (only applies when source_api=tmdb)')
@@ -130,12 +138,13 @@ from content.permissions import IsMemberOfList
         responses={204: None}
     )
 )
-class ListItemViewSet(viewsets.ModelViewSet):
+class ListItemViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, IsMemberOfList]
+    permit_list_expands = ['content_item', 'user_list', 'added_by']
 
     def get_queryset(self):
         list_id = self.kwargs.get('list_pk')
-        return ListItem.objects.filter(
+        queryset = ListItem.objects.filter(
             user_list_id=list_id
         ).select_related(
             'content_item',
@@ -145,6 +154,8 @@ class ListItemViewSet(viewsets.ModelViewSet):
             'user_list__members',
             'content_item__ratings__user'
         ).order_by('list_order', '-added_at')
+        
+        return queryset
 
     def get_serializer_class(self):
         if self.action == 'create': return ListItemCreateSerializer
