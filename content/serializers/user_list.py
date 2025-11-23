@@ -141,6 +141,8 @@ class UserListDetailSerializer(BaseFlexSerializer):
 
     def get_items(self, obj):
         from .list_item import ListItemSerializer
+        from content.utils import bulk_fetch_source_data
+
         items = obj.items.all().order_by('list_order', '-added_at')
 
         items_size = self.context.get('items_size')
@@ -152,9 +154,36 @@ class UserListDetailSerializer(BaseFlexSerializer):
             except (ValueError, TypeError):
                 pass
 
-        # Helper to parse flex fields for nested serializer
-        kwargs = {'context': self.context}
+        # PERFORMANCE OPTIMIZATION: Pre-fetch all source_data in one parallel batch
+        # This prevents N+1 HTTP requests to external APIs (TMDB, IGDB, Spotify, etc.)
         request = self.context.get('request')
+        country_code = None
+        images_size = None
+
+        if request:
+            country_code = request.query_params.get('country')
+            try:
+                images_size_param = request.query_params.get('images_size')
+                if images_size_param:
+                    images_size = int(images_size_param)
+            except (ValueError, TypeError):
+                pass
+
+        # Fetch all source data in parallel (10 workers)
+        # Before: 20 items × 500ms each = 10 seconds (sequential)
+        # After: 20 items / 10 workers × 500ms = 1 second (parallel)
+        content_items = [item.content_item for item in items]
+        source_data_cache = bulk_fetch_source_data(
+            content_items,
+            country_code=country_code,
+            images_size=images_size
+        )
+
+        # Inject pre-fetched data into context for ContentItemSerializer
+        context_with_cache = {**self.context, 'source_data_cache': source_data_cache}
+
+        # Parse flex fields for nested serializer
+        kwargs = {'context': context_with_cache}
 
         if request:
             # Parse fields
@@ -162,7 +191,7 @@ class UserListDetailSerializer(BaseFlexSerializer):
             if query_fields:
                 # Filter fields starting with 'items.' and strip prefix
                 fields = [
-                    f[6:] for f in query_fields.split(',') 
+                    f[6:] for f in query_fields.split(',')
                     if f.strip().startswith('items.')
                 ]
                 if fields:
@@ -173,7 +202,7 @@ class UserListDetailSerializer(BaseFlexSerializer):
             if query_expand:
                 # Filter expand starting with 'items.' and strip prefix
                 expand = [
-                    f[6:] for f in query_expand.split(',') 
+                    f[6:] for f in query_expand.split(',')
                     if f.strip().startswith('items.')
                 ]
                 if expand:

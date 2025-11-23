@@ -32,20 +32,41 @@ class ContentItemSerializer(BaseFlexSerializer):
         if self.context.get('skip_source_data', False):
             return None
 
+        # PERFORMANCE OPTIMIZATION: Check if source_data was pre-fetched in bulk
+        # This prevents N+1 HTTP requests when serializing multiple items
+        source_data_cache = self.context.get('source_data_cache')
+        if source_data_cache is not None:
+            # Use pre-fetched data from bulk operation
+            cached_data = source_data_cache.get(obj.id)
+
+            if cached_data is not None:
+                # Apply source_fields filtering if needed
+                request = self.context.get('request')
+                if request:
+                    source_fields = request.query_params.get('source_fields')
+                    if source_fields:
+                        fields = [f.strip() for f in source_fields.split(',')]
+                        return self._pick_source_fields(cached_data, fields)
+                return cached_data
+
+            # If not in cache, fall through to normal fetch (should not happen)
+
+        # FALLBACK: Individual fetch (used when not part of bulk operation)
         request = self.context.get('request')
         from content.utils import fetch_source_data
 
-        # Always fetch source data
         country_code = None
         images_size = None
-        
+
         if request:
             country_code = request.query_params.get('country', None)
             try:
-                images_size = int(request.query_params.get('images_size')) if request.query_params.get('images_size') else None
+                images_size_param = request.query_params.get('images_size')
+                if images_size_param:
+                    images_size = int(images_size_param)
             except (ValueError, TypeError):
                 pass
-                
+
         data = fetch_source_data(obj, country_code=country_code, images_size=images_size)
 
         if not data:

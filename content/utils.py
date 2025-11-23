@@ -180,3 +180,70 @@ def _fetch_openlibrary_data(external_id: str, images_size: Optional[int] = None)
         pass
 
     return None
+
+
+def bulk_fetch_source_data(
+    content_items: list,
+    country_code: Optional[str] = None,
+    images_size: Optional[int] = None
+) -> Dict[int, Dict[str, Any]]:
+    """
+    Fetch source data for multiple ContentItems in parallel using ThreadPoolExecutor.
+
+    This function significantly improves performance by:
+    - Fetching all items concurrently instead of sequentially
+    - Using 10 parallel workers to maximize throughput
+    - Returning a dict mapping content_item.id -> source_data
+
+    Performance:
+        Sequential (before): 20 items × 500ms = 10 seconds
+        Parallel (after): 20 items / 10 workers × 500ms = 1 second
+
+    Args:
+        content_items: List of ContentItem instances to fetch data for
+        country_code: Optional ISO 3166-1 alpha-2 country code (e.g., 'US', 'GB')
+        images_size: Optional limit on number of images to return
+
+    Returns:
+        Dict mapping content_item.id (int) to source_data (dict)
+
+    Example:
+        >>> items = [item1, item2, item3]
+        >>> data = bulk_fetch_source_data(items, country_code='US', images_size=10)
+        >>> print(data[item1.id])  # {'title': '...', 'cover': {...}, ...}
+    """
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    if not content_items:
+        return {}
+
+    results = {}
+
+    # Fetch all items in parallel with ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        # Submit all fetch tasks
+        futures = {}
+        for item in content_items:
+            future = executor.submit(
+                fetch_source_data,
+                item,
+                country_code=country_code,
+                images_size=images_size
+            )
+            futures[future] = item.id
+
+        # Collect results as they complete
+        for future in as_completed(futures):
+            item_id = futures[future]
+            try:
+                data = future.result()
+                if data:
+                    results[item_id] = data
+                else:
+                    results[item_id] = None
+            except Exception as e:
+                # Log error but don't fail entire batch
+                print(f"Error fetching source data for item {item_id}: {e}")
+                results[item_id] = None
+
+    return results
