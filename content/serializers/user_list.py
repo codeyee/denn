@@ -39,7 +39,21 @@ class UserListSerializer(BaseFlexSerializer):
         }
 
     def get_member_count(self, obj):
-        return obj.members.count()
+        """Return total count of members including owner if not in list"""
+        # Use prefetch cache if available
+        if hasattr(obj, '_prefetched_objects_cache') and 'members' in obj._prefetched_objects_cache:
+            members = obj.members.all()
+            count = len(members)
+            # Check if owner is in members list
+            # Need to compare IDs or objects. Assuming objects are same instances from prefetch/select_related
+            if obj.owner_id not in [m.id for m in members]:
+                count += 1
+            return count
+
+        count = obj.members.count()
+        if not obj.members.filter(id=obj.owner_id).exists():
+            count += 1
+        return count
 
     def get_item_count(self, obj):
         return obj.items.count()
@@ -53,6 +67,7 @@ class UserListSerializer(BaseFlexSerializer):
 class UserListDetailSerializer(BaseFlexSerializer):
     owner = UserSerializer(read_only=True)
     members = serializers.SerializerMethodField()
+    member_count = serializers.SerializerMethodField()
     items = serializers.SerializerMethodField()
     item_count = serializers.SerializerMethodField()
 
@@ -66,6 +81,7 @@ class UserListDetailSerializer(BaseFlexSerializer):
             'list_type',
             'owner',
             'members',
+            'member_count',
             'items',
             'item_count',
             'created_at',
@@ -103,6 +119,21 @@ class UserListDetailSerializer(BaseFlexSerializer):
             many=True,
             context={'user_list': obj}
         ).data
+
+    def get_member_count(self, obj):
+        """Return total count of members including owner"""
+        # Use logic consistent with get_members
+        if hasattr(obj, '_prefetched_objects_cache') and 'members' in obj._prefetched_objects_cache:
+            members = obj.members.all()
+            count = len(members)
+            if obj.owner_id not in [m.id for m in members]:
+                count += 1
+            return count
+
+        count = obj.members.count()
+        if not obj.members.filter(id=obj.owner_id).exists():
+            count += 1
+        return count
 
     def get_item_count(self, obj):
         """Return total count of items in the list"""
