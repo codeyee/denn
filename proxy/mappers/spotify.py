@@ -98,7 +98,7 @@ class SpotifyMapper:
             external_url=track.get('external_urls', {}).get('spotify')
         )
 
-    def map_search_item(self, item: Dict[str, Any]) -> SearchItem:
+    def map_search_item(self, item: Dict[str, Any], content_type: Optional[str] = None) -> SearchItem:
         return SearchItem(
             id=item.get('id'),
             type=ContentType.ALBUM,

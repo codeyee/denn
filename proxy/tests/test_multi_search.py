@@ -3,6 +3,7 @@ from django.urls import reverse
 from rest_framework.test import APIClient
 from rest_framework import status
 from unittest.mock import patch, MagicMock
+from proxy.views.search import MultiSearchView
 
 
 class MultiSearchViewTests(TestCase):
@@ -14,6 +15,37 @@ class MultiSearchViewTests(TestCase):
         self.client = APIClient()
         self.url = reverse('proxy:multi-search')
 
+    def patch_client(self, content_type, return_value=None, side_effect=None):
+        """
+        Helper to patch the client class for a specific content type
+        """
+        mock_instance = MagicMock()
+        if return_value:
+            # Setup methods based on content type
+            if content_type == 'MOVIES':
+                mock_instance.search_movies.return_value = return_value
+            elif content_type == 'TV_SHOWS':
+                mock_instance.search_tv_shows.return_value = return_value
+            elif content_type == 'GAMES':
+                mock_instance.search_games.return_value = return_value
+            elif content_type == 'ALBUMS':
+                mock_instance.search.return_value = return_value
+            elif content_type == 'BOOKS':
+                mock_instance.search.return_value = return_value
+        
+        if side_effect:
+            if content_type == 'MOVIES':
+                mock_instance.search_movies.side_effect = side_effect
+            # Add others if needed
+
+        mock_class = MagicMock(return_value=mock_instance)
+        
+        patcher = patch.dict(MultiSearchView.CONTENT_TYPE_HANDLERS[content_type], {'client_class': mock_class})
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        
+        return mock_instance
+
     def test_missing_query_parameter_returns_400(self):
         """
         Test case: Request without query parameter
@@ -24,35 +56,23 @@ class MultiSearchViewTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.data['error'], 'MISSING_PARAMETER')
 
-    @patch('proxy.views.search.TMDBClient')
-    @patch('proxy.views.search.IGDBClient')
-    @patch('proxy.views.search.SpotifyClient')
-    @patch('proxy.views.search.OpenLibraryClient')
-    def test_search_all_types_default(self, mock_ol, mock_spotify, mock_igdb, mock_tmdb):
+    def test_search_all_types_default(self):
         """
         Test case: Search without types parameter searches all types
-        Expected: All 5 content types in response
+        Expected: All 5 content types in response and non-empty where data exists
         """
         # Mock TMDB responses
-        mock_tmdb_instance = MagicMock()
-        mock_tmdb_instance.search_movies.return_value = ({'results': []}, 200)
-        mock_tmdb_instance.search_tv_shows.return_value = ({'results': []}, 200)
-        mock_tmdb.return_value = mock_tmdb_instance
-
+        self.patch_client('MOVIES', ({'results': [{'id': 1, 'title': 'Movie', 'media_type': 'movie'}]}, 200))
+        self.patch_client('TV_SHOWS', ({'results': [{'id': 1, 'name': 'TV', 'media_type': 'tv'}]}, 200))
+        
         # Mock IGDB responses
-        mock_igdb_instance = MagicMock()
-        mock_igdb_instance.search_games.return_value = ([], 200)
-        mock_igdb.return_value = mock_igdb_instance
-
+        self.patch_client('GAMES', ([{'id': 1, 'name': 'Game'}], 200))
+        
         # Mock Spotify responses
-        mock_spotify_instance = MagicMock()
-        mock_spotify_instance.search.return_value = ({'albums': {'items': []}}, 200)
-        mock_spotify.return_value = mock_spotify_instance
-
+        self.patch_client('ALBUMS', ({'albums': {'items': [{'id': '1', 'name': 'Album'}]}}, 200))
+        
         # Mock OpenLibrary responses
-        mock_ol_instance = MagicMock()
-        mock_ol_instance.search.return_value = ({'docs': []}, 200)
-        mock_ol.return_value = mock_ol_instance
+        self.patch_client('BOOKS', ({'docs': [{'key': '/works/OL1W', 'title': 'Book'}]}, 200))
 
         response = self.client.get(self.url, {'query': 'inception'})
 
@@ -62,22 +82,31 @@ class MultiSearchViewTests(TestCase):
         self.assertIn('games', response.data)
         self.assertIn('music', response.data)
         self.assertIn('books', response.data)
+        
+        # Verify data is actually present (this verifies the mapping works)
+        self.assertEqual(len(response.data['movies']), 1)
+        self.assertEqual(len(response.data['tv_shows']), 1)
+        self.assertEqual(len(response.data['games']), 1)
+        self.assertEqual(len(response.data['music']), 1)
+        self.assertEqual(len(response.data['books']), 1)
 
-    @patch('proxy.views.search.TMDBClient')
-    def test_search_specific_types_only(self, mock_tmdb):
+    def test_search_specific_types_only(self):
         """
         Test case: Search with specific types parameter
         Expected: Only requested types are searched
         """
-        mock_tmdb_instance = MagicMock()
-        mock_tmdb_instance.search_movies.return_value = ({'results': []}, 200)
-        mock_tmdb.return_value = mock_tmdb_instance
+        mock_tmdb = self.patch_client('MOVIES', ({'results': []}, 200))
+        
+        # Use a fresh mock for IGDB to verify it's NOT called
+        mock_igdb_class = MagicMock()
+        with patch.dict(MultiSearchView.CONTENT_TYPE_HANDLERS['GAMES'], {'client_class': mock_igdb_class}):
+            response = self.client.get(self.url, {'query': 'inception', 'types': 'MOVIES'})
 
-        response = self.client.get(self.url, {'query': 'inception', 'types': 'MOVIES'})
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        # Only movies should have been called
-        mock_tmdb_instance.search_movies.assert_called_once()
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            # Movies should have been called
+            mock_tmdb.search_movies.assert_called_once()
+            # IGDB should NOT have been instantiated
+            mock_igdb_class.assert_not_called()
 
     def test_invalid_content_type_returns_400(self):
         """
@@ -107,52 +136,38 @@ class MultiSearchViewTests(TestCase):
         response = self.client.get(self.url, {'query': 'test', 'limit': 'abc'})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    @patch('proxy.views.search.TMDBClient')
-    @patch('proxy.views.search.IGDBClient')
-    def test_multiple_types_comma_separated(self, mock_igdb, mock_tmdb):
+    def test_multiple_types_comma_separated(self):
         """
         Test case: Multiple types as comma-separated string
         Expected: Searches only specified types
         """
-        mock_tmdb_instance = MagicMock()
-        mock_tmdb_instance.search_movies.return_value = ({'results': []}, 200)
-        mock_tmdb.return_value = mock_tmdb_instance
-
-        mock_igdb_instance = MagicMock()
-        mock_igdb_instance.search_games.return_value = ([], 200)
-        mock_igdb.return_value = mock_igdb_instance
+        mock_tmdb = self.patch_client('MOVIES', ({'results': []}, 200))
+        mock_igdb = self.patch_client('GAMES', ([], 200))
 
         response = self.client.get(self.url, {'query': 'test', 'types': 'MOVIES,GAMES'})
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        mock_tmdb_instance.search_movies.assert_called_once()
-        mock_igdb_instance.search_games.assert_called_once()
+        mock_tmdb.search_movies.assert_called_once()
+        mock_igdb.search_games.assert_called_once()
 
-    @patch('proxy.views.search.TMDBClient')
-    def test_api_error_returns_empty_array(self, mock_tmdb):
+    def test_api_error_returns_empty_array(self):
         """
         Test case: External API error
         Expected: Returns empty array for that type, not full failure
         """
-        mock_tmdb_instance = MagicMock()
-        mock_tmdb_instance.search_movies.side_effect = Exception("API Error")
-        mock_tmdb.return_value = mock_tmdb_instance
+        self.patch_client('MOVIES', side_effect=Exception("API Error"))
 
         response = self.client.get(self.url, {'query': 'test', 'types': 'MOVIES'})
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['movies'], [])
 
-    @patch('proxy.views.search.TMDBClient')
-    @patch('proxy.views.search.TMDBMapper')
-    def test_response_format_matches_homepage(self, mock_mapper, mock_tmdb):
+    def test_response_format_matches_homepage(self):
         """
         Test case: Response structure
         Expected: Matches homepage format with movies, tv_shows, games, music, books
         """
-        mock_tmdb_instance = MagicMock()
-        mock_tmdb_instance.search_movies.return_value = ({'results': []}, 200)
-        mock_tmdb.return_value = mock_tmdb_instance
+        self.patch_client('MOVIES', ({'results': []}, 200))
 
         response = self.client.get(self.url, {'query': 'test', 'types': 'MOVIES'})
 
@@ -164,45 +179,32 @@ class MultiSearchViewTests(TestCase):
         for key in expected_keys:
             self.assertIsInstance(response.data[key], list)
 
-    @patch('proxy.views.search.TMDBClient')
-    def test_limit_parameter_applied_correctly(self, mock_tmdb):
+    def test_limit_parameter_applied_correctly(self):
         """
         Test case: Limit parameter limits results per type
         Expected: Results respect limit parameter
         """
         # Create mock results (50 items)
-        mock_results = [{'id': i, 'title': f'Movie {i}'} for i in range(50)]
+        mock_results = [{'id': i, 'title': f'Movie {i}', 'media_type': 'movie'} for i in range(50)]
 
-        mock_tmdb_instance = MagicMock()
-        mock_tmdb_instance.search_movies.return_value = ({'results': mock_results}, 200)
-        mock_tmdb.return_value = mock_tmdb_instance
+        self.patch_client('MOVIES', ({'results': mock_results}, 200))
+        
+        # We need to ensure the mapper is real or behaves correctly. 
+        # Since we only patched the client, the real mapper is used.
+        # The real TMDBMapper will map these items.
 
-        # Mock mapper
-        with patch('proxy.views.search.TMDBMapper') as mock_mapper_class:
-            mock_mapper = MagicMock()
-            mock_mapped_item = MagicMock()
-            mock_mapped_item.to_dict.return_value = {'id': 1}
-            mock_mapper.map_search_item.return_value = mock_mapped_item
-            mock_mapper_class.return_value = mock_mapper
+        response = self.client.get(self.url, {'query': 'test', 'types': 'MOVIES', 'limit': '10'})
 
-            response = self.client.get(self.url, {'query': 'test', 'types': 'MOVIES', 'limit': '10'})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # Should return exactly 10 items
+        self.assertEqual(len(response.data['movies']), 10)
 
-            self.assertEqual(response.status_code, status.HTTP_200_OK)
-            # Should have called map_search_item max 10 times (due to limit)
-            self.assertLessEqual(mock_mapper.map_search_item.call_count, 10)
-
-    @patch('proxy.views.search.TMDBClient')
-    @patch('proxy.views.search.IGDBClient')
-    @patch('proxy.views.search.SpotifyClient')
-    @patch('proxy.views.search.OpenLibraryClient')
-    def test_case_insensitive_type_parameter(self, mock_ol, mock_spotify, mock_igdb, mock_tmdb):
+    def test_case_insensitive_type_parameter(self):
         """
         Test case: Types parameter is case-insensitive
         Expected: Accepts lowercase, uppercase, mixed case
         """
-        mock_tmdb_instance = MagicMock()
-        mock_tmdb_instance.search_movies.return_value = ({'results': []}, 200)
-        mock_tmdb.return_value = mock_tmdb_instance
+        self.patch_client('MOVIES', ({'results': []}, 200))
 
         # Test lowercase
         response = self.client.get(self.url, {'query': 'test', 'types': 'movies'})
@@ -217,16 +219,13 @@ class MultiSearchViewTests(TestCase):
         Test case: Whitespace in types parameter
         Expected: Handles spaces around commas correctly
         """
-        with patch('proxy.views.search.TMDBClient') as mock_tmdb:
-            mock_tmdb_instance = MagicMock()
-            mock_tmdb_instance.search_movies.return_value = ({'results': []}, 200)
-            mock_tmdb.return_value = mock_tmdb_instance
+        self.patch_client('MOVIES', ({'results': []}, 200))
+        self.patch_client('TV_SHOWS', ({'results': []}, 200))
 
-            response = self.client.get(self.url, {'query': 'test', 'types': 'MOVIES , TV_SHOWS'})
-            self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response = self.client.get(self.url, {'query': 'test', 'types': 'MOVIES , TV_SHOWS'})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    @patch('proxy.views.search.TMDBClient')
-    def test_person_results_filtered_out(self, mock_tmdb):
+    def test_person_results_filtered_out(self):
         """
         Test case: TMDB person results are filtered out
         Expected: Only non-person results returned
@@ -237,19 +236,10 @@ class MultiSearchViewTests(TestCase):
             {'id': 3, 'title': 'Movie 2', 'media_type': 'movie'},
         ]
 
-        mock_tmdb_instance = MagicMock()
-        mock_tmdb_instance.search_movies.return_value = ({'results': mock_results}, 200)
-        mock_tmdb.return_value = mock_tmdb_instance
+        self.patch_client('MOVIES', ({'results': mock_results}, 200))
 
-        with patch('proxy.views.search.TMDBMapper') as mock_mapper_class:
-            mock_mapper = MagicMock()
-            mock_mapped_item = MagicMock()
-            mock_mapped_item.to_dict.return_value = {'id': 1}
-            mock_mapper.map_search_item.return_value = mock_mapped_item
-            mock_mapper_class.return_value = mock_mapper
+        response = self.client.get(self.url, {'query': 'test', 'types': 'MOVIES'})
 
-            response = self.client.get(self.url, {'query': 'test', 'types': 'MOVIES'})
-
-            self.assertEqual(response.status_code, status.HTTP_200_OK)
-            # Should only map non-person results (2 items, not 3)
-            self.assertEqual(mock_mapper.map_search_item.call_count, 2)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # Should only have 2 items (persons filtered out)
+        self.assertEqual(len(response.data['movies']), 2)

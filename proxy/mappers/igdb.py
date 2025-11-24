@@ -149,7 +149,7 @@ class IGDBMapper:
             additional_galleries=additional_galleries[:4]
         )
 
-    def map_search_item(self, item: Dict[str, Any]) -> SearchItem:
+    def map_search_item(self, item: Dict[str, Any], content_type: Optional[str] = None) -> SearchItem:
         if isinstance(item, list) and len(item) > 0:
             item = item[0]
 

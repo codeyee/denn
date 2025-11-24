@@ -62,9 +62,9 @@ class OpenLibraryMapper:
             return str(first_publish_year)
         return None
 
-    def map_search_item(self, item: Dict[str, Any]) -> SearchItem:
+    def map_search_item(self, item: Dict[str, Any], content_type: Optional[str] = None) -> SearchItem:
         cover_id = item.get('cover_i')
-        image_url = self._build_cover_url(cover_id, 'M')
+        image_url = self._build_cover_url(cover_id, 'L')
 
         description = None
         first_sentence = item.get('first_sentence')
