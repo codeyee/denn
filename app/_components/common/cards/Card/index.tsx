@@ -24,6 +24,8 @@ interface CardProps {
 
   className?: string;
   backgroundImage?: string;
+  backgroundImages?: string[];
+  activeImageIndex?: number;
   backgroundImageAlt?: string;
   icon?: LucideIcon;
   noAspectRatio?: boolean;
@@ -70,6 +72,8 @@ function Card({
   title,
   type,
   backgroundImage,
+  backgroundImages,
+  activeImageIndex = 0,
   backgroundImageAlt,
   icon,
   emptyIcon,
@@ -144,26 +148,47 @@ function Card({
                 )}
               </div>
             ) : (
-              <AnimatePresence>
-                <motion.div
-                  key={backgroundImage}
-                  className="absolute inset-0 bg-center bg-cover"
-                  style={{ backgroundImage: `url(${backgroundImage})` }}
-                  aria-label={backgroundImageAlt}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.5, ease: "easeInOut" }}
-                />
-              </AnimatePresence>
+              <>
+                {/* Multiple Images Mode */}
+                {backgroundImages && backgroundImages.length > 0 ? (
+                  <div className="absolute inset-0">
+                    {backgroundImages.map((img, idx) => (
+                      <div
+                        key={`${img}-${idx}`}
+                        className="absolute inset-0 bg-center bg-cover transition-opacity duration-500 ease-in-out"
+                        style={{
+                          backgroundImage: `url(${img})`,
+                          opacity: idx === activeImageIndex ? 1 : 0,
+                          zIndex: idx === activeImageIndex ? 1 : 0
+                        }}
+                        aria-label={idx === activeImageIndex ? backgroundImageAlt : undefined}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  /* Single Image Mode (Legacy) */
+                  <AnimatePresence>
+                    <motion.div
+                      key={backgroundImage}
+                      className="absolute inset-0 bg-center bg-cover"
+                      style={{ backgroundImage: `url(${backgroundImage})` }}
+                      aria-label={backgroundImageAlt}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.5, ease: "easeInOut" }}
+                    />
+                  </AnimatePresence>
+                )}
+              </>
             )}
 
             {/* Overlay layer */}
-            {!isEmpty && <div className="absolute inset-0 bg-black/20 md:bg-black/20" />}
+            {!isEmpty && <div className="absolute inset-0 bg-black/20 md:bg-black/20 z-5" />}
             <div
-              className={`absolute inset-x-0 bottom-0 h-[55%] md:h-[55%] bg-linear-to-t ${isEmpty
-                  ? "from-gray-700/80 via-gray-600/40 to-transparent"
-                  : "from-black/95 via-black/60 to-transparent md:from-black/95 md:via-black/40 md:to-transparent"
+              className={`absolute inset-x-0 bottom-0 h-[55%] md:h-[55%] bg-linear-to-t z-5 ${isEmpty
+                ? "from-gray-700/80 via-gray-600/40 to-transparent"
+                : "from-black/95 via-black/60 to-transparent md:from-black/95 md:via-black/40 md:to-transparent"
                 }`}
             />
 
@@ -216,16 +241,18 @@ function Card({
                 ) : (
                   <div
                     className="absolute inset-0 bg-center bg-cover cursor-pointer"
-                    style={{ backgroundImage: `url(${backgroundImage})` }}
+                    style={{
+                      backgroundImage: `url(${backgroundImages && backgroundImages.length > 0 ? backgroundImages[activeImageIndex] : backgroundImage})`
+                    }}
                   />
                 )}
 
                 {/* Overlay and gradient */}
-                {!isEmpty && <div className="absolute inset-0 bg-black/20" />}
+                {!isEmpty && <div className="absolute inset-0 bg-black/20 z-5" />}
                 <div
-                  className={`absolute inset-x-0 bottom-0 h-[55%] bg-linear-to-t ${isEmpty
-                      ? "from-gray-700/80 via-gray-600/40 to-transparent"
-                      : "from-black/95 via-black/60 to-transparent"
+                  className={`absolute inset-x-0 bottom-0 h-[55%] bg-linear-to-t z-5 ${isEmpty
+                    ? "from-gray-700/80 via-gray-600/40 to-transparent"
+                    : "from-black/95 via-black/60 to-transparent"
                     }`}
                 />
 

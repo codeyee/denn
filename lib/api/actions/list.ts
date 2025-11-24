@@ -17,8 +17,12 @@ export const listActions = {
     return api.get<PaginatedUserListList>(`/content/lists/${query}`, true);
   },
 
-  get: (id: number, country?: string): Promise<UserListDetail> => {
-    const query = buildQueryString({ addCountry: true, country });
+  get: (id: number, params?: ListQueryParams): Promise<UserListDetail> => {
+    const query = buildQueryString({
+      params,
+      addCountry: true,
+      country: params?.country,
+    });
     return api.get<UserListDetail>(`/content/lists/${id}/${query}`, true);
   },
 

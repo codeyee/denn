@@ -2,7 +2,6 @@
 
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "motion/react";
 import { Noise } from "@/app/_components/common/Noise";
 import { Content } from "@/lib/types";
 import { ContentType } from "@/lib/types";
@@ -46,21 +45,27 @@ export function FeaturedBanner({ items, autoRotateMs = 5000 }: FeaturedBannerPro
   if (validItems.length === 0) return null;
 
   const current = validItems[index];
-  const backgroundUrl = getBestImageUrl(current);
 
   return (
     <div className="relative w-full aspect-16/16 md:aspect-16/13 lg:aspect-16/10 xl:aspect-16/7 4xl:aspect-16/5 15xl:aspect-16/3 overflow-hidden mb-6 md:mb-10 rounded-none md:rounded-2xl">
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={current.id}
-          className="absolute inset-0 bg-center bg-cover"
-          style={{ backgroundImage: `url(${backgroundUrl})` }}
-          initial={{ opacity: 0.3, scale: 1.02 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.6, ease: "easeInOut" }}
-        />
-      </AnimatePresence>
+      <div className="absolute inset-0">
+        {validItems.map((item, i) => {
+          const url = getBestImageUrl(item);
+          const isActive = i === index;
+
+          return (
+            <div
+              key={item.id}
+              className="absolute inset-0 bg-center bg-cover transition-opacity duration-500 ease-in-out"
+              style={{
+                backgroundImage: `url(${url})`,
+                opacity: isActive ? 1 : 0,
+                zIndex: isActive ? 1 : 0
+              }}
+            />
+          );
+        })}
+      </div>
 
       <div className="absolute inset-0 pointer-events-none z-10">
         <Noise patternAlpha={15} patternRefreshInterval={2} />

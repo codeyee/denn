@@ -57,7 +57,11 @@ export function AddToListModal({
 
   useEffect(() => {
     if (isOpen) {
-      fetchLists({ items_size: 4 });
+      // Optimize: Only fetch minimal fields needed for list display and duplicate checking
+      fetchLists({
+        items_size: 4,
+        fields: "id,name,item_count,items.id,items.content_item.external_id,items.content_item.source_api,items.content_item.content_type",
+      });
       operations.setError(null);
       seasonSelection.resetSelection();
       phases.resetPhases();

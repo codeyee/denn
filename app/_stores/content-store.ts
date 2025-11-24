@@ -24,7 +24,7 @@ interface ContentState {
 }
 
 interface ContentActions {
-  fetchSuggestions: (limit?: number) => Promise<void>;
+  fetchSuggestions: (limit?: number, fields?: string, imagesSize?: number) => Promise<void>;
   clearError: () => void;
   resetSuggestions: () => void;
 }
@@ -47,7 +47,7 @@ const initialState: ContentState = {
 export const useContentStore = create<ContentStore>((set, get) => ({
   ...initialState,
 
-  fetchSuggestions: async (limit = 20) => {
+  fetchSuggestions: async (limit = 20, fields?: string, imagesSize?: number) => {
     // Check if we already have data and it's less than 6 hours old
     const { lastFetched } = get();
     const sixHoursInMs = 6 * 60 * 60 * 1000;
@@ -60,7 +60,11 @@ export const useContentStore = create<ContentStore>((set, get) => ({
     set({ isLoading: true, error: null });
 
     try {
-      const response = await homepageActions.getSuggestions(limit);
+      const response = await homepageActions.getSuggestions({
+        limit,
+        fields,
+        images_size: imagesSize,
+      });
 
       set({
         suggestions: {

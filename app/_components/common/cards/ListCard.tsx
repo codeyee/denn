@@ -65,9 +65,7 @@ export function ListCard({ list, className }: ListCardProps) {
     return () => clearInterval(interval);
   }, [backgroundImages.length]);
 
-  const backgroundImage = backgroundImages.length > 0
-    ? backgroundImages[currentImageIndex]
-    : undefined;
+
 
   const handleClick = () => {
     router.push(`/lists/${id}`);
@@ -79,7 +77,8 @@ export function ListCard({ list, className }: ListCardProps) {
         id={id}
         title={title}
         icon={ListIcon}
-        backgroundImage={backgroundImage}
+        backgroundImages={backgroundImages}
+        activeImageIndex={currentImageIndex}
         backgroundImageAlt={`${title} list background`}
         className={className}
         isEmpty={!hasItems}

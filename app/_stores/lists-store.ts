@@ -11,8 +11,8 @@ interface ListsState {
 }
 
 interface ListsActions {
-  fetchLists: (options?: { items_size?: number }) => Promise<void>;
-  forceRefreshLists: (options?: { items_size?: number }) => Promise<void>;
+  fetchLists: (options?: { items_size?: number; images_size?: number; fields?: string; expand?: string; source_fields?: string }) => Promise<void>;
+  forceRefreshLists: (options?: { items_size?: number; images_size?: number; fields?: string; expand?: string; source_fields?: string }) => Promise<void>;
   fetchListItems: (listId: number, pageSize: number) => Promise<void>;
   createList: (
     name: string,
@@ -54,7 +54,7 @@ const initialState: ListsState = {
 export const useListsStore = create<ListsStore>((set, get) => ({
   ...initialState,
 
-  fetchLists: async (options?: { items_size?: number }) => {
+  fetchLists: async (options?: { items_size?: number; images_size?: number; fields?: string; expand?: string; source_fields?: string }) => {
     const { lastFetched } = get();
     const fiveMinutesInMs = 5 * 60 * 1000;
 
@@ -85,7 +85,7 @@ export const useListsStore = create<ListsStore>((set, get) => ({
     }
   },
 
-  forceRefreshLists: async (options?: { items_size?: number }) => {
+  forceRefreshLists: async (options?: { items_size?: number; images_size?: number; fields?: string; expand?: string; source_fields?: string }) => {
     set({ isLoading: true, error: null });
 
     try {

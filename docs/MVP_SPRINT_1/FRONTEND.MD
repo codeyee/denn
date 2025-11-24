@@ -60,12 +60,6 @@ export const buildQuery = (options: FetchOptions) => {
 
 ---
 
-Aquí tienes la versión actualizada y ampliada de la tarea **FE-102**.
-
-Al hacerla "general", el alcance crece significativamente, por lo que he ajustado la estimación de tiempo a **3 días** (en lugar de 1), ya que implica auditar y refactorizar múltiples vistas principales de la aplicación, no solo un modal.
-
----
-
 ### FE-102: System-wide API Fetching Optimization
 
 **Priority:** 🔴 CRITICAL (Performance Overhaul)

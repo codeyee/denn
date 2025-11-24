@@ -534,7 +534,12 @@ export interface ListQueryParams {
   page?: number;
   page_size?: number;
   items_size?: number;
+  images_size?: number;
   country?: string;
+  fields?: string;
+  expand?: string;
+  omit?: string;
+  source_fields?: string;
 }
 
 export interface ContentItemQueryParams {
@@ -546,6 +551,10 @@ export interface ContentItemQueryParams {
   external_id?: string;
   ordering?: string;
   country?: string;
+  fields?: string;
+  expand?: string;
+  omit?: string;
+  source_fields?: string;
 }
 
 export interface RatingQueryParams {
@@ -588,4 +597,26 @@ export interface BookSearchParams {
   query: string;
   page?: number;
   page_size?: number;
+}
+
+export type ListSummary = Pick<UserList, "id" | "name" | "item_count">;
+
+export interface ListWithItemsPreview extends ListSummary {
+  items?: ListItemBasic[];
+}
+
+export interface ListItemBasic {
+  id: number;
+  status: ItemStatus;
+  content_item: ContentItemBasic;
+  list_order?: number;
+}
+
+export type ContentItemBasic = Pick<
+  ContentItemData,
+  "id" | "source_api" | "external_id" | "content_type" | "source_data"
+>;
+
+export interface ListWithItems extends UserList {
+  items?: ListItem[];
 }

@@ -59,3 +59,51 @@ export function addCountryParam(
   const countryCode = country || getUserCountryCode();
   params.append("country", countryCode);
 }
+
+export interface FlexFieldOptions {
+  fields?: string[];
+  expand?: string[];
+  omit?: string[];
+  sourceFields?: string[];
+  [key: string]: unknown;
+}
+
+export function buildFlexFieldsQuery(options: FlexFieldOptions): string {
+  const params = new URLSearchParams();
+
+  if (options.fields && options.fields.length > 0) {
+    params.append("fields", options.fields.join(","));
+  }
+
+  if (options.expand && options.expand.length > 0) {
+    params.append("expand", options.expand.join(","));
+  }
+
+  if (options.omit && options.omit.length > 0) {
+    params.append("omit", options.omit.join(","));
+  }
+
+  if (options.sourceFields && options.sourceFields.length > 0) {
+    params.append("source_fields", options.sourceFields.join(","));
+  }
+
+  // Handle any additional query parameters
+  Object.entries(options).forEach(([key, value]) => {
+    if (
+      key !== "fields" &&
+      key !== "expand" &&
+      key !== "omit" &&
+      key !== "sourceFields" &&
+      value !== undefined &&
+      value !== null
+    ) {
+      if (Array.isArray(value)) {
+        params.append(key, value.join(","));
+      } else {
+        params.append(key, String(value));
+      }
+    }
+  });
+
+  return params.toString();
+}

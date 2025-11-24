@@ -22,8 +22,9 @@ export function useListData(listId: number): UseListDataReturn {
     try {
       setLoading(true);
       setError(null);
-
-      const listData = await listActions.get(listId);
+      const listData = await listActions.get(listId, {
+        expand: "items.content_item,owner,members",
+      });
       setList(listData);
       setListItems(listData.items as ListItem[]);
     } catch (err) {
