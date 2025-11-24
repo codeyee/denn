@@ -42,14 +42,27 @@ class OpenLibraryClient(CachedAPIClient):
         )
 
     def get_book_by_key(self, book_id: str) -> Tuple[Dict[str, Any], int]:
-        book_id = book_id.lstrip('/')
-        endpoint = f'{book_id}.json'
-        return self.cached_get(
-            endpoint=endpoint,
-            cache_type='api_openlibrary_details',
-            operation='details',
-            book_id=book_id
-        )
+        """
+        Get book details by OpenLibrary work ID.
+
+        Uses search endpoint with the book ID as query to get consistent format.
+        Returns the first search result which matches the requested book.
+
+        Args:
+            book_id: OpenLibrary work ID (e.g., 'OL274505W' or '/works/OL274505W')
+
+        Returns:
+            Tuple of (book_data, status_code)
+        """
+        # Use search_by_key to get book in search format (consistent with homepage)
+        data, status_code = self.search_by_key(book_id)
+
+        if status_code == 200 and 'docs' in data and len(data['docs']) > 0:
+            # Return first result (the book itself)
+            return data['docs'][0], 200
+
+        # Not found
+        return {'error': 'RESOURCE_NOT_FOUND', 'message': 'Book not found'}, 404
 
     def search_by_key(self, key: str) -> Tuple[Dict[str, Any], int]:
         endpoint = 'search.json'
@@ -99,10 +112,23 @@ class OpenLibraryClient(CachedAPIClient):
         return results, 200
 
     def get_trending_books(self, limit: int = 50) -> Tuple[Dict[str, Any], int]:
+        """
+        Get trending/popular books using search endpoint.
+
+        OpenLibrary doesn't support q=* queries, so we use a broad search term
+        like 'bestseller' sorted by rating to get popular books.
+
+        Args:
+            limit: Maximum number of books to return
+
+        Returns:
+            Tuple of (response_data, status_code)
+            Response format is standard search.json with 'docs' array
+        """
         endpoint = 'search.json'
         params = {
-            'q': '*',
-            'sort': 'rating',
+            'q': 'bestseller',  # Broad search term that returns popular books
+            'sort': 'rating',   # Sort by rating to get best books first
             'limit': limit,
             'fields': '*'
         }
@@ -111,6 +137,6 @@ class OpenLibraryClient(CachedAPIClient):
             endpoint=endpoint,
             cache_type='api_openlibrary_trending',
             params=params,
-            operation='search',
+            operation='trending',
             limit=limit
         )

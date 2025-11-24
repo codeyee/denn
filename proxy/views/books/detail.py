@@ -42,7 +42,7 @@ class BookDetailView(OpenLibraryBaseView):
         mapper = self.get_mapper()
         images_size = int(request.query_params.get('images_size', 18))
 
-        data, status_code = client.get_book(book_id=book_id)
+        data, status_code = client.get_book_by_key(book_id=book_id)
 
         if status_code != http_status.HTTP_200_OK:
             if status_code == http_status.HTTP_404_NOT_FOUND:
