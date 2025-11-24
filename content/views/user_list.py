@@ -23,6 +23,14 @@ from rest_flex_fields.views import FlexFieldsMixin
         - `items_size`: Number of items to include per list (0 or not set = don't fetch items, >0 = fetch that many items, default: 0)
         - `country`: ISO 3166-1 alpha-2 country code (e.g., US, GB, FR) to filter providers by country (only applies when source_api=tmdb).
 
+        **Item Filtering (Performance Optimization):**
+        - `filter_external_id`: Filter items by external_id (e.g., "945961" for a movie, "1396:1" for a season)
+        - `filter_source_api`: Filter items by source API (e.g., "TMDB", "IGDB", "Spotify", "OpenLibrary") - case insensitive
+        - `filter_content_type`: Filter items by content type (e.g., "MOVIE", "TV_SHOW", "SEASON", "GAME", "ALBUM", "BOOK") - case insensitive
+
+        When item filters are provided, only items matching ALL criteria (logical AND) will be included in each list's items array.
+        If no items match, the items array will be empty. This dramatically reduces data transfer when checking if specific content exists in user lists.
+
         **Dynamic Fields (drf-flex-fields):**
         - `fields`: Comma-separated list of fields to include
         - `omit`: Comma-separated list of fields to exclude
@@ -34,10 +42,15 @@ from rest_flex_fields.views import FlexFieldsMixin
         - `?expand=owner` - Expand owner relationship with full user details
         - `?expand=items&items_size=5` - Expand first 5 items with full details
         - `?expand=owner,members&fields=id,name,owner,members` - Expand relationships and limit fields
+        - `?filter_external_id=945961&filter_source_api=TMDB&filter_content_type=MOVIE` - Check if "Alien: Romulus" is in any list
+        - `?filter_external_id=1396:1&filter_source_api=TMDB&filter_content_type=SEASON` - Check if "Breaking Bad Season 1" is in any list
         ''',
         parameters=[
             OpenApiParameter('items_size', OpenApiTypes.INT, OpenApiParameter.QUERY, required=False, description='Number of items to include per list (0 or not set = no items, >0 = fetch that many items, default: 0)'),
             OpenApiParameter('country', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='ISO 3166-1 alpha-2 country code to filter providers by country (only applies when source_api=tmdb)'),
+            OpenApiParameter('filter_external_id', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Filter items by external_id (e.g., "945961" for a movie, "1396:1" for a season)'),
+            OpenApiParameter('filter_source_api', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Filter items by source API (e.g., "TMDB", "IGDB") - case insensitive'),
+            OpenApiParameter('filter_content_type', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Filter items by content type (e.g., "MOVIE", "SEASON") - case insensitive'),
             OpenApiParameter('fields', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Comma-separated list of fields to include (e.g., "id,name,list_type")'),
             OpenApiParameter('omit', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Comma-separated list of fields to exclude (e.g., "created_at,updated_at")'),
             OpenApiParameter('expand', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Comma-separated list of relationships to expand (e.g., "owner,items,members")')
@@ -143,6 +156,7 @@ class UserListViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
         - select_related('owner') - Single JOIN instead of separate query
         - Prefetch('items') - Custom queryset with select_related for foreign keys
         - Prefetch('items__content_item__ratings') - Only ratings from list members
+        - Item filtering - Filter items by external_id, source_api, and content_type
 
         Performance impact:
         - Before: ~40-60 queries (N+1 for items, ratings, users)
@@ -150,8 +164,27 @@ class UserListViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
         """
         user = self.request.user
 
+        # Apply optional item filters for performance optimization
+        # When checking if a specific content is in user's lists (e.g., "Add to List" modal),
+        # filtering at the database level prevents transferring unnecessary data
+        filter_external_id = self.request.query_params.get('filter_external_id')
+        filter_source_api = self.request.query_params.get('filter_source_api')
+        filter_content_type = self.request.query_params.get('filter_content_type')
+
+        # Build filter dictionary for items (logical AND)
+        item_filters = {}
+        if filter_external_id:
+            item_filters['content_item__external_id'] = filter_external_id
+        if filter_source_api:
+            # Convert to lowercase to match database storage (e.g., 'TMDB' -> 'tmdb')
+            item_filters['content_item__source_api'] = filter_source_api.lower()
+        if filter_content_type:
+            # Content type is stored in uppercase (e.g., 'MOVIE', 'SEASON')
+            item_filters['content_item__content_type'] = filter_content_type.upper()
+
         # Optimized queryset for list items with all related data
-        items_queryset = ListItem.objects.select_related(
+        # We apply filters first, then select_related and order_by
+        items_queryset = ListItem.objects.filter(**item_filters).select_related(
             'content_item',  # Avoid extra query for each item's content
             'added_by'       # Avoid extra query for each item's added_by user
         ).order_by('list_order', '-added_at')
