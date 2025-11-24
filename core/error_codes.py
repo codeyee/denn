@@ -75,3 +75,9 @@ class ErrorCode:
         message='API rate limit exceeded',
         http_status=status.HTTP_429_TOO_MANY_REQUESTS
     )
+
+    DUPLICATE_ITEM = ErrorCodeData(
+        code='DUPLICATE_ITEM',
+        message='This item is already in the list',
+        http_status=status.HTTP_400_BAD_REQUEST
+    )

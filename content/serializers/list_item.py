@@ -4,6 +4,7 @@ from .content_item import ContentItemSerializer
 from .user import UserSerializer
 
 from core.serializers import BaseFlexSerializer
+from core.exceptions import DuplicateItemException
 
 class MemberRatingSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
@@ -40,7 +41,6 @@ class ListItemSerializer(BaseFlexSerializer):
             'status',
             'added_at',
             'completed_at',
-            'notes',
             'member_ratings',
             'list_rating',
             'member_rating_count',
@@ -207,7 +207,6 @@ class ListItemCreateSerializer(serializers.ModelSerializer):
             'content_item',
             'added_by',
             'status',
-            'notes',
             'added_at',
             'completed_at',
         ]
@@ -256,6 +255,23 @@ class ListItemCreateSerializer(serializers.ModelSerializer):
             content_type=content_type,
             defaults={}
         )
+
+        # Check for duplicate item in the same list
+        user_list = validated_data.get('user_list')
+        existing_item = ListItem.objects.filter(
+            user_list=user_list,
+            content_item=content_item
+        ).first()
+
+        if existing_item:
+            raise DuplicateItemException(
+                existing_item_id=existing_item.id,
+                existing_item={
+                    'id': existing_item.id,
+                    'added_at': existing_item.added_at.isoformat(),
+                    'status': existing_item.status
+                }
+            )
 
         list_item = ListItem.objects.create(
             content_item=content_item,

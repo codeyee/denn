@@ -5,15 +5,17 @@ from core.error_codes import ErrorCode, ErrorCodeData
 
 
 class APIError(Exception):
-    def __init__(self, error_code: ErrorCodeData, custom_message: str = None):
+    def __init__(self, error_code: ErrorCodeData, custom_message: str = None, extra_data: dict = None):
         self.error_code = error_code
         self.message = custom_message or error_code.message
+        self.extra_data = extra_data or {}
         super().__init__(self.message)
 
     def to_response(self) -> Response:
         response_data = {
             'error': self.error_code.code,
-            'message': self.message
+            'message': self.message,
+            **self.extra_data
         }
 
         return Response(response_data, status=self.error_code.http_status)
@@ -96,6 +98,17 @@ class RateLimitExceededException(APIError):
         super().__init__(
             ErrorCode.RATE_LIMIT_EXCEEDED,
             custom_message=custom_message
+        )
+
+
+class DuplicateItemException(APIError):
+    def __init__(self, existing_item_id: int, existing_item: dict):
+        super().__init__(
+            ErrorCode.DUPLICATE_ITEM,
+            extra_data={
+                'existing_item_id': existing_item_id,
+                'existing_item': existing_item
+            }
         )
 
 

@@ -1,4 +1,5 @@
 from typing import Dict, List, Any
+from datetime import datetime, timedelta, date
 
 def filter_dictionary(data: Any, fields: List[str]) -> Any:
     """
@@ -78,5 +79,61 @@ def filter_dictionary(data: Any, fields: List[str]) -> Any:
                     filtered_data[root] = data[root]
                 else:
                     filtered_data[root] = filter_dictionary(data[root], sub_fields)
-                    
+
     return filtered_data
+
+
+def filter_unreleased_content(results: List[Dict], include_unreleased: bool = False) -> List[Dict]:
+    """
+    Filter out content with future release dates.
+
+    Args:
+        results: List of content items with release_date field
+        include_unreleased: If True, include items with future release dates
+
+    Returns:
+        Filtered list with only released content (or all if include_unreleased=True)
+
+    Rules:
+        - Items with null/missing release_date are INCLUDED
+        - Items with release_date > today + 1 day are filtered out
+        - 1-day margin accounts for timezone differences
+    """
+    if include_unreleased:
+        return results
+
+    filtered = []
+    # Add 1-day margin for timezone differences
+    cutoff_date = date.today() + timedelta(days=1)
+
+    for item in results:
+        release_date = item.get('release_date')
+
+        # Include items with no release date
+        if not release_date:
+            filtered.append(item)
+            continue
+
+        try:
+            # Parse date string (format: YYYY-MM-DD)
+            if isinstance(release_date, str):
+                # Handle various date formats
+                if len(release_date) == 4:  # Year only (YYYY)
+                    item_date = datetime.strptime(release_date, '%Y').date()
+                elif len(release_date) == 7:  # Year-Month (YYYY-MM)
+                    item_date = datetime.strptime(release_date, '%Y-%m').date()
+                else:  # Full date (YYYY-MM-DD)
+                    item_date = datetime.strptime(release_date, '%Y-%m-%d').date()
+
+                # Include if release date is today or in the past (with margin)
+                if item_date <= cutoff_date:
+                    filtered.append(item)
+            else:
+                # If not a string, include it (unknown format)
+                filtered.append(item)
+
+        except (ValueError, TypeError, AttributeError):
+            # If date parsing fails, include the item (invalid dates shouldn't block content)
+            filtered.append(item)
+
+    return filtered

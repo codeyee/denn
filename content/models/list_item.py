@@ -48,12 +48,6 @@ class ListItem(models.Model):
         help_text='Date and time of completion'
     )
 
-    notes = models.TextField(
-        blank=True,
-        null=True,
-        help_text='Personal notes about this item'
-    )
-
     list_order = models.IntegerField(
         default=0,
         help_text='Order position within the list (1-based)'
