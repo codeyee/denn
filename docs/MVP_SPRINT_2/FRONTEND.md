@@ -1,8 +1,6 @@
-# Sprint 2 - Frontend Tasks (Week 5-6)
+# Sprint 2 - Frontend Tasks
 
 > **Sprint Goal:** Integrate backend improvements and build core UX features
-> **Duration:** 2 weeks
-> **Team:** Frontend
 
 ---
 
@@ -10,13 +8,256 @@
 
 **Before starting this sprint, ensure:**
 
--   [ ] BE-101: Owner in members (Sprint 1) - DEPLOYED ✅
--   [ ] BE-102: Filter invalid seasons (Sprint 1) - DEPLOYED ✅
--   [ ] BE-103: Owner ratings (Sprint 1) - DEPLOYED ✅
--   [ ] BE-104: List count fix (Sprint 1) - DEPLOYED ✅
--   [ ] BE-201: Calculated ratings (Sprint 2) - DEPLOYED ✅
--   [ ] BE-202: Multi-search endpoint (Sprint 2) - DEPLOYED ✅
--   [ ] BE-203: Duplicate validation (Sprint 2) - DEPLOYED ✅
+-   [x] BE-101: Owner in members (Sprint 1) - DEPLOYED ✅
+-   [x] BE-102: Filter invalid seasons (Sprint 1) - DEPLOYED ✅
+-   [x] BE-103: Owner ratings (Sprint 1) - DEPLOYED ✅
+-   [x] BE-104: List count fix (Sprint 1) - DEPLOYED ✅
+-   [x] BE-201: Calculated ratings (Sprint 2) - DEPLOYED ✅
+-   [x] BE-202: Multi-search endpoint (Sprint 2) - DEPLOYED ✅
+-   [x] BE-203: Duplicate validation (Sprint 2) - DEPLOYED ✅
+-   [x] BE-204: Remove notes field (Sprint 2) - DEPLOYED ✅
+-   [x] BE-205: Filter unreleased content (Sprint 2) - DEPLOYED ✅
+
+---
+
+## 📚 Backend Changes Summary (Sprint 2)
+
+### 🚨 Breaking Changes
+
+#### 1. `notes` Field Removed (BE-204)
+
+The `notes` field has been completely removed from the database and all API responses.
+
+**Before:**
+
+```json
+{
+  "id": 123,
+  "content_item": {...},
+  "status": "PENDING",
+  "notes": "Watch this next weekend"  // ❌ No longer exists
+}
+```
+
+**After:**
+
+```json
+{
+  "id": 123,
+  "content_item": {...},
+  "status": "PENDING"
+}
+```
+
+**Action Required:**
+
+-   Remove `notes` field from TypeScript interfaces
+-   Remove any UI that displays or edits notes
+-   Remove `notes` from POST/PATCH payloads
+
+---
+
+### ✨ New Backend Features
+
+#### 1. Server-Side Rating Calculations (BE-201)
+
+**Endpoint:** `GET /api/content/lists/{list_id}/items/`
+
+The backend now pre-calculates `list_rating` and `member_rating_count`.
+
+**Response:**
+
+```json
+{
+  "id": 123,
+  "status": "COMPLETED",
+  "member_ratings": [
+    {"user": {...}, "score": "8.5"},
+    {"user": {...}, "score": "9.0"}
+  ],
+  "list_rating": 8.8,           // ✨ NEW: Pre-calculated average
+  "member_rating_count": 2      // ✨ NEW: Pre-calculated count
+}
+```
+
+**Rules:**
+
+-   `list_rating` is **only present for COMPLETED items**
+-   Returns `null` if no ratings exist
+-   Only counts ratings from **list members** (including owner)
+
+---
+
+#### 2. Multi-Search Endpoint (BE-202)
+
+**Endpoint:** `GET /api/proxy/search/multi/`
+
+Search across all content types with a single API call.
+
+**Before (5 requests):**
+
+```typescript
+const movies = await api.get("/api/proxy/movies/search/?query=inception");
+const tvShows = await api.get("/api/proxy/tv-shows/search/?query=inception");
+const games = await api.get("/api/proxy/games/search/?query=inception");
+const albums = await api.get("/api/proxy/albums/search/?query=inception");
+const books = await api.get("/api/proxy/books/search/?query=inception");
+```
+
+**After (1 request):**
+
+```typescript
+const results = await api.get('/api/proxy/search/multi/?query=inception&limit=20');
+
+// Response structure (matches /homepage)
+{
+  "movies": [...],      // SearchItem[]
+  "tv_shows": [...],    // SearchItem[]
+  "games": [...],       // SearchItem[]
+  "music": [...],       // SearchItem[] (renamed from "albums")
+  "books": [...]        // SearchItem[]
+}
+```
+
+**Query Parameters:**
+
+| Parameter            | Type    | Required | Default | Description                                           |
+| -------------------- | ------- | -------- | ------- | ----------------------------------------------------- |
+| `query`              | string  | ✅ Yes   | -       | Search query                                          |
+| `types`              | string  | No       | All     | Comma-separated: `MOVIES,TV_SHOWS,GAMES,ALBUMS,BOOKS` |
+| `limit`              | integer | No       | 20      | Results per type (1-100)                              |
+| `include_unreleased` | boolean | No       | false   | Include future releases                               |
+
+**Examples:**
+
+```typescript
+// Search all types
+GET /api/proxy/search/multi/?query=inception
+
+// Search specific types
+GET /api/proxy/search/multi/?query=inception&types=MOVIES,TV_SHOWS
+
+// Custom limit
+GET /api/proxy/search/multi/?query=inception&limit=10
+
+// Include unreleased content
+GET /api/proxy/search/multi/?query=dune&include_unreleased=true
+```
+
+---
+
+#### 3. Duplicate Item Validation (BE-203)
+
+**Endpoint:** `POST /api/content/lists/{list_id}/items/`
+
+The backend now prevents duplicate items in the same list.
+
+**Error Response (400):**
+
+```json
+{
+    "error": "DUPLICATE_ITEM",
+    "message": "This item is already in the list",
+    "existing_item_id": 456,
+    "existing_item": {
+        "id": 456,
+        "added_at": "2024-01-15T10:30:00Z",
+        "status": "PENDING"
+    }
+}
+```
+
+**Frontend Handling:**
+
+```typescript
+try {
+    await addItemToList(listId, contentItemId);
+    toast.success("Added to list!");
+} catch (error) {
+    if (error.response?.data?.error === "DUPLICATE_ITEM") {
+        toast.info("This item is already in the list");
+        // Optionally scroll to existing item
+    } else {
+        toast.error("Failed to add item");
+    }
+}
+```
+
+---
+
+#### 4. Unreleased Content Filtering (BE-205)
+
+All search endpoints now filter out content with **future release dates** by default.
+
+**Rules:**
+
+-   ✅ Included: Items with `null` release date
+-   ✅ Included: Items with `release_date <= today + 1 day`
+-   ❌ Excluded: Items with `release_date > today + 1 day`
+
+**Override with Parameter:**
+
+```typescript
+// Default: Filter out unreleased
+GET /api/proxy/search/multi/?query=dune
+// Returns: Dune (2021), Dune: Part Two (2024)
+
+// Include unreleased
+GET /api/proxy/search/multi/?query=dune&include_unreleased=true
+// Also returns: Dune: Part Three (2026)
+```
+
+---
+
+### 🔄 Updated TypeScript Interfaces
+
+```typescript
+// interfaces/listItem.ts
+
+export interface ListItem {
+    id: number;
+    user_list: number;
+    list_order: number;
+    content_item: ContentItem;
+    added_by: User;
+    status: "PENDING" | "COMPLETED";
+    added_at: string;
+    completed_at: string | null;
+
+    // ✨ NEW FIELDS (from BE-201)
+    member_ratings: MemberRating[];
+    list_rating: number | null; // Only present for COMPLETED items
+    member_rating_count: number;
+
+    // ❌ REMOVED (BE-204)
+    // notes?: string;  // Delete this line
+}
+
+export interface MemberRating {
+    user: User;
+    score: string; // "8.5", "9.0", etc.
+    comment: string | null;
+    created_at: string;
+    updated_at: string;
+    is_owner: boolean;
+}
+
+// ✨ NEW: Multi-search types (BE-202)
+export interface MultiSearchParams {
+    query: string;
+    types?: string; // "MOVIES,TV_SHOWS,GAMES,ALBUMS,BOOKS"
+    limit?: number; // 1-100
+    include_unreleased?: boolean;
+}
+
+export interface MultiSearchResponse {
+    movies: SearchItem[];
+    tv_shows: SearchItem[];
+    games: SearchItem[];
+    music: SearchItem[]; // Note: "music" not "albums"
+    books: SearchItem[];
+}
+```
 
 ---
 
@@ -105,6 +346,35 @@
 -   [ ] Error handling for BE-203 duplicate errors
 -   [ ] Optimize re-renders (React.memo)
 
+**Backend Integration (BE-203):**
+
+```typescript
+async function handleCheckboxChange(listId: number, checked: boolean) {
+    try {
+        if (checked) {
+            // Add to list
+            await api.post(`/api/content/lists/${listId}/items/`, {
+                source_api: item.source_api,
+                external_id: item.external_id,
+                content_type: item.content_type,
+            });
+            toast.success("Added to list");
+        } else {
+            // Remove from list
+            await api.delete(`/api/content/lists/${listId}/items/${itemId}/`);
+            toast.success("Removed from list");
+        }
+    } catch (error) {
+        if (error.response?.data?.error === "DUPLICATE_ITEM") {
+            // Item already in list - check the checkbox but show info
+            toast.info("This item is already in the list");
+        } else {
+            toast.error("Failed to update list");
+        }
+    }
+}
+```
+
 **Acceptance Criteria:**
 
 -   [ ] Checkbox toggles add/remove instantly
@@ -112,7 +382,7 @@
 -   [ ] Modal auto-closes after 2s no interaction
 -   [ ] Shows: list type, item count, members (if collaborative)
 -   [ ] Loading state during API calls
--   [ ] Error toast if add/remove fails
+-   [ ] Error toast if add/remove fails (using BE-203 error format)
 -   [ ] Works on mobile (checkboxes easy to tap)
 -   [ ] Keyboard accessible (Space to toggle)
 
@@ -121,7 +391,7 @@
 -   [ ] Check list → item added → stays in modal
 -   [ ] Uncheck list → item removed
 -   [ ] Add to 3 lists in a row → all work
--   [ ] Duplicate prevention → shows error toast
+-   [ ] Duplicate prevention → shows error toast (BE-203)
 -   [ ] Auto-close after 2s idle → closes
 -   [ ] Click X → closes immediately
 
@@ -253,71 +523,123 @@ const books = await api.get(`/content/search/?type=BOOK&q=${query}`);
 Single API call:
 
 ```typescript
-// ✅ FAST: 1 request
-const results = await api.get(
-    "/content/search/multi/?query=inception?limit=20"
-);
+// ✅ FAST: 1 request (BE-202)
+const results = await api.get('/api/proxy/search/multi/', {
+  params: {
+    query: 'inception',
+    limit: 20  // Optional: results per type
+  }
+});
 
-// results.movies
-// results.tv_shows
-// results.games
-// etc.
+// Response structure (matches /homepage)
+{
+  movies: SearchItem[],      // Note: Same structure as homepage
+  tv_shows: SearchItem[],
+  games: SearchItem[],
+  music: SearchItem[],       // Note: renamed from "albums"
+  books: SearchItem[]
+}
 ```
 
-NOTE: BAse yourself in /homepage response but with SearchItems in every list.
+**Backend Features (BE-202):**
+
+-   All searches run in **parallel** (not sequential)
+-   Supports filtering by `types` parameter: `?types=MOVIES,TV_SHOWS`
+-   Supports `limit` per type: `?limit=10` (default: 20, max: 100)
+-   Supports `include_unreleased` (BE-205): `?include_unreleased=true`
 
 **File:** `app/_components/pages/SearchPage/index.tsx`
 
 **Implementation:**
 
 ```typescript
+// Create new API function
+export async function multiSearch(
+    params: MultiSearchParams
+): Promise<MultiSearchResponse> {
+    const response = await axios.get("/api/proxy/search/multi/", { params });
+    return response.data;
+}
+
 // Create new hook
 function useMultiSearch(query: string) {
-  const [results, setResults] = useState<MultiSearchResults | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+    const [results, setResults] = useState<MultiSearchResponse | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!query) return;
+    useEffect(() => {
+        if (!query) return;
 
-    const controller = new AbortController();
-    setLoading(true);
+        const controller = new AbortController();
+        setLoading(true);
 
-    const search = async () => {
-      try {
-        const data = await api.get(..., { signal: controller.signal });
-        setResults(data);
-      } catch (err) {
-        if (err.name !== 'AbortError') {
-          setError(err.message);
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
+        const search = async () => {
+            try {
+                const data = await multiSearch({
+                    query,
+                    limit: 20, // Optional
+                });
+                setResults(data);
+            } catch (err) {
+                if (err.name !== "AbortError") {
+                    setError(err.message);
+                }
+            } finally {
+                setLoading(false);
+            }
+        };
 
-    const debounce = setTimeout(search, 300);
+        const debounce = setTimeout(search, 300);
 
-    return () => {
-      clearTimeout(debounce);
-      controller.abort();
-    };
-  }, [query]);
+        return () => {
+            clearTimeout(debounce);
+            controller.abort();
+        };
+    }, [query]);
 
-  return { results, loading, error };
+    return { results, loading, error };
+}
+
+// Usage in component
+function SearchPage() {
+    const [query, setQuery] = useState("");
+    const { results, loading, error } = useMultiSearch(query);
+
+    return (
+        <div>
+            <SearchInput value={query} onChange={setQuery} />
+            {loading && <Loader />}
+            {error && <ErrorMessage error={error} />}
+            {results && (
+                <>
+                    <Section title="Movies" items={results.movies} />
+                    <Section title="TV Shows" items={results.tv_shows} />
+                    <Section title="Games" items={results.games} />
+                    <Section title="Music" items={results.music} />
+                    <Section title="Books" items={results.books} />
+                </>
+            )}
+        </div>
+    );
 }
 ```
 
 **Acceptance Criteria:**
 
--   [ ] Uses GET /api/content/search/multi/...
+-   [ ] Uses `GET /api/proxy/search/multi/` (BE-202)
 -   [ ] Single request instead of 5
--   [ ] Debounced (500ms)
+-   [ ] Debounced (300ms)
 -   [ ] Cancels previous request when user types
 -   [ ] Shows loading state
 -   [ ] Error handling
 -   [ ] TypeScript interfaces for response
 -   [ ] Works with existing search UI
+-   [ ] Response structure matches `/homepage` format
+
+**Performance Target:**
+
+-   Search response time: < 500ms for all 5 types
+-   Network waterfall: 1 request (not 5)
 
 ---
 
@@ -334,7 +656,7 @@ function useMultiSearch(query: string) {
 Frontend calculates averages client-side:
 
 ```typescript
-// ❌ Client-side calculation
+// ❌ Client-side calculation (REMOVE THIS)
 const listRating = useMemo(() => {
     const ratings = item.member_ratings.map((r) => r.rating);
     return ratings.reduce((a, b) => a + b, 0) / ratings.length;
@@ -342,23 +664,35 @@ const listRating = useMemo(() => {
 ```
 
 **New Behavior:**
-Display pre-calculated values from backend:
+Display pre-calculated values from backend (BE-201):
 
 ```typescript
-// ✅ Use backend values
-const listRating = item.list_rating; // Already calculated
+// ✅ Use backend values (BE-201)
+const listRating = item.list_rating; // Already calculated!
 const ratingCount = item.member_rating_count;
 
+// Display component
 <div>
-    {listRating ? (
-        <span>
-            ★ {listRating.toFixed(1)} ({ratingCount} ratings)
-        </span>
-    ) : (
-        <span>No ratings yet</span>
+    {item.status === "COMPLETED" && (
+        <>
+            {listRating !== null ? (
+                <span>
+                    ★ {listRating.toFixed(1)} ({ratingCount} ratings)
+                </span>
+            ) : (
+                <span>No ratings yet</span>
+            )}
+        </>
     )}
 </div>;
 ```
+
+**Backend Rules (BE-201):**
+
+-   `list_rating` is **only present for COMPLETED items**
+-   Returns `null` if no ratings exist
+-   Already rounded to 1 decimal place
+-   Only includes ratings from **list members** (owner + members)
 
 **Files:**
 
@@ -368,17 +702,19 @@ const ratingCount = item.member_rating_count;
 **Acceptance Criteria:**
 
 -   [ ] Remove client-side calculation logic
--   [ ] Display backend-provided list_rating
--   [ ] Display member_rating_count
--   [ ] Handle null ratings (no ratings yet)
+-   [ ] Display backend-provided `list_rating` (BE-201)
+-   [ ] Display `member_rating_count` (BE-201)
+-   [ ] Handle `null` ratings (no ratings yet)
 -   [ ] Format rating to 1 decimal place
 -   [ ] Show count (e.g., "8.5 (12 ratings)")
 -   [ ] Visual matches ContentDetailPage rating display
+-   [ ] Only show for COMPLETED items
 
 **Testing:**
 
--   [ ] Item with ratings → shows average
+-   [ ] Item with ratings → shows average from BE-201
 -   [ ] Item with 0 ratings → shows "No ratings"
+-   [ ] PENDING item → doesn't show ratings
 -   [ ] Verify matches backend calculation
 
 ---
@@ -394,7 +730,7 @@ const ratingCount = item.member_rating_count;
 No feedback when trying to add duplicate item.
 
 **New Behavior:**
-Show user-friendly error toast:
+Show user-friendly error toast using BE-203 error response:
 
 **Error Toast:**
 
@@ -402,6 +738,21 @@ Show user-friendly error toast:
 ┌─────────────────────────────────────────┐
 │ ℹ️  This item is already in "Watchlist" │
 └─────────────────────────────────────────┘
+```
+
+**Backend Error Response (BE-203):**
+
+```json
+{
+    "error": "DUPLICATE_ITEM",
+    "message": "This item is already in the list",
+    "existing_item_id": 456,
+    "existing_item": {
+        "id": 456,
+        "added_at": "2024-01-15T10:30:00Z",
+        "status": "PENDING"
+    }
+}
 ```
 
 **Implementation:**
@@ -412,9 +763,14 @@ const handleAddToList = async (listId: number) => {
         await addItemToList(listId, contentItemId);
         showToast("Added to list", "success");
     } catch (error) {
+        // Handle BE-203 duplicate error
         if (error.response?.data?.error === "DUPLICATE_ITEM") {
             const existing = error.response.data.existing_item;
-            showToast(`This item is already in this list`, "info");
+            const addedDate = new Date(existing.added_at).toLocaleDateString();
+            showToast(
+                `This item is already in this list (added ${addedDate})`,
+                "info"
+            );
         } else {
             showToast("Failed to add item", "error");
         }
@@ -537,3 +893,40 @@ function ListItemSkeleton() {
 -   [ ] Code reviewed by teammate
 -   [ ] Backend integration tested
 -   [ ] Merged to feature branch
+
+---
+
+## 📝 Backend API Reference
+
+### Updated Endpoints
+
+#### `GET /api/content/lists/{list_id}/items/`
+
+-   ✨ Added `list_rating` (float | null)
+-   ✨ Added `member_rating_count` (integer)
+-   ❌ Removed `notes` field
+
+#### `POST /api/content/lists/{list_id}/items/`
+
+-   ✨ Returns 400 with `DUPLICATE_ITEM` error if duplicate
+-   ❌ No longer accepts `notes` field
+
+### New Endpoints
+
+#### `GET /api/proxy/search/multi/`
+
+**Description:** Search across all content types in parallel
+
+**Parameters:**
+
+-   `query` (required): Search string
+-   `types` (optional): Comma-separated types (MOVIES,TV_SHOWS,GAMES,ALBUMS,BOOKS)
+-   `limit` (optional): Results per type (default: 20, max: 100)
+-   `include_unreleased` (optional): Include future releases (default: false)
+
+**Response:** Same structure as `/homepage` response
+
+---
+
+**For detailed backend documentation, see:** `CLAUDE.md`
+**API Documentation:** http://localhost:8000/api/swagger/

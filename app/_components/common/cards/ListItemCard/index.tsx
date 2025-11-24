@@ -76,9 +76,8 @@ export function ListItemCard({
   return (
     <div
       onClick={handleCardClick}
-      className={`cursor-pointer relative group max-h-[400px] sm:max-h-none transition-all duration-200 ${
-        className || ""
-      }`}
+      className={`cursor-pointer relative group max-h-[400px] sm:max-h-none transition-all duration-200 ${className || ""
+        }`}
       role="button"
       tabIndex={0}
       onKeyDown={navigation.handleKeyDown}
@@ -124,6 +123,7 @@ export function ListItemCard({
           {ratingData.showListRating && (
             <RatingBadge
               rating={ratingData.listRating}
+              count={item.member_rating_count}
               variant="list"
               size="compact"
               className="backdrop-blur-md bg-black/40 shadow-lg"

@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { ContentType } from "@/lib/types";
 import { Content } from "@/lib/types";
 import { getSourceApi } from "@/lib/utils/contentTypeUtils";
@@ -16,7 +16,7 @@ export function useContentCardModal(item: Content) {
     setIsOpen(false);
   }, []);
 
-  const getContentItemForModal = useCallback(() => {
+  const contentItem = useMemo(() => {
     const contentType = item.type as ContentType;
     const sourceApi = getSourceApi(contentType);
     const externalId = String(item.id);
@@ -26,12 +26,12 @@ export function useContentCardModal(item: Content) {
       external_id: externalId,
       content_type: contentType,
     };
-  }, [item]);
+  }, [item.type, item.id]);
 
   return {
     isOpen,
     openModal,
     closeModal,
-    contentItem: getContentItemForModal(),
+    contentItem,
   };
 }

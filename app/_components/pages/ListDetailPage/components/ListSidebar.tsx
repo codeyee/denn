@@ -10,6 +10,7 @@ import {
   GripVertical,
   Save,
   X,
+  Layers,
 } from "lucide-react";
 import { UserListDetail, ListType } from "@/lib/types";
 import { GroupBy, SortBy } from "@/lib/types/listView";
@@ -24,8 +25,7 @@ interface ListSidebarProps {
   completedCount: number;
   pendingCount: number;
   completionRate: number;
-  primaryGroup: GroupBy;
-  secondaryGroup: GroupBy;
+  groups: GroupBy[];
   sortBy: SortBy;
   isReorderMode: boolean;
   reorderLoading: boolean;
@@ -34,8 +34,7 @@ interface ListSidebarProps {
   onEnterReorderMode: () => void;
   onCancelReorder: () => void;
   onSaveReorder: () => void;
-  onPrimaryGroupChange: (group: GroupBy) => void;
-  onSecondaryGroupChange: (group: GroupBy) => void;
+  onGroupChange: (groups: GroupBy[]) => void;
   onSortByChange: (sortBy: SortBy) => void;
 }
 
@@ -45,8 +44,7 @@ export function ListSidebar({
   completedCount,
   pendingCount,
   completionRate,
-  primaryGroup,
-  secondaryGroup,
+  groups,
   sortBy,
   isReorderMode,
   reorderLoading,
@@ -55,12 +53,30 @@ export function ListSidebar({
   onEnterReorderMode,
   onCancelReorder,
   onSaveReorder,
-  onPrimaryGroupChange,
-  onSecondaryGroupChange,
+  onGroupChange,
   onSortByChange,
 }: ListSidebarProps) {
   const isShared = list.list_type === ListType.SHARED;
   const memberCount = (list.members?.length || 0).toString();
+
+  const availableGroups: { value: GroupBy; label: string }[] = [
+    { value: "status", label: "Status" },
+    { value: "content_type", label: "Content Type" },
+    { value: "date_added", label: "Date Added" },
+    { value: "rating", label: "Rating" },
+  ];
+
+  const handleToggleGroup = (group: GroupBy, checked: boolean) => {
+    if (checked) {
+      // Add to groups if not present (max 3)
+      if (!groups.includes(group) && groups.length < 3) {
+        onGroupChange([...groups, group]);
+      }
+    } else {
+      // Remove from groups
+      onGroupChange(groups.filter((g) => g !== group));
+    }
+  };
 
   return (
     <div className="w-full md:w-80 lg:w-96 shrink-0 space-y-6 order-1 md:order-2 md:sticky md:top-24 md:self-start md:max-h-[calc(100vh-8rem)] md:overflow-y-auto">
@@ -170,62 +186,65 @@ export function ListSidebar({
       {/* List Controls Card */}
       <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
         <h3 className="text-xl font-bold text-white mb-4">View Options</h3>
-        <div className="space-y-4">
+        <div className="space-y-6">
           {/* Grouping Section */}
-          <div className="space-y-2">
-            <h4 className="text-sm font-semibold text-foreground/80">
-              Grouping
-            </h4>
-            <div className="space-y-2">
-              <div>
-                <label className="text-xs text-muted-foreground mb-1 block">
-                  Primary
-                </label>
-                <Select
-                  value={primaryGroup}
-                  onChange={(e) =>
-                    onPrimaryGroupChange(e.target.value as GroupBy)
-                  }
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-semibold text-foreground/80 flex items-center gap-2">
+                <Layers className="w-4 h-4" />
+                Group By
+              </h4>
+              {groups.length > 0 && (
+                <button
+                  onClick={() => onGroupChange([])}
+                  className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
                   disabled={isReorderMode}
-                  className="w-full px-3 py-2 text-sm rounded-md cursor-pointer bg-white/5 hover:bg-white/10 text-white border border-white/20 disabled:opacity-50"
                 >
-                  <option value="none">No Grouping</option>
-                  <option value="status">Status</option>
-                  <option value="content_type">Content Type</option>
-                  <option value="date_added">Date Added</option>
-                  <option value="rating">Rating</option>
-                </Select>
-              </div>
-              {primaryGroup !== "none" && (
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">
-                    Secondary (optional)
-                  </label>
-                  <Select
-                    value={secondaryGroup}
-                    onChange={(e) =>
-                      onSecondaryGroupChange(e.target.value as GroupBy)
-                    }
-                    disabled={isReorderMode}
-                    className="w-full px-3 py-2 text-sm rounded-md cursor-pointer bg-white/5 hover:bg-white/10 text-white border border-white/20 disabled:opacity-50"
-                  >
-                    <option value="none">No Grouping</option>
-                    {primaryGroup !== "status" && (
-                      <option value="status">Status</option>
-                    )}
-                    {primaryGroup !== "content_type" && (
-                      <option value="content_type">Content Type</option>
-                    )}
-                    {primaryGroup !== "date_added" && (
-                      <option value="date_added">Date Added</option>
-                    )}
-                    {primaryGroup !== "rating" && (
-                      <option value="rating">Rating</option>
-                    )}
-                  </Select>
-                </div>
+                  Clear All
+                </button>
               )}
             </div>
+
+            <div className="space-y-2">
+              {availableGroups.map((group) => {
+                const isChecked = groups.includes(group.value);
+                const index = groups.indexOf(group.value);
+                const isDisabled = isReorderMode || (!isChecked && groups.length >= 3);
+
+                return (
+                  <label
+                    key={group.value}
+                    className={`
+                      flex items-center justify-between p-2 rounded-lg border transition-all cursor-pointer
+                      ${isChecked
+                        ? "bg-blue-500/10 border-blue-500/30"
+                        : "bg-white/5 border-white/10 hover:bg-white/10"
+                      }
+                      ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}
+                    `}
+                  >
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={(e) => handleToggleGroup(group.value, e.target.checked)}
+                        disabled={isDisabled}
+                        className="w-4 h-4 rounded border-gray-500 text-blue-500 focus:ring-blue-500 bg-transparent"
+                      />
+                      <span className="text-sm text-white">{group.label}</span>
+                    </div>
+                    {isChecked && (
+                      <span className="text-xs bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded-full font-mono">
+                        {index + 1}
+                      </span>
+                    )}
+                  </label>
+                );
+              })}
+            </div>
+            <p className="text-xs text-white/40">
+              Select up to 3 attributes to group items.
+            </p>
           </div>
 
           {/* Sorting Section */}

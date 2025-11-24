@@ -1,48 +1,46 @@
 import { Button } from "@/app/_components/common/ui/Button";
-import { ListWithItems } from "@/lib/types";
-import { Plus, Check } from "lucide-react";
+import { ListWithItems, ListItem } from "@/lib/types";
+import { Plus, Loader2 } from "lucide-react";
 import { TVSeason } from "@/lib/types";
 
 interface ListsPhaseProps {
   lists: ListWithItems[];
   listsLoading: boolean;
-  addingToListId: number | null;
+  loadingListIds: Set<number>;
   creatingNewList: boolean;
-  successListId: number | null;
   addMode: 'show' | 'seasons';
   selectedSeasons: Set<number>;
   tvShowSeasons?: TVSeason[];
-  isItemInList: (list: ListWithItems) => boolean;
+  getItemInList: (list: ListWithItems) => ListItem | undefined;
   getSeasonsInListCount: (list: ListWithItems) => number;
   handleCreateNewList: () => void;
-  handleAddToList: (listId: number) => void;
+  handleToggleList: (listId: number, checked: boolean, existingItemId?: number) => void;
 }
 
 export function ListsPhase({
   lists,
   listsLoading,
-  addingToListId,
+  loadingListIds,
   creatingNewList,
-  successListId,
   addMode,
   selectedSeasons,
   tvShowSeasons,
-  isItemInList,
+  getItemInList,
   getSeasonsInListCount,
   handleCreateNewList,
-  handleAddToList
+  handleToggleList
 }: ListsPhaseProps) {
   return (
     <>
       <Button
         onClick={handleCreateNewList}
-        disabled={creatingNewList || addingToListId !== null}
-        className="w-full flex items-center justify-center gap-2 cursor-pointer"
+        disabled={creatingNewList}
+        className="w-full flex items-center justify-center gap-2 cursor-pointer mb-4"
         variant="default"
       >
         {creatingNewList ? (
           <>
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+            <Loader2 className="animate-spin w-4 h-4" />
             Creating List...
           </>
         ) : (
@@ -58,7 +56,7 @@ export function ListsPhase({
 
         {listsLoading ? (
           <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+            <Loader2 className="animate-spin w-8 h-8 text-white/50" />
           </div>
         ) : lists.length === 0 ? (
           <div className="text-center py-8 text-white/60">
@@ -68,68 +66,62 @@ export function ListsPhase({
         ) : (
           <div className="max-h-[300px] overflow-y-auto space-y-2 pr-2">
             {lists.map((list) => {
-              const alreadyInList = isItemInList(list);
-              const itemCount = list.item_count ? parseInt(list.item_count, 10) : 0;
+              const existingItem = getItemInList(list);
+              const alreadyInList = !!existingItem;
 
               const seasonsInListCount = addMode === 'seasons' ? getSeasonsInListCount(list) : 0;
-              const allSeasonsInList =
-                addMode === 'seasons' &&
-                tvShowSeasons &&
-                seasonsInListCount === tvShowSeasons.length;
 
-              const shouldDisable =
-                addingToListId !== null ||
-                creatingNewList ||
-                successListId === list.id ||
-                (addMode === 'show' && alreadyInList) ||
-                (addMode === 'seasons' && selectedSeasons.size === 0);
+              const isLoading = loadingListIds.has(list.id);
+
+              // Determine if checked
+              const isChecked = addMode === 'show' ? alreadyInList : (seasonsInListCount > 0 && seasonsInListCount === tvShowSeasons?.length);
+
+              // For seasons mode, we might want a partial check state, but standard checkbox doesn't support indeterminate easily without ref.
+              // For now, let's just check if ALL selected seasons are in list?
+              // The requirement says "Checked = item is in list".
+
+              const shouldDisable = isLoading || creatingNewList || (addMode === 'seasons' && selectedSeasons.size === 0);
 
               return (
-                <button
+                <label
                   key={list.id}
-                  onClick={() => handleAddToList(list.id)}
-                  disabled={shouldDisable}
-                  className={`w-full text-left p-3 rounded-lg border transition-all ${
-                    successListId === list.id
-                      ? "bg-green-500/20 border-green-500/50"
-                      : alreadyInList && addMode === 'show'
-                      ? "bg-blue-500/10 border-blue-500/50 cursor-not-allowed"
-                      : "bg-card border-border hover:bg-card/80 hover:border-white/30 cursor-pointer"
-                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  className={`
+                    w-full flex items-center p-3 rounded-lg border transition-all cursor-pointer
+                    ${isChecked
+                      ? "bg-green-500/10 border-green-500/30"
+                      : "bg-card border-border hover:bg-card/80 hover:border-white/30"
+                    }
+                    ${shouldDisable ? "opacity-50 cursor-not-allowed" : ""}
+                  `}
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className="font-medium text-white truncate">{list.name}</p>
-                        {alreadyInList && addMode === 'show' && (
-                          <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full font-sans shrink-0">
-                            Already added
-                          </span>
-                        )}
-                        {addMode === 'seasons' && seasonsInListCount > 0 && (
-                          <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full font-sans shrink-0">
-                            {seasonsInListCount} {seasonsInListCount === 1 ? 'season' : 'seasons'} in list
-                          </span>
-                        )}
-                      </div>
-                      {list.description && (
-                        <p className="text-sm text-white/60 truncate font-sans">{list.description}</p>
-                      )}
-                      {itemCount > 0 && (
-                        <p className="text-xs text-white/50 mt-1 font-sans">
-                          {itemCount} {itemCount === 1 ? "item" : "items"}
-                        </p>
+                  <div className="relative flex items-center justify-center w-5 h-5 mr-3">
+                    {isLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-white/70" />
+                    ) : (
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        disabled={shouldDisable}
+                        onChange={(e) => handleToggleList(list.id, e.target.checked, existingItem?.id)}
+                        className="w-5 h-5 rounded border-gray-500 text-green-500 focus:ring-green-500 bg-transparent"
+                      />
+                    )}
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-medium text-white truncate">{list.name}</p>
+                      {addMode === 'seasons' && seasonsInListCount > 0 && (
+                        <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full font-sans shrink-0">
+                          {seasonsInListCount} {seasonsInListCount === 1 ? 'season' : 'seasons'}
+                        </span>
                       )}
                     </div>
-                    {addingToListId === list.id ? (
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white ml-3"></div>
-                    ) : successListId === list.id ? (
-                      <Check className="w-5 h-5 text-green-500 ml-3 shrink-0" />
-                    ) : (alreadyInList && addMode === 'show') || allSeasonsInList ? (
-                      <Check className="w-5 h-5 text-blue-400 ml-3 shrink-0" />
-                    ) : null}
+                    <div className="flex items-center gap-2 text-xs text-white/50 font-sans">
+                      <span>{list.list_type === 'SHARED' ? 'Collaborative' : 'Personal'}</span>
+                    </div>
                   </div>
-                </button>
+                </label>
               );
             })}
           </div>

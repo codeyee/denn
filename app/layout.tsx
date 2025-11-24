@@ -1,6 +1,7 @@
 import { ThemeProvider } from "@/app/_components/common/providers/ThemeProvider";
 import { StoreProvider } from "@/app/_providers/StoreProvider";
 import { CountryProvider } from "@/app/_components/common/providers/CountryProvider";
+import { ToastProvider } from "@/app/_components/common/Toast";
 
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
@@ -54,8 +55,10 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <StoreProvider>
-            <CountryProvider />
-            {children}
+            <ToastProvider>
+              <CountryProvider />
+              {children}
+            </ToastProvider>
           </StoreProvider>
         </ThemeProvider>
       </body>

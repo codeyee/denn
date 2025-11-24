@@ -70,18 +70,18 @@ export function ListItemRenderer({
       title={title}
       description={
         "original_title" in sourceData &&
-        sourceData.original_title !== sourceData.title
+          sourceData.original_title !== sourceData.title
           ? sourceData.original_title
           : undefined
       }
       subDescription={
         (contentItem.content_type === "ALBUM" ||
           contentItem.content_type === "BOOK") &&
-        "authors" in sourceData &&
-        sourceData.authors
+          "authors" in sourceData &&
+          sourceData.authors
           ? (sourceData.authors as Author[])
-              ?.map((author) => author.name)
-              .join(", ")
+            ?.map((author) => author.name)
+            .join(", ")
           : undefined
       }
       image={imageUrl}
@@ -97,14 +97,7 @@ export function ListItemRenderer({
       }
       expandedContent={
         <div className="space-y-4">
-          {item.notes && (
-            <div>
-              <h4 className="text-sm font-semibold text-white/80 mb-2">
-                Notes
-              </h4>
-              <p className="text-white/60 text-sm">{item.notes}</p>
-            </div>
-          )}
+
           <div>
             <h4 className="text-sm font-semibold text-white/80 mb-2">
               Details
@@ -135,9 +128,8 @@ export function ListItemRenderer({
                     return (
                       <div
                         key={idx}
-                        className={`flex items-center gap-2 text-sm ${
-                          isCurrentUser ? "font-semibold" : ""
-                        }`}
+                        className={`flex items-center gap-2 text-sm ${isCurrentUser ? "font-semibold" : ""
+                          }`}
                       >
                         <span className={isCurrentUser ? "text-white" : "text-white/60"}>
                           {rating.user?.username || "Unknown"}
@@ -169,11 +161,10 @@ export function ListItemRenderer({
                   ? "Mark as Pending"
                   : "Mark as Completed"
               }
-              className={`flex-1 cursor-pointer font-semibold transition-colors ${
-                item.status === ItemStatus.COMPLETED
-                  ? "bg-white/10 hover:bg-white/20 text-white border border-white/20"
-                  : "bg-green-600 hover:bg-green-700 text-white"
-              }`}
+              className={`flex-1 cursor-pointer font-semibold transition-colors ${item.status === ItemStatus.COMPLETED
+                ? "bg-white/10 hover:bg-white/20 text-white border border-white/20"
+                : "bg-green-600 hover:bg-green-700 text-white"
+                }`}
             >
               {item.status === ItemStatus.COMPLETED ? (
                 <>
@@ -221,6 +212,7 @@ export function ListItemRenderer({
           {ratingData.showListRating && (
             <RatingBadge
               rating={ratingData.listRating}
+              count={item.member_rating_count}
               variant="list"
               size="compact"
             />

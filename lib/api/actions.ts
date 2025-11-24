@@ -10,6 +10,7 @@ export { musicActions } from "./actions/music";
 export { gameActions } from "./actions/game";
 export { bookActions } from "./actions/book";
 export { homepageActions } from "./actions/homepage";
+export { searchActions } from "./actions/search";
 
 import { authActions } from "./actions/auth";
 import { contentItemActions } from "./actions/contentItem";
@@ -23,20 +24,22 @@ import { musicActions } from "./actions/music";
 import { gameActions } from "./actions/game";
 import { bookActions } from "./actions/book";
 import { homepageActions } from "./actions/homepage";
+import { searchActions } from "./actions/search";
 
 export const apiActions = {
-  auth: authActions,
-  contentItem: contentItemActions,
-  list: listActions,
-  listItem: listItemActions,
-  invitation: invitationActions,
-  member: memberActions,
-  rating: ratingActions,
-  video: videoActions,
-  music: musicActions,
-  game: gameActions,
-  book: bookActions,
-  homepage: homepageActions,
+    auth: authActions,
+    contentItem: contentItemActions,
+    list: listActions,
+    listItem: listItemActions,
+    invitation: invitationActions,
+    member: memberActions,
+    rating: ratingActions,
+    video: videoActions,
+    music: musicActions,
+    game: gameActions,
+    book: bookActions,
+    homepage: homepageActions,
+    search: searchActions,
 };
 
 export default apiActions;

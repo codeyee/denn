@@ -2,6 +2,7 @@ import { cn } from "@/lib/utils/tailwindUtils";
 
 interface RatingBadgeProps {
   rating: number | null;
+  count?: number;
   variant: "user" | "list";
   className?: string;
   size?: "default" | "compact";
@@ -20,6 +21,7 @@ const RATING_CONFIG = {
 
 export function RatingBadge({
   rating,
+  count,
   variant,
   className,
   size = "compact",
@@ -41,6 +43,9 @@ export function RatingBadge({
     >
       <span>★</span>
       <span>{rating.toFixed(1)}</span>
+      {count !== undefined && count > 1 && (
+        <span className="opacity-70 ml-0.5">({count})</span>
+      )}
     </div>
   );
 }

@@ -7,7 +7,7 @@ import { Footer } from "../../layout/Footer";
 import { EditListModal } from "../../common/modals/EditListModal";
 import { ConfirmDialog } from "../../common/modals/ConfirmDialog";
 import { RatingModal } from "../../common/modals/RatingModal";
-import { ListItemPlaceholder } from "../../common/lists/ListItemPlaceholder";
+import { ListItemSkeleton } from "../../common/lists/ListItemSkeleton";
 import { VerticalList } from "../../common/lists/VerticalList";
 import { ItemStatus, Rating, RatingCreate, ContentItem } from "@/lib/types";
 import { ListItem, MemberRating } from "@/lib/types";
@@ -56,7 +56,6 @@ export function ListDetailPage({ listId }: ListDetailPageProps) {
     pageSize,
     currentPage,
     setGroupBy,
-    clearGroupBy,
     setSortBy,
     setSortOrder,
     setPageSize,
@@ -135,31 +134,11 @@ export function ListDetailPage({ listId }: ListDetailPageProps) {
     await actions.handleSubmitRating(modals.ratingModalItem, data);
   };
 
-  // Compute primary and secondary groups from groupBy array for UI compatibility
+  // Compute primary group for ItemsHeader (just the first one or 'none')
   const primaryGroup = groupBy[0] || "none";
-  const secondaryGroup = groupBy[1] || "none";
 
-  const handlePrimaryGroupChange = (group: GroupBy) => {
-    if (group === "none") {
-      clearGroupBy();
-    } else {
-      // Replace first group, keep rest
-      const newGroupBy = [group, ...groupBy.slice(1)];
-      setGroupBy(newGroupBy);
-    }
-    setCurrentPage(1);
-    pagination.resetPagination();
-  };
-
-  const handleSecondaryGroupChange = (group: GroupBy) => {
-    if (group === "none") {
-      // Remove secondary group, keep only primary
-      setGroupBy(groupBy.slice(0, 1));
-    } else {
-      // Set or replace secondary group
-      const newGroupBy = [groupBy[0] || "none", group];
-      setGroupBy(newGroupBy.filter(g => g !== "none"));
-    }
+  const handleGroupChange = (newGroups: GroupBy[]) => {
+    setGroupBy(newGroups);
     setCurrentPage(1);
     pagination.resetPagination();
   };
@@ -200,8 +179,8 @@ export function ListDetailPage({ listId }: ListDetailPageProps) {
                 {/* List items skeleton */}
                 <VerticalList spacing="md">
                   {Array.from({ length: 20 }).map((_, index) => (
-                    <ListItemPlaceholder
-                      key={`placeholder-${index}`}
+                    <ListItemSkeleton
+                      key={`skeleton-${index}`}
                       index={index}
                     />
                   ))}
@@ -374,8 +353,7 @@ export function ListDetailPage({ listId }: ListDetailPageProps) {
               completedCount={stats.completedCount}
               pendingCount={stats.pendingCount}
               completionRate={stats.completionRate}
-              primaryGroup={primaryGroup}
-              secondaryGroup={secondaryGroup}
+              groups={groupBy}
               sortBy={sortBy}
               isReorderMode={reordering.isReorderMode}
               reorderLoading={reordering.reorderLoading}
@@ -384,8 +362,7 @@ export function ListDetailPage({ listId }: ListDetailPageProps) {
               onEnterReorderMode={reordering.handleEnterReorderMode}
               onCancelReorder={reordering.handleCancelReorder}
               onSaveReorder={reordering.handleSaveReorder}
-              onPrimaryGroupChange={handlePrimaryGroupChange}
-              onSecondaryGroupChange={handleSecondaryGroupChange}
+              onGroupChange={handleGroupChange}
               onSortByChange={handleSortByChange}
             />
           </div>
@@ -402,10 +379,10 @@ export function ListDetailPage({ listId }: ListDetailPageProps) {
         initialData={
           list
             ? {
-                name: list.name,
-                description: list.description || "",
-                listType: list.list_type,
-              }
+              name: list.name,
+              description: list.description || "",
+              listType: list.list_type,
+            }
             : undefined
         }
       />

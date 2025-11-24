@@ -11,8 +11,8 @@ interface ListsState {
 }
 
 interface ListsActions {
-  fetchLists: (options?: { items_size?: number; images_size?: number; fields?: string; expand?: string; source_fields?: string }) => Promise<void>;
-  forceRefreshLists: (options?: { items_size?: number; images_size?: number; fields?: string; expand?: string; source_fields?: string }) => Promise<void>;
+  fetchLists: (options?: { items_size?: number; images_size?: number; fields?: string; expand?: string; source_fields?: string; filter_external_id?: string; filter_source_api?: string; filter_content_type?: string }) => Promise<void>;
+  forceRefreshLists: (options?: { items_size?: number; images_size?: number; fields?: string; expand?: string; source_fields?: string; filter_external_id?: string; filter_source_api?: string; filter_content_type?: string }) => Promise<void>;
   fetchListItems: (listId: number, pageSize: number) => Promise<void>;
   createList: (
     name: string,
@@ -54,7 +54,7 @@ const initialState: ListsState = {
 export const useListsStore = create<ListsStore>((set, get) => ({
   ...initialState,
 
-  fetchLists: async (options?: { items_size?: number; images_size?: number; fields?: string; expand?: string; source_fields?: string }) => {
+  fetchLists: async (options?: { items_size?: number; images_size?: number; fields?: string; expand?: string; source_fields?: string; filter_external_id?: string; filter_source_api?: string; filter_content_type?: string }) => {
     const { lastFetched } = get();
     const fiveMinutesInMs = 5 * 60 * 1000;
 
@@ -85,7 +85,7 @@ export const useListsStore = create<ListsStore>((set, get) => ({
     }
   },
 
-  forceRefreshLists: async (options?: { items_size?: number; images_size?: number; fields?: string; expand?: string; source_fields?: string }) => {
+  forceRefreshLists: async (options?: { items_size?: number; images_size?: number; fields?: string; expand?: string; source_fields?: string; filter_external_id?: string; filter_source_api?: string; filter_content_type?: string }) => {
     set({ isLoading: true, error: null });
 
     try {

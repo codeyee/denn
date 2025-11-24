@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useMemo } from "react";
 import { useAuthStore } from "@/app/_stores/auth-store";
 import { ContentType, TVShowDetail } from "@/lib/types";
 import { useContentData } from "./hooks/useContentData";
@@ -46,6 +47,15 @@ export function ContentDetailPage({
   });
 
   const modals = useContentModals();
+
+  const contentItemForModal = useMemo(() => {
+    if (!contentItem) return { source_api: "", external_id: "", content_type: "" };
+    return {
+      source_api: contentItem.source_api,
+      external_id: contentItem.external_id,
+      content_type: contentItem.content_type,
+    };
+  }, [contentItem]);
 
   if (loading) {
     return (
@@ -159,11 +169,7 @@ export function ContentDetailPage({
         <AddToListModal
           isOpen={modals.isAddToListModalOpen}
           onOpenChange={modals.setIsAddToListModalOpen}
-          contentItem={{
-            source_api: contentItem.source_api,
-            external_id: contentItem.external_id,
-            content_type: contentItem.content_type,
-          }}
+          contentItem={contentItemForModal}
           tvShowSeasons={
             contentItem.content_type === ContentType.TV_SHOW &&
               detailData &&
@@ -182,9 +188,6 @@ export function ContentDetailPage({
               ? parseInt(contentItem.external_id)
               : undefined
           }
-          onSuccess={() => {
-            console.log("Successfully added to list");
-          }}
         />
       )}
 

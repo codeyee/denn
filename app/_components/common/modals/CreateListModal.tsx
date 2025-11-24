@@ -8,6 +8,7 @@ import { Modal } from "@/app/_components/common/modals/Modal";
 import { Button } from "@/app/_components/common/ui/Button";
 import { Input } from "@/app/_components/common/ui/Input";
 import { ListType } from "@/lib/types";
+import { generateRandomListName } from "@/lib/utils/randomListNames";
 
 // Define validation schema
 const createListSchema = z.object({
@@ -61,7 +62,13 @@ export function CreateListModal({
 
   // Reset form when modal opens/closes
   useEffect(() => {
-    if (!isOpen) {
+    if (isOpen) {
+      reset({
+        name: generateRandomListName(),
+        description: "",
+        listType: ListType.PERSONAL,
+      });
+    } else {
       reset();
     }
   }, [isOpen, reset]);
