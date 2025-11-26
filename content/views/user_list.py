@@ -2,11 +2,16 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from django.db.models import Q, Prefetch
+from django.db.models import Q, Prefetch, Count, Case, When, IntegerField
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiExample, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
-from content.models import UserList, ListItem, Rating
-from content.serializers import UserListSerializer, UserListDetailSerializer
+from content.models import UserList, ListItem, Rating, ContentItem
+from content.serializers import (
+    UserListSerializer,
+    UserListDetailSerializer,
+    BulkCheckRequestSerializer,
+    BulkCheckResponseSerializer
+)
 from content.permissions import IsOwnerOrReadOnly
 
 from rest_flex_fields.views import FlexFieldsMixin
@@ -313,3 +318,179 @@ class UserListViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
             stats['content_types'][content_type] += 1
 
         return Response(stats)
+
+    @extend_schema(
+        tags=['Lists Management'],
+        summary='Bulk check items across lists',
+        description='''
+        Check if multiple items exist in any of the user's lists.
+        This endpoint is optimized for checking multiple items at once (e.g., all seasons of a TV show).
+
+        **Use Case:**
+        When displaying an "Add to List" modal, you can check which lists already contain
+        the selected items and show counts to help users avoid duplicates.
+
+        **Request:**
+        - Maximum 100 items per request
+        - Each item requires: external_id, source_api, content_type
+
+        **Response:**
+        - Returns ALL user's lists (both owned and member lists)
+        - Each list includes:
+          - Basic list information (id, name, list_type, item_count)
+          - matched_count: How many queried items are in this list
+          - matched_items: Array of queried items found in this list (minimal fields only)
+
+        **Performance:**
+        - Single optimized database query with proper joins
+        - No external API calls (fast response)
+        - Handles up to 100 items efficiently
+
+        **Examples:**
+        Check if 10 seasons are in any lists:
+        ```json
+        {
+          "items": [
+            {"external_id": "1396:1", "source_api": "tmdb", "content_type": "SEASON"},
+            {"external_id": "1396:2", "source_api": "tmdb", "content_type": "SEASON"},
+            ...
+          ]
+        }
+        ```
+
+        Response shows which lists contain which seasons:
+        ```json
+        {
+          "queried_items_count": 10,
+          "lists": [
+            {
+              "id": 1,
+              "name": "Breaking Bad Collection",
+              "matched_count": 5,
+              "matched_items": [...]
+            },
+            {
+              "id": 2,
+              "name": "Watchlist",
+              "matched_count": 0,
+              "matched_items": []
+            }
+          ]
+        }
+        ```
+        ''',
+        request=BulkCheckRequestSerializer,
+        responses={
+            200: BulkCheckResponseSerializer,
+            400: OpenApiExample(
+                'Bad Request',
+                value={
+                    'items': ['Maximum 100 items allowed per request.']
+                }
+            )
+        },
+        examples=[
+            OpenApiExample(
+                'Check Multiple Seasons',
+                value={
+                    'items': [
+                        {'external_id': '1396:1', 'source_api': 'tmdb', 'content_type': 'SEASON'},
+                        {'external_id': '1396:2', 'source_api': 'tmdb', 'content_type': 'SEASON'},
+                        {'external_id': '1396:3', 'source_api': 'tmdb', 'content_type': 'SEASON'}
+                    ]
+                },
+                request_only=True
+            ),
+            OpenApiExample(
+                'Check Multiple Movies',
+                value={
+                    'items': [
+                        {'external_id': '550', 'source_api': 'tmdb', 'content_type': 'MOVIE'},
+                        {'external_id': '13', 'source_api': 'tmdb', 'content_type': 'MOVIE'}
+                    ]
+                },
+                request_only=True
+            )
+        ]
+    )
+    @action(detail=False, methods=['post'], url_path='bulk-check')
+    def bulk_check(self, request):
+        """
+        Check if multiple items exist in any of the user's lists.
+
+        Optimized for bulk operations:
+        1. Validates input items (max 100)
+        2. Gets or creates ContentItem records for all items
+        3. Single query to find all matching ListItems
+        4. Groups results by list
+        5. Returns all user lists with match counts
+        """
+        # Validate request
+        serializer = BulkCheckRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        items_data = serializer.validated_data['items']
+        queried_items_count = len(items_data)
+
+        # Step 1: Get or create ContentItem objects for all queried items
+        # This ensures we can match against existing items in lists
+        content_items = []
+        content_item_map = {}  # Map (external_id, source_api, content_type) -> ContentItem
+
+        for item_data in items_data:
+            content_item, created = ContentItem.objects.get_or_create(
+                external_id=item_data['external_id'],
+                source_api=item_data['source_api'],
+                content_type=item_data['content_type']
+            )
+            content_items.append(content_item)
+            content_item_map[(
+                content_item.external_id,
+                content_item.source_api,
+                content_item.content_type
+            )] = content_item
+
+        # Step 2: Get all user's lists (owned or member)
+        user = request.user
+        user_lists = UserList.objects.filter(
+            Q(owner=user) | Q(members=user)
+        ).distinct().select_related('owner').prefetch_related('members')
+
+        # Step 3: Find all ListItems for queried content items in user's lists
+        # This is a single optimized query with joins
+        list_items = ListItem.objects.filter(
+            user_list__in=user_lists,
+            content_item__in=content_items
+        ).select_related('content_item', 'user_list')
+
+        # Step 4: Group ListItems by UserList
+        list_to_items = {}  # Map list_id -> list of ContentItems
+        for list_item in list_items:
+            list_id = list_item.user_list_id
+            if list_id not in list_to_items:
+                list_to_items[list_id] = []
+            list_to_items[list_id].append(list_item.content_item)
+
+        # Step 5: Build response for each list
+        lists_response = []
+        for user_list in user_lists:
+            matched_items = list_to_items.get(user_list.id, [])
+            matched_count = len(matched_items)
+
+            lists_response.append({
+                'id': user_list.id,
+                'name': user_list.name,
+                'list_type': user_list.list_type,
+                'item_count': user_list.items.count(),
+                'matched_count': matched_count,
+                'matched_items': matched_items
+            })
+
+        # Step 6: Serialize and return response
+        response_data = {
+            'queried_items_count': queried_items_count,
+            'lists': lists_response
+        }
+
+        response_serializer = BulkCheckResponseSerializer(response_data)
+        return Response(response_serializer.data)
