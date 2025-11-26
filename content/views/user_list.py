@@ -367,7 +367,15 @@ class UserListViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
               "id": 1,
               "name": "Breaking Bad Collection",
               "matched_count": 5,
-              "matched_items": [...]
+              "matched_items": [
+                {
+                  "list_item_id": 42,
+                  "content_item_id": 12,
+                  "external_id": "1396:1",
+                  "source_api": "tmdb",
+                  "content_type": "SEASON"
+                }
+              ]
             },
             {
               "id": 2,
@@ -464,18 +472,29 @@ class UserListViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
         ).select_related('content_item', 'user_list')
 
         # Step 4: Group ListItems by UserList
-        list_to_items = {}  # Map list_id -> list of ContentItems
+        list_to_items = {}  # Map list_id -> list of ListItems
         for list_item in list_items:
             list_id = list_item.user_list_id
             if list_id not in list_to_items:
                 list_to_items[list_id] = []
-            list_to_items[list_id].append(list_item.content_item)
+            list_to_items[list_id].append(list_item)
 
         # Step 5: Build response for each list
         lists_response = []
         for user_list in user_lists:
-            matched_items = list_to_items.get(user_list.id, [])
-            matched_count = len(matched_items)
+            matched_list_items = list_to_items.get(user_list.id, [])
+            matched_count = len(matched_list_items)
+
+            # Build matched items array with both ListItem ID and ContentItem data
+            matched_items = []
+            for list_item in matched_list_items:
+                matched_items.append({
+                    'list_item_id': list_item.id,
+                    'content_item_id': list_item.content_item.id,
+                    'external_id': list_item.content_item.external_id,
+                    'source_api': list_item.content_item.source_api,
+                    'content_type': list_item.content_item.content_type,
+                })
 
             lists_response.append({
                 'id': user_list.id,

@@ -40,13 +40,32 @@ class BulkCheckItemInputSerializer(serializers.Serializer):
         return normalized
 
 
-class BulkCheckItemSerializer(serializers.ModelSerializer):
-    """Serializer for ContentItem in bulk check response (minimal fields)."""
+class BulkCheckItemSerializer(serializers.Serializer):
+    """Serializer for matched items in bulk check response.
 
-    class Meta:
-        model = ContentItem
-        fields = ['id', 'external_id', 'source_api', 'content_type']
-        read_only_fields = fields
+    Includes both ContentItem data (for identification) and ListItem ID (for deletion).
+    """
+
+    list_item_id = serializers.IntegerField(
+        read_only=True,
+        help_text="ListItem ID - use this for deleting items from lists"
+    )
+    content_item_id = serializers.IntegerField(
+        read_only=True,
+        help_text="ContentItem ID - unique identifier for the content"
+    )
+    external_id = serializers.CharField(
+        read_only=True,
+        help_text="External ID from source API"
+    )
+    source_api = serializers.CharField(
+        read_only=True,
+        help_text="Source API (tmdb, igdb, spotify, openlibrary)"
+    )
+    content_type = serializers.CharField(
+        read_only=True,
+        help_text="Content type (MOVIE, TV_SHOW, SEASON, GAME, ALBUM, BOOK)"
+    )
 
 
 class BulkCheckListSerializer(serializers.Serializer):

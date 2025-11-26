@@ -399,7 +399,8 @@ class BulkCheckTests(APITestCase):
 
             # Check matched_items structure
             for item in lst['matched_items']:
-                self.assertIn('id', item)
+                self.assertIn('list_item_id', item)
+                self.assertIn('content_item_id', item)
                 self.assertIn('external_id', item)
                 self.assertIn('source_api', item)
                 self.assertIn('content_type', item)
@@ -459,3 +460,64 @@ class BulkCheckTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['queried_items_count'], 50)
+
+    def test_bulk_check_list_item_id_is_correct(self):
+        """Test that list_item_id in response matches actual ListItem ID"""
+        url = reverse('content:lists:list-bulk-check')
+        data = {
+            'items': [
+                {'external_id': '1396:1', 'source_api': 'tmdb', 'content_type': 'SEASON'},
+            ]
+        }
+
+        response = self.client.post(url, data, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Find the watchlist which has BB S1
+        lists = {lst['name']: lst for lst in response.data['lists']}
+        watchlist = lists['Watchlist']
+
+        # Should have 1 match
+        self.assertEqual(watchlist['matched_count'], 1)
+
+        # Get the list_item_id from response
+        returned_list_item_id = watchlist['matched_items'][0]['list_item_id']
+
+        # Verify this is a valid ListItem ID by querying it
+        list_item = ListItem.objects.filter(
+            id=returned_list_item_id,
+            user_list=self.watchlist,
+            content_item=self.bb_season1
+        ).first()
+
+        self.assertIsNotNone(list_item, "list_item_id should match an actual ListItem")
+        self.assertEqual(list_item.content_item.external_id, '1396:1')
+
+    def test_bulk_check_list_item_id_can_be_used_for_deletion(self):
+        """Test that list_item_id from response can be used with DELETE endpoint"""
+        # First, get the list_item_id from bulk check
+        url = reverse('content:lists:list-bulk-check')
+        data = {
+            'items': [
+                {'external_id': '945961', 'source_api': 'tmdb', 'content_type': 'MOVIE'},
+            ]
+        }
+
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Find watchlist which has Alien movie
+        lists = {lst['name']: lst for lst in response.data['lists']}
+        watchlist = lists['Watchlist']
+
+        self.assertEqual(watchlist['matched_count'], 1)
+        list_item_id = watchlist['matched_items'][0]['list_item_id']
+
+        # Verify we can query with this ID
+        list_item = ListItem.objects.get(id=list_item_id)
+        self.assertEqual(list_item.user_list.id, self.watchlist.id)
+        self.assertEqual(list_item.content_item.external_id, '945961')
+
+        # Note: We don't actually delete here to avoid affecting other tests
+        # But we've verified the list_item_id is valid and points to the correct item
