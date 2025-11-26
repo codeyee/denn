@@ -636,3 +636,35 @@ export type ContentItemBasic = Pick<
 export interface ListWithItems extends UserList {
     items?: ListItem[];
 }
+
+export interface BulkCheckItem {
+    external_id: string;
+    source_api: string;
+    content_type: string;
+}
+
+export interface BulkCheckRequest {
+    items: BulkCheckItem[];
+}
+
+export interface MatchedItem {
+    list_item_id: number;
+    content_item_id: number;
+    external_id: string;
+    source_api: string;
+    content_type: string;
+}
+
+export interface UserListWithMatches {
+    id: number;
+    name: string;
+    list_type: ListType;
+    item_count: number;
+    matched_count: number;
+    matched_items: MatchedItem[];
+}
+
+export interface BulkCheckResponse {
+    queried_items_count: number;
+    lists: UserListWithMatches[];
+}

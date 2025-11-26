@@ -1,52 +1,62 @@
 import { api } from "../api";
 import { buildQueryString } from "../utils/queryParams";
 import type {
-  UserList,
-  UserListDetail,
-  PaginatedUserListList,
-  ListQueryParams,
+    UserList,
+    UserListDetail,
+    PaginatedUserListList,
+    ListQueryParams,
+    BulkCheckItem,
+    BulkCheckResponse,
 } from "@/lib/types";
 
 export const listActions = {
-  list: (params?: ListQueryParams): Promise<PaginatedUserListList> => {
-    const query = buildQueryString({
-      params,
-      addCountry: true,
-      country: params?.country,
-    });
-    return api.get<PaginatedUserListList>(`/content/lists/${query}`, true);
-  },
+    bulkCheck: (items: BulkCheckItem[]): Promise<BulkCheckResponse> => {
+        return api.post<BulkCheckResponse>(
+            "/content/lists/bulk-check/",
+            { items },
+            true
+        );
+    },
 
-  get: (id: number, params?: ListQueryParams): Promise<UserListDetail> => {
-    const query = buildQueryString({
-      params,
-      addCountry: true,
-      country: params?.country,
-    });
-    return api.get<UserListDetail>(`/content/lists/${id}/${query}`, true);
-  },
+    list: (params?: ListQueryParams): Promise<PaginatedUserListList> => {
+        const query = buildQueryString({
+            params,
+            addCountry: true,
+            country: params?.country,
+        });
+        return api.get<PaginatedUserListList>(`/content/lists/${query}`, true);
+    },
 
-  create: (list: {
-    name: string;
-    description?: string | null;
-    list_type: string;
-  }): Promise<UserList> => {
-    return api.post<UserList>("/content/lists/", list, true);
-  },
+    get: (id: number, params?: ListQueryParams): Promise<UserListDetail> => {
+        const query = buildQueryString({
+            params,
+            addCountry: true,
+            country: params?.country,
+        });
+        return api.get<UserListDetail>(`/content/lists/${id}/${query}`, true);
+    },
 
-  update: (id: number, list: Partial<UserList>): Promise<UserList> => {
-    return api.put<UserList>(`/content/lists/${id}/`, list, true);
-  },
+    create: (list: {
+        name: string;
+        description?: string | null;
+        list_type: string;
+    }): Promise<UserList> => {
+        return api.post<UserList>("/content/lists/", list, true);
+    },
 
-  patch: (id: number, list: Partial<UserList>): Promise<UserList> => {
-    return api.patch<UserList>(`/content/lists/${id}/`, list, true);
-  },
+    update: (id: number, list: Partial<UserList>): Promise<UserList> => {
+        return api.put<UserList>(`/content/lists/${id}/`, list, true);
+    },
 
-  delete: (id: number): Promise<void> => {
-    return api.delete(`/content/lists/${id}/`, true) as Promise<void>;
-  },
+    patch: (id: number, list: Partial<UserList>): Promise<UserList> => {
+        return api.patch<UserList>(`/content/lists/${id}/`, list, true);
+    },
 
-  getStats: (id: number): Promise<unknown> => {
-    return api.get(`/content/lists/${id}/stats/`, true);
-  },
+    delete: (id: number): Promise<void> => {
+        return api.delete(`/content/lists/${id}/`, true) as Promise<void>;
+    },
+
+    getStats: (id: number): Promise<unknown> => {
+        return api.get(`/content/lists/${id}/stats/`, true);
+    },
 };

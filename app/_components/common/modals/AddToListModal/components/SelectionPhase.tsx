@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { TVSeason } from "@/lib/types";
-import { ListWithItems } from "@/lib/types";
+import { UserListWithMatches } from "@/lib/types";
 
 interface SelectionPhaseProps {
   addMode: 'show' | 'seasons';
@@ -10,8 +10,8 @@ interface SelectionPhaseProps {
   toggleSeason: (seasonNumber: number) => void;
   selectAllSeasons: () => void;
   deselectAllSeasons: () => void;
-  lists: ListWithItems[];
-  isSeasonInList: (list: ListWithItems, seasonNumber: number) => boolean;
+  lists: UserListWithMatches[];
+  isSeasonInList: (list: UserListWithMatches, seasonNumber: number) => boolean;
 }
 
 export function SelectionPhase({
@@ -39,7 +39,7 @@ export function SelectionPhase({
           />
           <div className="flex-1 min-w-0">
             <div className="font-semibold text-white text-base">Add TV Show</div>
-            <div className="text-sm text-white/60 mt-1 break-words">
+            <div className="text-sm text-white/60 mt-1 wrap-break-word">
               Add the complete TV show as a single item to track and rate the series as a whole
             </div>
           </div>
@@ -56,7 +56,7 @@ export function SelectionPhase({
           />
           <div className="flex-1 min-w-0">
             <div className="font-semibold text-white text-base">Add Individual Seasons</div>
-            <div className="text-sm text-white/60 mt-1 break-words">
+            <div className="text-sm text-white/60 mt-1 wrap-break-word">
               Choose specific seasons to track and rate individually for more granular management
             </div>
           </div>
@@ -96,11 +96,10 @@ export function SelectionPhase({
               return (
                 <label
                   key={season.season_number}
-                  className={`flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer ${
-                    isSelected
-                      ? 'border-blue-500/50 bg-blue-500/10'
-                      : 'border-white/10 hover:bg-white/5'
-                  }`}
+                  className={`flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer ${isSelected
+                    ? 'border-blue-500/50 bg-blue-500/10'
+                    : 'border-white/10 hover:bg-white/5'
+                    }`}
                 >
                   <input
                     type="checkbox"

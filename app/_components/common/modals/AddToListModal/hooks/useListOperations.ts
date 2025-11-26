@@ -27,7 +27,8 @@ interface UseListOperationsReturn {
         checked: boolean,
         addMode: "show" | "seasons",
         selectedSeasons: Set<number>,
-        existingItemId?: number
+        existingItemId?: number,
+        existingSeasonsInList?: Set<number>
     ) => Promise<void>;
 }
 
@@ -53,12 +54,16 @@ export function useListOperations({
             const listName = generateRandomListName();
             const newList = await createList(listName);
 
-            await listItemActions.create(newList.id, {
-                source_api: contentItem.source_api as SourceApi,
-                external_id: contentItem.external_id,
-                content_type: contentItem.content_type as ContentType,
-                status: "PENDING",
-            } as ListItemCreate);
+            await listItemActions.create(
+                newList.id,
+                {
+                    source_api: contentItem.source_api as SourceApi,
+                    external_id: contentItem.external_id,
+                    content_type: contentItem.content_type as ContentType,
+                    status: "PENDING",
+                } as ListItemCreate,
+                "id,status"
+            );
 
             await refreshLists();
             showToast("List created and item added", "success");
@@ -76,15 +81,32 @@ export function useListOperations({
     }, [contentItem, createList, refreshLists, showToast]);
 
     const addSeasonsToList = useCallback(
-        async (listId: number, seasonNumbers: number[]) => {
+        async (
+            listId: number,
+            seasonNumbers: number[],
+            existingSeasonsInList?: Set<number>
+        ) => {
             const addedSeasons: number[] = [];
             const failedSeasons: Array<{
                 seasonNumber: number;
                 error: string;
             }> = [];
 
-            for (let i = 0; i < seasonNumbers.length; i++) {
-                const seasonNumber = seasonNumbers[i];
+            // Filter out seasons that are already in the list
+            const seasonsToAdd = existingSeasonsInList
+                ? seasonNumbers.filter((s) => !existingSeasonsInList.has(s))
+                : seasonNumbers;
+
+            if (seasonsToAdd.length === 0) {
+                showToast(
+                    "All selected seasons are already in the list",
+                    "info"
+                );
+                return;
+            }
+
+            for (let i = 0; i < seasonsToAdd.length; i++) {
+                const seasonNumber = seasonsToAdd[i];
                 const season = tvShowSeasons?.find(
                     (s) => s.season_number === seasonNumber
                 );
@@ -92,12 +114,16 @@ export function useListOperations({
                 if (!season) continue;
 
                 try {
-                    await listItemActions.create(listId, {
-                        source_api: contentItem.source_api as SourceApi,
-                        external_id: `${tvShowId}:${seasonNumber}`,
-                        content_type: ContentType.SEASON,
-                        status: "PENDING",
-                    } as ListItemCreate);
+                    await listItemActions.create(
+                        listId,
+                        {
+                            source_api: contentItem.source_api as SourceApi,
+                            external_id: `${tvShowId}:${seasonNumber}`,
+                            content_type: ContentType.SEASON,
+                            status: "PENDING",
+                        } as ListItemCreate,
+                        "id,status"
+                    );
 
                     addedSeasons.push(seasonNumber);
                 } catch (err) {
@@ -137,7 +163,8 @@ export function useListOperations({
             checked: boolean,
             addMode: "show" | "seasons",
             selectedSeasons: Set<number>,
-            existingItemId?: number
+            existingItemId?: number,
+            existingSeasonsInList?: Set<number>
         ) => {
             setLoadingListIds((prev) => {
                 const next = new Set(prev);
@@ -156,16 +183,21 @@ export function useListOperations({
                     ) {
                         await addSeasonsToList(
                             listId,
-                            Array.from(selectedSeasons)
+                            Array.from(selectedSeasons),
+                            existingSeasonsInList
                         );
                     } else {
-                        await listItemActions.create(listId, {
-                            source_api: contentItem.source_api as SourceApi,
-                            external_id: contentItem.external_id,
-                            content_type:
-                                contentItem.content_type as ContentType,
-                            status: "PENDING",
-                        } as ListItemCreate);
+                        await listItemActions.create(
+                            listId,
+                            {
+                                source_api: contentItem.source_api as SourceApi,
+                                external_id: contentItem.external_id,
+                                content_type:
+                                    contentItem.content_type as ContentType,
+                                status: "PENDING",
+                            } as ListItemCreate,
+                            "id,status"
+                        );
                         showToast("Added to list", "success");
                     }
                 } else {

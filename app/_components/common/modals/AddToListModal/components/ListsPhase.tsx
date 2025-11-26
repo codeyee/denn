@@ -1,18 +1,16 @@
 import { Button } from "@/app/_components/common/ui/Button";
-import { ListWithItems, ListItem } from "@/lib/types";
+import { UserListWithMatches, MatchedItem } from "@/lib/types";
 import { Plus, Loader2 } from "lucide-react";
-import { TVSeason } from "@/lib/types";
 
 interface ListsPhaseProps {
-  lists: ListWithItems[];
+  lists: UserListWithMatches[];
   listsLoading: boolean;
   loadingListIds: Set<number>;
   creatingNewList: boolean;
   addMode: 'show' | 'seasons';
   selectedSeasons: Set<number>;
-  tvShowSeasons?: TVSeason[];
-  getItemInList: (list: ListWithItems) => ListItem | undefined;
-  getSeasonsInListCount: (list: ListWithItems) => number;
+  getItemInList: (list: UserListWithMatches) => MatchedItem | undefined;
+  getSeasonsInListCount: (list: UserListWithMatches, selectedSeasons?: Set<number>) => number;
   handleCreateNewList: () => void;
   handleToggleList: (listId: number, checked: boolean, existingItemId?: number) => void;
 }
@@ -24,7 +22,6 @@ export function ListsPhase({
   creatingNewList,
   addMode,
   selectedSeasons,
-  tvShowSeasons,
   getItemInList,
   getSeasonsInListCount,
   handleCreateNewList,
@@ -69,12 +66,12 @@ export function ListsPhase({
               const existingItem = getItemInList(list);
               const alreadyInList = !!existingItem;
 
-              const seasonsInListCount = addMode === 'seasons' ? getSeasonsInListCount(list) : 0;
+              const seasonsInListCount = addMode === 'seasons' ? getSeasonsInListCount(list, selectedSeasons) : 0;
 
               const isLoading = loadingListIds.has(list.id);
 
               // Determine if checked
-              const isChecked = addMode === 'show' ? alreadyInList : (seasonsInListCount > 0 && seasonsInListCount === tvShowSeasons?.length);
+              const isChecked = addMode === 'show' ? alreadyInList : (seasonsInListCount > 0 && seasonsInListCount === selectedSeasons.size);
 
               // For seasons mode, we might want a partial check state, but standard checkbox doesn't support indeterminate easily without ref.
               // For now, let's just check if ALL selected seasons are in list?
@@ -102,7 +99,7 @@ export function ListsPhase({
                         type="checkbox"
                         checked={isChecked}
                         disabled={shouldDisable}
-                        onChange={(e) => handleToggleList(list.id, e.target.checked, existingItem?.id)}
+                        onChange={(e) => handleToggleList(list.id, e.target.checked, existingItem?.list_item_id)}
                         className="w-5 h-5 rounded border-gray-500 text-green-500 focus:ring-green-500 bg-transparent"
                       />
                     )}
