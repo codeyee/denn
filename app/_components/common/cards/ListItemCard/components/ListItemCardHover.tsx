@@ -75,13 +75,6 @@ export function ListItemCardHover({
               </div>
             )}
           </div>
-
-          {item.notes && (
-            <div className="pt-2 border-t border-white/10">
-              <p className="text-xs text-white/50 mb-1">Notes:</p>
-              <p className="text-sm text-white/80 line-clamp-3">{item.notes}</p>
-            </div>
-          )}
         </div>
 
         {showRatingInvitation && onRateClick && (
