@@ -3,7 +3,7 @@ import { StoreProvider } from "@/app/_providers/StoreProvider";
 import { CountryProvider } from "@/app/_components/common/providers/CountryProvider";
 import { ToastProvider } from "@/app/_components/common/Toast";
 
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
@@ -33,9 +33,27 @@ const azeretMono = localFont({
   display: "swap",
 });
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: "#000000",
+};
+
 export const metadata: Metadata = {
   title: "Denn",
-  description: "",
+  description: "Denn",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Denn",
+  },
+  icons: {
+    icon: "/icon.png",
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 export default function RootLayout({
