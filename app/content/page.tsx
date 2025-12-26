@@ -1,25 +1,19 @@
 "use client";
 
-import { Suspense, use, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Navbar } from "@/app/_components/layout/Navbar";
 import { ContentDetailPage } from "@/app/_components/pages/ContentDetailPage";
 import { ProtectedRoute } from "@/app/_components/common/providers/ProtectedRoute";
 
-function ContentPageContent({
-  searchParams
-}: {
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
-}) {
+function ContentPageContent() {
   const router = useRouter();
-  const search = use(searchParams);
+  const searchParams = useSearchParams();
 
-  // Check for external identifiers in query params
-  const externalId = search.external_id as string | undefined;
-  const sourceApi = search.source_api as string | undefined;
-  const contentType = search.content_type as string | undefined;
+  const externalId = searchParams.get("external_id");
+  const sourceApi = searchParams.get("source_api");
+  const contentType = searchParams.get("content_type");
 
-  // Redirect to home if required query params are missing
   useEffect(() => {
     if (!externalId || !sourceApi || !contentType) {
       router.push('/');
@@ -36,15 +30,10 @@ function ContentPageContent({
     );
   }
 
-  // Return null while redirecting
   return null;
 }
 
-export default function ContentPageWithQuery({
-  searchParams
-}: {
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
-}) {
+export default function ContentPageWithQuery() {
   return (
     <div className="relative w-full overflow-x-hidden">
       <Suspense fallback={null}>
@@ -63,7 +52,7 @@ export default function ContentPageWithQuery({
             </div>
           </div>
         }>
-          <ContentPageContent searchParams={searchParams} />
+          <ContentPageContent />
         </Suspense>
       </ProtectedRoute>
     </div>
