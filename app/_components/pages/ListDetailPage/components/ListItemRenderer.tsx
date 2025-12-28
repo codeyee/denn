@@ -44,7 +44,7 @@ export function ListItemRenderer({
 
   const isSeason = contentItem.content_type === "SEASON";
   const title =
-    isSeason && "tv_show_name" in sourceData
+    isSeason && sourceData && "tv_show_name" in sourceData
       ? formatSeasonTitle(sourceData.tv_show_name, sourceData.title)
       : sourceData?.title || "Untitled";
 
@@ -69,7 +69,8 @@ export function ListItemRenderer({
       isReorderMode={isReorderMode}
       title={title}
       description={
-        "original_title" in sourceData &&
+        sourceData &&
+          "original_title" in sourceData &&
           sourceData.original_title !== sourceData.title
           ? sourceData.original_title
           : undefined
@@ -77,6 +78,7 @@ export function ListItemRenderer({
       subDescription={
         (contentItem.content_type === "ALBUM" ||
           contentItem.content_type === "BOOK") &&
+          sourceData &&
           "authors" in sourceData &&
           sourceData.authors
           ? (sourceData.authors as Author[])

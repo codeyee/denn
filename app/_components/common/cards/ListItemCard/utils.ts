@@ -7,7 +7,7 @@ export function getListItemTitle(item: ListItem): string {
   const sourceData = contentItem.source_data;
 
   const isSeason = contentItem.content_type === "SEASON";
-  const title = isSeason && "tv_show_name" in sourceData
+  const title = isSeason && sourceData && "tv_show_name" in sourceData
     ? formatSeasonTitle(sourceData.tv_show_name, sourceData.title)
     : sourceData?.title || "Untitled";
 
@@ -23,6 +23,7 @@ export function getListItemSubtitle(item: ListItem): string {
   }
 
   if (
+    sourceData &&
     "original_title" in sourceData &&
     sourceData.original_title &&
     sourceData.original_title !== sourceData.title
@@ -33,6 +34,7 @@ export function getListItemSubtitle(item: ListItem): string {
   if (
     (contentItem.content_type === "ALBUM" ||
       contentItem.content_type === "BOOK") &&
+    sourceData &&
     "authors" in sourceData &&
     sourceData.authors
   ) {
