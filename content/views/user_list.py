@@ -231,15 +231,21 @@ class UserListViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
     def get_serializer_context(self):
         context = super().get_serializer_context()
 
-        if self.action == 'list':
-            items_size = self.request.query_params.get('items_size', '0')
-
-            try:
-                items_size = int(items_size)
-                if items_size > 0:
-                    context['items_size'] = items_size
-            except (ValueError, TypeError):
-                pass
+        # items_size applies to both 'list' and 'retrieve' actions
+        if self.action in ['list', 'retrieve']:
+            items_size = self.request.query_params.get('items_size')
+            
+            if items_size is not None:
+                try:
+                    items_size = int(items_size)
+                    if items_size > 0:
+                        context['items_size'] = items_size
+                except (ValueError, TypeError):
+                    pass
+            elif self.action == 'retrieve':
+                # Default limit for retrieve to prevent processing hundreds of items
+                # Users can override with ?items_size=0 for no limit or ?items_size=N for specific limit
+                context['items_size'] = 100
 
         return context
 
