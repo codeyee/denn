@@ -22,6 +22,7 @@ import { formatUserDisplayNameWithUsername } from "@/lib/utils/userUtils";
 interface ListSidebarProps {
   list: UserListDetail;
   itemCount: number;
+  totalItemCount: number;
   completedCount: number;
   pendingCount: number;
   completionRate: number;
@@ -29,6 +30,8 @@ interface ListSidebarProps {
   sortBy: SortBy;
   isReorderMode: boolean;
   reorderLoading: boolean;
+  itemsLoading: boolean;
+  allItemsLoaded: boolean;
   onEditList: () => void;
   onDeleteList: () => void;
   onEnterReorderMode: () => void;
@@ -41,6 +44,7 @@ interface ListSidebarProps {
 export function ListSidebar({
   list,
   itemCount,
+  totalItemCount,
   completedCount,
   pendingCount,
   completionRate,
@@ -48,6 +52,8 @@ export function ListSidebar({
   sortBy,
   isReorderMode,
   reorderLoading,
+  itemsLoading,
+  allItemsLoaded,
   onEditList,
   onDeleteList,
   onEnterReorderMode,
@@ -90,10 +96,10 @@ export function ListSidebar({
                 onClick={onEnterReorderMode}
                 className="w-full flex items-center justify-center gap-2 cursor-pointer bg-blue-600 text-white hover:bg-blue-700 font-semibold"
                 size="lg"
-                disabled={itemCount === 0}
+                disabled={itemCount === 0 || !allItemsLoaded}
               >
                 <GripVertical className="w-5 h-5" />
-                Reorder Items
+                {itemsLoading ? "Loading items..." : "Reorder Items"}
               </Button>
               <Button
                 onClick={onEditList}
@@ -148,7 +154,14 @@ export function ListSidebar({
               <Package className="w-4 h-4" />
               <span>Total Items</span>
             </div>
-            <span className="text-white font-bold text-lg">{itemCount}</span>
+            <div className="flex items-center gap-2">
+              <span className="text-white font-bold text-lg">
+                {allItemsLoaded ? itemCount : `${itemCount}/${totalItemCount}`}
+              </span>
+              {itemsLoading && (
+                <div className="w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+              )}
+            </div>
           </div>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-green-400">

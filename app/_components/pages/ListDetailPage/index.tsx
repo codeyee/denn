@@ -44,7 +44,16 @@ export function ListDetailPage({ listId }: ListDetailPageProps) {
   const [viewMode, setViewMode] = useState<"list" | "gallery">("list");
   const { user: currentUser } = useAuthStore();
 
-  const { loading, error, list, listItems, setListItems } = useListData(listId);
+  const {
+    loading,
+    itemsLoading,
+    allItemsLoaded,
+    error,
+    list,
+    listItems,
+    totalItemCount,
+    setListItems,
+  } = useListData(listId);
 
   const modals = useListModals();
 
@@ -350,6 +359,7 @@ export function ListDetailPage({ listId }: ListDetailPageProps) {
             <ListSidebar
               list={list}
               itemCount={stats.itemCount}
+              totalItemCount={totalItemCount}
               completedCount={stats.completedCount}
               pendingCount={stats.pendingCount}
               completionRate={stats.completionRate}
@@ -357,6 +367,8 @@ export function ListDetailPage({ listId }: ListDetailPageProps) {
               sortBy={sortBy}
               isReorderMode={reordering.isReorderMode}
               reorderLoading={reordering.reorderLoading}
+              itemsLoading={itemsLoading}
+              allItemsLoaded={allItemsLoaded}
               onEditList={modals.openEditModal}
               onDeleteList={modals.openDeleteListDialog}
               onEnterReorderMode={reordering.handleEnterReorderMode}

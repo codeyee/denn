@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useListsStore } from "@/app/_stores/lists-store";
-import { listActions, ratingActions } from "@/lib/api";
+import { ratingActions } from "@/lib/api";
 import { ListType, ItemStatus, User, RatingCreate } from "@/lib/types";
 import { ListItem, MemberRating } from "@/lib/types";
 
@@ -44,8 +44,6 @@ export function useListItemActions({
     setActionLoading(true);
     try {
       await updateList(listId, name, description, listType);
-      const listData = await listActions.get(listId);
-      setListItems(listData.items as ListItem[]);
     } finally {
       setActionLoading(false);
     }
@@ -80,23 +78,23 @@ export function useListItemActions({
         ? ItemStatus.PENDING
         : ItemStatus.COMPLETED;
 
+    setListItems((prev) =>
+      prev.map((item) =>
+        item.id === itemId
+          ? {
+              ...item,
+              status: newStatus,
+              completed_at:
+                newStatus === ItemStatus.COMPLETED
+                  ? new Date().toISOString()
+                  : null,
+            }
+          : item
+      )
+    );
+
     try {
       await updateListItemStatus(listId, itemId, newStatus);
-
-      setListItems((prev) =>
-        prev.map((item) =>
-          item.id === itemId
-            ? {
-                ...item,
-                status: newStatus,
-                completed_at:
-                  newStatus === ItemStatus.COMPLETED
-                    ? new Date().toISOString()
-                    : null,
-              }
-            : item
-        )
-      );
 
       if (newStatus === ItemStatus.COMPLETED && currentUserId && onRatingModalOpen) {
         const item = listItems.find((i) => i.id === itemId);
@@ -109,11 +107,22 @@ export function useListItemActions({
             );
 
           if (!hasUserRated) {
-            onRatingModalOpen(item);
+            onRatingModalOpen({ ...item, status: newStatus });
           }
         }
       }
     } catch (err) {
+      setListItems((prev) =>
+        prev.map((item) =>
+          item.id === itemId
+            ? {
+                ...item,
+                status: currentStatus as ItemStatus,
+                completed_at: null,
+              }
+            : item
+        )
+      );
       setError(
         err instanceof Error ? err.message : "Failed to update item status"
       );
@@ -123,10 +132,11 @@ export function useListItemActions({
   const handleSubmitRating = async (item: ListItem, data: RatingCreate) => {
     if (!currentUserId) return;
 
+    setActionLoading(true);
+
     try {
       await ratingActions.create(data);
 
-      // Optimistically update the list items
       setListItems((prev) =>
         prev.map((prevItem) =>
           prevItem.id === item.id
@@ -139,20 +149,18 @@ export function useListItemActions({
                     : []),
                   {
                     user: { id: currentUserId } as User,
-                    rating: parseFloat(data.score),
+                    score: parseFloat(data.score),
                   },
                 ] as MemberRating[],
               }
             : prevItem
         )
       );
-
-      // Fetch fresh data to ensure consistency
-      const listData = await listActions.get(listId);
-      setListItems(listData.items as ListItem[]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to rate item");
       throw err;
+    } finally {
+      setActionLoading(false);
     }
   };
 

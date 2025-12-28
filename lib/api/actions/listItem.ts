@@ -15,12 +15,14 @@ export const listItemActions = {
         listId: number,
         page?: number,
         pageSize?: number,
-        country?: string
+        country?: string,
+        expand?: string
     ): Promise<PaginatedListItemList> => {
         const params = new URLSearchParams();
         if (page !== undefined) params.append("page", String(page));
         if (pageSize !== undefined)
             params.append("page_size", String(pageSize));
+        if (expand) params.append("expand", expand);
         addCountryParam(params, country);
 
         const query = params.toString();
