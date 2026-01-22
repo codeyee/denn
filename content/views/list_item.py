@@ -8,6 +8,7 @@ from drf_spectacular.types import OpenApiTypes
 from content.models import ListItem, UserList
 from content.serializers import ListItemSerializer, ListItemCreateSerializer
 from content.permissions import IsMemberOfList
+from content.utils import bulk_fetch_source_data
 
 from rest_flex_fields.views import FlexFieldsMixin
 
@@ -205,6 +206,58 @@ class ListItemViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
             return user_list
         except UserList.DoesNotExist:
             return None
+
+    def list(self, request, *args, **kwargs):
+        """
+        List items with bulk fetch of source_data for performance.
+        
+        This prevents N+1 HTTP requests to external APIs by fetching all
+        source_data in parallel before serializing.
+        """
+        user_list = self.get_list()
+        if not user_list:
+            return Response(
+                {'detail': 'Lista no encontrada o no tienes acceso a ella.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        queryset = self.filter_queryset(self.get_queryset())
+
+        # Get paginated items (or all if page_size=0)
+        page = self.paginate_queryset(queryset)
+        items_to_serialize = page if page is not None else list(queryset)
+
+        # PERFORMANCE OPTIMIZATION: Pre-fetch all source_data in one parallel batch
+        # This prevents N+1 HTTP requests to external APIs (TMDB, IGDB, Spotify, etc.)
+        country_code = request.query_params.get('country')
+        images_size = None
+        try:
+            images_size_param = request.query_params.get('images_size')
+            if images_size_param:
+                images_size = int(images_size_param)
+        except (ValueError, TypeError):
+            pass
+
+        # Extract content_items from list items
+        content_items = [item.content_item for item in items_to_serialize]
+
+        # Fetch all source data in parallel (uses ThreadPoolExecutor with 4 workers)
+        source_data_cache = bulk_fetch_source_data(
+            content_items,
+            country_code=country_code,
+            images_size=images_size
+        )
+
+        # Inject pre-fetched data into context for ContentItemSerializer
+        context = self.get_serializer_context()
+        context['source_data_cache'] = source_data_cache
+
+        serializer = self.get_serializer(items_to_serialize, many=True, context=context)
+
+        if page is not None:
+            return self.get_paginated_response(serializer.data)
+
+        return Response(serializer.data)
 
     def create(self, request, *args, **kwargs):
         user_list = self.get_list()
