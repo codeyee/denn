@@ -45,8 +45,8 @@ CSRF_COOKIE_SAMESITE = 'Lax'  # Additional CSRF protection
 csrf_origins = os.getenv('CSRF_TRUSTED_ORIGINS', '')
 CSRF_TRUSTED_ORIGINS = [origin for origin in csrf_origins.split(',') if origin]
 
-# Prevent host header injection
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+# Note: ALLOWED_HOSTS is configured in base.py with Railway support
+# Do not override it here to preserve Railway domain auto-detection
 
 # File upload settings
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5 MB
