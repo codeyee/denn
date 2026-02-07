@@ -7,6 +7,7 @@ from .jwt import *
 from .cors import *
 from .docs import *
 from .cache import *
+from .security import *
 
 # Make settings available
 __all__ = [

@@ -7,6 +7,7 @@ from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, Bl
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import AccessToken
 from drf_spectacular.utils import extend_schema, OpenApiExample
+from core.throttling import AuthRateThrottle
 
 @extend_schema(
     tags=['Authentication'],
@@ -52,6 +53,7 @@ from drf_spectacular.utils import extend_schema, OpenApiExample
 )
 class LogoutView(DjRestAuthLogoutView):
     permission_classes = [IsAuthenticated]
+    throttle_classes = [AuthRateThrottle]  # Rate limit: 5 requests/minute
 
     def post(self, request, *args, **kwargs):
         refresh_token = request.data.get('refresh')

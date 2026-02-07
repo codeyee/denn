@@ -11,6 +11,20 @@ REST_FRAMEWORK = {
     "PAGE_SIZE": 20,
     "TIMEOUT": 30,
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+
+    # Rate limiting / Throttling
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ],
+
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "100/day",       # Anonymous users: 100 requests/day
+        "user": "1000/day",      # Authenticated users: 1000 requests/day
+        "auth": "5/minute",      # Auth endpoints: 5 requests/minute
+        "password_reset": "3/hour",  # Password reset: 3 requests/hour
+        "bulk": "10/minute",     # Bulk operations: 10 requests/minute
+    },
 }
 
 # dj-rest-auth configuration

@@ -3,6 +3,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, OpenApiExample
 from authentication.serializers import RegisterSerializer, UserSerializer
+from core.throttling import AuthRateThrottle
 
 @extend_schema(
     tags=['Authentication'],
@@ -55,6 +56,7 @@ from authentication.serializers import RegisterSerializer, UserSerializer
 class RegisterView(generics.CreateAPIView):
     permission_classes = [AllowAny]
     serializer_class = RegisterSerializer
+    throttle_classes = [AuthRateThrottle]  # Rate limit: 5 requests/minute
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)

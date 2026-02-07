@@ -109,18 +109,19 @@ class ListItemSerializer(BaseFlexSerializer):
         return member_ids
 
     def get_member_ratings(self, obj):
-        """
-        Get ratings from all list members for this content item.
-        Only returns data for COMPLETED items.
-
-        Performance optimization: Reuses member_ids across all three rating methods
-        to avoid redundant queries.
-        """
         if obj.status != ListItem.Status.COMPLETED:
             return []
 
-        member_ids = self._get_member_ids(obj)
+        if hasattr(obj.content_item, 'member_ratings_prefetched'):
+            member_ratings = obj.content_item.member_ratings_prefetched
+            return MemberRatingSerializer(
+                member_ratings,
+                many=True,
+                context={'user_list': obj.user_list}
+            ).data
 
+        # Fallback: query database
+        member_ids = self._get_member_ids(obj)
         member_ratings = Rating.objects.filter(
             content_item=obj.content_item,
             user_id__in=member_ids
@@ -133,18 +134,24 @@ class ListItemSerializer(BaseFlexSerializer):
         ).data
 
     def get_list_rating(self, obj):
-        """
-        Calculate average rating from all list members.
-        Only calculates for COMPLETED items.
-
-        Performance optimization: Uses in-memory calculation instead of database aggregation
-        when ratings are already fetched.
-        """
         if obj.status != ListItem.Status.COMPLETED:
             return None
 
-        member_ids = self._get_member_ids(obj)
+        if hasattr(obj, 'member_rating_avg_annotated'):
+            avg = obj.member_rating_avg_annotated
+            return round(float(avg), 1) if avg is not None else None
 
+        # Fallback: calculate from pre-fetched ratings or query database
+        if hasattr(obj.content_item, 'member_ratings_prefetched'):
+            member_ratings = obj.content_item.member_ratings_prefetched
+            if not member_ratings:
+                return None
+            total_score = sum(float(rating.score) for rating in member_ratings)
+            count = len(member_ratings)
+            return round(total_score / count, 1) if count > 0 else None
+
+        # Last resort: database query
+        member_ids = self._get_member_ids(obj)
         member_ratings = Rating.objects.filter(
             content_item=obj.content_item,
             user_id__in=member_ids
@@ -153,24 +160,23 @@ class ListItemSerializer(BaseFlexSerializer):
         if not member_ratings.exists():
             return None
 
-        # Use in-memory calculation to avoid extra query
         total_score = sum(float(rating.score) for rating in member_ratings)
         count = member_ratings.count()
-
         return round(total_score / count, 1) if count > 0 else None
 
     def get_member_rating_count(self, obj):
-        """
-        Count ratings from list members.
-        Only counts for COMPLETED items.
-
-        Performance optimization: Reuses member_ids calculation.
-        """
         if obj.status != ListItem.Status.COMPLETED:
             return 0
 
-        member_ids = self._get_member_ids(obj)
+        if hasattr(obj, 'member_rating_count_annotated'):
+            return obj.member_rating_count_annotated or 0
 
+        # Fallback: count from pre-fetched ratings
+        if hasattr(obj.content_item, 'member_ratings_prefetched'):
+            return len(obj.content_item.member_ratings_prefetched)
+
+        # Last resort: database query
+        member_ids = self._get_member_ids(obj)
         return Rating.objects.filter(
             content_item=obj.content_item,
             user_id__in=member_ids

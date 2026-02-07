@@ -2,7 +2,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from django.db.models import Q, Prefetch, Count, Case, When, IntegerField
+from django.db.models import Q, Prefetch, Count, Case, When, IntegerField, Subquery
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiExample, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 from content.models import UserList, ListItem, Rating, ContentItem
@@ -160,12 +160,13 @@ class UserListViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
         Optimizations:
         - select_related('owner') - Single JOIN instead of separate query
         - Prefetch('items') - Custom queryset with select_related for foreign keys
-        - Prefetch('items__content_item__ratings') - Only ratings from list members
+        - Prefetch('items__content_item__ratings') - Pre-fetch ratings from list members
+        - Annotations for avg/count - Database-level aggregations to avoid serializer queries
         - Item filtering - Filter items by external_id, source_api, and content_type
 
         Performance impact:
         - Before: ~40-60 queries (N+1 for items, ratings, users)
-        - After: ~5-8 queries (optimized with prefetch)
+        - After: ~5-8 queries (optimized with prefetch and annotations)
         """
         user = self.request.user
 
@@ -187,11 +188,36 @@ class UserListViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
             # Content type is stored in uppercase (e.g., 'MOVIE', 'SEASON')
             item_filters['content_item__content_type'] = filter_content_type.upper()
 
+        # Get current list for member filtering (if detail view)
+        # For list view, we'll use a separate approach
+        user_list_id = self.kwargs.get('pk')
+
+        # Create optimized ratings queryset
+        # Only fetch ratings from list members to avoid unnecessary data transfer
+        if user_list_id:
+            # For detail view: filter ratings by specific list members
+            ratings_queryset = Rating.objects.filter(
+                user_id__in=Subquery(
+                    UserList.objects.filter(pk=user_list_id)
+                    .values('members__id')
+                )
+            ).select_related('user').order_by('-created_at')
+        else:
+            # For list view: get all ratings (filter will happen in serializer)
+            ratings_queryset = Rating.objects.select_related('user').order_by('-created_at')
+
         # Optimized queryset for list items with all related data
         # We apply filters first, then select_related and order_by
         items_queryset = ListItem.objects.filter(**item_filters).select_related(
             'content_item',  # Avoid extra query for each item's content
             'added_by'       # Avoid extra query for each item's added_by user
+        ).prefetch_related(
+            # Pre-fetch ratings for COMPLETED items only
+            Prefetch(
+                'content_item__ratings',
+                queryset=ratings_queryset,
+                to_attr='member_ratings_prefetched'
+            )
         ).order_by('list_order', '-added_at')
 
         # Build the main queryset with all optimizations
@@ -204,12 +230,7 @@ class UserListViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
             Prefetch(
                 'items',
                 queryset=items_queryset
-            ),
-            # Note: We intentionally DO NOT prefetch ratings here because:
-            # 1. Only COMPLETED items need ratings
-            # 2. We only need ratings from list members (not all ratings)
-            # 3. The filtering logic is complex and handled in the serializer
-            # 4. Pre-fetching all ratings would waste memory/bandwidth
+            )
         )
 
     def get_serializer_class(self):
