@@ -10,6 +10,10 @@ Denn API is a Django-based secure API gateway for managing multi-media content. 
 
 ### Environment Setup
 ```bash
+# Quick start (automated setup script)
+./quick_start.sh
+
+# Or manual setup:
 # Create and activate virtual environment
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
@@ -130,18 +134,29 @@ python manage.py shell
   - `drf.py` - DRF settings
   - `static.py` - Static file configuration
   - `docs.py` - API documentation settings
+- Key utilities:
+  - `cache_utils.py` - `@cached_view` decorator for DRF views with query-param-aware cache keys
+  - `pagination.py` - `CustomPageNumberPagination` (supports `page_size=0` to bypass pagination)
+  - `error_codes.py` - Centralized `ErrorCode` dataclass definitions with HTTP status mappings
+  - `exceptions.py` - Custom exception classes (TimeoutException, ConnectionErrorException, etc.)
 
 ### Proxy API Client Architecture
 
 The proxy app uses a **layered client pattern** with inheritance:
 
 ```
-Client Hierarchy
-├── TMDBClient (proxy/clients/tmdb.py)
-├── SpotifyClient (proxy/clients/spotify.py)
-├── IGDBClient (proxy/clients/igdb.py)
-└── OpenLibraryClient (proxy/clients/openlibrary.py)
+BaseAPIClient (proxy/clients/base/base.py)
+  - HTTP request handling, error translation, operation-specific timeouts
+  ├── TMDBClient (proxy/clients/tmdb.py)
+  ├── SpotifyClient (proxy/clients/spotify.py)
+  ├── IGDBClient (proxy/clients/igdb.py)
+  └── OpenLibraryClient (proxy/clients/openlibrary.py)
 ```
+
+**Base View Classes** (`proxy/views/base.py`):
+Each API has a base view providing `get_client()` and `get_mapper()` factory methods:
+- `TMDBBaseView`, `IGDBBaseView`, `SpotifyBaseView`, `OpenLibraryBaseView`
+- All inherit `DynamicFieldsMixin` for `?fields=` query param support
 
 **Key Concepts:**
 
@@ -246,7 +261,16 @@ CACHE_KEYS = {
 - See client implementations for bulk methods (e.g., `get_bulk_movies()`)
 - Operation-specific timeouts prevent hanging requests
 
-### 5. Permissions
+### 5. Dynamic Field Selection
+- `DynamicFieldsMixin` in `proxy/views/base.py` enables `?fields=` query param on all proxy endpoints
+- Supports dot notation for nested fields: `?fields=id,title,cover.url`
+- Filtering implemented in `proxy/utils.py:filter_dictionary()` with nested dict traversal
+- Cache keys incorporate query params via MD5 hash to prevent collisions (see `core/cache_utils.py`)
+
+### 6. Signals
+- `content/signals/rating_signals.py`: `post_save` and `post_delete` on `Rating` auto-updates `ContentItem.average_rating` and `rating_count` via aggregation
+
+### 7. Permissions
 Custom permission classes in `content/permissions.py`:
 - `IsMemberOfList` - Check if user is in shared list
 - `IsOwnerOfRating` - Verify rating ownership
@@ -279,20 +303,19 @@ Custom permission classes in `content/permissions.py`:
 
 ### Adding a New External API
 
-1. **Create client** in `proxy/clients/new_api.py`:
+1. **Create client** in `proxy/clients/new_api.py` (extend `BaseAPIClient` from `proxy/clients/base/base.py`):
 ```python
-import os
-import requests
-from typing import Optional
+from proxy.clients.base.base import BaseAPIClient
 
-class NewAPIClient:
+class NewAPIClient(BaseAPIClient):
     def __init__(self):
-        self.base_url = "https://api.newapi.com/v1"
+        super().__init__(base_url="https://api.newapi.com/v1", api_name="newapi")
         self.api_key = os.getenv("NEWAPI_KEY")
-        self.session = requests.Session()
-        self.session.headers.update({
-            "Authorization": f"Bearer {self.api_key}"
-        })
+
+    def get_headers(self):
+        headers = super().get_default_headers()
+        headers["Authorization"] = f"Bearer {self.api_key}"
+        return headers
 
     def search(self, query: str) -> dict:
         # Implement with caching pattern
@@ -469,6 +492,10 @@ from drf_spectacular.utils import extend_schema, OpenApiParameter
 def get(self, request):
     # implementation
 ```
+
+## Python Version
+
+The project targets Python 3.11.9 (specified in `runtime.txt`).
 
 ## Deployment
 

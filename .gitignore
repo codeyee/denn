@@ -105,4 +105,4 @@ dmypy.json
 
 cython_debug/
 
-.claude/
+.claude/settings.local.json
