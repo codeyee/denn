@@ -17,7 +17,7 @@ IGDB_CLIENT_ID = os.getenv("IGDB_CLIENT_ID")
 IGDB_CLIENT_SECRET = os.getenv("IGDB_CLIENT_SECRET")
 IGDB_AUTH_URL = "https://id.twitch.tv/oauth2/token"
 IGDB_BASE_URL = "https://api.igdb.com/v4"
-IGDB_TOKEN_BUFFER_TIME = 60 * 60
+IGDB_TOKEN_BUFFER_TIME = 5 * 60
 
 class IGDBClient(CachedAPIClient):
     def __init__(self):
@@ -68,6 +68,7 @@ class IGDBClient(CachedAPIClient):
         return self._fetch_new_token()
 
     def get_headers(self) -> Dict[str, str]:
+        self.access_token = self._get_or_refresh_token()
         return {
             'Client-ID': self.client_id,
             'Authorization': f'Bearer {self.access_token}',

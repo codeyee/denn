@@ -11,7 +11,7 @@ SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID")
 SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")
 SPOTIFY_AUTH_URL = "https://accounts.spotify.com/api/token"
 SPOTIFY_BASE_URL = "https://api.spotify.com/v1"
-SPOTIFY_TOKEN_BUFFER_TIME = 60 * 60
+SPOTIFY_TOKEN_BUFFER_TIME = 5 * 60
 
 class SpotifyClient(CachedAPIClient):
     def __init__(self):
@@ -67,6 +67,7 @@ class SpotifyClient(CachedAPIClient):
         return self._fetch_new_token()
 
     def get_headers(self) -> Dict[str, str]:
+        self.access_token = self._get_or_refresh_token()
         headers = super().get_default_headers()
         headers['Authorization'] = f'Bearer {self.access_token}'
         return headers
