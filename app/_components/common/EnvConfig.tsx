@@ -8,7 +8,12 @@ declare global {
   }
 }
 
-export function EnvConfig() {
+import { headers } from "next/headers";
+
+export async function EnvConfig() {
+  // Opt out of static rendering
+  await headers();
+
   const env = {
     API_URL: process.env.API_URL || process.env.NEXT_PUBLIC_API_URL,
   };
