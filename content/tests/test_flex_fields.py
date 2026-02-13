@@ -51,10 +51,12 @@ class FlexFieldsTests(APITestCase):
         self.assertIsInstance(item['content_item'], dict)
         self.assertEqual(item['content_item']['id'], self.content_item.id)
 
+    @patch('content.views.list_item.bulk_fetch_source_data')
     @patch('content.utils.fetch_source_data')
-    def test_source_fields_parameter(self, mock_fetch):
+    def test_source_fields_parameter(self, mock_fetch, mock_bulk_fetch):
         """Test that ?source_fields parameter filters source_data"""
         mock_fetch.return_value = self.source_data
+        mock_bulk_fetch.return_value = {self.content_item.id: self.source_data}
         
         url = reverse('content:lists:items-list', kwargs={'list_pk': self.user_list.id})
         # Expand content_item to see source_data, and filter source_fields
@@ -69,10 +71,15 @@ class FlexFieldsTests(APITestCase):
         self.assertEqual(source_data, {'title': 'Test Movie'})
         self.assertNotIn('cover', source_data)
 
+    @patch('content.views.list_item.bulk_fetch_source_data')
     @patch('content.utils.fetch_source_data')
-    def test_nested_source_fields(self, mock_fetch):
+    def test_nested_source_fields(self, mock_fetch, mock_bulk_fetch):
         """Test dot notation for source_fields"""
         mock_fetch.return_value = self.source_data
+        
+        # Mock bulk fetch to return a dict mapping ID to source_data
+        # We need to know the ID of the item. self.content_item.id
+        mock_bulk_fetch.return_value = {self.content_item.id: self.source_data}
         
         url = reverse('content:lists:items-list', kwargs={'list_pk': self.user_list.id})
         response = self.client.get(url, {
