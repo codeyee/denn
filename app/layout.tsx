@@ -2,6 +2,7 @@ import { ThemeProvider } from "@/app/_components/common/providers/ThemeProvider"
 import { StoreProvider } from "@/app/_providers/StoreProvider";
 import { CountryProvider } from "@/app/_components/common/providers/CountryProvider";
 import { ToastProvider } from "@/app/_components/common/Toast";
+import { EnvConfig } from "@/app/_components/common/EnvConfig";
 
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
@@ -75,6 +76,7 @@ export default function RootLayout({
           <StoreProvider>
             <ToastProvider>
               <CountryProvider />
+              <EnvConfig />
               {children}
             </ToastProvider>
           </StoreProvider>

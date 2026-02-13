@@ -1,6 +1,7 @@
 import { useAuthStore } from "@/app/_stores/auth-store";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+import { getApiUrl } from "@/lib/env";
+
 const CONTENT_TYPE_JSON = "application/json";
 const DEFAULT_ERROR_DETAILS = "No error details";
 const HTTP_STATUS_UNAUTHORIZED = 401;
@@ -17,7 +18,7 @@ async function performTokenRefresh(): Promise<void> {
       throw new Error("No refresh token available");
     }
 
-    const response = await fetch(`${API_BASE_URL}/auth/token/refresh/`, {
+    const response = await fetch(`${getApiUrl()}/auth/token/refresh/`, {
       method: "POST",
       headers: { "Content-Type": CONTENT_TYPE_JSON },
       body: JSON.stringify({ refresh: refreshToken }),
@@ -120,7 +121,7 @@ export async function apiRequest<T = unknown>(
     }
   }
 
-  const url = `${API_BASE_URL}${endpoint}`;
+  const url = `${getApiUrl()}${endpoint}`;
 
   try {
     let response = await fetch(url, {
@@ -171,7 +172,7 @@ export async function apiRequest<T = unknown>(
       const errorMessage = `Network error: Unable to connect to ${url}. Please check if the backend server is running and accessible.`;
       console.error(errorMessage, {
         url,
-        apiBaseUrl: API_BASE_URL,
+        apiBaseUrl: getApiUrl(),
         endpoint,
       });
       throw new Error(errorMessage);

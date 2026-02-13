@@ -43,7 +43,7 @@ const initialState: AuthState = {
   error: null,
 };
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+import { getApiUrl } from "@/lib/env";
 
 export const useAuthStore = create<AuthStore>()(
   persist(
@@ -54,6 +54,7 @@ export const useAuthStore = create<AuthStore>()(
       login: async (email: string, password: string) => {
         set({ isLoading: true, error: null });
         try {
+          const apiUrl = getApiUrl();
           const response = await fetch(`${apiUrl}/auth/login/`, {
             method: "POST",
             headers: {
@@ -92,6 +93,7 @@ export const useAuthStore = create<AuthStore>()(
       register: async (username: string, email: string, password: string) => {
         set({ isLoading: true, error: null });
         try {
+          const apiUrl = getApiUrl();
           const response = await fetch(`${apiUrl}/auth/register/`, {
             method: "POST",
             headers: {
@@ -141,6 +143,7 @@ export const useAuthStore = create<AuthStore>()(
       logout: async () => {
         try {
           const state = useAuthStore.getState();
+          const apiUrl = getApiUrl();
           if (state.accessToken) {
             // Call the logout endpoint to invalidate the token
             await fetch(`${apiUrl}/auth/logout/`, {
