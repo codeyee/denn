@@ -16,6 +16,11 @@ import (
 	"github.com/codeyee/denn-proxy/internal/clients"
 	"github.com/codeyee/denn-proxy/internal/config"
 	"github.com/codeyee/denn-proxy/internal/handlers"
+	"github.com/codeyee/denn-proxy/internal/handlers/albums"
+	"github.com/codeyee/denn-proxy/internal/handlers/books"
+	"github.com/codeyee/denn-proxy/internal/handlers/games"
+	"github.com/codeyee/denn-proxy/internal/handlers/movies"
+	"github.com/codeyee/denn-proxy/internal/handlers/tvshows"
 	"github.com/codeyee/denn-proxy/internal/middleware"
 
 	tmdbclient "github.com/codeyee/denn-proxy/internal/providers/tmdb"
@@ -59,11 +64,11 @@ func main() {
 	openLibraryClient := olclient.NewClient(cache)
 	booksSvc := booksservice.NewService(openLibraryClient)
 
-	movieHandler := handlers.NewMovieHandler(tmdbSvc)
-	tvHandler := handlers.NewTVShowHandler(tmdbSvc)
-	gamesHandler := handlers.NewGamesHandler(gamesSvc)
-	albumHandler := handlers.NewAlbumHandler(spotifySvc)
-	bookHandler := handlers.NewBookHandler(booksSvc)
+	movieHandler := movies.NewHandler(tmdbSvc)
+	tvHandler := tvshows.NewHandler(tmdbSvc)
+	gamesHandler := games.NewHandler(gamesSvc)
+	albumHandler := albums.NewHandler(spotifySvc)
+	bookHandler := books.NewHandler(booksSvc)
 
 	r := gin.Default()
 
