@@ -1,8 +1,9 @@
-package handlers
+package health
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 type HealthResponse struct {

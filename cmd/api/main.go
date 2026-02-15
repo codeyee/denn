@@ -15,10 +15,10 @@ import (
 
 	"github.com/codeyee/denn-proxy/internal/clients"
 	"github.com/codeyee/denn-proxy/internal/config"
-	"github.com/codeyee/denn-proxy/internal/handlers"
 	"github.com/codeyee/denn-proxy/internal/handlers/albums"
 	"github.com/codeyee/denn-proxy/internal/handlers/books"
 	"github.com/codeyee/denn-proxy/internal/handlers/games"
+	"github.com/codeyee/denn-proxy/internal/handlers/health"
 	"github.com/codeyee/denn-proxy/internal/handlers/movies"
 	"github.com/codeyee/denn-proxy/internal/handlers/tvshows"
 	"github.com/codeyee/denn-proxy/internal/middleware"
@@ -84,7 +84,7 @@ func main() {
 
 	api := r.Group("/proxy/v1")
 	{
-		api.GET("/health", handlers.HealthCheck)
+		api.GET("/health", health.HealthCheck)
 
 		protected := api.Group("")
 		protected.Use(middleware.AuthMiddleware(cfg.ApiKey))
