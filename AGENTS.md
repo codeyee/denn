@@ -29,7 +29,7 @@ This script will:
 All generated agent directories are configured in `.gitignore` to keep the repository clean.
 
 
-denn-proxy is a Go REST API proxy that aggregates and normalizes metadata from external content APIs (TMDB for movies/TV, with planned support for IGDB, Spotify, OpenLibrary) into unified domain models. It provides search, detail retrieval, and bulk operations with an optional Redis caching layer.
+denn-proxy is a Go REST API proxy that aggregates and normalizes metadata from external content APIs (TMDB, IGDB, Spotify, OpenLibrary) into unified domain models. It provides search, detail retrieval, trending, and bulk operations for movies, TV shows, games, albums, and books, with an optional Redis caching layer.
 
 ## Build & Run Commands
 
@@ -43,9 +43,17 @@ go test ./internal/services/tmdb/    # Run tests for a specific package
 ## Required Configuration
 
 Environment variables loaded from `.env` file or system environment:
-- `TMDB_API_KEY` (required) — bearer token for TMDB API
-- `REDIS_URL` (optional, default `localhost:6379`) — falls back to NoOpCache if unavailable
-- `PORT` (optional, default `8080`)
+
+**Required:**
+- `TMDB_API_KEY` — bearer token for TMDB API
+- `IGDB_CLIENT_ID` — OAuth2 client ID for IGDB (Twitch)
+- `IGDB_CLIENT_SECRET` — OAuth2 client secret for IGDB (Twitch)
+- `SPOTIFY_CLIENT_ID` — OAuth2 client ID for Spotify
+- `SPOTIFY_CLIENT_SECRET` — OAuth2 client secret for Spotify
+
+**Optional:**
+- `PORT` (default `8080`)
+- `REDIS_URL` (default `localhost:6379`) — supports `redis://` URLs and `host:port` format; falls back to NoOpCache if unavailable
 
 ## Architecture
 
@@ -55,30 +63,120 @@ Environment variables loaded from `.env` file or system environment:
 Handler (HTTP validation/response) → Service (orchestration + mapping) → Provider/Client (API calls + caching)
 ```
 
+**Dependency injection flow:**
+
+```
+Config → Cache (Redis | NoOpCache)
+  → Providers (TMDB, IGDB, Spotify, OpenLibrary)
+    → Services (tmdb, games, spotify, books)
+      → Handlers (movies, tvshows, games, albums, books)
+        → Gin Router (/proxy group)
+          → Graceful Shutdown (SIGINT/SIGTERM, 5s timeout)
+```
+
 **Key packages under `internal/`:**
 
-- `clients/` — HTTP and caching abstractions. `BaseClient` wraps `net/http` with JSON helpers; `CachedClient` adds transparent caching via the `Cache` interface (Redis or NoOpCache fallback). Uses functional options pattern (`ClientOption`).
-- `providers/tmdb/` — TMDB-specific API client built on `CachedClient`. Raw API calls only; no domain logic.
-- `services/tmdb/` — Business logic layer. Contains `mapper.go` (TMDB response → domain model conversion) and `types.go` (TMDB API response structs). Handles bulk operations with semaphore-based concurrency (max 10 goroutines via channel + `sync.WaitGroup`).
-- `handlers/` — Gin HTTP handlers. Validates request params, calls services, returns JSON responses.
-- `models/` — Domain models (Movie, TVShow, Album, Book, Game) and shared types (Images, SearchItem, ContentType enums).
+- `clients/` — HTTP and caching abstractions. `BaseClient` wraps `net/http` with JSON helpers (30s default timeout); `CachedClient` adds transparent caching via the `Cache` interface (Redis or NoOpCache fallback). Uses functional options pattern (`ClientOption`). Error types: `ErrTimeout`, `ErrConnection`, `ErrNotJSON`, `ErrNotFound`, `APIError`.
 - `config/` — Env-based config loading with `godotenv`.
+- `models/` — Unified domain models (Movie, TVShow, Game, Album, Book) and shared types (Author, Platform, Images, SearchItem, ContentType/ImageType/ImageSize/AuthorType/AlbumType enums). Each model has a `ToResponse()` method for serialization with configurable image count.
+- `providers/` — External API clients, one per source:
+  - `providers/tmdb/` — TMDB client. Bearer token auth. Endpoints for movies (search, detail, popular) and TV shows (search, detail, seasons, images, watch providers, popular).
+  - `providers/igdb/` — IGDB client. OAuth2 Client Credentials flow via Twitch. Token caching with 5-min buffer and RWMutex. Uses IGDB's custom query language (not REST). Endpoints for game search, detail, bulk, popular, and popularity primitives.
+  - `providers/spotify/` — Spotify client. OAuth2 Client Credentials flow with base64-encoded Basic auth. Token caching with 5-min buffer. Endpoints for album search, detail, bulk, and trending (via Spotify Charts API).
+  - `providers/openlibrary/` — OpenLibrary client. No authentication. Endpoints for book search, detail, and trending (bestsellers).
+- `services/` — Business logic layer, one per domain:
+  - `services/tmdb/` — Movie and TV show orchestration. `mapper.go` converts TMDB responses → domain models (image URL building, platform normalization by country, season validation). Bulk operations with channel-based semaphore (max 10 goroutines). Parallel season expansion.
+  - `services/games/` — Game orchestration. `mapper.go` converts IGDB responses → domain models (image URL building, Unix timestamp formatting, game type mapping). Trending algorithm: 70% want-to-play + 30% visits score with recency multiplier (up to 4x for newer games), filtering browser-only games.
+  - `services/spotify/` — Album orchestration. `mapper.go` converts Spotify responses → domain models. Search excludes singles. Trending via Spotify Charts parsing.
+  - `services/books/` — Book orchestration. `mapper.go` converts OpenLibrary responses → domain models (cover image URL building, author extraction). Trending via bestseller search with client-side pagination.
+- `handlers/` — Gin HTTP handlers. Validates request params, calls services, returns JSON. Shared response types (`ErrorResponse`, `PaginatedResponse`, `PaginationMetadata`) and utilities (`parseImagesSize`, `parseIDs`, `parseStringIDs`).
 
 ## Key Patterns
 
 - **Cache interface with NoOpCache fallback** — Redis unavailability doesn't crash the server; it degrades to no-caching via `NoOpCache`.
-- **Template-based cache keys** — Keys like `tmdb:search:movies:{query}:{page}` with MD5 hash fallback for complex keys. TTLs vary by type (6h search, 12h details, 7d images).
-- **Concurrent bulk operations** — `GetBulkMovies`/`GetBulkTVShows` use channel-based semaphore to limit concurrent API calls to 10.
-- **Mapper separation** — `services/tmdb/mapper.go` isolates all TMDB→domain model conversion, keeping provider types in `types.go` separate from domain models.
-- **Graceful shutdown** — Signal handling with 5-second timeout and resource cleanup in `main.go`.
+- **Template-based cache keys** — Keys like `tmdb:search:movies:{query}:{page}` with MD5 hash fallback for complex keys (e.g., IGDB queries). TTLs vary by provider and type (search 6–24h, details 12–48h, images/providers 7d).
+- **OAuth2 token management** — IGDB and Spotify clients cache access tokens with automatic refresh. 5-minute safety buffer before expiry. Thread-safe via `sync.RWMutex`.
+- **Concurrent bulk operations** — All bulk endpoints use channel-based semaphore to limit concurrent API calls to 10 goroutines via `sync.WaitGroup`.
+- **Mapper separation** — Each service has a `mapper.go` isolating external API response → domain model conversion, keeping provider types in `types.go` separate from domain models in `models/`.
+- **Configurable image count** — All detail/bulk endpoints accept `images_size` query param (default 10) to control how many images are returned.
+- **Country-based platform filtering** — Movie and TV show endpoints accept `country` param (default `US`) to filter streaming/rent/buy platform availability.
+- **Graceful shutdown** — Signal handling (SIGINT/SIGTERM) with 5-second timeout and resource cleanup (cache connection close) in `main.go`.
 
 ## API Routes
 
 All routes are prefixed with `/proxy`:
+
+### Health
 - `GET /proxy/health`
-- `GET /proxy/movies/search?query=X&page=Y`
-- `GET /proxy/movies/:id?country=US`
-- `GET /proxy/movies/bulk?ids=1,2,3`
-- `GET /proxy/tv_shows/search?query=X&page=Y`
-- `GET /proxy/tv_shows/:id?expand=seasons`
-- `GET /proxy/tv_shows/:id/seasons/:season_number`
+
+### Movies (TMDB)
+- `GET /proxy/movies/search?query=X&page=1`
+- `GET /proxy/movies/:id?country=US&images_size=10`
+- `GET /proxy/movies/bulk?ids=1,2,3&country=US&images_size=10` — max 50 IDs
+- `GET /proxy/movies/trending?page=1`
+
+### TV Shows (TMDB)
+- `GET /proxy/tv_shows/search?query=X&page=1`
+- `GET /proxy/tv_shows/:id?country=US&expand=seasons&images_size=10`
+- `GET /proxy/tv_shows/:id/seasons/:season_number?country=US&images_size=10`
+- `GET /proxy/tv_shows/bulk?ids=1,2,3&country=US&images_size=10` — max 50 IDs
+- `GET /proxy/tv_shows/trending?page=1`
+
+### Games (IGDB)
+- `GET /proxy/games/search?query=X&page=1&limit=20` — max limit 500
+- `GET /proxy/games/:id?images_size=10`
+- `GET /proxy/games/bulk?ids=1,2,3&images_size=10` — max 50 IDs
+- `GET /proxy/games/trending?page=1&limit=20` — max limit 100
+
+### Albums (Spotify)
+- `GET /proxy/albums/search?query=X&page=1`
+- `GET /proxy/albums/:id?images_size=10`
+- `GET /proxy/albums/bulk?ids=id1,id2,id3&images_size=10` — max 20 IDs (string)
+- `GET /proxy/albums/trending?page=1`
+
+### Books (OpenLibrary)
+- `GET /proxy/books/search?query=X&page=1`
+- `GET /proxy/books/:id?images_size=10`
+- `GET /proxy/books/bulk?ids=id1,id2,id3&images_size=10` — max 20 IDs (string)
+- `GET /proxy/books/trending?page=1`
+
+## Project Structure
+
+```
+cmd/api/main.go                          # DI wiring & server setup
+internal/
+├── clients/
+│   ├── httpclient.go                    # BaseClient (net/http wrapper)
+│   ├── cache.go                         # Cache interface + Redis + NoOpCache
+│   ├── cached_client.go                 # Transparent caching layer
+│   └── errors.go                        # Error types
+├── config/
+│   └── config.go                        # Env-based configuration
+├── models/
+│   ├── base.go                          # Author, Platform, Image, SearchItem
+│   ├── movie.go                         # Movie + MovieResponse
+│   ├── tvshow.go                        # TVShow + Season + Episode
+│   ├── game.go                          # Game + GameResponse
+│   ├── album.go                         # Album + Track
+│   ├── book.go                          # Book + BookResponse
+│   └── constants.go                     # Enums (ContentType, ImageType, etc.)
+├── providers/
+│   ├── tmdb/                            # TMDB API client (bearer token)
+│   ├── igdb/                            # IGDB API client (OAuth2 via Twitch)
+│   ├── spotify/                         # Spotify API client (OAuth2)
+│   └── openlibrary/                     # OpenLibrary API client (no auth)
+├── services/
+│   ├── tmdb/                            # Movie/TV business logic + mapping
+│   ├── games/                           # Game business logic + trending algorithm
+│   ├── spotify/                         # Album business logic + charts parsing
+│   └── books/                           # Book business logic + bestseller mapping
+└── handlers/
+    ├── response.go                      # Shared response types & error codes
+    ├── utils.go                         # Query param parsing helpers
+    ├── health.go                        # Health check handler
+    ├── movies.go                        # Movie handlers
+    ├── tvshows.go                       # TV show handlers
+    ├── games.go                         # Game handlers
+    ├── albums.go                        # Album handlers
+    └── books.go                         # Book handlers
+```
