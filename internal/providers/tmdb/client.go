@@ -15,6 +15,8 @@ var cacheConfig = clients.CacheConfig{
 		"details":                "tmdb:details:{id}:{append}",
 		"images_season":          "tmdb:img:season:{id}:{season}",
 		"watch_providers_season": "tmdb:wp:season:{id}:{season}",
+		"popular_movies":         "tmdb:popular:movies:{page}",
+		"popular_tv":             "tmdb:popular:tv:{page}",
 	},
 
 	TTLs: map[string]time.Duration{
@@ -23,6 +25,8 @@ var cacheConfig = clients.CacheConfig{
 		"details":                48 * time.Hour,
 		"images_season":          7 * 24 * time.Hour,
 		"watch_providers_season": 7 * 24 * time.Hour,
+		"popular_movies":         24 * time.Hour,
+		"popular_tv":             24 * time.Hour,
 	},
 }
 
@@ -30,8 +34,8 @@ type Client struct {
 	*clients.CachedClient
 }
 
-func NewClient(apiKey string, cache clients.Cache) *Client {
-	base := clients.NewBaseClient(baseURL,
+func NewClient(apiKey string, cache clients.Cache, opts ...clients.ClientOption) *Client {
+	baseOpts := []clients.ClientOption{
 		clients.WithAPIName("tmdb"),
 		clients.WithHeaders(func() map[string]string {
 			return map[string]string{
@@ -40,8 +44,10 @@ func NewClient(apiKey string, cache clients.Cache) *Client {
 				"Authorization": "Bearer " + apiKey,
 			}
 		}),
-	)
+	}
 
+	baseOpts = append(baseOpts, opts...)
+	base := clients.NewBaseClient(baseURL, baseOpts...)
 	cached := clients.NewCachedClient(base, cache, cacheConfig)
 
 	return &Client{CachedClient: cached}

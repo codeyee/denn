@@ -59,6 +59,7 @@ func main() {
 		{
 			movies.GET("/search", movieHandler.Search)
 			movies.GET("/bulk", movieHandler.Bulk)
+			movies.GET("/trending", movieHandler.Trending)
 			movies.GET("/:id", movieHandler.Detail)
 		}
 
@@ -66,6 +67,7 @@ func main() {
 		{
 			tv.GET("/search", tvHandler.Search)
 			tv.GET("/bulk", tvHandler.Bulk)
+			tv.GET("/trending", tvHandler.Trending)
 			tv.GET("/:id", tvHandler.Detail)
 			tv.GET("/:id/seasons/:season_number", tvHandler.SeasonDetail)
 		}

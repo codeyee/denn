@@ -110,6 +110,48 @@ func (s *Service) SearchTVShows(ctx context.Context, query string, page int) (Se
 	}, nil
 }
 
+func (s *Service) GetPopularMovies(ctx context.Context, page int) (SearchResult, error) {
+	data, err := unmarshalResponse[tmdbSearchResponse](s.client.GetPopularMovies(ctx, page))
+
+	if err != nil {
+		return SearchResult{}, fmt.Errorf("popular movies: %w", err)
+	}
+
+	items := make([]models.SearchItem, 0, len(data.Results))
+
+	for _, r := range data.Results {
+		items = append(items, mapSearchItemMovie(r))
+	}
+
+	return SearchResult{
+		Page:         data.Page,
+		TotalPages:   data.TotalPages,
+		TotalResults: data.TotalResults,
+		Results:      items,
+	}, nil
+}
+
+func (s *Service) GetPopularTVShows(ctx context.Context, page int) (SearchResult, error) {
+	data, err := unmarshalResponse[tmdbSearchResponse](s.client.GetPopularTVShows(ctx, page))
+
+	if err != nil {
+		return SearchResult{}, fmt.Errorf("popular tv shows: %w", err)
+	}
+
+	items := make([]models.SearchItem, 0, len(data.Results))
+
+	for _, r := range data.Results {
+		items = append(items, mapSearchItemTV(r))
+	}
+
+	return SearchResult{
+		Page:         data.Page,
+		TotalPages:   data.TotalPages,
+		TotalResults: data.TotalResults,
+		Results:      items,
+	}, nil
+}
+
 func (s *Service) GetMovieComplete(ctx context.Context, movieID int, country string) (models.Movie, error) {
 	data, err := unmarshalResponse[tmdbMovieDetail](
 		s.client.GetMovieDetails(ctx, movieID, movieAppend),

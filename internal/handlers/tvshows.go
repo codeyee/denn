@@ -51,6 +51,30 @@ func (h *TVShowHandler) Search(c *gin.Context) {
 	})
 }
 
+func (h *TVShowHandler) Trending(c *gin.Context) {
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+
+	if page < 1 {
+		page = 1
+	}
+
+	result, err := h.service.GetPopularTVShows(c.Request.Context(), page)
+
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, CodeInternalError, "failed to get trending tv shows")
+		return
+	}
+
+	c.JSON(http.StatusOK, PaginatedResponse{
+		Metadata: PaginationMetadata{
+			Page:         result.Page,
+			TotalPages:   result.TotalPages,
+			TotalResults: result.TotalResults,
+		},
+		Results: result.Results,
+	})
+}
+
 func (h *TVShowHandler) Detail(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 

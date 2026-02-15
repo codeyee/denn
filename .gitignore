@@ -25,6 +25,9 @@ go.work
 .history
 .ionide
 
+# Migration
+old_files/
+
 # Agents
 .agent/
 .claude/

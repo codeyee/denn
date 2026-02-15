@@ -53,6 +53,30 @@ func (h *MovieHandler) Search(c *gin.Context) {
 	})
 }
 
+func (h *MovieHandler) Trending(c *gin.Context) {
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+
+	if page < 1 {
+		page = 1
+	}
+
+	result, err := h.service.GetPopularMovies(c.Request.Context(), page)
+
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, CodeInternalError, "failed to get trending movies")
+		return
+	}
+
+	c.JSON(http.StatusOK, PaginatedResponse{
+		Metadata: PaginationMetadata{
+			Page:         result.Page,
+			TotalPages:   result.TotalPages,
+			TotalResults: result.TotalResults,
+		},
+		Results: result.Results,
+	})
+}
+
 func (h *MovieHandler) Detail(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 

@@ -53,7 +53,7 @@ func (h *GamesHandler) Search(c *gin.Context) {
 	}
 	
 	c.JSON(http.StatusOK, PaginatedResponse{
-		Metadata: PaginationMetadatadata{
+		Metadata: PaginationMetadata{
 			Page:         page,
 			TotalPages:   0,
 			TotalResults: 0,

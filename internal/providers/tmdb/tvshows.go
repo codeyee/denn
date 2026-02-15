@@ -61,3 +61,13 @@ func (c *Client) GetSeasonImages(ctx context.Context, tvID, seasonNumber int) (*
 		"season": strconv.Itoa(seasonNumber),
 	})
 }
+
+func (c *Client) GetPopularTVShows(ctx context.Context, page int) (*clients.Response, error) {
+	params := url.Values{
+		"page": {strconv.Itoa(page)},
+	}
+
+	return c.CachedGet(ctx, "tv/popular", "popular_tv", params, map[string]string{
+		"page": strconv.Itoa(page),
+	})
+}

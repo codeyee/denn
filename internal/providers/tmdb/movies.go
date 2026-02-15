@@ -34,3 +34,13 @@ func (c *Client) GetMovieDetails(ctx context.Context, movieID int, appendToRespo
 		"append": appendToResponse,
 	})
 }
+
+func (c *Client) GetPopularMovies(ctx context.Context, page int) (*clients.Response, error) {
+	params := url.Values{
+		"page": {strconv.Itoa(page)},
+	}
+
+	return c.CachedGet(ctx, "movie/popular", "popular_movies", params, map[string]string{
+		"page": strconv.Itoa(page),
+	})
+}
