@@ -5,8 +5,8 @@ type Track struct {
 	Title           string   `json:"title"`
 	TrackNumber     int      `json:"track_number"`
 	Authors         []Author `json:"authors,omitempty"`
-	DurationSeconds *int     `json:"duration_seconds"`
-	ExternalURL     *string  `json:"external_url"`
+	DurationSeconds *int     `json:"duration_seconds,omitempty"`
+	ExternalURL     *string  `json:"external_url,omitempty"`
 }
 
 type Album struct {
@@ -14,12 +14,12 @@ type Album struct {
 	Title           string   `json:"title"`
 	ContentType     string   `json:"type"`
 	Authors         []Author `json:"authors,omitempty"`
-	ImageURL        *string  `json:"image_url"`
-	ReleaseDate     *string  `json:"release_date"`
-	TotalTracks     *int     `json:"total_tracks"`
-	DurationMinutes *int     `json:"duration_minutes"`
-	AlbumType       *string  `json:"album_type"`
-	ExternalURL     *string  `json:"external_url"`
+	ImageURL        *string  `json:"image_url,omitempty"`
+	ReleaseDate     *string  `json:"release_date,omitempty"`
+	TotalTracks     *int     `json:"total_tracks,omitempty"`
+	DurationMinutes *int     `json:"duration_minutes,omitempty"`
+	AlbumType       *string  `json:"album_type,omitempty"`
+	ExternalURL     *string  `json:"external_url,omitempty"`
 	Images          *Images  `json:"-"`
 	Tracks          []Track  `json:"tracks,omitempty"`
 }
@@ -28,12 +28,12 @@ type AlbumResponse struct {
 	ID              string       `json:"id"`
 	Type            string       `json:"type"`
 	Title           string       `json:"title"`
-	ImageURL        *string      `json:"image_url"`
-	ReleaseDate     *string      `json:"release_date"`
-	TotalTracks     *int         `json:"total_tracks"`
-	DurationMinutes *int         `json:"duration_minutes"`
-	AlbumType       *string      `json:"album_type"`
-	ExternalURL     *string      `json:"external_url"`
+	ImageURL        *string      `json:"image_url,omitempty"`
+	ReleaseDate     *string      `json:"release_date,omitempty"`
+	TotalTracks     *int         `json:"total_tracks,omitempty"`
+	DurationMinutes *int         `json:"duration_minutes,omitempty"`
+	AlbumType       *string      `json:"album_type,omitempty"`
+	ExternalURL     *string      `json:"external_url,omitempty"`
 	Authors         []Author     `json:"authors,omitempty"`
 	Images          []ImageEntry `json:"images,omitempty"`
 	Tracks          []Track      `json:"tracks,omitempty"`

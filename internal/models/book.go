@@ -5,10 +5,10 @@ type Book struct {
 	Title       string   `json:"title"`
 	ContentType string   `json:"type"`
 	Authors     []Author `json:"authors,omitempty"`
-	ImageURL    *string  `json:"image_url"`
-	ReleaseDate *string  `json:"release_date"`
-	Pages       *int     `json:"pages"`
-	Description *string  `json:"description"`
+	ImageURL    *string  `json:"image_url,omitempty"`
+	ReleaseDate *string  `json:"release_date,omitempty"`
+	Pages       *int     `json:"pages,omitempty"`
+	Description *string  `json:"description,omitempty"`
 	Images      *Images  `json:"-"`
 }
 
@@ -16,10 +16,10 @@ type BookResponse struct {
 	ID          string       `json:"id"`
 	Type        string       `json:"type"`
 	Title       string       `json:"title"`
-	ImageURL    *string      `json:"image_url"`
-	ReleaseDate *string      `json:"release_date"`
-	Pages       *int         `json:"pages"`
-	Description *string      `json:"description"`
+	ImageURL    *string      `json:"image_url,omitempty"`
+	ReleaseDate *string      `json:"release_date,omitempty"`
+	Pages       *int         `json:"pages,omitempty"`
+	Description *string      `json:"description,omitempty"`
 	Authors     []Author     `json:"authors,omitempty"`
 	Images      []ImageEntry `json:"images,omitempty"`
 }

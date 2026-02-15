@@ -5,13 +5,13 @@ type Movie struct {
 	Title           string                `json:"title"`
 	OriginalTitle   string                `json:"original_title"`
 	ContentType     string                `json:"type"`
-	Description     *string               `json:"description"`
-	ImageURL        *string               `json:"image_url"`
-	Tagline         *string               `json:"tagline"`
-	ImdbID          *string               `json:"imdb_id"`
-	ReleaseDate     *string               `json:"release_date"`
-	DurationMinutes *int                  `json:"duration_minutes"`
-	Status          *string               `json:"status"`
+	Description     *string               `json:"description,omitempty"`
+	ImageURL        *string               `json:"image_url,omitempty"`
+	Tagline         *string               `json:"tagline,omitempty"`
+	ImdbID          *string               `json:"imdb_id,omitempty"`
+	ReleaseDate     *string               `json:"release_date,omitempty"`
+	DurationMinutes *int                  `json:"duration_minutes,omitempty"`
+	Status          *string               `json:"status,omitempty"`
 	Authors         []Author              `json:"authors,omitempty"`
 	Images          *Images               `json:"-"`
 	Platforms       map[string][]Platform `json:"-"`
@@ -20,15 +20,15 @@ type Movie struct {
 type MovieResponse struct {
 	ID              string                `json:"id"`
 	Type            string                `json:"type"`
-	ImdbID          *string               `json:"imdb_id"`
+	ImdbID          *string               `json:"imdb_id,omitempty"`
 	Title           string                `json:"title"`
 	OriginalTitle   string                `json:"original_title"`
-	Tagline         *string               `json:"tagline"`
-	Description     *string               `json:"description"`
-	ImageURL        *string               `json:"image_url"`
-	ReleaseDate     *string               `json:"release_date"`
-	Status          *string               `json:"status"`
-	DurationMinutes *int                  `json:"duration_minutes"`
+	Tagline         *string               `json:"tagline,omitempty"`
+	Description     *string               `json:"description,omitempty"`
+	ImageURL        *string               `json:"image_url,omitempty"`
+	ReleaseDate     *string               `json:"release_date,omitempty"`
+	Status          *string               `json:"status,omitempty"`
+	DurationMinutes *int                  `json:"duration_minutes,omitempty"`
 	Authors         []Author              `json:"authors,omitempty"`
 	Images          []ImageEntry          `json:"images,omitempty"`
 	Platforms       map[string][]Platform `json:"platforms,omitempty"`

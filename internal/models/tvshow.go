@@ -5,10 +5,10 @@ type Episode struct {
 	EpisodeNumber   int     `json:"episode_number"`
 	SeasonNumber    int     `json:"season_number"`
 	Title           string  `json:"title"`
-	Description     *string `json:"description"`
-	ReleaseDate     *string `json:"release_date"`
-	DurationMinutes *int    `json:"duration_minutes"`
-	ImageURL        *string `json:"image_url"`
+	Description     *string `json:"description,omitempty"`
+	ReleaseDate     *string `json:"release_date,omitempty"`
+	DurationMinutes *int    `json:"duration_minutes,omitempty"`
+	ImageURL        *string `json:"image_url,omitempty"`
 	EpisodeType     *string `json:"episode_type,omitempty"`
 }
 
@@ -18,10 +18,10 @@ type Season struct {
 	Title            string                `json:"title"`
 	ContentType      string                `json:"type"`
 	NumberOfEpisodes int                   `json:"number_of_episodes"`
-	Description      *string               `json:"description"`
-	ReleaseDate      *string               `json:"release_date"`
-	ImageURL         *string               `json:"image_url"`
-	TVShowName       *string               `json:"tv_show_name"`
+	Description      *string               `json:"description,omitempty"`
+	ReleaseDate      *string               `json:"release_date,omitempty"`
+	ImageURL         *string               `json:"image_url,omitempty"`
+	TVShowName       *string               `json:"tv_show_name,omitempty"`
 	Images           *Images               `json:"-"`
 	Episodes         []Episode             `json:"-"`
 	Platforms        map[string][]Platform `json:"-"`
@@ -32,10 +32,10 @@ type SeasonResponse struct {
 	Type             string                `json:"type"`
 	SeasonNumber     int                   `json:"season_number"`
 	Title            string                `json:"title"`
-	TVShowName       *string               `json:"tv_show_name"`
-	Description      *string               `json:"description"`
-	ImageURL         *string               `json:"image_url"`
-	ReleaseDate      *string               `json:"release_date"`
+	TVShowName       *string               `json:"tv_show_name,omitempty"`
+	Description      *string               `json:"description,omitempty"`
+	ImageURL         *string               `json:"image_url,omitempty"`
+	ReleaseDate      *string               `json:"release_date,omitempty"`
 	NumberOfEpisodes int                   `json:"number_of_episodes"`
 	Images           []ImageEntry          `json:"images,omitempty"`
 	Platforms        map[string][]Platform `json:"platforms,omitempty"`
@@ -72,14 +72,14 @@ type TVShow struct {
 	Title            string                `json:"title"`
 	OriginalTitle    string                `json:"original_title"`
 	ContentType      string                `json:"type"`
-	Description      *string               `json:"description"`
-	ImageURL         *string               `json:"image_url"`
-	Tagline          *string               `json:"tagline"`
-	ImdbID           *string               `json:"imdb_id"`
-	ReleaseDate      *string               `json:"release_date"`
-	Status           *string               `json:"status"`
-	NumberOfSeasons  *int                  `json:"number_of_seasons"`
-	NumberOfEpisodes *int                  `json:"number_of_episodes"`
+	Description      *string               `json:"description,omitempty"`
+	ImageURL         *string               `json:"image_url,omitempty"`
+	Tagline          *string               `json:"tagline,omitempty"`
+	ImdbID           *string               `json:"imdb_id,omitempty"`
+	ReleaseDate      *string               `json:"release_date,omitempty"`
+	Status           *string               `json:"status,omitempty"`
+	NumberOfSeasons  *int                  `json:"number_of_seasons,omitempty"`
+	NumberOfEpisodes *int                  `json:"number_of_episodes,omitempty"`
 	Authors          []Author              `json:"authors,omitempty"`
 	Images           *Images               `json:"-"`
 	Platforms        map[string][]Platform `json:"-"`
@@ -89,16 +89,16 @@ type TVShow struct {
 type TVShowResponse struct {
 	ID               string                `json:"id"`
 	Type             string                `json:"type"`
-	ImdbID           *string               `json:"imdb_id"`
+	ImdbID           *string               `json:"imdb_id,omitempty"`
 	Title            string                `json:"title"`
 	OriginalTitle    string                `json:"original_title"`
-	Tagline          *string               `json:"tagline"`
-	Description      *string               `json:"description"`
-	ImageURL         *string               `json:"image_url"`
-	ReleaseDate      *string               `json:"release_date"`
-	Status           *string               `json:"status"`
-	NumberOfSeasons  *int                  `json:"number_of_seasons"`
-	NumberOfEpisodes *int                  `json:"number_of_episodes"`
+	Tagline          *string               `json:"tagline,omitempty"`
+	Description      *string               `json:"description,omitempty"`
+	ImageURL         *string               `json:"image_url,omitempty"`
+	ReleaseDate      *string               `json:"release_date,omitempty"`
+	Status           *string               `json:"status,omitempty"`
+	NumberOfSeasons  *int                  `json:"number_of_seasons,omitempty"`
+	NumberOfEpisodes *int                  `json:"number_of_episodes,omitempty"`
 	Authors          []Author              `json:"authors,omitempty"`
 	Images           []ImageEntry          `json:"images,omitempty"`
 	Platforms        map[string][]Platform `json:"platforms,omitempty"`

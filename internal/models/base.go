@@ -7,7 +7,7 @@ type Author struct {
 
 type Platform struct {
 	Name     string  `json:"name"`
-	ImageURL *string `json:"image_url"`
+	ImageURL *string `json:"image_url,omitempty"`
 }
 
 type ImageEntry struct {
@@ -115,8 +115,8 @@ type SearchItem struct {
 	Type          string   `json:"type"`
 	Title         string   `json:"title"`
 	OriginalTitle *string  `json:"original_title,omitempty"`
-	Description   *string  `json:"description"`
-	ImageURL      *string  `json:"image_url"`
-	ReleaseDate   *string  `json:"release_date"`
+	Description   *string  `json:"description,omitempty"`
+	ImageURL      *string  `json:"image_url,omitempty"`
+	ReleaseDate   *string  `json:"release_date,omitempty"`
 	Authors       []Author `json:"authors,omitempty"`
 }
