@@ -27,11 +27,11 @@ You are an expert in the `denn-proxy` architecture. Your role is to guide the im
 ## Directory Structure
 
 | Path | Purpose | Key Pattern |
-|Data|---|---|
+|---|---|---|
 | `internal/models` | Domain entities and shared structs. | JSON tags, helper methods (e.g., `ToResponse`). |
 | `internal/providers` | External API clients. | `clients.CachedClient`, request construction. |
-| `internal/services` | Business logic & orchestration. | `NewService`, `mapDomain`, `GetComplete`. |
-| `internal/handlers` | HTTP transport layer. | `gin.Context`, parameter parsing, error handling. |
+| `internal/services` | Business logic & orchestration. | `service/` (logic), `mapper/` (mapping), `types.go` (API types). |
+| `internal/handlers` | HTTP transport layer. | Organized by domain + `health` & `common`. |
 | `cmd/api` | Entry point & wiring. | `main.go` wires everything together. |
 | `internal/config` | Configuration. | Environment variables via `godotenv`. |
 
@@ -80,17 +80,23 @@ func NewClient(clientID, clientSecret string, cache clients.Cache) *Client {
     - **CRITICAL**: Use `CacheConfig` keys defined in `client.go`.
     - Return `*clients.Response`.
 
-### Step 3: Implement the Service (`internal/services/<provider>`)
+### Step 3: Implement the Service (`internal/services/<domain>`)
 
-1.  **Service Setup (`service.go`)**:
-    - Struct holding the `Client`.
+1.  **Directory Structure**:
+    - Create `internal/services/<domain>/service/` for business logic.
+    - Create `internal/services/<domain>/mapper/` for mapping logic.
+    - Create `internal/services/<domain>/types.go` for external API types.
+
+2.  **Service Setup (`service/service.go`)**:
+    - Struct holding the `Client` (from `internal/providers`).
     - Constructor `NewService`.
 
-2.  **Mapper (`mapper.go`)**:
-    - dedicated file for `mapExternalToDomain` functions.
+3.  **Mapper (`mapper/mapper.go`)**:
+    - Dedicated package `mapper`.
+    - `Map<Entity>` functions.
     - Keeps service logic clean.
 
-3.  **Business Logic (`service.go`)**:
+4.  **Business Logic (`service/service.go`)**:
     - `Get<Entity>Complete`: Fetches main data + related data (concurrently if needed).
     - `Search<Entity>`: Handles search queries.
     - **Concurrency Pattern**: Use `sync.WaitGroup` to fetch related data (e.g., reviews, DLCs) in parallel.
@@ -105,7 +111,9 @@ func (s *Service) GetGameComplete(ctx context.Context, id int) (models.Game, err
 
 ### Step 4: Implement the Handler (`internal/handlers`)
 
-Create `internal/handlers/<domain>.go`.
+### Step 4: Implement the Handler (`internal/handlers/<domain>`)
+
+Create `internal/handlers/<domain>/handler.go`.
 - Struct holding the `Service`.
 - Methods for `Search`, `Detail`, `Bulk`.
 - Parse parameters (`page`, `query`, `ids`).

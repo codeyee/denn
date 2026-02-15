@@ -166,17 +166,28 @@ internal/
 │   ├── spotify/                         # Spotify API client (OAuth2)
 │   └── openlibrary/                     # OpenLibrary API client (no auth)
 ├── services/
-│   ├── tmdb/                            # Movie/TV business logic + mapping
-│   ├── games/                           # Game business logic + trending algorithm
-│   ├── spotify/                         # Album business logic + charts parsing
-│   └── books/                           # Book business logic + bestseller mapping
+│   ├── tmdb/
+│   │   ├── mapper/                      # TMDB response mapping
+│   │   ├── service/                     # Business logic and coordination
+│   │   └── types.go                     # External API types
+│   ├── games/
+│   │   ├── mapper/                      # IGDB response mapping
+│   │   ├── service/                     # Business logic and trending
+│   │   └── types.go                     # External API types
+│   ├── spotify/
+│   │   ├── mapper/                      # Spotify response mapping
+│   │   ├── service/                     # Business logic and charts parsing
+│   │   └── types.go                     # External API types
+│   └── books/
+│       ├── mapper/                      # OpenLibrary response mapping
+│       ├── service/                     # Business logic and bestseller mapping
+│       └── types.go                     # External API types
 └── handlers/
-    ├── response.go                      # Shared response types & error codes
-    ├── utils.go                         # Query param parsing helpers
-    ├── health.go                        # Health check handler
-    ├── movies.go                        # Movie handlers
-    ├── tvshows.go                       # TV show handlers
-    ├── games.go                         # Game handlers
-    ├── albums.go                        # Album handlers
-    └── books.go                         # Book handlers
+    ├── common/                          # Shared response types & utilities
+    ├── health/                          # Health check handler
+    ├── movies/                          # Movie handlers
+    ├── tvshows/                         # TV show handlers
+    ├── games/                           # Game handlers
+    ├── albums/                          # Album handlers
+    └── books/                           # Book handlers
 ```
