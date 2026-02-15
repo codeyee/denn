@@ -4,6 +4,7 @@ type ImageType string
 type ImageSize string
 type ContentType string
 type AuthorType string
+type AlbumType string
 
 const (
 	ImageTypePoster  ImageType = "poster"
@@ -31,4 +32,8 @@ const (
 	AuthorTypeComposer   AuthorType = "composer"
 	AuthorTypeProducer   AuthorType = "producer"
 	AuthorTypeScreenplay AuthorType = "screenplay"
+
+	AlbumTypeAlbum  AlbumType = "album"
+	AlbumTypeEP     AlbumType = "ep"
+	AlbumTypeSingle AlbumType = "single"
 )

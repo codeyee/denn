@@ -41,6 +41,10 @@ func LoadConfig() (*Config, error) {
 		return nil, fmt.Errorf("IGDB_CLIENT_ID and IGDB_CLIENT_SECRET are required")
 	}
 
+	if cfg.SpotifyClientID == "" || cfg.SpotifyClientSecret == "" {
+		return nil, fmt.Errorf("SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET are required")
+	}
+
 	return cfg, nil
 }
 

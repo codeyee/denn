@@ -60,6 +60,10 @@ func defaultHeaders() map[string]string {
 	}
 }
 
+func (c *BaseClient) HTTPClient() *http.Client {
+	return c.httpClient
+}
+
 func NewBaseClient(baseURL string, opts ...ClientOption) *BaseClient {
 	c := &BaseClient{
 		baseURL:    strings.TrimRight(baseURL, "/"),

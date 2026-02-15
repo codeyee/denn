@@ -41,3 +41,17 @@ func parseIDs(s string) ([]int, error) {
 
 	return ids, nil
 }
+
+func parseStringIDs(s string) []string {
+	parts := strings.Split(s, ",")
+	ids := make([]string, 0, len(parts))
+
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p != "" {
+			ids = append(ids, p)
+		}
+	}
+
+	return ids
+}
