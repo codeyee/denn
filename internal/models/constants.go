@@ -17,6 +17,8 @@ const (
 	ContentTypeGame   ContentType = "game"
 	ContentTypeAlbum  ContentType = "album"
 	ContentTypeBook   ContentType = "book"
+	ContentTypeSeason ContentType = "season"
+	ContentTypePerson ContentType = "person"
 
 	AuthorTypeDirector   AuthorType = "director"
 	AuthorTypeActor      AuthorType = "actor"
