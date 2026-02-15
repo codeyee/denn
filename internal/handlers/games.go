@@ -1,14 +1,12 @@
 package handlers
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/codeyee/denn-proxy/internal/clients"
 	gamesservice "github.com/codeyee/denn-proxy/internal/services/games"
 )
 
@@ -36,7 +34,7 @@ func (h *GamesHandler) Search(c *gin.Context) {
 
 	if err != nil {
 		fmt.Printf("SearchGames Error: %v\n", err)
-		respondError(c, http.StatusInternalServerError, CodeInternalError, "failed to search games")
+		handleServiceError(c, err)
 		return
 	}
 	
@@ -60,12 +58,7 @@ func (h *GamesHandler) Detail(c *gin.Context) {
 
 	game, err := h.service.GetGameComplete(c.Request.Context(), id)
 	if err != nil {
-		if errors.Is(err, clients.ErrNotFound) || err.Error() == "game not found" {
-			respondError(c, http.StatusNotFound, CodeNotFound, "game not found")
-			return
-		}
-
-		respondError(c, http.StatusInternalServerError, CodeInternalError, "failed to get game details")
+		handleServiceError(c, err)
 		return
 	}
 
@@ -100,7 +93,7 @@ func (h *GamesHandler) Bulk(c *gin.Context) {
 	games, err := h.service.GetBulkGames(c.Request.Context(), ids)
 
 	if err != nil {
-		respondError(c, http.StatusInternalServerError, CodeInternalError, "failed to get bulk games")
+		handleServiceError(c, err)
 		return
 	}
 
@@ -121,7 +114,7 @@ func (h *GamesHandler) Trending(c *gin.Context) {
 	results, err := h.service.GetTrendingGames(c.Request.Context(), limit, offset)
 
 	if err != nil {
-		respondError(c, http.StatusInternalServerError, CodeInternalError, "failed to get trending games")
+		handleServiceError(c, err)
 		return
 	}
 	

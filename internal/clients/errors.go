@@ -1,22 +1,13 @@
 package clients
 
-import (
-	"errors"
-	"fmt"
-)
+import "errors"
 
 var (
-	ErrTimeout    = errors.New("request timed out")
-	ErrConnection = errors.New("connection failed")
-	ErrNotJSON    = errors.New("response is not valid JSON")
-	ErrNotFound   = errors.New("resource not found")
+	ErrNotFound     = errors.New("resource not found")
+	ErrTimeout      = errors.New("request timed out")
+	ErrConnection   = errors.New("connection failed")
+	ErrNotJSON      = errors.New("response was not JSON")
+	ErrRateLimit    = errors.New("rate limit exceeded")
+	ErrProviderAuth = errors.New("provider authentication failed")
+	ErrServerError  = errors.New("provider server error")
 )
-
-type APIError struct {
-	StatusCode int
-	Message    string
-}
-
-func (e *APIError) Error() string {
-	return fmt.Sprintf("API error (status %d): %s", e.StatusCode, e.Message)
-}

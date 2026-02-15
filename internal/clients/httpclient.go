@@ -7,13 +7,19 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 )
 
-const defaultTimeout = 30 * time.Second
+const (
+	defaultTimeout = 30 * time.Second
+	maxRetries     = 5
+	initialBackoff = 500 * time.Millisecond
+	maxBackoff     = 10 * time.Second
+)
 
 type Response struct {
 	Data       json.RawMessage
@@ -94,67 +100,103 @@ func (c *BaseClient) Request(ctx context.Context, method, endpoint string, param
 	}
 
 	var bodyReader io.Reader
+	var bodyBytes []byte
 
 	if body != nil {
 		switch v := body.(type) {
 
 		case string:
-			bodyReader = strings.NewReader(v)
+			bodyBytes = []byte(v)
 
 		case []byte:
-			bodyReader = bytes.NewReader(v)
+			bodyBytes = v
 
 		default:
 			jsonBody, err := json.Marshal(body)
 			if err != nil {
 				return nil, fmt.Errorf("failed to marshal request body: %w", err)
 			}
-			bodyReader = bytes.NewReader(jsonBody)
+			bodyBytes = jsonBody
 		}
+		bodyReader = bytes.NewReader(bodyBytes)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, method, reqURL, bodyReader)
+	var resp *http.Response
+	var err error
+
+	backoff := initialBackoff
+
+	for i := 0; i <= maxRetries; i++ {
+		if i > 0 {
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			case <-time.After(backoff):
+				// Calculate next backoff with jitter
+				jitter := time.Duration(rand.Int63n(int64(backoff) / 2))
+				backoff = min(backoff*2+jitter, maxBackoff)
+			}
+			// Reset body reader for retry
+			if bodyBytes != nil {
+				bodyReader = bytes.NewReader(bodyBytes)
+			}
+		}
+
+		req, reqErr := http.NewRequestWithContext(ctx, method, reqURL, bodyReader)
+		if reqErr != nil {
+			return nil, fmt.Errorf("failed to create request: %w", reqErr)
+		}
+
+		for key, value := range c.headersFn() {
+			req.Header.Set(key, value)
+		}
+
+		resp, err = c.httpClient.Do(req)
+
+		if err != nil {
+			if ctx.Err() != nil {
+				return nil, fmt.Errorf("%w: %w", ErrTimeout, ctx.Err())
+			}
+			// Retry on connection errors
+			continue
+		}
+
+		// Read body immediately to ensure we have the full response
+		// If reading fails, we should close body and retry
+		rawBody, readErr := io.ReadAll(resp.Body)
+		resp.Body.Close()
+
+		if readErr != nil {
+			err = fmt.Errorf("%w: failed to read response body: %w", ErrConnection, readErr)
+			continue
+		}
+
+		// Check for status codes that warrant a retry (429 Too Many Requests, 5xx Server Errors)
+		if resp.StatusCode == http.StatusTooManyRequests || (resp.StatusCode >= 500 && resp.StatusCode < 600) {
+			continue
+		}
+
+		if !json.Valid(rawBody) {
+			preview := string(rawBody[:min(200, len(rawBody))])
+			return nil, fmt.Errorf("%w: %s", ErrNotJSON, preview)
+		}
+
+		return &Response{
+			Data:       rawBody,
+			StatusCode: resp.StatusCode,
+		}, nil
+	}
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	for key, value := range c.headersFn() {
-		req.Header.Set(key, value)
-	}
-
-	resp, err := c.httpClient.Do(req)
-
-	if err != nil {
-		if ctx.Err() != nil {
-			return nil, fmt.Errorf("%w: %w", ErrTimeout, ctx.Err())
-		}
-
 		var urlErr *url.Error
-
 		if errors.As(err, &urlErr) && urlErr.Timeout() {
 			return nil, fmt.Errorf("%w: %w", ErrTimeout, err)
 		}
-
 		return nil, fmt.Errorf("%w: %w", ErrConnection, err)
 	}
-
-	defer resp.Body.Close()
-
-	rawBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("%w: failed to read response body: %w", ErrConnection, err)
-	}
-
-	if !json.Valid(rawBody) {
-		preview := string(rawBody[:min(200, len(rawBody))])
-		return nil, fmt.Errorf("%w: %s", ErrNotJSON, preview)
-	}
-
-	return &Response{
-		Data:       rawBody,
-		StatusCode: resp.StatusCode,
-	}, nil
+	
+	// Should not be reached if retries are exhausted correctly, but safe fallback
+	return nil, fmt.Errorf("%w: max retries exceeded", ErrConnection)
 }
 
 func (c *BaseClient) Get(ctx context.Context, endpoint string, params url.Values) (*Response, error) {

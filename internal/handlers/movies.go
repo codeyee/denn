@@ -1,14 +1,12 @@
 package handlers
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/codeyee/denn-proxy/internal/clients"
 	tmdbservice "github.com/codeyee/denn-proxy/internal/services/tmdb"
 )
 
@@ -35,7 +33,7 @@ func (h *MovieHandler) Search(c *gin.Context) {
 	result, err := h.service.SearchMovies(c.Request.Context(), query, page, limit)
 
 	if err != nil {
-		respondError(c, http.StatusInternalServerError, CodeInternalError, "failed to search movies")
+		handleServiceError(c, err)
 		return
 	}
 
@@ -55,7 +53,7 @@ func (h *MovieHandler) Trending(c *gin.Context) {
 	result, err := h.service.GetPopularMovies(c.Request.Context(), page, limit)
 
 	if err != nil {
-		respondError(c, http.StatusInternalServerError, CodeInternalError, "failed to get trending movies")
+		handleServiceError(c, err)
 		return
 	}
 
@@ -82,12 +80,7 @@ func (h *MovieHandler) Detail(c *gin.Context) {
 	movie, err := h.service.GetMovieComplete(c.Request.Context(), id, country)
 
 	if err != nil {
-		if errors.Is(err, clients.ErrNotFound) {
-			respondError(c, http.StatusNotFound, CodeNotFound, "movie not found")
-			return
-		}
-
-		respondError(c, http.StatusInternalServerError, CodeInternalError, "failed to get movie details")
+		handleServiceError(c, err)
 		return
 	}
 

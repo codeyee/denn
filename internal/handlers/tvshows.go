@@ -1,14 +1,12 @@
 package handlers
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/codeyee/denn-proxy/internal/clients"
 	tmdbservice "github.com/codeyee/denn-proxy/internal/services/tmdb"
 )
 
@@ -33,7 +31,7 @@ func (h *TVShowHandler) Search(c *gin.Context) {
 	result, err := h.service.SearchTVShows(c.Request.Context(), query, page, limit)
 
 	if err != nil {
-		respondError(c, http.StatusInternalServerError, CodeInternalError, "failed to search tv shows")
+		handleServiceError(c, err)
 		return
 	}
 
@@ -53,7 +51,7 @@ func (h *TVShowHandler) Trending(c *gin.Context) {
 	result, err := h.service.GetPopularTVShows(c.Request.Context(), page, limit)
 
 	if err != nil {
-		respondError(c, http.StatusInternalServerError, CodeInternalError, "failed to get trending tv shows")
+		handleServiceError(c, err)
 		return
 	}
 
@@ -80,12 +78,7 @@ func (h *TVShowHandler) Detail(c *gin.Context) {
 	show, err := h.service.GetTVShowComplete(c.Request.Context(), id, country)
 
 	if err != nil {
-		if errors.Is(err, clients.ErrNotFound) {
-			respondError(c, http.StatusNotFound, CodeNotFound, "tv show not found")
-			return
-		}
-
-		respondError(c, http.StatusInternalServerError, CodeInternalError, "failed to get tv show details")
+		handleServiceError(c, err)
 		return
 	}
 
@@ -112,12 +105,7 @@ func (h *TVShowHandler) SeasonDetail(c *gin.Context) {
 	season, err := h.service.GetSeasonComplete(c.Request.Context(), tvID, seasonNumber, country)
 
 	if err != nil {
-		if errors.Is(err, clients.ErrNotFound) {
-			respondError(c, http.StatusNotFound, CodeNotFound, "season not found")
-			return
-		}
-
-		respondError(c, http.StatusInternalServerError, CodeInternalError, "failed to get season details")
+		handleServiceError(c, err)
 		return
 	}
 

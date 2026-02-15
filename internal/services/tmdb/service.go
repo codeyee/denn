@@ -55,6 +55,18 @@ func unmarshalResponse[T any](resp *clients.Response, err error) (T, error) {
 		return zero, fmt.Errorf("TMDB %w", clients.ErrNotFound)
 	}
 
+	if resp.StatusCode == 429 {
+		return zero, fmt.Errorf("TMDB %w", clients.ErrRateLimit)
+	}
+
+	if resp.StatusCode == 401 || resp.StatusCode == 403 {
+		return zero, fmt.Errorf("TMDB %w", clients.ErrProviderAuth)
+	}
+
+	if resp.StatusCode >= 500 {
+		return zero, fmt.Errorf("TMDB %w", clients.ErrServerError)
+	}
+
 	if resp.StatusCode != 200 {
 		return zero, fmt.Errorf("TMDB API error (status %d)", resp.StatusCode)
 	}

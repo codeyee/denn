@@ -1,13 +1,11 @@
 package handlers
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/codeyee/denn-proxy/internal/clients"
 	spotifyservice "github.com/codeyee/denn-proxy/internal/services/spotify"
 )
 
@@ -34,7 +32,7 @@ func (h *AlbumHandler) Search(c *gin.Context) {
 	result, err := h.service.SearchAlbums(c.Request.Context(), query, page, limit)
 
 	if err != nil {
-		respondError(c, http.StatusInternalServerError, CodeInternalError, "failed to search albums")
+		handleServiceError(c, err)
 		return
 	}
 
@@ -59,12 +57,7 @@ func (h *AlbumHandler) Detail(c *gin.Context) {
 	album, err := h.service.GetAlbumComplete(c.Request.Context(), albumID)
 
 	if err != nil {
-		if errors.Is(err, clients.ErrNotFound) {
-			respondError(c, http.StatusNotFound, CodeNotFound, "album not found")
-			return
-		}
-
-		respondError(c, http.StatusInternalServerError, CodeInternalError, "failed to get album details")
+		handleServiceError(c, err)
 		return
 	}
 
@@ -109,7 +102,7 @@ func (h *AlbumHandler) Trending(c *gin.Context) {
 	result, err := h.service.GetTrendingAlbums(c.Request.Context(), page, limit)
 
 	if err != nil {
-		respondError(c, http.StatusInternalServerError, CodeInternalError, "failed to get trending albums")
+		handleServiceError(c, err)
 		return
 	}
 

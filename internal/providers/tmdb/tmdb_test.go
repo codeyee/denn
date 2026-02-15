@@ -103,7 +103,7 @@ func TestGetPopularMovies(t *testing.T) {
 			page:          1,
 			mockResponse:  nil,
 			mockStatus:    http.StatusInternalServerError,
-			wantErr:       false, // Client returns response with error status, not error struct
+			wantErr:       true,
 			expectedPage:  0,
 		},
 	}
@@ -184,7 +184,7 @@ func TestGetPopularTVShows(t *testing.T) {
 			page:          1,
 			mockResponse:  nil,
 			mockStatus:    http.StatusInternalServerError,
-			wantErr:       false,
+			wantErr:       true,
 			expectedPage:  0,
 		},
 	}

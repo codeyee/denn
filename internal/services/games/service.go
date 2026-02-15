@@ -67,7 +67,7 @@ func (s *Service) GetGameComplete(ctx context.Context, id int) (models.Game, err
 }
 
 func (s *Service) GetBulkGames(ctx context.Context, ids []int) ([]models.Game, error) {
-	const batchSize = 10
+	const batchSize = 5
 	var allGames []models.Game
 	var mu sync.Mutex
 	var wg sync.WaitGroup
@@ -152,6 +152,23 @@ func unmarshalResponse[T any](resp *clients.Response, err error) (T, error) {
 	if err != nil {
 		return zero, err
 	}
+	
+	if resp.StatusCode == 404 {
+		return zero, fmt.Errorf("IGDB %w", clients.ErrNotFound)
+	}
+
+	if resp.StatusCode == 429 {
+		return zero, fmt.Errorf("IGDB %w", clients.ErrRateLimit)
+	}
+
+	if resp.StatusCode == 401 || resp.StatusCode == 403 {
+		return zero, fmt.Errorf("IGDB %w", clients.ErrProviderAuth)
+	}
+
+	if resp.StatusCode >= 500 {
+		return zero, fmt.Errorf("IGDB %w", clients.ErrServerError)
+	}
+
 	if resp.StatusCode != 200 {
 		return zero, fmt.Errorf("IGDB API error (status %d)", resp.StatusCode)
 	}

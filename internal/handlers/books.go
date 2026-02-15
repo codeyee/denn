@@ -1,13 +1,11 @@
 package handlers
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/codeyee/denn-proxy/internal/clients"
 	booksservice "github.com/codeyee/denn-proxy/internal/services/books"
 )
 
@@ -34,7 +32,7 @@ func (h *BookHandler) Search(c *gin.Context) {
 	result, err := h.service.SearchBooks(c.Request.Context(), query, page, limit)
 
 	if err != nil {
-		respondError(c, http.StatusInternalServerError, CodeInternalError, "failed to search books")
+		handleServiceError(c, err)
 		return
 	}
 
@@ -59,12 +57,7 @@ func (h *BookHandler) Detail(c *gin.Context) {
 	book, err := h.service.GetBookComplete(c.Request.Context(), bookID)
 
 	if err != nil {
-		if errors.Is(err, clients.ErrNotFound) {
-			respondError(c, http.StatusNotFound, CodeNotFound, "book not found")
-			return
-		}
-
-		respondError(c, http.StatusInternalServerError, CodeInternalError, "failed to get book details")
+		handleServiceError(c, err)
 		return
 	}
 
@@ -109,7 +102,7 @@ func (h *BookHandler) Trending(c *gin.Context) {
 	result, err := h.service.GetTrendingBooks(c.Request.Context(), page, limit)
 
 	if err != nil {
-		respondError(c, http.StatusInternalServerError, CodeInternalError, "failed to get trending books")
+		handleServiceError(c, err)
 		return
 	}
 

@@ -79,18 +79,18 @@ Seguridad para navegadores.
 Mejoras en la arquitectura interna.
 
 ### 3.1 Manejo de Errores Robusto
-- [ ] Crear tipos de error centinela (`ErrProviderAuth`, `ErrRateLimit`, `ErrNotFound`).
-- [ ] Mejorar `unmarshalResponse` en servicios para mapear status codes externos a errores internos tipados.
-- [ ] Implementar middleware de logging de errores centralizado (no exponer stack traces al usuario).
+- [x] Crear tipos de error centinela (`ErrProviderAuth`, `ErrRateLimit`, `ErrNotFound`).
+- [x] Mejorar `unmarshalResponse` en servicios para mapear status codes externos a errores internos tipados.
+- [x] Implementar middleware de logging de errores centralizado (no exponer stack traces al usuario).
 
 ### 3.2 Documentación
 - [ ] Generar Swagger/OpenAPI spec (opcional, pero recomendado para el futuro).
 
 ### 3.3 Resiliencia IGDB (Rate Limiting)
 Error crítico observado: `IGDB API error (status 429)` durante pruebas de carga.
-- [ ] Implementar Backoff Exponencial en cliente IGDB.
-- [ ] Optimizar llamadas batch (reducir tamaño de chunks si es necesario).
-- [ ] Monitorear métricas de error (logs estructurados para 429).
+- [x] Implementar Backoff Exponencial en cliente IGDB.
+- [x] Optimizar llamadas batch (reducir tamaño de chunks si es necesario).
+- [x] Monitorear métricas de error (logs estructurados para 429).
 
 ---
 
