@@ -1,3 +1,5 @@
+.env
+
 .agent/
 .claude/
 .cursor/
