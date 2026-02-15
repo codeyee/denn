@@ -91,7 +91,8 @@ func main() {
 	defer stop()
 
 	go func() {
-		fmt.Printf("Server running on port %s\n", cfg.Port)
+		fmt.Printf("\nServer running on port %s\n", cfg.Port)
+
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Server error: %v", err)
 		}

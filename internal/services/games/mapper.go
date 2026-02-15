@@ -241,59 +241,6 @@ func extractSeries(collections []igdbCollection, franchises []igdbFranchise) *st
 	return nil
 }
 
-func extractAgeRating(ratings []igdbAgeRating) *string {
-	var esrb, pegi *igdbAgeRating
-
-	for i := range ratings {
-		r := &ratings[i]
-	
-		if r.Category == 1 {
-			esrb = r
-		} else if r.Category == 2 {
-			pegi = r
-		}
-	}
-
-	target := esrb
-
-	if target == nil {
-		target = pegi
-	}
-
-	if target == nil {
-		return nil
-	}
-
-	var ratingStr string
-	switch target.Rating {
-
-	case 1: ratingStr = "3"
-	case 2: ratingStr = "7"
-	case 3: ratingStr = "12"
-	case 4: ratingStr = "16"
-	case 5: ratingStr = "18"
-	case 6: ratingStr = "RP"
-	case 7: ratingStr = "EC"
-	case 8: ratingStr = "E"
-	case 9: ratingStr = "E10+"
-	case 10: ratingStr = "T"
-	case 11: ratingStr = "M"
-	case 12: ratingStr = "AO"
-	}
-
-	if ratingStr != "" {
-		prefix := "ESRB"
-
-		if target.Category == 2 {
-			prefix = "PEGI"
-		}
-
-		res := fmt.Sprintf("%s %s", prefix, ratingStr)
-		return &res
-	}
-
-	return nil
-}
 
 func mapSearchItem(item igdbGame) models.SearchItem {
 	posterID := getImageIDFromCover(item.Cover)
@@ -329,7 +276,6 @@ func mapGame(item igdbGame) models.Game {
 		Themes: extractNames(item.Themes, func(t igdbTheme) string { return t.Name }),
 		GameModes: extractNames(item.GameModes, func(m igdbGameMode) string { return m.Name }),
 		Series: extractSeries(item.Collections, item.Franchises),
-		AgeRating: extractAgeRating(item.AgeRatings),
 		
 		PlayTime: extractPlayTime(item.TimeToBeats),
 	}

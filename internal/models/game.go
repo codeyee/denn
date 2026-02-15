@@ -20,7 +20,6 @@ type Game struct {
 	Themes           []string   `json:"themes,omitempty"`
 	GameModes        []string   `json:"game_modes,omitempty"`
 	Series           *string    `json:"series,omitempty"`
-	AgeRating        *string    `json:"age_rating,omitempty"`
 	PlayTime         *PlayTime  `json:"play_time,omitempty"`
 	Images           *Images    `json:"-"`
 }
@@ -39,7 +38,6 @@ type GameResponse struct {
 	Themes           []string     `json:"themes,omitempty"`
 	GameModes        []string     `json:"game_modes,omitempty"`
 	Series           *string      `json:"series,omitempty"`
-	AgeRating        *string      `json:"age_rating,omitempty"`
 	PlayTime         *PlayTime    `json:"play_time,omitempty"`
 	Images           []ImageEntry `json:"images,omitempty"`
 }
@@ -59,7 +57,6 @@ func (g *Game) ToResponse(imagesSize int) GameResponse {
 		Themes:      g.Themes,
 		GameModes:   g.GameModes,
 		Series:           g.Series,
-		AgeRating:        g.AgeRating,
 		PlayTime:         g.PlayTime,
 	}
 

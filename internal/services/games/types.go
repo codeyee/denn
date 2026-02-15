@@ -54,11 +54,6 @@ type igdbFranchise struct {
 	Name string `json:"name"`
 }
 
-type igdbAgeRating struct {
-	ID       int `json:"id"`
-	Category int `json:"category"`
-	Rating   int `json:"rating"`
-}
 
 type igdbTimeToBeat struct {
 	ID         int `json:"id"`
@@ -84,7 +79,6 @@ type igdbGame struct {
 	GameModes         []igdbGameMode        `json:"game_modes"`
 	Collections       []igdbCollection      `json:"collections"`
 	Franchises        []igdbFranchise       `json:"franchises"`
-	AgeRatings        []igdbAgeRating       `json:"age_ratings"`
 	TimeToBeats       *igdbTimeToBeat       `json:"game_time_to_beats"`
 }
 

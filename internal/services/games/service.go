@@ -107,6 +107,10 @@ func (s *Service) GetPopularGames(ctx context.Context, limit, offset int) ([]mod
 
 	items := make([]models.SearchItem, 0, len(data))
 	for _, item := range data {
+		// Filter out games that are ONLY on Web browser (ID 82)
+		if len(item.Platforms) == 1 && item.Platforms[0].ID == 82 {
+			continue
+		}
 		items = append(items, mapSearchItem(item))
 	}
 	return items, nil
@@ -124,6 +128,20 @@ func (s *Service) GetTrendingGames(ctx context.Context, limit, offset int) ([]mo
 	if err != nil {
 		return nil, err
 	}
+	
+	// Filter out games that are ONLY on Web browser
+	var filteredGames []models.Game
+	for _, game := range games {
+		isBrowserOnly := false
+		if len(game.Platforms) == 1 && game.Platforms[0].Name == "Web browser" {
+			isBrowserOnly = true
+		}
+		
+		if !isBrowserOnly {
+			filteredGames = append(filteredGames, game)
+		}
+	}
+	games = filteredGames
 
 	scored := s.calculateScores(games, wantMap, visitsMap)
 	return paginateAndMap(scored, limit, offset), nil
@@ -201,6 +219,7 @@ func (s *Service) resolveGameDetails(ctx context.Context, wantMap, visitsMap map
 	for id := range idMap {
 		ids = append(ids, id)
 	}
+	sort.Ints(ids)
 
 	return s.GetBulkGames(ctx, ids)
 }
