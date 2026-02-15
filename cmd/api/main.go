@@ -6,14 +6,17 @@ import (
 	"log"
 	"net/http"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 
 	"github.com/codeyee/denn-proxy/internal/clients"
 	"github.com/codeyee/denn-proxy/internal/config"
 	"github.com/codeyee/denn-proxy/internal/handlers"
+	"github.com/codeyee/denn-proxy/internal/middleware"
 
 	tmdbclient "github.com/codeyee/denn-proxy/internal/providers/tmdb"
 	tmdbservice "github.com/codeyee/denn-proxy/internal/services/tmdb"
@@ -64,10 +67,25 @@ func main() {
 
 	r := gin.Default()
 
+	corsConfig := cors.DefaultConfig()
+	if cfg.CorsAllowOrigins == "*" {
+		corsConfig.AllowAllOrigins = true
+	} else {
+		corsConfig.AllowOrigins = strings.Split(cfg.CorsAllowOrigins, ",")
+	}
+	corsConfig.AllowMethods = []string{"GET", "OPTIONS"}
+	corsConfig.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "X-User-Country", "X-Api-Key", "Authorization"}
+	r.Use(cors.New(corsConfig))
+
 	api := r.Group("/proxy/v1")
 	{
 		api.GET("/health", handlers.HealthCheck)
-		movies := api.Group("/movies")
+
+		protected := api.Group("")
+		protected.Use(middleware.AuthMiddleware(cfg.ApiKey))
+		protected.Use(middleware.RateLimitMiddleware(cache, 60))
+
+		movies := protected.Group("/movies")
 		{
 			movies.GET("/search", movieHandler.Search)
 			movies.GET("/bulk", movieHandler.Bulk)
@@ -75,7 +93,7 @@ func main() {
 			movies.GET("/:id", movieHandler.Detail)
 		}
 
-		tv := api.Group("/tv_shows")
+		tv := protected.Group("/tv_shows")
 		{
 			tv.GET("/search", tvHandler.Search)
 			tv.GET("/bulk", tvHandler.Bulk)
@@ -84,7 +102,7 @@ func main() {
 			tv.GET("/:id/seasons/:season_number", tvHandler.SeasonDetail)
 		}
 
-		games := api.Group("/games")
+		games := protected.Group("/games")
 		{
 			games.GET("/search", gamesHandler.Search)
 			games.GET("/bulk", gamesHandler.Bulk)
@@ -92,7 +110,7 @@ func main() {
 			games.GET("/:id", gamesHandler.Detail)
 		}
 
-		albums := api.Group("/albums")
+		albums := protected.Group("/albums")
 		{
 			albums.GET("/search", albumHandler.Search)
 			albums.GET("/bulk", albumHandler.Bulk)
@@ -100,7 +118,7 @@ func main() {
 			albums.GET("/:id", albumHandler.Detail)
 		}
 
-		books := api.Group("/books")
+		books := protected.Group("/books")
 		{
 			books.GET("/search", bookHandler.Search)
 			books.GET("/bulk", bookHandler.Bulk)

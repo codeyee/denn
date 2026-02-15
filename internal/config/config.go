@@ -16,6 +16,8 @@ type Config struct {
 	SpotifyClientID     string
 	SpotifyClientSecret string
 	RedisURL            string
+	ApiKey              string
+	CorsAllowOrigins    string
 }
 
 func LoadConfig() (*Config, error) {
@@ -31,6 +33,12 @@ func LoadConfig() (*Config, error) {
 		SpotifyClientID:     getEnv("SPOTIFY_CLIENT_ID", ""),
 		SpotifyClientSecret: getEnv("SPOTIFY_CLIENT_SECRET", ""),
 		RedisURL:            getEnv("REDIS_URL", "localhost:6379"),
+		ApiKey:              getEnv("API_KEY", ""),
+		CorsAllowOrigins:    getEnv("CORS_ALLOW_ORIGINS", "*"),
+	}
+
+	if cfg.ApiKey == "" {
+		return nil, fmt.Errorf("API_KEY is required")
 	}
 
 	if cfg.TmdbApiKey == "" {

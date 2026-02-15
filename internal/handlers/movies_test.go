@@ -24,6 +24,10 @@ func (NoOpCache) Set(ctx context.Context, key string, value []byte, ttl time.Dur
 	return nil
 }
 func (NoOpCache) DeletePattern(ctx context.Context, pattern string) (int64, error) { return 0, nil }
+func (NoOpCache) Incr(ctx context.Context, key string) (int64, error) { return 0, nil }
+func (NoOpCache) Expire(ctx context.Context, key string, ttl time.Duration) (bool, error) {
+	return true, nil
+}
 func (NoOpCache) Close() error { return nil }
 
 // Mock RoundTripper

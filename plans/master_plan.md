@@ -56,21 +56,21 @@ Evitar romper clientes futuros.
 Proteger la API contra abusos y accesos no autorizados.
 
 ### 2.1 Middleware de Autenticación
-- [ ] Implementar verificación de `X-Api-Key` o Bearer Token.
-- [ ] Configurable vía variable de entorno `API_KEY`.
+- [x] Implementar verificación de `X-Api-Key` o Bearer Token.
+- [x] Configurable vía variable de entorno `API_KEY`.
 
 ### 2.2 Rate Limiting (Redis)
 Protección contra DoS y abuso de cuotas.
-- [ ] Implementar middleware usando Redis.
-- [ ] Límite sugerido: 60 req/min por IP.
-- [ ] Fallback a memoria si Redis no está disponible.
-- [ ] Headers de respuesta: `X-RateLimit-Limit`, `X-RateLimit-Remaining`.
+- [x] Implementar middleware usando Redis.
+- [x] Límite sugerido: 60 req/min por IP.
+- [x] Fallback a memoria si Redis no está disponible.
+- [x] Headers de respuesta: `X-RateLimit-Limit`, `X-RateLimit-Remaining`.
 
 ### 2.3 CORS (Cross-Origin Resource Sharing)
 Seguridad para navegadores.
-- [ ] Configurar `github.com/gin-contrib/cors`.
-- [ ] `AllowOrigins` configurable desde `.env`.
-- [ ] Permitir solo métodos y headers necesarios (`GET`, `X-User-Country`, etc.).
+- [x] Configurar `github.com/gin-contrib/cors`.
+- [x] `AllowOrigins` configurable desde `.env`.
+- [x] Permitir solo métodos y headers necesarios (`GET`, `X-User-Country`, etc.).
 
 ---
 
@@ -85,6 +85,12 @@ Mejoras en la arquitectura interna.
 
 ### 3.2 Documentación
 - [ ] Generar Swagger/OpenAPI spec (opcional, pero recomendado para el futuro).
+
+### 3.3 Resiliencia IGDB (Rate Limiting)
+Error crítico observado: `IGDB API error (status 429)` durante pruebas de carga.
+- [ ] Implementar Backoff Exponencial en cliente IGDB.
+- [ ] Optimizar llamadas batch (reducir tamaño de chunks si es necesario).
+- [ ] Monitorear métricas de error (logs estructurados para 429).
 
 ---
 

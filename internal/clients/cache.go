@@ -12,6 +12,8 @@ type Cache interface {
 	Get(ctx context.Context, key string) ([]byte, error)
 	Set(ctx context.Context, key string, value []byte, ttl time.Duration) error
 	DeletePattern(ctx context.Context, pattern string) (int64, error)
+	Incr(ctx context.Context, key string) (int64, error)
+	Expire(ctx context.Context, key string, ttl time.Duration) (bool, error)
 	Close() error
 }
 
@@ -83,6 +85,14 @@ func (r *RedisCache) DeletePattern(ctx context.Context, pattern string) (int64, 
 	return deleted, nil
 }
 
+func (r *RedisCache) Incr(ctx context.Context, key string) (int64, error) {
+	return r.client.Incr(ctx, key).Result()
+}
+
+func (r *RedisCache) Expire(ctx context.Context, key string, ttl time.Duration) (bool, error) {
+	return r.client.Expire(ctx, key, ttl).Result()
+}
+
 func (r *RedisCache) Close() error {
 	return r.client.Close()
 }
@@ -99,6 +109,14 @@ func (NoOpCache) Set(context.Context, string, []byte, time.Duration) error {
 
 func (NoOpCache) DeletePattern(context.Context, string) (int64, error) {
 	return 0, nil
+}
+
+func (NoOpCache) Incr(context.Context, string) (int64, error) {
+	return 0, nil
+}
+
+func (NoOpCache) Expire(context.Context, string, time.Duration) (bool, error) {
+	return true, nil
 }
 
 func (NoOpCache) Close() error {

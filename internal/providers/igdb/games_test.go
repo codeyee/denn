@@ -48,6 +48,14 @@ func (m *MockCache) DeletePattern(ctx context.Context, pattern string) (int64, e
 	return 0, nil
 }
 
+func (m *MockCache) Incr(ctx context.Context, key string) (int64, error) {
+	return 0, nil
+}
+
+func (m *MockCache) Expire(ctx context.Context, key string, ttl time.Duration) (bool, error) {
+	return true, nil
+}
+
 func (m *MockCache) Close() error {
 	return nil
 }
