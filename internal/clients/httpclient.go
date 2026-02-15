@@ -86,13 +86,21 @@ func (c *BaseClient) Request(ctx context.Context, method, endpoint string, param
 	var bodyReader io.Reader
 
 	if body != nil {
-		jsonBody, err := json.Marshal(body)
+		switch v := body.(type) {
 
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal request body: %w", err)
+		case string:
+			bodyReader = strings.NewReader(v)
+
+		case []byte:
+			bodyReader = bytes.NewReader(v)
+
+		default:
+			jsonBody, err := json.Marshal(body)
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal request body: %w", err)
+			}
+			bodyReader = bytes.NewReader(jsonBody)
 		}
-
-		bodyReader = bytes.NewReader(jsonBody)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, method, reqURL, bodyReader)

@@ -28,6 +28,45 @@ type igdbPlatform struct {
 	PlatformLogo igdbPlatformLogo `json:"platform_logo"`
 }
 
+
+type igdbGenre struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+
+type igdbTheme struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+
+type igdbGameMode struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+
+type igdbCollection struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+
+type igdbFranchise struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+
+type igdbAgeRating struct {
+	ID       int `json:"id"`
+	Category int `json:"category"`
+	Rating   int `json:"rating"`
+}
+
+type igdbTimeToBeat struct {
+	ID         int `json:"id"`
+	Hastily    int `json:"hastily"`
+	Normally   int `json:"normally"`
+	Completely int `json:"completely"`
+}
+
 type igdbGame struct {
 	ID                int                   `json:"id"`
 	Name              string                `json:"name"`
@@ -38,9 +77,15 @@ type igdbGame struct {
 	Artworks          []igdbImage           `json:"artworks"`
 	FirstReleaseDate  int64                 `json:"first_release_date"`
 	Platforms         []igdbPlatform        `json:"platforms"`
-	Category          int                   `json:"category"`
 	GameType          int                   `json:"game_type"`
 	InvolvedCompanies []igdbInvolvedCompany `json:"involved_companies"`
+	Genres            []igdbGenre           `json:"genres"`
+	Themes            []igdbTheme           `json:"themes"`
+	GameModes         []igdbGameMode        `json:"game_modes"`
+	Collections       []igdbCollection      `json:"collections"`
+	Franchises        []igdbFranchise       `json:"franchises"`
+	AgeRatings        []igdbAgeRating       `json:"age_ratings"`
+	TimeToBeats       *igdbTimeToBeat       `json:"game_time_to_beats"`
 }
 
 type igdbPopularityPrimitive struct {

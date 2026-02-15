@@ -216,6 +216,85 @@ func extractAuthors(companies []igdbInvolvedCompany) []models.Author {
 	return authors
 }
 
+func extractNames[T any](items []T, nameFn func(T) string) []string {
+	if len(items) == 0 {
+		return nil
+	}
+	names := make([]string, 0, len(items))
+	for _, item := range items {
+		if name := nameFn(item); name != "" {
+			names = append(names, name)
+		}
+	}
+	return names
+}
+
+func extractSeries(collections []igdbCollection, franchises []igdbFranchise) *string {
+	if len(franchises) > 0 {
+		return &franchises[0].Name
+	}
+
+	if len(collections) > 0 {
+		return &collections[0].Name
+	}
+
+	return nil
+}
+
+func extractAgeRating(ratings []igdbAgeRating) *string {
+	var esrb, pegi *igdbAgeRating
+
+	for i := range ratings {
+		r := &ratings[i]
+	
+		if r.Category == 1 {
+			esrb = r
+		} else if r.Category == 2 {
+			pegi = r
+		}
+	}
+
+	target := esrb
+
+	if target == nil {
+		target = pegi
+	}
+
+	if target == nil {
+		return nil
+	}
+
+	var ratingStr string
+	switch target.Rating {
+
+	case 1: ratingStr = "3"
+	case 2: ratingStr = "7"
+	case 3: ratingStr = "12"
+	case 4: ratingStr = "16"
+	case 5: ratingStr = "18"
+	case 6: ratingStr = "RP"
+	case 7: ratingStr = "EC"
+	case 8: ratingStr = "E"
+	case 9: ratingStr = "E10+"
+	case 10: ratingStr = "T"
+	case 11: ratingStr = "M"
+	case 12: ratingStr = "AO"
+	}
+
+	if ratingStr != "" {
+		prefix := "ESRB"
+
+		if target.Category == 2 {
+			prefix = "PEGI"
+		}
+
+		res := fmt.Sprintf("%s %s", prefix, ratingStr)
+		return &res
+	}
+
+	return nil
+}
+
 func mapSearchItem(item igdbGame) models.SearchItem {
 	posterID := getImageIDFromCover(item.Cover)
 	
@@ -240,10 +319,30 @@ func mapGame(item igdbGame) models.Game {
 		ContentType: string(models.ContentTypeGame),
 		Description: buildDescription(item.Summary, item.Storyline),
 		ImageURL:    buildIgdbImageURL(posterID, "720p"),
-		GameType:    formatGameType(item.Category),
+		GameType:    formatGameType(item.GameType),
 		ReleaseDate: formatReleaseDate(item.FirstReleaseDate),
 		Authors:     extractAuthors(item.InvolvedCompanies),
 		Platforms:   extractPlatforms(item.Platforms),
 		Images:      buildImages(item),
+		
+		Genres: extractNames(item.Genres, func(g igdbGenre) string { return g.Name }),
+		Themes: extractNames(item.Themes, func(t igdbTheme) string { return t.Name }),
+		GameModes: extractNames(item.GameModes, func(m igdbGameMode) string { return m.Name }),
+		Series: extractSeries(item.Collections, item.Franchises),
+		AgeRating: extractAgeRating(item.AgeRatings),
+		
+		PlayTime: extractPlayTime(item.TimeToBeats),
+	}
+}
+
+func extractPlayTime(tb *igdbTimeToBeat) *models.PlayTime {
+	if tb == nil {
+		return nil
+	}
+
+	return &models.PlayTime{
+		Hastily:    tb.Hastily,
+		Normally:   tb.Normally,
+		Completely: tb.Completely,
 	}
 }

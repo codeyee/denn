@@ -47,6 +47,7 @@ func (h *GamesHandler) Search(c *gin.Context) {
 	result, err := h.service.SearchGames(c.Request.Context(), query, limit, offset)
 
 	if err != nil {
+		fmt.Printf("SearchGames Error: %v\n", err)
 		respondError(c, http.StatusInternalServerError, CodeInternalError, "failed to search games")
 		return
 	}

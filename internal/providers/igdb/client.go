@@ -49,12 +49,12 @@ func NewClient(clientID, clientSecret string, cache clients.Cache) *Client {
 
 	cacheConfig := clients.CacheConfig{
 		KeyTemplates: map[string]string{
-			"api_igdb_search":   "igdb:search:{query}:{limit}:{offset}",
-			"api_igdb_details":  "igdb:details:{game_id}",
-			"api_igdb_bulk":     "igdb:bulk:{ids_hash}",
-			"api_igdb_popular":  "igdb:popular:{limit}:{offset}",
-			"api_igdb_popularity": "igdb:popularity:{popularity_type}:{limit}",
-			"api_igdb_trending": "igdb:trending:{limit}:{offset}",
+			"api_igdb_search":     "igdb:search:{query}:{limit}:{offset}:{body_hash}",
+			"api_igdb_details":    "igdb:details:{game_id}:{body_hash}",
+			"api_igdb_bulk":       "igdb:bulk:{ids_hash}:{body_hash}",
+			"api_igdb_popular":    "igdb:popular:{limit}:{offset}:{body_hash}",
+			"api_igdb_popularity": "igdb:popularity:{popularity_type}:{limit}:{body_hash}",
+			"api_igdb_trending":   "igdb:trending:{limit}:{offset}",
 		},
 		TTLs: map[string]time.Duration{
 			"api_igdb_search":     24 * time.Hour,
