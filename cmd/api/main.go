@@ -19,8 +19,10 @@ import (
 	tmdbservice "github.com/codeyee/denn-proxy/internal/services/tmdb"
 
 	igdbclient "github.com/codeyee/denn-proxy/internal/providers/igdb"
+	olclient "github.com/codeyee/denn-proxy/internal/providers/openlibrary"
 	spotifyclient "github.com/codeyee/denn-proxy/internal/providers/spotify"
 
+	booksservice "github.com/codeyee/denn-proxy/internal/services/books"
 	gamesservice "github.com/codeyee/denn-proxy/internal/services/games"
 	spotifyservice "github.com/codeyee/denn-proxy/internal/services/spotify"
 )
@@ -51,10 +53,14 @@ func main() {
 	spotifyClient := spotifyclient.NewClient(cfg.SpotifyClientID, cfg.SpotifyClientSecret, cache)
 	spotifySvc := spotifyservice.NewService(spotifyClient)
 
+	openLibraryClient := olclient.NewClient(cache)
+	booksSvc := booksservice.NewService(openLibraryClient)
+
 	movieHandler := handlers.NewMovieHandler(tmdbSvc)
 	tvHandler := handlers.NewTVShowHandler(tmdbSvc)
 	gamesHandler := handlers.NewGamesHandler(gamesSvc)
 	albumHandler := handlers.NewAlbumHandler(spotifySvc)
+	bookHandler := handlers.NewBookHandler(booksSvc)
 
 	r := gin.Default()
 
@@ -93,6 +99,14 @@ func main() {
 			albums.GET("/bulk", albumHandler.Bulk)
 			albums.GET("/trending", albumHandler.Trending)
 			albums.GET("/:id", albumHandler.Detail)
+		}
+
+		books := api.Group("/books")
+		{
+			books.GET("/search", bookHandler.Search)
+			books.GET("/bulk", bookHandler.Bulk)
+			books.GET("/trending", bookHandler.Trending)
+			books.GET("/:id", bookHandler.Detail)
 		}
 	}
 
