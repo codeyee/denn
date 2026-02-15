@@ -1,0 +1,20 @@
+meta {
+  name: Trending TV Shows
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{BASE_URL}}/tv_shows/trending?page=1&limit=20
+  body: none
+  auth: none
+}
+
+query {
+  page: 1
+  limit: 20
+}
+
+headers {
+  X-User-Country: {{COUNTRY}}
+}

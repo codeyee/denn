@@ -1,0 +1,19 @@
+meta {
+  name: Bulk TV Shows
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{BASE_URL}}/tv_shows/bulk?ids=1399,66732
+  body: none
+  auth: none
+}
+
+query {
+  ids: 1399,66732
+}
+
+headers {
+  X-User-Country: {{COUNTRY}}
+}

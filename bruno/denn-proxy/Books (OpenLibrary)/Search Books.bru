@@ -1,0 +1,17 @@
+meta {
+  name: Search Books
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{BASE_URL}}/books/search?query=Tolkien&page=1&limit=20
+  body: none
+  auth: none
+}
+
+query {
+  query: Tolkien
+  page: 1
+  limit: 20
+}

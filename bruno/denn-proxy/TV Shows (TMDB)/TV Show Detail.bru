@@ -1,0 +1,15 @@
+meta {
+  name: TV Show Detail
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{BASE_URL}}/tv_shows/1399
+  body: none
+  auth: none
+}
+
+headers {
+  X-User-Country: {{COUNTRY}}
+}

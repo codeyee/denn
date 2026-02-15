@@ -1,0 +1,15 @@
+meta {
+  name: Bulk Books
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{BASE_URL}}/books/bulk?ids=OL27448W,OL82563W
+  body: none
+  auth: none
+}
+
+query {
+  ids: OL27448W,OL82563W
+}
