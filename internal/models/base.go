@@ -6,9 +6,8 @@ type Author struct {
 }
 
 type Platform struct {
-	Name     string   `json:"title"`
-	ImageURL *string  `json:"image_url"`
-	Actions  []string `json:"actions,omitempty"`
+	Name     string  `json:"name"`
+	ImageURL *string `json:"image_url"`
 }
 
 type ImageEntry struct {
@@ -112,12 +111,12 @@ func (img *Images) ToList(imagesSize int) []ImageEntry {
 }
 
 type SearchItem struct {
-	ID            any       `json:"id"`
-	Type          string    `json:"type"`
-	Title         string    `json:"title"`
-	OriginalTitle *string   `json:"original_title,omitempty"`
-	Description   *string   `json:"description"`
-	ImageURL      *string   `json:"image_url"`
-	ReleaseDate   *string   `json:"release_date"`
-	Authors       []Author  `json:"authors,omitempty"`
+	ID            string   `json:"id"`
+	Type          string   `json:"type"`
+	Title         string   `json:"title"`
+	OriginalTitle *string  `json:"original_title,omitempty"`
+	Description   *string  `json:"description"`
+	ImageURL      *string  `json:"image_url"`
+	ReleaseDate   *string  `json:"release_date"`
+	Authors       []Author `json:"authors,omitempty"`
 }

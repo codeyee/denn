@@ -10,18 +10,18 @@ type Track struct {
 }
 
 type Album struct {
-	ID              string       `json:"id"`
-	Title           string       `json:"title"`
-	ContentType     string       `json:"type"`
-	Authors         []Author     `json:"authors,omitempty"`
-	ImageURL        *string      `json:"image_url"`
-	ReleaseDate     *string      `json:"release_date"`
-	TotalTracks     *int         `json:"total_tracks"`
-	DurationMinutes *int         `json:"duration_minutes"`
-	AlbumType       *string      `json:"album_type"`
-	ExternalURL     *string      `json:"external_url"`
-	Images          *Images      `json:"-"`
-	Tracks          []Track      `json:"tracks,omitempty"`
+	ID              string   `json:"id"`
+	Title           string   `json:"title"`
+	ContentType     string   `json:"type"`
+	Authors         []Author `json:"authors,omitempty"`
+	ImageURL        *string  `json:"image_url"`
+	ReleaseDate     *string  `json:"release_date"`
+	TotalTracks     *int     `json:"total_tracks"`
+	DurationMinutes *int     `json:"duration_minutes"`
+	AlbumType       *string  `json:"album_type"`
+	ExternalURL     *string  `json:"external_url"`
+	Images          *Images  `json:"-"`
+	Tracks          []Track  `json:"tracks,omitempty"`
 }
 
 type AlbumResponse struct {

@@ -1,8 +1,10 @@
 package config
 
 import (
+	"fmt"
 	"log"
 	"os"
+
 	"github.com/joho/godotenv"
 )
 
@@ -16,12 +18,12 @@ type Config struct {
 	RedisURL            string
 }
 
-func LoadConfig() *Config {
+func LoadConfig() (*Config, error) {
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found, relying on system environment variables")
 	}
 
-	return &Config{
+	cfg := &Config{
 		Port:                getEnv("PORT", "8080"),
 		TmdbApiKey:          getEnv("TMDB_API_KEY", ""),
 		IgdbClientID:        getEnv("IGDB_CLIENT_ID", ""),
@@ -30,6 +32,12 @@ func LoadConfig() *Config {
 		SpotifyClientSecret: getEnv("SPOTIFY_CLIENT_SECRET", ""),
 		RedisURL:            getEnv("REDIS_URL", "localhost:6379"),
 	}
+
+	if cfg.TmdbApiKey == "" {
+		return nil, fmt.Errorf("TMDB_API_KEY is required")
+	}
+
+	return cfg, nil
 }
 
 func getEnv(key, fallback string) string {

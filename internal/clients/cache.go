@@ -32,7 +32,7 @@ func NewRedisCache(redisURL string) (*RedisCache, error) {
 	defer cancel()
 
 	if err := client.Ping(ctx).Err(); err != nil {
-		return nil, fmt.Errorf("Failed to connect to Redis at %s: %w", redisURL, err)
+		return nil, fmt.Errorf("failed to connect to Redis at %s: %w", redisURL, err)
 	}
 
 	return &RedisCache{client: client}, nil

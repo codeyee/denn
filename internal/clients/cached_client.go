@@ -16,7 +16,7 @@ const defaultCacheTTL = time.Hour
 
 type CacheConfig struct {
 	KeyTemplates map[string]string
-	Timeouts     map[string]time.Duration
+	TTLs         map[string]time.Duration
 }
 
 type CachedClient struct {
@@ -69,7 +69,7 @@ func (c *CachedClient) generateCacheKey(cacheType string, args map[string]string
 }
 
 func (c *CachedClient) getCacheTTL(cacheType string) time.Duration {
-	if ttl, ok := c.config.Timeouts[cacheType]; ok {
+	if ttl, ok := c.config.TTLs[cacheType]; ok {
 		return ttl
 	}
 

@@ -3,8 +3,8 @@ package tmdb
 const (
 	imageBaseURL = "https://image.tmdb.org/t/p/"
 
-	posterSizeStandard  = "w500"
-	posterSizeOriginal  = "original"
+	posterSizeStandard = "w500"
+	posterSizeOriginal = "original"
 
 	gallerySizeStandard = "w780"
 	gallerySizeOriginal = "original"
@@ -87,13 +87,13 @@ type tmdbSeasonSummary struct {
 }
 
 type tmdbSeasonDetail struct {
-	ID           int             `json:"id"`
-	SeasonNumber int             `json:"season_number"`
-	Name         string          `json:"name"`
-	Overview     string          `json:"overview"`
-	PosterPath   *string         `json:"poster_path"`
-	AirDate      string          `json:"air_date"`
-	Episodes     []tmdbEpisode   `json:"episodes"`
+	ID           int           `json:"id"`
+	SeasonNumber int           `json:"season_number"`
+	Name         string        `json:"name"`
+	Overview     string        `json:"overview"`
+	PosterPath   *string       `json:"poster_path"`
+	AirDate      string        `json:"air_date"`
+	Episodes     []tmdbEpisode `json:"episodes"`
 }
 
 type tmdbEpisode struct {

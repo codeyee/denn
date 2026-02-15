@@ -6,9 +6,10 @@ import (
 )
 
 var (
-	ErrTimeout    = errors.New("Request timed out")
-	ErrConnection = errors.New("Connection failed")
-	ErrNotJSON    = errors.New("Response is not valid JSON")
+	ErrTimeout    = errors.New("request timed out")
+	ErrConnection = errors.New("connection failed")
+	ErrNotJSON    = errors.New("response is not valid JSON")
+	ErrNotFound   = errors.New("resource not found")
 )
 
 type APIError struct {

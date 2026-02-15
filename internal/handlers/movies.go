@@ -1,16 +1,19 @@
 package handlers
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/codeyee/denn-proxy/internal/clients"
 	tmdbservice "github.com/codeyee/denn-proxy/internal/services/tmdb"
 )
 
-const defaultImagesSize = 10
+const maxBulkIDs = 50
 
 type MovieHandler struct {
 	service *tmdbservice.Service
@@ -24,7 +27,7 @@ func (h *MovieHandler) Search(c *gin.Context) {
 	query := c.Query("query")
 
 	if query == "" {
-		respondBadRequest(c, "Query parameter is required")
+		respondError(c, http.StatusBadRequest, CodeMissingParameter, "query parameter is required")
 		return
 	}
 
@@ -37,12 +40,12 @@ func (h *MovieHandler) Search(c *gin.Context) {
 	result, err := h.service.SearchMovies(c.Request.Context(), query, page)
 
 	if err != nil {
-		respondInternalError(c, "Failed to search movies")
+		respondError(c, http.StatusInternalServerError, CodeInternalError, "failed to search movies")
 		return
 	}
 
 	c.JSON(http.StatusOK, PaginatedResponse{
-		Meta: PaginationMeta{
+		Metadata: PaginationMeta{
 			Page:         result.Page,
 			TotalPages:   result.TotalPages,
 			TotalResults: result.TotalResults,
@@ -55,29 +58,22 @@ func (h *MovieHandler) Detail(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 
 	if err != nil {
-		respondBadRequest(c, "invalid movie ID")
+		respondError(c, http.StatusBadRequest, CodeInvalidParameter, "invalid movie ID")
 		return
 	}
 
 	country := c.DefaultQuery("country", "US")
-
-	imagesSize := defaultImagesSize
-
-	if v := c.Query("images_size"); v != "" {
-		if parsed, err := strconv.Atoi(v); err == nil && parsed > 0 {
-			imagesSize = parsed
-		}
-	}
+	imagesSize := parseImagesSize(c)
 
 	movie, err := h.service.GetMovieComplete(c.Request.Context(), id, country)
 
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
-			respondNotFound(c, "movie not found")
+		if errors.Is(err, clients.ErrNotFound) {
+			respondError(c, http.StatusNotFound, CodeNotFound, "movie not found")
 			return
 		}
 
-		respondInternalError(c, "failed to get movie details")
+		respondError(c, http.StatusInternalServerError, CodeInternalError, "failed to get movie details")
 		return
 	}
 
@@ -88,31 +84,29 @@ func (h *MovieHandler) Bulk(c *gin.Context) {
 	idsParam := c.Query("ids")
 
 	if idsParam == "" {
-		respondBadRequest(c, "ids parameter is required")
+		respondError(c, http.StatusBadRequest, CodeMissingParameter, "ids parameter is required")
 		return
 	}
 
 	ids, err := parseIDs(idsParam)
 
 	if err != nil {
-		respondBadRequest(c, "Invalid ids format, expected comma-separated integers")
+		respondError(c, http.StatusBadRequest, CodeInvalidParameter, "invalid ids format, expected comma-separated integers")
 		return
 	}
 
 	if len(ids) == 0 {
-		respondBadRequest(c, "At least one id is required")
+		respondError(c, http.StatusBadRequest, CodeMissingParameter, "at least one id is required")
+		return
+	}
+
+	if len(ids) > maxBulkIDs {
+		respondError(c, http.StatusBadRequest, CodeLimitExceeded, fmt.Sprintf("maximum %d ids allowed per request", maxBulkIDs))
 		return
 	}
 
 	country := c.DefaultQuery("country", "US")
-
-	imagesSize := defaultImagesSize
-
-	if v := c.Query("images_size"); v != "" {
-		if parsed, err := strconv.Atoi(v); err == nil && parsed > 0 {
-			imagesSize = parsed
-		}
-	}
+	imagesSize := parseImagesSize(c)
 
 	results := h.service.GetBulkMovies(c.Request.Context(), ids, country)
 

@@ -89,7 +89,7 @@ func (c *BaseClient) Request(ctx context.Context, method, endpoint string, param
 		jsonBody, err := json.Marshal(body)
 
 		if err != nil {
-			return nil, fmt.Errorf("Failed to marshal request body: %w", err)
+			return nil, fmt.Errorf("failed to marshal request body: %w", err)
 		}
 
 		bodyReader = bytes.NewReader(jsonBody)
@@ -98,7 +98,7 @@ func (c *BaseClient) Request(ctx context.Context, method, endpoint string, param
 	req, err := http.NewRequestWithContext(ctx, method, reqURL, bodyReader)
 
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create request: %w", err)
+		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
 	for key, value := range c.headersFn() {
@@ -125,7 +125,7 @@ func (c *BaseClient) Request(ctx context.Context, method, endpoint string, param
 
 	rawBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("%w: Failed to read response body: %w", ErrConnection, err)
+		return nil, fmt.Errorf("%w: failed to read response body: %w", ErrConnection, err)
 	}
 
 	if !json.Valid(rawBody) {

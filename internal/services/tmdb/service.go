@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"sync"
 
 	"github.com/codeyee/denn-proxy/internal/clients"
@@ -51,7 +52,7 @@ func unmarshalResponse[T any](resp *clients.Response, err error) (T, error) {
 	}
 
 	if resp.StatusCode == 404 {
-		return zero, fmt.Errorf("Not found")
+		return zero, fmt.Errorf("TMDB %w", clients.ErrNotFound)
 	}
 
 	if resp.StatusCode != 200 {
@@ -61,7 +62,7 @@ func unmarshalResponse[T any](resp *clients.Response, err error) (T, error) {
 	var result T
 
 	if err := json.Unmarshal(resp.Data, &result); err != nil {
-		return zero, fmt.Errorf("Failed to unmarshal TMDB response: %w", err)
+		return zero, fmt.Errorf("failed to unmarshal TMDB response: %w", err)
 	}
 
 	return result, nil
@@ -71,7 +72,7 @@ func (s *Service) SearchMovies(ctx context.Context, query string, page int) (Sea
 	data, err := unmarshalResponse[tmdbSearchResponse](s.client.SearchMovies(ctx, query, page))
 
 	if err != nil {
-		return SearchResult{}, fmt.Errorf("Search movies: %w", err)
+		return SearchResult{}, fmt.Errorf("search movies: %w", err)
 	}
 
 	items := make([]models.SearchItem, 0, len(data.Results))
@@ -92,7 +93,7 @@ func (s *Service) SearchTVShows(ctx context.Context, query string, page int) (Se
 	data, err := unmarshalResponse[tmdbSearchResponse](s.client.SearchTVShows(ctx, query, page))
 
 	if err != nil {
-		return SearchResult{}, fmt.Errorf("Search tv shows: %w", err)
+		return SearchResult{}, fmt.Errorf("search tv shows: %w", err)
 	}
 
 	items := make([]models.SearchItem, 0, len(data.Results))
@@ -115,7 +116,7 @@ func (s *Service) GetMovieComplete(ctx context.Context, movieID int, country str
 	)
 
 	if err != nil {
-		return models.Movie{}, fmt.Errorf("Get movie %d: %w", movieID, err)
+		return models.Movie{}, fmt.Errorf("get movie %d: %w", movieID, err)
 	}
 
 	return mapMovie(data, country), nil
@@ -127,7 +128,7 @@ func (s *Service) GetTVShowComplete(ctx context.Context, tvID int, country strin
 	)
 
 	if err != nil {
-		return models.TVShow{}, fmt.Errorf("Get tv show %d: %w", tvID, err)
+		return models.TVShow{}, fmt.Errorf("get tv show %d: %w", tvID, err)
 	}
 
 	show := mapTVShow(data, country)
@@ -167,6 +168,7 @@ func (s *Service) GetTVShowComplete(ctx context.Context, tvID int, country strin
 
 			season, err := s.GetSeasonComplete(ctx, tvID, sn, country)
 			if err != nil {
+				log.Printf("failed to expand season %d for tv %d: %v", sn, tvID, err)
 				seasons[idx] = mapSeasonSummary(validSeasons[idx])
 				return
 			}
@@ -190,13 +192,14 @@ func (s *Service) GetSeasonComplete(ctx context.Context, tvID, seasonNumber int,
 	}
 
 	var (
-		sd  seasonData
-		mu  sync.Mutex
-		wg  sync.WaitGroup
-		errs []error
+		sd        seasonData
+		mu        sync.Mutex
+		wg        sync.WaitGroup
+		detailErr error
 	)
 
-	wg.Add(1)
+	wg.Add(4)
+
 	go func() {
 		defer wg.Done()
 		data, err := unmarshalResponse[tmdbSeasonDetail](
@@ -205,13 +208,12 @@ func (s *Service) GetSeasonComplete(ctx context.Context, tvID, seasonNumber int,
 		mu.Lock()
 		defer mu.Unlock()
 		if err != nil {
-			errs = append(errs, fmt.Errorf("season detail: %w", err))
+			detailErr = fmt.Errorf("season detail: %w", err)
 			return
 		}
 		sd.detail = data
 	}()
 
-	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		data, err := unmarshalResponse[tmdbTVDetail](
@@ -220,12 +222,12 @@ func (s *Service) GetSeasonComplete(ctx context.Context, tvID, seasonNumber int,
 		mu.Lock()
 		defer mu.Unlock()
 		if err != nil {
+			log.Printf("failed to fetch tv detail for season context (tv %d): %v", tvID, err)
 			return
 		}
 		sd.tvDetail = data
 	}()
 
-	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		data, err := unmarshalResponse[tmdbImagesResponse](
@@ -234,12 +236,12 @@ func (s *Service) GetSeasonComplete(ctx context.Context, tvID, seasonNumber int,
 		mu.Lock()
 		defer mu.Unlock()
 		if err != nil {
+			log.Printf("failed to fetch season images (tv %d, season %d): %v", tvID, seasonNumber, err)
 			return
 		}
 		sd.images = &data
 	}()
 
-	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		data, err := unmarshalResponse[tmdbWatchProvidersResponse](
@@ -248,6 +250,7 @@ func (s *Service) GetSeasonComplete(ctx context.Context, tvID, seasonNumber int,
 		mu.Lock()
 		defer mu.Unlock()
 		if err != nil {
+			log.Printf("failed to fetch season watch providers (tv %d, season %d): %v", tvID, seasonNumber, err)
 			return
 		}
 		sd.providers = &data
@@ -255,13 +258,11 @@ func (s *Service) GetSeasonComplete(ctx context.Context, tvID, seasonNumber int,
 
 	wg.Wait()
 
-	for _, err := range errs {
-		return models.Season{}, err
+	if detailErr != nil {
+		return models.Season{}, detailErr
 	}
 
-	tvShowName := sd.tvDetail.Name
-
-	return mapSeason(sd.detail, tvShowName, sd.images, sd.providers, country), nil
+	return mapSeason(sd.detail, sd.tvDetail.Name, sd.images, sd.providers, country), nil
 }
 
 func (s *Service) GetBulkMovies(ctx context.Context, ids []int, country string) []BulkMovieResult {
@@ -269,9 +270,15 @@ func (s *Service) GetBulkMovies(ctx context.Context, ids []int, country string) 
 	var wg sync.WaitGroup
 	sem := make(chan struct{}, 10)
 
+loop:
 	for i, id := range ids {
+		select {
+		case <-ctx.Done():
+			break loop
+		case sem <- struct{}{}:
+		}
+
 		wg.Add(1)
-		sem <- struct{}{}
 
 		go func(idx, movieID int) {
 			defer wg.Done()
@@ -296,9 +303,15 @@ func (s *Service) GetBulkTVShows(ctx context.Context, ids []int, country string)
 	var wg sync.WaitGroup
 	sem := make(chan struct{}, 10)
 
+loop:
 	for i, id := range ids {
+		select {
+		case <-ctx.Done():
+			break loop
+		case sem <- struct{}{}:
+		}
+
 		wg.Add(1)
-		sem <- struct{}{}
 
 		go func(idx, tvID int) {
 			defer wg.Done()

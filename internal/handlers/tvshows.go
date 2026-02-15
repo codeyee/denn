@@ -1,12 +1,14 @@
 package handlers
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/codeyee/denn-proxy/internal/clients"
 	tmdbservice "github.com/codeyee/denn-proxy/internal/services/tmdb"
 )
 
@@ -22,7 +24,7 @@ func (h *TVShowHandler) Search(c *gin.Context) {
 	query := c.Query("query")
 
 	if query == "" {
-		respondBadRequest(c, "query parameter is required")
+		respondError(c, http.StatusBadRequest, CodeMissingParameter, "query parameter is required")
 		return
 	}
 
@@ -35,12 +37,12 @@ func (h *TVShowHandler) Search(c *gin.Context) {
 	result, err := h.service.SearchTVShows(c.Request.Context(), query, page)
 
 	if err != nil {
-		respondInternalError(c, "failed to search tv shows")
+		respondError(c, http.StatusInternalServerError, CodeInternalError, "failed to search tv shows")
 		return
 	}
 
 	c.JSON(http.StatusOK, PaginatedResponse{
-		Meta: PaginationMeta{
+		Metadata: PaginationMeta{
 			Page:         result.Page,
 			TotalPages:   result.TotalPages,
 			TotalResults: result.TotalResults,
@@ -53,29 +55,23 @@ func (h *TVShowHandler) Detail(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 
 	if err != nil {
-		respondBadRequest(c, "invalid tv show ID")
+		respondError(c, http.StatusBadRequest, CodeInvalidParameter, "invalid tv show ID")
 		return
 	}
 
 	country := c.DefaultQuery("country", "US")
 	expandSeasons := c.Query("expand") == "seasons"
-
-	imagesSize := defaultImagesSize
-	if v := c.Query("images_size"); v != "" {
-		if parsed, err := strconv.Atoi(v); err == nil && parsed > 0 {
-			imagesSize = parsed
-		}
-	}
+	imagesSize := parseImagesSize(c)
 
 	show, err := h.service.GetTVShowComplete(c.Request.Context(), id, country, expandSeasons)
 
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
-			respondNotFound(c, "tv show not found")
+		if errors.Is(err, clients.ErrNotFound) {
+			respondError(c, http.StatusNotFound, CodeNotFound, "tv show not found")
 			return
 		}
 
-		respondInternalError(c, "failed to get tv show details")
+		respondError(c, http.StatusInternalServerError, CodeInternalError, "failed to get tv show details")
 		return
 	}
 
@@ -86,35 +82,29 @@ func (h *TVShowHandler) SeasonDetail(c *gin.Context) {
 	tvID, err := strconv.Atoi(c.Param("id"))
 
 	if err != nil {
-		respondBadRequest(c, "invalid tv show ID")
+		respondError(c, http.StatusBadRequest, CodeInvalidParameter, "invalid tv show ID")
 		return
 	}
 
 	seasonNumber, err := strconv.Atoi(c.Param("season_number"))
 
 	if err != nil {
-		respondBadRequest(c, "invalid season number")
+		respondError(c, http.StatusBadRequest, CodeInvalidParameter, "invalid season number")
 		return
 	}
 
 	country := c.DefaultQuery("country", "US")
-
-	imagesSize := defaultImagesSize
-	if v := c.Query("images_size"); v != "" {
-		if parsed, err := strconv.Atoi(v); err == nil && parsed > 0 {
-			imagesSize = parsed
-		}
-	}
+	imagesSize := parseImagesSize(c)
 
 	season, err := h.service.GetSeasonComplete(c.Request.Context(), tvID, seasonNumber, country)
 
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
-			respondNotFound(c, "season not found")
+		if errors.Is(err, clients.ErrNotFound) {
+			respondError(c, http.StatusNotFound, CodeNotFound, "season not found")
 			return
 		}
 
-		respondInternalError(c, "failed to get season details")
+		respondError(c, http.StatusInternalServerError, CodeInternalError, "failed to get season details")
 		return
 	}
 
@@ -125,31 +115,29 @@ func (h *TVShowHandler) Bulk(c *gin.Context) {
 	idsParam := c.Query("ids")
 
 	if idsParam == "" {
-		respondBadRequest(c, "ids parameter is required")
+		respondError(c, http.StatusBadRequest, CodeMissingParameter, "ids parameter is required")
 		return
 	}
 
 	ids, err := parseIDs(idsParam)
 
 	if err != nil {
-		respondBadRequest(c, "invalid ids format, expected comma-separated integers")
+		respondError(c, http.StatusBadRequest, CodeInvalidParameter, "invalid ids format, expected comma-separated integers")
 		return
 	}
 
 	if len(ids) == 0 {
-		respondBadRequest(c, "at least one id is required")
+		respondError(c, http.StatusBadRequest, CodeMissingParameter, "at least one id is required")
+		return
+	}
+
+	if len(ids) > maxBulkIDs {
+		respondError(c, http.StatusBadRequest, CodeLimitExceeded, fmt.Sprintf("maximum %d ids allowed per request", maxBulkIDs))
 		return
 	}
 
 	country := c.DefaultQuery("country", "US")
-
-	imagesSize := defaultImagesSize
-
-	if v := c.Query("images_size"); v != "" {
-		if parsed, err := strconv.Atoi(v); err == nil && parsed > 0 {
-			imagesSize = parsed
-		}
-	}
+	imagesSize := parseImagesSize(c)
 
 	results := h.service.GetBulkTVShows(c.Request.Context(), ids, country)
 

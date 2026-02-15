@@ -1,6 +1,7 @@
 package tmdb
 
 import (
+	"strconv"
 	"strings"
 
 	"github.com/codeyee/denn-proxy/internal/models"
@@ -21,8 +22,8 @@ func buildImageURLPtr(path *string, size string) *string {
 
 func buildImages(posterPath, backdropPath *string, imagesData *tmdbImagesResponse) *models.Images {
 	img := &models.Images{
-		PosterStandard:  buildImageURLPtr(posterPath, posterSizeStandard),
-		PosterOriginal:  buildImageURLPtr(posterPath, posterSizeOriginal),
+		PosterStandard: buildImageURLPtr(posterPath, posterSizeStandard),
+		PosterOriginal: buildImageURLPtr(posterPath, posterSizeOriginal),
 
 		GalleryStandard: buildImageURLPtr(backdropPath, gallerySizeStandard),
 		GalleryOriginal: buildImageURLPtr(backdropPath, gallerySizeOriginal),
@@ -125,7 +126,7 @@ func strPtr(s string) *string {
 
 func mapSearchItemMovie(r tmdbSearchResult) models.SearchItem {
 	return models.SearchItem{
-		ID:            r.ID,
+		ID:            strconv.Itoa(r.ID),
 		Type:          string(models.ContentTypeMovie),
 		Title:         r.Title,
 		OriginalTitle: strPtr(r.OriginalTitle),
@@ -155,7 +156,7 @@ func mapSearchItemTV(r tmdbSearchResult) models.SearchItem {
 	}
 
 	return models.SearchItem{
-		ID:            r.ID,
+		ID:            strconv.Itoa(r.ID),
 		Type:          string(models.ContentTypeTVShow),
 		Title:         title,
 		OriginalTitle: strPtr(originalTitle),
@@ -167,7 +168,7 @@ func mapSearchItemTV(r tmdbSearchResult) models.SearchItem {
 
 func mapMovie(d tmdbMovieDetail, country string) models.Movie {
 	return models.Movie{
-		ID:              d.ID,
+		ID:              strconv.Itoa(d.ID),
 		Title:           d.Title,
 		OriginalTitle:   d.OriginalTitle,
 		ContentType:     string(models.ContentTypeMovie),
@@ -186,7 +187,7 @@ func mapMovie(d tmdbMovieDetail, country string) models.Movie {
 
 func mapTVShow(d tmdbTVDetail, country string) models.TVShow {
 	return models.TVShow{
-		ID:               d.ID,
+		ID:               strconv.Itoa(d.ID),
 		Title:            d.Name,
 		OriginalTitle:    d.OriginalName,
 		ContentType:      string(models.ContentTypeTVShow),
@@ -211,7 +212,7 @@ func mapSeason(d tmdbSeasonDetail, tvShowName string, images *tmdbImagesResponse
 	}
 
 	return models.Season{
-		ID:               d.ID,
+		ID:               strconv.Itoa(d.ID),
 		SeasonNumber:     d.SeasonNumber,
 		Title:            d.Name,
 		ContentType:      string(models.ContentTypeSeason),
@@ -228,7 +229,7 @@ func mapSeason(d tmdbSeasonDetail, tvShowName string, images *tmdbImagesResponse
 
 func mapSeasonSummary(s tmdbSeasonSummary) models.Season {
 	return models.Season{
-		ID:               s.ID,
+		ID:               strconv.Itoa(s.ID),
 		SeasonNumber:     s.SeasonNumber,
 		Title:            s.Name,
 		ContentType:      string(models.ContentTypeSeason),
@@ -241,7 +242,7 @@ func mapSeasonSummary(s tmdbSeasonSummary) models.Season {
 
 func mapEpisode(ep tmdbEpisode) models.Episode {
 	return models.Episode{
-		ID:              ep.ID,
+		ID:              strconv.Itoa(ep.ID),
 		EpisodeNumber:   ep.EpisodeNumber,
 		SeasonNumber:    ep.SeasonNumber,
 		Title:           ep.Name,

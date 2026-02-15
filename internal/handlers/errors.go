@@ -1,14 +1,22 @@
 package handlers
 
 import (
-	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
 
+const (
+	CodeMissingParameter = "MISSING_PARAMETER"
+	CodeInvalidParameter = "INVALID_PARAMETER"
+	CodeLimitExceeded    = "LIMIT_EXCEEDED"
+	CodeNotFound         = "NOT_FOUND"
+	CodeInternalError    = "INTERNAL_ERROR"
+)
+
 type ErrorResponse struct {
-	Error   string `json:"error"`
-	Message string `json:"message,omitempty"`
+	Code    string `json:"code"`
+	Message string `json:"message"`
 }
 
 type PaginationMeta struct {
@@ -18,27 +26,25 @@ type PaginationMeta struct {
 }
 
 type PaginatedResponse struct {
-	Meta    PaginationMeta `json:"meta"`
-	Results any            `json:"results"`
+	Metadata PaginationMeta `json:"metadata"`
+	Results  any            `json:"results"`
 }
 
-func respondBadRequest(c *gin.Context, message string) {
-	c.JSON(http.StatusBadRequest, ErrorResponse{
-		Error:   "Bad Request",
+func respondError(c *gin.Context, statusCode int, code, message string) {
+	c.JSON(statusCode, ErrorResponse{
+		Code:    code,
 		Message: message,
 	})
 }
 
-func respondNotFound(c *gin.Context, message string) {
-	c.JSON(http.StatusNotFound, ErrorResponse{
-		Error:   "Not Found",
-		Message: message,
-	})
-}
+const defaultImagesSize = 10
 
-func respondInternalError(c *gin.Context, message string) {
-	c.JSON(http.StatusInternalServerError, ErrorResponse{
-		Error:   "Internal Server Error",
-		Message: message,
-	})
+func parseImagesSize(c *gin.Context) int {
+	if v := c.Query("images_size"); v != "" {
+		if parsed, err := strconv.Atoi(v); err == nil && parsed > 0 {
+			return parsed
+		}
+	}
+
+	return defaultImagesSize
 }

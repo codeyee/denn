@@ -1,7 +1,7 @@
 package models
 
 type Episode struct {
-	ID              int     `json:"id"`
+	ID              string  `json:"id"`
 	EpisodeNumber   int     `json:"episode_number"`
 	SeasonNumber    int     `json:"season_number"`
 	Title           string  `json:"title"`
@@ -13,7 +13,7 @@ type Episode struct {
 }
 
 type Season struct {
-	ID               int                   `json:"id"`
+	ID               string                `json:"id"`
 	SeasonNumber     int                   `json:"season_number"`
 	Title            string                `json:"title"`
 	ContentType      string                `json:"type"`
@@ -28,7 +28,7 @@ type Season struct {
 }
 
 type SeasonResponse struct {
-	ID               int                   `json:"id"`
+	ID               string                `json:"id"`
 	Type             string                `json:"type"`
 	SeasonNumber     int                   `json:"season_number"`
 	Title            string                `json:"title"`
@@ -68,7 +68,7 @@ func (s *Season) ToResponse(imagesSize int) SeasonResponse {
 }
 
 type TVShow struct {
-	ID               int                   `json:"id"`
+	ID               string                `json:"id"`
 	Title            string                `json:"title"`
 	OriginalTitle    string                `json:"original_title"`
 	ContentType      string                `json:"type"`
@@ -87,7 +87,7 @@ type TVShow struct {
 }
 
 type TVShowResponse struct {
-	ID               int                   `json:"id"`
+	ID               string                `json:"id"`
 	Type             string                `json:"type"`
 	ImdbID           *string               `json:"imdb_id"`
 	Title            string                `json:"title"`
