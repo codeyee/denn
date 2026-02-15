@@ -1,4 +1,4 @@
-package games
+package service
 
 import (
 	"context"
@@ -13,6 +13,8 @@ import (
 	"github.com/codeyee/denn-proxy/internal/clients"
 	"github.com/codeyee/denn-proxy/internal/models"
 	igdbclient "github.com/codeyee/denn-proxy/internal/providers/igdb"
+	"github.com/codeyee/denn-proxy/internal/services/games"
+	"github.com/codeyee/denn-proxy/internal/services/games/mapper"
 )
 
 const (
@@ -41,21 +43,21 @@ type scoredGame struct {
 }
 
 func (s *Service) SearchGames(ctx context.Context, query string, limit, offset int) (SearchResult, error) {
-	data, err := unmarshalResponse[[]igdbGame](s.client.SearchGames(ctx, query, limit, offset))
+	data, err := unmarshalResponse[[]games.IgdbGame](s.client.SearchGames(ctx, query, limit, offset))
 	if err != nil {
 		return SearchResult{}, err
 	}
 
 	items := make([]models.SearchItem, 0, len(data))
 	for _, item := range data {
-		items = append(items, mapSearchItem(item))
+		items = append(items, mapper.MapSearchItem(item))
 	}
 
 	return SearchResult{Results: items}, nil
 }
 
 func (s *Service) GetGameComplete(ctx context.Context, id int) (models.Game, error) {
-	data, err := unmarshalResponse[[]igdbGame](s.client.GetGame(ctx, id))
+	data, err := unmarshalResponse[[]games.IgdbGame](s.client.GetGame(ctx, id))
 	if err != nil {
 		return models.Game{}, err
 	}
@@ -63,7 +65,7 @@ func (s *Service) GetGameComplete(ctx context.Context, id int) (models.Game, err
 		return models.Game{}, fmt.Errorf("game not found")
 	}
 
-	return mapGame(data[0]), nil
+	return mapper.MapGame(data[0]), nil
 }
 
 func (s *Service) GetBulkGames(ctx context.Context, ids []int) ([]models.Game, error) {
@@ -77,30 +79,30 @@ func (s *Service) GetBulkGames(ctx context.Context, ids []int) ([]models.Game, e
 		if end > len(ids) {
 			end = len(ids)
 		}
-		
+
 		wg.Add(1)
 		go func(batchIDs []int) {
 			defer wg.Done()
-			data, err := unmarshalResponse[[]igdbGame](s.client.GetBulkGames(ctx, batchIDs))
+			data, err := unmarshalResponse[[]games.IgdbGame](s.client.GetBulkGames(ctx, batchIDs))
 			if err != nil {
 				log.Printf("Error fetching bulk games batch: %v", err)
 				return
 			}
-			
+
 			mu.Lock()
 			for _, item := range data {
-				allGames = append(allGames, mapGame(item))
+				allGames = append(allGames, mapper.MapGame(item))
 			}
 			mu.Unlock()
 		}(ids[i:end])
 	}
-	
+
 	wg.Wait()
 	return allGames, nil
 }
 
 func (s *Service) GetPopularGames(ctx context.Context, limit, offset int) ([]models.SearchItem, error) {
-	data, err := unmarshalResponse[[]igdbGame](s.client.GetPopularGames(ctx, limit, offset))
+	data, err := unmarshalResponse[[]games.IgdbGame](s.client.GetPopularGames(ctx, limit, offset))
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +113,7 @@ func (s *Service) GetPopularGames(ctx context.Context, limit, offset int) ([]mod
 		if len(item.Platforms) == 1 && item.Platforms[0].ID == 82 {
 			continue
 		}
-		items = append(items, mapSearchItem(item))
+		items = append(items, mapper.MapSearchItem(item))
 	}
 	return items, nil
 }
@@ -120,7 +122,7 @@ func (s *Service) GetTrendingGames(ctx context.Context, limit, offset int) ([]mo
 	wantMap, visitsMap, err := s.fetchTrendingPrimitives(ctx, limit)
 
 	if err != nil {
-		return s.GetPopularGames(ctx, limit, offset) 
+		return s.GetPopularGames(ctx, limit, offset)
 	}
 
 	games, err := s.resolveGameDetails(ctx, wantMap, visitsMap)
@@ -128,7 +130,7 @@ func (s *Service) GetTrendingGames(ctx context.Context, limit, offset int) ([]mo
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Filter out games that are ONLY on Web browser
 	var filteredGames []models.Game
 	for _, game := range games {
@@ -136,7 +138,7 @@ func (s *Service) GetTrendingGames(ctx context.Context, limit, offset int) ([]mo
 		if len(game.Platforms) == 1 && game.Platforms[0].Name == "Web browser" {
 			isBrowserOnly = true
 		}
-		
+
 		if !isBrowserOnly {
 			filteredGames = append(filteredGames, game)
 		}
@@ -152,7 +154,7 @@ func unmarshalResponse[T any](resp *clients.Response, err error) (T, error) {
 	if err != nil {
 		return zero, err
 	}
-	
+
 	if resp.StatusCode == 404 {
 		return zero, fmt.Errorf("IGDB %w", clients.ErrNotFound)
 	}
@@ -185,20 +187,20 @@ func (s *Service) fetchTrendingPrimitives(ctx context.Context, limit int) (map[i
 		fetchLimit = 500
 	}
 
-	var wantToPlay, visits []igdbPopularityPrimitive
+	var wantToPlay, visits []games.IgdbPopularityPrimitive
 	var errWant, errIncr error
 	var wg sync.WaitGroup
 
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		wantToPlay, errWant = unmarshalResponse[[]igdbPopularityPrimitive](
+		wantToPlay, errWant = unmarshalResponse[[]games.IgdbPopularityPrimitive](
 			s.client.GetPopularityPrimitives(ctx, PopulationTypeWantToPlay, fetchLimit),
 		)
 	}()
 	go func() {
 		defer wg.Done()
-		visits, errIncr = unmarshalResponse[[]igdbPopularityPrimitive](
+		visits, errIncr = unmarshalResponse[[]games.IgdbPopularityPrimitive](
 			s.client.GetPopularityPrimitives(ctx, PopulationTypeVisits, fetchLimit),
 		)
 	}()
@@ -346,7 +348,7 @@ func paginateAndMap(scored []scoredGame, limit, offset int) []models.SearchItem 
 			Authors:     s.game.Authors,
 		})
 	}
-	
+
 	return result
 }
 

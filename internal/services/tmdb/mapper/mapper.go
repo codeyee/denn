@@ -1,14 +1,15 @@
-package tmdb
+package mapper
 
 import (
 	"strconv"
 	"strings"
 
 	"github.com/codeyee/denn-proxy/internal/models"
+	"github.com/codeyee/denn-proxy/internal/services/tmdb"
 )
 
 func buildImageURL(path, size string) string {
-	return imageBaseURL + size + path
+	return tmdb.ImageBaseURL + size + path
 }
 
 func buildImageURLPtr(path *string, size string) *string {
@@ -20,13 +21,13 @@ func buildImageURLPtr(path *string, size string) *string {
 	return &url
 }
 
-func buildImages(posterPath, backdropPath *string, imagesData *tmdbImagesResponse) *models.Images {
+func buildImages(posterPath, backdropPath *string, imagesData *tmdb.TmdbImagesResponse) *models.Images {
 	img := &models.Images{
-		PosterStandard: buildImageURLPtr(posterPath, posterSizeStandard),
-		PosterOriginal: buildImageURLPtr(posterPath, posterSizeOriginal),
+		PosterStandard: buildImageURLPtr(posterPath, tmdb.PosterSizeStandard),
+		PosterOriginal: buildImageURLPtr(posterPath, tmdb.PosterSizeOriginal),
 
-		GalleryStandard: buildImageURLPtr(backdropPath, gallerySizeStandard),
-		GalleryOriginal: buildImageURLPtr(backdropPath, gallerySizeOriginal),
+		GalleryStandard: buildImageURLPtr(backdropPath, tmdb.GallerySizeStandard),
+		GalleryOriginal: buildImageURLPtr(backdropPath, tmdb.GallerySizeOriginal),
 	}
 
 	if imagesData != nil {
@@ -40,8 +41,8 @@ func buildImages(posterPath, backdropPath *string, imagesData *tmdbImagesRespons
 			}
 
 			img.AdditionalGalleries = append(img.AdditionalGalleries, models.GalleryItem{
-				Standard: buildImageURL(backdrop.FilePath, gallerySizeStandard),
-				Original: buildImageURL(backdrop.FilePath, gallerySizeOriginal),
+				Standard: buildImageURL(backdrop.FilePath, tmdb.GallerySizeStandard),
+				Original: buildImageURL(backdrop.FilePath, tmdb.GallerySizeOriginal),
 			})
 		}
 	}
@@ -49,7 +50,7 @@ func buildImages(posterPath, backdropPath *string, imagesData *tmdbImagesRespons
 	return img
 }
 
-func normalizePlatforms(wpData *tmdbWatchProvidersResponse, country string) map[string][]models.Platform {
+func normalizePlatforms(wpData *tmdb.TmdbWatchProvidersResponse, country string) map[string][]models.Platform {
 	if wpData == nil || wpData.Results == nil {
 		return nil
 	}
@@ -62,7 +63,7 @@ func normalizePlatforms(wpData *tmdbWatchProvidersResponse, country string) map[
 
 	result := make(map[string][]models.Platform)
 
-	addProviders := func(action string, providers []tmdbProvider) {
+	addProviders := func(action string, providers []tmdb.TmdbProvider) {
 		if len(providers) == 0 {
 			return
 		}
@@ -71,7 +72,7 @@ func normalizePlatforms(wpData *tmdbWatchProvidersResponse, country string) map[
 		for _, p := range providers {
 			var logoURL *string
 			if p.LogoPath != "" {
-				u := buildImageURL(p.LogoPath, posterSizeStandard)
+				u := buildImageURL(p.LogoPath, tmdb.PosterSizeStandard)
 				logoURL = &u
 			}
 
@@ -84,9 +85,9 @@ func normalizePlatforms(wpData *tmdbWatchProvidersResponse, country string) map[
 		result[action] = platforms
 	}
 
-	addProviders(ProviderActionStream, countryData.Flatrate)
-	addProviders(ProviderActionRent, countryData.Rent)
-	addProviders(ProviderActionBuy, countryData.Buy)
+	addProviders(tmdb.ProviderActionStream, countryData.Flatrate)
+	addProviders(tmdb.ProviderActionRent, countryData.Rent)
+	addProviders(tmdb.ProviderActionBuy, countryData.Buy)
 
 	if len(result) == 0 {
 		return nil
@@ -95,7 +96,7 @@ func normalizePlatforms(wpData *tmdbWatchProvidersResponse, country string) map[
 	return result
 }
 
-func extractAuthors(companies []tmdbCompany) []models.Author {
+func extractAuthors(companies []tmdb.TmdbCompany) []models.Author {
 	if len(companies) == 0 {
 		return nil
 	}
@@ -112,7 +113,7 @@ func extractAuthors(companies []tmdbCompany) []models.Author {
 	return authors
 }
 
-func isValidSeason(s tmdbSeasonSummary) bool {
+func IsValidSeason(s tmdb.TmdbSeasonSummary) bool {
 	return s.SeasonNumber > 0 && s.EpisodeCount > 0
 }
 
@@ -124,19 +125,19 @@ func strPtr(s string) *string {
 	return &s
 }
 
-func mapSearchItemMovie(r tmdbSearchResult) models.SearchItem {
+func MapSearchItemMovie(r tmdb.TmdbSearchResult) models.SearchItem {
 	return models.SearchItem{
 		ID:            strconv.Itoa(r.ID),
 		Type:          string(models.ContentTypeMovie),
 		Title:         r.Title,
 		OriginalTitle: strPtr(r.OriginalTitle),
 		Description:   strPtr(r.Overview),
-		ImageURL:      buildImageURLPtr(r.PosterPath, posterSizeStandard),
+		ImageURL:      buildImageURLPtr(r.PosterPath, tmdb.PosterSizeStandard),
 		ReleaseDate:   strPtr(r.ReleaseDate),
 	}
 }
 
-func mapSearchItemTV(r tmdbSearchResult) models.SearchItem {
+func MapSearchItemTV(r tmdb.TmdbSearchResult) models.SearchItem {
 	title := r.Name
 
 	if title == "" {
@@ -161,19 +162,19 @@ func mapSearchItemTV(r tmdbSearchResult) models.SearchItem {
 		Title:         title,
 		OriginalTitle: strPtr(originalTitle),
 		Description:   strPtr(r.Overview),
-		ImageURL:      buildImageURLPtr(r.PosterPath, posterSizeStandard),
+		ImageURL:      buildImageURLPtr(r.PosterPath, tmdb.PosterSizeStandard),
 		ReleaseDate:   strPtr(releaseDate),
 	}
 }
 
-func mapMovie(d tmdbMovieDetail, country string) models.Movie {
+func MapMovie(d tmdb.TmdbMovieDetail, country string) models.Movie {
 	return models.Movie{
 		ID:              strconv.Itoa(d.ID),
 		Title:           d.Title,
 		OriginalTitle:   d.OriginalTitle,
 		ContentType:     string(models.ContentTypeMovie),
 		Description:     strPtr(d.Overview),
-		ImageURL:        buildImageURLPtr(d.PosterPath, posterSizeStandard),
+		ImageURL:        buildImageURLPtr(d.PosterPath, tmdb.PosterSizeStandard),
 		Tagline:         strPtr(d.Tagline),
 		ImdbID:          extractImdbID(d.ExternalIDs),
 		ReleaseDate:     strPtr(d.ReleaseDate),
@@ -185,14 +186,14 @@ func mapMovie(d tmdbMovieDetail, country string) models.Movie {
 	}
 }
 
-func mapTVShow(d tmdbTVDetail, country string) models.TVShow {
+func MapTVShow(d tmdb.TmdbTVDetail, country string) models.TVShow {
 	return models.TVShow{
 		ID:               strconv.Itoa(d.ID),
 		Title:            d.Name,
 		OriginalTitle:    d.OriginalName,
 		ContentType:      string(models.ContentTypeTVShow),
 		Description:      strPtr(d.Overview),
-		ImageURL:         buildImageURLPtr(d.PosterPath, posterSizeStandard),
+		ImageURL:         buildImageURLPtr(d.PosterPath, tmdb.PosterSizeStandard),
 		Tagline:          strPtr(d.Tagline),
 		ImdbID:           extractImdbID(d.ExternalIDs),
 		ReleaseDate:      strPtr(d.FirstAirDate),
@@ -205,10 +206,10 @@ func mapTVShow(d tmdbTVDetail, country string) models.TVShow {
 	}
 }
 
-func mapSeason(d tmdbSeasonDetail, tvShowName string, images *tmdbImagesResponse, platforms *tmdbWatchProvidersResponse, country string) models.Season {
+func MapSeason(d tmdb.TmdbSeasonDetail, tvShowName string, images *tmdb.TmdbImagesResponse, platforms *tmdb.TmdbWatchProvidersResponse, country string) models.Season {
 	episodes := make([]models.Episode, 0, len(d.Episodes))
 	for _, ep := range d.Episodes {
-		episodes = append(episodes, mapEpisode(ep))
+		episodes = append(episodes, MapEpisode(ep))
 	}
 
 	return models.Season{
@@ -219,7 +220,7 @@ func mapSeason(d tmdbSeasonDetail, tvShowName string, images *tmdbImagesResponse
 		NumberOfEpisodes: len(d.Episodes),
 		Description:      strPtr(d.Overview),
 		ReleaseDate:      strPtr(d.AirDate),
-		ImageURL:         buildImageURLPtr(d.PosterPath, posterSizeStandard),
+		ImageURL:         buildImageURLPtr(d.PosterPath, tmdb.PosterSizeStandard),
 		TVShowName:       strPtr(tvShowName),
 		Images:           buildImages(d.PosterPath, nil, images),
 		Episodes:         episodes,
@@ -227,7 +228,7 @@ func mapSeason(d tmdbSeasonDetail, tvShowName string, images *tmdbImagesResponse
 	}
 }
 
-func mapSeasonSummary(s tmdbSeasonSummary) models.Season {
+func MapSeasonSummary(s tmdb.TmdbSeasonSummary) models.Season {
 	return models.Season{
 		ID:               strconv.Itoa(s.ID),
 		SeasonNumber:     s.SeasonNumber,
@@ -236,11 +237,11 @@ func mapSeasonSummary(s tmdbSeasonSummary) models.Season {
 		NumberOfEpisodes: s.EpisodeCount,
 		Description:      strPtr(s.Overview),
 		ReleaseDate:      strPtr(s.AirDate),
-		ImageURL:         buildImageURLPtr(s.PosterPath, posterSizeStandard),
+		ImageURL:         buildImageURLPtr(s.PosterPath, tmdb.PosterSizeStandard),
 	}
 }
 
-func mapEpisode(ep tmdbEpisode) models.Episode {
+func MapEpisode(ep tmdb.TmdbEpisode) models.Episode {
 	return models.Episode{
 		ID:              strconv.Itoa(ep.ID),
 		EpisodeNumber:   ep.EpisodeNumber,
@@ -249,12 +250,12 @@ func mapEpisode(ep tmdbEpisode) models.Episode {
 		Description:     strPtr(ep.Overview),
 		ReleaseDate:     strPtr(ep.AirDate),
 		DurationMinutes: ep.Runtime,
-		ImageURL:        buildImageURLPtr(ep.StillPath, gallerySizeStandard),
+		ImageURL:        buildImageURLPtr(ep.StillPath, tmdb.GallerySizeStandard),
 		EpisodeType:     strPtr(ep.EpisodeType),
 	}
 }
 
-func extractImdbID(ext *tmdbExternalIDsResponse) *string {
+func extractImdbID(ext *tmdb.TmdbExternalIDsResponse) *string {
 	if ext == nil {
 		return nil
 	}

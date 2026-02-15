@@ -10,10 +10,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/codeyee/denn-proxy/internal/clients"
 	"github.com/codeyee/denn-proxy/internal/providers/openlibrary"
-	booksservice "github.com/codeyee/denn-proxy/internal/services/books"
+	booksservice "github.com/codeyee/denn-proxy/internal/services/books/service"
+	"github.com/gin-gonic/gin"
 )
 
 // NoOpCache implementation for testing
@@ -24,7 +24,7 @@ func (NoOpCache) Set(ctx context.Context, key string, value []byte, ttl time.Dur
 	return nil
 }
 func (NoOpCache) DeletePattern(ctx context.Context, pattern string) (int64, error) { return 0, nil }
-func (NoOpCache) Incr(ctx context.Context, key string) (int64, error) { return 0, nil }
+func (NoOpCache) Incr(ctx context.Context, key string) (int64, error)              { return 0, nil }
 func (NoOpCache) Expire(ctx context.Context, key string, ttl time.Duration) (bool, error) {
 	return true, nil
 }
@@ -139,14 +139,14 @@ func TestDetail(t *testing.T) {
 
 	client := NewTestClient(func(req *http.Request) *http.Response {
 		if strings.Contains(req.URL.String(), "/search.json") {
-            q := req.URL.Query().Get("q")
+			q := req.URL.Query().Get("q")
 			if q == "OL123W" {
-                return &http.Response{
-                    StatusCode: 200,
-                    Body:       io.NopCloser(strings.NewReader(mockDetailResponse)),
-                    Header:     make(http.Header),
-                }
-            }
+				return &http.Response{
+					StatusCode: 200,
+					Body:       io.NopCloser(strings.NewReader(mockDetailResponse)),
+					Header:     make(http.Header),
+				}
+			}
 		}
 
 		return &http.Response{
@@ -195,15 +195,15 @@ func TestTrending(t *testing.T) {
 
 	client := NewTestClient(func(req *http.Request) *http.Response {
 		if strings.Contains(req.URL.String(), "/search.json") {
-            q := req.URL.Query().Get("q")
-            sort := req.URL.Query().Get("sort")
-            if q == "bestseller" && sort == "rating" {
-			    return &http.Response{
-				    StatusCode: 200,
-				    Body:       io.NopCloser(strings.NewReader(mockTrendingResponse)),
-				    Header:     make(http.Header),
-			    }
-            }
+			q := req.URL.Query().Get("q")
+			sort := req.URL.Query().Get("sort")
+			if q == "bestseller" && sort == "rating" {
+				return &http.Response{
+					StatusCode: 200,
+					Body:       io.NopCloser(strings.NewReader(mockTrendingResponse)),
+					Header:     make(http.Header),
+				}
+			}
 		}
 
 		return &http.Response{

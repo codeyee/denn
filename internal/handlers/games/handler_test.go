@@ -10,10 +10,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/codeyee/denn-proxy/internal/clients"
 	"github.com/codeyee/denn-proxy/internal/providers/igdb"
-	gamesservice "github.com/codeyee/denn-proxy/internal/services/games"
+	gamesservice "github.com/codeyee/denn-proxy/internal/services/games/service"
+	"github.com/gin-gonic/gin"
 )
 
 // NoOpCache implementation for testing
@@ -24,7 +24,7 @@ func (NoOpCache) Set(ctx context.Context, key string, value []byte, ttl time.Dur
 	return nil
 }
 func (NoOpCache) DeletePattern(ctx context.Context, pattern string) (int64, error) { return 0, nil }
-func (NoOpCache) Incr(ctx context.Context, key string) (int64, error) { return 0, nil }
+func (NoOpCache) Incr(ctx context.Context, key string) (int64, error)              { return 0, nil }
 func (NoOpCache) Expire(ctx context.Context, key string, ttl time.Duration) (bool, error) {
 	return true, nil
 }
@@ -88,16 +88,16 @@ func TestSearch(t *testing.T) {
 		}
 
 		if strings.Contains(req.URL.String(), "/games") {
-            // Verify body contains search query
-            bodyBytes, _ := io.ReadAll(req.Body)
-            bodyStr := string(bodyBytes)
-            if !strings.Contains(bodyStr, `search "test"`) {
+			// Verify body contains search query
+			bodyBytes, _ := io.ReadAll(req.Body)
+			bodyStr := string(bodyBytes)
+			if !strings.Contains(bodyStr, `search "test"`) {
 				return &http.Response{
 					StatusCode: 500,
 					Body:       io.NopCloser(strings.NewReader(`[{"status": 500, "title": "Unexpected query"}]`)),
 					Header:     make(http.Header),
 				}
-            }
+			}
 
 			return &http.Response{
 				StatusCode: 200,
@@ -168,16 +168,16 @@ func TestDetail(t *testing.T) {
 		}
 
 		if strings.Contains(req.URL.String(), "/games") {
-             // Verify body contains id filter
-            bodyBytes, _ := io.ReadAll(req.Body)
-            bodyStr := string(bodyBytes)
-            if !strings.Contains(bodyStr, "where id = (123)") {
-                 // The service might use `where id = (123);`
-                 // Or `where id = 123;` ?
-                 // Actually `details` template is usually specific.
-                 // But let's just return success for /games endpoint generally for this mock if not strictly checking body exact match.
-                 // However, we should be reasonably strict.
-            }
+			// Verify body contains id filter
+			bodyBytes, _ := io.ReadAll(req.Body)
+			bodyStr := string(bodyBytes)
+			if !strings.Contains(bodyStr, "where id = (123)") {
+				// The service might use `where id = (123);`
+				// Or `where id = 123;` ?
+				// Actually `details` template is usually specific.
+				// But let's just return success for /games endpoint generally for this mock if not strictly checking body exact match.
+				// However, we should be reasonably strict.
+			}
 			return &http.Response{
 				StatusCode: 200,
 				Body:       io.NopCloser(strings.NewReader(mockDetailResponse)),

@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/codeyee/denn-proxy/internal/handlers/common"
-	tmdbservice "github.com/codeyee/denn-proxy/internal/services/tmdb"
+	tmdbservice "github.com/codeyee/denn-proxy/internal/services/tmdb/service"
 )
 
 const maxBulkIDs = 50
@@ -126,4 +126,3 @@ func (h *Handler) Bulk(c *gin.Context) {
 
 	c.JSON(http.StatusOK, response)
 }
-

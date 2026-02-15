@@ -1,11 +1,11 @@
 package books
 
-type olSearchResponse struct {
+type OlSearchResponse struct {
 	NumFound int     `json:"numFound"`
-	Docs     []olDoc `json:"docs"`
+	Docs     []OlDoc `json:"docs"`
 }
 
-type olDoc struct {
+type OlDoc struct {
 	Key              string   `json:"key"`
 	Title            string   `json:"title"`
 	AuthorName       []string `json:"author_name"`

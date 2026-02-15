@@ -1,4 +1,4 @@
-package tmdb
+package service
 
 import (
 	"context"
@@ -10,6 +10,8 @@ import (
 	"github.com/codeyee/denn-proxy/internal/clients"
 	"github.com/codeyee/denn-proxy/internal/models"
 	tmdbclient "github.com/codeyee/denn-proxy/internal/providers/tmdb"
+	"github.com/codeyee/denn-proxy/internal/services/tmdb"
+	"github.com/codeyee/denn-proxy/internal/services/tmdb/mapper"
 )
 
 const (
@@ -81,7 +83,7 @@ func unmarshalResponse[T any](resp *clients.Response, err error) (T, error) {
 }
 
 func (s *Service) SearchMovies(ctx context.Context, query string, page, limit int) (SearchResult, error) {
-	data, err := unmarshalResponse[tmdbSearchResponse](s.client.SearchMovies(ctx, query, page))
+	data, err := unmarshalResponse[tmdb.TmdbSearchResponse](s.client.SearchMovies(ctx, query, page))
 
 	if err != nil {
 		return SearchResult{}, fmt.Errorf("search movies: %w", err)
@@ -90,7 +92,7 @@ func (s *Service) SearchMovies(ctx context.Context, query string, page, limit in
 	items := make([]models.SearchItem, 0, len(data.Results))
 
 	for _, r := range data.Results {
-		items = append(items, mapSearchItemMovie(r))
+		items = append(items, mapper.MapSearchItemMovie(r))
 	}
 
 	if len(items) > limit {
@@ -106,7 +108,7 @@ func (s *Service) SearchMovies(ctx context.Context, query string, page, limit in
 }
 
 func (s *Service) SearchTVShows(ctx context.Context, query string, page, limit int) (SearchResult, error) {
-	data, err := unmarshalResponse[tmdbSearchResponse](s.client.SearchTVShows(ctx, query, page))
+	data, err := unmarshalResponse[tmdb.TmdbSearchResponse](s.client.SearchTVShows(ctx, query, page))
 
 	if err != nil {
 		return SearchResult{}, fmt.Errorf("search tv shows: %w", err)
@@ -115,7 +117,7 @@ func (s *Service) SearchTVShows(ctx context.Context, query string, page, limit i
 	items := make([]models.SearchItem, 0, len(data.Results))
 
 	for _, r := range data.Results {
-		items = append(items, mapSearchItemTV(r))
+		items = append(items, mapper.MapSearchItemTV(r))
 	}
 
 	if len(items) > limit {
@@ -131,7 +133,7 @@ func (s *Service) SearchTVShows(ctx context.Context, query string, page, limit i
 }
 
 func (s *Service) GetPopularMovies(ctx context.Context, page, limit int) (SearchResult, error) {
-	data, err := unmarshalResponse[tmdbSearchResponse](s.client.GetPopularMovies(ctx, page))
+	data, err := unmarshalResponse[tmdb.TmdbSearchResponse](s.client.GetPopularMovies(ctx, page))
 
 	if err != nil {
 		return SearchResult{}, fmt.Errorf("popular movies: %w", err)
@@ -140,7 +142,7 @@ func (s *Service) GetPopularMovies(ctx context.Context, page, limit int) (Search
 	items := make([]models.SearchItem, 0, len(data.Results))
 
 	for _, r := range data.Results {
-		items = append(items, mapSearchItemMovie(r))
+		items = append(items, mapper.MapSearchItemMovie(r))
 	}
 
 	if len(items) > limit {
@@ -156,7 +158,7 @@ func (s *Service) GetPopularMovies(ctx context.Context, page, limit int) (Search
 }
 
 func (s *Service) GetPopularTVShows(ctx context.Context, page, limit int) (SearchResult, error) {
-	data, err := unmarshalResponse[tmdbSearchResponse](s.client.GetPopularTVShows(ctx, page))
+	data, err := unmarshalResponse[tmdb.TmdbSearchResponse](s.client.GetPopularTVShows(ctx, page))
 
 	if err != nil {
 		return SearchResult{}, fmt.Errorf("popular tv shows: %w", err)
@@ -165,7 +167,7 @@ func (s *Service) GetPopularTVShows(ctx context.Context, page, limit int) (Searc
 	items := make([]models.SearchItem, 0, len(data.Results))
 
 	for _, r := range data.Results {
-		items = append(items, mapSearchItemTV(r))
+		items = append(items, mapper.MapSearchItemTV(r))
 	}
 
 	if len(items) > limit {
@@ -181,7 +183,7 @@ func (s *Service) GetPopularTVShows(ctx context.Context, page, limit int) (Searc
 }
 
 func (s *Service) GetMovieComplete(ctx context.Context, movieID int, country string) (models.Movie, error) {
-	data, err := unmarshalResponse[tmdbMovieDetail](
+	data, err := unmarshalResponse[tmdb.TmdbMovieDetail](
 		s.client.GetMovieDetails(ctx, movieID, movieAppend),
 	)
 
@@ -189,11 +191,11 @@ func (s *Service) GetMovieComplete(ctx context.Context, movieID int, country str
 		return models.Movie{}, fmt.Errorf("get movie %d: %w", movieID, err)
 	}
 
-	return mapMovie(data, country), nil
+	return mapper.MapMovie(data, country), nil
 }
 
 func (s *Service) GetTVShowComplete(ctx context.Context, tvID int, country string) (models.TVShow, error) {
-	data, err := unmarshalResponse[tmdbTVDetail](
+	data, err := unmarshalResponse[tmdb.TmdbTVDetail](
 		s.client.GetTVDetails(ctx, tvID, tvAppend),
 	)
 
@@ -201,13 +203,13 @@ func (s *Service) GetTVShowComplete(ctx context.Context, tvID int, country strin
 		return models.TVShow{}, fmt.Errorf("get tv show %d: %w", tvID, err)
 	}
 
-	show := mapTVShow(data, country)
+	show := mapper.MapTVShow(data, country)
 
 	seasons := make([]models.Season, 0, len(data.Seasons))
 
 	for _, s := range data.Seasons {
-		if isValidSeason(s) {
-			seasons = append(seasons, mapSeasonSummary(s))
+		if mapper.IsValidSeason(s) {
+			seasons = append(seasons, mapper.MapSeasonSummary(s))
 		}
 	}
 
@@ -218,10 +220,10 @@ func (s *Service) GetTVShowComplete(ctx context.Context, tvID int, country strin
 
 func (s *Service) GetSeasonComplete(ctx context.Context, tvID, seasonNumber int, country string) (models.Season, error) {
 	type seasonData struct {
-		detail    tmdbSeasonDetail
-		tvDetail  tmdbTVDetail
-		images    *tmdbImagesResponse
-		providers *tmdbWatchProvidersResponse
+		detail    tmdb.TmdbSeasonDetail
+		tvDetail  tmdb.TmdbTVDetail
+		images    *tmdb.TmdbImagesResponse
+		providers *tmdb.TmdbWatchProvidersResponse
 	}
 
 	var (
@@ -235,7 +237,7 @@ func (s *Service) GetSeasonComplete(ctx context.Context, tvID, seasonNumber int,
 
 	go func() {
 		defer wg.Done()
-		data, err := unmarshalResponse[tmdbSeasonDetail](
+		data, err := unmarshalResponse[tmdb.TmdbSeasonDetail](
 			s.client.GetSeasonDetails(ctx, tvID, seasonNumber),
 		)
 		mu.Lock()
@@ -249,7 +251,7 @@ func (s *Service) GetSeasonComplete(ctx context.Context, tvID, seasonNumber int,
 
 	go func() {
 		defer wg.Done()
-		data, err := unmarshalResponse[tmdbTVDetail](
+		data, err := unmarshalResponse[tmdb.TmdbTVDetail](
 			s.client.GetTVDetails(ctx, tvID, ""),
 		)
 		mu.Lock()
@@ -263,7 +265,7 @@ func (s *Service) GetSeasonComplete(ctx context.Context, tvID, seasonNumber int,
 
 	go func() {
 		defer wg.Done()
-		data, err := unmarshalResponse[tmdbImagesResponse](
+		data, err := unmarshalResponse[tmdb.TmdbImagesResponse](
 			s.client.GetSeasonImages(ctx, tvID, seasonNumber),
 		)
 		mu.Lock()
@@ -277,7 +279,7 @@ func (s *Service) GetSeasonComplete(ctx context.Context, tvID, seasonNumber int,
 
 	go func() {
 		defer wg.Done()
-		data, err := unmarshalResponse[tmdbWatchProvidersResponse](
+		data, err := unmarshalResponse[tmdb.TmdbWatchProvidersResponse](
 			s.client.GetSeasonWatchProviders(ctx, tvID, seasonNumber),
 		)
 		mu.Lock()
@@ -295,7 +297,7 @@ func (s *Service) GetSeasonComplete(ctx context.Context, tvID, seasonNumber int,
 		return models.Season{}, detailErr
 	}
 
-	return mapSeason(sd.detail, sd.tvDetail.Name, sd.images, sd.providers, country), nil
+	return mapper.MapSeason(sd.detail, sd.tvDetail.Name, sd.images, sd.providers, country), nil
 }
 
 func (s *Service) GetBulkMovies(ctx context.Context, ids []int, country string) []BulkMovieResult {

@@ -1,4 +1,4 @@
-package books
+package service
 
 import (
 	"context"
@@ -9,9 +9,9 @@ import (
 	"github.com/codeyee/denn-proxy/internal/clients"
 	"github.com/codeyee/denn-proxy/internal/models"
 	olclient "github.com/codeyee/denn-proxy/internal/providers/openlibrary"
+	"github.com/codeyee/denn-proxy/internal/services/books"
+	"github.com/codeyee/denn-proxy/internal/services/books/mapper"
 )
-
-const defaultPageSize = 20
 
 type SearchResult struct {
 	Page         int                 `json:"page"`
@@ -70,14 +70,14 @@ func unmarshalResponse[T any](resp *clients.Response, err error) (T, error) {
 }
 
 func (s *Service) SearchBooks(ctx context.Context, query string, page, limit int) (SearchResult, error) {
-	data, err := unmarshalResponse[olSearchResponse](s.client.SearchBooks(ctx, query, page, limit))
+	data, err := unmarshalResponse[books.OlSearchResponse](s.client.SearchBooks(ctx, query, page, limit))
 	if err != nil {
 		return SearchResult{}, fmt.Errorf("search books: %w", err)
 	}
 
 	items := make([]models.SearchItem, 0, len(data.Docs))
 	for _, doc := range data.Docs {
-		items = append(items, mapSearchItem(doc))
+		items = append(items, mapper.MapSearchItem(doc))
 	}
 
 	totalPages := 0
@@ -94,7 +94,7 @@ func (s *Service) SearchBooks(ctx context.Context, query string, page, limit int
 }
 
 func (s *Service) GetBookComplete(ctx context.Context, bookID string) (models.Book, error) {
-	data, err := unmarshalResponse[olSearchResponse](s.client.GetBook(ctx, bookID))
+	data, err := unmarshalResponse[books.OlSearchResponse](s.client.GetBook(ctx, bookID))
 	if err != nil {
 		return models.Book{}, fmt.Errorf("get book %s: %w", bookID, err)
 	}
@@ -103,7 +103,7 @@ func (s *Service) GetBookComplete(ctx context.Context, bookID string) (models.Bo
 		return models.Book{}, fmt.Errorf("get book %s: %w", bookID, clients.ErrNotFound)
 	}
 
-	return mapBook(data.Docs[0]), nil
+	return mapper.MapBook(data.Docs[0]), nil
 }
 
 func (s *Service) GetBulkBooks(ctx context.Context, bookIDs []string) []BulkBookResult {
@@ -142,14 +142,14 @@ loop:
 func (s *Service) GetTrendingBooks(ctx context.Context, page, limit int) (SearchResult, error) {
 	totalLimit := 100
 
-	data, err := unmarshalResponse[olSearchResponse](s.client.GetTrendingBooks(ctx, totalLimit))
+	data, err := unmarshalResponse[books.OlSearchResponse](s.client.GetTrendingBooks(ctx, totalLimit))
 	if err != nil {
 		return SearchResult{}, fmt.Errorf("get trending books: %w", err)
 	}
 
 	items := make([]models.SearchItem, 0, len(data.Docs))
 	for _, doc := range data.Docs {
-		items = append(items, mapSearchItem(doc))
+		items = append(items, mapper.MapSearchItem(doc))
 	}
 
 	total := len(items)

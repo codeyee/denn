@@ -1,4 +1,4 @@
-package games
+package service
 
 import (
 	"bytes"
@@ -12,6 +12,7 @@ import (
 	"github.com/codeyee/denn-proxy/internal/clients"
 	"github.com/codeyee/denn-proxy/internal/models"
 	igdbclient "github.com/codeyee/denn-proxy/internal/providers/igdb"
+	"github.com/codeyee/denn-proxy/internal/services/games"
 )
 
 type MockRoundTripper struct {
@@ -24,17 +25,19 @@ func (m *MockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) 
 }
 
 func TestSearchGames(t *testing.T) {
-	mockData := []map[string]interface{}{
+	mockGames := []games.IgdbGame{
 		{
-			"id":   1,
-			"name": "Zelda",
-			"cover": map[string]interface{}{
-				"url": "//images.igdb.com/igdb/image/upload/t_thumb/co123.jpg",
+			ID:   1,
+			Name: "Test Game",
+			Cover: games.IgdbImage{
+				ID:      100,
+				Url:     "//images.igdb.com/igdb/image/upload/t_thumb/test.jpg",
+				ImageID: "test_image_id",
 			},
-			"first_release_date": 1600000000,
+			FirstReleaseDate: 1672531200,
 		},
 	}
-	mockBody, _ := json.Marshal(mockData)
+	mockBody, _ := json.Marshal(mockGames)
 
 	mockTransport := &MockRoundTripper{
 		Response: &http.Response{
@@ -99,7 +102,7 @@ func TestGetGameComplete(t *testing.T) {
 	if game.Title != "Single Game" {
 		t.Errorf("expected Title 'Single Game', got %s", game.Title)
 	}
-	
+
 	if len(game.Genres) != 1 || game.Genres[0] != "RPG" {
 		t.Errorf("expected Genre RPG, got %v", game.Genres)
 	}
@@ -137,14 +140,14 @@ func TestGetBulkGames(t *testing.T) {
 func TestGetPopularGames(t *testing.T) {
 	mockData := []map[string]interface{}{
 		{
-			"id": 1, 
+			"id":   1,
 			"name": "Popular Game",
 			"platforms": []map[string]interface{}{
 				{"id": 6, "name": "PC"},
 			},
 		},
 		{
-			"id": 2, 
+			"id":   2,
 			"name": "Browser Game",
 			"platforms": []map[string]interface{}{
 				{"id": 82, "name": "Web browser"},
@@ -174,7 +177,7 @@ func TestGetPopularGames(t *testing.T) {
 	if len(games) != 1 {
 		t.Errorf("expected 1 game (browser filtered), got %d", len(games))
 	}
-	
+
 	if games[0].Title != "Popular Game" {
 		t.Errorf("expected 'Popular Game', got %s", games[0].Title)
 	}
@@ -186,7 +189,7 @@ type StatefulRoundTripper struct {
 
 func (m *StatefulRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	bodyData, _ := io.ReadAll(req.Body)
-	
+
 	req.Body = io.NopCloser(bytes.NewReader(bodyData))
 
 	if bytes.Contains([]byte(req.URL.Path), []byte("popularity_primitives")) {
@@ -203,7 +206,7 @@ func (m *StatefulRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 				{"game_id": 1, "value": 50.0, "popularity_type": 1},
 			}
 		}
-		
+
 		bodyBytes, _ := json.Marshal(mockPrims)
 		return &http.Response{
 			StatusCode: http.StatusOK,
@@ -211,7 +214,7 @@ func (m *StatefulRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 			Header:     make(http.Header),
 		}, nil
 	}
-	
+
 	if bytes.Contains([]byte(req.URL.Path), []byte("games")) && bytes.Contains(bodyData, []byte("where id = (1)")) {
 		// Bulk get details
 		mockData := []map[string]interface{}{
@@ -227,7 +230,7 @@ func (m *StatefulRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 			Header:     make(http.Header),
 		}, nil
 	}
-	
+
 	// Default empty array
 	return &http.Response{
 		StatusCode: http.StatusOK,
@@ -251,7 +254,7 @@ func TestGetTrendingGames(t *testing.T) {
 	if len(games) != 1 {
 		t.Errorf("expected 1 game, got %d", len(games))
 	}
-	
+
 	if games[0].Title != "Trending Game" {
 		t.Errorf("expected 'Trending Game', got %s", games[0].Title)
 	}
@@ -259,7 +262,7 @@ func TestGetTrendingGames(t *testing.T) {
 
 func TestGetTrendingGames_Fallback(t *testing.T) {
 	stateful := &StatefulRoundTripperFallback{}
-	
+
 	mockHTTPClient := &http.Client{Transport: stateful}
 	client := igdbclient.NewClient("test-id", "test-secret", clients.NoOpCache{}, clients.WithHTTPClient(mockHTTPClient))
 	service := NewService(client)
@@ -268,7 +271,7 @@ func TestGetTrendingGames_Fallback(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Fallback failed: %v", err)
 	}
-	
+
 	if len(games) != 1 || games[0].Title != "Popular Fallback" {
 		t.Errorf("Expected fallback popular game, got %v", games)
 	}
@@ -284,7 +287,7 @@ func (m *StatefulRoundTripperFallback) RoundTrip(req *http.Request) (*http.Respo
 			Header:     make(http.Header),
 		}, nil
 	}
-	
+
 	if bytes.Contains([]byte(req.URL.Path), []byte("games")) {
 		mockData := []map[string]interface{}{
 			{"id": 99, "name": "Popular Fallback"},
@@ -296,7 +299,7 @@ func (m *StatefulRoundTripperFallback) RoundTrip(req *http.Request) (*http.Respo
 			Header:     make(http.Header),
 		}, nil
 	}
-	
+
 	return nil, io.EOF
 }
 
@@ -304,12 +307,48 @@ func TestCalculateScores(t *testing.T) {
 	// Case 1: High popularity + recent
 	game1 := models.Game{ID: "1", ReleaseDate: stringPtr(time.Now().Format("2006-01-02"))}
 	score1 := calculateSingleGameScore(game1, map[int]float64{1: 100}, map[int]float64{1: 100}, 100, 100, time.Now().Unix())
-	
+
 	// Case 2: High popularity + old
 	game2 := models.Game{ID: "1", ReleaseDate: stringPtr(time.Now().AddDate(-1, 0, 0).Format("2006-01-02"))}
 	score2 := calculateSingleGameScore(game2, map[int]float64{1: 100}, map[int]float64{1: 100}, 100, 100, time.Now().Unix())
-	
+
 	if score1 <= score2 {
 		t.Errorf("Recent game should have higher score than old game with same stats")
 	}
+}
+
+func TestCalculateRecencyMultiplier(t *testing.T) {
+	now := time.Now().Unix()
+	day := int64(86400)
+
+	tests := []struct {
+		name        string
+		releaseDate *string
+		expected    float64
+	}{
+		{"Nil date", nil, 1.0},
+		{"Future date", stringPtr(time.Unix(now+day, 0).Format("2006-01-02")), 0.0},
+		{"Just released", stringPtr(time.Unix(now-day, 0).Format("2006-01-02")), MaxRecencyBoost},
+		{"60 days old", stringPtr(time.Unix(now-(60*day), 0).Format("2006-01-02")), MaxRecencyBoost * 0.6},
+		{"Old game", stringPtr("2000-01-01"), 1.0},
+	}
+
+	for _, tt := range tests {
+		got := calculateRecencyMultiplier(tt.releaseDate, now)
+		// Float comparison with epsilon
+		if abs(got-tt.expected) > 0.001 {
+			t.Errorf("%s: expected %v, got %v", tt.name, tt.expected, got)
+		}
+	}
+}
+
+func stringPtr(s string) *string {
+	return &s
+}
+
+func abs(x float64) float64 {
+	if x < 0 {
+		return -x
+	}
+	return x
 }

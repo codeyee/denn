@@ -11,7 +11,7 @@ import (
 
 	"github.com/codeyee/denn-proxy/internal/clients"
 	"github.com/codeyee/denn-proxy/internal/providers/tmdb"
-	tmdbservice "github.com/codeyee/denn-proxy/internal/services/tmdb"
+	tmdbservice "github.com/codeyee/denn-proxy/internal/services/tmdb/service"
 	"github.com/gin-gonic/gin"
 )
 

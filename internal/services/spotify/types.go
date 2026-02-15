@@ -1,56 +1,56 @@
 package spotify
 
-type spotifySearchResponse struct {
-	Albums spotifyAlbumPage `json:"albums"`
+type SpotifySearchResponse struct {
+	Albums SpotifyAlbumPage `json:"albums"`
 }
 
-type spotifyAlbumPage struct {
-	Items  []spotifyAlbum `json:"items"`
+type SpotifyAlbumPage struct {
+	Items  []SpotifyAlbum `json:"items"`
 	Total  int            `json:"total"`
 	Limit  int            `json:"limit"`
 	Offset int            `json:"offset"`
 }
 
-type spotifyNewReleasesResponse struct {
-	Albums spotifyAlbumPage `json:"albums"`
+type SpotifyNewReleasesResponse struct {
+	Albums SpotifyAlbumPage `json:"albums"`
 }
 
-type spotifyAlbum struct {
-	ID          string            `json:"id"`
-	Name        string            `json:"name"`
-	AlbumType   string            `json:"album_type"`
-	TotalTracks int               `json:"total_tracks"`
-	ReleaseDate string            `json:"release_date"`
-	Images      []spotifyImage    `json:"images"`
-	Artists     []spotifyArtist   `json:"artists"`
-	ExternalURLs spotifyExternalURLs `json:"external_urls"`
-	Tracks      *spotifyTrackPage `json:"tracks,omitempty"`
+type SpotifyAlbum struct {
+	ID           string              `json:"id"`
+	Name         string              `json:"name"`
+	AlbumType    string              `json:"album_type"`
+	TotalTracks  int                 `json:"total_tracks"`
+	ReleaseDate  string              `json:"release_date"`
+	Images       []SpotifyImage      `json:"images"`
+	Artists      []SpotifyArtist     `json:"artists"`
+	ExternalURLs SpotifyExternalURLs `json:"external_urls"`
+	Tracks       *SpotifyTrackPage   `json:"tracks,omitempty"`
 }
 
-type spotifyTrackPage struct {
-	Items []spotifyTrack `json:"items"`
+type SpotifyTrackPage struct {
+	Items []SpotifyTrack `json:"items"`
 }
 
-type spotifyTrack struct {
+type SpotifyTrack struct {
 	ID           string              `json:"id"`
 	Name         string              `json:"name"`
 	TrackNumber  int                 `json:"track_number"`
 	DurationMs   int                 `json:"duration_ms"`
-	Artists      []spotifyArtist     `json:"artists"`
-	ExternalURLs spotifyExternalURLs `json:"external_urls"`
+	Artists      []SpotifyArtist     `json:"artists"`
+	ExternalURLs SpotifyExternalURLs `json:"external_urls"`
 }
 
-type spotifyArtist struct {
+type SpotifyArtist struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
 }
 
-type spotifyImage struct {
+type SpotifyImage struct {
 	URL    string `json:"url"`
 	Height int    `json:"height"`
 	Width  int    `json:"width"`
 }
 
-type spotifyExternalURLs struct {
+type SpotifyExternalURLs struct {
 	Spotify string `json:"spotify"`
 }

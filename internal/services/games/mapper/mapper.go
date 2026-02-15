@@ -1,4 +1,4 @@
-package games
+package mapper
 
 import (
 	"fmt"
@@ -7,11 +7,12 @@ import (
 	"time"
 
 	"github.com/codeyee/denn-proxy/internal/models"
+	"github.com/codeyee/denn-proxy/internal/services/games"
 )
 
 const (
-	igdbImageBaseURL   = "https://images.igdb.com/igdb/image/upload"
-	
+	igdbImageBaseURL = "https://images.igdb.com/igdb/image/upload"
+
 	GameTypeOriginal            = "original"
 	GameTypeStandaloneExpansion = "standalone_expansion"
 	GameTypeRemake              = "remake"
@@ -84,7 +85,7 @@ func buildDescription(summary, storyline string) *string {
 	return &storyline
 }
 
-func getImageIDFromCover(cover igdbImage) string {
+func getImageIDFromCover(cover games.IgdbImage) string {
 	if cover.ImageID != "" {
 		return cover.ImageID
 	}
@@ -96,16 +97,18 @@ func getImageIDFromCover(cover igdbImage) string {
 	return ""
 }
 
-func buildImages(item igdbGame) *models.Images {
+func buildImages(item games.IgdbGame) *models.Images {
 	posterID := getImageIDFromCover(item.Cover)
-	
+
 	posterStandard := buildIgdbImageURL(posterID, "720p")
 	posterOriginal := buildIgdbImageURL(posterID, "1080p")
-	
+
 	var additionalGalleries []models.GalleryItem
-	
+
 	for i, s := range item.Screenshots {
-		if i >= 4 { break }
+		if i >= 4 {
+			break
+		}
 
 		imgID := s.ImageID
 
@@ -124,9 +127,11 @@ func buildImages(item igdbGame) *models.Images {
 			}
 		}
 	}
-	
+
 	for i, a := range item.Artworks {
-		if i >= 4 { break }
+		if i >= 4 {
+			break
+		}
 
 		imgID := a.ImageID
 
@@ -145,7 +150,7 @@ func buildImages(item igdbGame) *models.Images {
 			}
 		}
 	}
-	
+
 	if len(additionalGalleries) > 4 {
 		additionalGalleries = additionalGalleries[:4]
 	}
@@ -174,30 +179,24 @@ func buildImages(item igdbGame) *models.Images {
 	}
 }
 
-func extractPlatforms(platforms []igdbPlatform) []models.Platform {
+func extractPlatforms(platforms []games.IgdbPlatform) []models.Platform {
 	if len(platforms) == 0 {
 		return nil
 	}
-	
+
 	res := make([]models.Platform, 0, len(platforms))
 
 	for _, p := range platforms {
-		var imgURL *string
-
-		if p.PlatformLogo.ImageID != "" {
-			imgURL = buildIgdbImageURL(p.PlatformLogo.ImageID, "cover_small")
-		}
-
 		res = append(res, models.Platform{
 			Name:     p.Name,
-			ImageURL: imgURL,
+			ImageURL: getPlatformLogo(p.PlatformLogo),
 		})
 	}
-	
+
 	return res
 }
 
-func extractAuthors(companies []igdbInvolvedCompany) []models.Author {
+func extractAuthors(companies []games.IgdbInvolvedCompany) []models.Author {
 	var authors []models.Author
 
 	for _, c := range companies {
@@ -229,7 +228,7 @@ func extractNames[T any](items []T, nameFn func(T) string) []string {
 	return names
 }
 
-func extractSeries(collections []igdbCollection, franchises []igdbFranchise) *string {
+func extractSeries(collections []games.IgdbCollection, franchises []games.IgdbFranchise) *string {
 	if len(franchises) > 0 {
 		return &franchises[0].Name
 	}
@@ -241,25 +240,33 @@ func extractSeries(collections []igdbCollection, franchises []igdbFranchise) *st
 	return nil
 }
 
+func extractPlayTime(tb *games.IgdbTimeToBeat) *models.PlayTime {
+	if tb == nil {
+		return nil
+	}
 
-func mapSearchItem(item igdbGame) models.SearchItem {
-	posterID := getImageIDFromCover(item.Cover)
-	
-	return models.SearchItem{
-		ID:            strconv.Itoa(item.ID),
-		Type:          string(models.ContentTypeGame),
-		Title:         item.Name,
-		OriginalTitle: nil,
-		Description:   buildDescription(item.Summary, item.Storyline),
-		ImageURL:      buildIgdbImageURL(posterID, "720p"),
-		ReleaseDate:   formatReleaseDate(item.FirstReleaseDate),
-		Authors:       extractAuthors(item.InvolvedCompanies),
+	return &models.PlayTime{
+		Hastily:    tb.Hastily,
+		Normally:   tb.Normally,
+		Completely: tb.Completely,
 	}
 }
 
-func mapGame(item igdbGame) models.Game {
+func MapSearchItem(game games.IgdbGame) models.SearchItem {
+	return models.SearchItem{
+		ID:          strconv.Itoa(game.ID),
+		Type:        string(models.ContentTypeGame),
+		Title:       game.Name,
+		Description: buildDescription(game.Summary, game.Storyline),
+		ImageURL:    getImageURL(game.Cover),
+		ReleaseDate: formatReleaseDate(game.FirstReleaseDate),
+		Authors:     extractAuthors(game.InvolvedCompanies),
+	}
+}
+
+func MapGame(item games.IgdbGame) models.Game {
 	posterID := getImageIDFromCover(item.Cover)
-	
+
 	return models.Game{
 		ID:          strconv.Itoa(item.ID),
 		Title:       item.Name,
@@ -271,24 +278,54 @@ func mapGame(item igdbGame) models.Game {
 		Authors:     extractAuthors(item.InvolvedCompanies),
 		Platforms:   extractPlatforms(item.Platforms),
 		Images:      buildImages(item),
-		
-		Genres: extractNames(item.Genres, func(g igdbGenre) string { return g.Name }),
-		Themes: extractNames(item.Themes, func(t igdbTheme) string { return t.Name }),
-		GameModes: extractNames(item.GameModes, func(m igdbGameMode) string { return m.Name }),
-		Series: extractSeries(item.Collections, item.Franchises),
-		
+
+		Genres:    extractNames(item.Genres, func(g games.IgdbGenre) string { return g.Name }),
+		Themes:    extractNames(item.Themes, func(t games.IgdbTheme) string { return t.Name }),
+		GameModes: extractNames(item.GameModes, func(m games.IgdbGameMode) string { return m.Name }),
+		Series:    extractSeries(item.Collections, item.Franchises),
+
 		PlayTime: extractPlayTime(item.TimeToBeats),
 	}
 }
 
-func extractPlayTime(tb *igdbTimeToBeat) *models.PlayTime {
-	if tb == nil {
+func getImageURL(img games.IgdbImage) *string {
+	if img.Url != "" {
+		if img.ImageID != "" {
+			url := fmt.Sprintf("https://images.igdb.com/igdb/image/upload/t_cover_big/%s.jpg", img.ImageID)
+			return &url
+		}
+		// IGDB URLs often start with //
+		url := "https:" + img.Url
+		return &url
+	}
+	return nil
+}
+
+func getBackdropURL(screenshots, artworks []games.IgdbImage) *string {
+	if len(screenshots) > 0 && screenshots[0].ImageID != "" {
+		url := fmt.Sprintf("https://images.igdb.com/igdb/image/upload/t_screenshot_big/%s.jpg", screenshots[0].ImageID)
+		return &url
+	}
+	if len(artworks) > 0 && artworks[0].ImageID != "" {
+		url := fmt.Sprintf("https://images.igdb.com/igdb/image/upload/t_screenshot_big/%s.jpg", artworks[0].ImageID)
+		return &url
+	}
+	return nil
+}
+
+func getReleaseDate(ts int64) *string {
+	if ts == 0 {
 		return nil
 	}
+	t := time.Unix(ts, 0)
+	s := t.Format("2006-01-02")
+	return &s
+}
 
-	return &models.PlayTime{
-		Hastily:    tb.Hastily,
-		Normally:   tb.Normally,
-		Completely: tb.Completely,
+func getPlatformLogo(logo games.IgdbPlatformLogo) *string {
+	if logo.ImageID != "" {
+		url := fmt.Sprintf("https://images.igdb.com/igdb/image/upload/t_thumb/%s.jpg", logo.ImageID)
+		return &url
 	}
+	return nil
 }

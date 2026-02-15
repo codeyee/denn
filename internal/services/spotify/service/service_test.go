@@ -1,4 +1,4 @@
-package spotify
+package service
 
 import (
 	"bytes"
@@ -40,13 +40,13 @@ func TestSearchAlbums_Success(t *testing.T) {
 		"albums": map[string]interface{}{
 			"items": []map[string]interface{}{
 				{
-					"id":           "1",
-					"name":         "OK Computer",
-					"album_type":   "album",
-					"total_tracks": 12,
-					"release_date": "1997-05-21",
-					"images":       []map[string]interface{}{{"url": "https://img.jpg", "height": 640, "width": 640}},
-					"artists":      []map[string]interface{}{{"name": "Radiohead"}},
+					"id":            "1",
+					"name":          "OK Computer",
+					"album_type":    "album",
+					"total_tracks":  12,
+					"release_date":  "1997-05-21",
+					"images":        []map[string]interface{}{{"url": "https://img.jpg", "height": 640, "width": 640}},
+					"artists":       []map[string]interface{}{{"name": "Radiohead"}},
 					"external_urls": map[string]interface{}{"spotify": "https://open.spotify.com/album/1"},
 				},
 			},
@@ -87,33 +87,33 @@ func TestSearchAlbums_FiltersSingles(t *testing.T) {
 		"albums": map[string]interface{}{
 			"items": []map[string]interface{}{
 				{
-					"id":           "1",
-					"name":         "Album One",
-					"album_type":   "album",
-					"total_tracks": 10,
-					"release_date": "2023-01-01",
-					"images":       []interface{}{},
-					"artists":      []interface{}{},
+					"id":            "1",
+					"name":          "Album One",
+					"album_type":    "album",
+					"total_tracks":  10,
+					"release_date":  "2023-01-01",
+					"images":        []interface{}{},
+					"artists":       []interface{}{},
 					"external_urls": map[string]interface{}{"spotify": ""},
 				},
 				{
-					"id":           "2",
-					"name":         "Single Track",
-					"album_type":   "single",
-					"total_tracks": 1,
-					"release_date": "2023-02-01",
-					"images":       []interface{}{},
-					"artists":      []interface{}{},
+					"id":            "2",
+					"name":          "Single Track",
+					"album_type":    "single",
+					"total_tracks":  1,
+					"release_date":  "2023-02-01",
+					"images":        []interface{}{},
+					"artists":       []interface{}{},
 					"external_urls": map[string]interface{}{"spotify": ""},
 				},
 				{
-					"id":           "3",
-					"name":         "EP Release",
-					"album_type":   "ep",
-					"total_tracks": 5,
-					"release_date": "2023-03-01",
-					"images":       []interface{}{},
-					"artists":      []interface{}{},
+					"id":            "3",
+					"name":          "EP Release",
+					"album_type":    "ep",
+					"total_tracks":  5,
+					"release_date":  "2023-03-01",
+					"images":        []interface{}{},
+					"artists":       []interface{}{},
 					"external_urls": map[string]interface{}{"spotify": ""},
 				},
 			},

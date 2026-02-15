@@ -1,4 +1,4 @@
-package spotify
+package service
 
 import (
 	"context"
@@ -10,9 +10,9 @@ import (
 	"github.com/codeyee/denn-proxy/internal/clients"
 	"github.com/codeyee/denn-proxy/internal/models"
 	spotifyclient "github.com/codeyee/denn-proxy/internal/providers/spotify"
+	"github.com/codeyee/denn-proxy/internal/services/spotify"
+	"github.com/codeyee/denn-proxy/internal/services/spotify/mapper"
 )
-
-const defaultPageSize = 20
 
 type SearchResult struct {
 	Page         int                 `json:"page"`
@@ -22,9 +22,9 @@ type SearchResult struct {
 }
 
 type BulkAlbumResult struct {
-	ID    string       `json:"id"`
+	ID    string        `json:"id"`
 	Album *models.Album `json:"data,omitempty"`
-	Error string       `json:"error,omitempty"`
+	Error string        `json:"error,omitempty"`
 }
 
 type Service struct {
@@ -73,7 +73,7 @@ func unmarshalResponse[T any](resp *clients.Response, err error) (T, error) {
 func (s *Service) SearchAlbums(ctx context.Context, query string, page, limit int) (SearchResult, error) {
 	offset := (page - 1) * limit
 
-	data, err := unmarshalResponse[spotifySearchResponse](s.client.SearchAlbums(ctx, query, limit, offset))
+	data, err := unmarshalResponse[spotify.SpotifySearchResponse](s.client.SearchAlbums(ctx, query, limit, offset))
 	if err != nil {
 		return SearchResult{}, fmt.Errorf("search albums: %w", err)
 	}
@@ -84,7 +84,7 @@ func (s *Service) SearchAlbums(ctx context.Context, query string, page, limit in
 		if albumType == "single" {
 			continue
 		}
-		items = append(items, mapSearchItem(album))
+		items = append(items, mapper.MapSearchItem(album))
 	}
 
 	totalPages := 0
@@ -101,12 +101,12 @@ func (s *Service) SearchAlbums(ctx context.Context, query string, page, limit in
 }
 
 func (s *Service) GetAlbumComplete(ctx context.Context, albumID string) (models.Album, error) {
-	data, err := unmarshalResponse[spotifyAlbum](s.client.GetAlbum(ctx, albumID))
+	data, err := unmarshalResponse[spotify.SpotifyAlbum](s.client.GetAlbum(ctx, albumID))
 	if err != nil {
 		return models.Album{}, fmt.Errorf("get album %s: %w", albumID, err)
 	}
 
-	return mapAlbumDetail(data), nil
+	return mapper.MapAlbumDetail(data), nil
 }
 
 func (s *Service) GetBulkAlbums(ctx context.Context, albumIDs []string) []BulkAlbumResult {
@@ -145,14 +145,14 @@ loop:
 func (s *Service) GetTrendingAlbums(ctx context.Context, page, limit int) (SearchResult, error) {
 	offset := (page - 1) * limit
 
-	data, err := unmarshalResponse[spotifyNewReleasesResponse](s.client.GetTrendingAlbums(ctx, limit, offset))
+	data, err := unmarshalResponse[spotify.SpotifyNewReleasesResponse](s.client.GetTrendingAlbums(ctx, limit, offset))
 	if err != nil {
 		return SearchResult{}, fmt.Errorf("get trending albums: %w", err)
 	}
 
 	items := make([]models.SearchItem, 0, len(data.Albums.Items))
 	for _, album := range data.Albums.Items {
-		items = append(items, mapSearchItem(album))
+		items = append(items, mapper.MapSearchItem(album))
 	}
 
 	totalPages := 0

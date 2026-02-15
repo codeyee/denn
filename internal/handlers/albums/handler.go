@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/codeyee/denn-proxy/internal/handlers/common"
-	spotifyservice "github.com/codeyee/denn-proxy/internal/services/spotify"
+	spotifyservice "github.com/codeyee/denn-proxy/internal/services/spotify/service"
 )
 
 const maxBulkIDs = 20

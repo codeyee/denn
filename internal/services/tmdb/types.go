@@ -1,13 +1,13 @@
 package tmdb
 
 const (
-	imageBaseURL = "https://image.tmdb.org/t/p/"
+	ImageBaseURL = "https://image.tmdb.org/t/p/"
 
-	posterSizeStandard = "w500"
-	posterSizeOriginal = "original"
+	PosterSizeStandard = "w500"
+	PosterSizeOriginal = "original"
 
-	gallerySizeStandard = "w780"
-	gallerySizeOriginal = "original"
+	GallerySizeStandard = "w780"
+	GallerySizeOriginal = "original"
 )
 
 const (
@@ -16,14 +16,14 @@ const (
 	ProviderActionBuy    = "buy"
 )
 
-type tmdbSearchResponse struct {
+type TmdbSearchResponse struct {
 	Page         int                `json:"page"`
 	TotalPages   int                `json:"total_pages"`
 	TotalResults int                `json:"total_results"`
-	Results      []tmdbSearchResult `json:"results"`
+	Results      []TmdbSearchResult `json:"results"`
 }
 
-type tmdbSearchResult struct {
+type TmdbSearchResult struct {
 	ID               int     `json:"id"`
 	Title            string  `json:"title"`
 	Name             string  `json:"name"`
@@ -40,7 +40,7 @@ type tmdbSearchResult struct {
 	OriginalLanguage string  `json:"original_language"`
 }
 
-type tmdbMovieDetail struct {
+type TmdbMovieDetail struct {
 	ID                  int                         `json:"id"`
 	Title               string                      `json:"title"`
 	OriginalTitle       string                      `json:"original_title"`
@@ -51,13 +51,13 @@ type tmdbMovieDetail struct {
 	ReleaseDate         string                      `json:"release_date"`
 	Runtime             *int                        `json:"runtime"`
 	Status              string                      `json:"status"`
-	ProductionCompanies []tmdbCompany               `json:"production_companies"`
-	ExternalIDs         *tmdbExternalIDsResponse    `json:"external_ids,omitempty"`
-	WatchProviders      *tmdbWatchProvidersResponse `json:"watch/providers,omitempty"`
-	Images              *tmdbImagesResponse         `json:"images,omitempty"`
+	ProductionCompanies []TmdbCompany               `json:"production_companies"`
+	ExternalIDs         *TmdbExternalIDsResponse    `json:"external_ids,omitempty"`
+	WatchProviders      *TmdbWatchProvidersResponse `json:"watch/providers,omitempty"`
+	Images              *TmdbImagesResponse         `json:"images,omitempty"`
 }
 
-type tmdbTVDetail struct {
+type TmdbTVDetail struct {
 	ID                  int                         `json:"id"`
 	Name                string                      `json:"name"`
 	OriginalName        string                      `json:"original_name"`
@@ -69,14 +69,14 @@ type tmdbTVDetail struct {
 	Status              string                      `json:"status"`
 	NumberOfSeasons     *int                        `json:"number_of_seasons"`
 	NumberOfEpisodes    *int                        `json:"number_of_episodes"`
-	ProductionCompanies []tmdbCompany               `json:"production_companies"`
-	Seasons             []tmdbSeasonSummary         `json:"seasons"`
-	ExternalIDs         *tmdbExternalIDsResponse    `json:"external_ids,omitempty"`
-	WatchProviders      *tmdbWatchProvidersResponse `json:"watch/providers,omitempty"`
-	Images              *tmdbImagesResponse         `json:"images,omitempty"`
+	ProductionCompanies []TmdbCompany               `json:"production_companies"`
+	Seasons             []TmdbSeasonSummary         `json:"seasons"`
+	ExternalIDs         *TmdbExternalIDsResponse    `json:"external_ids,omitempty"`
+	WatchProviders      *TmdbWatchProvidersResponse `json:"watch/providers,omitempty"`
+	Images              *TmdbImagesResponse         `json:"images,omitempty"`
 }
 
-type tmdbSeasonSummary struct {
+type TmdbSeasonSummary struct {
 	ID           int     `json:"id"`
 	SeasonNumber int     `json:"season_number"`
 	Name         string  `json:"name"`
@@ -86,17 +86,17 @@ type tmdbSeasonSummary struct {
 	EpisodeCount int     `json:"episode_count"`
 }
 
-type tmdbSeasonDetail struct {
+type TmdbSeasonDetail struct {
 	ID           int           `json:"id"`
 	SeasonNumber int           `json:"season_number"`
 	Name         string        `json:"name"`
 	Overview     string        `json:"overview"`
 	PosterPath   *string       `json:"poster_path"`
 	AirDate      string        `json:"air_date"`
-	Episodes     []tmdbEpisode `json:"episodes"`
+	Episodes     []TmdbEpisode `json:"episodes"`
 }
 
-type tmdbEpisode struct {
+type TmdbEpisode struct {
 	ID            int     `json:"id"`
 	EpisodeNumber int     `json:"episode_number"`
 	SeasonNumber  int     `json:"season_number"`
@@ -108,36 +108,36 @@ type tmdbEpisode struct {
 	EpisodeType   string  `json:"episode_type"`
 }
 
-type tmdbCompany struct {
+type TmdbCompany struct {
 	ID   int    `json:"id"`
 	Name string `json:"name"`
 }
 
-type tmdbExternalIDsResponse struct {
+type TmdbExternalIDsResponse struct {
 	ImdbID *string `json:"imdb_id"`
 }
 
-type tmdbWatchProvidersResponse struct {
-	Results map[string]tmdbCountryProviders `json:"results"`
+type TmdbWatchProvidersResponse struct {
+	Results map[string]TmdbCountryProviders `json:"results"`
 }
 
-type tmdbCountryProviders struct {
-	Flatrate []tmdbProvider `json:"flatrate"`
-	Rent     []tmdbProvider `json:"rent"`
-	Buy      []tmdbProvider `json:"buy"`
+type TmdbCountryProviders struct {
+	Flatrate []TmdbProvider `json:"flatrate"`
+	Rent     []TmdbProvider `json:"rent"`
+	Buy      []TmdbProvider `json:"buy"`
 }
 
-type tmdbProvider struct {
+type TmdbProvider struct {
 	ProviderID   int    `json:"provider_id"`
 	ProviderName string `json:"provider_name"`
 	LogoPath     string `json:"logo_path"`
 }
 
-type tmdbImagesResponse struct {
-	Backdrops []tmdbImage `json:"backdrops"`
-	Posters   []tmdbImage `json:"posters"`
+type TmdbImagesResponse struct {
+	Backdrops []TmdbImage `json:"backdrops"`
+	Posters   []TmdbImage `json:"posters"`
 }
 
-type tmdbImage struct {
+type TmdbImage struct {
 	FilePath string `json:"file_path"`
 }

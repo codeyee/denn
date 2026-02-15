@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/codeyee/denn-proxy/internal/handlers/common"
-	gamesservice "github.com/codeyee/denn-proxy/internal/services/games"
+	gamesservice "github.com/codeyee/denn-proxy/internal/services/games/service"
 )
 
 const maxBulkIDs = 50
@@ -30,7 +30,7 @@ func (h *Handler) Search(c *gin.Context) {
 	}
 
 	page, limit := common.ParsePagination(c)
-	
+
 	offset := (page - 1) * limit
 
 	result, err := h.service.SearchGames(c.Request.Context(), query, limit, offset)
@@ -40,7 +40,7 @@ func (h *Handler) Search(c *gin.Context) {
 		common.HandleServiceError(c, err)
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, common.PaginatedResponse{
 		Metadata: common.PaginationMetadata{
 			Page:         page,
@@ -111,20 +111,20 @@ func (h *Handler) Bulk(c *gin.Context) {
 
 func (h *Handler) Trending(c *gin.Context) {
 	page, limit := common.ParsePagination(c)
-	
+
 	offset := (page - 1) * limit
-	
+
 	results, err := h.service.GetTrendingGames(c.Request.Context(), limit, offset)
 
 	if err != nil {
 		common.HandleServiceError(c, err)
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, common.PaginatedResponse{
 		Metadata: common.PaginationMetadata{
-			Page: page,
-			TotalPages: 0,
+			Page:         page,
+			TotalPages:   0,
 			TotalResults: 0,
 		},
 		Results: results,

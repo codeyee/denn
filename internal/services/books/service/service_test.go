@@ -1,4 +1,4 @@
-package books
+package service
 
 import (
 	"bytes"
@@ -41,17 +41,17 @@ func TestSearchBooks_Success(t *testing.T) {
 		"docs": []map[string]interface{}{
 			{
 				"key":                "works/OL274505W",
-				"title":             "Harry Potter",
-				"author_name":       []string{"J.K. Rowling"},
-				"cover_i":           12345,
+				"title":              "Harry Potter",
+				"author_name":        []string{"J.K. Rowling"},
+				"cover_i":            12345,
 				"first_publish_year": 1997,
-				"first_sentence":    []string{"Mr and Mrs Dursley..."},
+				"first_sentence":     []string{"Mr and Mrs Dursley..."},
 			},
 			{
 				"key":                "/works/OL82563W",
-				"title":             "The Lord of the Rings",
-				"author_name":       []string{"J.R.R. Tolkien"},
-				"cover_i":           67890,
+				"title":              "The Lord of the Rings",
+				"author_name":        []string{"J.R.R. Tolkien"},
+				"cover_i":            67890,
 				"first_publish_year": 1954,
 			},
 		},
@@ -199,7 +199,7 @@ func TestGetTrendingBooks_Success(t *testing.T) {
 	for i := 0; i < 25; i++ {
 		docs[i] = map[string]interface{}{
 			"key":                "/works/OL" + string(rune('A'+i)) + "W",
-			"title":             "Book " + string(rune('A'+i)),
+			"title":              "Book " + string(rune('A'+i)),
 			"first_publish_year": 2000 + i,
 		}
 	}

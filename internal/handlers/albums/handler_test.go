@@ -12,7 +12,7 @@ import (
 
 	"github.com/codeyee/denn-proxy/internal/clients"
 	"github.com/codeyee/denn-proxy/internal/providers/spotify"
-	spotifyservice "github.com/codeyee/denn-proxy/internal/services/spotify"
+	spotifyservice "github.com/codeyee/denn-proxy/internal/services/spotify/service"
 	"github.com/gin-gonic/gin"
 )
 

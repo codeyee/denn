@@ -1,10 +1,11 @@
-package books
+package mapper
 
 import (
 	"testing"
 
 	"github.com/codeyee/denn-proxy/internal/models"
 	"github.com/codeyee/denn-proxy/internal/providers/openlibrary"
+	"github.com/codeyee/denn-proxy/internal/services/books"
 )
 
 func stringPtr(s string) *string {
@@ -196,7 +197,7 @@ func TestFormatReleaseDate(t *testing.T) {
 }
 
 func TestMapSearchItem(t *testing.T) {
-	doc := olDoc{
+	doc := books.OlDoc{
 		Key:              "/works/OL274505W",
 		Title:            "Harry Potter and the Philosopher's Stone",
 		AuthorName:       []string{"J.K. Rowling"},
@@ -205,7 +206,7 @@ func TestMapSearchItem(t *testing.T) {
 		FirstSentence:    []string{"Mr and Mrs Dursley, of number four, Privet Drive, were proud to say that they were perfectly normal, thank you very much."},
 	}
 
-	result := mapSearchItem(doc)
+	result := MapSearchItem(doc)
 
 	if result.ID != "OL274505W" {
 		t.Errorf("expected ID 'OL274505W', got %s", result.ID)
@@ -234,12 +235,12 @@ func TestMapSearchItem(t *testing.T) {
 }
 
 func TestMapSearchItem_MinimalData(t *testing.T) {
-	doc := olDoc{
+	doc := books.OlDoc{
 		Key:   "/works/OL1W",
 		Title: "Unknown Book",
 	}
 
-	result := mapSearchItem(doc)
+	result := MapSearchItem(doc)
 
 	if result.ID != "OL1W" {
 		t.Errorf("expected ID 'OL1W', got %s", result.ID)
@@ -262,7 +263,7 @@ func TestMapSearchItem_MinimalData(t *testing.T) {
 }
 
 func TestMapBook(t *testing.T) {
-	doc := olDoc{
+	doc := books.OlDoc{
 		Key:              "/works/OL274505W",
 		Title:            "Harry Potter and the Philosopher's Stone",
 		AuthorName:       []string{"J.K. Rowling"},
@@ -272,7 +273,7 @@ func TestMapBook(t *testing.T) {
 		NumberOfPages:    intPtr(309),
 	}
 
-	result := mapBook(doc)
+	result := MapBook(doc)
 
 	if result.ID != "OL274505W" {
 		t.Errorf("expected ID 'OL274505W', got %s", result.ID)
@@ -307,12 +308,12 @@ func TestMapBook(t *testing.T) {
 }
 
 func TestMapBook_NoCover(t *testing.T) {
-	doc := olDoc{
+	doc := books.OlDoc{
 		Key:   "/works/OL1W",
 		Title: "No Cover Book",
 	}
 
-	result := mapBook(doc)
+	result := MapBook(doc)
 
 	if result.ImageURL != nil {
 		t.Errorf("expected nil ImageURL, got %v", *result.ImageURL)

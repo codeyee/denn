@@ -24,15 +24,15 @@ import (
 	"github.com/codeyee/denn-proxy/internal/middleware"
 
 	tmdbclient "github.com/codeyee/denn-proxy/internal/providers/tmdb"
-	tmdbservice "github.com/codeyee/denn-proxy/internal/services/tmdb"
+	tmdbservice "github.com/codeyee/denn-proxy/internal/services/tmdb/service"
 
 	igdbclient "github.com/codeyee/denn-proxy/internal/providers/igdb"
 	olclient "github.com/codeyee/denn-proxy/internal/providers/openlibrary"
 	spotifyclient "github.com/codeyee/denn-proxy/internal/providers/spotify"
 
-	booksservice "github.com/codeyee/denn-proxy/internal/services/books"
-	gamesservice "github.com/codeyee/denn-proxy/internal/services/games"
-	spotifyservice "github.com/codeyee/denn-proxy/internal/services/spotify"
+	booksservice "github.com/codeyee/denn-proxy/internal/services/books/service"
+	gamesservice "github.com/codeyee/denn-proxy/internal/services/games/service"
+	spotifyservice "github.com/codeyee/denn-proxy/internal/services/spotify/service"
 )
 
 func main() {
@@ -131,7 +131,6 @@ func main() {
 			books.GET("/:id", bookHandler.Detail)
 		}
 	}
-
 
 	addr := fmt.Sprintf(":%s", cfg.Port)
 

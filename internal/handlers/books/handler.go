@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/codeyee/denn-proxy/internal/handlers/common"
-	booksservice "github.com/codeyee/denn-proxy/internal/services/books"
+	booksservice "github.com/codeyee/denn-proxy/internal/services/books/service"
 )
 
 const maxBulkIDs = 20

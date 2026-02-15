@@ -1,4 +1,4 @@
-package books
+package mapper
 
 import (
 	"fmt"
@@ -7,6 +7,7 @@ import (
 
 	"github.com/codeyee/denn-proxy/internal/models"
 	"github.com/codeyee/denn-proxy/internal/providers/openlibrary"
+	"github.com/codeyee/denn-proxy/internal/services/books"
 )
 
 func buildCoverURL(coverID int, size string) string {
@@ -91,22 +92,22 @@ func formatReleaseDate(firstPublishYear *int) *string {
 	return &date
 }
 
-func mapSearchItem(doc olDoc) models.SearchItem {
+func MapSearchItem(doc books.OlDoc) models.SearchItem {
 	title := doc.Title
 
 	return models.SearchItem{
-		ID:          extractID(doc.Key),
-		Type:        string(models.ContentTypeBook),
-		Title:       title,
+		ID:            extractID(doc.Key),
+		Type:          string(models.ContentTypeBook),
+		Title:         title,
 		OriginalTitle: &title,
-		Authors:     mapAuthors(doc.AuthorName),
-		ImageURL:    buildImageURL(doc.CoverI),
-		ReleaseDate: formatReleaseDate(doc.FirstPublishYear),
-		Description: extractDescription(doc.FirstSentence),
+		Authors:       mapAuthors(doc.AuthorName),
+		ImageURL:      buildImageURL(doc.CoverI),
+		ReleaseDate:   formatReleaseDate(doc.FirstPublishYear),
+		Description:   extractDescription(doc.FirstSentence),
 	}
 }
 
-func mapBook(doc olDoc) models.Book {
+func MapBook(doc books.OlDoc) models.Book {
 	return models.Book{
 		ID:          extractID(doc.Key),
 		Title:       doc.Title,

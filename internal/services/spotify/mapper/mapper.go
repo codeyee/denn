@@ -1,12 +1,13 @@
-package spotify
+package mapper
 
 import (
 	"math"
 
 	"github.com/codeyee/denn-proxy/internal/models"
+	"github.com/codeyee/denn-proxy/internal/services/spotify"
 )
 
-func getImageURL(images []spotifyImage, size string) *string {
+func getImageURL(images []spotify.SpotifyImage, size string) *string {
 	if len(images) == 0 {
 		return nil
 	}
@@ -29,7 +30,7 @@ func getImageURL(images []spotifyImage, size string) *string {
 	}
 }
 
-func buildImages(images []spotifyImage) *models.Images {
+func buildImages(images []spotify.SpotifyImage) *models.Images {
 	if len(images) == 0 {
 		return nil
 	}
@@ -47,7 +48,7 @@ func buildImages(images []spotifyImage) *models.Images {
 	}
 }
 
-func mapArtists(artists []spotifyArtist) []models.Author {
+func mapArtists(artists []spotify.SpotifyArtist) []models.Author {
 	if len(artists) == 0 {
 		return nil
 	}
@@ -112,7 +113,7 @@ func toMinutes(totalSeconds int) *int {
 	return &m
 }
 
-func mapTrack(t spotifyTrack) models.Track {
+func mapTrack(t spotify.SpotifyTrack) models.Track {
 	var durationSeconds *int
 	if t.DurationMs > 0 {
 		s := int(math.Round(float64(t.DurationMs) / 1000))
@@ -135,7 +136,7 @@ func mapTrack(t spotifyTrack) models.Track {
 	}
 }
 
-func mapSearchItem(item spotifyAlbum) models.SearchItem {
+func MapSearchItem(item spotify.SpotifyAlbum) models.SearchItem {
 	return models.SearchItem{
 		ID:          item.ID,
 		Type:        string(models.ContentTypeAlbum),
@@ -146,7 +147,7 @@ func mapSearchItem(item spotifyAlbum) models.SearchItem {
 	}
 }
 
-func mapAlbumDetail(data spotifyAlbum) models.Album {
+func MapAlbumDetail(data spotify.SpotifyAlbum) models.Album {
 	var tracks []models.Track
 	var totalDurationSeconds int
 
