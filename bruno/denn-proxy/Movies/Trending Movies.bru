@@ -1,13 +1,13 @@
 meta {
-  name: Trending TV Shows
+  name: Trending Movies
   type: http
   seq: 2
 }
 
 get {
-  url: {{BASE_URL}}/tv_shows/trending?page=1&limit=20
+  url: {{BASE_URL}}/movies/trending?page=1&limit=20
   body: none
-  auth: none
+  auth: inherit
 }
 
 query {
