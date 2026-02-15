@@ -140,7 +140,7 @@ func (c *Client) fetchNewToken() (string, int, error) {
 	req.Header.Set("Authorization", fmt.Sprintf("Basic %s", encoded))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return "", 0, fmt.Errorf("spotify auth request: %w", err)
 	}

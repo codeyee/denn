@@ -2,7 +2,6 @@ package tvshows
 
 import (
 	"context"
-	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -10,19 +9,23 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/codeyee/denn-proxy/internal/clients"
 	"github.com/codeyee/denn-proxy/internal/providers/tmdb"
 	tmdbservice "github.com/codeyee/denn-proxy/internal/services/tmdb"
+	"github.com/gin-gonic/gin"
 )
 
 type NoOpCache struct{}
 
 func (NoOpCache) Get(ctx context.Context, key string) ([]byte, error) { return nil, nil }
-func (NoOpCache) Set(ctx context.Context, key string, value []byte, ttl time.Duration) error { return nil }
+func (NoOpCache) Set(ctx context.Context, key string, value []byte, ttl time.Duration) error {
+	return nil
+}
 func (NoOpCache) DeletePattern(ctx context.Context, pattern string) (int64, error) { return 0, nil }
-func (NoOpCache) Incr(ctx context.Context, key string) (int64, error) { return 0, nil }
-func (NoOpCache) Expire(ctx context.Context, key string, ttl time.Duration) (bool, error) { return true, nil }
+func (NoOpCache) Incr(ctx context.Context, key string) (int64, error)              { return 0, nil }
+func (NoOpCache) Expire(ctx context.Context, key string, ttl time.Duration) (bool, error) {
+	return true, nil
+}
 func (NoOpCache) Close() error { return nil }
 
 type RoundTripFunc func(req *http.Request) *http.Response
@@ -45,7 +48,7 @@ func setupTestHandler(client *http.Client) *gin.Engine {
 
 	r.GET("/tv_shows/search", handler.Search)
 	r.GET("/tv_shows/:id", handler.Detail)
-	
+
 	return r
 }
 

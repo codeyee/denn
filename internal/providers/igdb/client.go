@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 	"sync"
 	"time"
 
@@ -13,11 +14,11 @@ import (
 )
 
 const (
-	AuthURL       = "https://id.twitch.tv/oauth2/token"
-	BaseURL       = "https://api.igdb.com/v4"
-	TokenKey      = "auth:igdb:token"
+	AuthURL        = "https://id.twitch.tv/oauth2/token"
+	BaseURL        = "https://api.igdb.com/v4"
+	TokenKey       = "auth:igdb:token"
 	TokenExpiryKey = "auth:igdb:expiry"
-	TokenBuffer   = 5 * time.Minute
+	TokenBuffer    = 5 * time.Minute
 )
 
 type Client struct {
@@ -83,7 +84,7 @@ func (c *Client) getAuthHeaders() map[string]string {
 	}
 
 	return map[string]string{
-		"Client-ID":    c.clientID,
+		"Client-ID":     c.clientID,
 		"Authorization": fmt.Sprintf("Bearer %s", token),
 		"Content-Type":  "text/plain",
 		"Accept":        "application/json",
@@ -126,7 +127,7 @@ func (c *Client) getOrRefreshToken() (string, error) {
 	if ttl < 0 {
 		ttl = 1 * time.Minute
 	}
-	
+
 	_ = c.cache.Set(ctx, TokenKey, []byte(token), ttl)
 
 	c.token = token
@@ -139,7 +140,13 @@ func (c *Client) fetchNewToken() (string, int, error) {
 	params.Set("client_secret", c.clientSecret)
 	params.Set("grant_type", "client_credentials")
 
-	resp, err := http.PostForm(AuthURL, params)
+	req, err := http.NewRequest(http.MethodPost, AuthURL, strings.NewReader(params.Encode()))
+	if err != nil {
+		return "", 0, err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, err := c.HTTPClient().Do(req)
 	if err != nil {
 		return "", 0, err
 	}
