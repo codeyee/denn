@@ -17,6 +17,9 @@ import (
 
 	tmdbclient "github.com/codeyee/denn-proxy/internal/providers/tmdb"
 	tmdbservice "github.com/codeyee/denn-proxy/internal/services/tmdb"
+
+	igdbclient "github.com/codeyee/denn-proxy/internal/providers/igdb"
+	gamesservice "github.com/codeyee/denn-proxy/internal/services/games"
 )
 
 func main() {
@@ -39,8 +42,12 @@ func main() {
 	tmdbClient := tmdbclient.NewClient(cfg.TmdbApiKey, cache)
 	tmdbSvc := tmdbservice.NewService(tmdbClient)
 
+	igdbClient := igdbclient.NewClient(cfg.IgdbClientID, cfg.IgdbClientSecret, cache)
+	gamesSvc := gamesservice.NewService(igdbClient)
+
 	movieHandler := handlers.NewMovieHandler(tmdbSvc)
 	tvHandler := handlers.NewTVShowHandler(tmdbSvc)
+	gamesHandler := handlers.NewGamesHandler(gamesSvc)
 
 	r := gin.Default()
 
@@ -62,7 +69,16 @@ func main() {
 			tv.GET("/:id", tvHandler.Detail)
 			tv.GET("/:id/seasons/:season_number", tvHandler.SeasonDetail)
 		}
+
+		games := api.Group("/games")
+		{
+			games.GET("/search", gamesHandler.Search)
+			games.GET("/bulk", gamesHandler.Bulk)
+			games.GET("/trending", gamesHandler.Trending)
+			games.GET("/:id", gamesHandler.Detail)
+		}
 	}
+
 
 	addr := fmt.Sprintf(":%s", cfg.Port)
 

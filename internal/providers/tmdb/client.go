@@ -18,9 +18,9 @@ var cacheConfig = clients.CacheConfig{
 	},
 
 	TTLs: map[string]time.Duration{
-		"search_movies":          6 * time.Hour,
-		"search_tv":              6 * time.Hour,
-		"details":                12 * time.Hour,
+		"search_movies":          24 * time.Hour,
+		"search_tv":              24 * time.Hour,
+		"details":                48 * time.Hour,
 		"images_season":          7 * 24 * time.Hour,
 		"watch_providers_season": 7 * 24 * time.Hour,
 	},

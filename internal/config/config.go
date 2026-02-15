@@ -37,6 +37,10 @@ func LoadConfig() (*Config, error) {
 		return nil, fmt.Errorf("TMDB_API_KEY is required")
 	}
 
+	if cfg.IgdbClientID == "" || cfg.IgdbClientSecret == "" {
+		return nil, fmt.Errorf("IGDB_CLIENT_ID and IGDB_CLIENT_SECRET are required")
+	}
+
 	return cfg, nil
 }
 
