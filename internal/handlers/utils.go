@@ -3,7 +3,21 @@ package handlers
 import (
 	"strconv"
 	"strings"
+
+	"github.com/gin-gonic/gin"
 )
+
+const defaultImagesSize = 10
+
+func parseImagesSize(c *gin.Context) int {
+	if v := c.Query("images_size"); v != "" {
+		if parsed, err := strconv.Atoi(v); err == nil && parsed > 0 {
+			return parsed
+		}
+	}
+
+	return defaultImagesSize
+}
 
 func parseIDs(s string) ([]int, error) {
 	parts := strings.Split(s, ",")

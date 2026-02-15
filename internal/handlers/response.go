@@ -1,10 +1,6 @@
 package handlers
 
-import (
-	"strconv"
-
-	"github.com/gin-gonic/gin"
-)
+import "github.com/gin-gonic/gin"
 
 const (
 	CodeMissingParameter = "MISSING_PARAMETER"
@@ -19,15 +15,15 @@ type ErrorResponse struct {
 	Message string `json:"message"`
 }
 
-type PaginationMeta struct {
+type PaginationMetadata struct {
 	Page         int `json:"page"`
 	TotalPages   int `json:"total_pages"`
 	TotalResults int `json:"total_results"`
 }
 
 type PaginatedResponse struct {
-	Metadata PaginationMeta `json:"metadata"`
-	Results  any            `json:"results"`
+	Metadata PaginationMetadata `json:"metadata"`
+	Results  any                `json:"results"`
 }
 
 func respondError(c *gin.Context, statusCode int, code, message string) {
@@ -35,16 +31,4 @@ func respondError(c *gin.Context, statusCode int, code, message string) {
 		Code:    code,
 		Message: message,
 	})
-}
-
-const defaultImagesSize = 10
-
-func parseImagesSize(c *gin.Context) int {
-	if v := c.Query("images_size"); v != "" {
-		if parsed, err := strconv.Atoi(v); err == nil && parsed > 0 {
-			return parsed
-		}
-	}
-
-	return defaultImagesSize
 }

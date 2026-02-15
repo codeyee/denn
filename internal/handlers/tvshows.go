@@ -42,7 +42,7 @@ func (h *TVShowHandler) Search(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, PaginatedResponse{
-		Metadata: PaginationMeta{
+		Metadata: PaginationMetadata{
 			Page:         result.Page,
 			TotalPages:   result.TotalPages,
 			TotalResults: result.TotalResults,
