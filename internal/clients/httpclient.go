@@ -47,6 +47,12 @@ func WithAPIName(name string) ClientOption {
 	}
 }
 
+func WithHTTPClient(client *http.Client) ClientOption {
+	return func(c *BaseClient) {
+		c.httpClient = client
+	}
+}
+
 func defaultHeaders() map[string]string {
 	return map[string]string{
 		"Content-Type": "application/json",

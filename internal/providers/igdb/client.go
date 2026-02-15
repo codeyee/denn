@@ -35,7 +35,7 @@ type AuthResponse struct {
 	TokenType   string `json:"token_type"`
 }
 
-func NewClient(clientID, clientSecret string, cache clients.Cache) *Client {
+func NewClient(clientID, clientSecret string, cache clients.Cache, opts ...clients.ClientOption) *Client {
 	c := &Client{
 		clientID:     clientID,
 		clientSecret: clientSecret,
@@ -43,8 +43,10 @@ func NewClient(clientID, clientSecret string, cache clients.Cache) *Client {
 	}
 
 	baseClient := clients.NewBaseClient(BaseURL,
-		clients.WithAPIName("igdb"),
-		clients.WithHeaders(c.getAuthHeaders),
+		append([]clients.ClientOption{
+			clients.WithAPIName("igdb"),
+			clients.WithHeaders(c.getAuthHeaders),
+		}, opts...)...,
 	)
 
 	cacheConfig := clients.CacheConfig{
