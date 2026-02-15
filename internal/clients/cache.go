@@ -86,3 +86,21 @@ func (r *RedisCache) DeletePattern(ctx context.Context, pattern string) (int64, 
 func (r *RedisCache) Close() error {
 	return r.client.Close()
 }
+
+type NoOpCache struct{}
+
+func (NoOpCache) Get(context.Context, string) ([]byte, error) {
+	return nil, nil
+}
+
+func (NoOpCache) Set(context.Context, string, []byte, time.Duration) error {
+	return nil
+}
+
+func (NoOpCache) DeletePattern(context.Context, string) (int64, error) {
+	return 0, nil
+}
+
+func (NoOpCache) Close() error {
+	return nil
+}

@@ -17,9 +17,14 @@ import (
 func main() {
 	cfg := config.LoadConfig()
 
-	cache, err := clients.NewRedisCache(cfg.RedisURL)
+	var cache clients.Cache
+
+	redisCache, err := clients.NewRedisCache(cfg.RedisURL)
 	if err != nil {
 		log.Printf("Warning: Redis unavailable (%v), continuing without cache\n", err)
+		cache = clients.NoOpCache{}
+	} else {
+		cache = redisCache
 	}
 
 	tmdbClient := tmdbclient.NewClient(cfg.TmdbApiKey, cache)
