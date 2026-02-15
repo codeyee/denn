@@ -86,7 +86,7 @@ func TestSearchMovies(t *testing.T) {
 			client := tmdbclient.NewClient("test-key", clients.NoOpCache{}, clients.WithHTTPClient(&http.Client{Transport: mockTransport}))
 			service := NewService(client)
 
-			result, err := service.SearchMovies(context.Background(), tt.query, tt.page)
+			result, err := service.SearchMovies(context.Background(), tt.query, tt.page, 20)
 
 			if tt.expectError {
 				if err == nil {
@@ -158,7 +158,7 @@ func TestGetPopularMovies(t *testing.T) {
 			client := tmdbclient.NewClient("test-key", clients.NoOpCache{}, clients.WithHTTPClient(&http.Client{Transport: mockTransport}))
 			service := NewService(client)
 
-			result, err := service.GetPopularMovies(context.Background(), tt.page)
+			result, err := service.GetPopularMovies(context.Background(), tt.page, 20)
 
 			if tt.expectError {
 				if err == nil {

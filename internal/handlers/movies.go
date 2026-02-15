@@ -30,13 +30,9 @@ func (h *MovieHandler) Search(c *gin.Context) {
 		return
 	}
 
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	page, limit := parsePagination(c)
 
-	if page < 1 {
-		page = 1
-	}
-
-	result, err := h.service.SearchMovies(c.Request.Context(), query, page)
+	result, err := h.service.SearchMovies(c.Request.Context(), query, page, limit)
 
 	if err != nil {
 		respondError(c, http.StatusInternalServerError, CodeInternalError, "failed to search movies")
@@ -54,13 +50,9 @@ func (h *MovieHandler) Search(c *gin.Context) {
 }
 
 func (h *MovieHandler) Trending(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	page, limit := parsePagination(c)
 
-	if page < 1 {
-		page = 1
-	}
-
-	result, err := h.service.GetPopularMovies(c.Request.Context(), page)
+	result, err := h.service.GetPopularMovies(c.Request.Context(), page, limit)
 
 	if err != nil {
 		respondError(c, http.StatusInternalServerError, CodeInternalError, "failed to get trending movies")
@@ -85,8 +77,7 @@ func (h *MovieHandler) Detail(c *gin.Context) {
 		return
 	}
 
-	country := c.DefaultQuery("country", "US")
-	imagesSize := parseImagesSize(c)
+	country := getCountryFromHeader(c)
 
 	movie, err := h.service.GetMovieComplete(c.Request.Context(), id, country)
 
@@ -100,7 +91,7 @@ func (h *MovieHandler) Detail(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, movie.ToResponse(imagesSize))
+	c.JSON(http.StatusOK, movie.ToResponse())
 }
 
 func (h *MovieHandler) Bulk(c *gin.Context) {
@@ -128,15 +119,14 @@ func (h *MovieHandler) Bulk(c *gin.Context) {
 		return
 	}
 
-	country := c.DefaultQuery("country", "US")
-	imagesSize := parseImagesSize(c)
+	country := getCountryFromHeader(c)
 
 	results := h.service.GetBulkMovies(c.Request.Context(), ids, country)
 
 	response := make([]any, 0, len(results))
 	for _, r := range results {
 		if r.Movie != nil {
-			response = append(response, r.Movie.ToResponse(imagesSize))
+			response = append(response, r.Movie.ToResponse())
 		}
 	}
 

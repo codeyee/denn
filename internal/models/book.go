@@ -24,7 +24,7 @@ type BookResponse struct {
 	Images      []ImageEntry `json:"images,omitempty"`
 }
 
-func (b *Book) ToResponse(imagesSize int) BookResponse {
+func (b *Book) ToResponse() BookResponse {
 	resp := BookResponse{
 		ID:          b.ID,
 		Type:        b.ContentType,
@@ -37,7 +37,7 @@ func (b *Book) ToResponse(imagesSize int) BookResponse {
 	}
 
 	if b.Images != nil {
-		resp.Images = b.Images.ToList(imagesSize)
+		resp.Images = b.Images.ToList(DefaultImagesSize)
 	}
 
 	return resp

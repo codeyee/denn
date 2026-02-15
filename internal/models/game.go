@@ -42,7 +42,7 @@ type GameResponse struct {
 	Images           []ImageEntry `json:"images,omitempty"`
 }
 
-func (g *Game) ToResponse(imagesSize int) GameResponse {
+func (g *Game) ToResponse() GameResponse {
 	resp := GameResponse{
 		ID:          g.ID,
 		Type:        g.ContentType,
@@ -61,7 +61,7 @@ func (g *Game) ToResponse(imagesSize int) GameResponse {
 	}
 
 	if g.Images != nil {
-		resp.Images = g.Images.ToList(imagesSize)
+		resp.Images = g.Images.ToList(DefaultImagesSize)
 	}
 
 	return resp

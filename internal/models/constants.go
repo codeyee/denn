@@ -36,4 +36,6 @@ const (
 	AlbumTypeAlbum  AlbumType = "album"
 	AlbumTypeEP     AlbumType = "ep"
 	AlbumTypeSingle AlbumType = "single"
+
+	DefaultImagesSize = 10
 )

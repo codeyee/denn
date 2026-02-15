@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 
@@ -30,13 +29,9 @@ func (h *BookHandler) Search(c *gin.Context) {
 		return
 	}
 
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	page, limit := parsePagination(c)
 
-	if page < 1 {
-		page = 1
-	}
-
-	result, err := h.service.SearchBooks(c.Request.Context(), query, page)
+	result, err := h.service.SearchBooks(c.Request.Context(), query, page, limit)
 
 	if err != nil {
 		respondError(c, http.StatusInternalServerError, CodeInternalError, "failed to search books")
@@ -61,8 +56,6 @@ func (h *BookHandler) Detail(c *gin.Context) {
 		return
 	}
 
-	imagesSize := parseImagesSize(c)
-
 	book, err := h.service.GetBookComplete(c.Request.Context(), bookID)
 
 	if err != nil {
@@ -75,7 +68,7 @@ func (h *BookHandler) Detail(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, book.ToResponse(imagesSize))
+	c.JSON(http.StatusOK, book.ToResponse())
 }
 
 func (h *BookHandler) Bulk(c *gin.Context) {
@@ -98,14 +91,12 @@ func (h *BookHandler) Bulk(c *gin.Context) {
 		return
 	}
 
-	imagesSize := parseImagesSize(c)
-
 	results := h.service.GetBulkBooks(c.Request.Context(), ids)
 
 	response := make([]any, 0, len(results))
 	for _, r := range results {
 		if r.Book != nil {
-			response = append(response, r.Book.ToResponse(imagesSize))
+			response = append(response, r.Book.ToResponse())
 		}
 	}
 
@@ -113,13 +104,9 @@ func (h *BookHandler) Bulk(c *gin.Context) {
 }
 
 func (h *BookHandler) Trending(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	page, limit := parsePagination(c)
 
-	if page < 1 {
-		page = 1
-	}
-
-	result, err := h.service.GetTrendingBooks(c.Request.Context(), page)
+	result, err := h.service.GetTrendingBooks(c.Request.Context(), page, limit)
 
 	if err != nil {
 		respondError(c, http.StatusInternalServerError, CodeInternalError, "failed to get trending books")

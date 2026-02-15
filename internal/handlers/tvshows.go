@@ -28,13 +28,9 @@ func (h *TVShowHandler) Search(c *gin.Context) {
 		return
 	}
 
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	page, limit := parsePagination(c)
 
-	if page < 1 {
-		page = 1
-	}
-
-	result, err := h.service.SearchTVShows(c.Request.Context(), query, page)
+	result, err := h.service.SearchTVShows(c.Request.Context(), query, page, limit)
 
 	if err != nil {
 		respondError(c, http.StatusInternalServerError, CodeInternalError, "failed to search tv shows")
@@ -52,13 +48,9 @@ func (h *TVShowHandler) Search(c *gin.Context) {
 }
 
 func (h *TVShowHandler) Trending(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	page, limit := parsePagination(c)
 
-	if page < 1 {
-		page = 1
-	}
-
-	result, err := h.service.GetPopularTVShows(c.Request.Context(), page)
+	result, err := h.service.GetPopularTVShows(c.Request.Context(), page, limit)
 
 	if err != nil {
 		respondError(c, http.StatusInternalServerError, CodeInternalError, "failed to get trending tv shows")
@@ -83,11 +75,9 @@ func (h *TVShowHandler) Detail(c *gin.Context) {
 		return
 	}
 
-	country := c.DefaultQuery("country", "US")
-	expandSeasons := c.Query("expand") == "seasons"
-	imagesSize := parseImagesSize(c)
+	country := getCountryFromHeader(c)
 
-	show, err := h.service.GetTVShowComplete(c.Request.Context(), id, country, expandSeasons)
+	show, err := h.service.GetTVShowComplete(c.Request.Context(), id, country)
 
 	if err != nil {
 		if errors.Is(err, clients.ErrNotFound) {
@@ -99,7 +89,7 @@ func (h *TVShowHandler) Detail(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, show.ToResponse(imagesSize))
+	c.JSON(http.StatusOK, show.ToResponse())
 }
 
 func (h *TVShowHandler) SeasonDetail(c *gin.Context) {
@@ -117,8 +107,7 @@ func (h *TVShowHandler) SeasonDetail(c *gin.Context) {
 		return
 	}
 
-	country := c.DefaultQuery("country", "US")
-	imagesSize := parseImagesSize(c)
+	country := getCountryFromHeader(c)
 
 	season, err := h.service.GetSeasonComplete(c.Request.Context(), tvID, seasonNumber, country)
 
@@ -132,7 +121,7 @@ func (h *TVShowHandler) SeasonDetail(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, season.ToResponse(imagesSize))
+	c.JSON(http.StatusOK, season.ToResponse())
 }
 
 func (h *TVShowHandler) Bulk(c *gin.Context) {
@@ -160,8 +149,7 @@ func (h *TVShowHandler) Bulk(c *gin.Context) {
 		return
 	}
 
-	country := c.DefaultQuery("country", "US")
-	imagesSize := parseImagesSize(c)
+	country := getCountryFromHeader(c)
 
 	results := h.service.GetBulkTVShows(c.Request.Context(), ids, country)
 
@@ -169,7 +157,7 @@ func (h *TVShowHandler) Bulk(c *gin.Context) {
 
 	for _, r := range results {
 		if r.TVShow != nil {
-			response = append(response, r.TVShow.ToResponse(imagesSize))
+			response = append(response, r.TVShow.ToResponse())
 		}
 	}
 

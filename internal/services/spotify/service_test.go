@@ -59,7 +59,7 @@ func TestSearchAlbums_Success(t *testing.T) {
 	mockBody, _ := json.Marshal(mockResponse)
 	service := newTestService(mockBody, http.StatusOK)
 
-	result, err := service.SearchAlbums(context.Background(), "Radiohead", 1)
+	result, err := service.SearchAlbums(context.Background(), "Radiohead", 1, 20)
 
 	if err != nil {
 		t.Fatalf("SearchAlbums failed: %v", err)
@@ -126,7 +126,7 @@ func TestSearchAlbums_FiltersSingles(t *testing.T) {
 	mockBody, _ := json.Marshal(mockResponse)
 	service := newTestService(mockBody, http.StatusOK)
 
-	result, err := service.SearchAlbums(context.Background(), "test", 1)
+	result, err := service.SearchAlbums(context.Background(), "test", 1, 20)
 
 	if err != nil {
 		t.Fatalf("SearchAlbums failed: %v", err)
@@ -156,7 +156,7 @@ func TestSearchAlbums_EmptyResults(t *testing.T) {
 	mockBody, _ := json.Marshal(mockResponse)
 	service := newTestService(mockBody, http.StatusOK)
 
-	result, err := service.SearchAlbums(context.Background(), "nonexistent", 1)
+	result, err := service.SearchAlbums(context.Background(), "nonexistent", 1, 20)
 
 	if err != nil {
 		t.Fatalf("SearchAlbums failed: %v", err)
@@ -170,7 +170,7 @@ func TestSearchAlbums_EmptyResults(t *testing.T) {
 func TestSearchAlbums_APIError(t *testing.T) {
 	service := newTestService([]byte(`{}`), http.StatusInternalServerError)
 
-	_, err := service.SearchAlbums(context.Background(), "test", 1)
+	_, err := service.SearchAlbums(context.Background(), "test", 1, 20)
 
 	if err == nil {
 		t.Error("expected error for API error status")
@@ -267,7 +267,7 @@ func TestGetTrendingAlbums_Success(t *testing.T) {
 	mockBody, _ := json.Marshal(chartsResponse)
 	service := newTestService(mockBody, http.StatusOK)
 
-	result, err := service.GetTrendingAlbums(context.Background(), 1)
+	result, err := service.GetTrendingAlbums(context.Background(), 1, 20)
 
 	if err != nil {
 		t.Fatalf("GetTrendingAlbums failed: %v", err)
@@ -301,7 +301,7 @@ func TestGetTrendingAlbums_EmptyChart(t *testing.T) {
 	mockBody, _ := json.Marshal(chartsResponse)
 	service := newTestService(mockBody, http.StatusOK)
 
-	result, err := service.GetTrendingAlbums(context.Background(), 1)
+	result, err := service.GetTrendingAlbums(context.Background(), 1, 20)
 
 	if err != nil {
 		t.Fatalf("GetTrendingAlbums failed: %v", err)

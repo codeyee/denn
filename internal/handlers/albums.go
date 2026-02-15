@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 
@@ -30,13 +29,9 @@ func (h *AlbumHandler) Search(c *gin.Context) {
 		return
 	}
 
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	page, limit := parsePagination(c)
 
-	if page < 1 {
-		page = 1
-	}
-
-	result, err := h.service.SearchAlbums(c.Request.Context(), query, page)
+	result, err := h.service.SearchAlbums(c.Request.Context(), query, page, limit)
 
 	if err != nil {
 		respondError(c, http.StatusInternalServerError, CodeInternalError, "failed to search albums")
@@ -61,8 +56,6 @@ func (h *AlbumHandler) Detail(c *gin.Context) {
 		return
 	}
 
-	imagesSize := parseImagesSize(c)
-
 	album, err := h.service.GetAlbumComplete(c.Request.Context(), albumID)
 
 	if err != nil {
@@ -75,7 +68,7 @@ func (h *AlbumHandler) Detail(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, album.ToResponse(imagesSize))
+	c.JSON(http.StatusOK, album.ToResponse())
 }
 
 func (h *AlbumHandler) Bulk(c *gin.Context) {
@@ -98,14 +91,12 @@ func (h *AlbumHandler) Bulk(c *gin.Context) {
 		return
 	}
 
-	imagesSize := parseImagesSize(c)
-
 	results := h.service.GetBulkAlbums(c.Request.Context(), ids)
 
 	response := make([]any, 0, len(results))
 	for _, r := range results {
 		if r.Album != nil {
-			response = append(response, r.Album.ToResponse(imagesSize))
+			response = append(response, r.Album.ToResponse())
 		}
 	}
 
@@ -113,13 +104,9 @@ func (h *AlbumHandler) Bulk(c *gin.Context) {
 }
 
 func (h *AlbumHandler) Trending(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	page, limit := parsePagination(c)
 
-	if page < 1 {
-		page = 1
-	}
-
-	result, err := h.service.GetTrendingAlbums(c.Request.Context(), page)
+	result, err := h.service.GetTrendingAlbums(c.Request.Context(), page, limit)
 
 	if err != nil {
 		respondError(c, http.StatusInternalServerError, CodeInternalError, "failed to get trending albums")

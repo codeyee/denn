@@ -39,7 +39,7 @@ type AlbumResponse struct {
 	Tracks          []Track      `json:"tracks,omitempty"`
 }
 
-func (a *Album) ToResponse(imagesSize int) AlbumResponse {
+func (a *Album) ToResponse() AlbumResponse {
 	resp := AlbumResponse{
 		ID:              a.ID,
 		Type:            a.ContentType,
@@ -55,7 +55,7 @@ func (a *Album) ToResponse(imagesSize int) AlbumResponse {
 	}
 
 	if a.Images != nil {
-		resp.Images = a.Images.ToList(imagesSize)
+		resp.Images = a.Images.ToList(DefaultImagesSize)
 	}
 
 	return resp

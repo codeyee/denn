@@ -7,16 +7,35 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-const defaultImagesSize = 10
+const (
+	defaultCountry = "US"
+	defaultPage    = 1
+	defaultLimit   = 20
+	maxLimit       = 50
+)
 
-func parseImagesSize(c *gin.Context) int {
-	if v := c.Query("images_size"); v != "" {
-		if parsed, err := strconv.Atoi(v); err == nil && parsed > 0 {
-			return parsed
-		}
+func getCountryFromHeader(c *gin.Context) string {
+	if country := c.GetHeader("X-User-Country"); country != "" {
+		return country
+	}
+	return defaultCountry
+}
+
+func parsePagination(c *gin.Context) (int, int) {
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	if page < 1 {
+		page = defaultPage
 	}
 
-	return defaultImagesSize
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
+	if limit < 1 {
+		limit = defaultLimit
+	}
+	if limit > maxLimit {
+		limit = maxLimit
+	}
+
+	return page, limit
 }
 
 func parseIDs(s string) ([]int, error) {

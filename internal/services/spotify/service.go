@@ -58,8 +58,7 @@ func unmarshalResponse[T any](resp *clients.Response, err error) (T, error) {
 	return result, nil
 }
 
-func (s *Service) SearchAlbums(ctx context.Context, query string, page int) (SearchResult, error) {
-	limit := defaultPageSize
+func (s *Service) SearchAlbums(ctx context.Context, query string, page, limit int) (SearchResult, error) {
 	offset := (page - 1) * limit
 
 	data, err := unmarshalResponse[spotifySearchResponse](s.client.SearchAlbums(ctx, query, limit, offset))
@@ -131,8 +130,7 @@ loop:
 	return results
 }
 
-func (s *Service) GetTrendingAlbums(ctx context.Context, page int) (SearchResult, error) {
-	limit := defaultPageSize
+func (s *Service) GetTrendingAlbums(ctx context.Context, page, limit int) (SearchResult, error) {
 	offset := (page - 1) * limit
 
 	data, err := unmarshalResponse[spotifyNewReleasesResponse](s.client.GetTrendingAlbums(ctx, limit, offset))

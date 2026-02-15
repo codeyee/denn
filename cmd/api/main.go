@@ -64,10 +64,9 @@ func main() {
 
 	r := gin.Default()
 
-	api := r.Group("/proxy")
+	api := r.Group("/proxy/v1")
 	{
 		api.GET("/health", handlers.HealthCheck)
-
 		movies := api.Group("/movies")
 		{
 			movies.GET("/search", movieHandler.Search)

@@ -42,7 +42,7 @@ type SeasonResponse struct {
 	Episodes         []Episode             `json:"episodes,omitempty"`
 }
 
-func (s *Season) ToResponse(imagesSize int) SeasonResponse {
+func (s *Season) ToResponse() SeasonResponse {
 	resp := SeasonResponse{
 		ID:               s.ID,
 		Type:             s.ContentType,
@@ -57,7 +57,7 @@ func (s *Season) ToResponse(imagesSize int) SeasonResponse {
 	}
 
 	if s.Images != nil {
-		resp.Images = s.Images.ToList(imagesSize)
+		resp.Images = s.Images.ToList(DefaultImagesSize)
 	}
 
 	if s.Platforms != nil {
@@ -105,7 +105,7 @@ type TVShowResponse struct {
 	Seasons          []SeasonResponse      `json:"seasons,omitempty"`
 }
 
-func (tv *TVShow) ToResponse(imagesSize int) TVShowResponse {
+func (tv *TVShow) ToResponse() TVShowResponse {
 	resp := TVShowResponse{
 		ID:               tv.ID,
 		Type:             tv.ContentType,
@@ -123,7 +123,7 @@ func (tv *TVShow) ToResponse(imagesSize int) TVShowResponse {
 	}
 
 	if tv.Images != nil {
-		resp.Images = tv.Images.ToList(imagesSize)
+		resp.Images = tv.Images.ToList(DefaultImagesSize)
 	}
 
 	if tv.Platforms != nil {
@@ -134,7 +134,7 @@ func (tv *TVShow) ToResponse(imagesSize int) TVShowResponse {
 		resp.Seasons = make([]SeasonResponse, len(tv.Seasons))
 
 		for i, season := range tv.Seasons {
-			resp.Seasons[i] = season.ToResponse(imagesSize)
+			resp.Seasons[i] = season.ToResponse()
 		}
 	}
 

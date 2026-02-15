@@ -28,19 +28,7 @@ func (h *GamesHandler) Search(c *gin.Context) {
 		return
 	}
 
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-
-	if page < 1 {
-		page = 1
-	}
-
-	limit := 20 // Default limit
-
-	if l := c.Query("limit"); l != "" {
-		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 && parsed <= 500 {
-			limit = parsed
-		}
-	}
+	page, limit := parsePagination(c)
 	
 	offset := (page - 1) * limit
 
@@ -70,8 +58,6 @@ func (h *GamesHandler) Detail(c *gin.Context) {
 		return
 	}
 
-	imagesSize := parseImagesSize(c)
-
 	game, err := h.service.GetGameComplete(c.Request.Context(), id)
 	if err != nil {
 		if errors.Is(err, clients.ErrNotFound) || err.Error() == "game not found" {
@@ -83,7 +69,7 @@ func (h *GamesHandler) Detail(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, game.ToResponse(imagesSize))
+	c.JSON(http.StatusOK, game.ToResponse())
 }
 
 func (h *GamesHandler) Bulk(c *gin.Context) {
@@ -111,8 +97,6 @@ func (h *GamesHandler) Bulk(c *gin.Context) {
 		return
 	}
 
-	imagesSize := parseImagesSize(c)
-
 	games, err := h.service.GetBulkGames(c.Request.Context(), ids)
 
 	if err != nil {
@@ -123,24 +107,14 @@ func (h *GamesHandler) Bulk(c *gin.Context) {
 	response := make([]any, 0, len(games))
 
 	for _, g := range games {
-		response = append(response, g.ToResponse(imagesSize))
+		response = append(response, g.ToResponse())
 	}
 
 	c.JSON(http.StatusOK, response)
 }
 
 func (h *GamesHandler) Trending(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-
-	if page < 1 { page = 1 }
-	
-	limit := 20
-
-	if l := c.Query("limit"); l != "" {
-		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 && parsed <= 100 {
-			limit = parsed
-		}
-	}
+	page, limit := parsePagination(c)
 	
 	offset := (page - 1) * limit
 	

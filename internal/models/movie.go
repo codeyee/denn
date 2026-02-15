@@ -34,7 +34,7 @@ type MovieResponse struct {
 	Platforms       map[string][]Platform `json:"platforms,omitempty"`
 }
 
-func (m *Movie) ToResponse(imagesSize int) MovieResponse {
+func (m *Movie) ToResponse() MovieResponse {
 	resp := MovieResponse{
 		ID:              m.ID,
 		Type:            m.ContentType,
@@ -51,7 +51,7 @@ func (m *Movie) ToResponse(imagesSize int) MovieResponse {
 	}
 
 	if m.Images != nil {
-		resp.Images = m.Images.ToList(imagesSize)
+		resp.Images = m.Images.ToList(DefaultImagesSize)
 	}
 
 	if m.Platforms != nil {

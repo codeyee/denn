@@ -57,9 +57,7 @@ func unmarshalResponse[T any](resp *clients.Response, err error) (T, error) {
 	return result, nil
 }
 
-func (s *Service) SearchBooks(ctx context.Context, query string, page int) (SearchResult, error) {
-	limit := defaultPageSize
-
+func (s *Service) SearchBooks(ctx context.Context, query string, page, limit int) (SearchResult, error) {
 	data, err := unmarshalResponse[olSearchResponse](s.client.SearchBooks(ctx, query, page, limit))
 	if err != nil {
 		return SearchResult{}, fmt.Errorf("search books: %w", err)
@@ -129,8 +127,7 @@ loop:
 	return results
 }
 
-func (s *Service) GetTrendingBooks(ctx context.Context, page int) (SearchResult, error) {
-	limit := defaultPageSize
+func (s *Service) GetTrendingBooks(ctx context.Context, page, limit int) (SearchResult, error) {
 	totalLimit := 100
 
 	data, err := unmarshalResponse[olSearchResponse](s.client.GetTrendingBooks(ctx, totalLimit))

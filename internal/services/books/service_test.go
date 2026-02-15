@@ -60,7 +60,7 @@ func TestSearchBooks_Success(t *testing.T) {
 	mockBody, _ := json.Marshal(mockResponse)
 	service := newTestService(mockBody, http.StatusOK)
 
-	result, err := service.SearchBooks(context.Background(), "fantasy", 1)
+	result, err := service.SearchBooks(context.Background(), "fantasy", 1, 20)
 
 	if err != nil {
 		t.Fatalf("SearchBooks failed: %v", err)
@@ -97,7 +97,7 @@ func TestSearchBooks_EmptyResults(t *testing.T) {
 	mockBody, _ := json.Marshal(mockResponse)
 	service := newTestService(mockBody, http.StatusOK)
 
-	result, err := service.SearchBooks(context.Background(), "nonexistent", 1)
+	result, err := service.SearchBooks(context.Background(), "nonexistent", 1, 20)
 
 	if err != nil {
 		t.Fatalf("SearchBooks failed: %v", err)
@@ -115,7 +115,7 @@ func TestSearchBooks_EmptyResults(t *testing.T) {
 func TestSearchBooks_APIError(t *testing.T) {
 	service := newTestService([]byte(`{}`), http.StatusInternalServerError)
 
-	_, err := service.SearchBooks(context.Background(), "test", 1)
+	_, err := service.SearchBooks(context.Background(), "test", 1, 20)
 
 	if err == nil {
 		t.Error("expected error for API error status")
@@ -212,7 +212,7 @@ func TestGetTrendingBooks_Success(t *testing.T) {
 	mockBody, _ := json.Marshal(mockResponse)
 	service := newTestService(mockBody, http.StatusOK)
 
-	result, err := service.GetTrendingBooks(context.Background(), 1)
+	result, err := service.GetTrendingBooks(context.Background(), 1, 20)
 
 	if err != nil {
 		t.Fatalf("GetTrendingBooks failed: %v", err)
@@ -252,7 +252,7 @@ func TestGetTrendingBooks_Page2(t *testing.T) {
 	mockBody, _ := json.Marshal(mockResponse)
 	service := newTestService(mockBody, http.StatusOK)
 
-	result, err := service.GetTrendingBooks(context.Background(), 2)
+	result, err := service.GetTrendingBooks(context.Background(), 2, 20)
 
 	if err != nil {
 		t.Fatalf("GetTrendingBooks failed: %v", err)
@@ -274,7 +274,7 @@ func TestGetTrendingBooks_PageBeyondTotal(t *testing.T) {
 	mockBody, _ := json.Marshal(mockResponse)
 	service := newTestService(mockBody, http.StatusOK)
 
-	result, err := service.GetTrendingBooks(context.Background(), 10)
+	result, err := service.GetTrendingBooks(context.Background(), 10, 20)
 
 	if err != nil {
 		t.Fatalf("GetTrendingBooks failed: %v", err)

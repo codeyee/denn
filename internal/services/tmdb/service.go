@@ -68,7 +68,7 @@ func unmarshalResponse[T any](resp *clients.Response, err error) (T, error) {
 	return result, nil
 }
 
-func (s *Service) SearchMovies(ctx context.Context, query string, page int) (SearchResult, error) {
+func (s *Service) SearchMovies(ctx context.Context, query string, page, limit int) (SearchResult, error) {
 	data, err := unmarshalResponse[tmdbSearchResponse](s.client.SearchMovies(ctx, query, page))
 
 	if err != nil {
@@ -81,6 +81,10 @@ func (s *Service) SearchMovies(ctx context.Context, query string, page int) (Sea
 		items = append(items, mapSearchItemMovie(r))
 	}
 
+	if len(items) > limit {
+		items = items[:limit]
+	}
+
 	return SearchResult{
 		Page:         data.Page,
 		TotalPages:   data.TotalPages,
@@ -89,7 +93,7 @@ func (s *Service) SearchMovies(ctx context.Context, query string, page int) (Sea
 	}, nil
 }
 
-func (s *Service) SearchTVShows(ctx context.Context, query string, page int) (SearchResult, error) {
+func (s *Service) SearchTVShows(ctx context.Context, query string, page, limit int) (SearchResult, error) {
 	data, err := unmarshalResponse[tmdbSearchResponse](s.client.SearchTVShows(ctx, query, page))
 
 	if err != nil {
@@ -102,6 +106,10 @@ func (s *Service) SearchTVShows(ctx context.Context, query string, page int) (Se
 		items = append(items, mapSearchItemTV(r))
 	}
 
+	if len(items) > limit {
+		items = items[:limit]
+	}
+
 	return SearchResult{
 		Page:         data.Page,
 		TotalPages:   data.TotalPages,
@@ -110,7 +118,7 @@ func (s *Service) SearchTVShows(ctx context.Context, query string, page int) (Se
 	}, nil
 }
 
-func (s *Service) GetPopularMovies(ctx context.Context, page int) (SearchResult, error) {
+func (s *Service) GetPopularMovies(ctx context.Context, page, limit int) (SearchResult, error) {
 	data, err := unmarshalResponse[tmdbSearchResponse](s.client.GetPopularMovies(ctx, page))
 
 	if err != nil {
@@ -123,6 +131,10 @@ func (s *Service) GetPopularMovies(ctx context.Context, page int) (SearchResult,
 		items = append(items, mapSearchItemMovie(r))
 	}
 
+	if len(items) > limit {
+		items = items[:limit]
+	}
+
 	return SearchResult{
 		Page:         data.Page,
 		TotalPages:   data.TotalPages,
@@ -131,7 +143,7 @@ func (s *Service) GetPopularMovies(ctx context.Context, page int) (SearchResult,
 	}, nil
 }
 
-func (s *Service) GetPopularTVShows(ctx context.Context, page int) (SearchResult, error) {
+func (s *Service) GetPopularTVShows(ctx context.Context, page, limit int) (SearchResult, error) {
 	data, err := unmarshalResponse[tmdbSearchResponse](s.client.GetPopularTVShows(ctx, page))
 
 	if err != nil {
@@ -142,6 +154,10 @@ func (s *Service) GetPopularTVShows(ctx context.Context, page int) (SearchResult
 
 	for _, r := range data.Results {
 		items = append(items, mapSearchItemTV(r))
+	}
+
+	if len(items) > limit {
+		items = items[:limit]
 	}
 
 	return SearchResult{
@@ -164,7 +180,7 @@ func (s *Service) GetMovieComplete(ctx context.Context, movieID int, country str
 	return mapMovie(data, country), nil
 }
 
-func (s *Service) GetTVShowComplete(ctx context.Context, tvID int, country string, expandSeasons bool) (models.TVShow, error) {
+func (s *Service) GetTVShowComplete(ctx context.Context, tvID int, country string) (models.TVShow, error) {
 	data, err := unmarshalResponse[tmdbTVDetail](
 		s.client.GetTVDetails(ctx, tvID, tvAppend),
 	)
@@ -175,51 +191,14 @@ func (s *Service) GetTVShowComplete(ctx context.Context, tvID int, country strin
 
 	show := mapTVShow(data, country)
 
-	if !expandSeasons {
-		seasons := make([]models.Season, 0, len(data.Seasons))
-
-		for _, s := range data.Seasons {
-			if isValidSeason(s) {
-				seasons = append(seasons, mapSeasonSummary(s))
-			}
-		}
-
-		show.Seasons = seasons
-		return show, nil
-	}
-
-	var validSeasons []tmdbSeasonSummary
+	seasons := make([]models.Season, 0, len(data.Seasons))
 
 	for _, s := range data.Seasons {
 		if isValidSeason(s) {
-			validSeasons = append(validSeasons, s)
+			seasons = append(seasons, mapSeasonSummary(s))
 		}
 	}
 
-	if len(validSeasons) == 0 {
-		return show, nil
-	}
-
-	seasons := make([]models.Season, len(validSeasons))
-	var wg sync.WaitGroup
-
-	for i, summary := range validSeasons {
-		wg.Add(1)
-		go func(idx int, sn int) {
-			defer wg.Done()
-
-			season, err := s.GetSeasonComplete(ctx, tvID, sn, country)
-			if err != nil {
-				log.Printf("failed to expand season %d for tv %d: %v", sn, tvID, err)
-				seasons[idx] = mapSeasonSummary(validSeasons[idx])
-				return
-			}
-
-			seasons[idx] = season
-		}(i, summary.SeasonNumber)
-	}
-
-	wg.Wait()
 	show.Seasons = seasons
 
 	return show, nil
@@ -359,7 +338,7 @@ loop:
 			defer wg.Done()
 			defer func() { <-sem }()
 
-			show, err := s.GetTVShowComplete(ctx, tvID, country, false)
+			show, err := s.GetTVShowComplete(ctx, tvID, country)
 			if err != nil {
 				results[idx] = BulkTVShowResult{ID: tvID, Error: err.Error()}
 				return
