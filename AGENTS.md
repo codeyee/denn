@@ -13,10 +13,11 @@ We provide a setup script to synchronize these skills to the configuration direc
 
 ```bash
 # Setup for specific agents (recommended)
-./scripts/setup_agent_env.sh --agent cursor --agent claude
+./scripts/setup_agents.sh --agent cursor --agent claude
+./scripts/setup_agents.sh -a cursor -a claude # short version
 
 # Setup for ALL agents
-./scripts/setup_agent_env.sh --all
+./scripts/setup_agents.sh --all
 ```
 
 
