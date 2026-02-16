@@ -1,0 +1,22 @@
+meta {
+  name: Multi Search
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{BASE_URL}}/multi-search?query=Matrix&page=1&limit=20
+  body: none
+  auth: inherit
+}
+
+query {
+  query: Matrix
+  page: 1
+  limit: 20
+  ~types: movies,tv_shows,games,albums,books
+}
+
+headers {
+  X-User-Country: {{COUNTRY}}
+}
