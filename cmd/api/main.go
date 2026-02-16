@@ -19,6 +19,7 @@ import (
 	"github.com/codeyee/denn-proxy/internal/handlers/books"
 	"github.com/codeyee/denn-proxy/internal/handlers/games"
 	"github.com/codeyee/denn-proxy/internal/handlers/health"
+	"github.com/codeyee/denn-proxy/internal/handlers/homepage"
 	"github.com/codeyee/denn-proxy/internal/handlers/movies"
 	"github.com/codeyee/denn-proxy/internal/handlers/multisearch"
 	"github.com/codeyee/denn-proxy/internal/handlers/tvshows"
@@ -70,7 +71,9 @@ func main() {
 	gamesHandler := games.NewHandler(gamesSvc)
 	albumHandler := albums.NewHandler(spotifySvc)
 	bookHandler := books.NewHandler(booksSvc)
+
 	multiSearchHandler := multisearch.NewHandler(tmdbSvc, gamesSvc, spotifySvc, booksSvc)
+	homepageHandler := homepage.NewHandler(tmdbSvc, gamesSvc, spotifySvc, booksSvc)
 
 	r := gin.Default()
 
@@ -93,6 +96,7 @@ func main() {
 		protected.Use(middleware.RateLimitMiddleware(cache, 60))
 
 		protected.GET("/multi-search", multiSearchHandler.Search)
+		protected.GET("/homepage", homepageHandler.Homepage)
 
 		movies := protected.Group("/movies")
 		{

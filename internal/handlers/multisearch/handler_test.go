@@ -146,7 +146,7 @@ func TestSearch_AllTypes(t *testing.T) {
 	raw := decodeResponse(t, w)
 
 	// All 5 keys must be present
-	expectedKeys := []string{"movies", "tv_shows", "games", "music", "books"}
+	expectedKeys := []string{"movies", "tv_shows", "games", "albums", "books"}
 	for _, key := range expectedKeys {
 		if _, ok := raw[key]; !ok {
 			t.Errorf("Expected key %q in response", key)
@@ -178,7 +178,7 @@ func TestSearch_AllTypes(t *testing.T) {
 		t.Error("Expected metadata for games, got nil")
 	}
 
-	musicCR := decodeContentResult(t, raw["music"])
+	musicCR := decodeContentResult(t, raw["albums"])
 	if len(musicCR.Results) != 1 || musicCR.Results[0].Title != "Test Album" {
 		t.Errorf("Expected 1 album 'Test Album', got %+v", musicCR.Results)
 	}
@@ -210,7 +210,7 @@ func TestSearch_FilteredTypes(t *testing.T) {
 	}
 
 	// Others should NOT be present
-	for _, key := range []string{"tv_shows", "music", "books"} {
+	for _, key := range []string{"tv_shows", "albums", "books"} {
 		if _, ok := raw[key]; ok {
 			t.Errorf("Did not expect key %q in response", key)
 		}
@@ -358,7 +358,7 @@ func TestSearch_AllServicesFail(t *testing.T) {
 
 	raw := decodeResponse(t, w)
 
-	for _, key := range []string{"movies", "tv_shows", "games", "music", "books"} {
+	for _, key := range []string{"movies", "tv_shows", "games", "albums", "books"} {
 		cr := decodeContentResult(t, raw[key])
 		if cr.Error == nil {
 			t.Errorf("Expected error for %s, got nil", key)
@@ -387,7 +387,7 @@ func TestSearch_EmptyResults(t *testing.T) {
 
 	raw := decodeResponse(t, w)
 
-	for _, key := range []string{"movies", "tv_shows", "games", "music", "books"} {
+	for _, key := range []string{"movies", "tv_shows", "games", "albums", "books"} {
 		cr := decodeContentResult(t, raw[key])
 		if cr.Error != nil {
 			t.Errorf("Expected no error for %s, got %v", key, *cr.Error)
@@ -419,7 +419,7 @@ func TestSearch_SingleType(t *testing.T) {
 	}
 }
 
-func TestSearch_AlbumsKeyIsMusic(t *testing.T) {
+func TestSearch_AlbumsKey(t *testing.T) {
 	tmdb, games, spotify, books := defaultMocks()
 
 	r := setupRouter(tmdb, games, spotify, books)
@@ -431,11 +431,7 @@ func TestSearch_AlbumsKeyIsMusic(t *testing.T) {
 
 	raw := decodeResponse(t, w)
 
-	// The type param is "albums" but the response key should be "music"
-	if _, ok := raw["music"]; !ok {
-		t.Error("Expected 'music' key in response when requesting albums")
-	}
-	if _, ok := raw["albums"]; ok {
-		t.Error("Did not expect 'albums' key — should be 'music'")
+	if _, ok := raw["albums"]; !ok {
+		t.Error("Expected 'albums' key in response when requesting albums type")
 	}
 }

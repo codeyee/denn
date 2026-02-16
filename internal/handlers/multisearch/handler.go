@@ -64,7 +64,7 @@ var responseKey = map[contentType]string{
 	typeMovies:  "movies",
 	typeTVShows: "tv_shows",
 	typeGames:   "games",
-	typeAlbums:  "music",
+	typeAlbums:  "albums",
 	typeBooks:   "books",
 }
 
@@ -89,9 +89,8 @@ func (h *Handler) Search(c *gin.Context) {
 		return
 	}
 
-	_, limit := common.ParsePagination(c)
-
-	results := h.searchAll(c.Request.Context(), query, limit, types)
+	page, limit := common.ParsePagination(c)
+	results := h.searchAll(c.Request.Context(), query, page, limit, types)
 
 	response := make(map[string]ContentResult, len(types))
 	for _, t := range types {
@@ -141,7 +140,7 @@ func (e *invalidTypeError) Error() string {
 	return "invalid content type: " + e.value + ". valid types are: " + strings.Join(names, ", ")
 }
 
-func (h *Handler) searchAll(ctx context.Context, query string, limit int, types []contentType) map[contentType]ContentResult {
+func (h *Handler) searchAll(ctx context.Context, query string, page, limit int, types []contentType) map[contentType]ContentResult {
 	results := make(map[contentType]ContentResult, len(types))
 	slots := make([]ContentResult, len(types))
 
@@ -151,7 +150,7 @@ func (h *Handler) searchAll(ctx context.Context, query string, limit int, types 
 	for i, t := range types {
 		go func(idx int, ct contentType) {
 			defer wg.Done()
-			slots[idx] = h.searchOne(ctx, ct, query, limit)
+			slots[idx] = h.searchOne(ctx, ct, query, page, limit)
 		}(i, t)
 	}
 
@@ -164,31 +163,31 @@ func (h *Handler) searchAll(ctx context.Context, query string, limit int, types 
 	return results
 }
 
-func (h *Handler) searchOne(ctx context.Context, ct contentType, query string, limit int) ContentResult {
+func (h *Handler) searchOne(ctx context.Context, ct contentType, query string, page, limit int) ContentResult {
 	switch ct {
 
 	case typeMovies:
-		return h.searchMovies(ctx, query, limit)
+		return h.searchMovies(ctx, query, page, limit)
 
 	case typeTVShows:
-		return h.searchTVShows(ctx, query, limit)
+		return h.searchTVShows(ctx, query, page, limit)
 
 	case typeGames:
-		return h.searchGames(ctx, query, limit)
+		return h.searchGames(ctx, query, page, limit)
 
 	case typeAlbums:
-		return h.searchAlbums(ctx, query, limit)
+		return h.searchAlbums(ctx, query, page, limit)
 
 	case typeBooks:
-		return h.searchBooks(ctx, query, limit)
+		return h.searchBooks(ctx, query, page, limit)
 
 	default:
 		return errorResult("unsupported content type")
 	}
 }
 
-func (h *Handler) searchMovies(ctx context.Context, query string, limit int) ContentResult {
-	res, err := h.tmdbSvc.SearchMovies(ctx, query, 1, limit)
+func (h *Handler) searchMovies(ctx context.Context, query string, page, limit int) ContentResult {
+	res, err := h.tmdbSvc.SearchMovies(ctx, query, page, limit)
 	if err != nil {
 		return errorResult(err.Error())
 	}
@@ -200,8 +199,8 @@ func (h *Handler) searchMovies(ctx context.Context, query string, limit int) Con
 	})
 }
 
-func (h *Handler) searchTVShows(ctx context.Context, query string, limit int) ContentResult {
-	res, err := h.tmdbSvc.SearchTVShows(ctx, query, 1, limit)
+func (h *Handler) searchTVShows(ctx context.Context, query string, page, limit int) ContentResult {
+	res, err := h.tmdbSvc.SearchTVShows(ctx, query, page, limit)
 	if err != nil {
 		return errorResult(err.Error())
 	}
@@ -213,21 +212,22 @@ func (h *Handler) searchTVShows(ctx context.Context, query string, limit int) Co
 	})
 }
 
-func (h *Handler) searchGames(ctx context.Context, query string, limit int) ContentResult {
-	res, err := h.gamesSvc.SearchGames(ctx, query, limit, 0)
+func (h *Handler) searchGames(ctx context.Context, query string, page, limit int) ContentResult {
+	offset := (page - 1) * limit
+	res, err := h.gamesSvc.SearchGames(ctx, query, limit, offset)
 	if err != nil {
 		return errorResult(err.Error())
 	}
 
 	return successResult(res.Results, &common.PaginationMetadata{
-		Page:         1,
+		Page:         page,
 		TotalPages:   0,
 		TotalResults: 0,
 	})
 }
 
-func (h *Handler) searchAlbums(ctx context.Context, query string, limit int) ContentResult {
-	res, err := h.spotifySvc.SearchAlbums(ctx, query, 1, limit)
+func (h *Handler) searchAlbums(ctx context.Context, query string, page, limit int) ContentResult {
+	res, err := h.spotifySvc.SearchAlbums(ctx, query, page, limit)
 	if err != nil {
 		return errorResult(err.Error())
 	}
@@ -239,8 +239,8 @@ func (h *Handler) searchAlbums(ctx context.Context, query string, limit int) Con
 	})
 }
 
-func (h *Handler) searchBooks(ctx context.Context, query string, limit int) ContentResult {
-	res, err := h.booksSvc.SearchBooks(ctx, query, 1, limit)
+func (h *Handler) searchBooks(ctx context.Context, query string, page, limit int) ContentResult {
+	res, err := h.booksSvc.SearchBooks(ctx, query, page, limit)
 	if err != nil {
 		return errorResult(err.Error())
 	}
