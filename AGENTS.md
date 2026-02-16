@@ -69,7 +69,7 @@ Handler (HTTP validation/response) → Service (orchestration + mapping) → Pro
 Config → Cache (Redis | NoOpCache)
   → Providers (TMDB, IGDB, Spotify, OpenLibrary)
     → Services (tmdb, games, spotify, books)
-      → Handlers (movies, tvshows, games, albums, books)
+      → Handlers (movies, tvshows, games, albums, books, multisearch, homepage)
         → Gin Router (/proxy group)
           → Graceful Shutdown (SIGINT/SIGTERM, 5s timeout)
 ```
@@ -90,6 +90,8 @@ Config → Cache (Redis | NoOpCache)
   - `services/spotify/` — Album orchestration. `mapper.go` converts Spotify responses → domain models. Search excludes singles. Trending via Spotify Charts parsing.
   - `services/books/` — Book orchestration. `mapper.go` converts OpenLibrary responses → domain models (cover image URL building, author extraction). Trending via bestseller search with client-side pagination.
 - `handlers/` — Gin HTTP handlers. Validates request params, calls services, returns JSON. Shared response types (`ErrorResponse`, `PaginatedResponse`, `PaginationMetadata`) and utilities (`parseImagesSize`, `parseIDs`, `parseStringIDs`).
+  - `handlers/multisearch/` — Multi-search handler. Fans out search queries to all 5 content types in parallel via interface-segregated service dependencies. Supports `types` filter param for searching specific content types. Returns per-type `ContentResult { metadata, results, error }` with partial failure handling.
+  - `handlers/homepage/` — Homepage handler. Two-phase parallel fan-out: (1) fetch trending/popular from all 5 services, (2) enrich with bulk detail endpoints. Returns full detail objects (MovieResponse, GameResponse, etc.) preserving trending order via generic `buildOrderedResult[T]`. Country from `X-User-Country` header.
 
 ## Key Patterns
 
@@ -101,44 +103,50 @@ Config → Cache (Redis | NoOpCache)
 - **Configurable image count** — All detail/bulk endpoints accept `images_size` query param (default 10) to control how many images are returned.
 - **Country-based platform filtering** — Movie and TV show endpoints accept `country` param (default `US`) to filter streaming/rent/buy platform availability.
 - **Graceful shutdown** — Signal handling (SIGINT/SIGTERM) with 5-second timeout and resource cleanup (cache connection close) in `main.go`.
+- **Handler-level composition** — Aggregate endpoints (multi-search, homepage) compose existing services at the handler level via interface segregation. Each handler defines narrow interfaces covering only the methods it needs, keeping dependencies explicit and testable with mock structs.
+- **Two-phase fan-out** — Homepage uses a two-phase concurrent pattern: phase 1 fetches trending items in parallel, phase 2 enriches them with bulk detail calls in parallel. Each phase uses `sync.WaitGroup` with pre-allocated slots for zero-contention writes.
 
 ## API Routes
 
-All routes are prefixed with `/proxy`:
+All routes are prefixed with `/proxy/v1`:
 
 ### Health
-- `GET /proxy/health`
+- `GET /proxy/v1/health`
+
+### Aggregate Endpoints
+- `GET /proxy/v1/multi-search?query=X&page=1&limit=20&types=movies,tv_shows,games,albums,books` — parallel search across content types, `types` filter optional (defaults to all)
+- `GET /proxy/v1/homepage?page=1&limit=10` — trending content with full detail enrichment, country from `X-User-Country` header
 
 ### Movies (TMDB)
-- `GET /proxy/movies/search?query=X&page=1`
-- `GET /proxy/movies/:id?country=US&images_size=10`
-- `GET /proxy/movies/bulk?ids=1,2,3&country=US&images_size=10` — max 50 IDs
-- `GET /proxy/movies/trending?page=1`
+- `GET /proxy/v1/movies/search?query=X&page=1`
+- `GET /proxy/v1/movies/:id?country=US&images_size=10`
+- `GET /proxy/v1/movies/bulk?ids=1,2,3&country=US&images_size=10` — max 50 IDs
+- `GET /proxy/v1/movies/trending?page=1`
 
 ### TV Shows (TMDB)
-- `GET /proxy/tv_shows/search?query=X&page=1`
-- `GET /proxy/tv_shows/:id?country=US&expand=seasons&images_size=10`
-- `GET /proxy/tv_shows/:id/seasons/:season_number?country=US&images_size=10`
-- `GET /proxy/tv_shows/bulk?ids=1,2,3&country=US&images_size=10` — max 50 IDs
-- `GET /proxy/tv_shows/trending?page=1`
+- `GET /proxy/v1/tv_shows/search?query=X&page=1`
+- `GET /proxy/v1/tv_shows/:id?country=US&expand=seasons&images_size=10`
+- `GET /proxy/v1/tv_shows/:id/seasons/:season_number?country=US&images_size=10`
+- `GET /proxy/v1/tv_shows/bulk?ids=1,2,3&country=US&images_size=10` — max 50 IDs
+- `GET /proxy/v1/tv_shows/trending?page=1`
 
 ### Games (IGDB)
-- `GET /proxy/games/search?query=X&page=1&limit=20` — max limit 500
-- `GET /proxy/games/:id?images_size=10`
-- `GET /proxy/games/bulk?ids=1,2,3&images_size=10` — max 50 IDs
-- `GET /proxy/games/trending?page=1&limit=20` — max limit 100
+- `GET /proxy/v1/games/search?query=X&page=1&limit=20` — max limit 500
+- `GET /proxy/v1/games/:id?images_size=10`
+- `GET /proxy/v1/games/bulk?ids=1,2,3&images_size=10` — max 50 IDs
+- `GET /proxy/v1/games/trending?page=1&limit=20` — max limit 100
 
 ### Albums (Spotify)
-- `GET /proxy/albums/search?query=X&page=1`
-- `GET /proxy/albums/:id?images_size=10`
-- `GET /proxy/albums/bulk?ids=id1,id2,id3&images_size=10` — max 20 IDs (string)
-- `GET /proxy/albums/trending?page=1`
+- `GET /proxy/v1/albums/search?query=X&page=1`
+- `GET /proxy/v1/albums/:id?images_size=10`
+- `GET /proxy/v1/albums/bulk?ids=id1,id2,id3&images_size=10` — max 20 IDs (string)
+- `GET /proxy/v1/albums/trending?page=1`
 
 ### Books (OpenLibrary)
-- `GET /proxy/books/search?query=X&page=1`
-- `GET /proxy/books/:id?images_size=10`
-- `GET /proxy/books/bulk?ids=id1,id2,id3&images_size=10` — max 20 IDs (string)
-- `GET /proxy/books/trending?page=1`
+- `GET /proxy/v1/books/search?query=X&page=1`
+- `GET /proxy/v1/books/:id?images_size=10`
+- `GET /proxy/v1/books/bulk?ids=id1,id2,id3&images_size=10` — max 20 IDs (string)
+- `GET /proxy/v1/books/trending?page=1`
 
 ## Project Structure
 
@@ -185,6 +193,8 @@ internal/
 └── handlers/
     ├── common/                          # Shared response types & utilities
     ├── health/                          # Health check handler
+    ├── multisearch/                     # Multi-search handler (parallel fan-out)
+    ├── homepage/                        # Homepage handler (trending + bulk enrichment)
     ├── movies/                          # Movie handlers
     ├── tvshows/                         # TV show handlers
     ├── games/                           # Game handlers
