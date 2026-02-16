@@ -25,6 +25,8 @@ go.work
 .history
 .ionide
 
+api
+
 # Agents
 .agent/
 .claude/
