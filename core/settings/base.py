@@ -47,7 +47,6 @@ THIRD_PARTY_APPS = [
 
 PROJECT_APPS = [
     "authentication",
-    "proxy",
     "content",
 ]
 
@@ -104,3 +103,7 @@ USE_TZ = True
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Proxy API (Go microservice) configuration
+PROXY_API_BASE_URL = os.getenv("PROXY_API_BASE_URL", "http://localhost:8080/v1/proxy")
+PROXY_API_KEY = os.getenv("PROXY_API_KEY", "")

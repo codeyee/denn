@@ -228,24 +228,12 @@ class ListItemViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
         items_to_serialize = page if page is not None else list(queryset)
 
         # PERFORMANCE OPTIMIZATION: Pre-fetch all source_data in one parallel batch
-        # This prevents N+1 HTTP requests to external APIs (TMDB, IGDB, Spotify, etc.)
         country_code = request.query_params.get('country')
-        images_size = None
-        try:
-            images_size_param = request.query_params.get('images_size')
-            if images_size_param:
-                images_size = int(images_size_param)
-        except (ValueError, TypeError):
-            pass
-
-        # Extract content_items from list items
         content_items = [item.content_item for item in items_to_serialize]
 
-        # Fetch all source data in parallel (uses ThreadPoolExecutor with 4 workers)
         source_data_cache = bulk_fetch_source_data(
             content_items,
             country_code=country_code,
-            images_size=images_size
         )
 
         # Inject pre-fetched data into context for ContentItemSerializer

@@ -56,18 +56,10 @@ class ContentItemSerializer(BaseFlexSerializer):
         from content.utils import fetch_source_data
 
         country_code = None
-        images_size = None
-
         if request:
             country_code = request.query_params.get('country', None)
-            try:
-                images_size_param = request.query_params.get('images_size')
-                if images_size_param:
-                    images_size = int(images_size_param)
-            except (ValueError, TypeError):
-                pass
 
-        data = fetch_source_data(obj, country_code=country_code, images_size=images_size)
+        data = fetch_source_data(obj, country_code=country_code)
 
         if not data:
             return None
