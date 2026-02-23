@@ -20,6 +20,21 @@ func NewHandler(service *booksservice.Service) *Handler {
 	return &Handler{service: service}
 }
 
+// Search godoc
+// @Summary      Search books
+// @Tags         Books
+// @Produce      json
+// @Param        query  query    string  true   "Search term"
+// @Param        page   query    int     false  "Page number (min 1)"          default(1)   minimum(1)
+// @Param        limit  query    int     false  "Results per page (max 50)"    default(20)  minimum(1)  maximum(50)
+// @Success      200    {object} common.PaginatedSearchResponse
+// @Failure      400    {object} common.ErrorResponse
+// @Failure      401    {object} map[string]string
+// @Failure      429    {object} common.ErrorResponse
+// @Failure      502    {object} common.ErrorResponse
+// @Security     ApiKeyHeader
+// @Security     BearerAuth
+// @Router       /books/search [get]
 func (h *Handler) Search(c *gin.Context) {
 	query := c.Query("query")
 
@@ -47,6 +62,20 @@ func (h *Handler) Search(c *gin.Context) {
 	})
 }
 
+// Detail godoc
+// @Summary      Get book details
+// @Tags         Books
+// @Produce      json
+// @Param        id   path     string  true  "OpenLibrary work ID (e.g. OL27448W)"
+// @Success      200  {object}  models.BookResponse
+// @Failure      400  {object}  common.ErrorResponse
+// @Failure      401  {object}  map[string]string
+// @Failure      404  {object}  common.ErrorResponse
+// @Failure      429  {object}  common.ErrorResponse
+// @Failure      502  {object}  common.ErrorResponse
+// @Security     ApiKeyHeader
+// @Security     BearerAuth
+// @Router       /books/{id} [get]
 func (h *Handler) Detail(c *gin.Context) {
 	bookID := c.Param("id")
 
@@ -65,6 +94,19 @@ func (h *Handler) Detail(c *gin.Context) {
 	c.JSON(http.StatusOK, book.ToResponse())
 }
 
+// Bulk godoc
+// @Summary      Get multiple books by ID
+// @Description  Fetches full details for up to 20 books in parallel. Book IDs are OpenLibrary work IDs (e.g. OL27448W). Failed IDs are silently omitted.
+// @Tags         Books
+// @Produce      json
+// @Param        ids  query    string  true  "Comma-separated OpenLibrary work IDs (max 20)"  example(OL27448W,OL82563W)
+// @Success      200  {array}   models.BookResponse
+// @Failure      400  {object}  common.ErrorResponse
+// @Failure      401  {object}  map[string]string
+// @Failure      429  {object}  common.ErrorResponse
+// @Security     ApiKeyHeader
+// @Security     BearerAuth
+// @Router       /books/bulk [get]
 func (h *Handler) Bulk(c *gin.Context) {
 	idsParam := c.Query("ids")
 
@@ -97,6 +139,20 @@ func (h *Handler) Bulk(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
+// Trending godoc
+// @Summary      Get trending books
+// @Description  Sourced from OpenLibrary bestsellers with client-side pagination.
+// @Tags         Books
+// @Produce      json
+// @Param        page   query    int  false  "Page number (min 1)"        default(1)   minimum(1)
+// @Param        limit  query    int  false  "Results per page (max 50)"  default(20)  minimum(1)  maximum(50)
+// @Success      200    {object} common.PaginatedSearchResponse
+// @Failure      401    {object} map[string]string
+// @Failure      429    {object} common.ErrorResponse
+// @Failure      502    {object} common.ErrorResponse
+// @Security     ApiKeyHeader
+// @Security     BearerAuth
+// @Router       /books/trending [get]
 func (h *Handler) Trending(c *gin.Context) {
 	page, limit := common.ParsePagination(c)
 

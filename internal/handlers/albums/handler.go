@@ -20,6 +20,22 @@ func NewHandler(service *spotifyservice.Service) *Handler {
 	return &Handler{service: service}
 }
 
+// Search godoc
+// @Summary      Search albums
+// @Description  Singles are excluded from results (only albums and EPs are returned).
+// @Tags         Albums
+// @Produce      json
+// @Param        query  query    string  true   "Search term"
+// @Param        page   query    int     false  "Page number (min 1)"          default(1)   minimum(1)
+// @Param        limit  query    int     false  "Results per page (max 50)"    default(20)  minimum(1)  maximum(50)
+// @Success      200    {object} common.PaginatedSearchResponse
+// @Failure      400    {object} common.ErrorResponse
+// @Failure      401    {object} map[string]string
+// @Failure      429    {object} common.ErrorResponse
+// @Failure      502    {object} common.ErrorResponse
+// @Security     ApiKeyHeader
+// @Security     BearerAuth
+// @Router       /albums/search [get]
 func (h *Handler) Search(c *gin.Context) {
 	query := c.Query("query")
 
@@ -47,6 +63,20 @@ func (h *Handler) Search(c *gin.Context) {
 	})
 }
 
+// Detail godoc
+// @Summary      Get album details
+// @Tags         Albums
+// @Produce      json
+// @Param        id   path     string  true  "Spotify album ID"
+// @Success      200  {object}  models.AlbumResponse
+// @Failure      400  {object}  common.ErrorResponse
+// @Failure      401  {object}  map[string]string
+// @Failure      404  {object}  common.ErrorResponse
+// @Failure      429  {object}  common.ErrorResponse
+// @Failure      502  {object}  common.ErrorResponse
+// @Security     ApiKeyHeader
+// @Security     BearerAuth
+// @Router       /albums/{id} [get]
 func (h *Handler) Detail(c *gin.Context) {
 	albumID := c.Param("id")
 
@@ -65,6 +95,19 @@ func (h *Handler) Detail(c *gin.Context) {
 	c.JSON(http.StatusOK, album.ToResponse())
 }
 
+// Bulk godoc
+// @Summary      Get multiple albums by ID
+// @Description  Fetches full details for up to 20 albums in parallel. Album IDs are Spotify string IDs. Failed IDs are silently omitted.
+// @Tags         Albums
+// @Produce      json
+// @Param        ids  query    string  true  "Comma-separated Spotify album IDs (max 20)"  example(5K79FLRUCSysQnVESLcTdb,3RQQmkQEvNCY4prGKE6oc5)
+// @Success      200  {array}   models.AlbumResponse
+// @Failure      400  {object}  common.ErrorResponse
+// @Failure      401  {object}  map[string]string
+// @Failure      429  {object}  common.ErrorResponse
+// @Security     ApiKeyHeader
+// @Security     BearerAuth
+// @Router       /albums/bulk [get]
 func (h *Handler) Bulk(c *gin.Context) {
 	idsParam := c.Query("ids")
 
@@ -97,6 +140,20 @@ func (h *Handler) Bulk(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
+// Trending godoc
+// @Summary      Get trending albums
+// @Description  Sourced from Spotify Charts.
+// @Tags         Albums
+// @Produce      json
+// @Param        page   query    int  false  "Page number (min 1)"        default(1)   minimum(1)
+// @Param        limit  query    int  false  "Results per page (max 50)"  default(20)  minimum(1)  maximum(50)
+// @Success      200    {object} common.PaginatedSearchResponse
+// @Failure      401    {object} map[string]string
+// @Failure      429    {object} common.ErrorResponse
+// @Failure      502    {object} common.ErrorResponse
+// @Security     ApiKeyHeader
+// @Security     BearerAuth
+// @Router       /albums/trending [get]
 func (h *Handler) Trending(c *gin.Context) {
 	page, limit := common.ParsePagination(c)
 

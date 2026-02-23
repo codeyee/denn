@@ -60,6 +60,24 @@ type ContentResult struct {
 	Error    *string                    `json:"error"`
 }
 
+// HomepageContentResult is used only for Swagger documentation.
+// At runtime Results contains full detail objects (MovieResponse, GameResponse, etc.).
+type HomepageContentResult struct {
+	Metadata *common.PaginationMetadata `json:"metadata"`
+	Results  []any                      `json:"results"`
+	Error    *string                    `json:"error"`
+}
+
+// HomepageResponse is used only for Swagger documentation.
+// At runtime the handler returns map[string]ContentResult with dynamic keys.
+type HomepageResponse struct {
+	Movies  HomepageContentResult `json:"movies"`
+	TVShows HomepageContentResult `json:"tv_shows"`
+	Games   HomepageContentResult `json:"games"`
+	Albums  HomepageContentResult `json:"albums"`
+	Books   HomepageContentResult `json:"books"`
+}
+
 type trendingData struct {
 	items    []models.SearchItem
 	metadata *common.PaginationMetadata
@@ -76,6 +94,20 @@ const (
 
 var allKeys = []string{keyMovies, keyTVShows, keyGames, keyAlbums, keyBooks}
 
+// Homepage godoc
+// @Summary      Homepage — trending content with full detail enrichment
+// @Description  Two-phase parallel fan-out: (1) fetch trending/popular from all 5 services, (2) enrich with full detail objects. Returns MovieResponse, TVShowResponse, GameResponse, AlbumResponse, BookResponse objects preserving trending order. Country is read from the X-User-Country header.
+// @Tags         Aggregate
+// @Produce      json
+// @Param        page            query    int     false  "Page number (min 1)"        default(1)   minimum(1)
+// @Param        limit           query    int     false  "Results per page (max 50)"  default(20)  minimum(1)  maximum(50)
+// @Param        X-User-Country  header   string  false  "ISO 3166-1 alpha-2 country code for platform availability (default US)"
+// @Success      200  {object}  homepage.HomepageResponse
+// @Failure      401  {object}  map[string]string
+// @Failure      429  {object}  common.ErrorResponse
+// @Security     ApiKeyHeader
+// @Security     BearerAuth
+// @Router       /homepage [get]
 func (h *Handler) Homepage(c *gin.Context) {
 	page, limit := common.ParsePagination(c)
 	country := common.GetCountryFromHeader(c)

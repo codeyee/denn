@@ -76,6 +76,32 @@ type ContentResult struct {
 	Error    *string                    `json:"error"`
 }
 
+// MultiSearchResponse is used only for Swagger documentation.
+// At runtime the handler returns map[string]ContentResult with dynamic keys.
+type MultiSearchResponse struct {
+	Movies  ContentResult `json:"movies"`
+	TVShows ContentResult `json:"tv_shows"`
+	Games   ContentResult `json:"games"`
+	Albums  ContentResult `json:"albums"`
+	Books   ContentResult `json:"books"`
+}
+
+// Search godoc
+// @Summary      Multi-search across all content types
+// @Description  Fans out the query in parallel to movies, TV shows, games, albums, and books. Returns per-type results with partial failure handling — if one upstream fails, its error field is set and the others still return results.
+// @Tags         Aggregate
+// @Produce      json
+// @Param        query  query    string  true   "Search term"
+// @Param        page   query    int     false  "Page number (min 1)"        default(1)   minimum(1)
+// @Param        limit  query    int     false  "Results per page (max 50)"  default(20)  minimum(1)  maximum(50)
+// @Param        types  query    string  false  "Comma-separated content types to search: movies,tv_shows,games,albums,books (default: all)"
+// @Success      200    {object} multisearch.MultiSearchResponse
+// @Failure      400    {object} common.ErrorResponse
+// @Failure      401    {object} map[string]string
+// @Failure      429    {object} common.ErrorResponse
+// @Security     ApiKeyHeader
+// @Security     BearerAuth
+// @Router       /multi-search [get]
 func (h *Handler) Search(c *gin.Context) {
 	query := c.Query("query")
 	if query == "" {

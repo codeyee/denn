@@ -21,6 +21,22 @@ func NewHandler(service *gamesservice.Service) *Handler {
 	return &Handler{service: service}
 }
 
+// Search godoc
+// @Summary      Search games
+// @Description  Searches via IGDB. Note: total_pages and total_results are always 0 (IGDB limitation).
+// @Tags         Games
+// @Produce      json
+// @Param        query  query    string  true   "Search term"
+// @Param        page   query    int     false  "Page number (min 1)"          default(1)   minimum(1)
+// @Param        limit  query    int     false  "Results per page (max 50)"    default(20)  minimum(1)  maximum(50)
+// @Success      200    {object} common.PaginatedSearchResponse
+// @Failure      400    {object} common.ErrorResponse
+// @Failure      401    {object} map[string]string
+// @Failure      429    {object} common.ErrorResponse
+// @Failure      502    {object} common.ErrorResponse
+// @Security     ApiKeyHeader
+// @Security     BearerAuth
+// @Router       /games/search [get]
 func (h *Handler) Search(c *gin.Context) {
 	query := c.Query("query")
 
@@ -51,6 +67,20 @@ func (h *Handler) Search(c *gin.Context) {
 	})
 }
 
+// Detail godoc
+// @Summary      Get game details
+// @Tags         Games
+// @Produce      json
+// @Param        id   path     int  true  "IGDB game ID"
+// @Success      200  {object}  models.GameResponse
+// @Failure      400  {object}  common.ErrorResponse
+// @Failure      401  {object}  map[string]string
+// @Failure      404  {object}  common.ErrorResponse
+// @Failure      429  {object}  common.ErrorResponse
+// @Failure      502  {object}  common.ErrorResponse
+// @Security     ApiKeyHeader
+// @Security     BearerAuth
+// @Router       /games/{id} [get]
 func (h *Handler) Detail(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 
@@ -68,6 +98,19 @@ func (h *Handler) Detail(c *gin.Context) {
 	c.JSON(http.StatusOK, game.ToResponse())
 }
 
+// Bulk godoc
+// @Summary      Get multiple games by ID
+// @Description  Fetches full details for up to 50 games in parallel.
+// @Tags         Games
+// @Produce      json
+// @Param        ids  query    string  true  "Comma-separated IGDB game IDs (max 50)"  example(7346,1020)
+// @Success      200  {array}   models.GameResponse
+// @Failure      400  {object}  common.ErrorResponse
+// @Failure      401  {object}  map[string]string
+// @Failure      429  {object}  common.ErrorResponse
+// @Security     ApiKeyHeader
+// @Security     BearerAuth
+// @Router       /games/bulk [get]
 func (h *Handler) Bulk(c *gin.Context) {
 	idsParam := c.Query("ids")
 
@@ -109,6 +152,20 @@ func (h *Handler) Bulk(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
+// Trending godoc
+// @Summary      Get trending games
+// @Description  Custom trending algorithm: 70% want-to-play + 30% visits, with recency multiplier (up to 4x). Browser-only games excluded. total_pages and total_results are always 0.
+// @Tags         Games
+// @Produce      json
+// @Param        page   query    int  false  "Page number (min 1)"        default(1)   minimum(1)
+// @Param        limit  query    int  false  "Results per page (max 50)"  default(20)  minimum(1)  maximum(50)
+// @Success      200    {object} common.PaginatedSearchResponse
+// @Failure      401    {object} map[string]string
+// @Failure      429    {object} common.ErrorResponse
+// @Failure      502    {object} common.ErrorResponse
+// @Security     ApiKeyHeader
+// @Security     BearerAuth
+// @Router       /games/trending [get]
 func (h *Handler) Trending(c *gin.Context) {
 	page, limit := common.ParsePagination(c)
 

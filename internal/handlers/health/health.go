@@ -12,6 +12,13 @@ type HealthResponse struct {
 	Version string `json:"version"`
 }
 
+// HealthCheck godoc
+// @Summary      Health check
+// @Description  Public endpoint — no authentication required.
+// @Tags         Health
+// @Produce      json
+// @Success      200  {object}  health.HealthResponse
+// @Router       /health [get]
 func HealthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, HealthResponse{
 		Service: "denn-proxy",

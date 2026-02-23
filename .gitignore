@@ -1,5 +1,9 @@
 .env
 
+# Swag intermediate files (swagger.yaml is renamed to openapi.yaml by make gen-spec)
+docs/swagger.json
+docs/swagger.yaml
+
 *.exe
 *.exe~
 *.dll

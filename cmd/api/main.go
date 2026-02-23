@@ -1,3 +1,22 @@
+// @title           Denn Proxy API
+// @version         1.0
+// @description     REST API proxy that aggregates metadata from TMDB, IGDB, Spotify, and OpenLibrary.
+// @description     Authentication: send API key via X-Api-Key header or Authorization: Bearer <token>.
+// @description     Rate limit: 60 requests/minute on protected endpoints.
+
+// @host            localhost:8080
+// @BasePath        /proxy/v1
+
+// @securityDefinitions.apikey  ApiKeyHeader
+// @in                          header
+// @name                        X-Api-Key
+// @description                 API key passed in the X-Api-Key header
+
+// @securityDefinitions.apikey  BearerAuth
+// @in                          header
+// @name                        Authorization
+// @description                 API key passed as a Bearer token: "Authorization: Bearer <key>"
+
 package main
 
 import (
