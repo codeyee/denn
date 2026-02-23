@@ -20,7 +20,7 @@ interface AddToListModalProps {
     content_type: string;
   };
   tvShowSeasons?: TVSeason[];
-  tvShowId?: number;
+  tvShowId?: string;
 }
 
 export function AddToListModal({
@@ -41,7 +41,7 @@ export function AddToListModal({
     ? tvShowSeasons
     : (fetchedContentItem?.source_data as unknown as TVShowDetail)?.seasons || [], [tvShowSeasons, fetchedContentItem]);
 
-  const effectiveTvShowId = useMemo(() => tvShowId || fetchedContentItem?.id, [tvShowId, fetchedContentItem]);
+  const effectiveTvShowId = useMemo(() => tvShowId || fetchedContentItem?.external_id, [tvShowId, fetchedContentItem]);
 
   const isMultiSeasonShow = Boolean(effectiveSeasons && effectiveSeasons.length > 0 && effectiveTvShowId);
 

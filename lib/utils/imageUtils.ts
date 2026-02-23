@@ -11,16 +11,16 @@ export function getImageUrl(
 ): string | null {
   if (!images || !Array.isArray(images)) return null;
 
-  const normalizedType = type.toUpperCase();
+  const normalizedType = type.toLowerCase();
 
-  const typeImages = images.filter((img) => img.type.toUpperCase() === normalizedType);
+  const typeImages = images.filter((img) => img.type.toLowerCase() === normalizedType);
   if (typeImages.length === 0) return null;
 
-  const preferredImage = typeImages.find((img) => img.size.toUpperCase() === preferredSize);
+  const preferredImage = typeImages.find((img) => img.size.toLowerCase() === preferredSize);
   if (preferredImage) return preferredImage.image_url;
 
   const fallbackSize = getFallbackSize(preferredSize);
-  const fallbackImage = typeImages.find((img) => img.size.toUpperCase() === fallbackSize);
+  const fallbackImage = typeImages.find((img) => img.size.toLowerCase() === fallbackSize);
   if (fallbackImage) return fallbackImage.image_url;
 
   return typeImages[0]?.image_url || null;

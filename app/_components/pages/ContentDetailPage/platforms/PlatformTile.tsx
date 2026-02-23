@@ -9,7 +9,7 @@ interface PlatformTileProps {
 }
 
 export function PlatformTile({ platform }: PlatformTileProps) {
-  const imageUrl = getPlatformImageUrl(platform.title, platform.image_url);
+  const imageUrl = getPlatformImageUrl(platform.name, platform.image_url);
 
   return (
     <div className="flex flex-col items-center gap-2">
@@ -17,7 +17,7 @@ export function PlatformTile({ platform }: PlatformTileProps) {
         {imageUrl && (
           <Image
             src={imageUrl}
-            alt={platform.title}
+            alt={platform.name}
             width={56}
             height={56}
             className="w-full h-full object-cover"
@@ -26,14 +26,7 @@ export function PlatformTile({ platform }: PlatformTileProps) {
         )}
       </div>
       <div className="text-center max-w-[80px]">
-        <p className="text-xs text-white/90 font-sans">{platform.title}</p>
-        {platform.actions && platform.actions.length > 0 && (
-          <p className="text-[10px] text-white/60 font-sans">
-            {platform.actions
-              .map((action) => action.charAt(0) + action.slice(1).toLowerCase())
-              .join(", ")}
-          </p>
-        )}
+        <p className="text-xs text-white/90 font-sans">{platform.name}</p>
       </div>
     </div>
   );

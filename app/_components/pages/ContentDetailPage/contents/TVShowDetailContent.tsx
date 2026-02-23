@@ -17,8 +17,7 @@ export function TVShowDetailContent({
     tvShow.status === "Returning Series" ? "Currently in emission" : "Ended";
   const releaseDate = formatReleaseDate(tvShow.release_date);
 
-  // Get platforms grouped by country code
-  const platformsByCountry = tvShow.platforms || {};
+  const platformsByAction = tvShow.platforms || {};
 
   return (
     <div className="container mx-auto px-4 mt-8">
@@ -100,7 +99,7 @@ export function TVShowDetailContent({
 
         {/* Right column - Where to Watch */}
         <div className="lg:col-span-1">
-          <PlatformsDisplay platforms={platformsByCountry} />
+          <PlatformsDisplay platforms={platformsByAction} />
         </div>
       </div>
     </div>

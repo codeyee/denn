@@ -12,7 +12,7 @@ interface UseListOperationsParams {
         content_type: string;
     };
     tvShowSeasons?: TVSeason[];
-    tvShowId?: number;
+    tvShowId?: string;
     refreshLists: () => Promise<void>;
 }
 

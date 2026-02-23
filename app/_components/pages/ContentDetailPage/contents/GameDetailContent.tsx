@@ -12,10 +12,8 @@ interface GameDetailContentProps {
 export function GameDetailContent({ game }: GameDetailContentProps) {
   const releaseDate = formatReleaseDate(game.release_date);
 
-  // Convert game platforms to the format expected by PlatformsDisplay
-  // Use empty string as country code since games don't have regional platforms
-  const platformsByCountry: Record<string, Platform[]> =
-    game.platforms && game.platforms.length > 0 ? { "": game.platforms } : {};
+  const platformsByAction: Record<string, Platform[]> =
+    game.platforms && game.platforms.length > 0 ? { platforms: game.platforms } : {};
 
   return (
     <div className="container mx-auto px-4 mt-8">
@@ -52,7 +50,7 @@ export function GameDetailContent({ game }: GameDetailContentProps) {
         {/* Right column - Where to Play */}
         <div className="lg:col-span-1">
           <PlatformsDisplay
-            platforms={platformsByCountry}
+            platforms={platformsByAction}
             title="Where to Play"
           />
         </div>

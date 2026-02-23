@@ -27,8 +27,7 @@ export function SeasonDetailContent({
 }: SeasonDetailContentProps) {
   const releaseDate = formatReleaseDate(season.release_date);
 
-  // Get platforms grouped by country code
-  const platformsByCountry = season.platforms || {};
+  const platformsByAction = season.platforms || {};
 
   return (
     <>
@@ -67,7 +66,7 @@ export function SeasonDetailContent({
 
           {/* Right column - Where to Watch */}
           <div className="lg:col-span-1">
-            <PlatformsDisplay platforms={platformsByCountry} />
+            <PlatformsDisplay platforms={platformsByAction} />
           </div>
         </div>
       </div>

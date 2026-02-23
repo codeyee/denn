@@ -1,5 +1,4 @@
-import { api } from "../api";
-import { addCountryParam } from "../utils/queryParams";
+import { proxyApi } from "../proxyApi";
 import type {
   VideoSearchResponse,
   MovieDetail,
@@ -13,62 +12,48 @@ import type {
 export const videoActions = {
   searchMovies: (params: VideoSearchParams, signal?: AbortSignal): Promise<VideoSearchResponse> => {
     const queryParams = new URLSearchParams();
-    queryParams.append("query", params.query);
+    queryParams.append("q", params.q);
     if (params.page) queryParams.append("page", String(params.page));
-    if (params.page_size) queryParams.append("page_size", String(params.page_size));
+    if (params.limit) queryParams.append("limit", String(params.limit));
 
-    return api.get<VideoSearchResponse>(
-      `/proxy/movies/search?${queryParams}`,
-      true,
-      signal
-    );
+    return proxyApi.get<VideoSearchResponse>(`/movies?${queryParams}`, { signal });
   },
 
   searchTVShows: (params: VideoSearchParams, signal?: AbortSignal): Promise<VideoSearchResponse> => {
     const queryParams = new URLSearchParams();
-    queryParams.append("query", params.query);
+    queryParams.append("q", params.q);
     if (params.page) queryParams.append("page", String(params.page));
-    if (params.page_size) queryParams.append("page_size", String(params.page_size));
+    if (params.limit) queryParams.append("limit", String(params.limit));
 
-    return api.get<VideoSearchResponse>(
-      `/proxy/tv-shows/search?${queryParams}`,
-      true,
-      signal
+    return proxyApi.get<VideoSearchResponse>(`/tv-shows?${queryParams}`, { signal });
+  },
+
+  getMovie: (movieId: string, country?: string): Promise<MovieDetail> => {
+    return proxyApi.getWithCountry<MovieDetail>(`/movies/${movieId}`, { country });
+  },
+
+  getTVShow: (tvId: string, country?: string): Promise<TVShowDetail> => {
+    return proxyApi.getWithCountry<TVShowDetail>(`/tv-shows/${tvId}`, { country });
+  },
+
+  getTVSeason: (tvId: string, seasonNumber: number, country?: string): Promise<TVSeasonDetail> => {
+    return proxyApi.getWithCountry<TVSeasonDetail>(
+      `/tv-shows/${tvId}/seasons/${seasonNumber}`,
+      { country }
     );
   },
 
-  getMovie: (movieId: number, country?: string): Promise<MovieDetail> => {
-    const params = new URLSearchParams();
-    addCountryParam(params, country);
-    return api.get<MovieDetail>(`/proxy/movies/${movieId}?${params}`, true);
-  },
-
-  getTVShow: (tvId: number, country?: string): Promise<TVShowDetail> => {
-    const params = new URLSearchParams();
-    addCountryParam(params, country);
-    return api.get<TVShowDetail>(`/proxy/tv-shows/${tvId}?${params}`, true);
-  },
-
-  getTVSeason: (tvId: number, seasonNumber: number, country?: string): Promise<TVSeasonDetail> => {
-    const params = new URLSearchParams();
-    addCountryParam(params, country);
-    return api.get<TVSeasonDetail>(
-      `/proxy/tv-shows/${tvId}/season/${seasonNumber}?${params}`,
-      true
+  bulkGetMovies: (ids: string[], country?: string): Promise<BulkMoviesResponse> => {
+    return proxyApi.getWithCountry<BulkMoviesResponse>(
+      `/movies/bulk?ids=${ids.join(",")}`,
+      { country }
     );
   },
 
-  bulkGetMovies: (ids: number[], country?: string): Promise<BulkMoviesResponse> => {
-    const params = new URLSearchParams();
-    params.append("ids", ids.join(","));
-    addCountryParam(params, country);
-    return api.get<BulkMoviesResponse>(`/proxy/movies/bulk?${params}`, true);
-  },
-
-  bulkGetTVShows: (ids: number[], country?: string): Promise<BulkTVShowsResponse> => {
-    const params = new URLSearchParams();
-    params.append("ids", ids.join(","));
-    addCountryParam(params, country);
-    return api.get<BulkTVShowsResponse>(`/proxy/tv-shows/bulk?${params}`, true);
+  bulkGetTVShows: (ids: string[], country?: string): Promise<BulkTVShowsResponse> => {
+    return proxyApi.getWithCountry<BulkTVShowsResponse>(
+      `/tv-shows/bulk?ids=${ids.join(",")}`,
+      { country }
+    );
   },
 };

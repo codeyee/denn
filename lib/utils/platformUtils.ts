@@ -76,9 +76,9 @@ export const platformImageOverrides: Record<string, string> = {
 };
 
 export function getPlatformImageUrl(
-  platformTitle: string,
+  platformName: string,
   originalImageUrl: string | null
 ): string | null {
-  const override = platformImageOverrides[platformTitle];
+  const override = platformImageOverrides[platformName];
   return override ?? originalImageUrl;
 }

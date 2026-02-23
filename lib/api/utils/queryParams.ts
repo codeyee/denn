@@ -52,6 +52,10 @@ export function addPaginationParams(
   }
 }
 
+/**
+ * @deprecated Country is now sent via X-User-Country header in proxy requests.
+ * This function is kept for Django API endpoints that still use country as a query param.
+ */
 export function addCountryParam(
   params: URLSearchParams,
   country?: string

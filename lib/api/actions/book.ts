@@ -1,4 +1,4 @@
-import { api } from "../api";
+import { proxyApi } from "../proxyApi";
 import type {
   BookSearchResponse,
   BookDetail,
@@ -9,24 +9,18 @@ import type {
 export const bookActions = {
   search: (params: BookSearchParams, signal?: AbortSignal): Promise<BookSearchResponse> => {
     const queryParams = new URLSearchParams();
-    queryParams.append("query", params.query);
+    queryParams.append("q", params.q);
     if (params.page) queryParams.append("page", String(params.page));
-    if (params.page_size) queryParams.append("page_size", String(params.page_size));
+    if (params.limit) queryParams.append("limit", String(params.limit));
 
-    return api.get<BookSearchResponse>(
-      `/proxy/books/search?${queryParams}`,
-      true,
-      signal
-    );
+    return proxyApi.get<BookSearchResponse>(`/books?${queryParams}`, { signal });
   },
 
   getBook: (bookId: string): Promise<BookDetail> => {
-    return api.get<BookDetail>(`/proxy/books/${bookId}`, true);
+    return proxyApi.get<BookDetail>(`/books/${bookId}`);
   },
 
   bulkGetBooks: (ids: string[]): Promise<BulkBooksResponse> => {
-    const params = new URLSearchParams();
-    params.append("ids", ids.join(","));
-    return api.get<BulkBooksResponse>(`/proxy/books/bulk?${params}`, true);
+    return proxyApi.get<BulkBooksResponse>(`/books/bulk?ids=${ids.join(",")}`);
   },
 };

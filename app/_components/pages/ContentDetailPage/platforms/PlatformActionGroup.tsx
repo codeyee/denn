@@ -4,23 +4,26 @@ import { Platform } from "@/lib/types";
 import { filterPlatforms } from "./filterPlatforms";
 import { PlatformTile } from "./PlatformTile";
 
-interface PlatformCountryRowProps {
-  countryCode: string;
+interface PlatformActionGroupProps {
+  actionLabel: string;
   platformList: Platform[];
 }
 
-export function PlatformCountryRow({
-  countryCode,
+export function PlatformActionGroup({
+  actionLabel,
   platformList,
-}: PlatformCountryRowProps) {
+}: PlatformActionGroupProps) {
   const filtered = filterPlatforms(platformList);
   if (filtered.length === 0) return null;
 
   return (
-    <div key={countryCode} className="mb-6">
+    <div className="mb-6">
+      <p className="text-sm text-white/60 mb-3 font-medium uppercase tracking-wide">
+        {actionLabel}
+      </p>
       <div className="flex flex-wrap gap-3">
         {filtered.map((platform, index) => (
-          <PlatformTile key={`${platform.title ?? index}-${index}`} platform={platform} />
+          <PlatformTile key={`${platform.name}-${index}`} platform={platform} />
         ))}
       </div>
     </div>

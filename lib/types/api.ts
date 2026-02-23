@@ -80,19 +80,19 @@ export enum AuthorType {
 }
 
 export enum ImageType {
-    POSTER = "POSTER",
-    GALLERY = "GALLERY",
+    POSTER = "poster",
+    GALLERY = "gallery",
 }
 
 export enum ImageSize {
-    STANDARD = "STANDARD",
-    ORIGINAL = "ORIGINAL",
+    STANDARD = "standard",
+    ORIGINAL = "original",
 }
 
-export enum ProviderAction {
-    STREAM = "STREAM",
-    RENT = "RENT",
-    BUY = "BUY",
+export enum PlatformAction {
+    STREAM = "stream",
+    RENT = "rent",
+    BUY = "buy",
 }
 
 export enum GameType {
@@ -232,13 +232,12 @@ export interface Image {
 }
 
 export interface Platform {
-    title: string;
+    name: string;
     image_url: string | null;
-    actions?: ProviderAction[] | null;
 }
 
 export interface SearchItem {
-    id: number | string;
+    id: string;
     type: ContentType;
     title: string;
     original_title?: string | null;
@@ -260,7 +259,7 @@ export interface GameImages {
 }
 
 export interface MovieDetail {
-    id: number;
+    id: string;
     type: "MOVIE";
     title: string;
     original_title: string;
@@ -277,7 +276,7 @@ export interface MovieDetail {
 }
 
 export interface TVShowDetail {
-    id: number;
+    id: string;
     type: "TV_SHOW";
     title: string;
     original_title: string;
@@ -296,7 +295,7 @@ export interface TVShowDetail {
 }
 
 export interface TVSeason {
-    id: number;
+    id: string;
     season_number: number;
     title: string;
     description: string | null;
@@ -306,7 +305,7 @@ export interface TVSeason {
 }
 
 export interface TVSeasonDetail {
-    id: number;
+    id: string;
     type: "SEASON";
     season_number: number;
     title: string;
@@ -321,7 +320,7 @@ export interface TVSeasonDetail {
 }
 
 export interface TVEpisode {
-    id: number;
+    id: string;
     episode_number: number;
     season_number: number;
     episode_type: string | null;
@@ -332,8 +331,20 @@ export interface TVEpisode {
     image_url: string | null;
 }
 
+export interface ProxyPaginationMetadata {
+    page: number;
+    total_results: number;
+    total_pages: number;
+}
+
+export interface ProxyCategoryResponse<T = SearchItem> {
+    results: T[];
+    metadata: ProxyPaginationMetadata;
+    error: string;
+}
+
 export interface VideoSearchResponse {
-    metadata: PaginationMetadata;
+    metadata: ProxyPaginationMetadata;
     results: SearchItem[];
 }
 
@@ -343,23 +354,23 @@ export interface VideoSuggestionsResponse {
 }
 
 export interface BulkMovieItem {
-    key: number;
-    id: number;
+    key: string;
+    id: string;
     data: MovieDetail | null;
     status_code: number;
     error: string | null;
 }
 
 export interface BulkTVShowItem {
-    key: number;
-    id: number;
+    key: string;
+    id: string;
     data: TVShowDetail | null;
     status_code: number;
     error: string | null;
 }
 
 export interface BulkSeasonItem {
-    tv_id: number;
+    tv_id: string;
     season_number: number;
     data: TVSeasonDetail | null;
     status_code: number;
@@ -391,7 +402,7 @@ export interface Track {
 }
 
 export interface MusicSearchResponse {
-    metadata: PaginationMetadata;
+    metadata: ProxyPaginationMetadata;
     results: SearchItem[];
 }
 
@@ -406,8 +417,14 @@ export type BulkAlbumsResponse = AlbumDetail[];
 export type BulkGamesResponse = GameDetail[];
 export type BulkBooksResponse = BookDetail[];
 
+export interface GamePlayTime {
+    hastily: number;
+    normally: number;
+    completely: number;
+}
+
 export interface GameDetail {
-    id: number;
+    id: string;
     type: "GAME";
     title: string;
     game_type: string | null;
@@ -417,10 +434,15 @@ export interface GameDetail {
     authors: Author[] | null;
     platforms: Platform[] | null;
     images: Image[];
+    genres: string[];
+    themes: string[];
+    game_modes: string[];
+    series: string | null;
+    play_time: GamePlayTime | null;
 }
 
 export interface GameSearchResponse {
-    metadata: PaginationMetadata;
+    metadata: ProxyPaginationMetadata;
     results: SearchItem[];
 }
 
@@ -442,7 +464,7 @@ export interface BookDetail {
 }
 
 export interface BookSearchResponse {
-    metadata: PaginationMetadata;
+    metadata: ProxyPaginationMetadata;
     results: SearchItem[];
 }
 
@@ -453,6 +475,7 @@ export interface BooksSuggestionsResponse {
 
 export interface BulkBookItem {
     key: string;
+    id: string;
     data: BookDetail | null;
     status_code: number;
     error: string | null;
@@ -478,11 +501,11 @@ export interface ContentItemData {
 }
 
 export interface HomepageResponse {
-    movies: MovieDetail[];
-    tv_shows: TVShowDetail[];
-    games: GameDetail[];
-    albums: AlbumDetail[];
-    books: BookDetail[];
+    movies: ProxyCategoryResponse<MovieDetail>;
+    "tv-shows": ProxyCategoryResponse<TVShowDetail>;
+    games: ProxyCategoryResponse<GameDetail>;
+    albums: ProxyCategoryResponse<AlbumDetail>;
+    books: ProxyCategoryResponse<BookDetail>;
 }
 
 export interface PaginationMetadata {
@@ -577,42 +600,41 @@ export interface InvitationQueryParams {
 }
 
 export interface VideoSearchParams {
-    query: string;
+    q: string;
     page?: number;
-    page_size?: number;
+    limit?: number;
 }
 
 export interface GameSearchParams {
-    query: string;
+    q: string;
     page?: number;
-    page_size?: number;
+    limit?: number;
 }
 
 export interface MusicSearchParams {
-    query: string;
+    q: string;
     page?: number;
-    page_size?: number;
+    limit?: number;
 }
 
 export interface BookSearchParams {
-    query: string;
+    q: string;
     page?: number;
-    page_size?: number;
+    limit?: number;
 }
 
 export interface MultiSearchParams {
-    query: string;
-    types?: string; // "MOVIES,TV_SHOWS,GAMES,ALBUMS,BOOKS"
-    limit?: number; // 1-100
-    include_unreleased?: boolean;
+    q: string;
+    types?: string;
+    limit?: number;
 }
 
 export interface MultiSearchResponse {
-    movies: SearchItem[];
-    tv_shows: SearchItem[];
-    games: SearchItem[];
-    music: SearchItem[];
-    books: SearchItem[];
+    movies: ProxyCategoryResponse<SearchItem>;
+    "tv-shows": ProxyCategoryResponse<SearchItem>;
+    games: ProxyCategoryResponse<SearchItem>;
+    albums: ProxyCategoryResponse<SearchItem>;
+    books: ProxyCategoryResponse<SearchItem>;
 }
 
 export type ListSummary = Pick<UserList, "id" | "name" | "item_count">;

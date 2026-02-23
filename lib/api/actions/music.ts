@@ -1,4 +1,4 @@
-import { api } from "../api";
+import { proxyApi } from "../proxyApi";
 import type {
   MusicSearchResponse,
   AlbumDetail,
@@ -9,24 +9,18 @@ import type {
 export const musicActions = {
   search: (params: MusicSearchParams, signal?: AbortSignal): Promise<MusicSearchResponse> => {
     const queryParams = new URLSearchParams();
-    queryParams.append("query", params.query);
+    queryParams.append("q", params.q);
     if (params.page) queryParams.append("page", String(params.page));
-    if (params.page_size) queryParams.append("page_size", String(params.page_size));
+    if (params.limit) queryParams.append("limit", String(params.limit));
 
-    return api.get<MusicSearchResponse>(
-      `/proxy/albums/search?${queryParams}`,
-      true,
-      signal
-    );
+    return proxyApi.get<MusicSearchResponse>(`/albums?${queryParams}`, { signal });
   },
 
   getAlbum: (albumId: string): Promise<AlbumDetail> => {
-    return api.get<AlbumDetail>(`/proxy/albums/${albumId}`, true);
+    return proxyApi.get<AlbumDetail>(`/albums/${albumId}`);
   },
 
   bulkGetAlbums: (ids: string[]): Promise<BulkAlbumsResponse> => {
-    const params = new URLSearchParams();
-    params.append("ids", ids.join(","));
-    return api.get<BulkAlbumsResponse>(`/proxy/albums/bulk?${params}`, true);
+    return proxyApi.get<BulkAlbumsResponse>(`/albums/bulk?ids=${ids.join(",")}`);
   },
 };

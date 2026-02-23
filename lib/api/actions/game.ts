@@ -1,4 +1,4 @@
-import { api } from "../api";
+import { proxyApi } from "../proxyApi";
 import type {
   GameSearchResponse,
   GameDetail,
@@ -9,24 +9,18 @@ import type {
 export const gameActions = {
   search: (params: GameSearchParams, signal?: AbortSignal): Promise<GameSearchResponse> => {
     const queryParams = new URLSearchParams();
-    queryParams.append("query", params.query);
+    queryParams.append("q", params.q);
     if (params.page) queryParams.append("page", String(params.page));
-    if (params.page_size) queryParams.append("page_size", String(params.page_size));
+    if (params.limit) queryParams.append("limit", String(params.limit));
 
-    return api.get<GameSearchResponse>(
-      `/proxy/games/search?${queryParams}`,
-      true,
-      signal
-    );
+    return proxyApi.get<GameSearchResponse>(`/games?${queryParams}`, { signal });
   },
 
-  getGame: (gameId: number): Promise<GameDetail> => {
-    return api.get<GameDetail>(`/proxy/games/${gameId}`, true);
+  getGame: (gameId: string): Promise<GameDetail> => {
+    return proxyApi.get<GameDetail>(`/games/${gameId}`);
   },
 
-  bulkGetGames: (ids: number[]): Promise<BulkGamesResponse> => {
-    const params = new URLSearchParams();
-    params.append("ids", ids.join(","));
-    return api.get<BulkGamesResponse>(`/proxy/games/bulk?${params}`, true);
+  bulkGetGames: (ids: string[]): Promise<BulkGamesResponse> => {
+    return proxyApi.get<BulkGamesResponse>(`/games/bulk?ids=${ids.join(",")}`);
   },
 };
