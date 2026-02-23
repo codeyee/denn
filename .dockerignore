@@ -1,0 +1,63 @@
+# Version control
+.git
+.gitignore
+
+# Environment files (secrets injected at runtime)
+.env
+
+# IDE & editor
+.vscode
+.history
+.ionide
+
+# Agent directories
+.agent/
+.agents/
+.claude/
+.cursor/
+.adal/
+.augment/
+.cline/
+.codebuddy/
+.commandcode/
+.continue/
+.crush/
+.factory/
+.goose/
+.iflow/
+.junie/
+.kilocode/
+.kiro/
+.kode/
+.mcpjam/
+.mux/
+.neovate/
+.openhands/
+.pi/
+.pochi/
+.qoder/
+.qwen/
+.roo/
+.trae/
+.vibe/
+.windsurf/
+.zencoder/
+
+# Documentation & non-essential
+docs/
+api/
+scripts/
+*.md
+LICENSE
+
+# Build artifacts
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Docker
+Dockerfile
+docker-compose*.yml
