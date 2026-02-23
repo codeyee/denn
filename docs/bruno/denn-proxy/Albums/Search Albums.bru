@@ -5,13 +5,13 @@ meta {
 }
 
 get {
-  url: {{BASE_URL}}/albums/search?query=Daft Punk&page=1&limit=20
+  url: {{BASE_URL}}/albums?q=Daft Punk&page=1&limit=20
   body: none
   auth: inherit
 }
 
 params:query {
-  query: Daft Punk
+  q: Daft Punk
   page: 1
   limit: 20
 }

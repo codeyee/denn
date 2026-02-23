@@ -64,7 +64,7 @@ func setupRouter(tmdb VideoService, games GamesService, spotify SpotifyService, 
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
 	h := NewHandler(tmdb, games, spotify, books)
-	r.GET("/multi-search", h.Search)
+	r.GET("/search", h.Search)
 	return r
 }
 
@@ -137,7 +137,7 @@ func TestSearch_AllTypes(t *testing.T) {
 	tmdb, games, spotify, books := defaultMocks()
 	r := setupRouter(tmdb, games, spotify, books)
 
-	w := doRequest(r, "/multi-search?query=test")
+	w := doRequest(r, "/search?q=test")
 
 	if w.Code != http.StatusOK {
 		t.Fatalf("Expected status 200, got %d. Body: %s", w.Code, w.Body.String())
@@ -146,7 +146,7 @@ func TestSearch_AllTypes(t *testing.T) {
 	raw := decodeResponse(t, w)
 
 	// All 5 keys must be present
-	expectedKeys := []string{"movies", "tv_shows", "games", "albums", "books"}
+	expectedKeys := []string{"movies", "tv-shows", "games", "albums", "books"}
 	for _, key := range expectedKeys {
 		if _, ok := raw[key]; !ok {
 			t.Errorf("Expected key %q in response", key)
@@ -165,7 +165,7 @@ func TestSearch_AllTypes(t *testing.T) {
 		t.Errorf("Expected no error for movies, got %v", *moviesCR.Error)
 	}
 
-	tvCR := decodeContentResult(t, raw["tv_shows"])
+	tvCR := decodeContentResult(t, raw["tv-shows"])
 	if len(tvCR.Results) != 1 || tvCR.Results[0].Title != "Test Show" {
 		t.Errorf("Expected 1 tv show 'Test Show', got %+v", tvCR.Results)
 	}
@@ -193,7 +193,7 @@ func TestSearch_FilteredTypes(t *testing.T) {
 	tmdb, games, spotify, books := defaultMocks()
 	r := setupRouter(tmdb, games, spotify, books)
 
-	w := doRequest(r, "/multi-search?query=test&types=movies,games")
+	w := doRequest(r, "/search?q=test&types=movies,games")
 
 	if w.Code != http.StatusOK {
 		t.Fatalf("Expected status 200, got %d", w.Code)
@@ -210,7 +210,7 @@ func TestSearch_FilteredTypes(t *testing.T) {
 	}
 
 	// Others should NOT be present
-	for _, key := range []string{"tv_shows", "albums", "books"} {
+	for _, key := range []string{"tv-shows", "albums", "books"} {
 		if _, ok := raw[key]; ok {
 			t.Errorf("Did not expect key %q in response", key)
 		}
@@ -221,7 +221,7 @@ func TestSearch_MissingQuery(t *testing.T) {
 	tmdb, games, spotify, books := defaultMocks()
 	r := setupRouter(tmdb, games, spotify, books)
 
-	w := doRequest(r, "/multi-search")
+	w := doRequest(r, "/search")
 
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("Expected status 400, got %d", w.Code)
@@ -237,7 +237,7 @@ func TestSearch_EmptyQuery(t *testing.T) {
 	tmdb, games, spotify, books := defaultMocks()
 	r := setupRouter(tmdb, games, spotify, books)
 
-	w := doRequest(r, "/multi-search?query=")
+	w := doRequest(r, "/search?q=")
 
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("Expected status 400, got %d", w.Code)
@@ -248,7 +248,7 @@ func TestSearch_InvalidType(t *testing.T) {
 	tmdb, games, spotify, books := defaultMocks()
 
 	r := setupRouter(tmdb, games, spotify, books)
-	w := doRequest(r, "/multi-search?query=test&types=movies,podcasts")
+	w := doRequest(r, "/search?q=test&types=movies,podcasts")
 
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("Expected status 400, got %d", w.Code)
@@ -264,7 +264,7 @@ func TestSearch_CaseInsensitiveTypes(t *testing.T) {
 	tmdb, games, spotify, books := defaultMocks()
 	r := setupRouter(tmdb, games, spotify, books)
 
-	w := doRequest(r, "/multi-search?query=test&types=MOVIES,Tv_Shows")
+	w := doRequest(r, "/search?q=test&types=MOVIES,Tv-Shows")
 
 	if w.Code != http.StatusOK {
 		t.Fatalf("Expected status 200, got %d. Body: %s", w.Code, w.Body.String())
@@ -275,8 +275,8 @@ func TestSearch_CaseInsensitiveTypes(t *testing.T) {
 	if _, ok := raw["movies"]; !ok {
 		t.Error("Expected 'movies' in response")
 	}
-	if _, ok := raw["tv_shows"]; !ok {
-		t.Error("Expected 'tv_shows' in response")
+	if _, ok := raw["tv-shows"]; !ok {
+		t.Error("Expected 'tv-shows' in response")
 	}
 }
 
@@ -284,7 +284,7 @@ func TestSearch_DuplicateTypes(t *testing.T) {
 	tmdb, games, spotify, books := defaultMocks()
 	r := setupRouter(tmdb, games, spotify, books)
 
-	w := doRequest(r, "/multi-search?query=test&types=movies,movies,games")
+	w := doRequest(r, "/search?q=test&types=movies,movies,games")
 
 	if w.Code != http.StatusOK {
 		t.Fatalf("Expected status 200, got %d", w.Code)
@@ -305,7 +305,7 @@ func TestSearch_PartialFailure(t *testing.T) {
 	games.err = fmt.Errorf("IGDB connection refused")
 
 	r := setupRouter(tmdb, games, spotify, books)
-	w := doRequest(r, "/multi-search?query=test")
+	w := doRequest(r, "/search?q=test")
 
 	// Should still be 200 — partial failure is OK
 	if w.Code != http.StatusOK {
@@ -349,7 +349,7 @@ func TestSearch_AllServicesFail(t *testing.T) {
 	books := &mockBooks{err: fmt.Errorf("OpenLibrary down")}
 
 	r := setupRouter(tmdb, games, spotify, books)
-	w := doRequest(r, "/multi-search?query=test")
+	w := doRequest(r, "/search?q=test")
 
 	// Still 200 — all groups have errors
 	if w.Code != http.StatusOK {
@@ -358,7 +358,7 @@ func TestSearch_AllServicesFail(t *testing.T) {
 
 	raw := decodeResponse(t, w)
 
-	for _, key := range []string{"movies", "tv_shows", "games", "albums", "books"} {
+	for _, key := range []string{"movies", "tv-shows", "games", "albums", "books"} {
 		cr := decodeContentResult(t, raw[key])
 		if cr.Error == nil {
 			t.Errorf("Expected error for %s, got nil", key)
@@ -379,7 +379,7 @@ func TestSearch_EmptyResults(t *testing.T) {
 	books := &mockBooks{result: booksservice.SearchResult{Page: 1, TotalPages: 0, TotalResults: 0}}
 
 	r := setupRouter(tmdb, games, spotify, books)
-	w := doRequest(r, "/multi-search?query=nonexistent")
+	w := doRequest(r, "/search?q=nonexistent")
 
 	if w.Code != http.StatusOK {
 		t.Fatalf("Expected status 200, got %d", w.Code)
@@ -387,7 +387,7 @@ func TestSearch_EmptyResults(t *testing.T) {
 
 	raw := decodeResponse(t, w)
 
-	for _, key := range []string{"movies", "tv_shows", "games", "albums", "books"} {
+	for _, key := range []string{"movies", "tv-shows", "games", "albums", "books"} {
 		cr := decodeContentResult(t, raw[key])
 		if cr.Error != nil {
 			t.Errorf("Expected no error for %s, got %v", key, *cr.Error)
@@ -402,7 +402,7 @@ func TestSearch_SingleType(t *testing.T) {
 	tmdb, games, spotify, books := defaultMocks()
 
 	r := setupRouter(tmdb, games, spotify, books)
-	w := doRequest(r, "/multi-search?query=test&types=books")
+	w := doRequest(r, "/search?q=test&types=books")
 
 	if w.Code != http.StatusOK {
 		t.Fatalf("Expected status 200, got %d", w.Code)
@@ -423,7 +423,7 @@ func TestSearch_AlbumsKey(t *testing.T) {
 	tmdb, games, spotify, books := defaultMocks()
 
 	r := setupRouter(tmdb, games, spotify, books)
-	w := doRequest(r, "/multi-search?query=test&types=albums")
+	w := doRequest(r, "/search?q=test&types=albums")
 
 	if w.Code != http.StatusOK {
 		t.Fatalf("Expected status 200, got %d", w.Code)

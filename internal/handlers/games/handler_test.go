@@ -51,7 +51,7 @@ func setupTestHandler(client *http.Client) *gin.Engine {
 	service := gamesservice.NewService(igdbClient)
 	handler := NewHandler(service)
 
-	r.GET("/games/search", handler.Search)
+	r.GET("/games", handler.Search)
 	r.GET("/games/:id", handler.Detail)
 	r.GET("/games/trending", handler.Trending)
 	r.GET("/games/bulk", handler.Bulk)
@@ -116,7 +116,7 @@ func TestSearch(t *testing.T) {
 	r := setupTestHandler(client)
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/games/search?query=test", nil)
+	req, _ := http.NewRequest("GET", "/games?q=test", nil)
 	r.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {

@@ -54,7 +54,7 @@ type contentType string
 
 const (
 	typeMovies  contentType = "movies"
-	typeTVShows contentType = "tv_shows"
+	typeTVShows contentType = "tv-shows"
 	typeGames   contentType = "games"
 	typeAlbums  contentType = "albums"
 	typeBooks   contentType = "books"
@@ -62,7 +62,7 @@ const (
 
 var responseKey = map[contentType]string{
 	typeMovies:  "movies",
-	typeTVShows: "tv_shows",
+	typeTVShows: "tv-shows",
 	typeGames:   "games",
 	typeAlbums:  "albums",
 	typeBooks:   "books",
@@ -80,7 +80,7 @@ type ContentResult struct {
 // At runtime the handler returns map[string]ContentResult with dynamic keys.
 type MultiSearchResponse struct {
 	Movies  ContentResult `json:"movies"`
-	TVShows ContentResult `json:"tv_shows"`
+	TVShows ContentResult `json:"tv-shows"`
 	Games   ContentResult `json:"games"`
 	Albums  ContentResult `json:"albums"`
 	Books   ContentResult `json:"books"`
@@ -91,19 +91,19 @@ type MultiSearchResponse struct {
 // @Description  Fans out the query in parallel to movies, TV shows, games, albums, and books. Returns per-type results with partial failure handling — if one upstream fails, its error field is set and the others still return results.
 // @Tags         Aggregate
 // @Produce      json
-// @Param        query  query    string  true   "Search term"
+// @Param        q      query    string  true   "Search term"
 // @Param        page   query    int     false  "Page number (min 1)"        default(1)   minimum(1)
 // @Param        limit  query    int     false  "Results per page (max 50)"  default(20)  minimum(1)  maximum(50)
-// @Param        types  query    string  false  "Comma-separated content types to search: movies,tv_shows,games,albums,books (default: all)"
+// @Param        types  query    string  false  "Comma-separated content types to search: movies,tv-shows,games,albums,books (default: all)"
 // @Success      200    {object} multisearch.MultiSearchResponse
 // @Failure      400    {object} common.ErrorResponse
 // @Failure      401    {object} map[string]string
 // @Failure      429    {object} common.ErrorResponse
 // @Security     ApiKeyHeader
 // @Security     BearerAuth
-// @Router       /multi-search [get]
+// @Router       /search [get]
 func (h *Handler) Search(c *gin.Context) {
-	query := c.Query("query")
+	query := c.Query("q")
 	if query == "" {
 		common.RespondError(c, http.StatusBadRequest, common.CodeMissingParameter, "query parameter is required")
 		return

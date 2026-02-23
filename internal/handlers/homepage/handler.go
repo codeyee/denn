@@ -72,7 +72,7 @@ type HomepageContentResult struct {
 // At runtime the handler returns map[string]ContentResult with dynamic keys.
 type HomepageResponse struct {
 	Movies  HomepageContentResult `json:"movies"`
-	TVShows HomepageContentResult `json:"tv_shows"`
+	TVShows HomepageContentResult `json:"tv-shows"`
 	Games   HomepageContentResult `json:"games"`
 	Albums  HomepageContentResult `json:"albums"`
 	Books   HomepageContentResult `json:"books"`
@@ -86,7 +86,7 @@ type trendingData struct {
 
 const (
 	keyMovies  = "movies"
-	keyTVShows = "tv_shows"
+	keyTVShows = "tv-shows"
 	keyGames   = "games"
 	keyAlbums  = "albums"
 	keyBooks   = "books"

@@ -51,7 +51,7 @@ func setupTestHandler(client *http.Client) *gin.Engine {
 	service := booksservice.NewService(olClient)
 	handler := NewHandler(service)
 
-	r.GET("/books/search", handler.Search)
+	r.GET("/books", handler.Search)
 	r.GET("/books/:id", handler.Detail)
 	r.GET("/books/trending", handler.Trending)
 	r.GET("/books/bulk", handler.Bulk)
@@ -99,7 +99,7 @@ func TestSearch(t *testing.T) {
 	r := setupTestHandler(client)
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/books/search?query=test", nil)
+	req, _ := http.NewRequest("GET", "/books?q=test", nil)
 	r.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {

@@ -5,13 +5,13 @@ meta {
 }
 
 get {
-  url: {{BASE_URL}}/books/search?query=Tolkien&page=1&limit=20
+  url: {{BASE_URL}}/books?q=Tolkien&page=1&limit=20
   body: none
   auth: inherit
 }
 
 query {
-  query: Tolkien
+  q: Tolkien
   page: 1
   limit: 20
 }

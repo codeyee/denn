@@ -5,13 +5,13 @@ meta {
 }
 
 get {
-  url: {{BASE_URL}}/games/search?query=Zelda&page=1&limit=20
+  url: {{BASE_URL}}/games?q=Zelda&page=1&limit=20
   body: none
   auth: inherit
 }
 
 query {
-  query: Zelda
+  q: Zelda
   page: 1
   limit: 20
 }

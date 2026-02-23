@@ -1,4 +1,4 @@
-basePath: /proxy/v1
+basePath: /v1/proxy
 definitions:
   common.ErrorResponse:
     properties:
@@ -54,7 +54,7 @@ definitions:
         $ref: '#/definitions/homepage.HomepageContentResult'
       movies:
         $ref: '#/definitions/homepage.HomepageContentResult'
-      tv_shows:
+      tv-shows:
         $ref: '#/definitions/homepage.HomepageContentResult'
     type: object
   models.AlbumResponse:
@@ -407,7 +407,7 @@ definitions:
         $ref: '#/definitions/multisearch.ContentResult'
       movies:
         $ref: '#/definitions/multisearch.ContentResult'
-      tv_shows:
+      tv-shows:
         $ref: '#/definitions/multisearch.ContentResult'
     type: object
 host: localhost:8080
@@ -420,6 +420,59 @@ info:
   title: Denn Proxy API
   version: "1.0"
 paths:
+  /albums:
+    get:
+      description: Singles are excluded from results (only albums and EPs are returned).
+      parameters:
+      - description: Search term
+        in: query
+        name: q
+        required: true
+        type: string
+      - default: 1
+        description: Page number (min 1)
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - default: 20
+        description: Results per page (max 50)
+        in: query
+        maximum: 50
+        minimum: 1
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.PaginatedSearchResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "429":
+          description: Too Many Requests
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "502":
+          description: Bad Gateway
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      security:
+      - ApiKeyHeader: []
+      - BearerAuth: []
+      summary: Search albums
+      tags:
+      - Albums
   /albums/{id}:
     get:
       parameters:
@@ -503,59 +556,6 @@ paths:
       summary: Get multiple albums by ID
       tags:
       - Albums
-  /albums/search:
-    get:
-      description: Singles are excluded from results (only albums and EPs are returned).
-      parameters:
-      - description: Search term
-        in: query
-        name: query
-        required: true
-        type: string
-      - default: 1
-        description: Page number (min 1)
-        in: query
-        minimum: 1
-        name: page
-        type: integer
-      - default: 20
-        description: Results per page (max 50)
-        in: query
-        maximum: 50
-        minimum: 1
-        name: limit
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/common.PaginatedSearchResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/common.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "429":
-          description: Too Many Requests
-          schema:
-            $ref: '#/definitions/common.ErrorResponse'
-        "502":
-          description: Bad Gateway
-          schema:
-            $ref: '#/definitions/common.ErrorResponse'
-      security:
-      - ApiKeyHeader: []
-      - BearerAuth: []
-      summary: Search albums
-      tags:
-      - Albums
   /albums/trending:
     get:
       description: Sourced from Spotify Charts.
@@ -600,6 +600,58 @@ paths:
       summary: Get trending albums
       tags:
       - Albums
+  /books:
+    get:
+      parameters:
+      - description: Search term
+        in: query
+        name: q
+        required: true
+        type: string
+      - default: 1
+        description: Page number (min 1)
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - default: 20
+        description: Results per page (max 50)
+        in: query
+        maximum: 50
+        minimum: 1
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.PaginatedSearchResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "429":
+          description: Too Many Requests
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "502":
+          description: Bad Gateway
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      security:
+      - ApiKeyHeader: []
+      - BearerAuth: []
+      summary: Search books
+      tags:
+      - Books
   /books/{id}:
     get:
       parameters:
@@ -683,58 +735,6 @@ paths:
       summary: Get multiple books by ID
       tags:
       - Books
-  /books/search:
-    get:
-      parameters:
-      - description: Search term
-        in: query
-        name: query
-        required: true
-        type: string
-      - default: 1
-        description: Page number (min 1)
-        in: query
-        minimum: 1
-        name: page
-        type: integer
-      - default: 20
-        description: Results per page (max 50)
-        in: query
-        maximum: 50
-        minimum: 1
-        name: limit
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/common.PaginatedSearchResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/common.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "429":
-          description: Too Many Requests
-          schema:
-            $ref: '#/definitions/common.ErrorResponse'
-        "502":
-          description: Bad Gateway
-          schema:
-            $ref: '#/definitions/common.ErrorResponse'
-      security:
-      - ApiKeyHeader: []
-      - BearerAuth: []
-      summary: Search books
-      tags:
-      - Books
   /books/trending:
     get:
       description: Sourced from OpenLibrary bestsellers with client-side pagination.
@@ -779,6 +779,60 @@ paths:
       summary: Get trending books
       tags:
       - Books
+  /games:
+    get:
+      description: 'Searches via IGDB. Note: total_pages and total_results are always
+        0 (IGDB limitation).'
+      parameters:
+      - description: Search term
+        in: query
+        name: q
+        required: true
+        type: string
+      - default: 1
+        description: Page number (min 1)
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - default: 20
+        description: Results per page (max 50)
+        in: query
+        maximum: 50
+        minimum: 1
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.PaginatedSearchResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "429":
+          description: Too Many Requests
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "502":
+          description: Bad Gateway
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      security:
+      - ApiKeyHeader: []
+      - BearerAuth: []
+      summary: Search games
+      tags:
+      - Games
   /games/{id}:
     get:
       parameters:
@@ -859,60 +913,6 @@ paths:
       - ApiKeyHeader: []
       - BearerAuth: []
       summary: Get multiple games by ID
-      tags:
-      - Games
-  /games/search:
-    get:
-      description: 'Searches via IGDB. Note: total_pages and total_results are always
-        0 (IGDB limitation).'
-      parameters:
-      - description: Search term
-        in: query
-        name: query
-        required: true
-        type: string
-      - default: 1
-        description: Page number (min 1)
-        in: query
-        minimum: 1
-        name: page
-        type: integer
-      - default: 20
-        description: Results per page (max 50)
-        in: query
-        maximum: 50
-        minimum: 1
-        name: limit
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/common.PaginatedSearchResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/common.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "429":
-          description: Too Many Requests
-          schema:
-            $ref: '#/definitions/common.ErrorResponse'
-        "502":
-          description: Bad Gateway
-          schema:
-            $ref: '#/definitions/common.ErrorResponse'
-      security:
-      - ApiKeyHeader: []
-      - BearerAuth: []
-      summary: Search games
       tags:
       - Games
   /games/trending:
@@ -1022,6 +1022,58 @@ paths:
       summary: Homepage — trending content with full detail enrichment
       tags:
       - Aggregate
+  /movies:
+    get:
+      parameters:
+      - description: Search term
+        in: query
+        name: q
+        required: true
+        type: string
+      - default: 1
+        description: Page number (min 1)
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - default: 20
+        description: Results per page (max 50)
+        in: query
+        maximum: 50
+        minimum: 1
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.PaginatedSearchResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "429":
+          description: Too Many Requests
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "502":
+          description: Bad Gateway
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      security:
+      - ApiKeyHeader: []
+      - BearerAuth: []
+      summary: Search movies
+      tags:
+      - Movies
   /movies/{id}:
     get:
       parameters:
@@ -1115,58 +1167,6 @@ paths:
       summary: Get multiple movies by ID
       tags:
       - Movies
-  /movies/search:
-    get:
-      parameters:
-      - description: Search term
-        in: query
-        name: query
-        required: true
-        type: string
-      - default: 1
-        description: Page number (min 1)
-        in: query
-        minimum: 1
-        name: page
-        type: integer
-      - default: 20
-        description: Results per page (max 50)
-        in: query
-        maximum: 50
-        minimum: 1
-        name: limit
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/common.PaginatedSearchResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/common.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "429":
-          description: Too Many Requests
-          schema:
-            $ref: '#/definitions/common.ErrorResponse'
-        "502":
-          description: Bad Gateway
-          schema:
-            $ref: '#/definitions/common.ErrorResponse'
-      security:
-      - ApiKeyHeader: []
-      - BearerAuth: []
-      summary: Search movies
-      tags:
-      - Movies
   /movies/trending:
     get:
       parameters:
@@ -1210,7 +1210,7 @@ paths:
       summary: Get popular/trending movies
       tags:
       - Movies
-  /multi-search:
+  /search:
     get:
       description: Fans out the query in parallel to movies, TV shows, games, albums,
         and books. Returns per-type results with partial failure handling — if one
@@ -1218,7 +1218,7 @@ paths:
       parameters:
       - description: Search term
         in: query
-        name: query
+        name: q
         required: true
         type: string
       - default: 1
@@ -1234,7 +1234,7 @@ paths:
         minimum: 1
         name: limit
         type: integer
-      - description: 'Comma-separated content types to search: movies,tv_shows,games,albums,books
+      - description: 'Comma-separated content types to search: movies,tv-shows,games,albums,books
           (default: all)'
         in: query
         name: types
@@ -1266,6 +1266,58 @@ paths:
       summary: Multi-search across all content types
       tags:
       - Aggregate
+  /tv-shows:
+    get:
+      parameters:
+      - description: Search term
+        in: query
+        name: q
+        required: true
+        type: string
+      - default: 1
+        description: Page number (min 1)
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - default: 20
+        description: Results per page (max 50)
+        in: query
+        maximum: 50
+        minimum: 1
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.PaginatedSearchResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "429":
+          description: Too Many Requests
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+        "502":
+          description: Bad Gateway
+          schema:
+            $ref: '#/definitions/common.ErrorResponse'
+      security:
+      - ApiKeyHeader: []
+      - BearerAuth: []
+      summary: Search TV shows
+      tags:
+      - TV Shows
   /tv-shows/{id}:
     get:
       parameters:
@@ -1314,7 +1366,7 @@ paths:
       summary: Get TV show details
       tags:
       - TV Shows
-  /tv-shows/{id}/seasons/{season_number}:
+  /tv-shows/{id}/seasons/{num}:
     get:
       parameters:
       - description: TMDB TV show ID
@@ -1324,7 +1376,7 @@ paths:
         type: integer
       - description: Season number (1-based)
         in: path
-        name: season_number
+        name: num
         required: true
         type: integer
       - description: ISO 3166-1 alpha-2 country code for platform availability (default
@@ -1410,58 +1462,6 @@ paths:
       - ApiKeyHeader: []
       - BearerAuth: []
       summary: Get multiple TV shows by ID
-      tags:
-      - TV Shows
-  /tv-shows/search:
-    get:
-      parameters:
-      - description: Search term
-        in: query
-        name: query
-        required: true
-        type: string
-      - default: 1
-        description: Page number (min 1)
-        in: query
-        minimum: 1
-        name: page
-        type: integer
-      - default: 20
-        description: Results per page (max 50)
-        in: query
-        maximum: 50
-        minimum: 1
-        name: limit
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/common.PaginatedSearchResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/common.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "429":
-          description: Too Many Requests
-          schema:
-            $ref: '#/definitions/common.ErrorResponse'
-        "502":
-          description: Bad Gateway
-          schema:
-            $ref: '#/definitions/common.ErrorResponse'
-      security:
-      - ApiKeyHeader: []
-      - BearerAuth: []
-      summary: Search TV shows
       tags:
       - TV Shows
   /tv-shows/trending:

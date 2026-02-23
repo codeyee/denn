@@ -46,8 +46,8 @@ func setupTestHandler(client *http.Client) *gin.Engine {
 	service := tmdbservice.NewService(tmdbClient)
 	handler := NewHandler(service)
 
-	r.GET("/tv_shows/search", handler.Search)
-	r.GET("/tv_shows/:id", handler.Detail)
+	r.GET("/tv-shows", handler.Search)
+	r.GET("/tv-shows/:id", handler.Detail)
 
 	return r
 }
@@ -71,7 +71,7 @@ func TestSearch(t *testing.T) {
 
 	r := setupTestHandler(client)
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/tv_shows/search?query=test", nil)
+	req, _ := http.NewRequest("GET", "/tv-shows?q=test", nil)
 	r.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {

@@ -24,7 +24,7 @@ func NewHandler(service *booksservice.Service) *Handler {
 // @Summary      Search books
 // @Tags         Books
 // @Produce      json
-// @Param        query  query    string  true   "Search term"
+// @Param        q      query    string  true   "Search term"
 // @Param        page   query    int     false  "Page number (min 1)"          default(1)   minimum(1)
 // @Param        limit  query    int     false  "Results per page (max 50)"    default(20)  minimum(1)  maximum(50)
 // @Success      200    {object} common.PaginatedSearchResponse
@@ -34,9 +34,9 @@ func NewHandler(service *booksservice.Service) *Handler {
 // @Failure      502    {object} common.ErrorResponse
 // @Security     ApiKeyHeader
 // @Security     BearerAuth
-// @Router       /books/search [get]
+// @Router       /books [get]
 func (h *Handler) Search(c *gin.Context) {
-	query := c.Query("query")
+	query := c.Query("q")
 
 	if query == "" {
 		common.RespondError(c, http.StatusBadRequest, common.CodeMissingParameter, "query parameter is required")

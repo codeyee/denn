@@ -5,13 +5,13 @@ meta {
 }
 
 get {
-  url: {{BASE_URL}}/tv-shows/search?query=Breaking Bad&page=1&limit=20
+  url: {{BASE_URL}}/tv-shows?q=Breaking Bad&page=1&limit=20
   body: none
   auth: inherit
 }
 
 query {
-  query: Breaking Bad
+  q: Breaking Bad
   page: 1
   limit: 20
 }

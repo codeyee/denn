@@ -181,7 +181,7 @@ func TestHomepage_AllTypes(t *testing.T) {
 
 	raw := decodeResponse(t, w)
 
-	expectedKeys := []string{"movies", "tv_shows", "games", "albums", "books"}
+	expectedKeys := []string{"movies", "tv-shows", "games", "albums", "books"}
 	for _, key := range expectedKeys {
 		if _, ok := raw[key]; !ok {
 			t.Errorf("Expected key %q in response", key)
@@ -327,7 +327,7 @@ func TestHomepage_AllServicesFail(t *testing.T) {
 
 	raw := decodeResponse(t, w)
 
-	for _, key := range []string{"movies", "tv_shows", "games", "albums", "books"} {
+	for _, key := range []string{"movies", "tv-shows", "games", "albums", "books"} {
 		cr := decodeContentResult(t, raw[key])
 		if cr.Error == nil {
 			t.Errorf("Expected error for %s, got nil", key)
@@ -353,7 +353,7 @@ func TestHomepage_EmptyTrending(t *testing.T) {
 
 	raw := decodeResponse(t, w)
 
-	for _, key := range []string{"movies", "tv_shows", "games", "albums", "books"} {
+	for _, key := range []string{"movies", "tv-shows", "games", "albums", "books"} {
 		cr := decodeContentResult(t, raw[key])
 		if cr.Error != nil {
 			t.Errorf("Expected no error for %s, got %v", key, *cr.Error)

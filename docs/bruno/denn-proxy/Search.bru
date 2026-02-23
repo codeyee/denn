@@ -1,20 +1,20 @@
 meta {
-  name: Multi Search
+  name: Search
   type: http
   seq: 3
 }
 
 get {
-  url: {{BASE_URL}}/multi-search?query=Matrix&page=1&limit=20
+  url: {{BASE_URL}}/search?q=Matrix&page=1&limit=20
   body: none
   auth: inherit
 }
 
 query {
-  query: Matrix
+  q: Matrix
   page: 1
   limit: 20
-  ~types: movies,tv_shows,games,albums,books
+  ~types: movies,tv-shows,games,albums,books
 }
 
 headers {

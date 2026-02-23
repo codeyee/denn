@@ -5,13 +5,13 @@ meta {
 }
 
 get {
-  url: {{BASE_URL}}/movies/search?query=Matrix&page=1&limit=20
+  url: {{BASE_URL}}/movies?q=Matrix&page=1&limit=20
   body: none
   auth: inherit
 }
 
 query {
-  query: Matrix
+  q: Matrix
   page: 1
   limit: 20
 }

@@ -25,7 +25,7 @@ func NewHandler(service *tmdbservice.Service) *Handler {
 // @Summary      Search TV shows
 // @Tags         TV Shows
 // @Produce      json
-// @Param        query  query    string  true   "Search term"
+// @Param        q      query    string  true   "Search term"
 // @Param        page   query    int     false  "Page number (min 1)"          default(1)   minimum(1)
 // @Param        limit  query    int     false  "Results per page (max 50)"    default(20)  minimum(1)  maximum(50)
 // @Success      200    {object} common.PaginatedSearchResponse
@@ -35,9 +35,9 @@ func NewHandler(service *tmdbservice.Service) *Handler {
 // @Failure      502    {object} common.ErrorResponse
 // @Security     ApiKeyHeader
 // @Security     BearerAuth
-// @Router       /tv-shows/search [get]
+// @Router       /tv-shows [get]
 func (h *Handler) Search(c *gin.Context) {
-	query := c.Query("query")
+	query := c.Query("q")
 
 	if query == "" {
 		common.RespondError(c, http.StatusBadRequest, common.CodeMissingParameter, "query parameter is required")
@@ -136,7 +136,7 @@ func (h *Handler) Detail(c *gin.Context) {
 // @Tags         TV Shows
 // @Produce      json
 // @Param        id              path     int     true   "TMDB TV show ID"
-// @Param        season_number   path     int     true   "Season number (1-based)"
+// @Param        num             path     int     true   "Season number (1-based)"
 // @Param        X-User-Country  header   string  false  "ISO 3166-1 alpha-2 country code for platform availability (default US)"
 // @Success      200  {object}  models.SeasonResponse
 // @Failure      400  {object}  common.ErrorResponse
@@ -146,7 +146,7 @@ func (h *Handler) Detail(c *gin.Context) {
 // @Failure      502  {object}  common.ErrorResponse
 // @Security     ApiKeyHeader
 // @Security     BearerAuth
-// @Router       /tv-shows/{id}/seasons/{season_number} [get]
+// @Router       /tv-shows/{id}/seasons/{num} [get]
 func (h *Handler) SeasonDetail(c *gin.Context) {
 	tvID, err := strconv.Atoi(c.Param("id"))
 
@@ -155,7 +155,7 @@ func (h *Handler) SeasonDetail(c *gin.Context) {
 		return
 	}
 
-	seasonNumber, err := strconv.Atoi(c.Param("season_number"))
+	seasonNumber, err := strconv.Atoi(c.Param("num"))
 
 	if err != nil {
 		common.RespondError(c, http.StatusBadRequest, common.CodeInvalidParameter, "invalid season number")

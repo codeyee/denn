@@ -5,7 +5,7 @@
 // @description     Rate limit: 60 requests/minute on protected endpoints.
 
 // @host            localhost:8080
-// @BasePath        /proxy/v1
+// @BasePath        /v1/proxy
 
 // @securityDefinitions.apikey  ApiKeyHeader
 // @in                          header
@@ -106,7 +106,7 @@ func main() {
 	corsConfig.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "X-User-Country", "X-Api-Key", "Authorization"}
 	r.Use(cors.New(corsConfig))
 
-	api := r.Group("/proxy/v1")
+	api := r.Group("/v1/proxy")
 	{
 		api.GET("/health", health.HealthCheck)
 
@@ -114,12 +114,12 @@ func main() {
 		protected.Use(middleware.AuthMiddleware(cfg.ApiKey))
 		protected.Use(middleware.RateLimitMiddleware(cache, 60))
 
-		protected.GET("/multi-search", multiSearchHandler.Search)
+		protected.GET("/search", multiSearchHandler.Search)
 		protected.GET("/homepage", homepageHandler.Homepage)
 
 		movies := protected.Group("/movies")
 		{
-			movies.GET("/search", movieHandler.Search)
+			movies.GET("", movieHandler.Search)
 			movies.GET("/bulk", movieHandler.Bulk)
 			movies.GET("/trending", movieHandler.Trending)
 			movies.GET("/:id", movieHandler.Detail)
@@ -127,35 +127,35 @@ func main() {
 
 		tv := protected.Group("/tv-shows")
 		{
-			tv.GET("/search", tvHandler.Search)
+			tv.GET("", tvHandler.Search)
 			tv.GET("/bulk", tvHandler.Bulk)
 			tv.GET("/trending", tvHandler.Trending)
 			tv.GET("/:id", tvHandler.Detail)
-			tv.GET("/:id/seasons/:season_number", tvHandler.SeasonDetail)
+			tv.GET("/:id/seasons/:num", tvHandler.SeasonDetail)
 		}
 
-		games := protected.Group("/games")
+		gamesGroup := protected.Group("/games")
 		{
-			games.GET("/search", gamesHandler.Search)
-			games.GET("/bulk", gamesHandler.Bulk)
-			games.GET("/trending", gamesHandler.Trending)
-			games.GET("/:id", gamesHandler.Detail)
+			gamesGroup.GET("", gamesHandler.Search)
+			gamesGroup.GET("/bulk", gamesHandler.Bulk)
+			gamesGroup.GET("/trending", gamesHandler.Trending)
+			gamesGroup.GET("/:id", gamesHandler.Detail)
 		}
 
-		albums := protected.Group("/albums")
+		albumsGroup := protected.Group("/albums")
 		{
-			albums.GET("/search", albumHandler.Search)
-			albums.GET("/bulk", albumHandler.Bulk)
-			albums.GET("/trending", albumHandler.Trending)
-			albums.GET("/:id", albumHandler.Detail)
+			albumsGroup.GET("", albumHandler.Search)
+			albumsGroup.GET("/bulk", albumHandler.Bulk)
+			albumsGroup.GET("/trending", albumHandler.Trending)
+			albumsGroup.GET("/:id", albumHandler.Detail)
 		}
 
-		books := protected.Group("/books")
+		booksGroup := protected.Group("/books")
 		{
-			books.GET("/search", bookHandler.Search)
-			books.GET("/bulk", bookHandler.Bulk)
-			books.GET("/trending", bookHandler.Trending)
-			books.GET("/:id", bookHandler.Detail)
+			booksGroup.GET("", bookHandler.Search)
+			booksGroup.GET("/bulk", bookHandler.Bulk)
+			booksGroup.GET("/trending", bookHandler.Trending)
+			booksGroup.GET("/:id", bookHandler.Detail)
 		}
 	}
 

@@ -51,7 +51,7 @@ func setupTestHandler(client *http.Client) *gin.Engine {
 	service := spotifyservice.NewService(spotifyClient)
 	handler := NewHandler(service)
 
-	r.GET("/albums/search", handler.Search)
+	r.GET("/albums", handler.Search)
 	r.GET("/albums/:id", handler.Detail)
 	r.GET("/albums/trending", handler.Trending)
 	r.GET("/albums/bulk", handler.Bulk)
@@ -150,7 +150,7 @@ func TestSearch(t *testing.T) {
 	r := setupTestHandler(client)
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/albums/search?query=test", nil)
+	req, _ := http.NewRequest("GET", "/albums?q=test", nil)
 	r.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
