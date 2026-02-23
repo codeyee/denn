@@ -35,7 +35,7 @@ func NewHandler(service *tmdbservice.Service) *Handler {
 // @Failure      502    {object} common.ErrorResponse
 // @Security     ApiKeyHeader
 // @Security     BearerAuth
-// @Router       /tv_shows/search [get]
+// @Router       /tv-shows/search [get]
 func (h *Handler) Search(c *gin.Context) {
 	query := c.Query("query")
 
@@ -75,7 +75,7 @@ func (h *Handler) Search(c *gin.Context) {
 // @Failure      502    {object} common.ErrorResponse
 // @Security     ApiKeyHeader
 // @Security     BearerAuth
-// @Router       /tv_shows/trending [get]
+// @Router       /tv-shows/trending [get]
 func (h *Handler) Trending(c *gin.Context) {
 	page, limit := common.ParsePagination(c)
 
@@ -110,7 +110,7 @@ func (h *Handler) Trending(c *gin.Context) {
 // @Failure      502  {object}  common.ErrorResponse
 // @Security     ApiKeyHeader
 // @Security     BearerAuth
-// @Router       /tv_shows/{id} [get]
+// @Router       /tv-shows/{id} [get]
 func (h *Handler) Detail(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 
@@ -146,7 +146,7 @@ func (h *Handler) Detail(c *gin.Context) {
 // @Failure      502  {object}  common.ErrorResponse
 // @Security     ApiKeyHeader
 // @Security     BearerAuth
-// @Router       /tv_shows/{id}/seasons/{season_number} [get]
+// @Router       /tv-shows/{id}/seasons/{season_number} [get]
 func (h *Handler) SeasonDetail(c *gin.Context) {
 	tvID, err := strconv.Atoi(c.Param("id"))
 
@@ -187,7 +187,7 @@ func (h *Handler) SeasonDetail(c *gin.Context) {
 // @Failure      429  {object}  common.ErrorResponse
 // @Security     ApiKeyHeader
 // @Security     BearerAuth
-// @Router       /tv_shows/bulk [get]
+// @Router       /tv-shows/bulk [get]
 func (h *Handler) Bulk(c *gin.Context) {
 	idsParam := c.Query("ids")
 

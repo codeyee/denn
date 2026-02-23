@@ -125,7 +125,7 @@ func main() {
 			movies.GET("/:id", movieHandler.Detail)
 		}
 
-		tv := protected.Group("/tv_shows")
+		tv := protected.Group("/tv-shows")
 		{
 			tv.GET("/search", tvHandler.Search)
 			tv.GET("/bulk", tvHandler.Bulk)

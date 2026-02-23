@@ -1266,7 +1266,7 @@ paths:
       summary: Multi-search across all content types
       tags:
       - Aggregate
-  /tv_shows/{id}:
+  /tv-shows/{id}:
     get:
       parameters:
       - description: TMDB TV show ID
@@ -1314,7 +1314,7 @@ paths:
       summary: Get TV show details
       tags:
       - TV Shows
-  /tv_shows/{id}/seasons/{season_number}:
+  /tv-shows/{id}/seasons/{season_number}:
     get:
       parameters:
       - description: TMDB TV show ID
@@ -1367,7 +1367,7 @@ paths:
       summary: Get season details with episodes
       tags:
       - TV Shows
-  /tv_shows/bulk:
+  /tv-shows/bulk:
     get:
       description: Fetches full details for up to 50 TV shows in parallel. Failed
         IDs are silently omitted.
@@ -1412,7 +1412,7 @@ paths:
       summary: Get multiple TV shows by ID
       tags:
       - TV Shows
-  /tv_shows/search:
+  /tv-shows/search:
     get:
       parameters:
       - description: Search term
@@ -1464,7 +1464,7 @@ paths:
       summary: Search TV shows
       tags:
       - TV Shows
-  /tv_shows/trending:
+  /tv-shows/trending:
     get:
       parameters:
       - default: 1
