@@ -5,6 +5,7 @@ import { Card } from "../Card";
 import { ListItem, UserListDetail } from "@/lib/types";
 import { getContentTypeIcon } from "@/lib/icons/contentTypeIcons";
 import { buildContentUrl } from "@/lib/utils/navigationUtils";
+import { getSourceApi } from "@/lib/utils/contentTypeUtils";
 import { StatusBadge } from "@/app/_components/common/ui/StatusBadge";
 import { RatingBadge } from "@/app/_components/common/ui/RatingBadge";
 import { useSmartNavigation } from "@/app/_hooks/useSmartNavigation";
@@ -55,7 +56,7 @@ export function ListItemCard({
   const getNavigationUrl = useCallback(() => {
     return buildContentUrl({
       externalId: String(contentItem.external_id),
-      sourceApi: contentItem.source_api,
+      sourceApi: getSourceApi(contentItem.content_type),
       contentType: contentItem.content_type,
     });
   }, [contentItem]);

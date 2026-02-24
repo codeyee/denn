@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { Modal } from "@/app/_components/common/modals/Modal";
 import { Button } from "@/app/_components/common/ui/Button";
-import { ContentType, TVSeason, UserListWithMatches, BulkCheckItem, MatchedItem, ContentItem, SourceApi, TVShowDetail } from "@/lib/types";
+import { ContentType, TVSeason, UserListWithMatches, BulkCheckItem, MatchedItem, ContentItem, TVShowDetail } from "@/lib/types";
 import { listActions, contentItemActions } from "@/lib/api";
 import { useListOperations } from "./hooks/useListOperations";
 import { useSeasonSelection } from "./hooks/useSeasonSelection";
@@ -59,7 +59,6 @@ export function AddToListModal({
         setLoadingContent(true);
         try {
           const item = await contentItemActions.getOrCreate(
-            contentItem.source_api as SourceApi,
             contentItem.external_id,
             contentItem.content_type as ContentType
           );

@@ -1,55 +1,35 @@
 import { ContentType, SourceApi } from "@/lib/types";
 
-interface ContentTypeConfig {
-  sourceApi: SourceApi;
-  displayName: string;
-}
-
-export const CONTENT_TYPE_CONFIG: Record<ContentType, ContentTypeConfig> = {
-  [ContentType.MOVIE]: {
-    sourceApi: SourceApi.TMDB,
-    displayName: "Movie",
-  },
-  [ContentType.TV_SHOW]: {
-    sourceApi: SourceApi.TMDB,
-    displayName: "TV Show",
-  },
-  [ContentType.SEASON]: {
-    sourceApi: SourceApi.TMDB,
-    displayName: "Season",
-  },
-  [ContentType.GAME]: {
-    sourceApi: SourceApi.IGDB,
-    displayName: "Game",
-  },
-  [ContentType.ALBUM]: {
-    sourceApi: SourceApi.SPOTIFY,
-    displayName: "Album",
-  },
-  [ContentType.BOOK]: {
-    sourceApi: SourceApi.OPENLIBRARY,
-    displayName: "Book",
-  },
-  [ContentType.PERSON]: {
-    sourceApi: SourceApi.TMDB,
-    displayName: "Person",
-  },
+const SOURCE_API_MAP: Record<string, SourceApi> = {
+  game:    SourceApi.IGDB,
+  album:   SourceApi.SPOTIFY,
+  book:    SourceApi.OPENLIBRARY,
+  movie:   SourceApi.TMDB,
+  tv_show: SourceApi.TMDB,
+  season:  SourceApi.TMDB,
+  person:  SourceApi.TMDB,
 };
 
+const DISPLAY_NAME_MAP: Record<string, string> = {
+  game:    "Game",
+  album:   "Album",
+  book:    "Book",
+  movie:   "Movie",
+  tv_show: "TV Show",
+  season:  "Season",
+  person:  "Person",
+};
+
+const VALID_CONTENT_TYPES = new Set(Object.keys(SOURCE_API_MAP));
+
 export function isValidContentType(type: string): type is ContentType {
-  return type in CONTENT_TYPE_CONFIG;
+  return VALID_CONTENT_TYPES.has(type.toLowerCase());
 }
 
 export function getSourceApi(type: string | ContentType): SourceApi {
-  if (isValidContentType(type)) {
-    return CONTENT_TYPE_CONFIG[type]?.sourceApi ?? SourceApi.TMDB;
-  }
-  return SourceApi.TMDB;
+  return SOURCE_API_MAP[type.toLowerCase()] ?? SourceApi.TMDB;
 }
 
 export function getContentTypeDisplayName(type: string | ContentType): string {
-  if (isValidContentType(type)) {
-    return CONTENT_TYPE_CONFIG[type]?.displayName ?? type;
-  }
-  return type;
+  return DISPLAY_NAME_MAP[type.toLowerCase()] ?? type;
 }

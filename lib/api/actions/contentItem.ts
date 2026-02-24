@@ -1,10 +1,10 @@
 import { api } from "../api";
 import { buildQueryString, addCountryParam } from "../utils/queryParams";
+import { getSourceApi } from "@/lib/utils/contentTypeUtils";
 import type {
   ContentItem,
   PaginatedContentItemList,
   ContentItemQueryParams,
-  SourceApi,
   ContentType,
 } from "@/lib/types";
 
@@ -60,15 +60,15 @@ export const contentItemActions = {
   },
 
   getOrCreate: (
-    sourceApi: SourceApi,
     externalId: string,
     contentType: ContentType,
     country?: string
   ): Promise<ContentItem> => {
     const params = new URLSearchParams();
-    params.append("source_api", sourceApi);
+    const normalizedType = contentType.toUpperCase() as ContentType;
+    params.append("source_api", getSourceApi(normalizedType));
     params.append("external_id", externalId);
-    params.append("content_type", contentType);
+    params.append("content_type", normalizedType);
     addCountryParam(params, country);
 
     return api.post<ContentItem>(

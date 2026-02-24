@@ -11,20 +11,18 @@ function ContentPageContent() {
   const searchParams = useSearchParams();
 
   const externalId = searchParams.get("external_id");
-  const sourceApi = searchParams.get("source_api");
   const contentType = searchParams.get("content_type");
 
   useEffect(() => {
-    if (!externalId || !sourceApi || !contentType) {
+    if (!externalId || !contentType) {
       router.push('/');
     }
-  }, [externalId, sourceApi, contentType, router]);
+  }, [externalId, contentType, router]);
 
-  if (externalId && sourceApi && contentType) {
+  if (externalId && contentType) {
     return (
       <ContentDetailPage
         externalId={externalId}
-        sourceApi={sourceApi}
         contentType={contentType}
       />
     );

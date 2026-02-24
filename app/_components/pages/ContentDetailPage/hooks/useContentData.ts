@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { contentItemActions, videoActions, musicActions } from "@/lib/api";
 import { gameActions, bookActions } from "@/lib/api/actions";
+import { getSourceApi } from "@/lib/utils/contentTypeUtils";
 import {
   ContentItem,
   ContentType,
@@ -50,9 +51,8 @@ export function useContentData({
 
         if (contentId) {
           item = await contentItemActions.get(contentId);
-        } else if (externalId && sourceApi && contentTypeStr) {
+        } else if (externalId && contentTypeStr) {
           item = await contentItemActions.getOrCreate(
-            sourceApi as SourceApi,
             externalId,
             contentTypeStr as ContentType
           );
@@ -76,15 +76,16 @@ export function useContentData({
             setTvShowTitle(sourceData.tv_show_name);
           }
         } else {
-          const { content_type, source_api, external_id } = item;
+          const { content_type, external_id } = item;
+          const correctSourceApi = getSourceApi(content_type);
 
-          if (content_type === ContentType.MOVIE && source_api === SourceApi.TMDB) {
+          if (content_type === ContentType.MOVIE && correctSourceApi === SourceApi.TMDB) {
             const movieDetail = await videoActions.getMovie(external_id);
             setDetailData(movieDetail);
-          } else if (content_type === ContentType.TV_SHOW && source_api === SourceApi.TMDB) {
+          } else if (content_type === ContentType.TV_SHOW && correctSourceApi === SourceApi.TMDB) {
             const tvDetail = await videoActions.getTVShow(external_id);
             setDetailData(tvDetail);
-          } else if (content_type === ContentType.SEASON && source_api === SourceApi.TMDB) {
+          } else if (content_type === ContentType.SEASON && correctSourceApi === SourceApi.TMDB) {
             const [tvIdStr, seasonNumberStr] = external_id.split(":");
             const seasonNumber = parseInt(seasonNumberStr);
 
@@ -103,13 +104,13 @@ export function useContentData({
                 }
               }
             }
-          } else if (content_type === ContentType.ALBUM && source_api === SourceApi.SPOTIFY) {
+          } else if (content_type === ContentType.ALBUM && correctSourceApi === SourceApi.SPOTIFY) {
             const albumDetail = await musicActions.getAlbum(external_id);
             setDetailData(albumDetail);
-          } else if (content_type === ContentType.GAME && source_api === SourceApi.IGDB) {
+          } else if (content_type === ContentType.GAME && correctSourceApi === SourceApi.IGDB) {
             const gameDetail = await gameActions.getGame(external_id);
             setDetailData(gameDetail);
-          } else if (content_type === ContentType.BOOK && source_api === SourceApi.OPENLIBRARY) {
+          } else if (content_type === ContentType.BOOK && correctSourceApi === SourceApi.OPENLIBRARY) {
             const bookDetail = await bookActions.getBook(external_id);
             setDetailData(bookDetail);
           }
@@ -122,7 +123,7 @@ export function useContentData({
       }
     };
 
-    if (contentId || (externalId && sourceApi && contentTypeStr)) {
+    if (contentId || (externalId && contentTypeStr)) {
       fetchContent();
     }
   }, [contentId, externalId, sourceApi, contentTypeStr]);
