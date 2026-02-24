@@ -28,5 +28,4 @@ urlpatterns = [
     # API Endpoints
     path("api/auth/", include('authentication.urls', namespace='authentication')),
     path("api/content/", include('content.urls', namespace='content')),
-    path("api/proxy/", include('proxy.urls', namespace='proxy')),
 ]

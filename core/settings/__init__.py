@@ -51,5 +51,7 @@ __all__ = [
     "CACHES",
     "CACHE_TIMEOUTS",
     "CACHE_KEYS",
-    "API_KEYS_CACHE",
+    # Proxy API
+    "PROXY_API_BASE_URL",
+    "PROXY_API_KEY",
 ]

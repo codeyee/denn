@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Denn API is a Django-based secure API gateway for managing multi-media content. It acts as a proxy for external APIs (TMDB, IGDB, Spotify, OpenLibrary), hiding API keys from frontend applications while providing a unified interface for movies, TV shows, games, music, and books.
+Denn Core API is a Django-based backend for managing multi-media content (movies, TV shows, games, music, and books). It handles user authentication, content lists, ratings, and invitations. External media data (TMDB, IGDB, Spotify, OpenLibrary) is fetched from a separate **Go proxy microservice** via HTTP calls.
 
 ## Development Commands
 
@@ -22,8 +22,7 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
 # Set up environment variables (create .env file first)
-# Required: SECRET_KEY, TMDB_API_KEY, IGDB_CLIENT_ID, IGDB_CLIENT_SECRET,
-#           SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, OPENLIBRARY_USER_AGENT
+# Required: SECRET_KEY, PROXY_API_BASE_URL, PROXY_API_KEY
 ```
 
 ### Database Management
@@ -67,7 +66,6 @@ python manage.py test
 # Run tests for specific app
 python manage.py test authentication
 python manage.py test content
-python manage.py test proxy
 
 # Run specific test file
 python manage.py test authentication.tests.test_views
@@ -114,23 +112,18 @@ python manage.py shell
 
 **`content/`** - User-generated content management
 - **Models**: ContentItem (external media reference), UserList (collections), ListItem (items in lists), Rating (user ratings), ListInvitation (sharing)
+- **Services**: `ProxyAPIClient` (`content/services/proxy_client.py`) — HTTP client for the Go proxy microservice
 - Supports personal and shared lists with multiple members
 - Rating aggregation cached on ContentItem
 - Automatic list ordering and completion tracking
 
-**`proxy/`** - External API integration layer (core feature)
-- Hides API keys from frontend
-- Unified response format across different external APIs
-- Built-in caching (Redis with LocalMemCache fallback)
-- Bulk operations with concurrent requests (ThreadPoolExecutor, 10 workers)
-
 **`core/`** - Project settings and configuration
 - Modular settings files in `core/settings/`:
-  - `base.py` - Django core settings
+  - `base.py` - Django core settings + proxy API config (`PROXY_API_BASE_URL`, `PROXY_API_KEY`)
   - `db.py` - Database configuration
   - `jwt.py` - JWT authentication settings
   - `cors.py` - CORS configuration
-  - `cache.py` - Redis/cache configuration and cache key templates
+  - `cache.py` - Redis/cache configuration
   - `drf.py` - DRF settings
   - `static.py` - Static file configuration
   - `docs.py` - API documentation settings
@@ -140,137 +133,80 @@ python manage.py shell
   - `error_codes.py` - Centralized `ErrorCode` dataclass definitions with HTTP status mappings
   - `exceptions.py` - Custom exception classes (TimeoutException, ConnectionErrorException, etc.)
 
-### Proxy API Client Architecture
+### External Data: Go Proxy Microservice
 
-The proxy app uses a **layered client pattern** with inheritance:
+External media metadata is handled by a separate Go microservice. This Django app communicates with it via `ProxyAPIClient`:
 
 ```
-BaseAPIClient (proxy/clients/base/base.py)
-  - HTTP request handling, error translation, operation-specific timeouts
-  ├── TMDBClient (proxy/clients/tmdb.py)
-  ├── SpotifyClient (proxy/clients/spotify.py)
-  ├── IGDBClient (proxy/clients/igdb.py)
-  └── OpenLibraryClient (proxy/clients/openlibrary.py)
+content/services/proxy_client.py  →  Go Proxy API (PROXY_API_BASE_URL)
+                                          ↓
+                                   TMDB, IGDB, Spotify, OpenLibrary
 ```
 
-**Base View Classes** (`proxy/views/base.py`):
-Each API has a base view providing `get_client()` and `get_mapper()` factory methods:
-- `TMDBBaseView`, `IGDBBaseView`, `SpotifyBaseView`, `OpenLibraryBaseView`
-- All inherit `DynamicFieldsMixin` for `?fields=` query param support
-
-**Key Concepts:**
-
-1. **Client Layer** (`proxy/clients/`)
-   - Each client handles API-specific authentication and endpoints
-   - Uses `requests` library for HTTP operations
-   - Error handling with structured responses
-   - Operation-specific timeouts from settings
-
-2. **Caching Strategy**
-   - Redis caching layer with configurable timeouts
-   - Automatic token management for OAuth2 APIs (IGDB, Spotify)
-   - Cache key templates defined in `settings.CACHE_KEYS`
-   - Cache timeouts defined in `settings.CACHE_TIMEOUTS`
-   - Fallback to LocalMemCache when Redis unavailable
-
-3. **Authentication Patterns:**
-   - **TMDB**: Bearer token authentication (API key in headers)
-   - **IGDB**: OAuth2 with Twitch (token auto-refresh via client credentials)
-   - **Spotify**: OAuth2 Client Credentials (token auto-refresh)
-   - **OpenLibrary**: User-Agent string only (no authentication)
+**Base path**: `/v1/proxy/`
+**Authentication**: API key via `X-Api-Key` header
+**Country**: Passed as `X-User-Country` header (not query param)
+**Search**: `GET /movies?q=...` (query param is `q`, no `/search` sub-path)
+**Bulk operations**: `GET /movies/bulk?ids=1,2,3` (GET with query string IDs)
+**TV Shows**: Uses kebab-case paths (`/tv-shows/`) and response keys (`tv-shows`)
 
 ### Data Flow Pattern
 
 ```
 Frontend Request
   ↓
-Django View (proxy/views/)
+Django View (content/views/)
   ↓
-API Client (proxy/clients/)
+ContentItem Serializer
   ↓
-[Check Cache] → Cache hit? Return cached data
-  ↓ (Cache miss)
-External API Request
+content/utils.py (fetch_source_data / bulk_fetch_source_data)
   ↓
-Mapper (proxy/mappers/) - Transform response
+ProxyAPIClient (content/services/proxy_client.py)
   ↓
-Dataclass Model (proxy/models/) - Structured data
+Go Proxy Microservice (HTTP)
   ↓
-Serializer (proxy/serializers/) - JSON response
-  ↓
-Response to Frontend
+Response to Frontend (ContentItem + source_data)
 ```
 
-### Mappers and Models
+### Proxy Client Methods
 
-**Important:** Proxy models (`proxy/models/`) use Python `@dataclass`, NOT Django ORM models. This is intentional because proxy data is ephemeral (cached but not persisted to database).
-
-**Mappers** (`proxy/mappers/`) transform external API responses to internal dataclass models:
-- `TMDBMapper`: Converts TMDB responses, handles image URLs, normalizes providers
-- `SpotifyMapper`: Transforms Spotify album/track data
-- `IGDBMapper`: Processes game data from IGDB
-- `OpenLibraryMapper`: Converts book information
-
-**Models** (`proxy/models/`) as dataclasses:
-- `Movie`, `TVShow`, `Season`, `Episode` (video models)
-- `Game` (gaming)
-- `Album`, `Track` (music)
-- `Book` (literature)
-- `Provider`, `Images`, `ExternalIds` (common structures)
-
-This design provides flexibility without database constraints and allows rapid response format changes.
+The `ProxyAPIClient` provides:
+- **Detail**: `get_movie()`, `get_tv_show()`, `get_season()`, `get_game()`, `get_album()`, `get_book()`
+- **Bulk**: `get_bulk_movies()`, `get_bulk_tv_shows()`, `get_bulk_games()`, `get_bulk_albums()`, `get_bulk_books()`
+- **Search**: `search_movies()`, `search_tv_shows()`, `search_games()`, `search_albums()`, `search_books()` (uses `q` param)
+- **Trending**: `trending_movies()`, `trending_tv_shows()`, `trending_games()`, `trending_albums()`, `trending_books()`
+- **Aggregate**: `search()` (multi-search), `homepage()`
+- **Health**: `health()`
 
 ## Key Design Patterns
 
 ### 1. Settings Configuration
 - All configurations centralized in modular `core/settings/` files
-- External API configs accessed via environment variables
+- Proxy API config via `PROXY_API_BASE_URL` and `PROXY_API_KEY` environment variables
 - Cache keys defined as templates in `settings.CACHE_KEYS`
-- Timeouts defined in `settings.CACHE_TIMEOUTS`
 - Settings imported via `core/settings/__init__.py`
 
 ### 2. Caching Strategy
 Cache timeouts (from `settings.CACHE_TIMEOUTS`):
 ```python
-'homepage': 24 hours
-'api_tmdb_search': 24 hours
-'api_tmdb_details': 48 hours
-'api_tmdb_external_ids': 30 days
-'api_tmdb_watch_providers': 30 days
-'api_igdb_search': 24 hours
-'api_spotify_search': 24 hours
-'api_openlibrary_search': 24 hours
-```
-
-Cache key patterns use `.format()` for dynamic values:
-```python
-CACHE_KEYS = {
-    'api_tmdb_details': 'api:tmdb:details:{movie_id}',
-    'api_tmdb_search': 'api:tmdb:search:{query}:{page}',
-}
+'homepage': 24 hours  # Only local caching; external API caching is handled by the Go proxy
 ```
 
 ### 3. Error Handling
 - Custom exception handler in `core/exceptions.py`
-- Structured error responses from API clients
+- Structured error responses
 - Never expose internal errors or API keys to clients
 - HTTP status codes follow REST conventions
 
 ### 4. Bulk Operations
-- Use `concurrent.futures.ThreadPoolExecutor` for parallel requests
-- See client implementations for bulk methods (e.g., `get_bulk_movies()`)
-- Operation-specific timeouts prevent hanging requests
+- `content/utils.py:bulk_fetch_source_data()` groups items by source_api and calls bulk proxy endpoints
+- Uses `concurrent.futures.ThreadPoolExecutor` (4 workers) for parallel API-group fetching
+- Seasons are fetched individually (no bulk endpoint)
 
-### 5. Dynamic Field Selection
-- `DynamicFieldsMixin` in `proxy/views/base.py` enables `?fields=` query param on all proxy endpoints
-- Supports dot notation for nested fields: `?fields=id,title,cover.url`
-- Filtering implemented in `proxy/utils.py:filter_dictionary()` with nested dict traversal
-- Cache keys incorporate query params via MD5 hash to prevent collisions (see `core/cache_utils.py`)
-
-### 6. Signals
+### 5. Signals
 - `content/signals/rating_signals.py`: `post_save` and `post_delete` on `Rating` auto-updates `ContentItem.average_rating` and `rating_count` via aggregation
 
-### 7. Permissions
+### 6. Permissions
 Custom permission classes in `content/permissions.py`:
 - `IsMemberOfList` - Check if user is in shared list
 - `IsOwnerOfRating` - Verify rating ownership
@@ -301,97 +237,6 @@ Custom permission classes in `content/permissions.py`:
 
 ## Adding New Features
 
-### Adding a New External API
-
-1. **Create client** in `proxy/clients/new_api.py` (extend `BaseAPIClient` from `proxy/clients/base/base.py`):
-```python
-from proxy.clients.base.base import BaseAPIClient
-
-class NewAPIClient(BaseAPIClient):
-    def __init__(self):
-        super().__init__(base_url="https://api.newapi.com/v1", api_name="newapi")
-        self.api_key = os.getenv("NEWAPI_KEY")
-
-    def get_headers(self):
-        headers = super().get_default_headers()
-        headers["Authorization"] = f"Bearer {self.api_key}"
-        return headers
-
-    def search(self, query: str) -> dict:
-        # Implement with caching pattern
-        pass
-```
-
-2. **Add environment variable** to `.env`:
-```env
-NEWAPI_KEY=your_api_key_here
-```
-
-3. **Create mapper** in `proxy/mappers/new_api.py`:
-```python
-from typing import Dict, Any
-from ..models.new_item import NewItem
-
-class NewAPIMapper:
-    @staticmethod
-    def map_item(data: Dict[str, Any]) -> NewItem:
-        return NewItem(
-            id=data.get('id'),
-            name=data.get('name'),
-            # ... map other fields
-        )
-```
-
-4. **Create dataclass model** in `proxy/models/new_item.py`:
-```python
-from dataclasses import dataclass
-from typing import Optional
-
-@dataclass
-class NewItem:
-    id: str
-    name: str
-    description: Optional[str] = None
-```
-
-5. **Create serializer** in `proxy/serializers/new_item.py`:
-```python
-from rest_framework import serializers
-
-class NewItemSerializer(serializers.Serializer):
-    id = serializers.CharField()
-    name = serializers.CharField()
-    description = serializers.CharField(required=False)
-```
-
-6. **Create views** in `proxy/views/new_api/`:
-```python
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from drf_spectacular.utils import extend_schema
-from ...clients.new_api import NewAPIClient
-
-class NewAPISearchView(APIView):
-    @extend_schema(
-        summary="Search NewAPI",
-        description="Search for items in NewAPI"
-    )
-    def get(self, request):
-        client = NewAPIClient()
-        # ... implement logic
-        return Response(data)
-```
-
-7. **Register URLs** in `proxy/urls/`:
-```python
-from django.urls import path
-from .views.new_api import NewAPISearchView
-
-urlpatterns = [
-    path('newapi/search/', NewAPISearchView.as_view(), name='newapi-search'),
-]
-```
-
 ### Adding Models to Content App
 
 1. Define model in appropriate file under `content/models/`
@@ -400,72 +245,6 @@ urlpatterns = [
 4. Register in `content/urls.py`
 5. Run migrations: `python manage.py makemigrations && python manage.py migrate`
 
-## Environment Variables
-
-Required for development:
-```
-SECRET_KEY=your-secret-key
-DEBUG=True
-ALLOWED_HOSTS=localhost,127.0.0.1
-
-# Database (PostgreSQL for production, SQLite for dev)
-PGDATABASE=denn_api
-PGUSER=postgres
-PGPASSWORD=password
-PGHOST=localhost
-PGPORT=5432
-
-# External APIs
-TMDB_API_KEY=your_tmdb_key
-IGDB_CLIENT_ID=your_igdb_id
-IGDB_CLIENT_SECRET=your_igdb_secret
-SPOTIFY_CLIENT_ID=your_spotify_id
-SPOTIFY_CLIENT_SECRET=your_spotify_secret
-OPENLIBRARY_USER_AGENT=DennAPI/1.0 (your-email@example.com)
-
-# CORS (comma-separated)
-CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
-
-# Redis (optional, falls back to LocalMemCache)
-REDIS_URL=redis://localhost:6379/0
-```
-
-## Common Development Patterns
-
-### Working with External API Clients
-
-When implementing or modifying external API integrations:
-
-1. **Use caching for all API calls**:
-```python
-from django.core.cache import cache
-from django.conf import settings
-
-def get_movie(self, movie_id: str) -> dict:
-    # Build cache key from template
-    cache_key = settings.CACHE_KEYS['api_tmdb_details'].format(movie_id=movie_id)
-    timeout = settings.CACHE_TIMEOUTS['api_tmdb_details']
-
-    # Check cache first
-    cached_data = cache.get(cache_key)
-    if cached_data:
-        return cached_data
-
-    # Make API request
-    response = self.session.get(f'/movie/{movie_id}', timeout=10)
-    data = response.json()
-
-    # Cache result
-    cache.set(cache_key, data, timeout)
-    return data
-```
-
-2. **Handle OAuth2 token refresh** for APIs requiring it (see IGDB/Spotify clients)
-
-3. **Use mappers** to transform external responses before returning to views
-
-4. **Set appropriate timeouts** to prevent hanging requests
-
 ### Working with Content Models
 
 When working with UserList and ListItem:
@@ -473,6 +252,20 @@ When working with UserList and ListItem:
 1. **List membership**: Always check `IsMemberOfList` permission for shared lists
 2. **Ordering**: ListItem.list_order is auto-managed; use custom actions for reordering
 3. **Ratings**: Updates automatically propagate to ContentItem.average_rating via signals
+
+### Fetching External Data
+
+To fetch external data for a ContentItem:
+```python
+from content.utils import fetch_source_data, bulk_fetch_source_data
+
+# Single item
+data = fetch_source_data(content_item, country_code='US')
+
+# Bulk (optimized with parallel bulk API calls)
+cache = bulk_fetch_source_data(content_items, country_code='US')
+# cache is a dict: {content_item.id: source_data_dict}
+```
 
 ### Working with Serializers
 
@@ -493,6 +286,32 @@ def get(self, request):
     # implementation
 ```
 
+## Environment Variables
+
+Required for development:
+```
+SECRET_KEY=your-secret-key
+DEBUG=True
+ALLOWED_HOSTS=localhost,127.0.0.1
+
+# Database (PostgreSQL for production, SQLite for dev)
+PGDATABASE=denn_api
+PGUSER=postgres
+PGPASSWORD=password
+PGHOST=localhost
+PGPORT=5432
+
+# Go Proxy Microservice
+PROXY_API_BASE_URL=http://localhost:8080/v1/proxy
+PROXY_API_KEY=your-proxy-api-key
+
+# CORS (comma-separated)
+CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
+
+# Redis (optional, falls back to LocalMemCache)
+REDIS_URL=redis://localhost:6379/0
+```
+
 ## Python Version
 
 The project targets Python 3.11.9 (specified in `runtime.txt`).
@@ -506,3 +325,4 @@ The project is production-ready for Railway platform:
 - Whitenoise for static file serving
 - Health check endpoint at `/`
 - Railway-specific environment detection in settings
+- Requires `PROXY_API_BASE_URL` and `PROXY_API_KEY` environment variables for the Go proxy service
