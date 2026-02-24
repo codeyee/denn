@@ -6,6 +6,7 @@ import type {
   PaginatedContentItemList,
   ContentItemQueryParams,
   ContentType,
+  SourceApi,
 } from "@/lib/types";
 
 export const contentItemActions = {
