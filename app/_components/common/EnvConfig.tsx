@@ -5,7 +5,6 @@ declare global {
     __ENV__: {
       API_URL?: string;
       PROXY_API_URL?: string;
-      PROXY_API_KEY?: string;
     };
   }
 }
@@ -18,7 +17,6 @@ export async function EnvConfig() {
   const env = {
     API_URL: process.env.API_URL || process.env.NEXT_PUBLIC_API_URL,
     PROXY_API_URL: "/api/proxy",
-    PROXY_API_KEY: process.env.PROXY_API_KEY || process.env.NEXT_PUBLIC_PROXY_API_KEY,
   };
 
   return (

@@ -1,4 +1,4 @@
-import { getProxyApiUrl, getProxyApiKey } from "@/lib/env";
+import { getProxyApiUrl } from "@/lib/env";
 import { getUserCountryCode } from "@/lib/utils/countryUtils";
 
 const CONTENT_TYPE_JSON = "application/json";
@@ -35,7 +35,6 @@ export async function proxyRequest<T = unknown>(
 ): Promise<T> {
   const headers: Record<string, string> = {
     "Content-Type": CONTENT_TYPE_JSON,
-    "X-Api-Key": getProxyApiKey(),
   };
 
   if (config.country) {

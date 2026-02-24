@@ -12,9 +12,3 @@ export function getProxyApiUrl(): string {
   return process.env.PROXY_API_URL || process.env.NEXT_PUBLIC_PROXY_API_URL || "http://localhost:8080/v1/proxy";
 }
 
-export function getProxyApiKey(): string {
-  if (typeof window !== "undefined" && window.__ENV__?.PROXY_API_KEY) {
-    return window.__ENV__.PROXY_API_KEY;
-  }
-  return process.env.PROXY_API_KEY || process.env.NEXT_PUBLIC_PROXY_API_KEY || "";
-}
