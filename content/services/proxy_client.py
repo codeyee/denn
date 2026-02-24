@@ -99,14 +99,18 @@ class ProxyAPIClient:
         path: str,
         ids: List[str],
         country: Optional[str] = None,
+        chunk_size: int = 20,
     ) -> List[Dict[str, Any]]:
         if not ids:
             return []
-        ids_param = ",".join(str(i) for i in ids)
-        result = self._get(path, params={"ids": ids_param}, country=country, timeout=30)
-        if isinstance(result, list):
-            return result
-        return []
+        all_results: List[Dict[str, Any]] = []
+        for i in range(0, len(ids), chunk_size):
+            chunk = ids[i:i + chunk_size]
+            ids_param = ",".join(str(id) for id in chunk)
+            result = self._get(path, params={"ids": ids_param}, country=country, timeout=30)
+            if isinstance(result, list):
+                all_results.extend(result)
+        return all_results
 
     # ── Search endpoints (query param is "q") ─────────────────────────
 
