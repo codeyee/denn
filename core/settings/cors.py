@@ -3,7 +3,7 @@ import re
 
 CORS_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "")
 CORS_ALLOWED_ORIGINS = [
-    origin.strip() for origin in CORS_ORIGINS.split(",") if origin.strip()
+    origin.strip().rstrip("/") for origin in CORS_ORIGINS.split(",") if origin.strip()
 ]
 
 if os.getenv("DISABLE_LOCALHOST_CORS", "False").lower() != "true":

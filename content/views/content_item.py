@@ -182,9 +182,9 @@ class ContentItemViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
     @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
     def get_or_create(self, request):
         # Read from query params as documented
-        source_api = request.query_params.get('source_api')
+        source_api = (request.query_params.get('source_api') or '').lower() or None
         external_id = request.query_params.get('external_id')
-        content_type = request.query_params.get('content_type')
+        content_type = (request.query_params.get('content_type') or '').upper() or None
 
         if not all([source_api, external_id, content_type]):
             return Response(
