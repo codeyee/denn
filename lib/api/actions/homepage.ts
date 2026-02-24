@@ -1,12 +1,9 @@
-import { api } from "../api";
-import { addCountryParam } from "../utils/queryParams";
+import { proxyApi } from "../proxyApi";
 import type { HomepageResponse } from "@/lib/types";
 
 export interface HomepageQueryParams {
   limit?: number;
   country?: string;
-  fields?: string;
-  images_size?: number;
 }
 
 export const homepageActions = {
@@ -19,16 +16,9 @@ export const homepageActions = {
       searchParams.append("limit", "10");
     }
 
-    if (params?.fields) {
-      searchParams.append("fields", params.fields);
-    }
-
-    if (params?.images_size !== undefined) {
-      searchParams.append("images_size", String(params.images_size));
-    }
-
-    addCountryParam(searchParams, params?.country);
-
-    return api.get<HomepageResponse>(`/proxy/homepage/?${searchParams}`, true);
+    return proxyApi.getWithCountry<HomepageResponse>(
+      `/homepage?${searchParams}`,
+      { country: params?.country }
+    );
   },
 };

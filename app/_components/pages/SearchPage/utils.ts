@@ -3,7 +3,7 @@ import type { SearchItem, MovieDetail, TVShowDetail, GameDetail, AlbumDetail, Bo
 export function transformMovieResults(results: SearchItem[]): MovieDetail[] {
   return results.map((item) => ({
     ...item,
-    id: getId(item),
+    id: item.id,
     type: "MOVIE" as const,
     original_title: item.original_title ?? item.title,
     description: item.description ?? null,
@@ -22,7 +22,7 @@ export function transformMovieResults(results: SearchItem[]): MovieDetail[] {
 export function transformTVShowResults(results: SearchItem[]): TVShowDetail[] {
   return results.map((item) => ({
     ...item,
-    id: getId(item),
+    id: item.id,
     type: "TV_SHOW" as const,
     original_title: item.original_title ?? item.title,
     description: item.description ?? null,
@@ -43,7 +43,7 @@ export function transformTVShowResults(results: SearchItem[]): TVShowDetail[] {
 export function transformGameResults(results: SearchItem[]): GameDetail[] {
   return results.map((item) => ({
     ...item,
-    id: getId(item),
+    id: item.id,
     type: "GAME" as const,
     description: item.description ?? null,
     image_url: item.image_url ?? null,
@@ -52,13 +52,18 @@ export function transformGameResults(results: SearchItem[]): GameDetail[] {
     images: [],
     platforms: [],
     game_type: null,
+    genres: [],
+    themes: [],
+    game_modes: [],
+    series: null,
+    play_time: null,
   }));
 }
 
 export function transformMusicResults(results: SearchItem[]): AlbumDetail[] {
   return results.map((item) => ({
     ...item,
-    id: String(item.id),
+    id: item.id,
     type: "ALBUM" as const,
     description: item.description ?? null,
     image_url: item.image_url ?? null,
@@ -76,7 +81,7 @@ export function transformMusicResults(results: SearchItem[]): AlbumDetail[] {
 export function transformBookResults(results: SearchItem[]): BookDetail[] {
   return results.map((item) => ({
     ...item,
-    id: String(item.id),
+    id: item.id,
     type: "BOOK" as const,
     description: item.description ?? null,
     image_url: item.image_url ?? null,
@@ -85,8 +90,4 @@ export function transformBookResults(results: SearchItem[]): BookDetail[] {
     images: [],
     pages: null,
   }));
-}
-
-function getId(item: SearchItem): number {
-  return typeof item.id === "string" ? Number.parseInt(item.id, 10) : item.id;
 }

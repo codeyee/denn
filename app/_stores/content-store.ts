@@ -24,7 +24,7 @@ interface ContentState {
 }
 
 interface ContentActions {
-  fetchSuggestions: (limit?: number, fields?: string, imagesSize?: number) => Promise<void>;
+  fetchSuggestions: (limit?: number) => Promise<void>;
   clearError: () => void;
   resetSuggestions: () => void;
 }
@@ -47,32 +47,26 @@ const initialState: ContentState = {
 export const useContentStore = create<ContentStore>((set, get) => ({
   ...initialState,
 
-  fetchSuggestions: async (limit = 20, fields?: string, imagesSize?: number) => {
-    // Check if we already have data and it's less than 6 hours old
+  fetchSuggestions: async (limit = 20) => {
     const { lastFetched } = get();
     const sixHoursInMs = 6 * 60 * 60 * 1000;
 
     if (lastFetched && Date.now() - lastFetched < sixHoursInMs) {
-      // Data is still fresh, no need to fetch
       return;
     }
 
     set({ isLoading: true, error: null });
 
     try {
-      const response = await homepageActions.getSuggestions({
-        limit,
-        fields,
-        images_size: imagesSize,
-      });
+      const response = await homepageActions.getSuggestions({ limit });
 
       set({
         suggestions: {
-          movies: response.movies || [],
-          tvShows: response.tv_shows || [],
-          games: response.games || [],
-          music: response.albums || [],
-          books: response.books || [],
+          movies: response.movies?.results || [],
+          tvShows: response["tv-shows"]?.results || [],
+          games: response.games?.results || [],
+          music: response.albums?.results || [],
+          books: response.books?.results || [],
         },
         isLoading: false,
         error: null,

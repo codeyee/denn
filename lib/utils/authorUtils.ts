@@ -22,7 +22,7 @@ function isPlatformArray(platforms: Platform[] | string[]): platforms is Platfor
   return (
     typeof firstItem === "object" &&
     firstItem !== null &&
-    "title" in firstItem
+    "name" in firstItem
   );
 }
 
@@ -50,7 +50,7 @@ export function formatPlatforms(platforms: Platform[] | string[] | null | undefi
   if (isEmptyArray(platforms)) return "";
 
   if (isPlatformArray(platforms)) {
-      return platforms.map((platform) => platform.title).join(", ");
+      return platforms.map((platform) => platform.name).join(", ");
   }
 
   return platforms.join(", ");

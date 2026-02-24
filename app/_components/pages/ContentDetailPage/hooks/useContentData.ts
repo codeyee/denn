@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { contentItemActions, videoActions, musicActions } from "@/lib/api";
+import { gameActions, bookActions } from "@/lib/api/actions";
 import {
   ContentItem,
   ContentType,
@@ -78,25 +79,24 @@ export function useContentData({
           const { content_type, source_api, external_id } = item;
 
           if (content_type === ContentType.MOVIE && source_api === SourceApi.TMDB) {
-            const movieDetail = await videoActions.getMovie(parseInt(external_id));
+            const movieDetail = await videoActions.getMovie(external_id);
             setDetailData(movieDetail);
           } else if (content_type === ContentType.TV_SHOW && source_api === SourceApi.TMDB) {
-            const tvDetail = await videoActions.getTVShow(parseInt(external_id));
+            const tvDetail = await videoActions.getTVShow(external_id);
             setDetailData(tvDetail);
           } else if (content_type === ContentType.SEASON && source_api === SourceApi.TMDB) {
             const [tvIdStr, seasonNumberStr] = external_id.split(":");
-            const tvId = parseInt(tvIdStr);
             const seasonNumber = parseInt(seasonNumberStr);
 
-            if (!isNaN(tvId) && !isNaN(seasonNumber)) {
-              const seasonDetail = await videoActions.getTVSeason(tvId, seasonNumber);
+            if (tvIdStr && !isNaN(seasonNumber)) {
+              const seasonDetail = await videoActions.getTVSeason(tvIdStr, seasonNumber);
               setDetailData(seasonDetail);
 
               if (seasonDetail.tv_show_name) {
                 setTvShowTitle(seasonDetail.tv_show_name);
               } else {
                 try {
-                  const tvShow = await videoActions.getTVShow(tvId);
+                  const tvShow = await videoActions.getTVShow(tvIdStr);
                   setTvShowTitle(tvShow.title);
                 } catch (error) {
                   console.warn("Could not fetch TV show title:", error);
@@ -107,9 +107,11 @@ export function useContentData({
             const albumDetail = await musicActions.getAlbum(external_id);
             setDetailData(albumDetail);
           } else if (content_type === ContentType.GAME && source_api === SourceApi.IGDB) {
-            console.warn("Game detail data not available in source_data");
+            const gameDetail = await gameActions.getGame(external_id);
+            setDetailData(gameDetail);
           } else if (content_type === ContentType.BOOK && source_api === SourceApi.OPENLIBRARY) {
-            console.warn("Book detail data not available in source_data");
+            const bookDetail = await bookActions.getBook(external_id);
+            setDetailData(bookDetail);
           }
         }
       } catch (err) {

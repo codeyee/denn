@@ -13,8 +13,7 @@ interface MovieDetailContentProps {
 export function MovieDetailContent({ movie }: MovieDetailContentProps) {
   const releaseDate = formatReleaseDate(movie.release_date);
 
-  // Get platforms grouped by country code
-  const platformsByCountry = movie.platforms || {};
+  const platformsByAction = movie.platforms || {};
 
   return (
     <div className="container mx-auto px-4 mt-8">
@@ -80,7 +79,7 @@ export function MovieDetailContent({ movie }: MovieDetailContentProps) {
 
         {/* Right column - Where to Watch */}
         <div className="lg:col-span-1">
-          <PlatformsDisplay platforms={platformsByCountry} />
+          <PlatformsDisplay platforms={platformsByAction} />
         </div>
       </div>
     </div>

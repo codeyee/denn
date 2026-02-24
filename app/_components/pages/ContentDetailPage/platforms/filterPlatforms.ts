@@ -2,17 +2,17 @@
 
 import { Platform } from "@/lib/types";
 
-export const filterPlatforms = (platformList: Platform[]) => {
-  const excludeTerms = [
-    "Amazon Channel",
-    "Apple TV Channel",
-    "Roku Premium Channel",
-    "with Ads",
-  ];
+const EXCLUDE_TERMS = [
+  "Amazon Channel",
+  "Apple TV Channel",
+  "Roku Premium Channel",
+  "with Ads",
+];
 
+export const filterPlatforms = (platformList: Platform[]) => {
   return platformList.filter((platform) => {
-    return !excludeTerms.some((term) =>
-      platform.title.toLowerCase().includes(term.toLowerCase())
+    return !EXCLUDE_TERMS.some((term) =>
+      platform.name.toLowerCase().includes(term.toLowerCase())
     );
   });
 };

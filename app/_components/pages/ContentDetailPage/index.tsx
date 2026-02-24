@@ -185,7 +185,7 @@ export function ContentDetailPage({
               "seasons" in detailData &&
               Array.isArray(detailData.seasons) &&
               detailData.seasons.length > 0
-              ? parseInt(contentItem.external_id)
+              ? contentItem.external_id
               : undefined
           }
         />

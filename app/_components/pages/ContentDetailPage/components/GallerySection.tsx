@@ -6,6 +6,7 @@ import {
   ContentItem,
   ContentType,
   ImageType,
+  ImageSize,
   AlbumDetail,
   BookDetail,
   TVSeasonDetail
@@ -55,55 +56,20 @@ function extractGalleryImages(
   detailData: MovieDetail | TVShowDetail | AlbumDetail | GameDetail | BookDetail | TVSeasonDetail,
   contentType: ContentType
 ): { src: string; alt: string }[] {
-  let title = "";
-  let images: { src: string; alt: string }[] = [];
+  const typesWithGallery = [ContentType.MOVIE, ContentType.TV_SHOW, ContentType.GAME];
+  if (!typesWithGallery.includes(contentType)) return [];
 
-  if (contentType === ContentType.MOVIE) {
-    const movie = detailData as MovieDetail;
-    title = movie.title;
-    images = movie.images
-      ? Array.from(
-          new Map(
-            movie.images
-              .filter(img => img.type === ImageType.GALLERY && img.size === "STANDARD")
-              .map(img => [img.image_url, img])
-          ).values()
-        ).map((img, index) => ({
-          src: img.image_url,
-          alt: `${title} gallery image ${index + 1}`,
-        }))
-      : [];
-  } else if (contentType === ContentType.TV_SHOW) {
-    const tvShow = detailData as TVShowDetail;
-    title = tvShow.title;
-    images = tvShow.images
-      ? Array.from(
-          new Map(
-            tvShow.images
-              .filter(img => img.type === ImageType.GALLERY && img.size === "STANDARD")
-              .map(img => [img.image_url, img])
-          ).values()
-        ).map((img, index) => ({
-          src: img.image_url,
-          alt: `${title} gallery image ${index + 1}`,
-        }))
-      : [];
-  } else if (contentType === ContentType.GAME) {
-    const game = detailData as GameDetail;
-    title = game.title;
-    images = game.images
-      ? Array.from(
-          new Map(
-            game.images
-              .filter(img => img.type === ImageType.GALLERY && img.size === "STANDARD")
-              .map(img => [img.image_url, img])
-          ).values()
-        ).map((img, index) => ({
-          src: img.image_url,
-          alt: `${title} gallery image ${index + 1}`,
-        }))
-      : [];
-  }
+  const data = detailData as MovieDetail | TVShowDetail | GameDetail;
+  if (!data.images) return [];
 
-  return images;
+  return Array.from(
+    new Map(
+      data.images
+        .filter(img => img.type === ImageType.GALLERY && img.size === ImageSize.STANDARD)
+        .map(img => [img.image_url, img])
+    ).values()
+  ).map((img, index) => ({
+    src: img.image_url,
+    alt: `${data.title} gallery image ${index + 1}`,
+  }));
 }

@@ -68,13 +68,12 @@ export function useSearchResults(query: string): UseSearchResultsReturn {
             try {
                 const response = await searchActions.multiSearch(
                     {
-                        query: searchQueryForThisRequest,
+                        q: searchQueryForThisRequest,
                         limit: 20,
                     },
                     signal
                 );
 
-                // Check if this is still the current search (prevent race conditions)
                 if (
                     currentSearchQueryRef.current !== searchQueryForThisRequest
                 ) {
@@ -82,11 +81,11 @@ export function useSearchResults(query: string): UseSearchResultsReturn {
                 }
 
                 setResults({
-                    movies: transformMovieResults(response.movies),
-                    tvShows: transformTVShowResults(response.tv_shows),
-                    games: transformGameResults(response.games),
-                    music: transformMusicResults(response.music),
-                    books: transformBookResults(response.books),
+                    movies: transformMovieResults(response.movies?.results || []),
+                    tvShows: transformTVShowResults(response["tv-shows"]?.results || []),
+                    games: transformGameResults(response.games?.results || []),
+                    music: transformMusicResults(response.albums?.results || []),
+                    books: transformBookResults(response.books?.results || []),
                 });
             } catch (err) {
                 // Ignore abort errors (expected when user types quickly)
