@@ -49,8 +49,6 @@ __all__ = [
     "SPECTACULAR_SETTINGS",
     # Cache
     "CACHES",
-    "CACHE_TIMEOUTS",
-    "CACHE_KEYS",
     # Proxy API
     "PROXY_API_BASE_URL",
     "PROXY_API_KEY",

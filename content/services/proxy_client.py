@@ -150,9 +150,6 @@ class ProxyAPIClient:
             params["types"] = types
         return self._get("/search", params=params)
 
-    def homepage(self, page: int = 1, limit: int = 20, country: Optional[str] = None) -> Optional[Dict[str, Any]]:
-        return self._get("/homepage", params={"page": page, "limit": limit}, country=country)
-
     # ── Health ────────────────────────────────────────────────────────
 
     def health(self) -> Optional[Dict[str, Any]]:
