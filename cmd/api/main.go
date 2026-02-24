@@ -112,7 +112,7 @@ func main() {
 
 		protected := api.Group("")
 		protected.Use(middleware.AuthMiddleware(cfg.ApiKey))
-		protected.Use(middleware.RateLimitMiddleware(cache, 60))
+		protected.Use(middleware.RateLimitMiddleware(cache, cfg.RateLimitPerMinute))
 
 		protected.GET("/search", multiSearchHandler.Search)
 		protected.GET("/homepage", homepageHandler.Homepage)

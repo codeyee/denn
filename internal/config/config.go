@@ -4,20 +4,22 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 
 	"github.com/joho/godotenv"
 )
 
 type Config struct {
-	Port                string
-	TmdbApiKey          string
-	IgdbClientID        string
-	IgdbClientSecret    string
-	SpotifyClientID     string
-	SpotifyClientSecret string
-	RedisURL            string
-	ApiKey              string
-	CorsAllowOrigins    string
+	Port                 string
+	TmdbApiKey           string
+	IgdbClientID         string
+	IgdbClientSecret     string
+	SpotifyClientID      string
+	SpotifyClientSecret  string
+	RedisURL             string
+	ApiKey               string
+	CorsAllowOrigins     string
+	RateLimitPerMinute   int
 }
 
 func LoadConfig() (*Config, error) {
@@ -25,16 +27,24 @@ func LoadConfig() (*Config, error) {
 		log.Println("No .env file found, relying on system environment variables")
 	}
 
+	rateLimitPerMinute := 300
+	if v := os.Getenv("RATE_LIMIT_PER_MINUTE"); v != "" {
+		if parsed, err := strconv.Atoi(v); err == nil {
+			rateLimitPerMinute = parsed
+		}
+	}
+
 	cfg := &Config{
-		Port:                getEnv("PORT", "8080"),
-		TmdbApiKey:          getEnv("TMDB_API_KEY", ""),
-		IgdbClientID:        getEnv("IGDB_CLIENT_ID", ""),
-		IgdbClientSecret:    getEnv("IGDB_CLIENT_SECRET", ""),
-		SpotifyClientID:     getEnv("SPOTIFY_CLIENT_ID", ""),
-		SpotifyClientSecret: getEnv("SPOTIFY_CLIENT_SECRET", ""),
-		RedisURL:            getEnv("REDIS_URL", "localhost:6379"),
-		ApiKey:              getEnv("API_KEY", ""),
-		CorsAllowOrigins:    getEnv("CORS_ALLOW_ORIGINS", "*"),
+		Port:                 getEnv("PORT", "8080"),
+		TmdbApiKey:           getEnv("TMDB_API_KEY", ""),
+		IgdbClientID:         getEnv("IGDB_CLIENT_ID", ""),
+		IgdbClientSecret:     getEnv("IGDB_CLIENT_SECRET", ""),
+		SpotifyClientID:      getEnv("SPOTIFY_CLIENT_ID", ""),
+		SpotifyClientSecret:  getEnv("SPOTIFY_CLIENT_SECRET", ""),
+		RedisURL:             getEnv("REDIS_URL", "localhost:6379"),
+		ApiKey:               getEnv("API_KEY", ""),
+		CorsAllowOrigins:     getEnv("CORS_ALLOW_ORIGINS", "*"),
+		RateLimitPerMinute:   rateLimitPerMinute,
 	}
 
 	if cfg.ApiKey == "" {
