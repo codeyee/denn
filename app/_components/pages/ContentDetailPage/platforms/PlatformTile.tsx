@@ -12,8 +12,8 @@ export function PlatformTile({ platform }: PlatformTileProps) {
   const imageUrl = getPlatformImageUrl(platform.name, platform.image_url);
 
   return (
-    <div className="flex flex-col items-center gap-2">
-      <div className="relative w-14 h-14 rounded-lg overflow-hidden bg-white/10">
+    <div className="flex flex-col items-center gap-2 w-[72px]">
+      <div className="w-14 h-14 rounded-lg overflow-hidden bg-white/10 flex-shrink-0">
         {imageUrl && (
           <Image
             src={imageUrl}
@@ -25,9 +25,7 @@ export function PlatformTile({ platform }: PlatformTileProps) {
           />
         )}
       </div>
-      <div className="text-center max-w-[80px]">
-        <p className="text-xs text-white/90 font-sans">{platform.name}</p>
-      </div>
+      <p className="text-xs text-white/90 font-sans text-center line-clamp-2">{platform.name}</p>
     </div>
   );
 }

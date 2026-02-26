@@ -21,7 +21,7 @@ export function PlatformActionGroup({
       <p className="text-sm text-white/60 mb-3 font-medium uppercase tracking-wide">
         {actionLabel}
       </p>
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-4">
         {filtered.map((platform, index) => (
           <PlatformTile key={`${platform.name}-${index}`} platform={platform} />
         ))}

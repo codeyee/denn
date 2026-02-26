@@ -44,6 +44,30 @@ export function GameDetailContent({ game }: GameDetailContentProps) {
                 </span>
               </div>
             )}
+            {game.genres && game.genres.length > 0 && (
+              <div>
+                <span className="text-white/60 font-bold">Genres:</span>
+                <span className="text-white ml-2 font-sans">
+                  {game.genres.join(", ")}
+                </span>
+              </div>
+            )}
+            {game.themes && game.themes.length > 0 && (
+              <div>
+                <span className="text-white/60 font-bold">Themes:</span>
+                <span className="text-white ml-2 font-sans">
+                  {game.themes.join(", ")}
+                </span>
+              </div>
+            )}
+            {game.game_modes && game.game_modes.length > 0 && (
+              <div>
+                <span className="text-white/60 font-bold">Game Modes:</span>
+                <span className="text-white ml-2 font-sans">
+                  {game.game_modes.join(", ")}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 

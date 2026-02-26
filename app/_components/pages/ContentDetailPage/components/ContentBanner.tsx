@@ -1,10 +1,11 @@
 "use client";
 
-import { SourceApi, Author } from "@/lib/types";
+import Link from "next/link";
+import { SourceApi, Author, ContentType } from "@/lib/types";
 import { getBannerImageUrl } from "@/lib/utils/imageUtils";
 import { formatAuthors } from "@/lib/utils/authorUtils";
+import { buildContentUrlSimple } from "@/lib/utils/navigationUtils";
 import { CONTENT_TYPE_ICONS } from "@/lib/icons/contentTypeIcons";
-import { formatSeasonTitle } from "@/lib/utils/titleUtils";
 import { Button } from "@/app/_components/common/ui/Button";
 import { ListPlus, Star } from "lucide-react";
 import { Content } from "@/lib/types";
@@ -23,6 +24,7 @@ interface ContentBannerProps {
 export function ContentBanner({
   item,
   tvShowTitle,
+  externalId,
   onAddToList,
   onRateContent,
   isAuthenticated,
@@ -52,14 +54,15 @@ export function ContentBanner({
 
   // For albums and books, show authors/artists as metadata
   const authors = getAuthors(item);
-  const isAlbum = item.type === "ALBUM";
-  const isBook = item.type === "BOOK";
-  const isSeason = item.type === "SEASON";
+  const normalizedType = item.type.toUpperCase();
+  const isAlbum = normalizedType === "ALBUM";
+  const isBook = normalizedType === "BOOK";
+  const isSeason = normalizedType === "SEASON";
 
-  // For seasons, format title to avoid redundancy
-  const displayTitle = isSeason
-    ? formatSeasonTitle(item.tv_show_name || tvShowTitle, item.title)
-    : item.title;
+  const displayTitle = item.title;
+  const tvShowName = isSeason ? (('tv_show_name' in item && item.tv_show_name) || tvShowTitle) : null;
+  const tvShowId = isSeason && externalId ? externalId.split(":")[0] : null;
+  const tvShowUrl = tvShowId ? buildContentUrlSimple(tvShowId, ContentType.TV_SHOW) : null;
 
   if (!backgroundUrl) {
     return (
@@ -99,8 +102,16 @@ export function ContentBanner({
               {displayTitle}
             </h1>
           </div>
-          {/* Original Title (for movies/TV), Authors/Artists (for albums/books) - skip for seasons since TV show is in title */}
-          {(isAlbum || isBook) && authors ? (
+          {/* Subtitle: TV show name (seasons), Authors (albums/books), Original title (movies/TV) */}
+          {isSeason && tvShowName ? (
+            <div className="mt-2 md:mt-3 text-white/85 text-sm md:text-base opacity-90 font-sans">
+              {tvShowUrl ? (
+                <Link href={tvShowUrl} className="hover:text-white hover:underline transition-colors">
+                  {tvShowName}
+                </Link>
+              ) : tvShowName}
+            </div>
+          ) : (isAlbum || isBook) && authors ? (
             <div className="mt-2 md:mt-3 text-white/85 text-sm md:text-base opacity-90 font-sans">
               {authors}
             </div>

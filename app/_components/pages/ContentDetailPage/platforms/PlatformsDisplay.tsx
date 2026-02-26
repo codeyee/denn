@@ -1,6 +1,8 @@
 "use client";
 
 import { Platform } from "@/lib/types";
+import { useSettingsStore } from "@/app/_stores/settings-store";
+import { DEFAULT_COUNTRY } from "@/lib/utils/countryUtils";
 import { PlatformActionGroup } from "./PlatformActionGroup";
 import { hasFilteredPlatforms } from "./filterPlatforms";
 
@@ -20,13 +22,24 @@ export function PlatformsDisplay({
   platforms,
   title = "Where to Watch",
 }: PlatformsDisplayProps) {
+  const countryCode = useSettingsStore((s) => s.countryCode) || DEFAULT_COUNTRY;
+
   if (Object.keys(platforms).length === 0) return null;
 
   if (!hasFilteredPlatforms(platforms)) return null;
 
   return (
     <div>
-      <h3 className="text-lg font-semibold text-white mb-4">{title}</h3>
+      <div className="flex items-center gap-2 mb-4">
+        <h3 className="text-lg font-semibold text-white">{title}</h3>
+        <img
+          src={`https://hatscripts.github.io/circle-flags/flags/${countryCode.toLowerCase()}.svg`}
+          alt={countryCode}
+          title={countryCode}
+          width={24}
+          height={24}
+        />
+      </div>
 
       {Object.entries(platforms).map(([actionType, platformList]) => (
         <PlatformActionGroup

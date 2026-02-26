@@ -26,14 +26,16 @@ function isPlatformArray(platforms: Platform[] | string[]): platforms is Platfor
   );
 }
 
-export function formatAuthors(authors: Author[] | string[] | null | undefined): string {
+export function formatAuthors(authors: Author[] | string[] | null | undefined, max = 3): string {
   if (isEmptyArray(authors)) return "";
 
-  if (isAuthorArray(authors)) {
-    return authors.map((author) => author.name).join(", ");
-  }
+  const names = isAuthorArray(authors)
+    ? authors.map((author) => author.name)
+    : [...authors];
 
-  return authors.join(", ");
+  if (names.length <= max) return names.join(", ");
+
+  return `${names.slice(0, max).join(", ")} & ${names.length - max} more`;
 }
 
 export function getAuthorNames(authors: Author[] | string[] | null | undefined): string[] {

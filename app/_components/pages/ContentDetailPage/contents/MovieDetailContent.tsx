@@ -43,7 +43,7 @@ export function MovieDetailContent({ movie }: MovieDetailContentProps) {
                 <span className="text-white ml-2 font-sans">{movie.duration_minutes} minutes</span>
               </div>
             )}
-            {movie.status && movie.status !== "Released" && (
+            {movie.status && movie.status.toLowerCase() !== "released" && (
               <div>
                 <span className="text-white/60 font-bold">Status:</span>
                 <span className="text-white ml-2 font-sans">{movie.status}</span>

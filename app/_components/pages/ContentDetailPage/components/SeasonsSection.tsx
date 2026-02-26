@@ -58,7 +58,7 @@ function createSeasonItem(season: TVSeason, tvShow: TVShowDetail) {
     release_date: season.release_date,
     number_of_episodes: season.number_of_episodes,
     description: season.description,
-    tv_show_name: tvShow.title,
+    tv_show_name: null,
     type: "SEASON" as const,
     external_id: externalId,
     source_api: SourceApi.TMDB,
