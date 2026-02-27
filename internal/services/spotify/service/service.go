@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -75,6 +76,9 @@ func (s *Service) SearchAlbums(ctx context.Context, query string, page, limit in
 
 	data, err := unmarshalResponse[spotify.SpotifySearchResponse](s.client.SearchAlbums(ctx, query, limit, offset))
 	if err != nil {
+		if errors.Is(err, clients.ErrProviderAuth) {
+			s.client.ClearToken()
+		}
 		return SearchResult{}, fmt.Errorf("search albums: %w", err)
 	}
 
@@ -103,6 +107,9 @@ func (s *Service) SearchAlbums(ctx context.Context, query string, page, limit in
 func (s *Service) GetAlbumComplete(ctx context.Context, albumID string) (models.Album, error) {
 	data, err := unmarshalResponse[spotify.SpotifyAlbum](s.client.GetAlbum(ctx, albumID))
 	if err != nil {
+		if errors.Is(err, clients.ErrProviderAuth) {
+			s.client.ClearToken()
+		}
 		return models.Album{}, fmt.Errorf("get album %s: %w", albumID, err)
 	}
 

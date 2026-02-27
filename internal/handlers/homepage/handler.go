@@ -329,10 +329,17 @@ func (h *Handler) enrichAlbums(ctx context.Context, td trendingData) ContentResu
 	bulkResults := h.spotifySvc.GetBulkAlbums(ctx, ids)
 
 	detailMap := make(map[string]models.AlbumResponse, len(bulkResults))
+	var firstErr string
 	for _, br := range bulkResults {
 		if br.Album != nil {
 			detailMap[br.Album.ID] = br.Album.ToResponse()
+		} else if br.Error != "" && firstErr == "" {
+			firstErr = br.Error
 		}
+	}
+
+	if len(detailMap) == 0 && firstErr != "" {
+		return errorResult(firstErr)
 	}
 
 	return buildOrderedResult(td, detailMap)

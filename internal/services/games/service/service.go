@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"sort"
@@ -45,6 +46,9 @@ type scoredGame struct {
 func (s *Service) SearchGames(ctx context.Context, query string, limit, offset int) (SearchResult, error) {
 	data, err := unmarshalResponse[[]games.IgdbGame](s.client.SearchGames(ctx, query, limit, offset))
 	if err != nil {
+		if errors.Is(err, clients.ErrProviderAuth) {
+			s.client.ClearToken()
+		}
 		return SearchResult{}, err
 	}
 
@@ -59,6 +63,9 @@ func (s *Service) SearchGames(ctx context.Context, query string, limit, offset i
 func (s *Service) GetGameComplete(ctx context.Context, id int) (models.Game, error) {
 	data, err := unmarshalResponse[[]games.IgdbGame](s.client.GetGame(ctx, id))
 	if err != nil {
+		if errors.Is(err, clients.ErrProviderAuth) {
+			s.client.ClearToken()
+		}
 		return models.Game{}, err
 	}
 	if len(data) == 0 {

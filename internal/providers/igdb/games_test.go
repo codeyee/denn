@@ -52,6 +52,10 @@ func (m *MockCache) Incr(ctx context.Context, key string) (int64, error) {
 	return 0, nil
 }
 
+func (m *MockCache) TTL(ctx context.Context, key string) (time.Duration, error) {
+	return 0, nil
+}
+
 func (m *MockCache) Expire(ctx context.Context, key string, ttl time.Duration) (bool, error) {
 	return true, nil
 }

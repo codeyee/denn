@@ -28,6 +28,7 @@ type Client struct {
 	cache        clients.Cache
 	mu           sync.RWMutex
 	token        string
+	tokenExpiry  time.Time
 }
 
 type AuthResponse struct {
@@ -91,9 +92,13 @@ func (c *Client) getAuthHeaders() map[string]string {
 	}
 }
 
+func (c *Client) tokenValid() bool {
+	return c.token != "" && (c.tokenExpiry.IsZero() || time.Now().Before(c.tokenExpiry))
+}
+
 func (c *Client) getOrRefreshToken() (string, error) {
 	c.mu.RLock()
-	if c.token != "" {
+	if c.tokenValid() {
 		c.mu.RUnlock()
 		return c.token, nil
 	}
@@ -103,7 +108,7 @@ func (c *Client) getOrRefreshToken() (string, error) {
 	defer c.mu.Unlock()
 
 	// Double check
-	if c.token != "" {
+	if c.tokenValid() {
 		return c.token, nil
 	}
 
@@ -112,6 +117,12 @@ func (c *Client) getOrRefreshToken() (string, error) {
 	cachedToken, err := c.cache.Get(ctx, TokenKey)
 	if err == nil && cachedToken != nil {
 		c.token = string(cachedToken)
+		ttl, _ := c.cache.TTL(ctx, TokenKey)
+		if ttl > 0 {
+			c.tokenExpiry = time.Now().Add(ttl)
+		} else {
+			c.tokenExpiry = time.Now().Add(TokenBuffer)
+		}
 		return c.token, nil
 	}
 
@@ -121,7 +132,6 @@ func (c *Client) getOrRefreshToken() (string, error) {
 		return "", err
 	}
 
-	// Cache token
 	// Set TTL slightly less than actual expiry to be safe
 	ttl := time.Duration(expires)*time.Second - TokenBuffer
 	if ttl < 0 {
@@ -131,7 +141,15 @@ func (c *Client) getOrRefreshToken() (string, error) {
 	_ = c.cache.Set(ctx, TokenKey, []byte(token), ttl)
 
 	c.token = token
+	c.tokenExpiry = time.Now().Add(ttl)
 	return c.token, nil
+}
+
+func (c *Client) ClearToken() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.token = ""
+	c.tokenExpiry = time.Time{}
 }
 
 func (c *Client) fetchNewToken() (string, int, error) {

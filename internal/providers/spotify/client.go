@@ -32,6 +32,7 @@ type Client struct {
 	httpClient   *http.Client
 	mu           sync.RWMutex
 	token        string
+	tokenExpiry  time.Time
 }
 
 type AuthResponse struct {
@@ -57,14 +58,14 @@ func NewClient(clientID, clientSecret string, cache clients.Cache, opts ...clien
 
 	cacheConfig := clients.CacheConfig{
 		KeyTemplates: map[string]string{
-			"spotify_search":       "spotify:search:{query}:{limit}:{offset}",
-			"spotify_details":      "spotify:details:{album_id}",
-			"spotify_bulk":         "spotify:bulk:{ids_hash}",
+			"spotify_search":  "spotify:search:{query}:{limit}:{offset}",
+			"spotify_details": "spotify:details:{album_id}",
+			"spotify_bulk":    "spotify:bulk:{ids_hash}",
 		},
 		TTLs: map[string]time.Duration{
-			"spotify_search":  6 * time.Hour,
-			"spotify_details": 12 * time.Hour,
-			"spotify_bulk":    12 * time.Hour,
+			"spotify_search":  24 * time.Hour,
+			"spotify_details": 7 * 24 * time.Hour,
+			"spotify_bulk":    7 * 24 * time.Hour,
 		},
 	}
 
@@ -87,9 +88,13 @@ func (c *Client) getAuthHeaders() map[string]string {
 	}
 }
 
+func (c *Client) tokenValid() bool {
+	return c.token != "" && (c.tokenExpiry.IsZero() || time.Now().Before(c.tokenExpiry))
+}
+
 func (c *Client) getOrRefreshToken() (string, error) {
 	c.mu.RLock()
-	if c.token != "" {
+	if c.tokenValid() {
 		c.mu.RUnlock()
 		return c.token, nil
 	}
@@ -98,7 +103,7 @@ func (c *Client) getOrRefreshToken() (string, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	if c.token != "" {
+	if c.tokenValid() {
 		return c.token, nil
 	}
 
@@ -106,6 +111,12 @@ func (c *Client) getOrRefreshToken() (string, error) {
 	cachedToken, err := c.cache.Get(ctx, TokenKey)
 	if err == nil && cachedToken != nil {
 		c.token = string(cachedToken)
+		ttl, _ := c.cache.TTL(ctx, TokenKey)
+		if ttl > 0 {
+			c.tokenExpiry = time.Now().Add(ttl)
+		} else {
+			c.tokenExpiry = time.Now().Add(TokenBuffer)
+		}
 		return c.token, nil
 	}
 
@@ -122,7 +133,15 @@ func (c *Client) getOrRefreshToken() (string, error) {
 	_ = c.cache.Set(ctx, TokenKey, []byte(token), ttl)
 
 	c.token = token
+	c.tokenExpiry = time.Now().Add(ttl)
 	return c.token, nil
+}
+
+func (c *Client) ClearToken() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.token = ""
+	c.tokenExpiry = time.Time{}
 }
 
 func (c *Client) fetchNewToken() (string, int, error) {
