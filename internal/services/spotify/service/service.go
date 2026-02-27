@@ -72,6 +72,11 @@ func unmarshalResponse[T any](resp *clients.Response, err error) (T, error) {
 }
 
 func (s *Service) SearchAlbums(ctx context.Context, query string, page, limit int) (SearchResult, error) {
+	const spotifySearchMaxLimit = 10
+	if limit > spotifySearchMaxLimit {
+		limit = spotifySearchMaxLimit
+	}
+
 	offset := (page - 1) * limit
 
 	data, err := unmarshalResponse[spotify.SpotifySearchResponse](s.client.SearchAlbums(ctx, query, limit, offset))

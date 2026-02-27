@@ -27,7 +27,7 @@ func NewHandler(service *spotifyservice.Service) *Handler {
 // @Produce      json
 // @Param        q      query    string  true   "Search term"
 // @Param        page   query    int     false  "Page number (min 1)"          default(1)   minimum(1)
-// @Param        limit  query    int     false  "Results per page (max 50)"    default(20)  minimum(1)  maximum(50)
+// @Param        limit  query    int     false  "Results per page (max 10)"    default(10)  minimum(1)  maximum(10)
 // @Success      200    {object} common.PaginatedSearchResponse
 // @Failure      400    {object} common.ErrorResponse
 // @Failure      401    {object} map[string]string

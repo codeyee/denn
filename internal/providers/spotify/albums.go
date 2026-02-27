@@ -2,7 +2,6 @@ package spotify
 
 import (
 	"context"
-	"crypto/md5"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -34,18 +33,6 @@ func (c *Client) GetAlbum(ctx context.Context, albumID string) (*clients.Respons
 
 	return c.CachedGet(ctx, endpoint, "spotify_details", nil, map[string]string{
 		"album_id": albumID,
-	})
-}
-
-func (c *Client) GetBulkAlbums(ctx context.Context, albumIDs []string) (*clients.Response, error) {
-	params := url.Values{
-		"ids": {strings.Join(albumIDs, ",")},
-	}
-
-	idsHash := fmt.Sprintf("%x", md5.Sum([]byte(strings.Join(albumIDs, ","))))
-
-	return c.CachedGet(ctx, "albums", "spotify_bulk", params, map[string]string{
-		"ids_hash": idsHash,
 	})
 }
 

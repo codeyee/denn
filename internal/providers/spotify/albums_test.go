@@ -128,34 +128,3 @@ func TestGetAlbum(t *testing.T) {
 		t.Errorf("Expected status 200, got %d", resp.StatusCode)
 	}
 }
-
-func TestGetBulkAlbums(t *testing.T) {
-	mockResponse := map[string]interface{}{
-		"albums": []map[string]interface{}{
-			{"id": "1", "name": "Album 1"},
-			{"id": "2", "name": "Album 2"},
-		},
-	}
-	mockBody, _ := json.Marshal(mockResponse)
-
-	mockTransport := &MockRoundTripper{
-		Response: &http.Response{
-			StatusCode: http.StatusOK,
-			Body:       io.NopCloser(bytes.NewReader(mockBody)),
-			Header:     make(http.Header),
-		},
-	}
-
-	cache := NewMockCache()
-	client := NewClient("id", "secret", cache, clients.WithHTTPClient(&http.Client{Transport: mockTransport}))
-	client.token = "test-token"
-
-	resp, err := client.GetBulkAlbums(context.Background(), []string{"1", "2"})
-	if err != nil {
-		t.Fatalf("GetBulkAlbums failed: %v", err)
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("Expected status 200, got %d", resp.StatusCode)
-	}
-}
