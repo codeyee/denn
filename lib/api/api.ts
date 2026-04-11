@@ -13,7 +13,8 @@ async function performTokenRefresh(): Promise<void> {
   if (refreshPromise) return refreshPromise;
 
   refreshPromise = (async () => {
-    const { refreshToken, setAccessToken, setRefreshToken } = useAuthStore.getState();
+    const { refreshToken, setAccessToken, setRefreshToken, clearSession } =
+      useAuthStore.getState();
     if (!refreshToken) {
       throw new Error("No refresh token available");
     }
@@ -25,7 +26,19 @@ async function performTokenRefresh(): Promise<void> {
     });
 
     if (!response.ok) {
-      throw new Error("Token refresh failed");
+      const errorData = await response.json().catch(() => ({}));
+      const errorMessage = extractErrorMessage(errorData);
+
+      if (response.status === HTTP_STATUS_UNAUTHORIZED) {
+        clearSession();
+        throw new Error(
+          `Session expired. Please log in again.${errorMessage ? ` ${errorMessage}` : ""}`
+        );
+      }
+
+      throw new Error(
+        `Token refresh failed${errorMessage ? `: ${errorMessage}` : ""}`
+      );
     }
 
     const data = await response.json();
@@ -33,9 +46,15 @@ async function performTokenRefresh(): Promise<void> {
     if (data?.refresh) setRefreshToken(data.refresh);
   })()
     .catch((err) => {
-      const { setAccessToken, setRefreshToken } = useAuthStore.getState();
+      const { clearSession, setAccessToken, setRefreshToken } = useAuthStore.getState();
+
+      if (err instanceof Error && err.message.startsWith("Session expired.")) {
+        throw err;
+      }
+
       setAccessToken(null);
       setRefreshToken(null);
+      clearSession();
       throw err;
     })
     .finally(() => {
@@ -160,6 +179,7 @@ export async function apiRequest<T = unknown>(
           return parseResponse<T>(response, retriedIsJson);
         } catch (e) {
           console.error("Token refresh failed", e);
+          throw e;
         }
       }
 
