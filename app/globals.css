@@ -20,7 +20,7 @@
   --breakpoint-15xl: 304rem;
 
   /* Fonts */
-  --font-sans: var(--font-geist-sans);
+  --font-sans: "Segoe UI", Arial, Helvetica, sans-serif;
   --font-mono: var(--font-azeret-mono);
 
   /* Base colors */

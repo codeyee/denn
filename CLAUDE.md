@@ -32,6 +32,9 @@ npm run lint
 ```
 Runs ESLint to check code quality
 
+`npm run lint` and `npm run build` are the minimum quality gates and must stay reproducible in CI without hidden network dependencies.
+`npm run build` uses `next build --webpack` intentionally; do not switch it back to Turbopack without validating the CI and sandbox behavior.
+
 ---
 
 ## Project Architecture

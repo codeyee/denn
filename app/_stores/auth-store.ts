@@ -29,6 +29,7 @@ interface AuthActions {
   setUser: (user: User | null) => void;
   setAccessToken: (accessToken: string | null) => void;
   setRefreshToken: (refreshToken: string | null) => void;
+  clearSession: () => void;
   clearError: () => void;
 }
 
@@ -174,6 +175,13 @@ export const useAuthStore = create<AuthStore>()(
 
       setRefreshToken: (refreshToken: string | null) => {
         set({ refreshToken });
+      },
+
+      clearSession: () => {
+        set({
+          ...initialState,
+          isLoading: false,
+        });
       },
 
       clearError: () => {
