@@ -129,6 +129,9 @@ npm run build
 npm run start
 ```
 
+`npm run build` is expected to work without fetching remote font assets.
+The project uses the webpack production build path explicitly to keep builds stable in CI and sandboxed environments.
+
 ---
 
 ## 📖 Project Structure

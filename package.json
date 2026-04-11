@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint"
   },
@@ -35,9 +35,6 @@
     "tailwind-merge": "^3.3.1",
     "zod": "^4.1.12",
     "zustand": "^5.0.8"
-  },
-  "overrides": {
-    "brace-expansion": "^5.0.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
