@@ -57,7 +57,6 @@ class ListItem(models.Model):
         db_table = 'list_items'
         ordering = ['list_order', '-added_at']
 
-        # TODO: Ajustar, ahora mismo un contenido puede aparecer varias veces en la misma lista
         indexes = [
             models.Index(fields=['user_list', 'status']),
             models.Index(fields=['content_item']),
@@ -68,8 +67,12 @@ class ListItem(models.Model):
         constraints = [
             models.UniqueConstraint(
                 fields=['user_list', 'list_order'],
-                name='unique_list_order_per_list'
-            )
+                name='unique_list_order_per_list',
+            ),
+            models.UniqueConstraint(
+                fields=['user_list', 'content_item'],
+                name='unique_item_per_list',
+            ),
         ]
 
     def __str__(self):

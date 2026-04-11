@@ -39,23 +39,20 @@ class UserListSerializer(BaseFlexSerializer):
         }
 
     def get_member_count(self, obj):
-        """Return total count of members including owner if not in list"""
-        # Use prefetch cache if available
-        if hasattr(obj, '_prefetched_objects_cache') and 'members' in obj._prefetched_objects_cache:
-            members = obj.members.all()
-            count = len(members)
-            # Check if owner is in members list
-            # Need to compare IDs or objects. Assuming objects are same instances from prefetch/select_related
-            if obj.owner_id not in [m.id for m in members]:
-                count += 1
+        if hasattr(obj, 'member_count_annotated'):
+            count = obj.member_count_annotated
+            if hasattr(obj, '_prefetched_objects_cache') and 'members' in obj._prefetched_objects_cache:
+                if obj.owner_id not in [m.id for m in obj.members.all()]:
+                    count += 1
             return count
-
         count = obj.members.count()
         if not obj.members.filter(id=obj.owner_id).exists():
             count += 1
         return count
 
     def get_item_count(self, obj):
+        if hasattr(obj, 'item_count_annotated'):
+            return obj.item_count_annotated
         return obj.items.count()
 
     def validate_list_type(self, value):
@@ -121,23 +118,32 @@ class UserListDetailSerializer(BaseFlexSerializer):
         ).data
 
     def get_member_count(self, obj):
-        """Return total count of members including owner"""
-        # Use logic consistent with get_members
-        if hasattr(obj, '_prefetched_objects_cache') and 'members' in obj._prefetched_objects_cache:
-            members = obj.members.all()
-            count = len(members)
-            if obj.owner_id not in [m.id for m in members]:
-                count += 1
+        if hasattr(obj, 'member_count_annotated'):
+            count = obj.member_count_annotated
+            if hasattr(obj, '_prefetched_objects_cache') and 'members' in obj._prefetched_objects_cache:
+                if obj.owner_id not in [m.id for m in obj.members.all()]:
+                    count += 1
             return count
-
         count = obj.members.count()
         if not obj.members.filter(id=obj.owner_id).exists():
             count += 1
         return count
 
     def get_item_count(self, obj):
-        """Return total count of items in the list"""
+        if hasattr(obj, 'item_count_annotated'):
+            return obj.item_count_annotated
         return obj.items.count()
+
+    def _wants_source_data(self):
+        request = self.context.get('request')
+        if not request:
+            return False
+        if request.query_params.get('include_source_data', '').lower() in ('true', '1'):
+            return True
+        if request.query_params.get('source_fields'):
+            return True
+        expand = request.query_params.get('expand', '')
+        return 'source_data' in expand
 
     def get_items(self, obj):
         from .list_item import ListItemSerializer
@@ -154,44 +160,28 @@ class UserListDetailSerializer(BaseFlexSerializer):
             except (ValueError, TypeError):
                 pass
 
-        # PERFORMANCE OPTIMIZATION: Pre-fetch all source_data in one parallel batch
+        child_context = {**self.context}
+
+        if self._wants_source_data():
+            request = self.context.get('request')
+            country_code = request.query_params.get('country') if request else None
+            content_items = [item.content_item for item in items]
+            child_context['source_data_cache'] = bulk_fetch_source_data(
+                content_items, country_code=country_code,
+            )
+
+        kwargs = {'context': child_context}
+
         request = self.context.get('request')
-        country_code = None
         if request:
-            country_code = request.query_params.get('country')
-
-        content_items = [item.content_item for item in items]
-        source_data_cache = bulk_fetch_source_data(
-            content_items,
-            country_code=country_code,
-        )
-
-        # Inject pre-fetched data into context for ContentItemSerializer
-        context_with_cache = {**self.context, 'source_data_cache': source_data_cache}
-
-        # Parse flex fields for nested serializer
-        kwargs = {'context': context_with_cache}
-
-        if request:
-            # Parse fields
             query_fields = request.query_params.get('fields')
             if query_fields:
-                # Filter fields starting with 'items.' and strip prefix
-                fields = [
-                    f[6:] for f in query_fields.split(',')
-                    if f.strip().startswith('items.')
-                ]
+                fields = [f[6:] for f in query_fields.split(',') if f.strip().startswith('items.')]
                 if fields:
                     kwargs['fields'] = fields
-
-            # Parse expand
             query_expand = request.query_params.get('expand')
             if query_expand:
-                # Filter expand starting with 'items.' and strip prefix
-                expand = [
-                    f[6:] for f in query_expand.split(',')
-                    if f.strip().startswith('items.')
-                ]
+                expand = [f[6:] for f in query_expand.split(',') if f.strip().startswith('items.')]
                 if expand:
                     kwargs['expand'] = expand
 

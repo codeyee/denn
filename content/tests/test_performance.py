@@ -157,11 +157,7 @@ class QueryOptimizationTests(TransactionTestCase):
         # Reset query counter
         connection.queries_log.clear()
 
-        # Bulk check should use minimal queries regardless of number of items
-        # Expected: ~5-8 queries total (not N queries per item)
-        # Bulk check should use minimal queries regardless of number of items
-        # Expected: ~5-8 queries total (not N queries per item)
-        with self.assertNumQueries(9):  # Should be under 10 queries
+        with self.assertNumQueries(3):
             from content.serializers import BulkCheckRequestSerializer
             from rest_framework.parsers import JSONParser
             # Use the wrapped request for data access

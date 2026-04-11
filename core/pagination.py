@@ -7,6 +7,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+MAX_UNPAGINATED = 200
+
 
 class CustomPageNumberPagination(PageNumberPagination):
     page_size = 20
@@ -16,24 +18,27 @@ class CustomPageNumberPagination(PageNumberPagination):
     def paginate_queryset(self, queryset, request, view=None):
         raw_page_size = request.query_params.get(self.page_size_query_param)
 
-        # If page_size is explicitly set to "0", bypass pagination and return all items
         if raw_page_size is not None and str(raw_page_size).strip() == "0":
-            # Count total items in queryset
+            allow = request.query_params.get('allow_unpaginated', '').lower() in ('true', '1')
             total_count = queryset.count() if hasattr(queryset, 'count') else len(queryset)
 
-            # Log warning for large lists
-            if total_count > 200:
+            if not allow and total_count > MAX_UNPAGINATED:
+                logger.warning(
+                    f"Capping unpaginated request from {total_count} to {MAX_UNPAGINATED} items "
+                    f"(user={getattr(request, 'user', 'unknown')}, path={request.path}). "
+                    f"Send allow_unpaginated=true to override."
+                )
+                self.page_size = MAX_UNPAGINATED
+                return super().paginate_queryset(queryset, request, view)
+
+            if total_count > MAX_UNPAGINATED:
                 logger.warning(
                     f"Fetching all {total_count} items without pagination "
-                    f"(requested by {request.user if hasattr(request, 'user') else 'unknown'} "
-                    f"on {request.path})"
+                    f"(user={getattr(request, 'user', 'unknown')}, path={request.path})"
                 )
 
-            # Return None to signal DRF to skip pagination
-            # The view will handle the full queryset directly
             return None
 
-        # Otherwise, use standard pagination
         return super().paginate_queryset(queryset, request, view)
 
     def get_paginated_response(self, data):

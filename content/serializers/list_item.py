@@ -141,28 +141,14 @@ class ListItemSerializer(BaseFlexSerializer):
             avg = obj.member_rating_avg_annotated
             return round(float(avg), 1) if avg is not None else None
 
-        # Fallback: calculate from pre-fetched ratings or query database
         if hasattr(obj.content_item, 'member_ratings_prefetched'):
             member_ratings = obj.content_item.member_ratings_prefetched
             if not member_ratings:
                 return None
-            total_score = sum(float(rating.score) for rating in member_ratings)
-            count = len(member_ratings)
-            return round(total_score / count, 1) if count > 0 else None
+            total_score = sum(float(r.score) for r in member_ratings)
+            return round(total_score / len(member_ratings), 1)
 
-        # Last resort: database query
-        member_ids = self._get_member_ids(obj)
-        member_ratings = Rating.objects.filter(
-            content_item=obj.content_item,
-            user_id__in=member_ids
-        )
-
-        if not member_ratings.exists():
-            return None
-
-        total_score = sum(float(rating.score) for rating in member_ratings)
-        count = member_ratings.count()
-        return round(total_score / count, 1) if count > 0 else None
+        return None
 
     def get_member_rating_count(self, obj):
         if obj.status != ListItem.Status.COMPLETED:
@@ -171,16 +157,10 @@ class ListItemSerializer(BaseFlexSerializer):
         if hasattr(obj, 'member_rating_count_annotated'):
             return obj.member_rating_count_annotated or 0
 
-        # Fallback: count from pre-fetched ratings
         if hasattr(obj.content_item, 'member_ratings_prefetched'):
             return len(obj.content_item.member_ratings_prefetched)
 
-        # Last resort: database query
-        member_ids = self._get_member_ids(obj)
-        return Rating.objects.filter(
-            content_item=obj.content_item,
-            user_id__in=member_ids
-        ).count()
+        return 0
 
 class ListItemCreateSerializer(serializers.ModelSerializer):
     source_api = serializers.ChoiceField(

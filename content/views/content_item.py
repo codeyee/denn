@@ -1,4 +1,4 @@
-from rest_framework import viewsets, status, filters
+from rest_framework import viewsets, status, filters, serializers as drf_serializers
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -9,6 +9,12 @@ from content.models import ContentItem
 from content.serializers import ContentItemSerializer
 from content.permissions import IsAdminOrReadOnly
 from rest_flex_fields.views import FlexFieldsMixin
+
+
+class ContentItemLookupSerializer(drf_serializers.Serializer):
+    source_api = drf_serializers.ChoiceField(choices=ContentItem.SourceAPI.choices)
+    external_id = drf_serializers.CharField(max_length=255)
+    content_type = drf_serializers.ChoiceField(choices=ContentItem.ContentType.choices)
 
 @extend_schema_view(
     list=extend_schema(
@@ -161,42 +167,28 @@ class ContentItemViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
         tags=['Content Items'],
         summary='Get or create content item',
         description='''
-        Get a content item by source API and external ID, or create it if it doesn't exist. This is useful for ensuring a content item exists before creating ratings or list items.
+        Get a content item by source API and external ID, or create it if it doesn't exist.
+        This is useful for ensuring a content item exists before creating ratings or list items.
 
-        **Optional Query Parameters:**
-        - `country`: ISO 3166-1 alpha-2 country code (e.g., US, GB, FR) to filter providers by country (only applies when source_api=tmdb).
+        **Request body:** `source_api`, `external_id`, `content_type` (all required).
         ''',
-        parameters=[
-            OpenApiParameter('source_api', OpenApiTypes.STR, OpenApiParameter.QUERY, required=True, description='Source API (tmdb, igdb, spotify, openlibrary)'),
-            OpenApiParameter('external_id', OpenApiTypes.STR, OpenApiParameter.QUERY, required=True, description='External ID from the source API'),
-            OpenApiParameter('content_type', OpenApiTypes.STR, OpenApiParameter.QUERY, required=True, description='Content type (MOVIE, TV_SHOW, SEASON, GAME, ALBUM, BOOK)'),
-            OpenApiParameter('country', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='ISO 3166-1 alpha-2 country code to filter providers by country (only applies when source_api=tmdb)'),
-        ],
-        request=None,
+        request=ContentItemLookupSerializer,
         responses={
             200: ContentItemSerializer,
             201: ContentItemSerializer,
-            400: OpenApiExample('Validation Error', value={'error': 'Missing required parameters'}),
+            400: OpenApiExample('Validation Error', value={'error': 'VALIDATION_ERROR'}),
         }
     )
     @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
     def get_or_create(self, request):
-        # Read from query params as documented
-        source_api = (request.query_params.get('source_api') or '').lower() or None
-        external_id = request.query_params.get('external_id')
-        content_type = (request.query_params.get('content_type') or '').upper() or None
-
-        if not all([source_api, external_id, content_type]):
-            return Response(
-                {'error': 'Missing required parameters: source_api, external_id, content_type'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        lookup = ContentItemLookupSerializer(data=request.data)
+        lookup.is_valid(raise_exception=True)
 
         content_item, created = ContentItem.objects.get_or_create(
-            source_api=source_api,
-            external_id=external_id,
-            content_type=content_type,
-            defaults={}
+            source_api=lookup.validated_data['source_api'],
+            external_id=lookup.validated_data['external_id'],
+            content_type=lookup.validated_data['content_type'],
+            defaults={},
         )
 
         serializer = self.get_serializer(content_item)

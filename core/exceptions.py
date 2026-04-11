@@ -117,12 +117,62 @@ def custom_exception_handler(exc, context):
         return exc.to_response()
 
     response = exception_handler(exc, context)
+    if response is None:
+        return None
 
-    if response is not None:
-        custom_response_data = {
-            'error': 'ERROR',
-            'message': str(exc) if str(exc) else 'An error occurred'
+    if isinstance(response.data, dict):
+        response.data = {
+            'error': _error_code_from_status(response.status_code),
+            'message': _extract_message(response.data),
+            'fields': _extract_field_errors(response.data),
         }
-        response.data = custom_response_data
+    elif isinstance(response.data, list):
+        response.data = {
+            'error': _error_code_from_status(response.status_code),
+            'message': response.data[0] if response.data else 'An error occurred',
+            'fields': {},
+        }
 
     return response
+
+
+_STATUS_TO_CODE = {
+    400: 'VALIDATION_ERROR',
+    401: 'UNAUTHORIZED',
+    403: 'FORBIDDEN',
+    404: 'NOT_FOUND',
+    405: 'METHOD_NOT_ALLOWED',
+    429: 'RATE_LIMITED',
+}
+
+
+def _error_code_from_status(status_code: int) -> str:
+    return _STATUS_TO_CODE.get(status_code, 'ERROR')
+
+
+def _extract_message(data: dict) -> str:
+    if 'detail' in data:
+        detail = data['detail']
+        return str(detail)
+    for value in data.values():
+        if isinstance(value, list) and value:
+            return str(value[0])
+        if isinstance(value, str):
+            return value
+    return 'An error occurred'
+
+
+def _extract_field_errors(data: dict) -> dict:
+    if 'detail' in data and len(data) == 1:
+        return {}
+    fields = {}
+    for key, value in data.items():
+        if key == 'detail':
+            continue
+        if isinstance(value, list):
+            fields[key] = [str(v) for v in value]
+        elif isinstance(value, dict):
+            fields[key] = value
+        else:
+            fields[key] = [str(value)]
+    return fields

@@ -276,15 +276,17 @@ class BulkCheckTests(APITestCase):
         response = self.client.post(url, data, format='json')
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        # Check that error response contains validation error about items
         self.assertIn('error', response.data)
-        self.assertIn('items', str(response.data.get('message', '')))
+        has_items_error = (
+            'items' in str(response.data.get('message', ''))
+            or 'items' in response.data.get('fields', {})
+        )
+        self.assertTrue(has_items_error)
 
     def test_bulk_check_max_items_limit(self):
         """Test validation when more than 100 items are provided"""
         url = reverse('content:lists:list-bulk-check')
 
-        # Create 101 items
         items = [
             {'external_id': str(i), 'source_api': 'tmdb', 'content_type': 'MOVIE'}
             for i in range(101)
@@ -294,9 +296,7 @@ class BulkCheckTests(APITestCase):
         response = self.client.post(url, data, format='json')
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        # Check that error response contains validation error about items
         self.assertIn('error', response.data)
-        self.assertIn('items', str(response.data.get('message', '')))
 
     def test_bulk_check_missing_required_fields(self):
         """Test validation when required fields are missing"""

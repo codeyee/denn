@@ -2,10 +2,10 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.db import transaction
-from django.db.models import F
+from django.db.models import F, Prefetch, Subquery
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiExample, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
-from content.models import ListItem, UserList
+from content.models import ListItem, UserList, Rating
 from content.serializers import ListItemSerializer, ListItemCreateSerializer
 from content.permissions import IsMemberOfList
 from content.utils import bulk_fetch_source_data
@@ -173,19 +173,34 @@ class ListItemViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
     permit_list_expands = ['content_item', 'user_list', 'added_by']
 
     def get_queryset(self):
+        from django.db.models import Q
         list_id = self.kwargs.get('list_pk')
-        queryset = ListItem.objects.filter(
-            user_list_id=list_id
+
+        member_ids_subquery = Subquery(
+            UserList.objects.filter(pk=list_id).values('members__id')
+        )
+        owner_id_subquery = Subquery(
+            UserList.objects.filter(pk=list_id).values('owner_id')[:1]
+        )
+
+        ratings_qs = Rating.objects.filter(
+            Q(user_id__in=member_ids_subquery) | Q(user_id=owner_id_subquery)
+        ).select_related('user').order_by('-created_at')
+
+        return ListItem.objects.filter(
+            user_list_id=list_id,
         ).select_related(
             'content_item',
             'added_by',
-            'user_list'
+            'user_list',
         ).prefetch_related(
             'user_list__members',
-            'content_item__ratings__user'
+            Prefetch(
+                'content_item__ratings',
+                queryset=ratings_qs,
+                to_attr='member_ratings_prefetched',
+            ),
         ).order_by('list_order', '-added_at')
-        
-        return queryset
 
     def get_serializer_class(self):
         if self.action == 'create': return ListItemCreateSerializer
@@ -207,44 +222,39 @@ class ListItemViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
         except UserList.DoesNotExist:
             return None
 
+    def _wants_source_data(self, request):
+        if request.query_params.get('include_source_data', '').lower() in ('true', '1'):
+            return True
+        if request.query_params.get('source_fields'):
+            return True
+        expand = request.query_params.get('expand', '')
+        return 'source_data' in expand
+
     def list(self, request, *args, **kwargs):
-        """
-        List items with bulk fetch of source_data for performance.
-        
-        This prevents N+1 HTTP requests to external APIs by fetching all
-        source_data in parallel before serializing.
-        """
         user_list = self.get_list()
         if not user_list:
             return Response(
                 {'detail': 'Lista no encontrada o no tienes acceso a ella.'},
-                status=status.HTTP_404_NOT_FOUND
+                status=status.HTTP_404_NOT_FOUND,
             )
 
         queryset = self.filter_queryset(self.get_queryset())
-
-        # Get paginated items (or all if page_size=0)
         page = self.paginate_queryset(queryset)
         items_to_serialize = page if page is not None else list(queryset)
 
-        # PERFORMANCE OPTIMIZATION: Pre-fetch all source_data in one parallel batch
-        country_code = request.query_params.get('country')
-        content_items = [item.content_item for item in items_to_serialize]
-
-        source_data_cache = bulk_fetch_source_data(
-            content_items,
-            country_code=country_code,
-        )
-
-        # Inject pre-fetched data into context for ContentItemSerializer
         context = self.get_serializer_context()
-        context['source_data_cache'] = source_data_cache
+
+        if self._wants_source_data(request):
+            country_code = request.query_params.get('country')
+            content_items = [item.content_item for item in items_to_serialize]
+            context['source_data_cache'] = bulk_fetch_source_data(
+                content_items, country_code=country_code,
+            )
 
         serializer = self.get_serializer(items_to_serialize, many=True, context=context)
 
         if page is not None:
             return self.get_paginated_response(serializer.data)
-
         return Response(serializer.data)
 
     def create(self, request, *args, **kwargs):

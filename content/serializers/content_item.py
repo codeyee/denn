@@ -27,50 +27,52 @@ class ContentItemSerializer(BaseFlexSerializer):
             'source_data',
         ]
 
-    def get_source_data(self, obj):
-        # Skip fetching source data if explicitly disabled in context
+    def _should_include_source_data(self):
         if self.context.get('skip_source_data', False):
+            return False
+        if self.context.get('include_source_data', False):
+            return True
+        if self.context.get('source_data_cache') is not None:
+            return True
+        request = self.context.get('request')
+        if request:
+            if request.query_params.get('source_fields'):
+                return True
+            expand = request.query_params.get('expand', '')
+            if 'source_data' in expand:
+                return True
+            include = request.query_params.get('include_source_data', '').lower()
+            if include in ('true', '1'):
+                return True
+        return False
+
+    def get_source_data(self, obj):
+        if not self._should_include_source_data():
             return None
 
-        # PERFORMANCE OPTIMIZATION: Check if source_data was pre-fetched in bulk
-        # This prevents N+1 HTTP requests when serializing multiple items
         source_data_cache = self.context.get('source_data_cache')
         if source_data_cache is not None:
-            # Use pre-fetched data from bulk operation
             cached_data = source_data_cache.get(obj.id)
-
             if cached_data is not None:
-                # Apply source_fields filtering if needed
-                request = self.context.get('request')
-                if request:
-                    source_fields = request.query_params.get('source_fields')
-                    if source_fields:
-                        fields = [f.strip() for f in source_fields.split(',')]
-                        return self._pick_source_fields(cached_data, fields)
-                return cached_data
-
-            # If not in cache, fall through to normal fetch (should not happen)
-
-        # FALLBACK: Individual fetch (used when not part of bulk operation)
-        request = self.context.get('request')
-        from content.utils import fetch_source_data
-
-        country_code = None
-        if request:
-            country_code = request.query_params.get('country', None)
-
-        data = fetch_source_data(obj, country_code=country_code)
-
-        if not data:
+                return self._apply_source_fields(cached_data)
             return None
 
-        # Handle source_fields filtering
+        from content.utils import fetch_source_data
+
+        request = self.context.get('request')
+        country_code = request.query_params.get('country') if request else None
+        data = fetch_source_data(obj, country_code=country_code)
+        if not data:
+            return None
+        return self._apply_source_fields(data)
+
+    def _apply_source_fields(self, data):
+        request = self.context.get('request')
         if request:
             source_fields = request.query_params.get('source_fields')
             if source_fields:
                 fields = [f.strip() for f in source_fields.split(',')]
                 return self._pick_source_fields(data, fields)
-
         return data
 
     def _pick_source_fields(self, data, fields):
