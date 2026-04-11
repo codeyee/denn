@@ -309,7 +309,7 @@ PROXY_API_KEY=your-proxy-api-key
 CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
 
 # Redis (optional, falls back to LocalMemCache)
-REDIS_URL=redis://localhost:6379/0
+REDIS_URL=redis://localhost:6379/1
 ```
 
 ## Python Version
