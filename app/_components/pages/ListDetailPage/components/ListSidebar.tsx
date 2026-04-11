@@ -30,8 +30,8 @@ interface ListSidebarProps {
   sortBy: SortBy;
   isReorderMode: boolean;
   reorderLoading: boolean;
+  reorderPreparing: boolean;
   itemsLoading: boolean;
-  allItemsLoaded: boolean;
   onEditList: () => void;
   onDeleteList: () => void;
   onEnterReorderMode: () => void;
@@ -52,8 +52,8 @@ export function ListSidebar({
   sortBy,
   isReorderMode,
   reorderLoading,
+  reorderPreparing,
   itemsLoading,
-  allItemsLoaded,
   onEditList,
   onDeleteList,
   onEnterReorderMode,
@@ -96,10 +96,10 @@ export function ListSidebar({
                 onClick={onEnterReorderMode}
                 className="w-full flex items-center justify-center gap-2 cursor-pointer bg-blue-600 text-white hover:bg-blue-700 font-semibold"
                 size="lg"
-                disabled={itemCount === 0 || !allItemsLoaded}
+                disabled={itemCount === 0 || reorderPreparing}
               >
                 <GripVertical className="w-5 h-5" />
-                {itemsLoading ? "Loading items..." : "Reorder Items"}
+                {reorderPreparing ? "Preparing reorder..." : "Reorder Items"}
               </Button>
               <Button
                 onClick={onEditList}
@@ -156,7 +156,7 @@ export function ListSidebar({
             </div>
             <div className="flex items-center gap-2">
               <span className="text-white font-bold text-lg">
-                {allItemsLoaded ? itemCount : `${itemCount}/${totalItemCount}`}
+                {totalItemCount}
               </span>
               {itemsLoading && (
                 <div className="w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
@@ -258,6 +258,11 @@ export function ListSidebar({
             <p className="text-xs text-white/40">
               Select up to 3 attributes to group items.
             </p>
+            {groups.length > 0 && (
+              <p className="text-xs text-amber-400/60">
+                Grouping applies to the current page only.
+              </p>
+            )}
           </div>
 
           {/* Sorting Section */}
@@ -283,6 +288,11 @@ export function ListSidebar({
                 <option value="added_by">Added By</option>
                 <option value="content_type">Type</option>
               </Select>
+              {sortBy !== "list_order" && (
+                <p className="text-xs text-amber-400/60 mt-1">
+                  Sorting applies to the current page only.
+                </p>
+              )}
             </div>
           </div>
         </div>

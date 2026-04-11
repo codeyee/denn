@@ -30,8 +30,12 @@ interface LegacyPreferences {
   secondaryGroup?: string;
   sortBy: SortBy;
   sortOrder: SortOrder;
-  pageSize: PageSize;
+  pageSize: PageSize | "all";
   currentPage: number;
+}
+
+function normalizePageSize(pageSize: PageSize | "all"): PageSize {
+  return pageSize === "all" ? 50 : pageSize;
 }
 
 function computeGroupByFromPreferences(preferences: LegacyPreferences | ListViewPreferences): GroupBy[] {
@@ -53,11 +57,12 @@ function computeGroupByFromPreferences(preferences: LegacyPreferences | ListView
 
 function getInitialPreferences(listId: number) {
   const preferences = loadPreferences(listId);
+
   return {
     groupBy: computeGroupByFromPreferences(preferences),
     sortBy: preferences.sortBy,
     sortOrder: preferences.sortOrder,
-    pageSize: preferences.pageSize,
+    pageSize: normalizePageSize(preferences.pageSize),
     currentPage: preferences.currentPage,
   };
 }
@@ -76,7 +81,7 @@ export function useListPreferences(listId: number): UseListPreferencesReturn {
       sortBy: newPreferences.sortBy,
       sortOrder: newPreferences.sortOrder,
       currentPage: newPreferences.currentPage,
-      pageSize: newPreferences.pageSize,
+      pageSize: normalizePageSize(newPreferences.pageSize),
     });
     setCurrentListId(listId);
   }

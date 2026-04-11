@@ -145,7 +145,7 @@ export interface UserList {
 }
 
 export interface UserListDetail extends UserList {
-    items: ListItem[];
+    items?: ListItem[];
 }
 
 export interface ListItem {
@@ -530,6 +530,14 @@ export interface PaginatedUserListList {
 export interface PaginatedListItemList {
     metadata: PaginationMetadata;
     results: ListItem[];
+}
+
+export interface ListStatsResponse {
+    total_items: number;
+    pending_items: number;
+    completed_items: number;
+    member_count: number;
+    content_types: Record<string, number>;
 }
 
 export interface PaginatedListInvitationList {

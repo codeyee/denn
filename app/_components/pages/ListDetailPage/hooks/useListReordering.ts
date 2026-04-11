@@ -1,59 +1,46 @@
 import { useState, useCallback } from "react";
-import {
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragStartEvent,
-  DragOverEvent,
-} from "@dnd-kit/core";
-import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
+import { DragOverEvent, DragStartEvent } from "@dnd-kit/core";
+import { arrayMove } from "@dnd-kit/sortable";
 import { useListsStore } from "@/app/_stores/lists-store";
 import { useUIStore } from "@/app/_stores/ui-store";
 import { ListItem } from "@/lib/types";
 
 interface UseListReorderingOptions {
   listId: number;
-  listItems: ListItem[];
-  setListItems: React.Dispatch<React.SetStateAction<ListItem[]>>;
+  fullItems: ListItem[] | null;
+  ensureFullItems: () => Promise<ListItem[]>;
+  onReorderSaved: (items: ListItem[]) => void;
 }
 
 interface UseListReorderingReturn {
   activeId: number | null;
+  reorderItems: ListItem[];
   reorderLoading: boolean;
-  sensors: ReturnType<typeof useSensors>;
+  reorderPreparing: boolean;
   isReorderMode: boolean;
   handleDragStart: (event: DragStartEvent) => void;
   handleDragOver: (event: DragOverEvent) => void;
   handleDragEnd: () => void;
   handleDragCancel: () => void;
-  handleEnterReorderMode: () => void;
+  handleEnterReorderMode: () => Promise<void>;
   handleCancelReorder: () => void;
   handleSaveReorder: () => Promise<void>;
 }
 
 export function useListReordering({
   listId,
-  listItems,
-  setListItems,
+  fullItems,
+  ensureFullItems,
+  onReorderSaved,
 }: UseListReorderingOptions): UseListReorderingReturn {
   const [originalItems, setOriginalItems] = useState<ListItem[]>([]);
+  const [reorderItems, setReorderItems] = useState<ListItem[]>([]);
   const [reorderLoading, setReorderLoading] = useState(false);
+  const [reorderPreparing, setReorderPreparing] = useState(false);
   const [activeId, setActiveId] = useState<number | null>(null);
 
   const { reorderListItems } = useListsStore();
   const { isReorderMode, enterReorderMode, exitReorderMode } = useUIStore();
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     setActiveId(event.active.id as number);
@@ -62,20 +49,21 @@ export function useListReordering({
   const handleDragOver = useCallback((event: DragOverEvent) => {
     const { active, over } = event;
 
-    if (over && active.id !== over.id) {
-      setListItems((items) => {
-        const oldIndex = items.findIndex((item) => item.id === active.id);
-        const newIndex = items.findIndex((item) => item.id === over.id);
-
-        const newItems = arrayMove(items, oldIndex, newIndex);
-
-        return newItems.map((item, index) => ({
-          ...item,
-          list_order: index + 1,
-        }));
-      });
+    if (!over || active.id === over.id) {
+      return;
     }
-  }, [setListItems]);
+
+    setReorderItems((items) => {
+      const oldIndex = items.findIndex((item) => item.id === active.id);
+      const newIndex = items.findIndex((item) => item.id === over.id);
+      const nextItems = arrayMove(items, oldIndex, newIndex);
+
+      return nextItems.map((item, index) => ({
+        ...item,
+        list_order: index + 1,
+      }));
+    });
+  }, []);
 
   const handleDragEnd = useCallback(() => {
     setActiveId(null);
@@ -83,40 +71,48 @@ export function useListReordering({
 
   const handleDragCancel = useCallback(() => {
     setActiveId(null);
-    if (isReorderMode && originalItems.length > 0) {
-      setListItems([...originalItems]);
-    }
-  }, [isReorderMode, originalItems, setListItems]);
+    setReorderItems(originalItems);
+  }, [originalItems]);
 
-  const handleEnterReorderMode = useCallback(() => {
-    setOriginalItems([...listItems]);
-    enterReorderMode(listId);
-  }, [listItems, listId, enterReorderMode]);
+  const handleEnterReorderMode = useCallback(async () => {
+    setReorderPreparing(true);
+
+    try {
+      const items = fullItems ?? (await ensureFullItems());
+      setOriginalItems(items);
+      setReorderItems(items);
+      enterReorderMode(listId);
+    } finally {
+      setReorderPreparing(false);
+    }
+  }, [ensureFullItems, enterReorderMode, fullItems, listId]);
 
   const handleCancelReorder = useCallback(() => {
-    setListItems([...originalItems]);
+    setActiveId(null);
+    setReorderItems([]);
+    setOriginalItems([]);
     exitReorderMode();
-  }, [originalItems, exitReorderMode, setListItems]);
+  }, [exitReorderMode]);
 
   const handleSaveReorder = useCallback(async () => {
     try {
       setReorderLoading(true);
-      const itemIds = listItems.map((item) => item.id);
+      const itemIds = reorderItems.map((item) => item.id);
       await reorderListItems(listId, itemIds);
+      onReorderSaved(reorderItems);
+      setOriginalItems(reorderItems);
+      setReorderItems([]);
       exitReorderMode();
-      setOriginalItems([]);
-    } catch (err) {
-      console.error("Failed to save reorder:", err);
-      throw err;
     } finally {
       setReorderLoading(false);
     }
-  }, [listItems, listId, reorderListItems, exitReorderMode]);
+  }, [exitReorderMode, listId, onReorderSaved, reorderItems, reorderListItems]);
 
   return {
     activeId,
+    reorderItems,
     reorderLoading,
-    sensors,
+    reorderPreparing,
     isReorderMode,
     handleDragStart,
     handleDragOver,

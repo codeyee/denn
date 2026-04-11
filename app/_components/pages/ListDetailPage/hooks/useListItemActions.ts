@@ -9,6 +9,13 @@ interface UseListItemActionsOptions {
   listId: number;
   listItems: ListItem[];
   setListItems: React.Dispatch<React.SetStateAction<ListItem[]>>;
+  onListUpdated?: (name: string, description?: string, listType?: ListType) => void;
+  onItemDeleted?: (item: ListItem) => void;
+  onItemStatusUpdated?: (
+    itemId: number,
+    previousStatus: ItemStatus,
+    nextStatus: ItemStatus
+  ) => void;
   currentUserId?: number;
   onRatingModalOpen?: (item: ListItem) => void;
 }
@@ -27,6 +34,9 @@ export function useListItemActions({
   listId,
   listItems,
   setListItems,
+  onListUpdated,
+  onItemDeleted,
+  onItemStatusUpdated,
   currentUserId,
   onRatingModalOpen,
 }: UseListItemActionsOptions): UseListItemActionsReturn {
@@ -44,6 +54,7 @@ export function useListItemActions({
     setActionLoading(true);
     try {
       await updateList(listId, name, description, listType);
+      onListUpdated?.(name, description, listType);
     } finally {
       setActionLoading(false);
     }
@@ -63,8 +74,12 @@ export function useListItemActions({
   const handleDeleteItem = async (itemId: number) => {
     setActionLoading(true);
     try {
+      const itemToDelete = listItems.find((item) => item.id === itemId);
       await deleteListItem(listId, itemId);
       setListItems((prev) => prev.filter((item) => item.id !== itemId));
+      if (itemToDelete) {
+        onItemDeleted?.(itemToDelete);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete item");
     } finally {
@@ -95,6 +110,7 @@ export function useListItemActions({
 
     try {
       await updateListItemStatus(listId, itemId, newStatus);
+      onItemStatusUpdated?.(itemId, currentStatus as ItemStatus, newStatus);
 
       if (newStatus === ItemStatus.COMPLETED && currentUserId && onRatingModalOpen) {
         const item = listItems.find((i) => i.id === itemId);

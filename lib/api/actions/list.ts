@@ -5,6 +5,7 @@ import type {
     UserListDetail,
     PaginatedUserListList,
     ListQueryParams,
+    ListStatsResponse,
     BulkCheckItem,
     BulkCheckResponse,
 } from "@/lib/types";
@@ -56,7 +57,7 @@ export const listActions = {
         return api.delete(`/content/lists/${id}/`, true) as Promise<void>;
     },
 
-    getStats: (id: number): Promise<unknown> => {
-        return api.get(`/content/lists/${id}/stats/`, true);
+    getStats: (id: number): Promise<ListStatsResponse> => {
+        return api.get<ListStatsResponse>(`/content/lists/${id}/stats/`, true);
     },
 };

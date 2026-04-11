@@ -1,5 +1,6 @@
 import { api } from "../api";
 import {
+    buildFlexFieldsQuery,
     buildQueryString,
     addPaginationParams,
     addCountryParam,
@@ -10,23 +11,63 @@ import type {
     ListItemCreate,
 } from "@/lib/types";
 
+interface ListItemQueryOptions {
+    country?: string;
+    fields?: string;
+    expand?: string;
+    omit?: string;
+    source_fields?: string;
+}
+
+function buildListItemQuery(
+    page?: number,
+    pageSize?: number,
+    options: ListItemQueryOptions = {}
+): string {
+    const params = new URLSearchParams();
+    addPaginationParams(params, { page, pageSize });
+
+    const flexFieldsQuery = buildFlexFieldsQuery({
+        fields: options.fields ? options.fields.split(",") : undefined,
+        expand: options.expand ? options.expand.split(",") : undefined,
+        omit: options.omit ? options.omit.split(",") : undefined,
+        sourceFields: options.source_fields
+            ? options.source_fields.split(",")
+            : undefined,
+    });
+
+    if (flexFieldsQuery) {
+        const flexParams = new URLSearchParams(flexFieldsQuery);
+        flexParams.forEach((value, key) => {
+            params.append(key, value);
+        });
+    }
+
+    addCountryParam(params, options.country);
+
+    return params.toString();
+}
+
 export const listItemActions = {
     list: (
         listId: number,
         page?: number,
         pageSize?: number,
-        country?: string,
-        expand?: string
+        options?: ListItemQueryOptions
     ): Promise<PaginatedListItemList> => {
-        const params = new URLSearchParams();
-        if (page !== undefined) params.append("page", String(page));
-        if (pageSize !== undefined)
-            params.append("page_size", String(pageSize));
-        if (expand) params.append("expand", expand);
-        addCountryParam(params, country);
-
-        const query = params.toString();
+        const query = buildListItemQuery(page, pageSize, options);
         return api.get<PaginatedListItemList>(
+            `/content/lists/${listId}/items/${query ? `?${query}` : ""}`,
+            true
+        );
+    },
+
+    listAll: (
+        listId: number,
+        options?: ListItemQueryOptions
+    ): Promise<ListItem[]> => {
+        const query = buildListItemQuery(undefined, 0, options);
+        return api.get<ListItem[]>(
             `/content/lists/${listId}/items/${query ? `?${query}` : ""}`,
             true
         );

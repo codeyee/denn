@@ -10,7 +10,6 @@ import {
 import {
   groupItemsComposite,
   sortItems,
-  sortGroupedItems,
   paginateItems,
 } from "../utils";
 
@@ -47,7 +46,6 @@ export function useListGrouping({
   isReorderMode,
 }: UseListGroupingOptions): ProcessedData {
   const processedData = useMemo(() => {
-    // In reorder mode, show all items without grouping or pagination
     if (isReorderMode) {
       return {
         displayItems: listItems,
@@ -64,29 +62,13 @@ export function useListGrouping({
     }
 
     const hasGrouping = groupBy.length > 0;
+    const sortedItems = sortItems(listItems, sortBy, sortOrder);
+    const paginated = paginateItems(sortedItems, currentPage, pageSize);
 
     if (hasGrouping) {
-      // Create composite groups
-      let grouped = groupItemsComposite(listItems, groupBy);
-
-      // Sort items within each group
-      grouped = sortGroupedItems(grouped, sortBy, sortOrder);
-
-      // Get all items from all groups for pagination
-      const allItems = grouped.flatMap((g) => g.items);
-      const paginated = paginateItems(allItems, currentPage, pageSize);
-
-      // Re-group the paginated items to maintain group structure
-      const paginatedGrouped = groupItemsComposite(paginated.items, groupBy);
-      const sortedPaginatedGrouped = sortGroupedItems(
-        paginatedGrouped,
-        sortBy,
-        sortOrder
-      );
-
       return {
         displayItems: [],
-        groupedItems: sortedPaginatedGrouped,
+        groupedItems: groupItemsComposite(paginated.items, groupBy),
         paginationInfo: {
           currentPage: paginated.currentPage,
           pageSize: paginated.pageSize,
@@ -97,10 +79,6 @@ export function useListGrouping({
         },
       };
     } else {
-      // No grouping: sort and paginate items directly
-      const sorted = sortItems(listItems, sortBy, sortOrder);
-      const paginated = paginateItems(sorted, currentPage, pageSize);
-
       return {
         displayItems: paginated.items,
         groupedItems: null,

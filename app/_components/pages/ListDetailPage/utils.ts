@@ -336,21 +336,7 @@ export function paginateItems(
   pageSize: PageSize
 ): PaginatedResult<ListItem> {
   const totalItems = items.length;
-
-  // Handle 'all' case - show all items without pagination
-  if (pageSize === 'all') {
-    return {
-      items: items,
-      currentPage: 1,
-      pageSize: 'all',
-      totalItems,
-      totalPages: 1,
-      startIndex: 0,
-      endIndex: totalItems,
-    };
-  }
-
-  const numericPageSize = pageSize as number;
+  const numericPageSize = pageSize;
   const totalPages = Math.ceil(totalItems / numericPageSize);
   const validPage = Math.max(1, Math.min(currentPage, totalPages || 1));
 
@@ -384,18 +370,7 @@ export function paginateGroup(
     : group.items;
 
   const totalItems = allItems.length;
-
-  // Handle 'all' case
-  if (pageSize === 'all') {
-    return {
-      paginatedItems: allItems,
-      totalPages: 1,
-      startIndex: 0,
-      endIndex: totalItems,
-    };
-  }
-
-  const numericPageSize = pageSize as number;
+  const numericPageSize = pageSize;
   const totalPages = Math.max(1, Math.ceil(totalItems / numericPageSize));
   const validPage = Math.max(1, Math.min(groupPage, totalPages));
 
@@ -421,18 +396,7 @@ export function paginateSubGroup(
   endIndex: number;
 } {
   const totalItems = subGroup.items.length;
-
-  // Handle 'all' case
-  if (pageSize === 'all') {
-    return {
-      paginatedItems: subGroup.items,
-      totalPages: 1,
-      startIndex: 0,
-      endIndex: totalItems,
-    };
-  }
-
-  const numericPageSize = pageSize as number;
+  const numericPageSize = pageSize;
   const totalPages = Math.max(1, Math.ceil(totalItems / numericPageSize));
   const validPage = Math.max(1, Math.min(subGroupPage, totalPages));
 
@@ -458,18 +422,7 @@ export function paginateSubGroups(
     endIndex: number;
   } {
     const totalItems = subGroups.length;
-
-    // Handle 'all' case
-    if (pageSize === 'all') {
-      return {
-        paginatedSubGroups: subGroups,
-        totalPages: 1,
-        startIndex: 0,
-        endIndex: totalItems,
-      };
-    }
-
-    const numericPageSize = pageSize as number;
+    const numericPageSize = pageSize;
     const totalPages = Math.max(1, Math.ceil(totalItems / numericPageSize));
     const validPage = Math.max(1, Math.min(subGroupPage, totalPages));
 
@@ -492,21 +445,7 @@ export function paginateGroupedItems(
   // Get all items from all groups
   const allItems = flattenGroups(groups);
   const totalItems = allItems.length;
-
-  // Handle 'all' case - show all groups without pagination
-  if (pageSize === 'all') {
-    return {
-      items: groups,
-      currentPage: 1,
-      pageSize: 'all',
-      totalItems,
-      totalPages: 1,
-      startIndex: 0,
-      endIndex: totalItems,
-    };
-  }
-
-  const numericPageSize = pageSize as number;
+  const numericPageSize = pageSize;
   const totalPages = Math.ceil(totalItems / numericPageSize);
   const validPage = Math.max(1, Math.min(currentPage, totalPages || 1));
 

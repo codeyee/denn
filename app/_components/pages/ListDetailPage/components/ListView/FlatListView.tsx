@@ -1,28 +1,12 @@
-import {
-  DndContext,
-  closestCenter,
-  DragOverlay,
-  DragStartEvent,
-  DragOverEvent,
-  SensorDescriptor,
-  SensorOptions,
-} from "@dnd-kit/core";
-import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { ListItem, UserListDetail } from "@/lib/types";
 import { VerticalList } from "../../../../common/lists/VerticalList";
 import { ListItemRenderer } from "../ListItemRenderer";
 
 interface FlatListViewProps {
   items: ListItem[];
-  activeId: number | null;
-  isReorderMode: boolean;
+  highlightedItemId: number | null;
   list: UserListDetail;
   currentUserId?: number;
-  sensors: SensorDescriptor<SensorOptions>[];
-  onDragStart: (event: DragStartEvent) => void;
-  onDragOver: (event: DragOverEvent) => void;
-  onDragEnd: () => void;
-  onDragCancel: () => void;
   onToggleStatus: (itemId: number, currentStatus: string) => void;
   onDelete: (itemId: number) => void;
   onRate: (item: ListItem) => void;
@@ -31,69 +15,31 @@ interface FlatListViewProps {
 
 export function FlatListView({
   items,
-  activeId,
-  isReorderMode,
+  highlightedItemId,
   list,
   currentUserId,
-  sensors,
-  onDragStart,
-  onDragOver,
-  onDragEnd,
-  onDragCancel,
   onToggleStatus,
   onDelete,
   onRate,
   shouldInviteToRate,
 }: FlatListViewProps) {
-  const activeItem = items.find((i) => i.id === activeId);
-
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCenter}
-      onDragStart={onDragStart}
-      onDragOver={onDragOver}
-      onDragEnd={onDragEnd}
-      onDragCancel={onDragCancel}
-    >
-      <SortableContext
-        items={items.map((item) => item.id)}
-        strategy={verticalListSortingStrategy}
-      >
-        <VerticalList spacing="md">
-          {items.map((item) => (
-            <ListItemRenderer
-              key={item.id}
-              item={item}
-              activeId={activeId}
-              isReorderMode={isReorderMode}
-              list={list}
-              currentUserId={currentUserId}
-              onToggleStatus={onToggleStatus}
-              onDelete={onDelete}
-              onRate={onRate}
-              shouldInviteToRate={shouldInviteToRate}
-            />
-          ))}
-        </VerticalList>
-      </SortableContext>
-      <DragOverlay>
-        {activeId && activeItem ? (
-          <div className="opacity-80 shadow-2xl pointer-events-none">
-            <ListItemRenderer
-              item={activeItem}
-              activeId={null}
-              isReorderMode={true}
-              list={list}
-              currentUserId={currentUserId}
-              onToggleStatus={onToggleStatus}
-              onDelete={onDelete}
-              onRate={onRate}
-              shouldInviteToRate={shouldInviteToRate}
-            />
-          </div>
-        ) : null}
-      </DragOverlay>
-    </DndContext>
+    <VerticalList spacing="md">
+      {items.map((item) => (
+        <ListItemRenderer
+          key={item.id}
+          item={item}
+          activeId={null}
+          isHighlighted={item.id === highlightedItemId}
+          isReorderMode={false}
+          list={list}
+          currentUserId={currentUserId}
+          onToggleStatus={onToggleStatus}
+          onDelete={onDelete}
+          onRate={onRate}
+          shouldInviteToRate={shouldInviteToRate}
+        />
+      ))}
+    </VerticalList>
   );
 }
