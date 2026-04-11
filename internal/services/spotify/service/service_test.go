@@ -12,21 +12,67 @@ import (
 	spotifyclient "github.com/codeyee/denn-proxy/internal/providers/spotify"
 )
 
+type requestHandler func(*http.Request) (*http.Response, error)
+
 type MockRoundTripper struct {
-	Response *http.Response
-	Err      error
+	handlers []requestHandler
 }
 
 func (m *MockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	return m.Response, m.Err
+	for _, handler := range m.handlers {
+		resp, err := handler(req)
+		if resp != nil || err != nil {
+			return resp, err
+		}
+	}
+
+	return nil, io.EOF
+}
+
+func jsonResponse(statusCode int, body []byte) *http.Response {
+	return &http.Response{
+		StatusCode: statusCode,
+		Body:       io.NopCloser(bytes.NewReader(body)),
+		Header:     make(http.Header),
+	}
+}
+
+func authHandler() requestHandler {
+	return func(req *http.Request) (*http.Response, error) {
+		if req.URL.Host != "accounts.spotify.com" {
+			return nil, nil
+		}
+
+		return jsonResponse(http.StatusOK, []byte(`{"access_token":"test-token","expires_in":3600,"token_type":"Bearer"}`)), nil
+	}
+}
+
+func apiHandler(body []byte, statusCode int) requestHandler {
+	return func(req *http.Request) (*http.Response, error) {
+		if req.URL.Host != "api.spotify.com" {
+			return nil, nil
+		}
+
+		return jsonResponse(statusCode, body), nil
+	}
+}
+
+func chartsHandler(body []byte, statusCode int) requestHandler {
+	return func(req *http.Request) (*http.Response, error) {
+		if req.URL.Host != "charts-spotify-com-service.spotify.com" {
+			return nil, nil
+		}
+
+		return jsonResponse(statusCode, body), nil
+	}
 }
 
 func newTestService(mockBody []byte, statusCode int) *Service {
 	mockTransport := &MockRoundTripper{
-		Response: &http.Response{
-			StatusCode: statusCode,
-			Body:       io.NopCloser(bytes.NewReader(mockBody)),
-			Header:     make(http.Header),
+		handlers: []requestHandler{
+			authHandler(),
+			apiHandler(mockBody, statusCode),
+			chartsHandler(mockBody, statusCode),
 		},
 	}
 

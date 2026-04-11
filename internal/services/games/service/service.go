@@ -309,7 +309,9 @@ func calculateRecencyMultiplier(releaseDate *string, now int64) float64 {
 		return 0.0
 	}
 
-	daysOld := float64(now-ts) / 86400.0
+	nowDate := time.Unix(now, 0).UTC()
+	startOfToday := time.Date(nowDate.Year(), nowDate.Month(), nowDate.Day(), 0, 0, 0, 0, time.UTC)
+	daysOld := startOfToday.Sub(t).Hours() / 24.0
 
 	switch {
 	case daysOld < 30:
