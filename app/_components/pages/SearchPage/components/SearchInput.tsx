@@ -4,19 +4,16 @@ interface SearchInputProps {
   value: string;
   onChange: (value: string) => void;
   inputRef?: React.RefObject<HTMLInputElement | null>;
-  onUserTyped?: () => void;
 }
 
 export function SearchInput({
   value,
   onChange,
   inputRef,
-  onUserTyped,
 }: SearchInputProps) {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange(e.target.value);
-    onUserTyped?.();
   };
 
   return (

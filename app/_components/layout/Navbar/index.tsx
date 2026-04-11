@@ -18,11 +18,22 @@ import {
 import { useSettings } from "@/app/_hooks/useSettings";
 import { useNavbarSearch } from "./hooks/useNavbarSearch";
 
-export function Navbar() {
+interface NavbarProps {
+  searchQuery?: string;
+  onSearchChange?: (value: string) => void;
+}
+
+export function Navbar({ searchQuery, onSearchChange }: NavbarProps) {
   const { user, isAuthenticated, logout } = useAuth();
   const { settings, toggleAnimations } = useSettings();
   const router = useRouter();
-  const { searchQuery, searchInputRef, handleSearchChange } = useNavbarSearch();
+  const {
+    searchQuery: internalSearchQuery,
+    searchInputRef,
+    handleSearchChange,
+  } = useNavbarSearch();
+  const resolvedSearchQuery = searchQuery ?? internalSearchQuery;
+  const resolvedHandleSearchChange = onSearchChange ?? handleSearchChange;
 
   return (
     <div className="fixed top-0 left-0 right-0 z-50">
@@ -50,8 +61,8 @@ export function Navbar() {
                 <input
                   ref={searchInputRef}
                   type="text"
-                  value={searchQuery}
-                  onChange={(e) => handleSearchChange(e.target.value)}
+                  value={resolvedSearchQuery}
+                  onChange={(e) => resolvedHandleSearchChange(e.target.value)}
                   placeholder="Search for movies, TV shows, games..."
                   className="w-full pl-12 pr-4 py-2 bg-white/10 backdrop-blur-lg border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white/40 transition-all"
                 />

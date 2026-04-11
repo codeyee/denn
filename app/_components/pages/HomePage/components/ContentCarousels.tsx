@@ -2,9 +2,9 @@ import { ContentCard } from "@/app/_components/common/cards/ContentCard";
 import { ListCard } from "@/app/_components/common/cards/ListCard";
 import { CreateListCard } from "@/app/_components/common/cards/CreateListCard";
 import { Carousel } from "@/app/_components/common/ui/Carousel";
-import { LoadingCarousel } from "@/app/_components/common/state/LoadingCarousel";
+import { ErrorState } from "@/app/_components/common/state/ErrorState";
 import { Content } from "@/lib/types";
-import { UserList } from "@/lib/types";
+import { ListType, UserList } from "@/lib/types";
 
 const CONTENT_SECTIONS = [
   { key: 'movies', title: 'Popular Movies' },
@@ -23,39 +23,44 @@ interface ContentCarouselsProps {
     books: Content[];
   };
   lists: UserList[];
-  suggestionsLoading: boolean;
-  listsLoading: boolean;
-  createList: (name: string) => void;
+  suggestionsError?: string | null;
+  listsError?: string | null;
+  createList: (
+    name: string,
+    description?: string,
+    listType?: ListType
+  ) => Promise<unknown>;
+  isCreatingList?: boolean;
 }
 
 interface CarouselSectionProps {
   title: string;
   items: Content[];
-  isLoading: boolean;
   keyPrefix: string;
 }
 
 export function ContentCarousels({
   suggestions,
   lists,
-  suggestionsLoading,
-  listsLoading,
+  suggestionsError,
+  listsError,
   createList,
+  isCreatingList = false,
 }: ContentCarouselsProps) {
   return (
     <>
       <ListsCarousel
         lists={lists}
-        isLoading={listsLoading}
+        error={listsError}
         createList={createList}
+        isLoading={isCreatingList}
       />
 
-      {CONTENT_SECTIONS.map(({ key, title }) => (
+      {!suggestionsError && CONTENT_SECTIONS.map(({ key, title }) => (
         <CarouselSection
           key={key}
           title={title}
           items={suggestions[key as keyof typeof suggestions]}
-          isLoading={suggestionsLoading}
           keyPrefix={key}
         />
       ))}
@@ -66,13 +71,8 @@ export function ContentCarousels({
 function CarouselSection({
   title,
   items,
-  isLoading,
   keyPrefix,
 }: CarouselSectionProps) {
-  if (isLoading) {
-    return <LoadingCarousel title={title} />;
-  }
-
   if (items.length === 0) {
     return null;
   }
@@ -92,15 +92,26 @@ function CarouselSection({
 
 function ListsCarousel({
   lists,
+  error,
   isLoading,
   createList,
 }: {
   lists: UserList[];
+  error?: string | null;
   isLoading: boolean;
-  createList: (name: string) => void;
+  createList: (
+    name: string,
+    description?: string,
+    listType?: ListType
+  ) => Promise<unknown>;
 }) {
-  if (isLoading) {
-    return <LoadingCarousel title="Your Lists" />;
+  if (error) {
+    return (
+      <ErrorState
+        error={error}
+        title="Could not load your lists"
+      />
+    );
   }
 
   if (lists.length === 0 && !isLoading) {

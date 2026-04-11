@@ -1,11 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { searchActions } from "@/lib/api/actions";
 import type {
-    MovieDetail,
-    TVShowDetail,
-    GameDetail,
-    AlbumDetail,
-    BookDetail,
+    MultiSearchResponse,
 } from "@/lib/types";
 import {
     transformMovieResults,
@@ -14,14 +10,7 @@ import {
     transformMusicResults,
     transformBookResults,
 } from "../utils";
-
-export interface SearchResults {
-    movies: MovieDetail[];
-    tvShows: TVShowDetail[];
-    games: GameDetail[];
-    music: AlbumDetail[];
-    books: BookDetail[];
-}
+import { EMPTY_SEARCH_RESULTS, type SearchResults } from "../types";
 
 interface UseSearchResultsReturn {
     results: SearchResults;
@@ -30,18 +19,35 @@ interface UseSearchResultsReturn {
     hasResults: boolean;
 }
 
-const EMPTY_RESULTS: SearchResults = {
-    movies: [],
-    tvShows: [],
-    games: [],
-    music: [],
-    books: [],
-};
+interface UseSearchResultsOptions {
+    initialQuery?: string;
+    initialResults?: SearchResults;
+    initialError?: string | null;
+}
 
-export function useSearchResults(query: string): UseSearchResultsReturn {
-    const [results, setResults] = useState<SearchResults>(EMPTY_RESULTS);
+function transformSearchResponse(response: MultiSearchResponse): SearchResults {
+    return {
+        movies: transformMovieResults(response.movies?.results || []),
+        tvShows: transformTVShowResults(response["tv-shows"]?.results || []),
+        games: transformGameResults(response.games?.results || []),
+        music: transformMusicResults(response.albums?.results || []),
+        books: transformBookResults(response.books?.results || []),
+    };
+}
+
+export function useSearchResults(
+    query: string,
+    options: UseSearchResultsOptions = {}
+): UseSearchResultsReturn {
+    const initialQuery = options.initialQuery?.trim() ?? "";
+    const initialResults = options.initialResults ?? EMPTY_SEARCH_RESULTS;
+    const initialError = options.initialError ?? null;
+    const skippedInitialFetchRef = useRef(false);
+    const [results, setResults] = useState<SearchResults>(
+        initialQuery ? initialResults : EMPTY_SEARCH_RESULTS
+    );
     const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(initialError);
 
     const currentSearchQueryRef = useRef<string>("");
 
@@ -53,14 +59,26 @@ export function useSearchResults(query: string): UseSearchResultsReturn {
         const performSearch = async () => {
             // Clear results if no query
             if (!query.trim()) {
-                setResults(EMPTY_RESULTS);
+                setResults(EMPTY_SEARCH_RESULTS);
                 setIsLoading(false);
+                setError(null);
                 currentSearchQueryRef.current = "";
                 return;
             }
 
             const searchQueryForThisRequest = query.trim();
             currentSearchQueryRef.current = searchQueryForThisRequest;
+
+            if (
+                !skippedInitialFetchRef.current &&
+                searchQueryForThisRequest === initialQuery
+            ) {
+                skippedInitialFetchRef.current = true;
+                setResults(initialResults);
+                setError(initialError);
+                setIsLoading(false);
+                return;
+            }
 
             setIsLoading(true);
             setError(null);
@@ -80,13 +98,7 @@ export function useSearchResults(query: string): UseSearchResultsReturn {
                     return;
                 }
 
-                setResults({
-                    movies: transformMovieResults(response.movies?.results || []),
-                    tvShows: transformTVShowResults(response["tv-shows"]?.results || []),
-                    games: transformGameResults(response.games?.results || []),
-                    music: transformMusicResults(response.albums?.results || []),
-                    books: transformBookResults(response.books?.results || []),
-                });
+                setResults(transformSearchResponse(response));
             } catch (err) {
                 // Ignore abort errors (expected when user types quickly)
                 if (err instanceof Error && err.name === "AbortError") {
@@ -102,7 +114,7 @@ export function useSearchResults(query: string): UseSearchResultsReturn {
                             ? err.message
                             : "An error occurred while searching"
                     );
-                    setResults(EMPTY_RESULTS);
+                    setResults(EMPTY_SEARCH_RESULTS);
                 }
             } finally {
                 // Only update loading state if this is still the current search
@@ -120,7 +132,7 @@ export function useSearchResults(query: string): UseSearchResultsReturn {
         return () => {
             controller.abort();
         };
-    }, [query]);
+    }, [initialError, initialQuery, initialResults, query]);
 
     const hasResults =
         results.movies.length > 0 ||

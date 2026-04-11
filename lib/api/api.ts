@@ -1,6 +1,7 @@
 import { useAuthStore } from "@/app/_stores/auth-store";
 
 import { getApiUrl } from "@/lib/env";
+import { syncAuthCookies } from "@/lib/auth/session-client";
 
 const CONTENT_TYPE_JSON = "application/json";
 const DEFAULT_ERROR_DETAILS = "No error details";
@@ -44,6 +45,10 @@ async function performTokenRefresh(): Promise<void> {
     const data = await response.json();
     if (data?.access) setAccessToken(data.access);
     if (data?.refresh) setRefreshToken(data.refresh);
+    syncAuthCookies({
+      accessToken: data?.access ?? useAuthStore.getState().accessToken,
+      refreshToken: data?.refresh ?? useAuthStore.getState().refreshToken,
+    });
   })()
     .catch((err) => {
       const { clearSession, setAccessToken, setRefreshToken } = useAuthStore.getState();

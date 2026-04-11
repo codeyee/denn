@@ -56,20 +56,14 @@ export function useNavbarSearch() {
       } else {
         const urlQuery = searchParams.get("q") || "";
         if (trimmedQuery !== urlQuery) {
-          if (trimmedQuery) {
-            router.push(`/search?q=${encodeURIComponent(trimmedQuery)}`, {
-              scroll: false,
-            });
-            hasUserTypedRef.current = true;
-          } else {
-            if (hasUserTypedRef.current) {
-              const prevPage =
-                typeof window !== "undefined"
-                  ? sessionStorage.getItem(PREV_PAGE_KEY) || "/"
-                  : "/";
-              router.push(prevPage);
-            }
-          }
+          const nextUrl = trimmedQuery
+            ? `/search?q=${encodeURIComponent(trimmedQuery)}`
+            : "/search";
+
+          router.replace(nextUrl, {
+            scroll: false,
+          });
+          hasUserTypedRef.current = Boolean(trimmedQuery);
         }
       }
     }, SEARCH_DEBOUNCE_MS);

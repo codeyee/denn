@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { clearAuthCookies, syncAuthCookies } from "@/lib/auth/session-client";
 
 export interface User {
   id: number;
@@ -27,6 +28,11 @@ interface AuthActions {
   ) => Promise<void>;
   logout: () => Promise<void>;
   setUser: (user: User | null) => void;
+  setSession: (session: {
+    user: User | null;
+    accessToken: string | null;
+    refreshToken: string | null;
+  }) => void;
   setAccessToken: (accessToken: string | null) => void;
   setRefreshToken: (refreshToken: string | null) => void;
   clearSession: () => void;
@@ -79,6 +85,10 @@ export const useAuthStore = create<AuthStore>()(
             isLoading: false,
             error: null,
           });
+          syncAuthCookies({
+            accessToken: data.access,
+            refreshToken: data.refresh,
+          });
         } catch (error) {
           set({
             error:
@@ -129,6 +139,10 @@ export const useAuthStore = create<AuthStore>()(
             isLoading: false,
             error: null,
           });
+          syncAuthCookies({
+            accessToken: data.access,
+            refreshToken: data.refresh,
+          });
         } catch (error) {
           set({
             error:
@@ -153,11 +167,15 @@ export const useAuthStore = create<AuthStore>()(
                 "Content-Type": "application/json",
                 Authorization: `Bearer ${state.accessToken}`,
               },
+              body: JSON.stringify({
+                refresh: state.refreshToken,
+              }),
             });
           }
         } catch (error) {
           console.error("Logout error:", error);
         } finally {
+          clearAuthCookies();
           set(initialState);
         }
       },
@@ -169,15 +187,41 @@ export const useAuthStore = create<AuthStore>()(
         });
       },
 
+      setSession: ({ user, accessToken, refreshToken }) => {
+        if (accessToken || refreshToken) {
+          syncAuthCookies({ accessToken, refreshToken });
+        } else {
+          clearAuthCookies();
+        }
+
+        set({
+          user,
+          accessToken,
+          refreshToken,
+          isAuthenticated: Boolean(user && accessToken),
+          isLoading: false,
+          error: null,
+        });
+      },
+
       setAccessToken: (accessToken: string | null) => {
+        syncAuthCookies({
+          accessToken,
+          refreshToken: useAuthStore.getState().refreshToken,
+        });
         set({ accessToken });
       },
 
       setRefreshToken: (refreshToken: string | null) => {
+        syncAuthCookies({
+          accessToken: useAuthStore.getState().accessToken,
+          refreshToken,
+        });
         set({ refreshToken });
       },
 
       clearSession: () => {
+        clearAuthCookies();
         set({
           ...initialState,
           isLoading: false,
