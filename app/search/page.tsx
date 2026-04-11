@@ -1,39 +1,37 @@
-"use client";
+import { SearchRouteShell } from "@/app/_components/routes/SearchRouteShell";
+import { EMPTY_SEARCH_RESULTS } from "@/app/_components/pages/SearchPage/types";
+import { getServerCountryCode, resolveSession } from "@/lib/auth/session-server";
+import { getSearchResults } from "@/lib/server/search";
 
-import { Suspense } from "react";
-import { Navbar } from "@/app/_components/layout/Navbar";
-import { SearchPage } from "@/app/_components/pages/SearchPage";
-import { useAuth } from "@/app/_hooks/useAuth";
+interface SearchPageProps {
+  searchParams?: Promise<{
+    q?: string;
+  }>;
+}
 
-export default function Search() {
-  const { isAuthenticated, isLoading } = useAuth();
+export default async function Search({ searchParams }: SearchPageProps) {
+  const params = searchParams ? await searchParams : undefined;
+  const initialQuery = params?.q?.trim() ?? "";
+  const session = await resolveSession();
+  const country = await getServerCountryCode();
+  let initialResults = EMPTY_SEARCH_RESULTS;
+  let initialError: string | null = null;
 
-  if (isLoading) {
-    return (
-      <div className="relative w-full overflow-x-hidden">
-        <Suspense fallback={null}>
-          <Navbar />
-        </Suspense>
-        <div
-          className="flex items-center justify-center min-h-screen"
-          style={{ backgroundColor: "var(--color-hero-gradient)" }}
-        >
-          <p className="text-white">Loading...</p>
-        </div>
-      </div>
-    );
+  if (session.isAuthenticated && initialQuery) {
+    try {
+      initialResults = await getSearchResults(initialQuery, country);
+    } catch (error) {
+      initialError =
+        error instanceof Error ? error.message : "Failed to load search results";
+    }
   }
 
   return (
-    <div className="relative w-full overflow-x-hidden">
-      <Suspense fallback={null}>
-        <Navbar />
-      </Suspense>
-      {isAuthenticated ? <SearchPage /> : (
-        <div className="flex items-center justify-center min-h-screen bg-background-logged-in">
-          <p className="text-white text-xl">Please log in to search</p>
-        </div>
-      )}
-    </div>
+    <SearchRouteShell
+      session={session}
+      initialQuery={initialQuery}
+      initialResults={initialResults}
+      initialError={initialError}
+    />
   );
 }

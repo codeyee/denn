@@ -1,29 +1,33 @@
 "use client";
 
-import { useRef } from "react";
 import { Footer } from "../../layout/Footer";
-import { useSearchQuery } from "./hooks/useSearchQuery";
-import { useSearchResults } from "./hooks/useSearchResults";
 import { SearchInput } from "./components/SearchInput";
 import { SearchResultsSection } from "./components/SearchResultsSection";
 import { EmptyState } from "../../common/state/EmptyState";
 import { LoadingCarousel } from "../../common/state/LoadingCarousel";
+import type { SearchResults } from "./types";
 
-export function SearchPage() {
-  const {
-    searchQuery,
-    debouncedQuery,
-    setSearchQuery,
-    mobileInputRef,
-  } = useSearchQuery();
+interface SearchPageProps {
+  searchQuery: string;
+  onSearchQueryChange: (query: string) => void;
+  debouncedQuery: string;
+  results: SearchResults;
+  isLoading: boolean;
+  error: string | null;
+  hasResults: boolean;
+  mobileInputRef: React.RefObject<HTMLInputElement | null>;
+}
 
-  const hasUserTypedRef = useRef(false);
-
-  const handleUserTyped = () => {
-    hasUserTypedRef.current = true;
-  };
-
-  const { results, isLoading, error, hasResults } = useSearchResults(debouncedQuery);
+export function SearchPage({
+  searchQuery,
+  onSearchQueryChange,
+  debouncedQuery,
+  results,
+  isLoading,
+  error,
+  hasResults,
+  mobileInputRef,
+}: SearchPageProps) {
 
   const showLoading = isLoading || (searchQuery.trim() && !hasResults && !error);
   const showResults = !isLoading && !error && debouncedQuery.trim();
@@ -34,9 +38,8 @@ export function SearchPage() {
       {/* Mobile Search Input */}
       <SearchInput
         value={searchQuery}
-        onChange={setSearchQuery}
+        onChange={onSearchQueryChange}
         inputRef={mobileInputRef}
-        onUserTyped={handleUserTyped}
       />
 
       <div className="pt-5 lg:pt-30 pb-20">
