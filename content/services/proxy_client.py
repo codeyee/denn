@@ -39,6 +39,9 @@ class ProxyAPIClient:
         timeout: int = DEFAULT_TIMEOUT,
     ) -> Optional[Dict[str, Any]]:
         url = f"{self.base_url}{path}"
+        if getattr(settings, "TESTING", False):
+            return None
+
         try:
             resp = self._session.get(
                 url,

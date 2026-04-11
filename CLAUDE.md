@@ -15,8 +15,8 @@ Denn Core API is a Django-based backend for managing multi-media content (movies
 
 # Or manual setup:
 # Create and activate virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+python3 -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
@@ -61,24 +61,24 @@ gunicorn core.wsgi:application
 ### Testing
 ```bash
 # Run all tests
-python manage.py test
+./.venv/bin/python manage.py test
 
 # Run tests for specific app
-python manage.py test authentication
-python manage.py test content
+./.venv/bin/python manage.py test authentication
+./.venv/bin/python manage.py test content
 
 # Run specific test file
-python manage.py test authentication.tests.test_views
+./.venv/bin/python manage.py test authentication.tests.test_views
 
 # Run specific test class or method
-python manage.py test authentication.tests.test_views.TestClassName
-python manage.py test authentication.tests.test_views.TestClassName.test_method_name
+./.venv/bin/python manage.py test authentication.tests.test_views.TestClassName
+./.venv/bin/python manage.py test authentication.tests.test_views.TestClassName.test_method_name
 
 # Run with verbosity
-python manage.py test --verbosity=2
+./.venv/bin/python manage.py test --verbosity=2
 
 # Run with warnings
-python manage.py test --debug-mode
+./.venv/bin/python manage.py test --debug-mode
 ```
 
 ### Cache Management
@@ -309,7 +309,7 @@ PROXY_API_KEY=your-proxy-api-key
 CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
 
 # Redis (optional, falls back to LocalMemCache)
-REDIS_URL=redis://localhost:6379/0
+REDIS_URL=redis://localhost:6379/1
 ```
 
 ## Python Version
