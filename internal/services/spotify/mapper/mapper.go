@@ -2,9 +2,16 @@ package mapper
 
 import (
 	"math"
+	"regexp"
 
 	"github.com/codeyee/denn-proxy/internal/models"
 	"github.com/codeyee/denn-proxy/internal/services/spotify"
+)
+
+var (
+	yearPattern      = regexp.MustCompile(`^\d{4}$`)
+	yearMonthPattern = regexp.MustCompile(`^\d{4}-\d{2}$`)
+	fullDatePattern  = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
 )
 
 func getImageURL(images []spotify.SpotifyImage, size string) *string {
@@ -77,11 +84,20 @@ func normalizeReleaseDate(date string) *string {
 
 	switch len(date) {
 	case 10: // YYYY-MM-DD
+		if !fullDatePattern.MatchString(date) {
+			return nil
+		}
 		return &date
 	case 7: // YYYY-MM
+		if !yearMonthPattern.MatchString(date) {
+			return nil
+		}
 		normalized := date + "-01"
 		return &normalized
 	case 4: // YYYY
+		if !yearPattern.MatchString(date) {
+			return nil
+		}
 		normalized := date + "-01-01"
 		return &normalized
 	default:

@@ -16,12 +16,49 @@ import (
 )
 
 type MockRoundTripper struct {
-	Response *http.Response
-	Err      error
+	handlers []func(*http.Request, []byte) (*http.Response, error)
 }
 
 func (m *MockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	return m.Response, m.Err
+	bodyData, _ := io.ReadAll(req.Body)
+	req.Body = io.NopCloser(bytes.NewReader(bodyData))
+
+	for _, handler := range m.handlers {
+		resp, err := handler(req, bodyData)
+		if resp != nil || err != nil {
+			return resp, err
+		}
+	}
+
+	return nil, io.EOF
+}
+
+func authRoundTripper(req *http.Request, _ []byte) (*http.Response, error) {
+	if req.URL.Host != "id.twitch.tv" {
+		return nil, nil
+	}
+
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Body: io.NopCloser(bytes.NewReader(
+			[]byte(`{"access_token":"test-token","expires_in":3600,"token_type":"bearer"}`),
+		)),
+		Header: make(http.Header),
+	}, nil
+}
+
+func apiRoundTripper(body []byte, statusCode int) func(*http.Request, []byte) (*http.Response, error) {
+	return func(req *http.Request, _ []byte) (*http.Response, error) {
+		if req.URL.Host != "api.igdb.com" {
+			return nil, nil
+		}
+
+		return &http.Response{
+			StatusCode: statusCode,
+			Body:       io.NopCloser(bytes.NewReader(body)),
+			Header:     make(http.Header),
+		}, nil
+	}
 }
 
 func TestSearchGames(t *testing.T) {
@@ -40,10 +77,9 @@ func TestSearchGames(t *testing.T) {
 	mockBody, _ := json.Marshal(mockGames)
 
 	mockTransport := &MockRoundTripper{
-		Response: &http.Response{
-			StatusCode: http.StatusOK,
-			Body:       io.NopCloser(bytes.NewReader(mockBody)),
-			Header:     make(http.Header),
+		handlers: []func(*http.Request, []byte) (*http.Response, error){
+			authRoundTripper,
+			apiRoundTripper(mockBody, http.StatusOK),
 		},
 	}
 
@@ -65,8 +101,8 @@ func TestSearchGames(t *testing.T) {
 		t.Errorf("expected ID '1', got %s", result.Results[0].ID)
 	}
 
-	if result.Results[0].Title != "Zelda" {
-		t.Errorf("expected Title 'Zelda', got %s", result.Results[0].Title)
+	if result.Results[0].Title != "Test Game" {
+		t.Errorf("expected Title 'Test Game', got %s", result.Results[0].Title)
 	}
 }
 
@@ -83,10 +119,9 @@ func TestGetGameComplete(t *testing.T) {
 	mockBody, _ := json.Marshal(mockData)
 
 	mockTransport := &MockRoundTripper{
-		Response: &http.Response{
-			StatusCode: http.StatusOK,
-			Body:       io.NopCloser(bytes.NewReader(mockBody)),
-			Header:     make(http.Header),
+		handlers: []func(*http.Request, []byte) (*http.Response, error){
+			authRoundTripper,
+			apiRoundTripper(mockBody, http.StatusOK),
 		},
 	}
 
@@ -116,10 +151,9 @@ func TestGetBulkGames(t *testing.T) {
 	mockBody, _ := json.Marshal(mockData)
 
 	mockTransport := &MockRoundTripper{
-		Response: &http.Response{
-			StatusCode: http.StatusOK,
-			Body:       io.NopCloser(bytes.NewReader(mockBody)),
-			Header:     make(http.Header),
+		handlers: []func(*http.Request, []byte) (*http.Response, error){
+			authRoundTripper,
+			apiRoundTripper(mockBody, http.StatusOK),
 		},
 	}
 
@@ -157,10 +191,9 @@ func TestGetPopularGames(t *testing.T) {
 	mockBody, _ := json.Marshal(mockData)
 
 	mockTransport := &MockRoundTripper{
-		Response: &http.Response{
-			StatusCode: http.StatusOK,
-			Body:       io.NopCloser(bytes.NewReader(mockBody)),
-			Header:     make(http.Header),
+		handlers: []func(*http.Request, []byte) (*http.Response, error){
+			authRoundTripper,
+			apiRoundTripper(mockBody, http.StatusOK),
 		},
 	}
 
@@ -231,6 +264,16 @@ func (m *StatefulRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 		}, nil
 	}
 
+	if req.URL.Host == "id.twitch.tv" {
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body: io.NopCloser(bytes.NewReader(
+				[]byte(`{"access_token":"test-token","expires_in":3600,"token_type":"bearer"}`),
+			)),
+			Header: make(http.Header),
+		}, nil
+	}
+
 	// Default empty array
 	return &http.Response{
 		StatusCode: http.StatusOK,
@@ -280,6 +323,16 @@ func TestGetTrendingGames_Fallback(t *testing.T) {
 type StatefulRoundTripperFallback struct{}
 
 func (m *StatefulRoundTripperFallback) RoundTrip(req *http.Request) (*http.Response, error) {
+	if req.URL.Host == "id.twitch.tv" {
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body: io.NopCloser(bytes.NewReader(
+				[]byte(`{"access_token":"test-token","expires_in":3600,"token_type":"bearer"}`),
+			)),
+			Header: make(http.Header),
+		}, nil
+	}
+
 	if bytes.Contains([]byte(req.URL.Path), []byte("popularity_primitives")) {
 		return &http.Response{
 			StatusCode: http.StatusInternalServerError,
@@ -327,7 +380,7 @@ func TestCalculateRecencyMultiplier(t *testing.T) {
 		expected    float64
 	}{
 		{"Nil date", nil, 1.0},
-		{"Future date", stringPtr(time.Unix(now+day, 0).Format("2006-01-02")), 0.0},
+		{"Future date", stringPtr("2999-01-01"), 0.0},
 		{"Just released", stringPtr(time.Unix(now-day, 0).Format("2006-01-02")), MaxRecencyBoost},
 		{"60 days old", stringPtr(time.Unix(now-(60*day), 0).Format("2006-01-02")), MaxRecencyBoost * 0.6},
 		{"Old game", stringPtr("2000-01-01"), 1.0},
