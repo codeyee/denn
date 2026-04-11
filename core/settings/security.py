@@ -1,11 +1,11 @@
 import os
-from .base import DEBUG
+from .base import DEBUG, TESTING
 
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
 
-if not DEBUG:
+if not DEBUG and not TESTING:
     # Redirect all HTTP requests to HTTPS
     SECURE_SSL_REDIRECT = True
 
