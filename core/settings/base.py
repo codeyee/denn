@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -9,6 +10,7 @@ load_dotenv(os.path.join(BASE_DIR, ".env"))
 # Security settings
 SECRET_KEY = os.getenv("SECRET_KEY")
 DEBUG = os.getenv("DEBUG", "False") == "True"
+TESTING = "test" in sys.argv
 
 # Allowed hosts configuration
 allowed_hosts_env = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1")

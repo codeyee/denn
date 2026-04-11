@@ -72,8 +72,8 @@ cd api/core
 
 2. **Create a virtual environment**
 ```bash
-python -m venv venv
-source venv/bin/activate
+python3 -m venv .venv
+source .venv/bin/activate
 ```
 
 3. **Install dependencies**
@@ -107,17 +107,23 @@ OPENLIBRARY_USER_AGENT=DennAPI/1.0 (tu-email@example.com)
 
 5. **Run migrations**
 ```bash
-python manage.py migrate
+./.venv/bin/python manage.py migrate
 ```
 
 6. **Create a superuser (optional)**
 ```bash
-python manage.py createsuperuser
+./.venv/bin/python manage.py createsuperuser
 ```
 
 7. **Start the development server**
 ```bash
-python manage.py runserver
+./.venv/bin/python manage.py runserver
+```
+
+### Tests
+
+```bash
+./.venv/bin/python manage.py test
 ```
 
 The API will be available at `http://localhost:8000`

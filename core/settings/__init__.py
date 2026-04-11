@@ -15,6 +15,7 @@ __all__ = [
     "BASE_DIR",
     "SECRET_KEY",
     "DEBUG",
+    "TESTING",
     "ALLOWED_HOSTS",
     "INSTALLED_APPS",
     "MIDDLEWARE",
