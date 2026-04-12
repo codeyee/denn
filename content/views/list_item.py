@@ -34,7 +34,7 @@ from rest_flex_fields.views import FlexFieldsMixin
         **Pagination:**
         - Default: 20 items per page
         - Maximum: 100 items per page
-        - Special: Use `page_size=0` to bypass pagination and fetch all items (useful for reordering)
+        - Use `unpaginated=true` to bypass pagination and fetch all items (useful for reordering)
 
         **Examples:**
         - `?fields=id,status,notes` - Return only basic item info
@@ -45,12 +45,13 @@ from rest_flex_fields.views import FlexFieldsMixin
         - `?expand=content_item,added_by&fields=id,content_item,added_by.username` - Expand multiple relationships with field selection
         - `?source_fields=title,release_date,genres.name` - Filter source_data to specific fields (works with dot notation for nested data)
 
-        **Performance Note:** Using `page_size=0` on lists with many items (>200) may impact performance. A warning will be logged for large lists.
+        **Performance Note:** Using `unpaginated=true` on lists with many items (>200) may impact performance. A warning will be logged for large lists.
         ''',
         parameters=[
             OpenApiParameter('country', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='ISO 3166-1 alpha-2 country code to filter providers by country (only applies when source_api=tmdb)'),
             OpenApiParameter('page', OpenApiTypes.INT, OpenApiParameter.QUERY, required=False, description='Page number (default: 1)'),
-            OpenApiParameter('page_size', OpenApiTypes.INT, OpenApiParameter.QUERY, required=False, description='Number of items per page (default: 20, max: 100). Set to 0 to fetch all items without pagination.'),
+            OpenApiParameter('page_size', OpenApiTypes.INT, OpenApiParameter.QUERY, required=False, description='Number of items per page (default: 20, max: 100).'),
+            OpenApiParameter('unpaginated', OpenApiTypes.BOOL, OpenApiParameter.QUERY, required=False, description='Set to true to bypass pagination and fetch all items.'),
             OpenApiParameter('fields', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Comma-separated list of fields to include (e.g., "id,status")'),
             OpenApiParameter('omit', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Comma-separated list of fields to exclude'),
             OpenApiParameter('expand', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Comma-separated list of relationships to expand (e.g., "content_item,added_by")'),
@@ -317,7 +318,7 @@ class ListItemViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
         Set a new order by passing the list of item IDs in the desired order.
 
         **Important:** This endpoint requires ALL item IDs in the list to be included in the request.
-        If your list is paginated, first fetch all items using `GET /api/content/lists/{list_id}/items/?page_size=0`
+        If your list is paginated, first fetch all items using `GET /api/content/lists/{list_id}/items/?unpaginated=true`
         to get all item IDs before calling this endpoint.
 
         **Request Body:**

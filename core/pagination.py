@@ -16,27 +16,15 @@ class CustomPageNumberPagination(PageNumberPagination):
     max_page_size = 100
 
     def paginate_queryset(self, queryset, request, view=None):
-        raw_page_size = request.query_params.get(self.page_size_query_param)
+        unpaginated = request.query_params.get('unpaginated', '').lower() in ('true', '1')
 
-        if raw_page_size is not None and str(raw_page_size).strip() == "0":
-            allow = request.query_params.get('allow_unpaginated', '').lower() in ('true', '1')
+        if unpaginated:
             total_count = queryset.count() if hasattr(queryset, 'count') else len(queryset)
-
-            if not allow and total_count > MAX_UNPAGINATED:
-                logger.warning(
-                    f"Capping unpaginated request from {total_count} to {MAX_UNPAGINATED} items "
-                    f"(user={getattr(request, 'user', 'unknown')}, path={request.path}). "
-                    f"Send allow_unpaginated=true to override."
-                )
-                self.page_size = MAX_UNPAGINATED
-                return super().paginate_queryset(queryset, request, view)
-
             if total_count > MAX_UNPAGINATED:
                 logger.warning(
-                    f"Fetching all {total_count} items without pagination "
+                    f"Unpaginated request returning {total_count} items "
                     f"(user={getattr(request, 'user', 'unknown')}, path={request.path})"
                 )
-
             return None
 
         return super().paginate_queryset(queryset, request, view)

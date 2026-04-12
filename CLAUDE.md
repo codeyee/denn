@@ -129,7 +129,7 @@ python manage.py shell
   - `docs.py` - API documentation settings
 - Key utilities:
   - `cache_utils.py` - `@cached_view` decorator for DRF views with query-param-aware cache keys
-  - `pagination.py` - `CustomPageNumberPagination` (supports `page_size=0` to bypass pagination)
+  - `pagination.py` - `CustomPageNumberPagination` (supports `unpaginated=true` to bypass pagination)
   - `error_codes.py` - Centralized `ErrorCode` dataclass definitions with HTTP status mappings
   - `exceptions.py` - Custom exception classes (TimeoutException, ConnectionErrorException, etc.)
 
