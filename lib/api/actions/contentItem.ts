@@ -1,5 +1,5 @@
 import { api } from "../api";
-import { buildQueryString, addCountryParam } from "../utils/queryParams";
+import { buildQueryString } from "../utils/queryParams";
 import { getSourceApi } from "@/lib/utils/contentTypeUtils";
 import type {
   ContentItem,
@@ -65,16 +65,16 @@ export const contentItemActions = {
     contentType: ContentType,
     country?: string
   ): Promise<ContentItem> => {
-    const params = new URLSearchParams();
     const normalizedType = contentType.toUpperCase() as ContentType;
-    params.append("source_api", getSourceApi(normalizedType));
-    params.append("external_id", externalId);
-    params.append("content_type", normalizedType);
-    addCountryParam(params, country);
+    const query = country ? `?country=${encodeURIComponent(country)}` : "";
 
     return api.post<ContentItem>(
-      `/content/items/get_or_create/?${params}`,
-      {},
+      `/content/items/get_or_create/${query}`,
+      {
+        source_api: getSourceApi(normalizedType),
+        external_id: externalId,
+        content_type: normalizedType,
+      },
       true
     );
   },
