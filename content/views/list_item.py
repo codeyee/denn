@@ -229,7 +229,9 @@ class ListItemViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
         if request.query_params.get('source_fields'):
             return True
         expand = request.query_params.get('expand', '')
-        return 'source_data' in expand
+        if 'content_item' in expand or 'source_data' in expand:
+            return True
+        return False
 
     def list(self, request, *args, **kwargs):
         user_list = self.get_list()

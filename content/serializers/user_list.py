@@ -143,7 +143,9 @@ class UserListDetailSerializer(BaseFlexSerializer):
         if request.query_params.get('source_fields'):
             return True
         expand = request.query_params.get('expand', '')
-        return 'source_data' in expand
+        if 'content_item' in expand or 'source_data' in expand:
+            return True
+        return False
 
     def get_items(self, obj):
         from .list_item import ListItemSerializer

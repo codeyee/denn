@@ -39,7 +39,7 @@ class ContentItemSerializer(BaseFlexSerializer):
             if request.query_params.get('source_fields'):
                 return True
             expand = request.query_params.get('expand', '')
-            if 'source_data' in expand:
+            if 'content_item' in expand or 'source_data' in expand:
                 return True
             include = request.query_params.get('include_source_data', '').lower()
             if include in ('true', '1'):
