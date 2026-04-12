@@ -66,9 +66,10 @@ export const listItemActions = {
         listId: number,
         options?: ListItemQueryOptions
     ): Promise<ListItem[]> => {
-        const query = buildListItemQuery(undefined, 0, options);
+        const query = buildListItemQuery(undefined, undefined, options);
+        const sep = query ? `?${query}&unpaginated=true` : "?unpaginated=true";
         return api.get<ListItem[]>(
-            `/content/lists/${listId}/items/${query ? `?${query}` : ""}`,
+            `/content/lists/${listId}/items/${sep}`,
             true
         );
     },
