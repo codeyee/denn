@@ -1,27 +1,21 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { Package } from "lucide-react";
+import { useCallback, useEffect, useMemo } from "react";
 import { Navbar } from "../../layout/Navbar";
 import { Footer } from "../../layout/Footer";
-import { EditListModal } from "../../common/modals/EditListModal";
-import { ConfirmDialog } from "../../common/modals/ConfirmDialog";
-import { RatingModal } from "../../common/modals/RatingModal";
 import { ListItemSkeleton } from "../../common/lists/ListItemSkeleton";
 import { VerticalList } from "../../common/lists/VerticalList";
-import { ItemStatus, Rating, RatingCreate, ContentItem } from "@/lib/types";
-import { ListItem, MemberRating } from "@/lib/types";
+import { ItemStatus, ListItem, MemberRating } from "@/lib/types";
 import { GroupBy } from "@/lib/types/listView";
 import { useAuthStore } from "@/app/_stores/auth-store";
 
-import { useListData } from "./hooks/useListData";
 import { useListModals } from "./hooks/useListModals";
 import { useListPreferences } from "./hooks/useListPreferences";
 import { useListItemActions } from "./hooks/useListItemActions";
 import { useListReordering } from "./hooks/useListReordering";
-import { useListStats } from "./hooks/useListStats";
-import { useListPagination } from "./hooks/useListPagination";
-import { useListGrouping } from "./hooks/useListGrouping";
+import { useListNavigationSearch } from "./hooks/useListNavigationSearch";
+import { useDataStrategy } from "./hooks/useDataStrategy";
+import { useViewerState } from "./hooks/useViewerState";
 
 import {
   ListHeader,
@@ -30,33 +24,19 @@ import {
   ListHeaderPlaceholder,
   ItemsHeaderPlaceholder,
   ListSidebarPlaceholder,
+  ListNavigationSearch,
 } from "./components";
-import { FlatListView } from "./components/ListView/FlatListView";
-import { GroupedListView } from "./components/ListView/GroupedListView";
-import { FlatGalleryView } from "./components/GalleryView/FlatGalleryView";
-import { GroupedGalleryView } from "./components/GalleryView/GroupedGalleryView";
+import { ListContentRenderer } from "./components/ListContentRenderer";
+import { ListModals } from "./components/ListModals";
 
 interface ListDetailPageProps {
   listId: number;
 }
 
 export function ListDetailPage({ listId }: ListDetailPageProps) {
-  const [viewMode, setViewMode] = useState<"list" | "gallery">("list");
   const { user: currentUser } = useAuthStore();
 
-  const {
-    loading,
-    itemsLoading,
-    allItemsLoaded,
-    error,
-    list,
-    listItems,
-    totalItemCount,
-    setListItems,
-  } = useListData(listId);
-
   const modals = useListModals();
-
   const preferences = useListPreferences(listId);
   const {
     groupBy,
@@ -71,132 +51,107 @@ export function ListDetailPage({ listId }: ListDetailPageProps) {
     setCurrentPage,
   } = preferences;
 
-  const pagination = useListPagination(currentPage);
+  const data = useDataStrategy({ listId, currentPage, pageSize });
+
+  const viewer = useViewerState({
+    pageItems: data.pageItems,
+    groupBy,
+    sortBy,
+    sortOrder,
+    pageSize,
+    isReorderMode: false,
+  });
+
+  const search = useListNavigationSearch({
+    pageItems: data.pageItems,
+    fullItems: data.fullItems,
+    ensureFullItems: data.ensureFullItems,
+  });
 
   const actions = useListItemActions({
     listId,
-    listItems,
-    setListItems,
+    listItems: data.pageItems,
+    setListItems: data.setCachedItems,
+    onListUpdated: data.onListUpdated,
+    onItemDeleted: data.onItemDeleted,
+    onItemStatusUpdated: data.onItemStatusUpdated,
     currentUserId: currentUser?.id,
     onRatingModalOpen: modals.openRatingModal,
   });
 
   const reordering = useListReordering({
     listId,
-    listItems,
-    setListItems,
+    fullItems: data.fullItems,
+    ensureFullItems: data.ensureFullItems,
+    onReorderSaved: data.onReorderSaved,
   });
 
-  const stats = useListStats(listItems);
-
-  const processedData = useListGrouping({
-    listItems,
-    groupBy,
-    sortBy,
-    sortOrder,
-    currentPage,
-    pageSize,
-    isReorderMode: reordering.isReorderMode,
-  });
+  useEffect(() => {
+    if (currentPage > data.totalPages) {
+      setCurrentPage(data.totalPages);
+    }
+  }, [currentPage, setCurrentPage, data.totalPages]);
 
   const shouldInviteToRate = useMemo(() => {
     return (item: ListItem): boolean => {
-      if (!currentUser || item.status !== ItemStatus.COMPLETED) {
-        return false;
-      }
-
-      const hasUserRated =
-        item.member_ratings &&
-        Array.isArray(item.member_ratings) &&
-        item.member_ratings.some(
-          (rating: MemberRating) => rating.user?.id === currentUser.id
-        );
-
-      return !hasUserRated;
+      if (!currentUser || item.status !== ItemStatus.COMPLETED) return false;
+      return !item.member_ratings?.some(
+        (rating: MemberRating) => rating.user?.id === currentUser.id,
+      );
     };
   }, [currentUser]);
 
-  // Extract user's existing rating from ratingModalItem
-  const userExistingRating = useMemo((): Rating | null => {
-    if (!modals.ratingModalItem || !currentUser) return null;
-
-    const memberRating = modals.ratingModalItem.member_ratings?.find(
-      (mr: MemberRating) => mr.user?.id === currentUser.id
-    );
-
-    if (!memberRating) return null;
-
-    return {
-      id: 0,
-      user: currentUser,
-      content_item: modals.ratingModalItem.content_item as unknown as ContentItem,
-      score: String(memberRating.score),
-      comment: null,
-      created_at: "",
-      updated_at: "",
-    };
-  }, [modals.ratingModalItem, currentUser]);
-
-  // Wrapper function to handle rating submission
-  const handleRatingSubmit = async (data: RatingCreate) => {
-    if (!modals.ratingModalItem) return;
-    await actions.handleSubmitRating(modals.ratingModalItem, data);
-  };
-
-  // Compute primary group for ItemsHeader (just the first one or 'none')
-  const primaryGroup = groupBy[0] || "none";
-
-  const handleGroupChange = (newGroups: GroupBy[]) => {
-    setGroupBy(newGroups);
+  const handleGroupChange = (nextGroupBy: GroupBy[]) => {
+    setGroupBy(nextGroupBy);
     setCurrentPage(1);
-    pagination.resetPagination();
+    viewer.setHighlightedItemId(null);
   };
 
-  const handleSortByChange = (newSortBy: typeof sortBy) => {
-    setSortBy(newSortBy);
+  const handleSortByChange = (nextSortBy: typeof sortBy) => {
+    setSortBy(nextSortBy);
     setCurrentPage(1);
-    pagination.resetPagination();
+    viewer.setHighlightedItemId(null);
   };
 
-  const handleSortOrderChange = (order: typeof sortOrder) => {
-    setSortOrder(order);
+  const handleSortOrderChange = (nextSortOrder: typeof sortOrder) => {
+    setSortOrder(nextSortOrder);
     setCurrentPage(1);
-    pagination.resetPagination();
+    viewer.setHighlightedItemId(null);
   };
 
-  const handlePageSizeChange = (size: typeof pageSize) => {
-    setPageSize(size);
+  const handlePageSizeChange = (nextPageSize: typeof pageSize) => {
+    setPageSize(nextPageSize);
     setCurrentPage(1);
-    pagination.resetPagination();
+    viewer.setHighlightedItemId(null);
   };
 
-  if (loading) {
+  const handleSearchSelect = useCallback(
+    (result: { id: number; pageIndex?: number }) => {
+      if (result.pageIndex !== undefined) {
+        setCurrentPage(Math.floor(result.pageIndex / pageSize) + 1);
+      }
+      search.clearQuery();
+      viewer.setHighlightedItemId(result.id);
+    },
+    [pageSize, search, setCurrentPage, viewer],
+  );
+
+  if (data.loading) {
     return (
       <>
         <Navbar />
         <div className="relative w-full min-h-screen bg-background-logged-in">
           <div className="container mx-auto px-4 mt-8 pt-30 pb-8">
-            {/* Header skeleton */}
             <ListHeaderPlaceholder />
-
             <div className="flex flex-col md:flex-row gap-6 lg:gap-8">
-              {/* Main Content */}
               <div className="flex-1 min-w-0 pb-8 order-2 md:order-1">
-                {/* Items header skeleton */}
                 <ItemsHeaderPlaceholder />
-
-                {/* List items skeleton */}
                 <VerticalList spacing="md">
-                  {Array.from({ length: 20 }).map((_, index) => (
-                    <ListItemSkeleton
-                      key={`skeleton-${index}`}
-                      index={index}
-                    />
+                  {Array.from({ length: 10 }).map((_, index) => (
+                    <ListItemSkeleton key={`skeleton-${index}`} index={index} />
                   ))}
                 </VerticalList>
               </div>
-
-              {/* Sidebar skeleton */}
               <ListSidebarPlaceholder />
             </div>
           </div>
@@ -206,7 +161,7 @@ export function ListDetailPage({ listId }: ListDetailPageProps) {
     );
   }
 
-  if (error || !list) {
+  if (data.error || !data.list) {
     return (
       <>
         <Navbar />
@@ -215,7 +170,7 @@ export function ListDetailPage({ listId }: ListDetailPageProps) {
             <div className="flex items-center justify-center min-h-[400px]">
               <div className="text-center">
                 <p className="text-red-400 text-xl mb-4">
-                  {error || "List not found"}
+                  {data.error || "List not found"}
                 </p>
                 <button
                   onClick={() => window.history.back()}
@@ -237,141 +192,83 @@ export function ListDetailPage({ listId }: ListDetailPageProps) {
       <Navbar />
       <div className="relative w-full min-h-screen bg-background-logged-in">
         <div className="container mx-auto px-4 mt-8 pt-30 pb-8">
-          <ListHeader list={list} />
+          <ListHeader list={data.list} />
 
           <div className="flex flex-col md:flex-row gap-6 lg:gap-8">
-            {/* Main Content */}
             <div className="flex-1 min-w-0 pb-8 order-2 md:order-1">
               <ItemsHeader
-                itemCount={stats.itemCount}
-                viewMode={viewMode}
-                primaryGroup={primaryGroup}
+                itemCount={data.totalItemCount}
+                viewMode={viewer.viewMode}
+                sortBy={sortBy}
+                hasGrouping={groupBy.length > 0}
                 sortOrder={sortOrder}
                 pageSize={pageSize}
                 currentPage={currentPage}
-                totalPages={processedData.paginationInfo.totalPages}
+                totalPages={data.totalPages}
                 isReorderMode={reordering.isReorderMode}
-                onViewModeChange={setViewMode}
+                onViewModeChange={viewer.setViewMode}
                 onSortOrderChange={handleSortOrderChange}
                 onPageSizeChange={handlePageSizeChange}
                 onPageChange={setCurrentPage}
               />
 
-              {listItems.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 text-center bg-white/5 rounded-2xl">
-                  <Package className="w-16 h-16 text-gray-400 opacity-50 mb-4" />
-                  <p className="text-gray-400 text-lg">This list is empty</p>
-                  <p className="text-gray-500 text-sm">
-                    Add items to get started
-                  </p>
-                </div>
-              ) : viewMode === "list" ? (
-                processedData.groupedItems ? (
-                  <GroupedListView
-                    groups={processedData.groupedItems}
-                    groupPages={pagination.groupPages}
-                    subGroupPages={pagination.subGroupPages}
-                    sortOrder={sortOrder}
-                    pageSize={pageSize}
-                    isReorderMode={reordering.isReorderMode}
-                    list={list}
-                    currentUserId={currentUser?.id}
-                    onGroupPageChange={(groupKey, page) =>
-                      pagination.setGroupPages((prev) => ({
-                        ...prev,
-                        [groupKey]: page,
-                      }))
-                    }
-                    onSubGroupPageChange={(subGroupKey, page) =>
-                      pagination.setSubGroupPages((prev) => ({
-                        ...prev,
-                        [subGroupKey]: page,
-                      }))
-                    }
-                    onSortOrderChange={handleSortOrderChange}
-                    onPageSizeChange={handlePageSizeChange}
-                    onToggleStatus={actions.handleToggleItemStatus}
-                    onDelete={(itemId) => modals.openDeleteItemDialog(itemId)}
-                    onRate={modals.openRatingModal}
-                    shouldInviteToRate={shouldInviteToRate}
-                  />
-                ) : (
-                  <FlatListView
-                    items={processedData.displayItems}
-                    activeId={reordering.activeId}
-                    isReorderMode={reordering.isReorderMode}
-                    list={list}
-                    currentUserId={currentUser?.id}
-                    sensors={reordering.sensors}
-                    onDragStart={reordering.handleDragStart}
-                    onDragOver={reordering.handleDragOver}
-                    onDragEnd={reordering.handleDragEnd}
-                    onDragCancel={reordering.handleDragCancel}
-                    onToggleStatus={actions.handleToggleItemStatus}
-                    onDelete={(itemId) => modals.openDeleteItemDialog(itemId)}
-                    onRate={modals.openRatingModal}
-                    shouldInviteToRate={shouldInviteToRate}
-                  />
-                )
-              ) : processedData.groupedItems ? (
-                <GroupedGalleryView
-                  groups={processedData.groupedItems}
-                  groupPages={pagination.groupPages}
-                  sortOrder={sortOrder}
-                  pageSize={pageSize}
-                  isReorderMode={reordering.isReorderMode}
-                  list={list}
-                  currentUserId={currentUser?.id}
-                  onGroupPageChange={(groupKey, page) =>
-                    pagination.setGroupPages((prev) => ({
-                      ...prev,
-                      [groupKey]: page,
-                    }))
-                  }
-                  onSortOrderChange={handleSortOrderChange}
-                  onPageSizeChange={handlePageSizeChange}
-                  onToggleStatus={actions.handleToggleItemStatus}
-                  onDelete={(itemId) => modals.openDeleteItemDialog(itemId)}
-                  onRate={modals.openRatingModal}
-                  shouldInviteToRate={shouldInviteToRate}
+              {!reordering.isReorderMode ? (
+                <ListNavigationSearch
+                  query={search.query}
+                  results={search.results}
+                  isLoading={search.isLoading}
+                  disabled={reordering.isReorderMode}
+                  canSearchAll={search.canSearchAll}
+                  hasSearchedAll={search.hasSearchedAll}
+                  onQueryChange={search.setQuery}
+                  onClear={search.clearQuery}
+                  onSelectResult={handleSearchSelect}
+                  onSearchAll={search.searchAll}
                 />
-              ) : (
-                <FlatGalleryView
-                  items={processedData.displayItems}
-                  activeId={reordering.activeId}
-                  isReorderMode={reordering.isReorderMode}
-                  list={list}
-                  currentUserId={currentUser?.id}
-                  sensors={reordering.sensors}
-                  onDragStart={reordering.handleDragStart}
-                  onDragOver={reordering.handleDragOver}
-                  onDragEnd={reordering.handleDragEnd}
-                  onDragCancel={reordering.handleDragCancel}
-                  onToggleStatus={actions.handleToggleItemStatus}
-                  onDelete={(itemId) => modals.openDeleteItemDialog(itemId)}
-                  onRate={modals.openRatingModal}
-                  shouldInviteToRate={shouldInviteToRate}
-                />
-              )}
+              ) : null}
+
+              <ListContentRenderer
+                totalItemCount={data.totalItemCount}
+                isReorderMode={reordering.isReorderMode}
+                isViewerLoading={data.itemsLoading}
+                viewMode={viewer.viewMode}
+                displayItems={viewer.displayItems}
+                groupedItems={viewer.groupedItems}
+                highlightedItemId={viewer.highlightedItemId}
+                list={data.list}
+                currentUserId={currentUser?.id}
+                reorderItems={reordering.reorderItems}
+                activeId={reordering.activeId}
+                onToggleStatus={actions.handleToggleItemStatus}
+                onDelete={modals.openDeleteItemDialog}
+                onRate={modals.openRatingModal}
+                shouldInviteToRate={shouldInviteToRate}
+                onDragStart={reordering.handleDragStart}
+                onDragOver={reordering.handleDragOver}
+                onDragEnd={reordering.handleDragEnd}
+                onDragCancel={reordering.handleDragCancel}
+              />
             </div>
 
-            {/* Sidebar */}
             <ListSidebar
-              list={list}
-              itemCount={stats.itemCount}
-              totalItemCount={totalItemCount}
-              completedCount={stats.completedCount}
-              pendingCount={stats.pendingCount}
-              completionRate={stats.completionRate}
+              list={data.list}
+              itemCount={data.totalItemCount}
+              totalItemCount={data.totalItemCount}
+              completedCount={data.completedCount}
+              pendingCount={data.pendingCount}
+              completionRate={data.completionRate}
               groups={groupBy}
               sortBy={sortBy}
               isReorderMode={reordering.isReorderMode}
               reorderLoading={reordering.reorderLoading}
-              itemsLoading={itemsLoading}
-              allItemsLoaded={allItemsLoaded}
+              reorderPreparing={reordering.reorderPreparing}
+              itemsLoading={data.itemsLoading || data.fullItemsLoading}
               onEditList={modals.openEditModal}
               onDeleteList={modals.openDeleteListDialog}
-              onEnterReorderMode={reordering.handleEnterReorderMode}
+              onEnterReorderMode={() => {
+                viewer.setViewMode("list");
+                void reordering.handleEnterReorderMode();
+              }}
               onCancelReorder={reordering.handleCancelReorder}
               onSaveReorder={reordering.handleSaveReorder}
               onGroupChange={handleGroupChange}
@@ -382,63 +279,24 @@ export function ListDetailPage({ listId }: ListDetailPageProps) {
       </div>
       <Footer />
 
-      {/* Modals */}
-      <EditListModal
-        isOpen={modals.isEditModalOpen}
-        onOpenChange={modals.closeEditModal}
+      <ListModals
+        list={data.list}
+        currentUser={currentUser}
+        isEditModalOpen={modals.isEditModalOpen}
+        isDeleteListDialogOpen={modals.isDeleteListDialogOpen}
+        deleteItemId={modals.deleteItemId}
+        ratingModalItem={modals.ratingModalItem}
+        isRatingModalOpen={modals.isRatingModalOpen}
+        actionLoading={actions.actionLoading}
+        onCloseEditModal={modals.closeEditModal}
+        onCloseDeleteListDialog={modals.closeDeleteListDialog}
+        onCloseDeleteItemDialog={modals.closeDeleteItemDialog}
+        onCloseRatingModal={modals.closeRatingModal}
         onUpdateList={actions.handleUpdateList}
-        isLoading={actions.actionLoading}
-        initialData={
-          list
-            ? {
-              name: list.name,
-              description: list.description || "",
-              listType: list.list_type,
-            }
-            : undefined
-        }
+        onDeleteList={actions.handleDeleteList}
+        onDeleteItem={actions.handleDeleteItem}
+        onSubmitRating={actions.handleSubmitRating}
       />
-
-      <ConfirmDialog
-        isOpen={modals.isDeleteListDialogOpen}
-        onOpenChange={modals.closeDeleteListDialog}
-        onConfirm={actions.handleDeleteList}
-        title="Delete List"
-        description={`Are you sure you want to delete "${list?.name}"? This action cannot be undone.`}
-        confirmText="Delete"
-        cancelText="Cancel"
-        variant="danger"
-        isLoading={actions.actionLoading}
-      />
-
-      <ConfirmDialog
-        isOpen={modals.deleteItemId !== null}
-        onOpenChange={(open) => !open && modals.closeDeleteItemDialog()}
-        onConfirm={() => {
-          if (modals.deleteItemId) {
-            return actions.handleDeleteItem(modals.deleteItemId);
-          }
-        }}
-        title="Remove Item"
-        description="Are you sure you want to remove this item from the list?"
-        confirmText="Remove"
-        cancelText="Cancel"
-        variant="danger"
-        isLoading={actions.actionLoading}
-      />
-
-      {currentUser && modals.ratingModalItem && (
-        <RatingModal
-          isOpen={modals.isRatingModalOpen}
-          onOpenChange={(open) => {
-            if (!open) modals.closeRatingModal();
-          }}
-          onSubmitRating={handleRatingSubmit}
-          existingRating={userExistingRating}
-          contentItem={modals.ratingModalItem.content_item as unknown as ContentItem}
-          isLoading={actions.actionLoading}
-        />
-      )}
     </>
   );
 }

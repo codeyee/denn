@@ -8,6 +8,7 @@ import { ListItem, UserListDetail } from "@/lib/types";
 interface ReorderableListItemCardProps {
   item: ListItem;
   activeId: number | null;
+  isHighlighted?: boolean;
   list: UserListDetail;
   currentUserId?: number;
   onToggleStatus: (itemId: number, currentStatus: string) => void;
@@ -20,6 +21,7 @@ interface ReorderableListItemCardProps {
 export function ReorderableListItemCard({
   item,
   activeId,
+  isHighlighted = false,
   list,
   currentUserId,
   onToggleStatus,
@@ -49,6 +51,7 @@ export function ReorderableListItemCard({
   return (
     <div
       ref={setNodeRef}
+      data-list-item-id={item.id}
       style={style}
       {...(isReorderMode ? { ...attributes, ...listeners } : {})}
       className={`${isReorderMode && !isDragging ? "cursor-grab animate-reorder-wiggle" : ""} ${isDragging ? "cursor-grabbing opacity-0" : ""}`}
@@ -61,7 +64,7 @@ export function ReorderableListItemCard({
         onDelete={onDelete}
         onRateClick={onRateClick}
         showRatingInvitation={showRatingInvitation}
-        className={isReorderMode ? "pointer-events-none select-none" : ""}
+        className={`${isReorderMode ? "pointer-events-none select-none" : ""} ${isHighlighted ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-background-logged-in rounded-2xl" : ""}`}
         disableHover={isReorderMode}
       />
     </div>

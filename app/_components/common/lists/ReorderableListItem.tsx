@@ -8,6 +8,7 @@ import { ReactNode } from "react";
 interface ReorderableListItemProps {
   id: number;
   activeId: number | null;
+  className?: string;
   title: string;
   description?: string;
   subDescription?: string;
@@ -24,6 +25,7 @@ interface ReorderableListItemProps {
 export function ReorderableListItem({
   id,
   activeId,
+  className,
   isReorderMode,
   leadingContent,
   trailingContent,
@@ -53,9 +55,10 @@ export function ReorderableListItem({
   return (
     <div
       ref={setNodeRef}
+      data-list-item-id={id}
       style={style}
       {...(isReorderMode ? { ...attributes, ...listeners } : {})}
-      className={`${isReorderMode && !isDragging ? "cursor-grab animate-reorder-wiggle" : ""} ${isDragging ? "cursor-grabbing opacity-0" : ""}`}
+      className={`${isReorderMode && !isDragging ? "cursor-grab animate-reorder-wiggle" : ""} ${isDragging ? "cursor-grabbing opacity-0" : ""} ${className || ""}`}
     >
       <ExpandableListItem
         {...props}

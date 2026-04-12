@@ -314,7 +314,6 @@ export const useListsStore = create<ListsStore>((set, get) => ({
         pageSize
       );
 
-      // When pageSize = 0, API returns array directly instead of paginated response
       const items = (Array.isArray(response)
         ? response
         : response.results || []) as unknown as ListItem[];

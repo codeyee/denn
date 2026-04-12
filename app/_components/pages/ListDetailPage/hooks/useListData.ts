@@ -1,152 +1,204 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { listActions, listItemActions } from "@/lib/api";
-import { UserListDetail, PaginatedListItemList } from "@/lib/types";
-import { ListItem } from "@/lib/types";
+import { ListItem, ListStatsResponse, UserListDetail } from "@/lib/types";
+import { PageSize } from "@/lib/types/listView";
 
-const INITIAL_ITEMS_SIZE = 50;
-const BACKGROUND_PAGE_SIZE = 100;
+const VIEWER_SOURCE_FIELDS = "title,original_title,tv_show_name,image_url,authors";
+
+interface UseListDataOptions {
+  listId: number;
+  currentPage: number;
+  pageSize: PageSize;
+}
 
 interface UseListDataReturn {
   loading: boolean;
   itemsLoading: boolean;
-  allItemsLoaded: boolean;
+  fullItemsLoading: boolean;
   error: string | null;
   list: UserListDetail | null;
-  listItems: ListItem[];
+  pageItems: ListItem[];
+  fullItems: ListItem[] | null;
   totalItemCount: number;
-  setListItems: React.Dispatch<React.SetStateAction<ListItem[]>>;
-  refetch: () => Promise<void>;
-  loadAllItems: () => Promise<void>;
+  stats: ListStatsResponse | null;
+  setList: React.Dispatch<React.SetStateAction<UserListDetail | null>>;
+  setPageItems: React.Dispatch<React.SetStateAction<ListItem[]>>;
+  setFullItems: React.Dispatch<React.SetStateAction<ListItem[] | null>>;
+  setTotalItemCount: React.Dispatch<React.SetStateAction<number>>;
+  setStats: React.Dispatch<React.SetStateAction<ListStatsResponse | null>>;
+  refetchMetadata: () => Promise<void>;
+  refetchCurrentPage: () => Promise<void>;
+  refetchStats: () => Promise<void>;
+  ensureFullItems: () => Promise<ListItem[]>;
 }
 
-export function useListData(listId: number): UseListDataReturn {
+async function fetchListMetadata(listId: number): Promise<UserListDetail> {
+  return listActions.get(listId, {
+    expand: "owner,members",
+    omit: "items",
+  });
+}
+
+async function fetchListStats(listId: number): Promise<ListStatsResponse> {
+  return listActions.getStats(listId);
+}
+
+async function fetchListPage(
+  listId: number,
+  currentPage: number,
+  pageSize: PageSize
+) {
+  return listItemActions.list(listId, currentPage, pageSize, {
+    expand: "content_item",
+    source_fields: VIEWER_SOURCE_FIELDS,
+  });
+}
+
+async function fetchAllListItems(listId: number): Promise<ListItem[]> {
+  return listItemActions.listAll(listId, {
+    expand: "content_item",
+    source_fields: VIEWER_SOURCE_FIELDS,
+  });
+}
+
+export function useListData({
+  listId,
+  currentPage,
+  pageSize,
+}: UseListDataOptions): UseListDataReturn {
   const [loading, setLoading] = useState(true);
   const [itemsLoading, setItemsLoading] = useState(false);
-  const [allItemsLoaded, setAllItemsLoaded] = useState(false);
+  const [fullItemsLoading, setFullItemsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [list, setList] = useState<UserListDetail | null>(null);
-  const [listItems, setListItems] = useState<ListItem[]>([]);
+  const [pageItems, setPageItems] = useState<ListItem[]>([]);
+  const [fullItems, setFullItems] = useState<ListItem[] | null>(null);
+  const [stats, setStats] = useState<ListStatsResponse | null>(null);
   const [totalItemCount, setTotalItemCount] = useState(0);
+  const hasBootstrappedPageRef = useRef(false);
+  const lastRequestedPageRef = useRef("");
+  const currentPageRef = useRef(currentPage);
+  const pageSizeRef = useRef(pageSize);
 
-  const loadingAllRef = useRef(false);
-  const abortControllerRef = useRef<AbortController | null>(null);
+  currentPageRef.current = currentPage;
+  pageSizeRef.current = pageSize;
 
-  const fetchItemsPage = useCallback(
-    async (page: number, pageSize: number): Promise<PaginatedListItemList> => {
-      return listItemActions.list(listId, page, pageSize, undefined, "content_item");
-    },
-    [listId]
-  );
-
-  const fetchListWithInitialItems = useCallback(async () => {
-    try {
-      const listData = await listActions.get(listId, {
-        expand: "owner,members,items.content_item",
-        items_size: INITIAL_ITEMS_SIZE,
-      });
-
-      setList({ ...listData, items: [] });
-
-      const initialItems = (listData.items || []) as ListItem[];
-      setListItems(initialItems);
-
-      const totalCount = parseInt(listData.item_count || "0", 10);
-      setTotalItemCount(totalCount);
-
-      if (initialItems.length >= totalCount) {
-        setAllItemsLoaded(true);
-      }
-
-      return listData;
-    } catch (err) {
-      console.error("Error fetching list:", err);
-      throw err;
-    }
+  const refetchMetadata = useCallback(async () => {
+    const metadata = await fetchListMetadata(listId);
+    setList(metadata);
   }, [listId]);
 
-  const loadAllItems = useCallback(async () => {
-    if (loadingAllRef.current || allItemsLoaded) return;
+  const refetchStats = useCallback(async () => {
+    const nextStats = await fetchListStats(listId);
+    setStats(nextStats);
+    setTotalItemCount(nextStats.total_items);
+  }, [listId]);
 
-    loadingAllRef.current = true;
+  const refetchCurrentPage = useCallback(async () => {
     setItemsLoading(true);
 
-    abortControllerRef.current = new AbortController();
-
     try {
-      const firstPage = await fetchItemsPage(1, BACKGROUND_PAGE_SIZE);
-      const totalCount = firstPage.metadata.count;
-      const totalPages = firstPage.metadata.total_pages;
-
-      setTotalItemCount(totalCount);
-
-      if (abortControllerRef.current?.signal.aborted) return;
-
-      let allItems = [...firstPage.results];
-
-      for (let page = 2; page <= totalPages; page++) {
-        if (abortControllerRef.current?.signal.aborted) return;
-
-        const pageData = await fetchItemsPage(page, BACKGROUND_PAGE_SIZE);
-        allItems = [...allItems, ...pageData.results];
-      }
-
-      if (!abortControllerRef.current?.signal.aborted) {
-        setListItems(allItems);
-        setAllItemsLoaded(true);
-      }
-    } catch (err) {
-      if (!abortControllerRef.current?.signal.aborted) {
-        console.error("Error loading all items:", err);
-      }
+      const response = await fetchListPage(listId, currentPage, pageSize);
+      setPageItems(response.results);
+      setTotalItemCount(response.metadata.count);
+      lastRequestedPageRef.current = `${currentPage}:${pageSize}`;
     } finally {
-      loadingAllRef.current = false;
       setItemsLoading(false);
     }
-  }, [fetchItemsPage, allItemsLoaded]);
+  }, [currentPage, listId, pageSize]);
 
-  const fetchList = useCallback(async () => {
+  const ensureFullItems = useCallback(async () => {
+    if (fullItems) {
+      return fullItems;
+    }
+
+    setFullItemsLoading(true);
+
     try {
+      const items = await fetchAllListItems(listId);
+      setFullItems(items);
+      setTotalItemCount(items.length);
+      return items;
+    } finally {
+      setFullItemsLoading(false);
+    }
+  }, [fullItems, listId]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function bootstrap() {
       setLoading(true);
       setError(null);
-      setAllItemsLoaded(false);
+      setFullItems(null);
+      setPageItems([]);
+      hasBootstrappedPageRef.current = false;
 
-      await fetchListWithInitialItems();
-    } catch (err) {
-      console.error("Error fetching list:", err);
-      setError(err instanceof Error ? err.message : "Failed to load list");
-    } finally {
-      setLoading(false);
+      try {
+        const [metadata, nextStats, response] = await Promise.all([
+          fetchListMetadata(listId),
+          fetchListStats(listId),
+          fetchListPage(listId, currentPageRef.current, pageSizeRef.current),
+        ]);
+
+        if (cancelled) {
+          return;
+        }
+
+        setList(metadata);
+        setStats(nextStats);
+        setPageItems(response.results);
+        setTotalItemCount(nextStats.total_items);
+        hasBootstrappedPageRef.current = true;
+        lastRequestedPageRef.current = `${currentPageRef.current}:${pageSizeRef.current}`;
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Failed to load list");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
     }
-  }, [fetchListWithInitialItems]);
 
-  useEffect(() => {
-    fetchList();
+    bootstrap();
 
     return () => {
-      abortControllerRef.current?.abort();
+      cancelled = true;
     };
-  }, [fetchList]);
+  }, [listId]);
 
   useEffect(() => {
-    if (!loading && list && !allItemsLoaded) {
-      const timer = setTimeout(() => {
-        loadAllItems();
-      }, 500);
-
-      return () => clearTimeout(timer);
+    if (
+      loading ||
+      !hasBootstrappedPageRef.current ||
+      lastRequestedPageRef.current === `${currentPage}:${pageSize}`
+    ) {
+      return;
     }
-  }, [loading, list, allItemsLoaded, loadAllItems]);
+
+    void refetchCurrentPage();
+  }, [currentPage, loading, pageSize, refetchCurrentPage]);
 
   return {
     loading,
     itemsLoading,
-    allItemsLoaded,
+    fullItemsLoading,
     error,
     list,
-    listItems,
+    pageItems,
+    fullItems,
     totalItemCount,
-    setListItems,
-    refetch: fetchList,
-    loadAllItems,
+    stats,
+    setList,
+    setPageItems,
+    setFullItems,
+    setTotalItemCount,
+    setStats,
+    refetchMetadata,
+    refetchCurrentPage,
+    refetchStats,
+    ensureFullItems,
   };
 }

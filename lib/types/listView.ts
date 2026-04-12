@@ -18,7 +18,13 @@ export type SortBy =
 
 export type SortOrder = 'asc' | 'desc';
 
-export type PageSize = 10 | 20 | 50 | 'all';
+export type PageSize = 10 | 20 | 50;
+
+/**
+ * Browse: paginated server data — default for viewing.
+ * Reorder: full dataset loaded explicitly for drag-and-drop reordering.
+ */
+export type DataMode = 'browse' | 'reorder';
 
 export interface ListViewPreferences {
   groupBy: GroupBy[]; // Composite grouping: up to 4 attributes
