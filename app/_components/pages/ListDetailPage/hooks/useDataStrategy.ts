@@ -4,15 +4,15 @@ import {
   ListItem,
   ListStatsResponse,
   ListType,
+  PaginationMetadata,
   UserListDetail,
 } from "@/lib/types";
-import { PageSize } from "@/lib/types/listView";
+import { ListItemQuery } from "@/lib/types/listView";
 import { useListData } from "./useListData";
 
 interface UseDataStrategyOptions {
   listId: number;
-  currentPage: number;
-  pageSize: PageSize;
+  query: ListItemQuery;
 }
 
 interface UseDataStrategyReturn {
@@ -25,6 +25,7 @@ interface UseDataStrategyReturn {
   fullItems: ListItem[] | null;
   totalItemCount: number;
   totalPages: number;
+  pageMetadata: PaginationMetadata | null;
   stats: ListStatsResponse | null;
   completedCount: number;
   pendingCount: number;
@@ -44,8 +45,7 @@ interface UseDataStrategyReturn {
 
 export function useDataStrategy({
   listId,
-  currentPage,
-  pageSize,
+  query,
 }: UseDataStrategyOptions): UseDataStrategyReturn {
   const {
     loading,
@@ -56,6 +56,7 @@ export function useDataStrategy({
     pageItems,
     fullItems,
     totalItemCount,
+    pageMetadata,
     stats,
     setList,
     setPageItems,
@@ -64,7 +65,7 @@ export function useDataStrategy({
     setStats,
     refetchCurrentPage,
     ensureFullItems,
-  } = useListData({ listId, currentPage, pageSize });
+  } = useListData({ listId, query });
 
   const setCachedItems = useCallback(
     (updater: React.SetStateAction<ListItem[]>) => {
@@ -100,7 +101,6 @@ export function useDataStrategy({
       setTotalItemCount((prev) => Math.max(0, prev - 1));
       setStats((prev) => {
         if (!prev) return prev;
-
         const nextCompleted =
           item.status === ItemStatus.COMPLETED
             ? Math.max(0, prev.completed_items - 1)
@@ -109,7 +109,6 @@ export function useDataStrategy({
           item.status === ItemStatus.PENDING
             ? Math.max(0, prev.pending_items - 1)
             : prev.pending_items;
-
         return {
           ...prev,
           total_items: Math.max(0, prev.total_items - 1),
@@ -117,7 +116,6 @@ export function useDataStrategy({
           pending_items: nextPending,
         };
       });
-
       void refetchCurrentPage();
     },
     [refetchCurrentPage, setStats, setTotalItemCount],
@@ -127,10 +125,8 @@ export function useDataStrategy({
     (_itemId: number, previousStatus: ItemStatus, nextStatus: ItemStatus) => {
       setStats((prev) => {
         if (!prev || previousStatus === nextStatus) return prev;
-
         const completedDelta = nextStatus === ItemStatus.COMPLETED ? 1 : -1;
         const pendingDelta = nextStatus === ItemStatus.PENDING ? 1 : -1;
-
         return {
           ...prev,
           completed_items: Math.max(0, prev.completed_items + completedDelta),
@@ -144,14 +140,15 @@ export function useDataStrategy({
   const onReorderSaved = useCallback(
     (items: ListItem[]) => {
       setFullItems(items);
-      const pageStart = (currentPage - 1) * pageSize;
-      const pageEnd = pageStart + pageSize;
+      const pageStart = (query.page - 1) * query.pageSize;
+      const pageEnd = pageStart + query.pageSize;
       setPageItems(items.slice(pageStart, pageEnd));
     },
-    [currentPage, pageSize, setFullItems, setPageItems],
+    [query.page, query.pageSize, setFullItems, setPageItems],
   );
 
-  const totalPages = Math.max(1, Math.ceil(totalItemCount / pageSize));
+  const totalPages = pageMetadata?.total_pages
+    ?? Math.max(1, Math.ceil(totalItemCount / query.pageSize));
   const completedCount = stats?.completed_items ?? 0;
   const pendingCount = stats?.pending_items ?? 0;
   const completionRate =
@@ -167,6 +164,7 @@ export function useDataStrategy({
     fullItems,
     totalItemCount,
     totalPages,
+    pageMetadata,
     stats,
     completedCount,
     pendingCount,

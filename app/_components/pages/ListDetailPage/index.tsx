@@ -1,16 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Navbar } from "../../layout/Navbar";
 import { Footer } from "../../layout/Footer";
 import { ListItemSkeleton } from "../../common/lists/ListItemSkeleton";
 import { VerticalList } from "../../common/lists/VerticalList";
 import { ItemStatus, ListItem, MemberRating } from "@/lib/types";
-import { GroupBy } from "@/lib/types/listView";
+import { isQueryEmpty } from "@/lib/types/listView";
 import { useAuthStore } from "@/app/_stores/auth-store";
+import { listItemActions } from "@/lib/api";
 
 import { useListModals } from "./hooks/useListModals";
-import { useListPreferences } from "./hooks/useListPreferences";
+import { useExploreQuery } from "./hooks/useExploreQuery";
 import { useListItemActions } from "./hooks/useListItemActions";
 import { useListReordering } from "./hooks/useListReordering";
 import { useListNavigationSearch } from "./hooks/useListNavigationSearch";
@@ -21,6 +22,7 @@ import {
   ListHeader,
   ListSidebar,
   ItemsHeader,
+  ExploreToolbar,
   ListHeaderPlaceholder,
   ItemsHeaderPlaceholder,
   ListSidebarPlaceholder,
@@ -37,28 +39,15 @@ export function ListDetailPage({ listId }: ListDetailPageProps) {
   const { user: currentUser } = useAuthStore();
 
   const modals = useListModals();
-  const preferences = useListPreferences(listId);
-  const {
-    groupBy,
-    sortBy,
-    sortOrder,
-    pageSize,
-    currentPage,
-    setGroupBy,
-    setSortBy,
-    setSortOrder,
-    setPageSize,
-    setCurrentPage,
-  } = preferences;
+  const explore = useExploreQuery(listId);
+  const { query } = explore;
 
-  const data = useDataStrategy({ listId, currentPage, pageSize });
+  const data = useDataStrategy({ listId, query });
 
   const viewer = useViewerState({
     pageItems: data.pageItems,
-    groupBy,
-    sortBy,
-    sortOrder,
-    pageSize,
+    pageMetadata: data.pageMetadata,
+    groupBy: query.groupBy,
     isReorderMode: false,
   });
 
@@ -87,10 +76,10 @@ export function ListDetailPage({ listId }: ListDetailPageProps) {
   });
 
   useEffect(() => {
-    if (currentPage > data.totalPages) {
-      setCurrentPage(data.totalPages);
+    if (query.page > data.totalPages) {
+      explore.setPage(data.totalPages);
     }
-  }, [currentPage, setCurrentPage, data.totalPages]);
+  }, [query.page, explore, data.totalPages]);
 
   const shouldInviteToRate = useMemo(() => {
     return (item: ListItem): boolean => {
@@ -101,40 +90,60 @@ export function ListDetailPage({ listId }: ListDetailPageProps) {
     };
   }, [currentUser]);
 
-  const handleGroupChange = (nextGroupBy: GroupBy[]) => {
-    setGroupBy(nextGroupBy);
-    setCurrentPage(1);
-    viewer.setHighlightedItemId(null);
-  };
-
-  const handleSortByChange = (nextSortBy: typeof sortBy) => {
-    setSortBy(nextSortBy);
-    setCurrentPage(1);
-    viewer.setHighlightedItemId(null);
-  };
-
-  const handleSortOrderChange = (nextSortOrder: typeof sortOrder) => {
-    setSortOrder(nextSortOrder);
-    setCurrentPage(1);
-    viewer.setHighlightedItemId(null);
-  };
-
-  const handlePageSizeChange = (nextPageSize: typeof pageSize) => {
-    setPageSize(nextPageSize);
-    setCurrentPage(1);
-    viewer.setHighlightedItemId(null);
-  };
-
   const handleSearchSelect = useCallback(
     (result: { id: number; pageIndex?: number }) => {
       if (result.pageIndex !== undefined) {
-        setCurrentPage(Math.floor(result.pageIndex / pageSize) + 1);
+        explore.setPage(Math.floor(result.pageIndex / query.pageSize) + 1);
       }
       search.clearQuery();
       viewer.setHighlightedItemId(result.id);
     },
-    [pageSize, search, setCurrentPage, viewer],
+    [explore, query.pageSize, search, viewer],
   );
+
+  const exploreIsEmpty = isQueryEmpty(query);
+  const hasExplicitSort = query.sort.length > 0;
+  const isSortPureCanonical =
+    !hasExplicitSort ||
+    (query.sort.length === 1 && query.sort[0].field === "list_order");
+
+  const reorderDisabledReason = !exploreIsEmpty
+    ? "Clear filters and grouping to edit the canonical order."
+    : !isSortPureCanonical
+    ? "Reset sort to default order to edit the canonical order."
+    : undefined;
+
+  const canApplySort = exploreIsEmpty && hasExplicitSort && !isSortPureCanonical;
+
+  const [applySortPending, setApplySortPending] = useState(false);
+
+  const handleApplySortAsListOrder = useCallback(async () => {
+    if (!canApplySort || applySortPending) return;
+    if (
+      typeof window !== "undefined" &&
+      !window.confirm(
+        "This will replace the canonical list order with the current sort. Continue?",
+      )
+    )
+      return;
+    setApplySortPending(true);
+    try {
+      await listItemActions.applySortAsListOrder(listId, query.sort);
+      explore.setSort([]);
+      await data.refetchCurrentPage();
+    } catch (err) {
+      console.error("apply sort failed", err);
+      if (typeof window !== "undefined") {
+        window.alert(
+          err instanceof Error
+            ? err.message
+            : "Failed to apply sort as list order.",
+        );
+      }
+    } finally {
+      setApplySortPending(false);
+    }
+  }, [applySortPending, canApplySort, data, explore, listId, query.sort]);
 
   if (data.loading) {
     return (
@@ -196,20 +205,35 @@ export function ListDetailPage({ listId }: ListDetailPageProps) {
 
           <div className="flex flex-col md:flex-row gap-6 lg:gap-8">
             <div className="flex-1 min-w-0 pb-8 order-2 md:order-1">
+              <ExploreToolbar
+                query={query}
+                totalItemCount={data.totalItemCount}
+                isReorderMode={reordering.isReorderMode}
+                canApplySort={canApplySort}
+                applySortHint={
+                  canApplySort
+                    ? "Promote the current sort to the canonical list order."
+                    : exploreIsEmpty
+                    ? "Set an explicit sort (other than default order) to enable promotion."
+                    : "Clear filters and grouping to enable promotion."
+                }
+                applySortPending={applySortPending}
+                onSetSort={explore.setSort}
+                onSetGroupBy={explore.setGroupBy}
+                onSetFilter={explore.setFilter}
+                onSetPageSize={explore.setPageSize}
+                onResetExploration={explore.resetExploration}
+                onApplySortAsListOrder={handleApplySortAsListOrder}
+              />
+
               <ItemsHeader
                 itemCount={data.totalItemCount}
                 viewMode={viewer.viewMode}
-                sortBy={sortBy}
-                hasGrouping={groupBy.length > 0}
-                sortOrder={sortOrder}
-                pageSize={pageSize}
-                currentPage={currentPage}
+                currentPage={query.page}
                 totalPages={data.totalPages}
                 isReorderMode={reordering.isReorderMode}
                 onViewModeChange={viewer.setViewMode}
-                onSortOrderChange={handleSortOrderChange}
-                onPageSizeChange={handlePageSizeChange}
-                onPageChange={setCurrentPage}
+                onPageChange={explore.setPage}
               />
 
               {!reordering.isReorderMode ? (
@@ -257,12 +281,11 @@ export function ListDetailPage({ listId }: ListDetailPageProps) {
               completedCount={data.completedCount}
               pendingCount={data.pendingCount}
               completionRate={data.completionRate}
-              groups={groupBy}
-              sortBy={sortBy}
               isReorderMode={reordering.isReorderMode}
               reorderLoading={reordering.reorderLoading}
               reorderPreparing={reordering.reorderPreparing}
               itemsLoading={data.itemsLoading || data.fullItemsLoading}
+              reorderDisabledReason={reorderDisabledReason}
               onEditList={modals.openEditModal}
               onDeleteList={modals.openDeleteListDialog}
               onEnterReorderMode={() => {
@@ -271,8 +294,6 @@ export function ListDetailPage({ listId }: ListDetailPageProps) {
               }}
               onCancelReorder={reordering.handleCancelReorder}
               onSaveReorder={reordering.handleSaveReorder}
-              onGroupChange={handleGroupChange}
-              onSortByChange={handleSortByChange}
             />
           </div>
         </div>

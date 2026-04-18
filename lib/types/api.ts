@@ -515,6 +515,16 @@ export interface PaginationMetadata {
     total_pages: number;
     next: string | null;
     previous: string | null;
+    /**
+     * Present only when `group_by` is active in a list-item request.
+     * See Sprint 4.5 query model.
+     */
+    groups?: Array<{
+        key: string;
+        label: string;
+        count_in_page: number;
+        count_global: number;
+    }>;
 }
 
 export interface PaginatedContentItemList {

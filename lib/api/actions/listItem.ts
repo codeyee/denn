@@ -10,6 +10,7 @@ import type {
     PaginatedListItemList,
     ListItemCreate,
 } from "@/lib/types";
+import type { ListItemQuery, SortClause } from "@/lib/types/listView";
 
 interface ListItemQueryOptions {
     country?: string;
@@ -17,6 +18,44 @@ interface ListItemQueryOptions {
     expand?: string;
     omit?: string;
     source_fields?: string;
+    /**
+     * Server-side query model (filters, sort, group_by) introduced in Sprint 4.5.
+     * `page` and `pageSize` come from the dedicated arguments to keep the
+     * action signature backwards-compatible.
+     */
+    query?: Pick<ListItemQuery, "filters" | "rangeFilters" | "sort" | "groupBy">;
+}
+
+function serializeSort(sort: SortClause[]): string | null {
+    if (!sort.length) return null;
+    return sort
+        .map((c) => (c.direction === "desc" ? `-${c.field}` : c.field))
+        .join(",");
+}
+
+function appendQueryModel(
+    params: URLSearchParams,
+    query: ListItemQueryOptions["query"]
+): void {
+    if (!query) return;
+
+    for (const [field, value] of Object.entries(query.filters ?? {})) {
+        if (value === undefined || value === null || value === "") continue;
+        const serialized = Array.isArray(value)
+            ? value.map((v) => String(v)).join(",")
+            : String(value);
+        params.append(`filter[${field}]`, serialized);
+    }
+
+    for (const [field, value] of Object.entries(query.rangeFilters ?? {})) {
+        if (value === undefined || value === null || value === "") continue;
+        params.append(`filter[${field}]`, String(value));
+    }
+
+    const sortStr = serializeSort(query.sort ?? []);
+    if (sortStr) params.append("sort", sortStr);
+
+    if (query.groupBy) params.append("group_by", query.groupBy);
 }
 
 function buildListItemQuery(
@@ -44,6 +83,8 @@ function buildListItemQuery(
     }
 
     addCountryParam(params, options.country);
+
+    appendQueryModel(params, options.query);
 
     return params.toString();
 }
@@ -146,6 +187,18 @@ export const listItemActions = {
         return api.post<PaginatedListItemList>(
             `/content/lists/${listId}/items/${itemId}/move/?${params}`,
             {},
+            true
+        );
+    },
+
+    applySortAsListOrder: (
+        listId: number,
+        sort: SortClause[]
+    ): Promise<{ updated: number }> => {
+        const sortStr = serializeSort(sort);
+        return api.post<{ updated: number }>(
+            `/content/lists/${listId}/items/apply-sort/`,
+            { sort: sortStr },
             true
         );
     },

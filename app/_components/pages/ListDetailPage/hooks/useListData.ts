@@ -1,14 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { listActions, listItemActions } from "@/lib/api";
-import { ListItem, ListStatsResponse, UserListDetail } from "@/lib/types";
-import { PageSize } from "@/lib/types/listView";
+import { ListItem, ListStatsResponse, PaginationMetadata, UserListDetail } from "@/lib/types";
+import { ListItemQuery } from "@/lib/types/listView";
 
 const VIEWER_SOURCE_FIELDS = "title,original_title,tv_show_name,image_url,authors";
 
 interface UseListDataOptions {
   listId: number;
-  currentPage: number;
-  pageSize: PageSize;
+  query: ListItemQuery;
 }
 
 interface UseListDataReturn {
@@ -20,6 +19,7 @@ interface UseListDataReturn {
   pageItems: ListItem[];
   fullItems: ListItem[] | null;
   totalItemCount: number;
+  pageMetadata: PaginationMetadata | null;
   stats: ListStatsResponse | null;
   setList: React.Dispatch<React.SetStateAction<UserListDetail | null>>;
   setPageItems: React.Dispatch<React.SetStateAction<ListItem[]>>;
@@ -43,14 +43,16 @@ async function fetchListStats(listId: number): Promise<ListStatsResponse> {
   return listActions.getStats(listId);
 }
 
-async function fetchListPage(
-  listId: number,
-  currentPage: number,
-  pageSize: PageSize
-) {
-  return listItemActions.list(listId, currentPage, pageSize, {
+async function fetchListPage(listId: number, query: ListItemQuery) {
+  return listItemActions.list(listId, query.page, query.pageSize, {
     expand: "content_item",
     source_fields: VIEWER_SOURCE_FIELDS,
+    query: {
+      filters: query.filters,
+      rangeFilters: query.rangeFilters,
+      sort: query.sort,
+      groupBy: query.groupBy,
+    },
   });
 }
 
@@ -61,11 +63,18 @@ async function fetchAllListItems(listId: number): Promise<ListItem[]> {
   });
 }
 
-export function useListData({
-  listId,
-  currentPage,
-  pageSize,
-}: UseListDataOptions): UseListDataReturn {
+function querySignature(query: ListItemQuery): string {
+  return JSON.stringify({
+    f: query.filters,
+    r: query.rangeFilters,
+    s: query.sort,
+    g: query.groupBy,
+    p: query.page,
+    ps: query.pageSize,
+  });
+}
+
+export function useListData({ listId, query }: UseListDataOptions): UseListDataReturn {
   const [loading, setLoading] = useState(true);
   const [itemsLoading, setItemsLoading] = useState(false);
   const [fullItemsLoading, setFullItemsLoading] = useState(false);
@@ -75,13 +84,12 @@ export function useListData({
   const [fullItems, setFullItems] = useState<ListItem[] | null>(null);
   const [stats, setStats] = useState<ListStatsResponse | null>(null);
   const [totalItemCount, setTotalItemCount] = useState(0);
-  const hasBootstrappedPageRef = useRef(false);
-  const lastRequestedPageRef = useRef("");
-  const currentPageRef = useRef(currentPage);
-  const pageSizeRef = useRef(pageSize);
+  const [pageMetadata, setPageMetadata] = useState<PaginationMetadata | null>(null);
 
-  currentPageRef.current = currentPage;
-  pageSizeRef.current = pageSize;
+  const hasBootstrappedRef = useRef(false);
+  const lastSignatureRef = useRef("");
+  const queryRef = useRef(query);
+  queryRef.current = query;
 
   const refetchMetadata = useCallback(async () => {
     const metadata = await fetchListMetadata(listId);
@@ -91,33 +99,27 @@ export function useListData({
   const refetchStats = useCallback(async () => {
     const nextStats = await fetchListStats(listId);
     setStats(nextStats);
-    setTotalItemCount(nextStats.total_items);
   }, [listId]);
 
   const refetchCurrentPage = useCallback(async () => {
     setItemsLoading(true);
-
     try {
-      const response = await fetchListPage(listId, currentPage, pageSize);
+      const response = await fetchListPage(listId, queryRef.current);
       setPageItems(response.results);
+      setPageMetadata(response.metadata);
       setTotalItemCount(response.metadata.count);
-      lastRequestedPageRef.current = `${currentPage}:${pageSize}`;
+      lastSignatureRef.current = querySignature(queryRef.current);
     } finally {
       setItemsLoading(false);
     }
-  }, [currentPage, listId, pageSize]);
+  }, [listId]);
 
   const ensureFullItems = useCallback(async () => {
-    if (fullItems) {
-      return fullItems;
-    }
-
+    if (fullItems) return fullItems;
     setFullItemsLoading(true);
-
     try {
       const items = await fetchAllListItems(listId);
       setFullItems(items);
-      setTotalItemCount(items.length);
       return items;
     } finally {
       setFullItemsLoading(false);
@@ -126,60 +128,44 @@ export function useListData({
 
   useEffect(() => {
     let cancelled = false;
-
     async function bootstrap() {
       setLoading(true);
       setError(null);
       setFullItems(null);
       setPageItems([]);
-      hasBootstrappedPageRef.current = false;
-
+      hasBootstrappedRef.current = false;
       try {
         const [metadata, nextStats, response] = await Promise.all([
           fetchListMetadata(listId),
           fetchListStats(listId),
-          fetchListPage(listId, currentPageRef.current, pageSizeRef.current),
+          fetchListPage(listId, queryRef.current),
         ]);
-
-        if (cancelled) {
-          return;
-        }
-
+        if (cancelled) return;
         setList(metadata);
         setStats(nextStats);
         setPageItems(response.results);
-        setTotalItemCount(nextStats.total_items);
-        hasBootstrappedPageRef.current = true;
-        lastRequestedPageRef.current = `${currentPageRef.current}:${pageSizeRef.current}`;
+        setPageMetadata(response.metadata);
+        setTotalItemCount(response.metadata.count);
+        hasBootstrappedRef.current = true;
+        lastSignatureRef.current = querySignature(queryRef.current);
       } catch (err) {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Failed to load list");
-        }
+        if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load list");
       } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+        if (!cancelled) setLoading(false);
       }
     }
-
     bootstrap();
-
     return () => {
       cancelled = true;
     };
   }, [listId]);
 
   useEffect(() => {
-    if (
-      loading ||
-      !hasBootstrappedPageRef.current ||
-      lastRequestedPageRef.current === `${currentPage}:${pageSize}`
-    ) {
-      return;
-    }
-
+    if (loading || !hasBootstrappedRef.current) return;
+    const sig = querySignature(query);
+    if (sig === lastSignatureRef.current) return;
     void refetchCurrentPage();
-  }, [currentPage, loading, pageSize, refetchCurrentPage]);
+  }, [loading, query, refetchCurrentPage]);
 
   return {
     loading,
@@ -190,6 +176,7 @@ export function useListData({
     pageItems,
     fullItems,
     totalItemCount,
+    pageMetadata,
     stats,
     setList,
     setPageItems,
