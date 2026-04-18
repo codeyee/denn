@@ -100,7 +100,26 @@ def bulk_fetch_source_data(
             except Exception:
                 pass
 
+    _opportunistic_upsert_browse_metadata(content_items, results)
+
     return results
+
+
+def _opportunistic_upsert_browse_metadata(
+    content_items: List[ContentItem],
+    source_data_by_id: Dict[int, Optional[Dict[str, Any]]],
+) -> None:
+    """
+    Best-effort: keep ContentItemBrowseMetadata fresh whenever the proxy
+    bulk-fetch brings back a payload during a request.
+
+    Failures are swallowed; metadata is non-critical for the request path.
+    """
+    try:
+        from content.services.browse_metadata_service import upsert_many
+        upsert_many(content_items, source_data_by_id)
+    except Exception:
+        pass
 
 
 def _bulk_fetch_tmdb(

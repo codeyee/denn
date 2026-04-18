@@ -9,6 +9,13 @@ from content.models import ListItem, UserList, Rating
 from content.serializers import ListItemSerializer, ListItemCreateSerializer
 from content.permissions import IsMemberOfList
 from content.utils import bulk_fetch_source_data
+from content.services import (
+    annotate_items_with_ratings,
+    apply_query,
+    build_group_metadata,
+    parse_list_item_query,
+    QueryParseError,
+)
 
 from rest_flex_fields.views import FlexFieldsMixin
 
@@ -37,7 +44,7 @@ from rest_flex_fields.views import FlexFieldsMixin
         - Use `unpaginated=true` to bypass pagination and fetch all items (useful for reordering)
 
         **Examples:**
-        - `?fields=id,status,notes` - Return only basic item info
+        - `?fields=id,status` - Return only basic item info
         - `?omit=member_ratings` - Exclude member ratings from response
         - `?expand=content_item` - Expand content_item relationship with full details
         - `?expand=content_item&fields=id,status,content_item.source_data` - Expand content item and only return source data
@@ -55,10 +62,17 @@ from rest_flex_fields.views import FlexFieldsMixin
             OpenApiParameter('fields', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Comma-separated list of fields to include (e.g., "id,status")'),
             OpenApiParameter('omit', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Comma-separated list of fields to exclude'),
             OpenApiParameter('expand', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Comma-separated list of relationships to expand (e.g., "content_item,added_by")'),
-            OpenApiParameter('source_fields', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Comma-separated list of fields to include from external API source_data. Supports dot notation (e.g., "title,cover.url,genres.name")')
+            OpenApiParameter('source_fields', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Comma-separated list of fields to include from external API source_data. Supports dot notation (e.g., "title,cover.url,genres.name")'),
+            OpenApiParameter('sort', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Comma-separated sort fields with optional `-` for desc (e.g., "artist,-release_date,list_order"). Whitelisted fields only.'),
+            OpenApiParameter('group_by', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Single field to group the page by (e.g., "status", "content_type", "artist"). Pagination remains global.'),
+            OpenApiParameter('filter[status]', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Filter by status. CSV supported (e.g., "PENDING,COMPLETED").'),
+            OpenApiParameter('filter[content_type]', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Filter by content type. CSV supported.'),
+            OpenApiParameter('filter[source_api]', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Filter by source API. CSV supported.'),
+            OpenApiParameter('filter[added_by]', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Filter by user id who added the item. CSV supported.'),
         ],
         responses={
             200: ListItemSerializer(many=True),
+            400: OpenApiExample('Bad Query', value={'detail': "Unknown sort field: 'foo'"}),
             403: OpenApiExample('Forbidden', value={'detail': 'You do not have access to this list.'}),
             404: OpenApiExample('Not Found', value={'detail': 'Lista no encontrada o no tienes acceso a ella.'})
         }
@@ -119,8 +133,7 @@ from rest_flex_fields.views import FlexFieldsMixin
                     'source_api': 'tmdb',
                     'external_id': '550',
                     'content_type': 'MOVIE',
-                    'status': 'PENDING',
-                    'notes': 'Fight Club - Must watch!'
+                    'status': 'PENDING'
                 },
                 request_only=True
             ),
@@ -139,7 +152,7 @@ from rest_flex_fields.views import FlexFieldsMixin
     update=extend_schema(
         tags=['List Items'],
         summary='Update list item',
-        description='Update a list item. Can change status (PENDING/COMPLETED) and notes.',
+        description='Update a list item. Can change status (PENDING/COMPLETED).',
         request=ListItemSerializer,
         responses={200: ListItemSerializer}
     ),
@@ -155,11 +168,6 @@ from rest_flex_fields.views import FlexFieldsMixin
                 value={'status': 'COMPLETED'},
                 request_only=True
             ),
-            OpenApiExample(
-                'Update Notes',
-                value={'notes': 'Watched it yesterday, amazing!'},
-                request_only=True
-            )
         ]
     ),
     destroy=extend_schema(
@@ -172,6 +180,20 @@ from rest_flex_fields.views import FlexFieldsMixin
 class ListItemViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, IsMemberOfList]
     permit_list_expands = ['content_item', 'user_list', 'added_by']
+
+    def _get_member_ids_for_list(self, list_id):
+        """
+        Return all member ids (including owner) for the given list.
+        Used for annotating list_rating consistently with serializer logic.
+        """
+        member_ids = list(
+            UserList.objects.filter(pk=list_id).values_list('members__id', flat=True)
+        )
+        member_ids = [mid for mid in member_ids if mid is not None]
+        owner_id = UserList.objects.filter(pk=list_id).values_list('owner_id', flat=True).first()
+        if owner_id and owner_id not in member_ids:
+            member_ids.append(owner_id)
+        return member_ids
 
     def get_queryset(self):
         from django.db.models import Q
@@ -188,10 +210,13 @@ class ListItemViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
             Q(user_id__in=member_ids_subquery) | Q(user_id=owner_id_subquery)
         ).select_related('user').order_by('-created_at')
 
-        return ListItem.objects.filter(
+        member_ids = self._get_member_ids_for_list(list_id)
+
+        qs = ListItem.objects.filter(
             user_list_id=list_id,
         ).select_related(
             'content_item',
+            'content_item__browse_meta',
             'added_by',
             'user_list',
         ).prefetch_related(
@@ -201,7 +226,11 @@ class ListItemViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
                 queryset=ratings_qs,
                 to_attr='member_ratings_prefetched',
             ),
-        ).order_by('list_order', '-added_at')
+        )
+
+        qs = annotate_items_with_ratings(qs, member_ids)
+
+        return qs.order_by('list_order', '-added_at')
 
     def get_serializer_class(self):
         if self.action == 'create': return ListItemCreateSerializer
@@ -241,7 +270,16 @@ class ListItemViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
+        try:
+            query = parse_list_item_query(request.query_params)
+        except QueryParseError as exc:
+            return Response(
+                {'detail': str(exc)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         queryset = self.filter_queryset(self.get_queryset())
+        queryset = apply_query(queryset, query)
         page = self.paginate_queryset(queryset)
         items_to_serialize = page if page is not None else list(queryset)
 
@@ -257,7 +295,13 @@ class ListItemViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
         serializer = self.get_serializer(items_to_serialize, many=True, context=context)
 
         if page is not None:
-            return self.get_paginated_response(serializer.data)
+            response = self.get_paginated_response(serializer.data)
+            if query.has_grouping:
+                response.data['metadata']['groups'] = build_group_metadata(
+                    items_to_serialize, queryset, query.group_by,
+                )
+            return response
+
         return Response(serializer.data)
 
     def create(self, request, *args, **kwargs):
@@ -312,6 +356,85 @@ class ListItemViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
         instance.delete()
 
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @extend_schema(
+        tags=['List Items'],
+        summary='Promote an explore sort to the canonical list order',
+        description='''
+        Promote the current explore sort to the canonical `list_order` of the list.
+
+        Body must contain `sort` as a non-empty CSV string of whitelisted sort
+        fields (prefix `-` for desc), identical to the `?sort=` query param.
+
+        Validations:
+        - filters and grouping are NOT allowed (operate over the full list only).
+        - sort cannot be empty.
+        - sort cannot reduce to canonical `list_order` (no-op).
+        ''',
+        request=None,
+        responses={200: OpenApiExample('OK', value={'updated': 42})}
+    )
+    def apply_sort(self, request, *args, **kwargs):
+        user_list = self.get_list()
+        if not user_list:
+            return Response(
+                {'detail': 'Lista no encontrada o no tienes acceso a ella.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        if any(k.startswith('filter[') for k in request.query_params.keys()):
+            return Response(
+                {'detail': 'Filters are not allowed when promoting a sort to the canonical order.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if request.query_params.get('group_by'):
+            return Response(
+                {'detail': 'Grouping is not allowed when promoting a sort to the canonical order.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        sort_raw = request.data.get('sort') if isinstance(request.data, dict) else None
+        if not sort_raw or not isinstance(sort_raw, str):
+            return Response(
+                {'detail': 'Body must include a non-empty "sort" string.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            from django.http import QueryDict
+            qd = QueryDict(mutable=True)
+            qd['sort'] = sort_raw
+            query = parse_list_item_query(qd)
+        except QueryParseError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not query.sort:
+            return Response(
+                {'detail': '"sort" must include at least one valid field.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if all(c.field == 'list_order' for c in query.sort):
+            return Response(
+                {'detail': 'Sort already matches the canonical list order; nothing to apply.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        queryset = apply_query(self.get_queryset(), query)
+        items = list(queryset)
+        if not items:
+            return Response({'updated': 0})
+
+        with transaction.atomic():
+            for item in items:
+                item.list_order = -item.id
+            ListItem.objects.bulk_update(items, ['list_order'])
+
+            for idx, item in enumerate(items, start=1):
+                item.list_order = idx
+            ListItem.objects.bulk_update(items, ['list_order'])
+
+        return Response({'updated': len(items)})
 
     @extend_schema(
         tags=['List Items'],

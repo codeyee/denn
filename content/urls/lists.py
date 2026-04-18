@@ -33,6 +33,10 @@ list_item_move = ListItemViewSet.as_view({
     'post': 'move'
 })
 
+list_item_apply_sort = ListItemViewSet.as_view({
+    'post': 'apply_sort'
+})
+
 list_member_list = ListMemberViewSet.as_view({
     'get': 'list'
 })
@@ -68,6 +72,11 @@ urlpatterns = [
         '<int:list_pk>/items/<int:pk>/move/',
         list_item_move,
         name='items-move'
+    ),
+    path(
+        '<int:list_pk>/items/apply-sort/',
+        list_item_apply_sort,
+        name='items-apply-sort'
     ),
     path(
         '<int:list_pk>/members/',
