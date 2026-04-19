@@ -73,7 +73,6 @@ export function reportWebVital(metric: WebVitalMetric, route: string): void {
   };
 
   if (process.env.NODE_ENV === "development") {
-    // eslint-disable-next-line no-console
     console.log(
       `%c[web-vital] ${payload.name} %c${payload.value}%c ${rating} %c(${route})`,
       "color: #6b7280",

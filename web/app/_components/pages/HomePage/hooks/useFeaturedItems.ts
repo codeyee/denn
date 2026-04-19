@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 import { Content } from "@/lib/types";
 
 const FEATURED_ITEMS_COUNT = 20;
@@ -13,10 +13,11 @@ interface UseFeaturedItemsParams {
 
 export function useFeaturedItems({ movies, tvShows, games, music }: UseFeaturedItemsParams) {
   // Random selection runs only after mount to avoid SSR/CSR hydration mismatches.
-  const [isMounted, setIsMounted] = useState(false);
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
+  const isMounted = useSyncExternalStore(
+    subscribeNoop,
+    () => true,
+    () => false,
+  );
 
   const deterministicItems = useMemo(() => {
     const pool: Content[] = [
@@ -41,6 +42,10 @@ export function useFeaturedItems({ movies, tvShows, games, music }: UseFeaturedI
   const featuredItems = isMounted ? randomizedItems : deterministicItems;
 
   return { featuredItems };
+}
+
+function subscribeNoop() {
+  return () => {};
 }
 
 function pickRandom<T>(arr: T[], n: number): T[] {

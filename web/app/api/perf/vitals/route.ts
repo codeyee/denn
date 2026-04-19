@@ -44,7 +44,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "invalid_shape" }, { status: 400 });
   }
 
-  // eslint-disable-next-line no-console
   console.log(
     JSON.stringify({
       event: "web_vital",
