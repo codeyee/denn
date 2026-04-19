@@ -18,7 +18,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-STATE_DIR="$ROOT_DIR/.workspace-dev"
+STATE_DIR="$ROOT_DIR/.workspace"
 LOG_DIR="$STATE_DIR/logs"
 PID_DIR="$STATE_DIR/pids"
 REDIS_CONTAINER_NAME="denn-workspace-redis"
