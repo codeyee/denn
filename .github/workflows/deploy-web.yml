@@ -1,20 +1,28 @@
-name: Build & Push Docker Image
+name: Deploy Web
 
 on:
-  pull_request:
   push:
     branches: [main]
+    paths:
+      - 'web/**'
+      - '.github/workflows/deploy-web.yml'
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: ghcr.io/codeyee/denn-web
+
+concurrency:
+  group: deploy-web-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   validate:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-
+    defaults:
+      run:
+        working-directory: web
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -24,6 +32,7 @@ jobs:
         with:
           node-version: 20
           cache: npm
+          cache-dependency-path: web/package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -35,13 +44,11 @@ jobs:
         run: npm run build
 
   build-and-push:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: validate
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -60,15 +67,16 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.IMAGE_NAME }}
           tags: |
             type=raw,value=latest
-            type=sha,prefix=
+            type=sha,format=short,prefix=sha-
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: ./web
+          file: ./web/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -77,6 +85,6 @@ jobs:
 
       - name: Deploy via webhook
         if: success() && env.DEPLOY_WEBHOOK != ''
-        run: curl -fsSL "${{ secrets.DEPLOY_WEBHOOK }}"
+        run: curl -fsSL "${{ secrets.WEB_DEPLOY_WEBHOOK }}"
         env:
-          DEPLOY_WEBHOOK: ${{ secrets.DEPLOY_WEBHOOK }}
+          DEPLOY_WEBHOOK: ${{ secrets.WEB_DEPLOY_WEBHOOK }}

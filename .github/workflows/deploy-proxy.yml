@@ -1,46 +1,47 @@
-name: Build & Push Docker Image
+name: Deploy Proxy
 
 on:
-  pull_request:
   push:
     branches: [main]
+    paths:
+      - 'proxy/**'
+      - '.github/workflows/deploy-proxy.yml'
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: ghcr.io/codeyee/denn-proxy
+
+concurrency:
+  group: deploy-proxy-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   validate:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-
+    defaults:
+      run:
+        working-directory: proxy
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Set up Go
+        uses: actions/setup-go@v5
         with:
-          python-version: "3.11"
-          cache: pip
-
-      - name: Install dependencies
-        run: pip install -r requirements.txt
+          go-version-file: proxy/go.mod
+          cache: true
 
       - name: Run tests
-        env:
-          SECRET_KEY: ci-placeholder-secret
-        run: python manage.py test
+        run: go test ./...
 
   build-and-push:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: validate
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -59,15 +60,16 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.IMAGE_NAME }}
           tags: |
             type=raw,value=latest
-            type=sha,prefix=
+            type=sha,format=short,prefix=sha-
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: ./proxy
+          file: ./proxy/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -76,6 +78,6 @@ jobs:
 
       - name: Deploy via webhook
         if: success() && env.DEPLOY_WEBHOOK != ''
-        run: curl -fsSL "${{ secrets.DEPLOY_WEBHOOK }}"
+        run: curl -fsSL "${{ secrets.PROXY_DEPLOY_WEBHOOK }}"
         env:
-          DEPLOY_WEBHOOK: ${{ secrets.DEPLOY_WEBHOOK }}
+          DEPLOY_WEBHOOK: ${{ secrets.PROXY_DEPLOY_WEBHOOK }}

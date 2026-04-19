@@ -155,10 +155,11 @@ La raíz `/home/perso/codeyee/denn` no contiene un workspace manager (`pnpm-work
   - `core/Dockerfile`
   - `proxy/Dockerfile`
 - Compose sólo para `proxy` + Redis: `proxy/docker-compose.yml`
-- Workflows duplicados por repo:
-  - `web/.github/workflows/docker-build.yml`
-  - `core/.github/workflows/docker-build.yml`
-  - `proxy/.github/workflows/docker-build.yml`
+- Workflows centralizados en la raíz del monorepo:
+  - `.github/workflows/monorepo-ci.yml`
+  - `.github/workflows/deploy-web.yml`
+  - `.github/workflows/deploy-core.yml`
+  - `.github/workflows/deploy-proxy.yml`
 
 ### Relaciones entre componentes
 - `web -> core`

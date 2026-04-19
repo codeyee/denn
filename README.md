@@ -1,7 +1,7 @@
 # Denn
 
 Denn is a multi-media tracker (movies, TV, games, music, books) built
-as three cooperating services in a single workspace:
+as three cooperating services in a single monorepo:
 
 | Path    | Stack                       | Role                                                           |
 | ------- | --------------------------- | -------------------------------------------------------------- |
@@ -39,7 +39,8 @@ The decision and its alternatives are recorded in
 - [`docs/sprints/`](./docs/sprints/) - Sprint plans. Files prefixed
   with `done-` are completed.
 - [`docs/workspace-operating-model.md`](./docs/workspace-operating-model.md) -
-  How the three services are versioned and shipped together.
+  How the three services are versioned, validated, and shipped from the
+  monorepo.
 
 Per-service docs:
 
@@ -74,6 +75,22 @@ variables; the canonical list is in
 [`docs/contracts/internal-http.md`](./docs/contracts/internal-http.md).
 The most important rule: `PROXY_API_KEY` is **server-only**. It must
 never be set with the `NEXT_PUBLIC_` prefix.
+
+## CI and deploy
+
+The repo validates changes from the root and deploys each app
+independently:
+
+- Pull requests run the root workflow
+  [`.github/workflows/monorepo-ci.yml`](./.github/workflows/monorepo-ci.yml),
+  which only validates the areas touched by the PR and ends in a
+  single `ci-summary` check for branch protection.
+- Pushes to `main` trigger app-specific deploy workflows by path:
+  - [`deploy-web.yml`](./.github/workflows/deploy-web.yml)
+  - [`deploy-core.yml`](./.github/workflows/deploy-core.yml)
+  - [`deploy-proxy.yml`](./.github/workflows/deploy-proxy.yml)
+- Each deploy builds from its own directory, publishes its own image,
+  and calls its own deploy webhook.
 
 ---
 

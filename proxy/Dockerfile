@@ -26,7 +26,7 @@ FROM gcr.io/distroless/static-debian12
 # OCI metadata labels
 LABEL org.opencontainers.image.title="denn-proxy" \
       org.opencontainers.image.description="REST API proxy aggregating TMDB, IGDB, Spotify, and OpenLibrary" \
-      org.opencontainers.image.source="https://github.com/codeyee/denn-proxy"
+      org.opencontainers.image.source="https://github.com/codeyee/denn"
 
 COPY --from=builder /denn-proxy /denn-proxy
 COPY --from=builder /healthcheck /healthcheck

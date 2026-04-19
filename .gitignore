@@ -1,0 +1,4 @@
+# Local-only artifacts created by scripts/workspace-dev.sh
+backups/
+.workspace-dev/
+.codex
