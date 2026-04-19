@@ -7,6 +7,7 @@ import { ContentType, TVShowDetail } from "@/lib/types";
 import { useContentData } from "./hooks/useContentData";
 import { useUserRating } from "./hooks/useUserRating";
 import { useContentModals } from "./hooks/useContentModals";
+import { ContentDetailSkeleton } from "./ContentDetailSkeleton";
 import { ContentHeader } from "./components/ContentHeader";
 import { AboutSection } from "./components/AboutSection";
 import { TracksSection } from "./components/TracksSection";
@@ -47,18 +48,7 @@ export function ContentDetailPage({ contentId }: ContentDetailPageProps) {
   }, [contentItem]);
 
   if (loading) {
-    return (
-      <div className="relative w-full min-h-screen bg-background-logged-in">
-        <div className="container mx-auto px-4 mt-8 py-20">
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-              <p className="text-gray-400">Loading content...</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return <ContentDetailSkeleton />;
   }
 
   if (error || !contentItem) {

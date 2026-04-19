@@ -8,6 +8,8 @@ import { buildContentUrlById } from "@/lib/utils/navigationUtils";
 import { StatusBadge } from "@/app/_components/common/ui/StatusBadge";
 import { RatingBadge } from "@/app/_components/common/ui/RatingBadge";
 import { useSmartNavigation } from "@/app/_hooks/useSmartNavigation";
+import { usePrefetchContentDetail } from "@/lib/api/queries/usePrefetchContentDetail";
+import { useHoverPrefetch } from "@/lib/perf/useHoverPrefetch";
 import { getListItemTitle, getListItemSubtitle } from "./utils";
 import { ListItemCardHover } from "./components/ListItemCardHover";
 import { getRatingBadgeData } from "@/app/_components/pages/ListDetailPage/utils";
@@ -58,6 +60,15 @@ export function ListItemCard({
 
   const navigation = useSmartNavigation(getNavigationUrl);
 
+  // T8: warm the ContentDetail cache after 200ms of hover intent.
+  // The ContentItem id is already known (no `getOrCreate` round-trip
+  // needed), so we go straight to `prefetchQuery`.
+  const prefetchContentDetail = usePrefetchContentDetail();
+  const handlePrefetch = useCallback(() => {
+    prefetchContentDetail(contentItem.id);
+  }, [contentItem.id, prefetchContentDetail]);
+  const hoverPrefetchHandlers = useHoverPrefetch(handlePrefetch);
+
   const handleCardClick = useCallback(
     (e: React.MouseEvent) => {
       const target = e.target as HTMLElement;
@@ -78,6 +89,7 @@ export function ListItemCard({
       tabIndex={0}
       onKeyDown={navigation.handleKeyDown}
       aria-label={`View details for ${title}`}
+      {...hoverPrefetchHandlers}
     >
       <Card
         id={item.id}

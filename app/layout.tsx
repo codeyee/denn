@@ -1,8 +1,10 @@
 import { ThemeProvider } from "@/app/_components/common/providers/ThemeProvider";
 import { StoreProvider } from "@/app/_providers/StoreProvider";
+import { QueryProvider } from "@/app/_providers/QueryProvider";
 import { CountryProvider } from "@/app/_components/common/providers/CountryProvider";
 import { ToastProvider } from "@/app/_components/common/Toast";
 import { EnvConfig } from "@/app/_components/common/EnvConfig";
+import { WebVitalsReporter } from "@/app/_components/common/WebVitalsReporter";
 import { AuthSessionBootstrap } from "@/app/_components/routes/AuthSessionBootstrap";
 import { resolveSession, type SessionSnapshot } from "@/lib/auth/session-server";
 
@@ -88,12 +90,15 @@ export default async function RootLayout({
           disableTransitionOnChange
         >
           <StoreProvider>
-            <AuthSessionBootstrap session={session} />
-            <ToastProvider>
-              <CountryProvider />
-              <EnvConfig />
-              {children}
-            </ToastProvider>
+            <QueryProvider>
+              <AuthSessionBootstrap session={session} />
+              <ToastProvider>
+                <CountryProvider />
+                <EnvConfig />
+                <WebVitalsReporter />
+                {children}
+              </ToastProvider>
+            </QueryProvider>
           </StoreProvider>
         </ThemeProvider>
       </body>

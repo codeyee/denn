@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { Card } from "../Card";
 import { ContentType } from "@/lib/types";
 import { formatSeasonTitle } from "@/lib/utils/titleUtils";
@@ -10,6 +10,8 @@ import { Button } from "@/app/_components/common/ui/Button";
 import { AddToListModal } from "@/app/_components/common/modals/AddToListModal";
 import { buildContentUrlById } from "@/lib/utils/navigationUtils";
 import { contentItemActions } from "@/lib/api";
+import { usePrefetchContentDetail } from "@/lib/api/queries/usePrefetchContentDetail";
+import { useHoverPrefetch } from "@/lib/perf/useHoverPrefetch";
 import { useSmartNavigation } from "@/app/_hooks/useSmartNavigation";
 import { useContentCardModal } from "./hooks/useContentCardModal";
 import {
@@ -42,6 +44,23 @@ export function ContentCard({ item, className }: ContentCardProps) {
   const navigation = useSmartNavigation(getNavigationUrl);
   const modal = useContentCardModal(item);
 
+  // T8: prefetch the ContentDetail payload after 200ms hover intent.
+  // We resolve the internal id via `getOrCreate` (the same call
+  // `getNavigationUrl` makes) and warm `useContentDetailQuery`'s cache,
+  // so the destination page already has data on first paint.
+  const prefetchContentDetail = usePrefetchContentDetail();
+  const handlePrefetch = useCallback(async () => {
+    try {
+      const contentType = item.type as ContentType;
+      const externalId = String(item.id);
+      const resolved = await contentItemActions.getOrCreate(externalId, contentType);
+      prefetchContentDetail(resolved.id);
+    } catch {
+      // best-effort, never block navigation on prefetch failure
+    }
+  }, [item.id, item.type, prefetchContentDetail]);
+  const hoverPrefetchHandlers = useHoverPrefetch(handlePrefetch);
+
   const isSeason = item.type === "SEASON";
   const title =
     isSeason && "tv_show_name" in item
@@ -72,6 +91,7 @@ export function ContentCard({ item, className }: ContentCardProps) {
         tabIndex={0}
         onKeyDown={navigation.handleKeyDown}
         aria-label={`View details for ${title}`}
+        {...hoverPrefetchHandlers}
       >
         <Card
           type={type as ContentType}

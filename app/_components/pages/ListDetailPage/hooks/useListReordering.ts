@@ -1,8 +1,8 @@
 import { useState, useCallback } from "react";
 import { DragOverEvent, DragStartEvent } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
-import { useListsStore } from "@/app/_stores/lists-store";
 import { useUIStore } from "@/app/_stores/ui-store";
+import { useReorderListItemsMutation } from "@/lib/api/mutations";
 import { ListItem } from "@/lib/types";
 
 interface UseListReorderingOptions {
@@ -35,12 +35,22 @@ export function useListReordering({
 }: UseListReorderingOptions): UseListReorderingReturn {
   const [originalItems, setOriginalItems] = useState<ListItem[]>([]);
   const [reorderItems, setReorderItems] = useState<ListItem[]>([]);
-  const [reorderLoading, setReorderLoading] = useState(false);
   const [reorderPreparing, setReorderPreparing] = useState(false);
   const [activeId, setActiveId] = useState<number | null>(null);
 
-  const { reorderListItems } = useListsStore();
   const { isReorderMode, enterReorderMode, exitReorderMode } = useUIStore();
+
+  // T7: persist reorder via TanStack Query mutation. The optimistic
+  // ordering already lives in `reorderItems` (driven by drag); on
+  // error we restore from `originalItems` and surface a toast.
+  const reorderMutation = useReorderListItemsMutation<ListItem[]>({
+    onMutate: () => originalItems,
+    onError: (_err, _vars, snapshot) => {
+      if (snapshot) {
+        setReorderItems(snapshot);
+      }
+    },
+  });
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     setActiveId(event.active.id as number);
@@ -95,23 +105,22 @@ export function useListReordering({
   }, [exitReorderMode]);
 
   const handleSaveReorder = useCallback(async () => {
+    const itemIds = reorderItems.map((item) => item.id);
     try {
-      setReorderLoading(true);
-      const itemIds = reorderItems.map((item) => item.id);
-      await reorderListItems(listId, itemIds);
+      await reorderMutation.mutateAsync({ listId, itemIds });
       onReorderSaved(reorderItems);
       setOriginalItems(reorderItems);
       setReorderItems([]);
       exitReorderMode();
-    } finally {
-      setReorderLoading(false);
+    } catch {
+      // toast + rollback already handled by the mutation
     }
-  }, [exitReorderMode, listId, onReorderSaved, reorderItems, reorderListItems]);
+  }, [exitReorderMode, listId, onReorderSaved, reorderItems, reorderMutation]);
 
   return {
     activeId,
     reorderItems,
-    reorderLoading,
+    reorderLoading: reorderMutation.isPending,
     reorderPreparing,
     isReorderMode,
     handleDragStart,

@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
-import { contentItemActions } from "@/lib/api";
+import { useMemo } from "react";
+
+import { useContentDetailQuery } from "@/lib/api/queries";
 import {
   ContentItem,
   ContentType,
@@ -16,93 +17,74 @@ interface UseContentDataParams {
   country?: string;
 }
 
+type DetailPayload =
+  | MovieDetail
+  | TVShowDetail
+  | TVSeasonDetail
+  | AlbumDetail
+  | GameDetail
+  | BookDetail
+  | null;
+
 interface UseContentDataReturn {
   loading: boolean;
   error: string | null;
   contentItem: ContentItem | null;
-  detailData:
-    | MovieDetail
-    | TVShowDetail
-    | TVSeasonDetail
-    | AlbumDetail
-    | GameDetail
-    | BookDetail
-    | null;
+  detailData: DetailPayload;
   tvShowTitle: string | null;
 }
 
+/**
+ * Sprint 08 / T6 — Migrated from a hand-rolled `useEffect` fetch to
+ * `useContentDetailQuery`. The return shape is preserved so callers
+ * (`ContentDetailPage` and friends) do not need to change.
+ *
+ * Side benefits:
+ * - The page now hydrates instantly when the detail was prefetched
+ *   on hover (T8).
+ * - Re-mounting the page (e.g. dialog → close → reopen) hits the
+ *   cache for `staleTime` (5 minutes) instead of refetching.
+ */
 export function useContentData({
   contentId,
   country,
 }: UseContentDataParams): UseContentDataReturn {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [contentItem, setContentItem] = useState<ContentItem | null>(null);
-  const [detailData, setDetailData] = useState<
-    MovieDetail | TVShowDetail | TVSeasonDetail | AlbumDetail | GameDetail | BookDetail | null
-  >(null);
-  const [tvShowTitle, setTvShowTitle] = useState<string | null>(null);
+  const query = useContentDetailQuery(contentId, country);
 
-  useEffect(() => {
-    let cancelled = false;
+  const item = query.data ?? null;
 
-    const fetchContent = async () => {
+  const detailData = useMemo<DetailPayload>(() => {
+    if (!item?.source_data) return null;
+    if (typeof item.source_data === "string") {
       try {
-        setLoading(true);
-        setError(null);
-
-        const item = await contentItemActions.get(contentId, country);
-        if (cancelled) return;
-
-        setContentItem(item);
-
-        let sourceData:
-          | MovieDetail | TVShowDetail | TVSeasonDetail | AlbumDetail | GameDetail | BookDetail
-          | null = null;
-
-        if (item.source_data) {
-          sourceData =
-            typeof item.source_data === "string"
-              ? JSON.parse(item.source_data)
-              : item.source_data;
-        }
-
-        if (sourceData) {
-          setDetailData(sourceData);
-
-          if (
-            item.content_type === ContentType.SEASON &&
-            "tv_show_name" in sourceData &&
-            sourceData.tv_show_name
-          ) {
-            setTvShowTitle(sourceData.tv_show_name);
-          }
-        }
-      } catch (err) {
-        if (!cancelled) {
-          console.error("Error fetching content:", err);
-          setError(err instanceof Error ? err.message : "Failed to load content");
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+        return JSON.parse(item.source_data) as DetailPayload;
+      } catch {
+        return null;
       }
-    };
-
-    if (Number.isFinite(contentId) && contentId > 0) {
-      fetchContent();
     }
+    return item.source_data as DetailPayload;
+  }, [item]);
 
-    return () => {
-      cancelled = true;
-    };
-  }, [contentId, country]);
+  const tvShowTitle = useMemo(() => {
+    if (!item || item.content_type !== ContentType.SEASON) return null;
+    if (
+      detailData &&
+      "tv_show_name" in detailData &&
+      typeof detailData.tv_show_name === "string"
+    ) {
+      return detailData.tv_show_name;
+    }
+    return null;
+  }, [item, detailData]);
 
   return {
-    loading,
-    error,
-    contentItem,
+    loading: query.isLoading,
+    error: query.error
+      ? query.error instanceof Error
+        ? query.error.message
+        : "Failed to load content"
+      : null,
+    contentItem: item,
     detailData,
     tvShowTitle,
   };

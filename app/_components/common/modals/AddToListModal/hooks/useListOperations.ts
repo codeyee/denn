@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { useListsStore } from "@/app/_stores/lists-store";
 import { listItemActions } from "@/lib/api";
+import { useAddContentToListMutation } from "@/lib/api/mutations";
 import { ListItemCreate, ContentType, SourceApi, TVSeason } from "@/lib/types";
 import { useToast } from "@/app/_components/common/Toast";
 import { generateRandomListName } from "@/lib/utils/randomListNames";
@@ -46,6 +47,14 @@ export function useListOperations({
     const [error, setError] = useState<string | null>(null);
     const { showToast } = useToast();
 
+    // T7: shared add-to-list mutation. We let the mutation surface the
+    // error toast and keep `setError` for the modal-local state.
+    const addToListMutation = useAddContentToListMutation({
+        onError: (err) => {
+            setError(err.message || "Failed to update list");
+        },
+    });
+
     const handleCreateNewList = useCallback(async () => {
         setCreatingNewList(true);
         setError(null);
@@ -54,16 +63,15 @@ export function useListOperations({
             const listName = generateRandomListName();
             const newList = await createList(listName);
 
-            await listItemActions.create(
-                newList.id,
-                {
+            await addToListMutation.mutateAsync({
+                listId: newList.id,
+                payload: {
                     source_api: contentItem.source_api as SourceApi,
                     external_id: contentItem.external_id,
                     content_type: contentItem.content_type as ContentType,
                     status: "PENDING",
                 } as ListItemCreate,
-                "id,status"
-            );
+            });
 
             await refreshLists();
             showToast("List created and item added", "success");
@@ -78,7 +86,7 @@ export function useListOperations({
         } finally {
             setCreatingNewList(false);
         }
-    }, [contentItem, createList, refreshLists, showToast]);
+    }, [contentItem, createList, refreshLists, showToast, addToListMutation]);
 
     const addSeasonsToList = useCallback(
         async (
@@ -187,17 +195,16 @@ export function useListOperations({
                             existingSeasonsInList
                         );
                     } else {
-                        await listItemActions.create(
+                        await addToListMutation.mutateAsync({
                             listId,
-                            {
+                            payload: {
                                 source_api: contentItem.source_api as SourceApi,
                                 external_id: contentItem.external_id,
                                 content_type:
                                     contentItem.content_type as ContentType,
                                 status: "PENDING",
                             } as ListItemCreate,
-                            "id,status"
-                        );
+                        });
                         showToast("Added to list", "success");
                     }
                 } else {
@@ -275,7 +282,14 @@ export function useListOperations({
                 });
             }
         },
-        [contentItem, tvShowId, addSeasonsToList, refreshLists, showToast]
+        [
+            contentItem,
+            tvShowId,
+            addSeasonsToList,
+            refreshLists,
+            showToast,
+            addToListMutation,
+        ]
     );
 
     return {

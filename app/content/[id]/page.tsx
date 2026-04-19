@@ -4,22 +4,8 @@ import { Suspense, use } from "react";
 import { useRouter } from "next/navigation";
 import { Navbar } from "@/app/_components/layout/Navbar";
 import { ContentDetailPage } from "@/app/_components/pages/ContentDetailPage";
+import { ContentDetailSkeleton } from "@/app/_components/pages/ContentDetailPage/ContentDetailSkeleton";
 import { ProtectedRoute } from "@/app/_components/common/providers/ProtectedRoute";
-
-function ContentByIdLoading() {
-  return (
-    <div className="relative w-full min-h-screen bg-background-logged-in">
-      <div className="container mx-auto px-4 mt-8 py-20">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-            <p className="text-gray-400">Loading...</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function ContentByIdContent({ id }: { id: string }) {
   const router = useRouter();
@@ -48,7 +34,7 @@ export default function ContentByIdPage({ params }: ContentByIdPageProps) {
         <Navbar />
       </Suspense>
       <ProtectedRoute>
-        <Suspense fallback={<ContentByIdLoading />}>
+        <Suspense fallback={<ContentDetailSkeleton />}>
           <ContentByIdContent id={id} />
         </Suspense>
       </ProtectedRoute>
