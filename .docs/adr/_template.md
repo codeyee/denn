@@ -3,7 +3,6 @@
 - Estado: Proposed | Accepted | Superseded by NNNN | Deprecated
 - Fecha: YYYY-MM-DD
 - Decisores: nombres o roles
-- Sprint relacionado: `sprint-XX`
 
 ## Contexto
 

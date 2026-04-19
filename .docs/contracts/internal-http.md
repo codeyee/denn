@@ -63,7 +63,7 @@ Reglas:
 Lo que el contrato **prohíbe**:
 
 - Devolver `{ "error": "texto humano" }` sin código.
-- Devolver `{ "code": "..." }` (campo legacy, eliminado en Sprint 06 PR-6B.3).
+- Devolver `{ "code": "..." }` (campo legacy eliminado del contrato canónico).
 - Anidar el sobre como `{ "error": { "code": ... } }` (rechazado por costo de migración cliente).
 
 Tests de contrato:

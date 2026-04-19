@@ -2,14 +2,16 @@
 
 - Estado: Accepted
 - Fecha: 2026-04-18
-- Sprint relacionado: `sprint-06-integration-observability`
-- Supersede secciones de: [`docs/auditoria-completa.md`](../auditoria-completa.md), [`docs/plan-remediacion.md`](../plan-remediacion.md)
+- Supersede diagnóstico histórico ahora absorbido por:
+  [`../architecture/current-state.md`](../architecture/current-state.md),
+  [`../technical-debt.md`](../technical-debt.md) y
+  [`../history/implementation-history.md`](../history/implementation-history.md)
 
 ## Contexto
 
 El workspace tiene tres servicios independientes:
 
-- `web` — Next.js 15. Sirve UI, hace SSR y expone una ruta BFF en [`web/app/api/proxy/[...path]/route.ts`](../../web/app/api/proxy/[...path]/route.ts).
+- `web` — Next.js 16. Sirve UI, hace SSR y expone una ruta BFF en [`web/app/api/proxy/[...path]/route.ts`](../../web/app/api/proxy/[...path]/route.ts).
 - `core` — Django/DRF. Dueño del dominio (auth, lists, content_items, ratings, invitations).
 - `proxy` — Go/Gin. Gateway hacia metadata externa (TMDB, IGDB, Spotify, OpenLibrary). Tiene caché Redis y rate-limiting.
 
@@ -29,7 +31,7 @@ Evidencia en código:
 - `core → proxy`: [`core/content/services/proxy_client.py`](../../core/content/services/proxy_client.py), [`core/content/utils.py`](../../core/content/utils.py), [`core/content/serializers/content_item.py`](../../core/content/serializers/content_item.py).
 - Superficie del `proxy`: [`proxy/cmd/api/main.go`](../../proxy/cmd/api/main.go), [`proxy/internal/middleware/auth.go`](../../proxy/internal/middleware/auth.go).
 
-El problema que el Sprint 06 pidió cerrar: la topología nunca fue una decisión, fue una acumulación. La documentación histórica llegó a describir a `core` como un "centralized API gateway", lo cual no se sostiene. Y existen dos clientes lógicos contra `proxy` (uno desde `web`, otro desde `core`) sin un contrato común.
+El problema a resolver era estructural: la topología nunca fue una decisión, fue una acumulación. La documentación histórica llegó a describir a `core` como un "centralized API gateway", lo cual no se sostiene. Y existen dos clientes lógicos contra `proxy` (uno desde `web`, otro desde `core`) sin un contrato común.
 
 ## Decisión
 
@@ -85,7 +87,7 @@ Las dos flechas con `proxy` (`web → proxy` y `core → proxy`) son legítimas 
 - `web` deja de aceptar el fallback inseguro `NEXT_PUBLIC_PROXY_API_KEY` en cualquier path server-side ([`web/app/api/proxy/[...path]/route.ts`](../../web/app/api/proxy/[...path]/route.ts), [`web/lib/server/home.ts`](../../web/lib/server/home.ts), [`web/lib/server/search.ts`](../../web/lib/server/search.ts)). Tratado en PR-6B.
 - `proxy` falla cerrado cuando `API_KEY` está vacío en producción ([`proxy/internal/middleware/auth.go`](../../proxy/internal/middleware/auth.go)). Tratado en PR-6B.
 - `core` no añade rutas `/api/proxy/...`. La superficie HTTP de `core` queda en `/api/auth/*`, `/api/content/*`, `/api/cache/*`.
-- El versionado de URLs queda asimétrico y declarado: `core` en `/api`, `proxy` en `/v1/proxy`. No se introduce `/v1/` en `core` en este sprint.
+- El versionado de URLs queda asimétrico y declarado: `core` en `/api`, `proxy` en `/v1/proxy`. No se introduce `/v1/` en `core` en esta decisión.
 
 ### Operación
 
@@ -97,16 +99,15 @@ Las dos flechas con `proxy` (`web → proxy` y `core → proxy`) son legítimas 
 
 - [`README.md`](../../README.md#core-service) consolida la descripción vigente de `core` para no afirmar que es el gateway.
 - Se crea [`docs/contracts/internal-http.md`](../contracts/internal-http.md) en PR-6B con el contrato canónico de headers, env vars y errores.
-- Este ADR se enlaza desde los READMEs de los tres servicios y desde `docs/workspace-operating-model.md`.
+- Este ADR se enlaza desde el índice central [`../README.md`](../README.md) y desde `docs/workspace-operating-model.md`.
 
 ### Deuda explícita
 
-- La duplicación de cliente HTTP entre `web/lib/api/proxyApi.ts` y `core/content/services/proxy_client.py` no se resuelve aquí. Generar tipos compartidos desde `proxy/docs/openapi.yaml` queda como sprint futuro.
+- La duplicación de cliente HTTP entre `web/lib/api/proxyApi.ts` y `core/content/services/proxy_client.py` no se resuelve aquí. Generar tipos compartidos desde `proxy/docs/openapi.yaml` queda como trabajo futuro.
 - El header `X-Api-Consumer` para diferenciar tráfico es opcional y entra sólo si la observabilidad lo requiere.
 
 ## Referencias
 
-- Sprint: [`docs/sprints/done-sprint-06-integration-observability.md`](../sprints/done-sprint-06-integration-observability.md), Lote 6A.
-- Auditoría previa: [`docs/auditoria-completa.md`](../auditoria-completa.md).
+- Historia de implementación: [`../history/implementation-history.md`](../history/implementation-history.md).
 - Topología del workspace: [`docs/workspace-operating-model.md`](../workspace-operating-model.md).
 - ADR de auth complementario: [`0002-web-auth-cookies.md`](./0002-web-auth-cookies.md).

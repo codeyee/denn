@@ -2,7 +2,6 @@
 
 - Estado: Accepted
 - Fecha: 2026-04-18
-- Sprint relacionado: `sprint-06-integration-observability`
 
 ## Contexto
 
@@ -27,27 +26,27 @@ REST_AUTH = {
 
 Consecuencia práctica: cualquier XSS en el frontend permite exfiltrar la sesión completa (access + refresh) en una sola línea de JavaScript. Esto rompe la propiedad básica de "los JWT no deben ser legibles por código no confiable".
 
-`resolveSession` ([`web/lib/auth/session-server.ts`](../../web/lib/auth/session-server.ts)) ya lee los tokens desde cookies en SSR y los re-hidrata vía `AuthSessionBootstrap` ([`web/app/_components/routes/AuthSessionBootstrap.tsx`](../../web/app/_components/routes/AuthSessionBootstrap.tsx)). Ya hay un campo `needsCookieSync` en `SessionSnapshot` que **no se consume**.
+`resolveSession` ([`web/lib/auth/session-server.ts`](../../web/lib/auth/session-server.ts)) ya lee los tokens desde cookies en SSR y los re-hidrata vía `AuthSessionBootstrap` ([`web/app/_components/routes/AuthSessionBootstrap.tsx`](../../web/app/_components/routes/AuthSessionBootstrap.tsx)). El campo `needsCookieSync` de `SessionSnapshot` ya se consume para limpiar cookies + estado cuando el refresh falla, pero la migración a `HttpOnly` sigue pendiente.
 
 ## Decisión
 
 Migrar la sesión web a **cookies `HttpOnly` / `Secure` / `SameSite=Lax`** emitidas por `core` (o por un BFF en `web`), con refresh manejado server-side. La transición es por fases para no romper rutas protegidas existentes.
 
-### Fase 1 — Reducir superficie de exfiltración (este sprint)
+### Fase 1 — Reducir superficie de exfiltración
 
 - Quitar `accessToken` y `refreshToken` del `partialize` de Zustand. Sólo se persisten `user` e `isAuthenticated` (datos de UI no sensibles).
 - Los tokens siguen existiendo en cookies legibles por JS (no se quita `js-cookie` aún), pero deja de existir la copia en `localStorage`.
 - Cablear `needsCookieSync`: cuando el SSR detecta que el refresh falló, el cliente limpia cookies + estado.
 - Hacer que cualquier flujo de cliente que necesite el access token lo lea de la store de Zustand (que ahora se hidrata desde el server snapshot) o de la cookie en cada request.
 
-### Fase 2 — `core` emite cookies `HttpOnly` (sprint posterior)
+### Fase 2 — `core` emite cookies `HttpOnly`
 
 - Cambiar `JWT_AUTH_HTTPONLY: False -> True` en `core/core/settings/drf.py`.
 - Configurar `JWT_AUTH_SAMESITE`, `JWT_AUTH_SECURE`, dominio y path explícitamente.
 - Mover login/register/refresh/logout a un BFF en `web/app/api/auth/*` para que el browser nunca toque `core/auth/*` directo (necesario para mantener `SameSite=Lax` y evitar problemas de cross-site cookie con dominios distintos).
 - Implementar protección CSRF: token CSRF en cookie no-HttpOnly + header `X-CSRF-Token` en mutaciones, validado server-side.
 
-### Fase 3 — Eliminar tokens client-side (sprint posterior)
+### Fase 3 — Eliminar tokens client-side
 
 - Quitar `syncAuthCookies`, `clearAuthCookies` y `js-cookie` de la dependencia.
 - Quitar `accessToken` y `refreshToken` del estado de Zustand. Los handlers de cliente que necesitaban el token llaman al BFF.
@@ -72,13 +71,13 @@ Migrar la sesión web a **cookies `HttpOnly` / `Secure` / `SameSite=Lax`** emiti
 
 ## Consecuencias
 
-### Código (entrega de este sprint, fase 1)
+### Código (fase 1)
 
 - `web/app/_stores/auth-store.ts`: `partialize` excluye `accessToken` y `refreshToken`.
 - `web/app/_components/routes/AuthSessionBootstrap.tsx`: si `session.needsCookieSync` es true y `session.accessToken` es null, llama `clearSession()`.
 - Documentar en este ADR las fases 2 y 3 con el alcance que tendrán.
 
-### Código (fases 2–3, sprint posterior)
+### Código (fases 2–3)
 
 - `core/core/settings/drf.py`: flip de `JWT_AUTH_HTTPONLY`, `JWT_AUTH_SAMESITE`, `JWT_AUTH_SECURE`.
 - Nuevo BFF `web/app/api/auth/[login|register|logout|refresh]/route.ts` que media entre el browser y `core`.
@@ -94,9 +93,12 @@ Migrar la sesión web a **cookies `HttpOnly` / `Secure` / `SameSite=Lax`** emiti
 
 - README de `web` referencia este ADR (PR-6D).
 - `docs/contracts/internal-http.md` describe la auth actual y enlaza a este ADR para la dirección futura.
+- [`../architecture/auth-session-bootstrap.md`](../architecture/auth-session-bootstrap.md)
+  documenta el estado real del bootstrap global y sus gaps todavía
+  abiertos.
 
 ## Referencias
 
-- Sprint: [`docs/sprints/done-sprint-06-integration-observability.md`](../sprints/done-sprint-06-integration-observability.md), Lote 6B (T4 + T6).
+- Historia de implementación: [`../history/implementation-history.md`](../history/implementation-history.md).
 - Inventario de lecturas de token: [`web/app/_stores/auth-store.ts`](../../web/app/_stores/auth-store.ts), [`web/lib/auth/session-client.ts`](../../web/lib/auth/session-client.ts), [`web/lib/api/api.ts`](../../web/lib/api/api.ts), [`web/lib/auth/session-server.ts`](../../web/lib/auth/session-server.ts).
 - Configuración backend actual: [`core/core/settings/drf.py`](../../core/core/settings/drf.py).

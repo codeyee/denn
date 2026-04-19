@@ -13,6 +13,8 @@ tooling.
 
 ## Shared Documentation Rules
 
+- `.docs/README.md` is the canonical index and starting point for shared
+  project memory.
 - Cross-service documentation lives in `.docs/` at the repo root.
 - App-specific implementation notes stay inside each app directory.
 - Cross-app changes must update the shared docs when they affect

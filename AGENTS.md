@@ -7,7 +7,7 @@ This file is the single canonical guide for agents and contributors working in t
 - `web/`: Next.js 16 App Router frontend plus the browser-facing BFF for metadata calls.
 - `core/`: Django + DRF API for accounts, lists, ratings, invitations, and normalized content persistence.
 - `proxy/`: Go + Gin metadata service; the only service that talks to TMDB, IGDB, Spotify, and OpenLibrary directly.
-- `.docs/`: ADRs, internal HTTP contracts, runbooks, performance notes, and workspace policy.
+- `.docs/`: central project memory for architecture, implemented features, technical debt, roadmap, ADRs, contracts, runbooks, performance notes, and workspace policy.
 - Root `Makefile` and `.scripts/`: full-stack development and validation entrypoints.
 
 ### Integration Boundaries
@@ -23,6 +23,11 @@ Do not bypass these paths casually. If a change alters service ownership, reques
 Start with:
 
 - `README.md`
+- `.docs/README.md`
+- `.docs/architecture/current-state.md`
+- `.docs/features/implemented.md`
+- `.docs/technical-debt.md`
+- `.docs/roadmap/open-plans.md`
 - `.docs/adr/0001-external-metadata-integration.md`
 - `.docs/contracts/internal-http.md`
 - `.docs/workspace-operating-model.md`
@@ -122,9 +127,12 @@ Security rule:
 
 ## Docs and Change Hygiene
 
+- `.docs/README.md` is the canonical index for project memory; keep it current when documentation is added, moved, or retired.
 - Cross-service changes must update `.docs/` when they affect contracts, workflows, topology, observability, or operating commands.
 - Architecture changes belong in ADRs under `.docs/adr/`.
 - CI or validation workflow changes must stay aligned with `.docs/workspace-operating-model.md`.
+- `architecture/` documents merged behavior, `roadmap/open-plans.md` summarizes active work, and `history/implementation-history.md` stores extracted outcomes from completed sprints.
+- `.docs/sprints/` is only for open or future plans. When a sprint is finished, extract the durable outcomes into the canonical docs and remove the stale done plan.
 - If you delete or rename developer-facing files, update any README references in the same change.
 - Keep service directories free of duplicated agent/editor scaffolding; repository-wide guidance belongs at the root.
 - GitHub workflows and repository automation belong in the root `.github/`, not inside individual services.

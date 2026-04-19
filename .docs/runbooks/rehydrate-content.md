@@ -1,14 +1,8 @@
 # Runbook — `rehydrate_content_details`
 
-Sprint 07 introduces local-first content detail storage. The
-`rehydrate_content_details` Django management command refreshes locally
-cached `MovieDetail` / `TvShowDetail` / `SeasonDetail` / `AlbumDetail` /
-`GameDetail` / `BookDetail` rows that have aged past their per-type TTL by
-re-fetching from the Go proxy and re-running the type-specific mapper.
+The `rehydrate_content_details` Django management command refreshes locally cached `MovieDetail` / `TvShowDetail` / `SeasonDetail` / `AlbumDetail` / `GameDetail` / `BookDetail` rows that have aged past their per-type TTL by re-fetching from the Go proxy and re-running the type-specific mapper.
 
-This is the **periodic refresh** job. The first-time backfill of items that
-do not yet have a Detail row at all is `backfill_content_details` (Sprint
-07 / PR-7E).
+This is the **periodic refresh** job. The first-time backfill of items that do not yet have a Detail row at all is `backfill_content_details`.
 
 ## When to run
 
@@ -56,8 +50,7 @@ Common flags:
 
 ## Output and metrics
 
-Every type emits one structured log line on stdout in the same shape used
-by the Sprint 6C observability scaffolding:
+Every type emits one structured log line on stdout:
 
 ```json
 {"event":"rehydrate","content_type":"MOVIE","total":42,"refreshed":40,"unchanged":1,"errors":1,"latency_ms":12345}
@@ -79,9 +72,7 @@ alert when `errors > 0` for any type.
   Detail rows stay valid (`is_stale=true` will appear in subsequent
   read-path responses once the orchestrator fires; see
   `source_data_orchestrator`).
-- **Mapper raises.** Sprint 07 mappers wrap their writes in
-  `transaction.atomic()`. The previous Detail row is preserved. Counted
-  as `errors`.
+- **Mapper raises.** Mappers wrap their writes in `transaction.atomic()`. The previous Detail row is preserved. Counted as `errors`.
 - **`auto_now=True` clamping.** `MovieDetail.last_refreshed_at` is an
   `auto_now` field — the only way to artificially age a row is via
   `MovieDetail.objects.filter(...).update(last_refreshed_at=...)`. Tests
@@ -112,5 +103,5 @@ python manage.py rehydrate_content_details --content-type MOVIE --limit 50
 - Read-path orchestrator: `core/content/services/source_data_orchestrator.py`
 - Local persistence entry point: `core/content/services/local_content_store/__init__.py`
 - Mappers: `core/content/services/local_content_store/mappers/`
-- First-time backfill (PR-7E): `backfill_content_details`
+- First-time backfill: `backfill_content_details`
 - TTL settings: `CONTENT_REHYDRATION_TTL` in `core/core/settings/base.py`

@@ -1,9 +1,6 @@
-# Performance baseline — Sprint 08
+# Performance Baseline
 
-This document is the source of truth for "is the app faster than it was
-before Sprint 08?". Every row is a measurement, not an opinion. The
-process is part of the contract: if a number is undocumented, treat it
-as inexistent.
+This document is the source of truth for performance expectations on the main request paths. Every row is a measurement, not an opinion. The process is part of the contract: if a number is undocumented, treat it as inexistent.
 
 ## How to reproduce
 
@@ -47,11 +44,7 @@ Tips:
 
 ## Tables
 
-The "before" column captures the state at the start of Sprint 08
-(after T1/T2 are merged but before T3/T4/T5/T7/T8 land). Each lot adds
-a column with its own measurement. Numbers should be filled in before
-the PR ships; rows still showing `_TBD_` block the PR per the
-checklist below.
+The "before" column captures the earlier known baseline before the current optimization work. Additional columns can be added as measurable changes land. Numbers should be filled in before the PR ships; rows still showing `_TBD_` block the PR per the checklist below.
 
 ### Backend endpoints
 
@@ -71,11 +64,9 @@ checklist below.
 | Open `/content/[id]` from a card click | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | Threshold: LCP < 2500 (with hover prefetch < 1800), CLS < 0.1 |
 | Open `/lists/[id]` for a 100-item list | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | Threshold: LCP < 3000, INP < 200 |
 
-## Acceptable thresholds (post Sprint 08)
+## Acceptable Thresholds
 
-These are the targets the sprint commits to. A PR that regresses any
-of them needs an explicit "yes, this is acceptable" sign-off in the
-description.
+These are the targets the performance program commits to. A PR that regresses any of them needs an explicit "yes, this is acceptable" sign-off in the description.
 
 ### Backend (per request)
 
@@ -102,8 +93,6 @@ description.
 If a flow exceeds a threshold, the PR description must call it out
 explicitly under a "Performance impact" heading.
 
-## Notes for Sprint 7 / local-first comparison
+## Notes For Local-First Comparison
 
-This baseline is intentionally captured *before* Sprint 7 lands.
-Once the local Detail rows are in place, re-measure the same rows
-into a new "after Sprint 7" column so the impact is auditable.
+If the local-first detail model changes materially, re-measure the same rows into a new comparison column so the impact is auditable.
