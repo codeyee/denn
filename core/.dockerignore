@@ -1,0 +1,47 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Project specific
+db.sqlite3
+.env
+.DS_Store
+tmp/
+coverage/
+htmlcov/
+dist/
+build/
+*.egg-info/
+.mypy_cache/
+.pytest_cache/
+
+# Agent & AI
+.agent/
+.agents/
+.claude/
+.cursor/
+.specify/
+CLAUDE.md
+
+# Deployment / Misc
+README.md
+quick_start.sh
+runtime.txt
