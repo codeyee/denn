@@ -51,7 +51,7 @@ class FlexFieldsTests(APITestCase):
         self.assertIsInstance(item['content_item'], dict)
         self.assertEqual(item['content_item']['id'], self.content_item.id)
 
-    @patch('content.views.list_item.bulk_fetch_source_data')
+    @patch('content.views.list_item.fetch_bulk_source_data')
     @patch('content.utils.fetch_source_data')
     def test_source_fields_parameter(self, mock_fetch, mock_bulk_fetch):
         """Test that ?source_fields parameter filters source_data"""
@@ -71,7 +71,7 @@ class FlexFieldsTests(APITestCase):
         self.assertEqual(source_data, {'title': 'Test Movie'})
         self.assertNotIn('cover', source_data)
 
-    @patch('content.views.list_item.bulk_fetch_source_data')
+    @patch('content.views.list_item.fetch_bulk_source_data')
     @patch('content.utils.fetch_source_data')
     def test_nested_source_fields(self, mock_fetch, mock_bulk_fetch):
         """Test dot notation for source_fields"""

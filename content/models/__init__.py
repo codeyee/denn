@@ -5,6 +5,28 @@ from .list_item import ListItem
 from .rating import Rating
 from .list_invitation import ListInvitation
 
+from .detail import (
+    MovieDetail,
+    TvShowDetail,
+    SeasonDetail,
+    AlbumDetail,
+    GameDetail,
+    BookDetail,
+    Episode,
+    Track,
+    Image,
+    StreamingPlatform,
+    GamePlatform,
+)
+from .catalog import (
+    Author,
+    ContentItemAuthor,
+    TrackAuthor,
+    Genre,
+    Theme,
+    GameMode,
+)
+
 __all__ = [
     'ContentItem',
     'ContentItemBrowseMetadata',
@@ -12,4 +34,21 @@ __all__ = [
     'ListItem',
     'Rating',
     'ListInvitation',
+    'MovieDetail',
+    'TvShowDetail',
+    'SeasonDetail',
+    'AlbumDetail',
+    'GameDetail',
+    'BookDetail',
+    'Episode',
+    'Track',
+    'Image',
+    'StreamingPlatform',
+    'GamePlatform',
+    'Author',
+    'ContentItemAuthor',
+    'TrackAuthor',
+    'Genre',
+    'Theme',
+    'GameMode',
 ]

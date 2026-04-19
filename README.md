@@ -18,8 +18,19 @@ The cross-service HTTP contract is documented in
 
 - User authentication (JWT) and account lifecycle.
 - Lists, list items, ratings, and any other user-generated entities.
-- Server-to-server enrichment calls to `proxy` when persisting a card
-  needs canonical metadata that lives in an external API.
+- **Persistence of normalized content detail (Sprint 07).** Per-type
+  `*Detail` rows + child tables (`Episode`, `Track`, `Image`, …) live in
+  PostgreSQL. The Go `proxy` stays stateless w.r.t. Postgres; `core` is
+  the single source of truth for cached content.
+- The local-first read path
+  (`content/services/source_data_orchestrator.py`) that classifies items
+  as `fresh_local`, `stale_local`, or `missing` and only calls `proxy`
+  for the latter two.
+- Periodic refresh of stale Detail rows via the
+  `rehydrate_content_details` management command (see
+  [`docs/runbooks/rehydrate-content.md`](../docs/runbooks/rehydrate-content.md)).
+- Server-to-server enrichment calls to `proxy` when ingesting brand-new
+  external IDs.
 - Returning the canonical Denn error envelope on any 4xx/5xx, with a
   `request_id` for cross-service correlation.
 

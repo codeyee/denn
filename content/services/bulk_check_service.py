@@ -68,13 +68,16 @@ def check_items_in_lists(user, validated_items):
 def ensure_content_items(validated_items):
     """
     Get-or-create ContentItem rows for each validated item.
-    Returns list of ContentItem instances.
+    Delegates to `local_content_store.get_or_create_content_item` so all
+    ingest paths share the same ID-allocation logic.
     """
+    from content.services.local_content_store import get_or_create_content_item
+
     results = []
     for item in validated_items:
-        ci, _ = ContentItem.objects.get_or_create(
-            external_id=item['external_id'],
+        ci, _ = get_or_create_content_item(
             source_api=item['source_api'],
+            external_id=item['external_id'],
             content_type=item['content_type'],
         )
         results.append(ci)

@@ -33,7 +33,7 @@ from content.services.browse_metadata_service import (
     BROWSE_METADATA_TTL,
     upsert_browse_metadata,
 )
-from content.utils import bulk_fetch_source_data
+from content.services.source_data_orchestrator import fetch_bulk_source_data
 
 
 CHUNK_SIZE = 50
@@ -102,7 +102,7 @@ class Command(BaseCommand):
         started = time.monotonic()
         for chunk_start in range(0, total, CHUNK_SIZE):
             chunk = items[chunk_start:chunk_start + CHUNK_SIZE]
-            payloads = bulk_fetch_source_data(chunk)
+            payloads = fetch_bulk_source_data(chunk)
             for item in chunk:
                 payload = payloads.get(item.id)
                 if not payload:

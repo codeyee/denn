@@ -8,7 +8,7 @@ from drf_spectacular.types import OpenApiTypes
 from content.models import ListItem, UserList, Rating
 from content.serializers import ListItemSerializer, ListItemCreateSerializer
 from content.permissions import IsMemberOfList
-from content.utils import bulk_fetch_source_data
+from content.services.source_data_orchestrator import fetch_bulk_source_data
 from content.services import (
     annotate_items_with_ratings,
     apply_query,
@@ -288,7 +288,7 @@ class ListItemViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
         if self._wants_source_data(request):
             country_code = request.query_params.get('country')
             content_items = [item.content_item for item in items_to_serialize]
-            context['source_data_cache'] = bulk_fetch_source_data(
+            context['source_data_cache'] = fetch_bulk_source_data(
                 content_items, country_code=country_code,
             )
 

@@ -1,8 +1,12 @@
 from rest_framework import viewsets, status, filters, serializers as drf_serializers
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.generics import get_object_or_404
 from django.db.models import Q
+from django.shortcuts import redirect
+from django.urls import reverse
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiExample, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 from content.models import ContentItem
@@ -165,13 +169,13 @@ class ContentItemViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
 
     @extend_schema(
         tags=['Content Items'],
-        summary='Get or create content item',
+        summary='Get or create content item (deprecated alias)',
         description='''
-        Get a content item by source API and external ID, or create it if it doesn't exist.
-        This is useful for ensuring a content item exists before creating ratings or list items.
+        DEPRECATED — use `POST /api/content/get-or-create/` instead.
 
-        **Request body:** `source_api`, `external_id`, `content_type` (all required).
+        Get a content item by source API and external ID, or create it if it doesn't exist.
         ''',
+        deprecated=True,
         request=ContentItemLookupSerializer,
         responses={
             200: ContentItemSerializer,
@@ -184,11 +188,12 @@ class ContentItemViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
         lookup = ContentItemLookupSerializer(data=request.data)
         lookup.is_valid(raise_exception=True)
 
-        content_item, created = ContentItem.objects.get_or_create(
+        from content.services.local_content_store import get_or_create_content_item
+
+        content_item, created = get_or_create_content_item(
             source_api=lookup.validated_data['source_api'],
             external_id=lookup.validated_data['external_id'],
             content_type=lookup.validated_data['content_type'],
-            defaults={},
         )
 
         serializer = self.get_serializer(content_item)
@@ -231,3 +236,113 @@ class ContentItemViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
 
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+
+
+@extend_schema(
+    tags=['Content Items'],
+    summary='Get content item details by public id',
+    description='''
+    Public, id-first endpoint for resolving a single content item along with
+    its `source_data` payload (always included). This is the canonical URL
+    for content detail pages — frontends should link here directly using the
+    internal numeric id.
+
+    Optional `country` query param scopes streaming providers (TMDB only).
+    ''',
+    parameters=[
+        OpenApiParameter('country', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False,
+                         description='ISO 3166-1 alpha-2 country code'),
+    ],
+    responses={
+        200: ContentItemSerializer,
+        404: OpenApiExample('Not Found', value={'detail': 'Content item not found.'})
+    }
+)
+class ContentItemDetailByIdView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, id):
+        item = get_object_or_404(ContentItem, pk=id)
+        serializer = ContentItemSerializer(
+            item,
+            context={'request': request, 'include_source_data': True},
+        )
+        return Response(serializer.data)
+
+
+@extend_schema(
+    tags=['Content Items'],
+    summary='Get or create content item (top-level alias)',
+    description='''
+    Resolve `(source_api, external_id, content_type)` to a single
+    `ContentItem`, creating it if missing. This is the top-level alias for
+    the legacy `POST /api/content/items/get_or_create/` endpoint and is the
+    preferred call site for new code.
+    ''',
+    request=ContentItemLookupSerializer,
+    responses={200: ContentItemSerializer, 201: ContentItemSerializer},
+)
+class ContentItemGetOrCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        lookup = ContentItemLookupSerializer(data=request.data)
+        lookup.is_valid(raise_exception=True)
+
+        from content.services.local_content_store import get_or_create_content_item
+
+        item, created = get_or_create_content_item(
+            source_api=lookup.validated_data['source_api'],
+            external_id=lookup.validated_data['external_id'],
+            content_type=lookup.validated_data['content_type'],
+        )
+        serializer = ContentItemSerializer(item, context={'request': request})
+        response_status = status.HTTP_201_CREATED if created else status.HTTP_200_OK
+        return Response(serializer.data, status=response_status)
+
+
+@extend_schema(
+    tags=['Content Items'],
+    summary='Legacy redirect: external triple → public id',
+    description='''
+    Issues a `301` permanent redirect from the legacy
+    `/api/content/?external_id=&source_api=&content_type=` query-string
+    contract to the canonical `/api/content/<id>/` URL. The triple is
+    resolved via `get_or_create` so the target is always materialized.
+
+    Returns `400` if any of the three params are missing.
+    ''',
+    parameters=[
+        OpenApiParameter('external_id', OpenApiTypes.STR, OpenApiParameter.QUERY, required=True),
+        OpenApiParameter('source_api', OpenApiTypes.STR, OpenApiParameter.QUERY, required=True),
+        OpenApiParameter('content_type', OpenApiTypes.STR, OpenApiParameter.QUERY, required=True),
+    ],
+    responses={301: None, 400: None},
+)
+class LegacyContentRedirectView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        external_id = request.query_params.get('external_id')
+        source_api = request.query_params.get('source_api')
+        content_type = request.query_params.get('content_type')
+
+        if not (external_id and source_api and content_type):
+            return Response(
+                {'error': 'Missing required params: external_id, source_api, content_type'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        from content.services.local_content_store import get_or_create_content_item
+
+        try:
+            item, _ = get_or_create_content_item(
+                source_api=source_api,
+                external_id=external_id,
+                content_type=content_type,
+            )
+        except Exception:
+            return Response({'error': 'Could not resolve content item'}, status=status.HTTP_404_NOT_FOUND)
+
+        target = reverse('content:content-detail-by-id', kwargs={'id': item.pk})
+        return redirect(target, permanent=True)

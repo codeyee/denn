@@ -53,73 +53,18 @@ def fetch_source_data(
     return None
 
 
-def bulk_fetch_source_data(
-    content_items: list,
-    country_code: Optional[str] = None,
-) -> Dict[int, Dict[str, Any]]:
+def bulk_fetch_source_data(*_args, **_kwargs):
+    """Removed in Sprint 07 / PR-7E.
+
+    Use `content.services.source_data_orchestrator.fetch_bulk_source_data`
+    directly. The two functions are not API-compatible — the orchestrator
+    is the canonical local-first read path; this shim used to wrap it.
     """
-    Fetch source data for multiple ContentItems using the Go proxy API bulk endpoints.
-
-    Groups items by source_api and uses bulk endpoints where possible.
-    Seasons are fetched individually (no bulk endpoint).
-
-    Args:
-        content_items: List of ContentItem instances to fetch data for
-        country_code: Optional ISO 3166-1 alpha-2 country code
-
-    Returns:
-        Dict mapping content_item.id (int) to source_data (dict)
-    """
-    if not content_items:
-        return {}
-
-    results: Dict[int, Optional[Dict[str, Any]]] = {}
-    grouped: Dict[str, List[ContentItem]] = defaultdict(list)
-    for item in content_items:
-        grouped[item.source_api].append(item)
-
-    with ThreadPoolExecutor(max_workers=4) as executor:
-        futures = []
-
-        if ContentItem.SourceAPI.TMDB in grouped:
-            futures.append(executor.submit(_bulk_fetch_tmdb, grouped[ContentItem.SourceAPI.TMDB], country_code))
-
-        if ContentItem.SourceAPI.IGDB in grouped:
-            futures.append(executor.submit(_bulk_fetch_igdb, grouped[ContentItem.SourceAPI.IGDB]))
-
-        if ContentItem.SourceAPI.SPOTIFY in grouped:
-            futures.append(executor.submit(_bulk_fetch_spotify, grouped[ContentItem.SourceAPI.SPOTIFY]))
-
-        if ContentItem.SourceAPI.OPENLIBRARY in grouped:
-            futures.append(executor.submit(_bulk_fetch_openlibrary, grouped[ContentItem.SourceAPI.OPENLIBRARY]))
-
-        for future in as_completed(futures):
-            try:
-                partial_results = future.result()
-                results.update(partial_results)
-            except Exception:
-                pass
-
-    _opportunistic_upsert_browse_metadata(content_items, results)
-
-    return results
-
-
-def _opportunistic_upsert_browse_metadata(
-    content_items: List[ContentItem],
-    source_data_by_id: Dict[int, Optional[Dict[str, Any]]],
-) -> None:
-    """
-    Best-effort: keep ContentItemBrowseMetadata fresh whenever the proxy
-    bulk-fetch brings back a payload during a request.
-
-    Failures are swallowed; metadata is non-critical for the request path.
-    """
-    try:
-        from content.services.browse_metadata_service import upsert_many
-        upsert_many(content_items, source_data_by_id)
-    except Exception:
-        pass
+    raise ImportError(
+        '410 Gone: content.utils.bulk_fetch_source_data was removed. '
+        'Import fetch_bulk_source_data from '
+        'content.services.source_data_orchestrator instead.'
+    )
 
 
 def _bulk_fetch_tmdb(

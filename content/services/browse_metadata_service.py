@@ -41,16 +41,21 @@ For now the upsert path runs opportunistically whenever
 """
 from __future__ import annotations
 
-import hashlib
-import json
 import logging
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta
-from typing import Any, Dict, Iterable, List, Optional
+from datetime import date, timedelta
+from typing import Any, Dict, Iterable, Optional
 
 from django.utils import timezone
 
 from content.models import ContentItem, ContentItemBrowseMetadata
+
+from .payload_helpers import (
+    authors_of_type,
+    hash_payload,
+    normalized_title,
+    parse_iso_date,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -78,89 +83,55 @@ class BrowseFields:
 # ---------------------------------------------------------------------------
 # Mappers per content type
 # ---------------------------------------------------------------------------
-
-def _parse_iso_date(value: Any) -> Optional[date]:
-    """Parse `YYYY-MM-DD`, `YYYY-MM`, or `YYYY` strings into a `date`."""
-    if not value or not isinstance(value, str):
-        return None
-    for fmt in ('%Y-%m-%d', '%Y-%m', '%Y'):
-        try:
-            return datetime.strptime(value, fmt).date()
-        except ValueError:
-            continue
-    return None
-
-
-def _normalized_title(payload: Dict[str, Any]) -> str:
-    """Return the proxy's normalized display title.
-
-    Falls back to `original_title` for movies/tv shows and `tv_show_name`
-    for seasons (so `S01` of "Demon Slayer" still sorts under the show).
-    """
-    return (
-        payload.get('title')
-        or payload.get('original_title')
-        or payload.get('tv_show_name')
-        or ''
-    ).strip()
-
-
-def _authors_of_type(payload: Dict[str, Any], wanted: str) -> List[str]:
-    out: List[str] = []
-    raw = payload.get('authors')
-    if not isinstance(raw, list):
-        return out
-    for entry in raw:
-        if isinstance(entry, dict) and entry.get('type') == wanted and entry.get('name'):
-            out.append(str(entry['name']))
-        elif isinstance(entry, str):
-            out.append(entry)
-    return out
+# Backwards-compatible aliases used elsewhere in `content.services`.
+_parse_iso_date = parse_iso_date
+_authors_of_type = authors_of_type
+_normalized_title = normalized_title
 
 
 def _map_movie(payload: Dict[str, Any]) -> BrowseFields:
     return BrowseFields(
-        display_title=_normalized_title(payload),
-        release_date=_parse_iso_date(payload.get('release_date')),
+        display_title=normalized_title(payload),
+        release_date=parse_iso_date(payload.get('release_date')),
     )
 
 
 def _map_tv_show(payload: Dict[str, Any]) -> BrowseFields:
     return BrowseFields(
-        display_title=_normalized_title(payload),
-        release_date=_parse_iso_date(payload.get('release_date')),
+        display_title=normalized_title(payload),
+        release_date=parse_iso_date(payload.get('release_date')),
     )
 
 
 def _map_season(payload: Dict[str, Any]) -> BrowseFields:
     return BrowseFields(
-        display_title=_normalized_title(payload),
-        release_date=_parse_iso_date(payload.get('release_date')),
+        display_title=normalized_title(payload),
+        release_date=parse_iso_date(payload.get('release_date')),
     )
 
 
 def _map_album(payload: Dict[str, Any]) -> BrowseFields:
-    title = _normalized_title(payload)
-    artists = _authors_of_type(payload, 'artist')
+    title = normalized_title(payload)
+    artists = authors_of_type(payload, 'artist')
     return BrowseFields(
         display_title=title,
         artist=', '.join(artists),
         album_title=title,
-        release_date=_parse_iso_date(payload.get('release_date')),
+        release_date=parse_iso_date(payload.get('release_date')),
     )
 
 
 def _map_game(payload: Dict[str, Any]) -> BrowseFields:
     return BrowseFields(
-        display_title=_normalized_title(payload),
-        release_date=_parse_iso_date(payload.get('release_date')),
+        display_title=normalized_title(payload),
+        release_date=parse_iso_date(payload.get('release_date')),
     )
 
 
 def _map_book(payload: Dict[str, Any]) -> BrowseFields:
     return BrowseFields(
-        display_title=_normalized_title(payload),
-        release_date=_parse_iso_date(payload.get('release_date')),
+        display_title=normalized_title(payload),
+        release_date=parse_iso_date(payload.get('release_date')),
     )
 
 
@@ -187,12 +158,7 @@ def build_browse_metadata(content_item: ContentItem, source_data: Dict[str, Any]
     return fields
 
 
-def _hash_payload(source_data: Dict[str, Any]) -> str:
-    try:
-        canonical = json.dumps(source_data, sort_keys=True, default=str)
-    except Exception:
-        return ''
-    return hashlib.sha256(canonical.encode('utf-8')).hexdigest()
+_hash_payload = hash_payload  # back-compat alias for older imports
 
 
 def upsert_browse_metadata(content_item: ContentItem, source_data: Dict[str, Any]) -> Optional[ContentItemBrowseMetadata]:
@@ -206,7 +172,7 @@ def upsert_browse_metadata(content_item: ContentItem, source_data: Dict[str, Any
         fields = build_browse_metadata(content_item, source_data)
         if not fields:
             return None
-        payload_hash = _hash_payload(source_data)
+        payload_hash = hash_payload(source_data)
         defaults = fields.as_dict()
         defaults['source_payload_hash'] = payload_hash
         meta, _ = ContentItemBrowseMetadata.objects.update_or_create(

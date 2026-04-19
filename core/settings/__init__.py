@@ -53,4 +53,8 @@ __all__ = [
     # Proxy API
     "PROXY_API_BASE_URL",
     "PROXY_API_KEY",
+    # Sprint 07 — local-first content domain
+    "CONTENT_REHYDRATION_TTL",
+    "DEFAULT_COUNTRY",
+    "FORCE_PROXY_FETCH",
 ]

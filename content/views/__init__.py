@@ -3,7 +3,12 @@ from .list_item import ListItemViewSet
 from .list_member import ListMemberViewSet
 from .rating import RatingViewSet
 from .list_invitation import ListInvitationViewSet
-from .content_item import ContentItemViewSet
+from .content_item import (
+    ContentItemViewSet,
+    ContentItemDetailByIdView,
+    ContentItemGetOrCreateView,
+    LegacyContentRedirectView,
+)
 
 __all__ = [
     'UserListViewSet',
@@ -12,4 +17,7 @@ __all__ = [
     'RatingViewSet',
     'ListInvitationViewSet',
     'ContentItemViewSet',
+    'ContentItemDetailByIdView',
+    'ContentItemGetOrCreateView',
+    'LegacyContentRedirectView',
 ]

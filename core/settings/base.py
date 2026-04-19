@@ -1,5 +1,6 @@
 import os
 import sys
+from datetime import timedelta
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -119,3 +120,23 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # Proxy API (Go microservice) configuration
 PROXY_API_BASE_URL = os.getenv("PROXY_API_BASE_URL", "http://localhost:8080/v1/proxy")
 PROXY_API_KEY = os.getenv("PROXY_API_KEY", "")
+
+# Sprint 07: per-content-type TTL for the local Detail rows. The
+# rehydration job (and read-time stale check) consults this map; missing
+# keys fall back to the longest TTL to err on the side of fewer proxy hits.
+CONTENT_REHYDRATION_TTL = {
+    "BOOK": timedelta(days=90),
+    "MOVIE": timedelta(days=30),
+    "GAME": timedelta(days=30),
+    "ALBUM": timedelta(days=30),
+    "TV_SHOW": timedelta(days=7),
+    "SEASON": timedelta(days=7),
+}
+
+# Country used when the request did not specify one. Streaming providers
+# are country-scoped on the proxy side via the X-User-Country header.
+DEFAULT_COUNTRY = os.getenv("DEFAULT_COUNTRY", "US")
+
+# Sprint 07: read-path debugging knob. When True, the orchestrator
+# ignores fresh local Detail rows and forces a proxy fetch.
+FORCE_PROXY_FETCH = os.getenv("FORCE_PROXY_FETCH", "False") == "True"

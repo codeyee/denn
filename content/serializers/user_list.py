@@ -149,7 +149,7 @@ class UserListDetailSerializer(BaseFlexSerializer):
 
     def get_items(self, obj):
         from .list_item import ListItemSerializer
-        from content.utils import bulk_fetch_source_data
+        from content.services.source_data_orchestrator import fetch_bulk_source_data
 
         items = obj.items.all().order_by('list_order', '-added_at')
 
@@ -168,7 +168,7 @@ class UserListDetailSerializer(BaseFlexSerializer):
             request = self.context.get('request')
             country_code = request.query_params.get('country') if request else None
             content_items = [item.content_item for item in items]
-            child_context['source_data_cache'] = bulk_fetch_source_data(
+            child_context['source_data_cache'] = fetch_bulk_source_data(
                 content_items, country_code=country_code,
             )
 
