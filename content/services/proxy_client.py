@@ -1,14 +1,31 @@
 import logging
+import os
+import time
 from typing import Optional, Dict, Any, List
 
 import requests
 from django.conf import settings
 
+from core.middleware.perf_timing import perf_record_proxy_call
 from core.middleware.request_id import get_current_request_id
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_TIMEOUT = 15
+
+def _env_int(name: str, default: int) -> int:
+    """Read a positive int from env, falling back to ``default`` on errors."""
+    raw = os.getenv(name)
+    if not raw:
+        return default
+    try:
+        value = int(raw)
+        return value if value > 0 else default
+    except ValueError:
+        return default
+
+
+DEFAULT_TIMEOUT = _env_int("PROXY_GET_TIMEOUT", 15)
+BULK_TIMEOUT = _env_int("PROXY_BULK_TIMEOUT", 30)
 
 
 class ProxyAPIError(Exception):
@@ -47,6 +64,11 @@ class ProxyAPIClient:
         if getattr(settings, "TESTING", False):
             return None
 
+        # Sprint 08 / T1: record per-call wall time even on failure so the
+        # request-level perf log captures every proxy hop, not just the
+        # successful ones. The thread-local counter is a no-op outside an
+        # instrumented request.
+        started = time.perf_counter()
         try:
             resp = self._session.get(
                 url,
@@ -70,6 +92,8 @@ class ProxyAPIClient:
                 extra={"path": path, "params": params, "error": str(e)},
             )
             return None
+        finally:
+            perf_record_proxy_call(time.perf_counter() - started)
 
     # ── Detail endpoints ──────────────────────────────────────────────
 
@@ -121,7 +145,7 @@ class ProxyAPIClient:
         for i in range(0, len(ids), chunk_size):
             chunk = ids[i:i + chunk_size]
             ids_param = ",".join(str(id) for id in chunk)
-            result = self._get(path, params={"ids": ids_param}, country=country, timeout=30)
+            result = self._get(path, params={"ids": ids_param}, country=country, timeout=BULK_TIMEOUT)
             if isinstance(result, list):
                 all_results.extend(result)
         return all_results

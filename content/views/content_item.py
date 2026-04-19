@@ -167,6 +167,41 @@ class ContentItemViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
 
         return queryset
 
+    def _wants_source_data(self, request):
+        """Mirror of ContentItemSerializer._should_include_source_data."""
+        if request.query_params.get('source_fields'):
+            return True
+        expand = request.query_params.get('expand', '')
+        if 'content_item' in expand or 'source_data' in expand:
+            return True
+        include = request.query_params.get('include_source_data', '').lower()
+        return include in ('true', '1')
+
+    def list(self, request, *args, **kwargs):
+        """Override to precompute source_data_cache once per page.
+
+        Sprint 08 / T3: without this, each item in the page would call
+        `fetch_source_data` individually inside the serializer, which is
+        N HTTP calls to the proxy per request. The cache fans out via
+        `fetch_bulk_source_data` (one call per source family).
+        """
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        items_to_serialize = page if page is not None else list(queryset)
+
+        context = self.get_serializer_context()
+        if self._wants_source_data(request) and items_to_serialize:
+            from content.services.source_data_orchestrator import fetch_bulk_source_data
+            country_code = request.query_params.get('country')
+            context['source_data_cache'] = fetch_bulk_source_data(
+                list(items_to_serialize), country_code=country_code,
+            )
+
+        serializer = self.get_serializer(items_to_serialize, many=True, context=context)
+        if page is not None:
+            return self.get_paginated_response(serializer.data)
+        return Response(serializer.data)
+
     @extend_schema(
         tags=['Content Items'],
         summary='Get or create content item (deprecated alias)',
@@ -234,7 +269,16 @@ class ContentItemViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
         if content_type:
             queryset = queryset.filter(content_type=content_type)
 
-        serializer = self.get_serializer(queryset, many=True)
+        items = list(queryset)
+        context = self.get_serializer_context()
+        if self._wants_source_data(request) and items:
+            from content.services.source_data_orchestrator import fetch_bulk_source_data
+            country_code = request.query_params.get('country')
+            context['source_data_cache'] = fetch_bulk_source_data(
+                items, country_code=country_code,
+            )
+
+        serializer = self.get_serializer(items, many=True, context=context)
         return Response(serializer.data)
 
 

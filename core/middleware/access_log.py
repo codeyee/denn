@@ -13,6 +13,8 @@ from typing import Callable
 
 from django.http import HttpRequest, HttpResponse
 
+from .perf_timing import get_request_perf_metrics
+
 logger = logging.getLogger("core.access")
 
 
@@ -37,6 +39,10 @@ class AccessLogMiddleware:
             "duration_ms": duration_ms,
             "user_id": user_id,
         }
+
+        perf_metrics = get_request_perf_metrics(request)
+        if perf_metrics is not None:
+            extra.update(perf_metrics)
 
         if response.status_code >= 500:
             logger.error("http_request", extra=extra)

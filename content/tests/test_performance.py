@@ -231,6 +231,51 @@ class APIPerformanceTests(APITestCase):
 
         self.assertEqual(response.status_code, 200)
 
+    def test_list_items_endpoint_query_count(self):
+        """Sprint 08 / T3: GET /lists/<id>/items/ stays bounded by a query budget.
+
+        The endpoint chains ListItem -> ContentItem (+ browse_meta) ->
+        added_by + ratings. The budget below assumes a single page of
+        20 items; it must NOT scale linearly with the number of items
+        (that would prove a regressed prefetch).
+        """
+        from django.db import connection
+
+        connection.queries_log.clear()
+        with override_settings(DEBUG=True):
+            with self.assertNumQueries(10):
+                response = self.client.get(
+                    f'/api/content/lists/{self.user_list.id}/items/'
+                )
+
+        self.assertEqual(response.status_code, 200)
+        # Page size defaults to 20; if pagination changes, this guard
+        # will catch a silent breakage.
+        self.assertLessEqual(len(response.data.get('results', [])), 20)
+
+    def test_content_detail_endpoint_query_count(self):
+        """Sprint 08 / T3: GET /api/content/<id>/ resolves a single item.
+
+        Should be a small constant: SELECT for the item + the auth/session
+        plumbing. include_source_data goes to the proxy (mocked away in
+        TESTING) so it does not show up as DB queries here.
+        """
+        from django.db import connection
+
+        content_item = ContentItem.objects.create(
+            source_api='tmdb',
+            external_id='42',
+            content_type='MOVIE',
+        )
+
+        connection.queries_log.clear()
+        with override_settings(DEBUG=True):
+            with self.assertNumQueries(1):
+                response = self.client.get(f'/api/content/{content_item.id}/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['id'], content_item.id)
+
 
 class SerializerPerformanceTests(TestCase):
     """Test serializer performance and query efficiency."""

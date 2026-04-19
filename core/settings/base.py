@@ -70,6 +70,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "core.middleware.AccessLogMiddleware",
+    "core.middleware.PerfTimingMiddleware",
 ]
 
 # Structured logging (JSON, stdlib only — see core/logging.py).

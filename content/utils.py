@@ -1,8 +1,28 @@
+import os
 from typing import Optional, Dict, Any, List
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from content.models import ContentItem
+
+
+def _env_int(name: str, default: int) -> int:
+    raw = os.getenv(name)
+    if not raw:
+        return default
+    try:
+        value = int(raw)
+        return value if value > 0 else default
+    except ValueError:
+        return default
+
+
+# Sprint 08 / T4: TMDB seasons are the only family that fans out to
+# individual proxy calls (no bulk endpoint upstream). The default keeps
+# the previous hard-coded behaviour; raise it via env to extract more
+# concurrency once Sprint 5 confirms the proxy can take it.
+TMDB_SEASONS_MAX_WORKERS = _env_int("TMDB_SEASONS_MAX_WORKERS", 10)
+
 
 _client = None
 
@@ -108,7 +128,7 @@ def _bulk_fetch_tmdb(
                 results[item_id] = None
 
     if seasons:
-        with ThreadPoolExecutor(max_workers=10) as executor:
+        with ThreadPoolExecutor(max_workers=TMDB_SEASONS_MAX_WORKERS) as executor:
             season_futures = {}
             for item_id, ext_id in seasons:
                 parts = ext_id.split(":")
