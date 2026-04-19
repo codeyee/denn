@@ -5,13 +5,14 @@ import (
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
 	"sort"
 	"strings"
 	"sync/atomic"
 	"time"
+
+	"github.com/codeyee/denn-proxy/internal/logging"
 )
 
 const defaultCacheTTL = time.Hour
@@ -156,7 +157,12 @@ func (c *CachedClient) CachedRequest(
 func (c *CachedClient) recordGetFailure(cacheType string, err error) {
 	n := atomic.AddUint64(&c.getFailures, 1)
 	if n == 1 || n%cacheLogSampleEvery == 0 {
-		log.Printf("cache: %s GET %q failed (n=%d): %v", c.apiName, cacheType, n, err)
+		logging.L().Warn("cache_get_failed",
+			"api", c.apiName,
+			"cache_type", cacheType,
+			"failures", n,
+			"error", err.Error(),
+		)
 	}
 	if c.recorder != nil {
 		c.recorder.OnError(c.apiName, cacheType, "get", err)
@@ -166,7 +172,12 @@ func (c *CachedClient) recordGetFailure(cacheType string, err error) {
 func (c *CachedClient) recordSetFailure(cacheType string, err error) {
 	n := atomic.AddUint64(&c.setFailures, 1)
 	if n == 1 || n%cacheLogSampleEvery == 0 {
-		log.Printf("cache: %s SET %q failed (n=%d): %v", c.apiName, cacheType, n, err)
+		logging.L().Warn("cache_set_failed",
+			"api", c.apiName,
+			"cache_type", cacheType,
+			"failures", n,
+			"error", err.Error(),
+		)
 	}
 	if c.recorder != nil {
 		c.recorder.OnError(c.apiName, cacheType, "set", err)

@@ -2,11 +2,12 @@ package config
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"strconv"
 
 	"github.com/joho/godotenv"
+
+	"github.com/codeyee/denn-proxy/internal/logging"
 )
 
 type Config struct {
@@ -24,7 +25,7 @@ type Config struct {
 
 func LoadConfig() (*Config, error) {
 	if err := godotenv.Load(); err != nil {
-		log.Println("No .env file found, relying on system environment variables")
+		logging.L().Info("env_file_not_found_using_system_env")
 	}
 
 	rateLimitPerMinute := 300

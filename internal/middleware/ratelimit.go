@@ -2,12 +2,13 @@ package middleware
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"sync/atomic"
 	"time"
 
 	"github.com/codeyee/denn-proxy/internal/clients"
+	"github.com/codeyee/denn-proxy/internal/handlers/common"
+	"github.com/codeyee/denn-proxy/internal/logging"
 	"github.com/gin-gonic/gin"
 )
 
@@ -37,8 +38,8 @@ const noOpCacheTypeName = "clients.NoOpCache"
 // wiring the cache.
 func WarnIfRateLimitCacheNoOp(cache clients.Cache) {
 	if _, ok := cache.(clients.NoOpCache); ok {
-		log.Printf("ratelimit: cache is %s — request throttling is DISABLED. "+
-			"Wire a real Redis-backed cache for production traffic.", noOpCacheTypeName)
+		logging.L().Warn("ratelimit_cache_is_noop_throttling_disabled",
+			"cache_type", noOpCacheTypeName)
 	}
 }
 
@@ -69,7 +70,11 @@ func RateLimitMiddleware(cache clients.Cache, limit int) gin.HandlerFunc {
 			// unnoticed until upstream providers rate-limit us.
 			n := atomic.AddUint64(&degradedFailures, 1)
 			if n == 1 || n%degradedLogSampleEvery == 0 {
-				log.Printf("ratelimit: cache unavailable, failing open (failures=%d): %v", n, err)
+				logging.L().Warn("ratelimit_cache_unavailable_failing_open",
+					"failures", n,
+					"error", err.Error(),
+					"request_id", requestIDOrEmpty(c),
+				)
 			}
 			c.Header(rateLimitDegradedHeader, "cache-error")
 			c.Next()
@@ -90,8 +95,10 @@ func RateLimitMiddleware(cache clients.Cache, limit int) gin.HandlerFunc {
 		c.Header("X-RateLimit-Remaining", fmt.Sprintf("%d", remaining))
 
 		if count > int64(limit) {
-			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{
-				"error": "Rate limit exceeded",
+			c.AbortWithStatusJSON(http.StatusTooManyRequests, common.ErrorResponse{
+				Error:     common.CodeRateLimit,
+				Message:   "Rate limit exceeded",
+				RequestID: common.RequestIDFromContext(c),
 			})
 			return
 		}

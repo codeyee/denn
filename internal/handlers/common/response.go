@@ -18,9 +18,20 @@ const (
 	CodeRateLimit        = "RATE_LIMIT_EXCEEDED"
 )
 
+// ErrorResponse is the canonical error envelope shared with `core` and
+// consumed by `web`. See docs/contracts/internal-http.md.
+//
+//   {
+//     "error":   "MACHINE_CODE",
+//     "message": "Human readable",
+//     "fields":  { "name": ["msg"] },   // optional
+//     "request_id": "uuid"              // added by request-id middleware
+//   }
 type ErrorResponse struct {
-	Code    string `json:"code"`
-	Message string `json:"message"`
+	Error     string              `json:"error"`
+	Message   string              `json:"message"`
+	Fields    map[string][]string `json:"fields,omitempty"`
+	RequestID string              `json:"request_id,omitempty"`
 }
 
 type PaginationMetadata struct {
@@ -34,10 +45,23 @@ type PaginatedResponse struct {
 	Results  any                `json:"results"`
 }
 
+// RequestIDFromContext extracts the request ID set by the request-id
+// middleware. Returns an empty string when the middleware has not run
+// (which is the case in many tests).
+func RequestIDFromContext(c *gin.Context) string {
+	if v, ok := c.Get("request_id"); ok {
+		if s, ok := v.(string); ok {
+			return s
+		}
+	}
+	return ""
+}
+
 func RespondError(c *gin.Context, statusCode int, code, message string) {
 	c.JSON(statusCode, ErrorResponse{
-		Code:    code,
-		Message: message,
+		Error:     code,
+		Message:   message,
+		RequestID: RequestIDFromContext(c),
 	})
 }
 

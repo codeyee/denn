@@ -34,6 +34,7 @@ import (
 
 	"github.com/codeyee/denn-proxy/internal/clients"
 	"github.com/codeyee/denn-proxy/internal/config"
+	"github.com/codeyee/denn-proxy/internal/logging"
 	"github.com/codeyee/denn-proxy/internal/handlers/albums"
 	"github.com/codeyee/denn-proxy/internal/handlers/books"
 	"github.com/codeyee/denn-proxy/internal/handlers/games"
@@ -57,6 +58,9 @@ import (
 )
 
 func main() {
+	logging.SetDefault()
+	slog := logging.L()
+
 	cfg, err := config.LoadConfig()
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
@@ -66,7 +70,7 @@ func main() {
 
 	redisCache, err := clients.NewRedisCache(cfg.RedisURL)
 	if err != nil {
-		log.Printf("Warning: Redis unavailable (%v), continuing without cache\n", err)
+		slog.Warn("redis_unavailable_using_noop_cache", "error", err.Error())
 		cache = clients.NoOpCache{}
 	} else {
 		cache = redisCache
@@ -94,7 +98,13 @@ func main() {
 	multiSearchHandler := multisearch.NewHandler(tmdbSvc, gamesSvc, spotifySvc, booksSvc)
 	homepageHandler := homepage.NewHandler(tmdbSvc, gamesSvc, spotifySvc, booksSvc, cache)
 
-	r := gin.Default()
+	r := gin.New()
+	r.Use(gin.Recovery())
+
+	// Request ID is the very first middleware so all subsequent layers
+	// (logs, error envelopes) can correlate requests.
+	r.Use(middleware.RequestID())
+	r.Use(middleware.AccessLog())
 
 	corsConfig := cors.DefaultConfig()
 	if cfg.CorsAllowOrigins == "*" {
@@ -103,7 +113,8 @@ func main() {
 		corsConfig.AllowOrigins = strings.Split(cfg.CorsAllowOrigins, ",")
 	}
 	corsConfig.AllowMethods = []string{"GET", "OPTIONS"}
-	corsConfig.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "X-User-Country", "X-Api-Key", "Authorization"}
+	corsConfig.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "X-User-Country", "X-Api-Key", "X-Request-Id", "Authorization"}
+	corsConfig.ExposeHeaders = []string{"X-Request-Id", "X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Degraded"}
 	r.Use(cors.New(corsConfig))
 
 	api := r.Group("/v1/proxy")
@@ -114,7 +125,7 @@ func main() {
 		protected := api.Group("")
 		protected.Use(middleware.AuthMiddleware(cfg.ApiKey))
 		middleware.WarnIfRateLimitCacheNoOp(cache)
-	protected.Use(middleware.RateLimitMiddleware(cache, cfg.RateLimitPerMinute))
+		protected.Use(middleware.RateLimitMiddleware(cache, cfg.RateLimitPerMinute))
 
 		protected.GET("/search", multiSearchHandler.Search)
 		protected.GET("/homepage", homepageHandler.Homepage)
@@ -172,7 +183,7 @@ func main() {
 	defer stop()
 
 	go func() {
-		fmt.Printf("\nServer running on port %s\n", cfg.Port)
+		slog.Info("server_listening", "port", cfg.Port)
 
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Server error: %v", err)
@@ -180,7 +191,7 @@ func main() {
 	}()
 
 	<-ctx.Done()
-	log.Println("Shutting down server...")
+	slog.Info("server_shutting_down")
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -189,5 +200,5 @@ func main() {
 		log.Fatalf("Server forced to shutdown: %v", err)
 	}
 
-	log.Println("Server exited")
+	slog.Info("server_exited")
 }

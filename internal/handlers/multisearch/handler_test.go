@@ -228,8 +228,8 @@ func TestSearch_MissingQuery(t *testing.T) {
 	}
 
 	resp := decodeErrorResponse(t, w)
-	if resp["code"] != "MISSING_PARAMETER" {
-		t.Errorf("Expected code MISSING_PARAMETER, got %v", resp["code"])
+	if resp["error"] != "MISSING_PARAMETER" {
+		t.Errorf("Expected error MISSING_PARAMETER, got %v", resp["error"])
 	}
 }
 
@@ -255,8 +255,8 @@ func TestSearch_InvalidType(t *testing.T) {
 	}
 
 	resp := decodeErrorResponse(t, w)
-	if resp["code"] != "INVALID_PARAMETER" {
-		t.Errorf("Expected code INVALID_PARAMETER, got %v", resp["code"])
+	if resp["error"] != "INVALID_PARAMETER" {
+		t.Errorf("Expected error INVALID_PARAMETER, got %v", resp["error"])
 	}
 }
 
