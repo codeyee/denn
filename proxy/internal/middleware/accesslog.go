@@ -17,7 +17,7 @@ import (
 //
 // Per-route latency aggregation is deliberately delegated to whatever
 // log/metrics backend ingests these lines. We do not maintain an
-// in-process counter — see docs/observability.md.
+// in-process counter — see .docs/observability.md.
 func AccessLog() gin.HandlerFunc {
 	log := logging.L()
 	return func(c *gin.Context) {

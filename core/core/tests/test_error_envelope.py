@@ -1,7 +1,7 @@
 """Contract test for the canonical error envelope.
 
 Locks the shape shared with the Go `proxy` (see
-docs/contracts/internal-http.md and proxy/internal/handlers/common/response_test.go).
+.docs/contracts/internal-http.md and proxy/internal/handlers/common/response_test.go).
 
 Envelope:
 

@@ -2,7 +2,7 @@
 //
 // We standardize on log/slog (stdlib, Go ≥1.21) with a JSON handler so
 // every line is grep-able and shippable to Loki/Datadog/etc. without a
-// parsing layer. See docs/observability.md.
+// parsing layer. See .docs/observability.md.
 package logging
 
 import (

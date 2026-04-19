@@ -19,7 +19,7 @@ const (
 )
 
 // ErrorResponse is the canonical error envelope shared with `core` and
-// consumed by `web`. See docs/contracts/internal-http.md.
+// consumed by `web`. See .docs/contracts/internal-http.md.
 //
 //   {
 //     "error":   "MACHINE_CODE",

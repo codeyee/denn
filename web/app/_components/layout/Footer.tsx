@@ -22,7 +22,7 @@ export function Footer() {
     >
       <Separator className="bg-white/10 mb-8" />
       <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-gray-400">
-        <p>&copy; 2025 Denn. All rights reserved.</p>
+        <p>&copy; 2026 Denn. All rights reserved.</p>
         <div className="flex gap-6">
           <a href="#" className="hover:text-white transition-colors">
             About

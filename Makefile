@@ -1,10 +1,12 @@
 .PHONY: help up down restart status doctor logs check kill-orphans \
         tail-proxy tail-core tail-web tail-redis \
         test test-proxy test-core test-web \
+        validate-web validate-core validate-proxy \
+        lint-web build-web \
         build-proxy \
         db-backup db-backups db-restore db-shell
 
-SCRIPT := ./scripts/workspace-dev.sh
+SCRIPT := ./.scripts/workspace.sh
 
 help:
 	@echo "Local dev (full stack):"
@@ -25,9 +27,14 @@ help:
 	@echo
 	@echo "Tests:"
 	@echo "  make test             run full test suite (proxy + core)"
+	@echo "  make validate-web     run frontend lint + build"
+	@echo "  make validate-core    run django tests"
+	@echo "  make validate-proxy   run go tests"
 	@echo "  make test-proxy       go test ./..."
 	@echo "  make test-core        django tests"
 	@echo "  make test-web         vitest / next test if configured"
+	@echo "  make lint-web         run frontend lint"
+	@echo "  make build-web        run frontend production build"
 	@echo
 	@echo "Database (local Postgres in docker):"
 	@echo "  make db-backup        dump local DB to backups/<ts>.sql.gz (custom format + gzip)"
@@ -50,6 +57,16 @@ tail-web:      ; @$(SCRIPT) logs web
 tail-redis:    ; @$(SCRIPT) logs redis
 
 test: test-proxy test-core
+
+validate-web: lint-web build-web
+validate-core: test-core
+validate-proxy: test-proxy
+
+lint-web:
+	cd web && npm run lint
+
+build-web:
+	cd web && npm run build
 
 test-proxy:
 	cd proxy && go test ./...

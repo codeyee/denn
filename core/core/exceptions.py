@@ -1,6 +1,6 @@
 """Canonical error envelope for `core`.
 
-Contract (shared with `proxy`, see `docs/contracts/internal-http.md`):
+Contract (shared with `proxy`, see `.docs/contracts/internal-http.md`):
 
     {
         "error":      "MACHINE_CODE",     # required, stable identifier

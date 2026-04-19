@@ -10,7 +10,7 @@ import (
 )
 
 // TestRespondError_EnvelopeShape locks the canonical error envelope shared
-// with `core` (see docs/contracts/internal-http.md). If you need to break
+// with `core` (see .docs/contracts/internal-http.md). If you need to break
 // this shape, update the contract doc and the matching Django test in
 // core/core/tests/test_error_envelope.py at the same time.
 func TestRespondError_EnvelopeShape(t *testing.T) {

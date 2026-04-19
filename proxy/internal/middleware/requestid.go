@@ -6,7 +6,7 @@ import (
 )
 
 // requestIDHeader is the canonical correlation header. See
-// docs/contracts/internal-http.md.
+// .docs/contracts/internal-http.md.
 const requestIDHeader = "X-Request-Id"
 
 // RequestIDContextKey is the gin.Context key used to store the request ID.
