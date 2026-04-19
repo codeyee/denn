@@ -1,0 +1,204 @@
+// @title           Denn Proxy API
+// @version         1.0
+// @description     REST API proxy that aggregates metadata from TMDB, IGDB, Spotify, and OpenLibrary.
+// @description     Authentication: send API key via X-Api-Key header or Authorization: Bearer <token>.
+// @description     Rate limit: 60 requests/minute on protected endpoints.
+
+// @host            localhost:8080
+// @BasePath        /v1/proxy
+
+// @securityDefinitions.apikey  ApiKeyHeader
+// @in                          header
+// @name                        X-Api-Key
+// @description                 API key passed in the X-Api-Key header
+
+// @securityDefinitions.apikey  BearerAuth
+// @in                          header
+// @name                        Authorization
+// @description                 API key passed as a Bearer token: "Authorization: Bearer <key>"
+
+package main
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"net/http"
+	"os/signal"
+	"strings"
+	"syscall"
+	"time"
+
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
+
+	"github.com/codeyee/denn-proxy/internal/clients"
+	"github.com/codeyee/denn-proxy/internal/config"
+	"github.com/codeyee/denn-proxy/internal/logging"
+	"github.com/codeyee/denn-proxy/internal/handlers/albums"
+	"github.com/codeyee/denn-proxy/internal/handlers/books"
+	"github.com/codeyee/denn-proxy/internal/handlers/games"
+	"github.com/codeyee/denn-proxy/internal/handlers/health"
+	"github.com/codeyee/denn-proxy/internal/handlers/homepage"
+	"github.com/codeyee/denn-proxy/internal/handlers/movies"
+	"github.com/codeyee/denn-proxy/internal/handlers/multisearch"
+	"github.com/codeyee/denn-proxy/internal/handlers/tvshows"
+	"github.com/codeyee/denn-proxy/internal/middleware"
+
+	tmdbclient "github.com/codeyee/denn-proxy/internal/providers/tmdb"
+	tmdbservice "github.com/codeyee/denn-proxy/internal/services/tmdb/service"
+
+	igdbclient "github.com/codeyee/denn-proxy/internal/providers/igdb"
+	olclient "github.com/codeyee/denn-proxy/internal/providers/openlibrary"
+	spotifyclient "github.com/codeyee/denn-proxy/internal/providers/spotify"
+
+	booksservice "github.com/codeyee/denn-proxy/internal/services/books/service"
+	gamesservice "github.com/codeyee/denn-proxy/internal/services/games/service"
+	spotifyservice "github.com/codeyee/denn-proxy/internal/services/spotify/service"
+)
+
+func main() {
+	logging.SetDefault()
+	slog := logging.L()
+
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		log.Fatalf("Failed to load config: %v", err)
+	}
+
+	var cache clients.Cache
+
+	redisCache, err := clients.NewRedisCache(cfg.RedisURL)
+	if err != nil {
+		slog.Warn("redis_unavailable_using_noop_cache", "error", err.Error())
+		cache = clients.NoOpCache{}
+	} else {
+		cache = redisCache
+	}
+	defer cache.Close()
+
+	tmdbClient := tmdbclient.NewClient(cfg.TmdbApiKey, cache)
+	tmdbSvc := tmdbservice.NewService(tmdbClient)
+
+	igdbClient := igdbclient.NewClient(cfg.IgdbClientID, cfg.IgdbClientSecret, cache)
+	gamesSvc := gamesservice.NewService(igdbClient)
+
+	spotifyClient := spotifyclient.NewClient(cfg.SpotifyClientID, cfg.SpotifyClientSecret, cache)
+	spotifySvc := spotifyservice.NewService(spotifyClient)
+
+	openLibraryClient := olclient.NewClient(cache)
+	booksSvc := booksservice.NewService(openLibraryClient)
+
+	movieHandler := movies.NewHandler(tmdbSvc)
+	tvHandler := tvshows.NewHandler(tmdbSvc)
+	gamesHandler := games.NewHandler(gamesSvc)
+	albumHandler := albums.NewHandler(spotifySvc)
+	bookHandler := books.NewHandler(booksSvc)
+
+	multiSearchHandler := multisearch.NewHandler(tmdbSvc, gamesSvc, spotifySvc, booksSvc)
+	homepageHandler := homepage.NewHandler(tmdbSvc, gamesSvc, spotifySvc, booksSvc, cache)
+
+	r := gin.New()
+	r.Use(gin.Recovery())
+
+	// Request ID is the very first middleware so all subsequent layers
+	// (logs, error envelopes) can correlate requests.
+	r.Use(middleware.RequestID())
+	r.Use(middleware.AccessLog())
+
+	corsConfig := cors.DefaultConfig()
+	if cfg.CorsAllowOrigins == "*" {
+		corsConfig.AllowAllOrigins = true
+	} else {
+		corsConfig.AllowOrigins = strings.Split(cfg.CorsAllowOrigins, ",")
+	}
+	corsConfig.AllowMethods = []string{"GET", "OPTIONS"}
+	corsConfig.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "X-User-Country", "X-Api-Key", "X-Request-Id", "Authorization"}
+	corsConfig.ExposeHeaders = []string{"X-Request-Id", "X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Degraded"}
+	r.Use(cors.New(corsConfig))
+
+	api := r.Group("/v1/proxy")
+	{
+		healthHandler := health.NewHandler(cache)
+		api.GET("/health", healthHandler.HealthCheck)
+
+		protected := api.Group("")
+		protected.Use(middleware.AuthMiddleware(cfg.ApiKey))
+		middleware.WarnIfRateLimitCacheNoOp(cache)
+		protected.Use(middleware.RateLimitMiddleware(cache, cfg.RateLimitPerMinute))
+
+		protected.GET("/search", multiSearchHandler.Search)
+		protected.GET("/homepage", homepageHandler.Homepage)
+
+		movies := protected.Group("/movies")
+		{
+			movies.GET("", movieHandler.Search)
+			movies.GET("/bulk", movieHandler.Bulk)
+			movies.GET("/trending", movieHandler.Trending)
+			movies.GET("/:id", movieHandler.Detail)
+		}
+
+		tv := protected.Group("/tv-shows")
+		{
+			tv.GET("", tvHandler.Search)
+			tv.GET("/bulk", tvHandler.Bulk)
+			tv.GET("/trending", tvHandler.Trending)
+			tv.GET("/:id", tvHandler.Detail)
+			tv.GET("/:id/seasons/:num", tvHandler.SeasonDetail)
+		}
+
+		gamesGroup := protected.Group("/games")
+		{
+			gamesGroup.GET("", gamesHandler.Search)
+			gamesGroup.GET("/bulk", gamesHandler.Bulk)
+			gamesGroup.GET("/trending", gamesHandler.Trending)
+			gamesGroup.GET("/:id", gamesHandler.Detail)
+		}
+
+		albumsGroup := protected.Group("/albums")
+		{
+			albumsGroup.GET("", albumHandler.Search)
+			albumsGroup.GET("/bulk", albumHandler.Bulk)
+			albumsGroup.GET("/trending", albumHandler.Trending)
+			albumsGroup.GET("/:id", albumHandler.Detail)
+		}
+
+		booksGroup := protected.Group("/books")
+		{
+			booksGroup.GET("", bookHandler.Search)
+			booksGroup.GET("/bulk", bookHandler.Bulk)
+			booksGroup.GET("/trending", bookHandler.Trending)
+			booksGroup.GET("/:id", bookHandler.Detail)
+		}
+	}
+
+	addr := fmt.Sprintf(":%s", cfg.Port)
+
+	srv := &http.Server{
+		Addr:    addr,
+		Handler: r,
+	}
+
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	go func() {
+		slog.Info("server_listening", "port", cfg.Port)
+
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Server error: %v", err)
+		}
+	}()
+
+	<-ctx.Done()
+	slog.Info("server_shutting_down")
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		log.Fatalf("Server forced to shutdown: %v", err)
+	}
+
+	slog.Info("server_exited")
+}

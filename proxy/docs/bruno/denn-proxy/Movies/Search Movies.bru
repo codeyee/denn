@@ -1,0 +1,21 @@
+meta {
+  name: Search Movies
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{BASE_URL}}/movies?q=Matrix&page=1&limit=20
+  body: none
+  auth: inherit
+}
+
+query {
+  q: Matrix
+  page: 1
+  limit: 20
+}
+
+headers {
+  X-User-Country: {{COUNTRY}}
+}

@@ -1,0 +1,20 @@
+meta {
+  name: Homepage
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{BASE_URL}}/homepage?page=1&limit=10
+  body: none
+  auth: inherit
+}
+
+query {
+  page: 1
+  limit: 10
+}
+
+headers {
+  X-User-Country: {{COUNTRY}}
+}

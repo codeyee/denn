@@ -1,0 +1,17 @@
+meta {
+  name: Search Albums
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{BASE_URL}}/albums?q=Daft Punk&page=1&limit=20
+  body: none
+  auth: inherit
+}
+
+params:query {
+  q: Daft Punk
+  page: 1
+  limit: 20
+}

@@ -1,0 +1,17 @@
+meta {
+  name: Search Games
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{BASE_URL}}/games?q=Zelda&page=1&limit=20
+  body: none
+  auth: inherit
+}
+
+query {
+  q: Zelda
+  page: 1
+  limit: 20
+}

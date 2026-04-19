@@ -1,0 +1,16 @@
+meta {
+  name: Trending Books
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{BASE_URL}}/books/trending?page=1&limit=20
+  body: none
+  auth: inherit
+}
+
+query {
+  page: 1
+  limit: 20
+}

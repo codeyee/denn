@@ -1,0 +1,52 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: denn-proxy
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      - REDIS_URL=redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - backend
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 128M
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+
+  redis:
+    image: redis:7-alpine
+    container_name: denn-proxy-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+networks:
+  backend:
+    driver: bridge
+
+volumes:
+  redis_data:
