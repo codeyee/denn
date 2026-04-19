@@ -10,15 +10,16 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 )
 
 const (
-	defaultTimeout = 30 * time.Second
-	maxRetries     = 5
-	initialBackoff = 500 * time.Millisecond
-	maxBackoff     = 10 * time.Second
+	defaultTimeout        = 30 * time.Second
+	defaultMaxRetries     = 5
+	defaultInitialBackoff = 500 * time.Millisecond
+	defaultMaxBackoff     = 10 * time.Second
 )
 
 type Response struct {
@@ -26,11 +27,33 @@ type Response struct {
 	StatusCode int
 }
 
+// RetryConfig controls how Request handles transient upstream failures.
+// Zero values mean "retry once with no backoff" (i.e. effectively disabled);
+// callers should use the explicit constructors instead of building a zero
+// struct by hand.
+type RetryConfig struct {
+	MaxRetries     int
+	InitialBackoff time.Duration
+	MaxBackoff     time.Duration
+	// TotalBudget bounds the cumulative time spent across all attempts.
+	// When zero the parent context is the only deadline.
+	TotalBudget time.Duration
+}
+
+func defaultRetryConfig() RetryConfig {
+	return RetryConfig{
+		MaxRetries:     defaultMaxRetries,
+		InitialBackoff: defaultInitialBackoff,
+		MaxBackoff:     defaultMaxBackoff,
+	}
+}
+
 type BaseClient struct {
 	baseURL    string
 	apiName    string
 	httpClient *http.Client
 	headersFn  func() map[string]string
+	retry      RetryConfig
 }
 
 type ClientOption func(*BaseClient)
@@ -59,6 +82,21 @@ func WithHTTPClient(client *http.Client) ClientOption {
 	}
 }
 
+// WithRetryConfig overrides the default retry policy. Pass MaxRetries: 0 in
+// tests that want a 5xx/429 response to surface immediately instead of
+// triggering the full backoff loop.
+func WithRetryConfig(cfg RetryConfig) ClientOption {
+	return func(c *BaseClient) {
+		c.retry = cfg
+	}
+}
+
+// WithNoRetry is shorthand for WithRetryConfig with retries disabled.
+// Intended for unit tests that exercise error-path handling.
+func WithNoRetry() ClientOption {
+	return WithRetryConfig(RetryConfig{MaxRetries: 0})
+}
+
 func defaultHeaders() map[string]string {
 	return map[string]string{
 		"Content-Type": "application/json",
@@ -75,6 +113,7 @@ func NewBaseClient(baseURL string, opts ...ClientOption) *BaseClient {
 		baseURL:    strings.TrimRight(baseURL, "/"),
 		httpClient: &http.Client{Timeout: defaultTimeout},
 		headersFn:  defaultHeaders,
+		retry:      defaultRetryConfig(),
 	}
 
 	for _, opt := range opts {
@@ -121,22 +160,47 @@ func (c *BaseClient) Request(ctx context.Context, method, endpoint string, param
 		bodyReader = bytes.NewReader(bodyBytes)
 	}
 
-	var resp *http.Response
-	var err error
+	// Optional total budget: cap cumulative time across all attempts. Zero
+	// means "rely on the parent context only", which is the production
+	// default for backwards compatibility.
+	if c.retry.TotalBudget > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, c.retry.TotalBudget)
+		defer cancel()
+	}
 
-	backoff := initialBackoff
+	var (
+		err             error
+		lastClassified  error // ErrRateLimit | ErrServerError | ErrConnection
+		lastRetryAfter  time.Duration
+		nextBackoff     = c.retry.InitialBackoff
+		maxBO           = c.retry.MaxBackoff
+	)
 
-	for i := 0; i <= maxRetries; i++ {
-		if i > 0 {
-			select {
-			case <-ctx.Done():
-				return nil, ctx.Err()
-			case <-time.After(backoff):
-				// Calculate next backoff with jitter
-				jitter := time.Duration(rand.Int63n(int64(backoff) / 2))
-				backoff = min(backoff*2+jitter, maxBackoff)
+	for attempt := 0; attempt <= c.retry.MaxRetries; attempt++ {
+		if attempt > 0 {
+			// Prefer the upstream's Retry-After hint; otherwise full-jitter
+			// backoff (uniform[0, nextBackoff)) to break herd behavior during
+			// fan-out fan-in scenarios like /homepage.
+			wait := lastRetryAfter
+			if wait <= 0 && nextBackoff > 0 {
+				wait = time.Duration(rand.Int63n(int64(nextBackoff)))
 			}
-			// Reset body reader for retry
+			lastRetryAfter = 0
+
+			if wait > 0 {
+				timer := time.NewTimer(wait)
+				select {
+				case <-ctx.Done():
+					timer.Stop()
+					return nil, classifyContextErr(ctx.Err())
+				case <-timer.C:
+				}
+			}
+
+			if nextBackoff > 0 {
+				nextBackoff = min(nextBackoff*2, maxBO)
+			}
 			if bodyBytes != nil {
 				bodyReader = bytes.NewReader(bodyBytes)
 			}
@@ -151,28 +215,36 @@ func (c *BaseClient) Request(ctx context.Context, method, endpoint string, param
 			req.Header.Set(key, value)
 		}
 
+		var resp *http.Response
 		resp, err = c.httpClient.Do(req)
 
 		if err != nil {
 			if ctx.Err() != nil {
-				return nil, fmt.Errorf("%w: %w", ErrTimeout, ctx.Err())
+				return nil, classifyContextErr(ctx.Err())
 			}
-			// Retry on connection errors
+			lastClassified = ErrConnection
 			continue
 		}
 
-		// Read body immediately to ensure we have the full response
-		// If reading fails, we should close body and retry
 		rawBody, readErr := io.ReadAll(resp.Body)
 		resp.Body.Close()
 
 		if readErr != nil {
 			err = fmt.Errorf("%w: failed to read response body: %w", ErrConnection, readErr)
+			lastClassified = ErrConnection
 			continue
 		}
 
-		// Check for status codes that warrant a retry (429 Too Many Requests, 5xx Server Errors)
-		if resp.StatusCode == http.StatusTooManyRequests || (resp.StatusCode >= 500 && resp.StatusCode < 600) {
+		// 429 and 5xx are the only retryable status classes. 4xx other than
+		// 429 surfaces immediately so callers can short-circuit.
+		if resp.StatusCode == http.StatusTooManyRequests {
+			lastClassified = ErrRateLimit
+			lastRetryAfter = parseRetryAfter(resp.Header.Get("Retry-After"), maxBO)
+			continue
+		}
+		if resp.StatusCode >= 500 && resp.StatusCode < 600 {
+			lastClassified = ErrServerError
+			lastRetryAfter = parseRetryAfter(resp.Header.Get("Retry-After"), maxBO)
 			continue
 		}
 
@@ -187,16 +259,64 @@ func (c *BaseClient) Request(ctx context.Context, method, endpoint string, param
 		}, nil
 	}
 
-	if err != nil {
+	// Retries exhausted. Classify so callers (services, handlers) can
+	// distinguish "we gave up after 6 tries with rate limits" from "the
+	// upstream blew up once". errors.Is(err, ErrUpstreamExhausted) and
+	// errors.Is(err, ErrRateLimit) both succeed against this wrapped value.
+	switch {
+	case lastClassified != nil:
+		if err != nil {
+			return nil, fmt.Errorf("%w: %w: %w", ErrUpstreamExhausted, lastClassified, err)
+		}
+		return nil, fmt.Errorf("%w: %w", ErrUpstreamExhausted, lastClassified)
+	case err != nil:
 		var urlErr *url.Error
 		if errors.As(err, &urlErr) && urlErr.Timeout() {
 			return nil, fmt.Errorf("%w: %w", ErrTimeout, err)
 		}
-		return nil, fmt.Errorf("%w: %w", ErrConnection, err)
+		return nil, fmt.Errorf("%w: %w: %w", ErrUpstreamExhausted, ErrConnection, err)
+	default:
+		return nil, fmt.Errorf("%w: %w", ErrUpstreamExhausted, ErrConnection)
 	}
-	
-	// Should not be reached if retries are exhausted correctly, but safe fallback
-	return nil, fmt.Errorf("%w: max retries exceeded", ErrConnection)
+}
+
+// classifyContextErr maps a context error onto our taxonomy. Both
+// DeadlineExceeded and Canceled are surfaced as ErrTimeout because callers
+// generally want the same handling (502/504 with a visible reason) regardless
+// of which side cancelled.
+func classifyContextErr(err error) error {
+	if err == nil {
+		return nil
+	}
+	return fmt.Errorf("%w: %w", ErrTimeout, err)
+}
+
+// parseRetryAfter parses the value of an HTTP Retry-After header. Per RFC 7231
+// the value is either a delta in seconds or an HTTP-date. We ignore values
+// above maxBackoff to avoid pathological waits when an upstream returns a
+// huge number; tests rely on the cap.
+func parseRetryAfter(value string, maxBackoff time.Duration) time.Duration {
+	if value == "" {
+		return 0
+	}
+	if secs, err := strconv.Atoi(strings.TrimSpace(value)); err == nil && secs >= 0 {
+		d := time.Duration(secs) * time.Second
+		if maxBackoff > 0 && d > maxBackoff {
+			return maxBackoff
+		}
+		return d
+	}
+	if t, err := http.ParseTime(value); err == nil {
+		d := time.Until(t)
+		if d <= 0 {
+			return 0
+		}
+		if maxBackoff > 0 && d > maxBackoff {
+			return maxBackoff
+		}
+		return d
+	}
+	return 0
 }
 
 func (c *BaseClient) Get(ctx context.Context, endpoint string, params url.Values) (*Response, error) {

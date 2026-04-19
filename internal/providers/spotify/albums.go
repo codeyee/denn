@@ -84,7 +84,7 @@ func (c *Client) getChartAlbums(ctx context.Context) ([]chartAlbum, error) {
 		}
 	}
 
-	albums, err := c.fetchAndParseCharts()
+	albums, err := c.fetchAndParseCharts(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -96,19 +96,21 @@ func (c *Client) getChartAlbums(ctx context.Context) ([]chartAlbum, error) {
 	return albums, nil
 }
 
-func (c *Client) fetchAndParseCharts() ([]chartAlbum, error) {
-	resp, err := c.httpClient.Get(ChartsURL)
+// fetchAndParseCharts now goes through the shared BaseClient so transient
+// 5xx/429 from the public Charts host get retried with jitter and proper
+// classification, just like the rest of our upstream calls.
+func (c *Client) fetchAndParseCharts(ctx context.Context) ([]chartAlbum, error) {
+	resp, err := c.chartsClient.Get(ctx, chartsPath, nil)
 	if err != nil {
 		return nil, fmt.Errorf("charts request: %w", err)
 	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("charts API error (status %d)", resp.StatusCode)
 	}
 
 	var chartsData chartsResponse
-	if err := json.NewDecoder(resp.Body).Decode(&chartsData); err != nil {
+	if err := json.Unmarshal(resp.Data, &chartsData); err != nil {
 		return nil, fmt.Errorf("decode charts response: %w", err)
 	}
 

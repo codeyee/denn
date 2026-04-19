@@ -14,6 +14,7 @@ import (
 	"github.com/codeyee/denn-proxy/internal/clients"
 	"github.com/codeyee/denn-proxy/internal/models"
 	igdbclient "github.com/codeyee/denn-proxy/internal/providers/igdb"
+	"github.com/codeyee/denn-proxy/internal/services/common"
 	"github.com/codeyee/denn-proxy/internal/services/games"
 	"github.com/codeyee/denn-proxy/internal/services/games/mapper"
 )
@@ -75,11 +76,19 @@ func (s *Service) GetGameComplete(ctx context.Context, id int) (models.Game, err
 	return mapper.MapGame(data[0]), nil
 }
 
+// GetBulkGames fetches the supplied IGDB IDs in fixed-size batches in parallel.
+// Per-batch failures are logged and the partial result is returned along with
+// a non-nil error so callers (notably homepage enrichment) can decide whether
+// to surface a partial response or treat it as a hard failure. The previous
+// behavior swallowed all batch errors silently, hiding rate-limit storms.
 func (s *Service) GetBulkGames(ctx context.Context, ids []int) ([]models.Game, error) {
 	const batchSize = 5
-	var allGames []models.Game
-	var mu sync.Mutex
-	var wg sync.WaitGroup
+	var (
+		allGames  []models.Game
+		batchErrs []error
+		mu        sync.Mutex
+		wg        sync.WaitGroup
+	)
 
 	for i := 0; i < len(ids); i += batchSize {
 		end := i + batchSize
@@ -92,7 +101,10 @@ func (s *Service) GetBulkGames(ctx context.Context, ids []int) ([]models.Game, e
 			defer wg.Done()
 			data, err := unmarshalResponse[[]games.IgdbGame](s.client.GetBulkGames(ctx, batchIDs))
 			if err != nil {
-				log.Printf("Error fetching bulk games batch: %v", err)
+				log.Printf("igdb: bulk games batch %v failed: %v", batchIDs, err)
+				mu.Lock()
+				batchErrs = append(batchErrs, fmt.Errorf("batch %v: %w", batchIDs, err))
+				mu.Unlock()
 				return
 			}
 
@@ -105,6 +117,13 @@ func (s *Service) GetBulkGames(ctx context.Context, ids []int) ([]models.Game, e
 	}
 
 	wg.Wait()
+
+	if len(batchErrs) > 0 {
+		// errors.Join keeps each batch's classified error reachable via
+		// errors.Is, so callers can still distinguish ErrRateLimit from
+		// ErrServerError when deciding whether to retry the whole call.
+		return allGames, fmt.Errorf("igdb bulk games: %w", errors.Join(batchErrs...))
+	}
 	return allGames, nil
 }
 
@@ -133,9 +152,14 @@ func (s *Service) GetTrendingGames(ctx context.Context, limit, offset int) ([]mo
 	}
 
 	games, err := s.resolveGameDetails(ctx, wantMap, visitsMap)
-
-	if err != nil {
+	// Tolerate partial bulk failures: trending is a best-effort surface, and
+	// returning N-of-M scored games beats failing the whole homepage bucket
+	// because one batch hit a rate limit.
+	if err != nil && len(games) == 0 {
 		return nil, err
+	}
+	if err != nil {
+		log.Printf("igdb: trending using partial bulk results: %v", err)
 	}
 
 	// Filter out games that are ONLY on Web browser
@@ -156,30 +180,50 @@ func (s *Service) GetTrendingGames(ctx context.Context, limit, offset int) ([]mo
 	return paginateAndMap(scored, limit, offset), nil
 }
 
+// GetTrendingGamesDetail returns the same trending page as GetTrendingGames
+// but already mapped to full Game models. Homepage enrichment uses this to
+// avoid a second IGDB GetBulkGames round-trip for the same IDs we just
+// scored. The previous flow:
+//
+//	homepage.fetchTrending -> GetTrendingGames (resolves details to score)
+//	homepage.enrichGames   -> GetBulkGames     (re-fetches the same N IDs)
+//
+// doubled IGDB load on the trending bucket and made hitting the per-second
+// IGDB rate limit dramatically more likely.
+func (s *Service) GetTrendingGamesDetail(ctx context.Context, limit, offset int) ([]models.Game, error) {
+	wantMap, visitsMap, err := s.fetchTrendingPrimitives(ctx, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	games, err := s.resolveGameDetails(ctx, wantMap, visitsMap)
+	if err != nil && len(games) == 0 {
+		return nil, err
+	}
+	if err != nil {
+		log.Printf("igdb: trending detail using partial bulk results: %v", err)
+	}
+
+	filtered := games[:0]
+	for _, g := range games {
+		if len(g.Platforms) == 1 && g.Platforms[0].Name == "Web browser" {
+			continue
+		}
+		filtered = append(filtered, g)
+	}
+
+	scored := s.calculateScores(filtered, wantMap, visitsMap)
+	return paginateScored(scored, limit, offset), nil
+}
+
 func unmarshalResponse[T any](resp *clients.Response, err error) (T, error) {
 	var zero T
 	if err != nil {
 		return zero, err
 	}
 
-	if resp.StatusCode == 404 {
-		return zero, fmt.Errorf("IGDB %w", clients.ErrNotFound)
-	}
-
-	if resp.StatusCode == 429 {
-		return zero, fmt.Errorf("IGDB %w", clients.ErrRateLimit)
-	}
-
-	if resp.StatusCode == 401 || resp.StatusCode == 403 {
-		return zero, fmt.Errorf("IGDB %w", clients.ErrProviderAuth)
-	}
-
-	if resp.StatusCode >= 500 {
-		return zero, fmt.Errorf("IGDB %w", clients.ErrServerError)
-	}
-
-	if resp.StatusCode != 200 {
-		return zero, fmt.Errorf("IGDB API error (status %d)", resp.StatusCode)
+	if cerr := common.ClassifyStatus("IGDB", resp.StatusCode); cerr != nil {
+		return zero, cerr
 	}
 	var result T
 	if err := json.Unmarshal(resp.Data, &result); err != nil {
@@ -327,6 +371,28 @@ func calculateRecencyMultiplier(releaseDate *string, now int64) float64 {
 	default:
 		return 1.0
 	}
+}
+
+// paginateScored returns the page slice of scored games as full Game models,
+// dropping zero-score entries the same way paginateAndMap does so the two
+// homepage paths stay in lockstep.
+func paginateScored(scored []scoredGame, limit, offset int) []models.Game {
+	if offset >= len(scored) {
+		return []models.Game{}
+	}
+	end := offset + limit
+	if end > len(scored) {
+		end = len(scored)
+	}
+	subset := scored[offset:end]
+	out := make([]models.Game, 0, len(subset))
+	for _, s := range subset {
+		if s.score <= 0 {
+			continue
+		}
+		out = append(out, s.game)
+	}
+	return out
 }
 
 func paginateAndMap(scored []scoredGame, limit, offset int) []models.SearchItem {

@@ -2,12 +2,17 @@ package homepage
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/codeyee/denn-proxy/internal/clients"
 	"github.com/codeyee/denn-proxy/internal/handlers/common"
 	"github.com/codeyee/denn-proxy/internal/models"
 
@@ -16,16 +21,36 @@ import (
 	tmdbservice "github.com/codeyee/denn-proxy/internal/services/tmdb/service"
 )
 
+// HomepageCacheTTL is short on purpose: homepage is heavily aggregated and a
+// few minutes of staleness across users is preferable to thundering five
+// upstreams every request. Keep it well under TMDB/IGDB list refresh cycles.
+const HomepageCacheTTL = 5 * time.Minute
+
+// bucketTimeout caps how long a single content bucket (movies, tv-shows,
+// games, albums, books) is allowed to block the aggregate response. Without
+// it, one slow upstream blocks all five; the homepage then waits up to
+// httpclient.maxBackoff*retries before giving up, locking handler goroutines
+// and starving the rate limiter.
+const bucketTimeout = 8 * time.Second
+
 type VideoService interface {
 	GetPopularMovies(ctx context.Context, page, limit int) (tmdbservice.SearchResult, error)
 	GetPopularTVShows(ctx context.Context, page, limit int) (tmdbservice.SearchResult, error)
-	GetBulkMovies(ctx context.Context, ids []int, country string) []tmdbservice.BulkMovieResult
-	GetBulkTVShows(ctx context.Context, ids []int, country string) []tmdbservice.BulkTVShowResult
+	// Previews drop the watch-providers and images appends that detail
+	// pages need but homepage cards do not. See PR-5C.2 — using
+	// GetBulkMovies on /homepage roughly quadrupled TMDB payload and put
+	// us at risk of hitting the per-IP rate limit.
+	GetBulkMoviePreviews(ctx context.Context, ids []int, country string) []tmdbservice.BulkMovieResult
+	GetBulkTVShowPreviews(ctx context.Context, ids []int, country string) []tmdbservice.BulkTVShowResult
 }
 
 type GamesService interface {
-	GetTrendingGames(ctx context.Context, limit, offset int) ([]models.SearchItem, error)
-	GetBulkGames(ctx context.Context, ids []int) ([]models.Game, error)
+	// GetTrendingGamesDetail returns the trending page already mapped to
+	// full Game models. Homepage uses this in place of
+	// GetTrendingGames + GetBulkGames to avoid a duplicate IGDB call: the
+	// scoring step inside the service already had to fetch full details,
+	// so re-issuing GetBulkGames here was wasted IGDB budget.
+	GetTrendingGamesDetail(ctx context.Context, limit, offset int) ([]models.Game, error)
 }
 
 type SpotifyService interface {
@@ -43,14 +68,28 @@ type Handler struct {
 	gamesSvc   GamesService
 	spotifySvc SpotifyService
 	booksSvc   BooksService
+	cache      clients.Cache
 }
 
-func NewHandler(video VideoService, games GamesService, spotify SpotifyService, books BooksService) *Handler {
+// NewHandler wires the aggregate handler. The cache is required (pass
+// clients.NoOpCache{} when running without Redis); a nil cache would hide
+// the fail-open behavior we want to make visible per PR-5D.2.
+func NewHandler(
+	video VideoService,
+	games GamesService,
+	spotify SpotifyService,
+	books BooksService,
+	cache clients.Cache,
+) *Handler {
+	if cache == nil {
+		cache = clients.NoOpCache{}
+	}
 	return &Handler{
 		videoSvc:   video,
 		gamesSvc:   games,
 		spotifySvc: spotify,
 		booksSvc:   books,
+		cache:      cache,
 	}
 }
 
@@ -82,6 +121,10 @@ type trendingData struct {
 	items    []models.SearchItem
 	metadata *common.PaginationMetadata
 	err      error
+	// prefetched lets a trending fetcher hand a fully-detailed payload to
+	// the enrichment phase so we skip the second bulk call. Currently used
+	// by the games bucket; nil for everything else.
+	prefetched any
 }
 
 const (
@@ -111,11 +154,49 @@ var allKeys = []string{keyMovies, keyTVShows, keyGames, keyAlbums, keyBooks}
 func (h *Handler) Homepage(c *gin.Context) {
 	page, limit := common.ParsePagination(c)
 	country := common.GetCountryFromHeader(c)
+	ctx := c.Request.Context()
 
-	trending := h.fetchTrending(c.Request.Context(), page, limit)
-	results := h.enrichAll(c.Request.Context(), trending, country)
+	cacheKey := homepageCacheKey(page, limit, country)
+	if cached, err := h.cache.Get(ctx, cacheKey); err == nil && len(cached) > 0 {
+		c.Header("X-Cache", "HIT")
+		c.Data(http.StatusOK, "application/json", cached)
+		return
+	}
 
-	c.JSON(http.StatusOK, results)
+	trending := h.fetchTrending(ctx, page, limit)
+	results := h.enrichAll(ctx, trending, country)
+
+	payload, err := json.Marshal(results)
+	if err != nil {
+		// Marshal failures here are programmer errors; serve a fresh JSON
+		// rather than poison the cache.
+		c.JSON(http.StatusOK, results)
+		return
+	}
+
+	// Best-effort write — a Redis outage must never fail the request.
+	if cerr := h.cache.Set(ctx, cacheKey, payload, HomepageCacheTTL); cerr != nil {
+		log.Printf("homepage: cache set failed for %s: %v", cacheKey, cerr)
+	}
+	c.Header("X-Cache", "MISS")
+	c.Data(http.StatusOK, "application/json", payload)
+}
+
+// bucketContext derives a per-bucket child context with a hard deadline so
+// no single upstream can hold the homepage hostage. Returning cancel keeps
+// the goroutine leak detector happy when the bucket finishes early.
+func bucketContext(parent context.Context) (context.Context, context.CancelFunc) {
+	return context.WithTimeout(parent, bucketTimeout)
+}
+
+// homepageCacheKey scopes the aggregate by the inputs that change the
+// payload. Country must be in the key because the (now-leaner) preview
+// payloads still contain country-specific provider hints in some buckets.
+func homepageCacheKey(page, limit int, country string) string {
+	if country == "" {
+		country = "US"
+	}
+	return fmt.Sprintf("homepage:agg:p%d:l%d:c%s", page, limit, country)
 }
 
 func (h *Handler) fetchTrending(ctx context.Context, page, limit int) map[string]trendingData {
@@ -129,7 +210,9 @@ func (h *Handler) fetchTrending(ctx context.Context, page, limit int) map[string
 
 	go func() {
 		defer wg.Done()
-		res, err := h.videoSvc.GetPopularMovies(ctx, page, limit)
+		bctx, cancel := bucketContext(ctx)
+		defer cancel()
+		res, err := h.videoSvc.GetPopularMovies(bctx, page, limit)
 		slots[0] = trendingData{
 			items:    res.Results,
 			metadata: paginationFromTMDB(res),
@@ -139,7 +222,9 @@ func (h *Handler) fetchTrending(ctx context.Context, page, limit int) map[string
 
 	go func() {
 		defer wg.Done()
-		res, err := h.videoSvc.GetPopularTVShows(ctx, page, limit)
+		bctx, cancel := bucketContext(ctx)
+		defer cancel()
+		res, err := h.videoSvc.GetPopularTVShows(bctx, page, limit)
 		slots[1] = trendingData{
 			items:    res.Results,
 			metadata: paginationFromTMDB(res),
@@ -149,20 +234,40 @@ func (h *Handler) fetchTrending(ctx context.Context, page, limit int) map[string
 
 	go func() {
 		defer wg.Done()
-		items, err := h.gamesSvc.GetTrendingGames(ctx, limit, offset)
+		bctx, cancel := bucketContext(ctx)
+		defer cancel()
+		// Single IGDB roundtrip for both the trending list and the
+		// enriched detail payload — the service already had to fetch
+		// full Game models to compute the trending score.
+		games, err := h.gamesSvc.GetTrendingGamesDetail(bctx, limit, offset)
+		items := make([]models.SearchItem, 0, len(games))
+		for _, g := range games {
+			items = append(items, models.SearchItem{
+				ID:          g.ID,
+				Type:        g.ContentType,
+				Title:       g.Title,
+				Description: g.Description,
+				ImageURL:    g.ImageURL,
+				ReleaseDate: g.ReleaseDate,
+				Authors:     g.Authors,
+			})
+		}
 		slots[2] = trendingData{
 			items: items,
 			metadata: &common.PaginationMetadata{
 				Page:         page,
 				TotalResults: len(items),
 			},
-			err: err,
+			err:        err,
+			prefetched: games,
 		}
 	}()
 
 	go func() {
 		defer wg.Done()
-		res, err := h.spotifySvc.GetTrendingAlbums(ctx, page, limit)
+		bctx, cancel := bucketContext(ctx)
+		defer cancel()
+		res, err := h.spotifySvc.GetTrendingAlbums(bctx, page, limit)
 		slots[3] = trendingData{
 			items: res.Results,
 			metadata: &common.PaginationMetadata{
@@ -176,7 +281,9 @@ func (h *Handler) fetchTrending(ctx context.Context, page, limit int) map[string
 
 	go func() {
 		defer wg.Done()
-		res, err := h.booksSvc.GetTrendingBooks(ctx, page, limit)
+		bctx, cancel := bucketContext(ctx)
+		defer cancel()
+		res, err := h.booksSvc.GetTrendingBooks(bctx, page, limit)
 		slots[4] = trendingData{
 			items: res.Results,
 			metadata: &common.PaginationMetadata{
@@ -225,7 +332,9 @@ func (h *Handler) enrichAll(ctx context.Context, trending map[string]trendingDat
 		wg.Add(1)
 		go func(k string, data trendingData) {
 			defer wg.Done()
-			ch <- enrichResult{key: k, result: h.enrichOne(ctx, k, data, country)}
+			bctx, cancel := bucketContext(ctx)
+			defer cancel()
+			ch <- enrichResult{key: k, result: h.enrichOne(bctx, k, data, country)}
 		}(key, td)
 	}
 
@@ -270,7 +379,7 @@ func (h *Handler) enrichMovies(ctx context.Context, td trendingData, country str
 		return successResult([]any{}, td.metadata)
 	}
 
-	bulkResults := h.videoSvc.GetBulkMovies(ctx, ids, country)
+	bulkResults := h.videoSvc.GetBulkMoviePreviews(ctx, ids, country)
 
 	// Build an ID→response map for order preservation.
 	detailMap := make(map[string]models.MovieResponse, len(bulkResults))
@@ -289,7 +398,7 @@ func (h *Handler) enrichTVShows(ctx context.Context, td trendingData, country st
 		return successResult([]any{}, td.metadata)
 	}
 
-	bulkResults := h.videoSvc.GetBulkTVShows(ctx, ids, country)
+	bulkResults := h.videoSvc.GetBulkTVShowPreviews(ctx, ids, country)
 
 	detailMap := make(map[string]models.TVShowResponse, len(bulkResults))
 	for _, br := range bulkResults {
@@ -301,22 +410,17 @@ func (h *Handler) enrichTVShows(ctx context.Context, td trendingData, country st
 	return buildOrderedResult(td, detailMap)
 }
 
-func (h *Handler) enrichGames(ctx context.Context, td trendingData) ContentResult {
-	ids := extractIntIDs(td.items)
-	if len(ids) == 0 {
+func (h *Handler) enrichGames(_ context.Context, td trendingData) ContentResult {
+	if len(td.items) == 0 {
 		return successResult([]any{}, td.metadata)
 	}
 
-	games, err := h.gamesSvc.GetBulkGames(ctx, ids)
-	if err != nil {
-		return errorResult(err.Error())
-	}
-
+	// trending phase already fetched full models; just shape them.
+	games, _ := td.prefetched.([]models.Game)
 	detailMap := make(map[string]models.GameResponse, len(games))
 	for _, g := range games {
 		detailMap[g.ID] = g.ToResponse()
 	}
-
 	return buildOrderedResult(td, detailMap)
 }
 

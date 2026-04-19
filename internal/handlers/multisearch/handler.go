@@ -88,7 +88,7 @@ type MultiSearchResponse struct {
 
 // Search godoc
 // @Summary      Multi-search across all content types
-// @Description  Fans out the query in parallel to movies, TV shows, games, albums, and books. Returns per-type results with partial failure handling — if one upstream fails, its error field is set and the others still return results.
+// @Description  Fans out the query in parallel to movies, TV shows, games, albums, and books. Returns per-type results with partial failure handling — if one upstream fails, its error field is set and the others still return results. Note: the albums bucket is capped at 10 results per page by the Spotify search API regardless of the `limit` parameter.
 // @Tags         Aggregate
 // @Produce      json
 // @Param        q      query    string  true   "Search term"
@@ -245,10 +245,21 @@ func (h *Handler) searchGames(ctx context.Context, query string, page, limit int
 		return errorResult(err.Error())
 	}
 
+	// IGDB's search endpoint does not return a count, so we previously
+	// reported total_results=0 — which clients then treated as "no
+	// results" even when we returned a full page. Compute a lower bound:
+	//   - total_results: at least the items consumed so far
+	//   - total_pages:   at least current page; bump to page+1 only when
+	//     the upstream filled the page (suggesting more rows likely exist)
+	consumed := offset + len(res.Results)
+	totalPages := page
+	if len(res.Results) >= limit {
+		totalPages = page + 1
+	}
 	return successResult(res.Results, &common.PaginationMetadata{
 		Page:         page,
-		TotalPages:   0,
-		TotalResults: 0,
+		TotalPages:   totalPages,
+		TotalResults: consumed,
 	})
 }
 

@@ -58,7 +58,11 @@ func TestGetPopularTVShows(t *testing.T) {
 			}
 
 			cache := NewMockCache()
-			client := NewClient("test-key", cache, clients.WithHTTPClient(&http.Client{Transport: mockTransport}))
+			opts := []clients.ClientOption{clients.WithHTTPClient(&http.Client{Transport: mockTransport})}
+			if tt.wantErr {
+				opts = append(opts, clients.WithNoRetry())
+			}
+			client := NewClient("test-key", cache, opts...)
 
 			resp, err := client.GetPopularTVShows(context.Background(), tt.page)
 

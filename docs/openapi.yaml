@@ -1215,6 +1215,8 @@ paths:
       description: Fans out the query in parallel to movies, TV shows, games, albums,
         and books. Returns per-type results with partial failure handling — if one
         upstream fails, its error field is set and the others still return results.
+        Note: the albums bucket is capped at 10 results per page by the Spotify search
+        API regardless of the `limit` parameter.
       parameters:
       - description: Search term
         in: query

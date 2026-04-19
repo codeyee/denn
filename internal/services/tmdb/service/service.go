@@ -10,6 +10,7 @@ import (
 	"github.com/codeyee/denn-proxy/internal/clients"
 	"github.com/codeyee/denn-proxy/internal/models"
 	tmdbclient "github.com/codeyee/denn-proxy/internal/providers/tmdb"
+	"github.com/codeyee/denn-proxy/internal/services/common"
 	"github.com/codeyee/denn-proxy/internal/services/tmdb"
 	"github.com/codeyee/denn-proxy/internal/services/tmdb/mapper"
 )
@@ -17,6 +18,13 @@ import (
 const (
 	movieAppend = "external_ids,watch/providers,images"
 	tvAppend    = "external_ids,watch/providers,images"
+
+	// previewAppend is used by homepage card enrichment. Watch providers
+	// and image galleries are detail-page concerns; pulling them for every
+	// homepage card multiplies TMDB payload size by ~4x and forces TMDB to
+	// stitch country-specific watch data we don't render in the cards.
+	moviePreviewAppend = "external_ids"
+	tvPreviewAppend    = "external_ids"
 )
 
 type SearchResult struct {
@@ -53,24 +61,8 @@ func unmarshalResponse[T any](resp *clients.Response, err error) (T, error) {
 		return zero, err
 	}
 
-	if resp.StatusCode == 404 {
-		return zero, fmt.Errorf("TMDB %w", clients.ErrNotFound)
-	}
-
-	if resp.StatusCode == 429 {
-		return zero, fmt.Errorf("TMDB %w", clients.ErrRateLimit)
-	}
-
-	if resp.StatusCode == 401 || resp.StatusCode == 403 {
-		return zero, fmt.Errorf("TMDB %w", clients.ErrProviderAuth)
-	}
-
-	if resp.StatusCode >= 500 {
-		return zero, fmt.Errorf("TMDB %w", clients.ErrServerError)
-	}
-
-	if resp.StatusCode != 200 {
-		return zero, fmt.Errorf("TMDB API error (status %d)", resp.StatusCode)
+	if cerr := common.ClassifyStatus("TMDB", resp.StatusCode); cerr != nil {
+		return zero, cerr
 	}
 
 	var result T
@@ -300,7 +292,57 @@ func (s *Service) GetSeasonComplete(ctx context.Context, tvID, seasonNumber int,
 	return mapper.MapSeason(sd.detail, sd.tvDetail.Name, sd.images, sd.providers, country), nil
 }
 
-func (s *Service) GetBulkMovies(ctx context.Context, ids []int, country string) []BulkMovieResult {
+// GetMoviePreview is the homepage-card variant of GetMovieComplete. It hits
+// the same /movie/{id} endpoint but skips the watch-providers and images
+// appends so payloads stay small. Detail routes still call GetMovieComplete
+// so individual movie pages keep their full data.
+func (s *Service) GetMoviePreview(ctx context.Context, movieID int, country string) (models.Movie, error) {
+	data, err := unmarshalResponse[tmdb.TmdbMovieDetail](
+		s.client.GetMovieDetails(ctx, movieID, moviePreviewAppend),
+	)
+	if err != nil {
+		return models.Movie{}, fmt.Errorf("get movie preview %d: %w", movieID, err)
+	}
+	return mapper.MapMovie(data, country), nil
+}
+
+// GetTVShowPreview mirrors GetMoviePreview for TV shows. Season list is
+// derived from the base detail payload so card rendering stays correct.
+func (s *Service) GetTVShowPreview(ctx context.Context, tvID int, country string) (models.TVShow, error) {
+	data, err := unmarshalResponse[tmdb.TmdbTVDetail](
+		s.client.GetTVDetails(ctx, tvID, tvPreviewAppend),
+	)
+	if err != nil {
+		return models.TVShow{}, fmt.Errorf("get tv preview %d: %w", tvID, err)
+	}
+	show := mapper.MapTVShow(data, country)
+	seasons := make([]models.Season, 0, len(data.Seasons))
+	for _, season := range data.Seasons {
+		if mapper.IsValidSeason(season) {
+			seasons = append(seasons, mapper.MapSeasonSummary(season))
+		}
+	}
+	show.Seasons = seasons
+	return show, nil
+}
+
+// GetBulkMoviePreviews mirrors GetBulkMovies but uses the lightweight
+// preview endpoint, dropping ~75% of TMDB payload bytes for /homepage.
+func (s *Service) GetBulkMoviePreviews(ctx context.Context, ids []int, country string) []BulkMovieResult {
+	return s.bulkMovies(ctx, ids, country, s.GetMoviePreview)
+}
+
+// GetBulkTVShowPreviews is the TV equivalent of GetBulkMoviePreviews.
+func (s *Service) GetBulkTVShowPreviews(ctx context.Context, ids []int, country string) []BulkTVShowResult {
+	return s.bulkTVShows(ctx, ids, country, s.GetTVShowPreview)
+}
+
+func (s *Service) bulkMovies(
+	ctx context.Context,
+	ids []int,
+	country string,
+	fetch func(context.Context, int, string) (models.Movie, error),
+) []BulkMovieResult {
 	results := make([]BulkMovieResult, len(ids))
 	var wg sync.WaitGroup
 	sem := make(chan struct{}, 10)
@@ -312,28 +354,28 @@ loop:
 			break loop
 		case sem <- struct{}{}:
 		}
-
 		wg.Add(1)
-
 		go func(idx, movieID int) {
 			defer wg.Done()
 			defer func() { <-sem }()
-
-			movie, err := s.GetMovieComplete(ctx, movieID, country)
+			movie, err := fetch(ctx, movieID, country)
 			if err != nil {
 				results[idx] = BulkMovieResult{ID: movieID, Error: err.Error()}
 				return
 			}
-
 			results[idx] = BulkMovieResult{ID: movieID, Movie: &movie}
 		}(i, id)
 	}
-
 	wg.Wait()
 	return results
 }
 
-func (s *Service) GetBulkTVShows(ctx context.Context, ids []int, country string) []BulkTVShowResult {
+func (s *Service) bulkTVShows(
+	ctx context.Context,
+	ids []int,
+	country string,
+	fetch func(context.Context, int, string) (models.TVShow, error),
+) []BulkTVShowResult {
 	results := make([]BulkTVShowResult, len(ids))
 	var wg sync.WaitGroup
 	sem := make(chan struct{}, 10)
@@ -345,23 +387,26 @@ loop:
 			break loop
 		case sem <- struct{}{}:
 		}
-
 		wg.Add(1)
-
 		go func(idx, tvID int) {
 			defer wg.Done()
 			defer func() { <-sem }()
-
-			show, err := s.GetTVShowComplete(ctx, tvID, country)
+			show, err := fetch(ctx, tvID, country)
 			if err != nil {
 				results[idx] = BulkTVShowResult{ID: tvID, Error: err.Error()}
 				return
 			}
-
 			results[idx] = BulkTVShowResult{ID: tvID, TVShow: &show}
 		}(i, id)
 	}
-
 	wg.Wait()
 	return results
+}
+
+func (s *Service) GetBulkMovies(ctx context.Context, ids []int, country string) []BulkMovieResult {
+	return s.bulkMovies(ctx, ids, country, s.GetMovieComplete)
+}
+
+func (s *Service) GetBulkTVShows(ctx context.Context, ids []int, country string) []BulkTVShowResult {
+	return s.bulkTVShows(ctx, ids, country, s.GetTVShowComplete)
 }

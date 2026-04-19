@@ -21,7 +21,7 @@ func (m *mockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) 
 	return m.response, m.err
 }
 
-func newTestService(mockBody []byte, statusCode int) *Service {
+func newTestService(mockBody []byte, statusCode int, opts ...clients.ClientOption) *Service {
 	mockTransport := &mockRoundTripper{
 		response: &http.Response{
 			StatusCode: statusCode,
@@ -31,7 +31,8 @@ func newTestService(mockBody []byte, statusCode int) *Service {
 	}
 
 	mockHTTPClient := &http.Client{Transport: mockTransport}
-	client := olclient.NewClient(clients.NoOpCache{}, clients.WithHTTPClient(mockHTTPClient))
+	all := append([]clients.ClientOption{clients.WithHTTPClient(mockHTTPClient)}, opts...)
+	client := olclient.NewClient(clients.NoOpCache{}, all...)
 	return NewService(client)
 }
 
@@ -113,7 +114,8 @@ func TestSearchBooks_EmptyResults(t *testing.T) {
 }
 
 func TestSearchBooks_APIError(t *testing.T) {
-	service := newTestService([]byte(`{}`), http.StatusInternalServerError)
+	// Disable retries: the 5xx is the assertion, not a transient hiccup.
+	service := newTestService([]byte(`{}`), http.StatusInternalServerError, clients.WithNoRetry())
 
 	_, err := service.SearchBooks(context.Background(), "test", 1, 20)
 

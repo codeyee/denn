@@ -3,6 +3,7 @@ package openlibrary
 import (
 	"time"
 
+	cachettl "github.com/codeyee/denn-proxy/internal/cache"
 	"github.com/codeyee/denn-proxy/internal/clients"
 )
 
@@ -34,9 +35,9 @@ func NewClient(cache clients.Cache, opts ...clients.ClientOption) *Client {
 			"ol_trending": "openlibrary:trending:{limit}",
 		},
 		TTLs: map[string]time.Duration{
-			"ol_search":   6 * time.Hour,
-			"ol_details":  12 * time.Hour,
-			"ol_trending": 24 * time.Hour,
+			"ol_search":   cachettl.BookSearchTTL,
+			"ol_details":  cachettl.BookDetailTTL,
+			"ol_trending": cachettl.CatalogueTTL,
 		},
 	}
 

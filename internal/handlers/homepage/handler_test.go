@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/codeyee/denn-proxy/internal/clients"
 	"github.com/codeyee/denn-proxy/internal/models"
 
 	booksservice "github.com/codeyee/denn-proxy/internal/services/books/service"
@@ -34,27 +35,21 @@ func (m *mockVideo) GetPopularTVShows(_ context.Context, _, _ int) (tmdbservice.
 	return m.popularTV, m.popularTVErr
 }
 
-func (m *mockVideo) GetBulkMovies(_ context.Context, _ []int, _ string) []tmdbservice.BulkMovieResult {
+func (m *mockVideo) GetBulkMoviePreviews(_ context.Context, _ []int, _ string) []tmdbservice.BulkMovieResult {
 	return m.bulkMovies
 }
 
-func (m *mockVideo) GetBulkTVShows(_ context.Context, _ []int, _ string) []tmdbservice.BulkTVShowResult {
+func (m *mockVideo) GetBulkTVShowPreviews(_ context.Context, _ []int, _ string) []tmdbservice.BulkTVShowResult {
 	return m.bulkTVShows
 }
 
 type mockGames struct {
-	trendingItems []models.SearchItem
-	trendingErr   error
-	bulkGames     []models.Game
-	bulkErr       error
+	trendingDetail []models.Game
+	trendingErr    error
 }
 
-func (m *mockGames) GetTrendingGames(_ context.Context, _, _ int) ([]models.SearchItem, error) {
-	return m.trendingItems, m.trendingErr
-}
-
-func (m *mockGames) GetBulkGames(_ context.Context, _ []int) ([]models.Game, error) {
-	return m.bulkGames, m.bulkErr
+func (m *mockGames) GetTrendingGamesDetail(_ context.Context, _, _ int) ([]models.Game, error) {
+	return m.trendingDetail, m.trendingErr
 }
 
 type mockSpotify struct {
@@ -88,7 +83,7 @@ func (m *mockBooks) GetBulkBooks(_ context.Context, _ []string) []booksservice.B
 func setupRouter(video VideoService, games GamesService, spotify SpotifyService, books BooksService) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
-	h := NewHandler(video, games, spotify, books)
+	h := NewHandler(video, games, spotify, books, clients.NoOpCache{})
 	r.GET("/homepage", h.Homepage)
 	return r
 }
@@ -146,8 +141,7 @@ func defaultMocks() (*mockVideo, *mockGames, *mockSpotify, *mockBooks) {
 	}
 
 	games := &mockGames{
-		trendingItems: []models.SearchItem{{ID: "3", Type: "game", Title: "Trending Game"}},
-		bulkGames:     []models.Game{{ID: "3", ContentType: "game", Title: "Trending Game"}},
+		trendingDetail: []models.Game{{ID: "3", ContentType: "game", Title: "Trending Game"}},
 	}
 
 	spotify := &mockSpotify{
@@ -281,33 +275,10 @@ func TestHomepage_PartialFailure_TrendingPhase(t *testing.T) {
 	}
 }
 
-func TestHomepage_PartialFailure_EnrichPhase(t *testing.T) {
-	video, games, spotify, books := defaultMocks()
-
-	// Trending succeeds but bulk fails
-	games.bulkErr = fmt.Errorf("IGDB bulk timeout")
-
-	r := setupRouter(video, games, spotify, books)
-	w := doRequest(r, "/homepage")
-
-	if w.Code != http.StatusOK {
-		t.Fatalf("Expected status 200, got %d", w.Code)
-	}
-
-	raw := decodeResponse(t, w)
-
-	// Games should have error from phase 2
-	gamesCR := decodeContentResult(t, raw["games"])
-	if gamesCR.Error == nil {
-		t.Fatal("Expected error for games from bulk phase, got nil")
-	}
-
-	// Movies should still succeed
-	moviesCR := decodeContentResult(t, raw["movies"])
-	if moviesCR.Error != nil {
-		t.Errorf("Expected no error for movies, got %v", *moviesCR.Error)
-	}
-}
+// Note: the games path no longer has a separate "bulk" phase to fail in;
+// trending and enrichment are now serviced by a single
+// GetTrendingGamesDetail call (PR-5C.1). The trending-phase test above
+// already covers the failure surface for the games bucket.
 
 func TestHomepage_AllServicesFail(t *testing.T) {
 	video := &mockVideo{

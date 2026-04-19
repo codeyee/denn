@@ -2,16 +2,58 @@ package middleware
 
 import (
 	"fmt"
+	"log"
 	"net/http"
+	"sync/atomic"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/codeyee/denn-proxy/internal/clients"
+	"github.com/gin-gonic/gin"
 )
 
+// rateLimitDegradedHeader marks responses that bypassed rate limiting
+// because the cache (Redis) was unavailable. Operators and downstream
+// observability can alert on its presence — previously the middleware
+// silently fell open, which made a Redis outage indistinguishable from
+// "no traffic was throttled".
+const rateLimitDegradedHeader = "X-RateLimit-Degraded"
+
+// degradedLogSampleEvery throttles the fail-open warning so an outage does
+// not flood the log at request rate. We log the first occurrence and then
+// every Nth event after that.
+const degradedLogSampleEvery = 100
+
+// degradedFailures counts cache failures observed by RateLimitMiddleware.
+// Module-level so it survives across requests; access via atomic ops.
+var degradedFailures uint64
+
+// noOpCacheTypeName is the type name we expect for clients.NoOpCache; we
+// detect it at startup so operators get a single warning instead of one
+// per request via the fail-open header.
+const noOpCacheTypeName = "clients.NoOpCache"
+
+// WarnIfRateLimitCacheNoOp emits a one-shot warning if the cache passed to
+// the rate limiter is the no-op implementation. Call this from main after
+// wiring the cache.
+func WarnIfRateLimitCacheNoOp(cache clients.Cache) {
+	if _, ok := cache.(clients.NoOpCache); ok {
+		log.Printf("ratelimit: cache is %s — request throttling is DISABLED. "+
+			"Wire a real Redis-backed cache for production traffic.", noOpCacheTypeName)
+	}
+}
+
 func RateLimitMiddleware(cache clients.Cache, limit int) gin.HandlerFunc {
+	_, isNoOp := cache.(clients.NoOpCache)
 	return func(c *gin.Context) {
 		if limit <= 0 {
+			c.Next()
+			return
+		}
+
+		// NoOp cache means rate limiting is structurally off; surface it
+		// as a degraded response and skip the Incr round-trip entirely.
+		if isNoOp {
+			c.Header(rateLimitDegradedHeader, "noop-cache")
 			c.Next()
 			return
 		}
@@ -21,7 +63,15 @@ func RateLimitMiddleware(cache clients.Cache, limit int) gin.HandlerFunc {
 
 		count, err := cache.Incr(c.Request.Context(), key)
 		if err != nil {
-			// Fail open if cache is unavailable
+			// Fail open: better to serve traffic than to 500 the API on
+			// a Redis hiccup, but make the degradation observable so a
+			// sustained outage triggers alerts rather than going
+			// unnoticed until upstream providers rate-limit us.
+			n := atomic.AddUint64(&degradedFailures, 1)
+			if n == 1 || n%degradedLogSampleEvery == 0 {
+				log.Printf("ratelimit: cache unavailable, failing open (failures=%d): %v", n, err)
+			}
+			c.Header(rateLimitDegradedHeader, "cache-error")
 			c.Next()
 			return
 		}

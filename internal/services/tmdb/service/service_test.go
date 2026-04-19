@@ -22,13 +22,14 @@ func (m *mockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) 
 	return m.roundTripFunc(req)
 }
 
-func newTestService(handler func(*http.Request) (*http.Response, error)) *Service {
+func newTestService(handler func(*http.Request) (*http.Response, error), opts ...clients.ClientOption) *Service {
 	httpClient := &http.Client{
 		Transport: &mockRoundTripper{roundTripFunc: handler},
 		Timeout:   10 * time.Second,
 	}
 
-	tmdbClient := tmdbclient.NewClient("test-api-key", clients.NoOpCache{}, clients.WithHTTPClient(httpClient))
+	all := append([]clients.ClientOption{clients.WithHTTPClient(httpClient)}, opts...)
+	tmdbClient := tmdbclient.NewClient("test-api-key", clients.NoOpCache{}, all...)
 	return NewService(tmdbClient)
 }
 
@@ -193,12 +194,14 @@ func TestGetTVShowComplete(t *testing.T) {
 }
 
 func TestGetTrendingMovies_Error(t *testing.T) {
+	// 500 here is the test assertion; disable retries so this case finishes
+	// in milliseconds instead of triggering the full backoff loop.
 	service := newTestService(func(req *http.Request) (*http.Response, error) {
 		return &http.Response{
 			StatusCode: 500,
 			Body:       io.NopCloser(bytes.NewBufferString("Internal Server Error")),
 		}, nil
-	})
+	}, clients.WithNoRetry())
 
 	_, err := service.GetPopularMovies(context.Background(), 1, 20)
 	if err == nil {

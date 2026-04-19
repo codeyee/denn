@@ -3,19 +3,23 @@ package igdb
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
-	"strings"
 	"sync"
 	"time"
 
+	cachettl "github.com/codeyee/denn-proxy/internal/cache"
 	"github.com/codeyee/denn-proxy/internal/clients"
 )
 
 const (
 	AuthURL        = "https://id.twitch.tv/oauth2/token"
 	BaseURL        = "https://api.igdb.com/v4"
+	authBase       = "https://id.twitch.tv"
+	authPath       = "/oauth2/token"
 	TokenKey       = "auth:igdb:token"
 	TokenExpiryKey = "auth:igdb:expiry"
 	TokenBuffer    = 5 * time.Minute
@@ -26,15 +30,26 @@ type Client struct {
 	clientID     string
 	clientSecret string
 	cache        clients.Cache
-	mu           sync.RWMutex
-	token        string
-	tokenExpiry  time.Time
+	// oauthClient runs the Twitch client-credentials exchange through the
+	// shared BaseClient so transient 5xx/429 are retried with jitter.
+	oauthClient *clients.BaseClient
+	mu          sync.RWMutex
+	token       string
+	tokenExpiry time.Time
 }
 
 type AuthResponse struct {
 	AccessToken string `json:"access_token"`
 	ExpiresIn   int    `json:"expires_in"`
 	TokenType   string `json:"token_type"`
+}
+
+// oauthRetry keeps the token endpoint responsive: tighter envelope than the
+// default API retries so a Twitch hiccup doesn't gate every IGDB call.
+var oauthRetry = clients.RetryConfig{
+	MaxRetries:     3,
+	InitialBackoff: 200 * time.Millisecond,
+	MaxBackoff:     2 * time.Second,
 }
 
 func NewClient(clientID, clientSecret string, cache clients.Cache, opts ...clients.ClientOption) *Client {
@@ -51,6 +66,13 @@ func NewClient(clientID, clientSecret string, cache clients.Cache, opts ...clien
 		}, opts...)...,
 	)
 
+	c.oauthClient = clients.NewBaseClient(authBase,
+		clients.WithAPIName("igdb-oauth"),
+		clients.WithHTTPClient(baseClient.HTTPClient()),
+		clients.WithHeaders(c.oauthHeaders),
+		clients.WithRetryConfig(oauthRetry),
+	)
+
 	cacheConfig := clients.CacheConfig{
 		KeyTemplates: map[string]string{
 			"api_igdb_search":     "igdb:search:{query}:{limit}:{offset}:{body_hash}",
@@ -58,15 +80,13 @@ func NewClient(clientID, clientSecret string, cache clients.Cache, opts ...clien
 			"api_igdb_bulk":       "igdb:bulk:{ids_hash}:{body_hash}",
 			"api_igdb_popular":    "igdb:popular:{limit}:{offset}:{body_hash}",
 			"api_igdb_popularity": "igdb:popularity:{popularity_type}:{limit}:{body_hash}",
-			"api_igdb_trending":   "igdb:trending:{limit}:{offset}",
 		},
 		TTLs: map[string]time.Duration{
-			"api_igdb_search":     24 * time.Hour,
-			"api_igdb_details":    48 * time.Hour,
-			"api_igdb_bulk":       48 * time.Hour,
-			"api_igdb_popular":    24 * time.Hour,
-			"api_igdb_popularity": 24 * time.Hour,
-			"api_igdb_trending":   24 * time.Hour,
+			"api_igdb_search":     cachettl.SearchTTL,
+			"api_igdb_details":    cachettl.DetailTTL,
+			"api_igdb_bulk":       cachettl.DetailTTL,
+			"api_igdb_popular":    cachettl.CatalogueTTL,
+			"api_igdb_popularity": cachettl.CatalogueTTL,
 		},
 	}
 
@@ -74,13 +94,20 @@ func NewClient(clientID, clientSecret string, cache clients.Cache, opts ...clien
 	return c
 }
 
+// getAuthHeaders returns the per-request headers for IGDB API calls. On token
+// failure we now send a deterministic invalid Authorization so IGDB responds
+// with 401, which BaseClient classifies and the service layer turns into
+// ErrProviderAuth — instead of the previous silent partial-headers degradation
+// that produced random 400s.
 func (c *Client) getAuthHeaders() map[string]string {
 	token, err := c.getOrRefreshToken()
 	if err != nil {
-		fmt.Printf("Error getting IGDB token: %v\n", err)
-
+		log.Printf("igdb: token unavailable, request will fail: %v", err)
 		return map[string]string{
-			"Client-ID": c.clientID,
+			"Client-ID":     c.clientID,
+			"Authorization": "Bearer invalid-token-after-oauth-failure",
+			"Content-Type":  "text/plain",
+			"Accept":        "application/json",
 		}
 	}
 
@@ -89,6 +116,15 @@ func (c *Client) getAuthHeaders() map[string]string {
 		"Authorization": fmt.Sprintf("Bearer %s", token),
 		"Content-Type":  "text/plain",
 		"Accept":        "application/json",
+	}
+}
+
+// oauthHeaders supplies the form-urlencoded content type the Twitch token
+// endpoint requires. Credentials travel in the body, not as Basic auth.
+func (c *Client) oauthHeaders() map[string]string {
+	return map[string]string{
+		"Content-Type": "application/x-www-form-urlencoded",
+		"Accept":       "application/json",
 	}
 }
 
@@ -158,24 +194,22 @@ func (c *Client) fetchNewToken() (string, int, error) {
 	params.Set("client_secret", c.clientSecret)
 	params.Set("grant_type", "client_credentials")
 
-	req, err := http.NewRequest(http.MethodPost, AuthURL, strings.NewReader(params.Encode()))
+	resp, err := c.oauthClient.Request(context.Background(), http.MethodPost, authPath, nil, params.Encode())
 	if err != nil {
-		return "", 0, err
+		// Surface as ErrProviderAuth so callers can classify a token failure
+		// the same way they classify a 401 on a normal API call.
+		if errors.Is(err, clients.ErrUpstreamExhausted) || errors.Is(err, clients.ErrConnection) || errors.Is(err, clients.ErrTimeout) {
+			return "", 0, fmt.Errorf("%w: %w", clients.ErrProviderAuth, err)
+		}
+		return "", 0, fmt.Errorf("igdb auth request: %w", err)
 	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	resp, err := c.HTTPClient().Do(req)
-	if err != nil {
-		return "", 0, err
-	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return "", 0, fmt.Errorf("failed to authenticate with IGDB: status %d", resp.StatusCode)
+		return "", 0, fmt.Errorf("%w: igdb auth status %d", clients.ErrProviderAuth, resp.StatusCode)
 	}
 
 	var authResp AuthResponse
-	if err := json.NewDecoder(resp.Body).Decode(&authResp); err != nil {
+	if err := json.Unmarshal(resp.Data, &authResp); err != nil {
 		return "", 0, err
 	}
 

@@ -276,10 +276,15 @@ func TestProviderError(t *testing.T) {
 	mockTransport := &MockRoundTripper{
 		Err: io.EOF, // Simulate network error
 	}
-	
-	baseClient := clients.NewBaseClient(BaseURL, clients.WithHTTPClient(&http.Client{Transport: mockTransport}))
+
+	// Disable retries: this test asserts that a transport error surfaces; the
+	// retry loop would otherwise turn it into ~15s of exponential sleeps.
+	baseClient := clients.NewBaseClient(BaseURL,
+		clients.WithHTTPClient(&http.Client{Transport: mockTransport}),
+		clients.WithNoRetry(),
+	)
 	cache := NewMockCache()
-	
+
 	c := &Client{
 		CachedClient: clients.NewCachedClient(baseClient, cache, clients.CacheConfig{}),
 		cache:        cache,

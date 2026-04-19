@@ -1,4 +1,4 @@
-.PHONY: gen-spec build run test
+.PHONY: gen-spec build run test test-integration
 
 gen-spec:
 	swag init \
@@ -18,3 +18,10 @@ run:
 
 test:
 	go test ./...
+
+# test-integration runs tests guarded by `//go:build integration`.
+# Use this for any test that hits a real upstream provider or Redis instance.
+# CI defaults to `make test` (unit only); run `make test-integration` manually
+# when you want to exercise the integration-tagged suite.
+test-integration:
+	go test -tags=integration -count=1 ./...

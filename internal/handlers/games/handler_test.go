@@ -1,14 +1,12 @@
 package games
 
 import (
-	"context"
 	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/codeyee/denn-proxy/internal/clients"
 	"github.com/codeyee/denn-proxy/internal/providers/igdb"
@@ -16,22 +14,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// NoOpCache implementation for testing
-type NoOpCache struct{}
-
-func (NoOpCache) Get(ctx context.Context, key string) ([]byte, error) { return nil, nil }
-func (NoOpCache) Set(ctx context.Context, key string, value []byte, ttl time.Duration) error {
-	return nil
-}
-func (NoOpCache) DeletePattern(ctx context.Context, pattern string) (int64, error) { return 0, nil }
-func (NoOpCache) Incr(ctx context.Context, key string) (int64, error)              { return 0, nil }
-func (NoOpCache) TTL(ctx context.Context, key string) (time.Duration, error) { return 0, nil }
-func (NoOpCache) Expire(ctx context.Context, key string, ttl time.Duration) (bool, error) {
-	return true, nil
-}
-func (NoOpCache) Close() error { return nil }
-
-// Mock RoundTripper
+// Mock RoundTripper. Returning a *http.Response without an error keeps the
+// per-test setup terse; failures are signalled via the response body/status.
 type RoundTripFunc func(req *http.Request) *http.Response
 
 func (f RoundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -48,7 +32,7 @@ func setupTestHandler(client *http.Client) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
 
-	igdbClient := igdb.NewClient("test-id", "test-secret", NoOpCache{}, clients.WithHTTPClient(client))
+	igdbClient := igdb.NewClient("test-id", "test-secret", clients.NoOpCache{}, clients.WithHTTPClient(client))
 	service := gamesservice.NewService(igdbClient)
 	handler := NewHandler(service)
 

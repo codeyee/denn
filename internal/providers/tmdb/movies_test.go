@@ -125,8 +125,13 @@ func TestGetPopularMovies(t *testing.T) {
 			}
 
 			cache := NewMockCache()
-			// Use the refactored NewClient with options
-			client := NewClient("test-key", cache, clients.WithHTTPClient(&http.Client{Transport: mockTransport}))
+			opts := []clients.ClientOption{clients.WithHTTPClient(&http.Client{Transport: mockTransport})}
+			if tt.wantErr {
+				// Disable retries when the test expects an error; otherwise the
+				// shared retry loop multiplies a deterministic 5xx into ~30s.
+				opts = append(opts, clients.WithNoRetry())
+			}
+			client := NewClient("test-key", cache, opts...)
 
 			resp, err := client.GetPopularMovies(context.Background(), tt.page)
 

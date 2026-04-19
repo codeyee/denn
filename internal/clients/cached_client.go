@@ -5,14 +5,33 @@ import (
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"sort"
 	"strings"
+	"sync/atomic"
 	"time"
 )
 
 const defaultCacheTTL = time.Hour
+
+// cacheLogSampleEvery throttles how often we log cache Get/Set failures.
+// We log the first failure and then every Nth one — this ensures we
+// notice an outage immediately without flooding the log when Redis is
+// truly down. Per-CachedClient counter so each provider gets its own
+// signal in the logs.
+const cacheLogSampleEvery = 100
+
+// CacheRecorder is an optional sink for cache events. It is intentionally
+// minimal so a future metrics package (Prometheus, OTEL, etc.) can plug in
+// without touching the client. Implementations must be safe for
+// concurrent use.
+type CacheRecorder interface {
+	OnHit(api, cacheType string)
+	OnMiss(api, cacheType string)
+	OnError(api, cacheType, op string, err error)
+}
 
 type CacheConfig struct {
 	KeyTemplates map[string]string
@@ -21,8 +40,12 @@ type CacheConfig struct {
 
 type CachedClient struct {
 	*BaseClient
-	cache  Cache
-	config CacheConfig
+	cache    Cache
+	config   CacheConfig
+	recorder CacheRecorder
+
+	getFailures uint64
+	setFailures uint64
 }
 
 func NewCachedClient(base *BaseClient, cache Cache, config CacheConfig) *CachedClient {
@@ -31,6 +54,11 @@ func NewCachedClient(base *BaseClient, cache Cache, config CacheConfig) *CachedC
 		cache:      cache,
 		config:     config,
 	}
+}
+
+// SetRecorder attaches a metrics sink. nil disables recording (default).
+func (c *CachedClient) SetRecorder(r CacheRecorder) {
+	c.recorder = r
 }
 
 type cachedEntry struct {
@@ -86,12 +114,24 @@ func (c *CachedClient) CachedRequest(
 	cacheKey := c.generateCacheKey(cacheType, cacheArgs)
 	cached, err := c.cache.Get(ctx, cacheKey)
 
+	if err != nil {
+		// Sampled log + recorder. We deliberately swallow the error so a
+		// Redis hiccup doesn't fail the user request, but we make sure
+		// the failure is observable.
+		c.recordGetFailure(cacheType, err)
+	}
+
 	if err == nil && cached != nil {
 		var entry cachedEntry
 
 		if json.Unmarshal(cached, &entry) == nil {
+			if c.recorder != nil {
+				c.recorder.OnHit(c.apiName, cacheType)
+			}
 			return &Response{Data: entry.Data, StatusCode: entry.StatusCode}, nil
 		}
+	} else if err == nil && c.recorder != nil {
+		c.recorder.OnMiss(c.apiName, cacheType)
 	}
 
 	resp, err := c.Request(ctx, method, endpoint, params, body)
@@ -104,11 +144,33 @@ func (c *CachedClient) CachedRequest(
 		entry := cachedEntry{Data: resp.Data, StatusCode: resp.StatusCode}
 
 		if data, marshalErr := json.Marshal(entry); marshalErr == nil {
-			_ = c.cache.Set(ctx, cacheKey, data, c.getCacheTTL(cacheType))
+			if setErr := c.cache.Set(ctx, cacheKey, data, c.getCacheTTL(cacheType)); setErr != nil {
+				c.recordSetFailure(cacheType, setErr)
+			}
 		}
 	}
 
 	return resp, nil
+}
+
+func (c *CachedClient) recordGetFailure(cacheType string, err error) {
+	n := atomic.AddUint64(&c.getFailures, 1)
+	if n == 1 || n%cacheLogSampleEvery == 0 {
+		log.Printf("cache: %s GET %q failed (n=%d): %v", c.apiName, cacheType, n, err)
+	}
+	if c.recorder != nil {
+		c.recorder.OnError(c.apiName, cacheType, "get", err)
+	}
+}
+
+func (c *CachedClient) recordSetFailure(cacheType string, err error) {
+	n := atomic.AddUint64(&c.setFailures, 1)
+	if n == 1 || n%cacheLogSampleEvery == 0 {
+		log.Printf("cache: %s SET %q failed (n=%d): %v", c.apiName, cacheType, n, err)
+	}
+	if c.recorder != nil {
+		c.recorder.OnError(c.apiName, cacheType, "set", err)
+	}
 }
 
 func (c *CachedClient) CachedGet(

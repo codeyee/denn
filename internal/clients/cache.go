@@ -18,6 +18,13 @@ type Cache interface {
 	Close() error
 }
 
+// Pinger is implemented by caches that can verify backend reachability
+// without performing a key operation. Used by /health to distinguish a
+// caching outage from "everything fine, no traffic".
+type Pinger interface {
+	Ping(ctx context.Context) error
+}
+
 type RedisCache struct {
 	client *redis.Client
 }
@@ -100,6 +107,12 @@ func (r *RedisCache) Expire(ctx context.Context, key string, ttl time.Duration) 
 
 func (r *RedisCache) Close() error {
 	return r.client.Close()
+}
+
+// Ping verifies the Redis backend is reachable. Returned errors are passed
+// through verbatim so /health can include the underlying Redis message.
+func (r *RedisCache) Ping(ctx context.Context) error {
+	return r.client.Ping(ctx).Err()
 }
 
 type NoOpCache struct{}

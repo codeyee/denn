@@ -3,6 +3,7 @@ package tmdb
 import (
 	"time"
 
+	cachettl "github.com/codeyee/denn-proxy/internal/cache"
 	"github.com/codeyee/denn-proxy/internal/clients"
 )
 
@@ -20,13 +21,13 @@ var cacheConfig = clients.CacheConfig{
 	},
 
 	TTLs: map[string]time.Duration{
-		"search_movies":          24 * time.Hour,
-		"search_tv":              24 * time.Hour,
-		"details":                48 * time.Hour,
-		"images_season":          7 * 24 * time.Hour,
-		"watch_providers_season": 7 * 24 * time.Hour,
-		"popular_movies":         24 * time.Hour,
-		"popular_tv":             24 * time.Hour,
+		"search_movies":          cachettl.SearchTTL,
+		"search_tv":              cachettl.SearchTTL,
+		"details":                cachettl.DetailTTL,
+		"images_season":          cachettl.MediaTTL,
+		"watch_providers_season": cachettl.MediaTTL,
+		"popular_movies":         cachettl.CatalogueTTL,
+		"popular_tv":             cachettl.CatalogueTTL,
 	},
 }
 

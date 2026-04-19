@@ -92,7 +92,7 @@ func main() {
 	bookHandler := books.NewHandler(booksSvc)
 
 	multiSearchHandler := multisearch.NewHandler(tmdbSvc, gamesSvc, spotifySvc, booksSvc)
-	homepageHandler := homepage.NewHandler(tmdbSvc, gamesSvc, spotifySvc, booksSvc)
+	homepageHandler := homepage.NewHandler(tmdbSvc, gamesSvc, spotifySvc, booksSvc, cache)
 
 	r := gin.Default()
 
@@ -108,11 +108,13 @@ func main() {
 
 	api := r.Group("/v1/proxy")
 	{
-		api.GET("/health", health.HealthCheck)
+		healthHandler := health.NewHandler(cache)
+		api.GET("/health", healthHandler.HealthCheck)
 
 		protected := api.Group("")
 		protected.Use(middleware.AuthMiddleware(cfg.ApiKey))
-		protected.Use(middleware.RateLimitMiddleware(cache, cfg.RateLimitPerMinute))
+		middleware.WarnIfRateLimitCacheNoOp(cache)
+	protected.Use(middleware.RateLimitMiddleware(cache, cfg.RateLimitPerMinute))
 
 		protected.GET("/search", multiSearchHandler.Search)
 		protected.GET("/homepage", homepageHandler.Homepage)

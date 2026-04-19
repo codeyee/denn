@@ -2,6 +2,7 @@ package games
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -52,7 +53,7 @@ func (h *Handler) Search(c *gin.Context) {
 	result, err := h.service.SearchGames(c.Request.Context(), query, limit, offset)
 
 	if err != nil {
-		fmt.Printf("SearchGames Error: %v\n", err)
+		log.Printf("games: SearchGames %q: %v", query, err)
 		common.HandleServiceError(c, err)
 		return
 	}
