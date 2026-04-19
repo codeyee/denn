@@ -8,8 +8,8 @@
 
 A modern, feature-rich frontend for managing and discovering multi-media content. Browse, organize, and track movies, TV shows, music, games, and books all in one beautiful interface.
 
-This package is part of a three-service workspace (`web`, `core`,
-`proxy`). Read the root [`README.md`](../README.md) and
+This package is part of the Denn monorepo (`web`, `core`, `proxy`).
+Read the root [`README.md`](../README.md) and
 [`docs/adr/0001-external-metadata-integration.md`](../docs/adr/0001-external-metadata-integration.md)
 for the topology before changing how data is fetched.
 
@@ -82,14 +82,14 @@ for the topology before changing how data is fetched.
 ### Prerequisites
 - Node.js 18+ or Bun
 - npm, yarn, pnpm, or bun
-- Access to [Denn API](https://github.com/CodeYee/denn-api) (backend)
+- Access to the sibling `core` and `proxy` apps in this monorepo
 
 ### Installation
 
 1. **Clone the repository**
 ```bash
-git clone https://github.com/CodeYee/denn-web.git
-cd denn-web
+git clone https://github.com/CodeYee/denn.git
+cd denn/web
 ```
 
 2. **Install dependencies**
@@ -147,7 +147,7 @@ The project uses the webpack production build path explicitly to keep builds sta
 ## 📖 Project Structure
 
 ```
-denn-web/
+web/
 ├── app/
 │   ├── _components/           # React components
 │   │   ├── cards/            # Card components (ContentCard, ListCard, etc.)
