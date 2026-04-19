@@ -92,6 +92,7 @@ func (h *Handler) Detail(c *gin.Context) {
 
 	game, err := h.service.GetGameComplete(c.Request.Context(), id)
 	if err != nil {
+		log.Printf("games: GetGameComplete id=%d: %v", id, err)
 		common.HandleServiceError(c, err)
 		return
 	}

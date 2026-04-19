@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"strings"
@@ -110,6 +111,22 @@ func TestGetGameComplete(t *testing.T) {
 	}
 	if len(game.Genres) != 1 || game.Genres[0] != "RPG" {
 		t.Errorf("expected Genre RPG, got %v", game.Genres)
+	}
+}
+
+func TestGetGameCompleteEmptyResponseReturnsErrNotFound(t *testing.T) {
+	// Regression: IGDB returns 200 OK with `[]` for IDs that don't exist.
+	// The service used to return a generic fmt.Errorf("game not found") that
+	// the handler couldn't classify, so the proxy responded 500 instead of 404.
+	mockBody, _ := json.Marshal([]map[string]any{})
+	service := newServiceWithAPI(t, mockBody, http.StatusOK)
+
+	_, err := service.GetGameComplete(context.Background(), 305556)
+	if err == nil {
+		t.Fatal("expected error for empty IGDB response, got nil")
+	}
+	if !errors.Is(err, clients.ErrNotFound) {
+		t.Errorf("expected ErrNotFound, got %v", err)
 	}
 }
 

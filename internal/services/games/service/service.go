@@ -70,7 +70,10 @@ func (s *Service) GetGameComplete(ctx context.Context, id int) (models.Game, err
 		return models.Game{}, err
 	}
 	if len(data) == 0 {
-		return models.Game{}, fmt.Errorf("game not found")
+		// IGDB returns 200 with [] for IDs that don't exist (deleted/private).
+		// Surface that as ErrNotFound so the handler maps it to a clean 404
+		// instead of falling through to a generic 500.
+		return models.Game{}, clients.ErrNotFound
 	}
 
 	return mapper.MapGame(data[0]), nil
