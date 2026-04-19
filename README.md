@@ -8,6 +8,11 @@
 
 A modern, feature-rich frontend for managing and discovering multi-media content. Browse, organize, and track movies, TV shows, music, games, and books all in one beautiful interface.
 
+This package is part of a three-service workspace (`web`, `core`,
+`proxy`). Read the root [`README.md`](../README.md) and
+[`docs/adr/0001-external-metadata-integration.md`](../docs/adr/0001-external-metadata-integration.md)
+for the topology before changing how data is fetched.
+
 ---
 
 ## 🚀 Features
@@ -100,15 +105,20 @@ bun install
 
 3. **Set up environment variables**
 
-Create a `.env.local` file in the project root:
+Copy `.env.example` to `.env.local` and fill in real values. The most
+important variables (full list and rules in
+[`docs/contracts/internal-http.md`](../docs/contracts/internal-http.md)):
+
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:8000/api
+NEXT_PUBLIC_API_URL=http://localhost:8000/api   # core (Django)
+NEXT_PUBLIC_PROXY_BASE_URL=http://localhost:8081/v1/proxy
+PROXY_BASE_URL=http://localhost:8081/v1/proxy   # used by SSR + BFF
+PROXY_API_KEY=replace-me                        # SERVER-ONLY, never NEXT_PUBLIC_*
 ```
 
-For production:
-```env
-NEXT_PUBLIC_API_URL=https://denn.up.railway.app/api
-```
+`PROXY_API_KEY` must never be exposed to the browser. The Next.js BFF
+in `app/api/proxy/[...path]/route.ts` is the only place in `web` that
+attaches it to outgoing requests.
 
 4. **Run the development server**
 ```bash
@@ -182,9 +192,13 @@ Protected routes use the `ProtectedRoute` wrapper component for authentication.
 Five specialized Zustand stores handle different aspects of the application:
 
 1. **auth-store.ts** - Authentication state
-   - User data and JWT tokens
+   - User data and JWT tokens (in memory only)
    - Login/register/logout actions
-   - Persistent localStorage sync
+   - User profile is persisted to localStorage; **access/refresh
+     tokens are not** (Phase 1 of
+     [`docs/adr/0002-web-auth-cookies.md`](../docs/adr/0002-web-auth-cookies.md)).
+     The longer-term plan is to move tokens to `HttpOnly`/`Secure`
+     cookies; see the ADR for the staged migration.
 
 2. **content-store.ts** - Content data
    - Movies, TV shows, games, music, books
@@ -280,13 +294,42 @@ Implemented with `next-themes`:
 
 ## 🔐 Authentication Flow
 
-1. User submits login/register form
-2. Frontend sends request to `/api/auth/login/` or `/api/auth/register/`
-3. Backend returns user data + JWT tokens (access + refresh)
-4. Tokens stored in Zustand auth store and persisted to localStorage
-5. API client automatically includes Bearer token in authenticated requests
-6. On 401 response, automatically refreshes token and retries
-7. On logout, calls `/api/auth/logout/` and clears all state
+1. User submits login/register form.
+2. Frontend sends request to `/api/auth/login/` or `/api/auth/register/`.
+3. Backend (`core`) returns user data + JWT tokens (access + refresh).
+4. Tokens are held in the Zustand auth store **in memory** (Phase 1 of
+   ADR-0002). The user profile is persisted to localStorage so the UI
+   can hydrate before the first network round-trip; tokens are not.
+5. API client automatically includes the Bearer token in authenticated
+   requests.
+6. On 401 response, automatically refreshes the token and retries.
+7. On logout, calls `/api/auth/logout/` and clears all state.
+
+The longer-term plan (ADR-0002) is to move tokens out of JS entirely
+and into `HttpOnly` / `Secure` / `SameSite=Lax` cookies issued by
+`core`, with the BFF coordinating refresh. This file will be updated
+when later phases land.
+
+---
+
+## 🔌 Talking to the backends
+
+`web` integrates with two HTTP backends:
+
+- **`core`** (Django) for everything tied to a Denn account: auth,
+  lists, ratings.
+- **`proxy`** (Go) for external metadata (TMDB, IGDB, Spotify,
+  OpenLibrary). The browser never calls `proxy` directly:
+  - In **SSR helpers** (`lib/server/*`) we call `proxy` server-to-
+    server using `lib/server/proxy.ts` to attach `X-Api-Key` and
+    `X-Request-Id`.
+  - In the **browser** we go through the BFF route at
+    `app/api/proxy/[...path]/route.ts`, which adds the same headers on
+    the way out.
+
+Every server-side call propagates `X-Request-Id` so a single user
+action can be traced across `web → proxy` and `web → core → proxy`.
+See [`docs/observability.md`](../docs/observability.md).
 
 ---
 

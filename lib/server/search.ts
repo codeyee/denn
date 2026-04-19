@@ -1,26 +1,11 @@
 import "server-only";
 
+import { headers } from "next/headers";
 import { getProxyApiUrl } from "@/lib/env";
+import { buildProxyHeaders, generateRequestId } from "@/lib/server/proxy";
 import type { MultiSearchResponse } from "@/lib/types";
 import { transformBookResults, transformGameResults, transformMovieResults, transformMusicResults, transformTVShowResults } from "@/app/_components/pages/SearchPage/utils";
 import { EMPTY_SEARCH_RESULTS, type SearchResults } from "@/app/_components/pages/SearchPage/types";
-
-function getProxyHeaders(country: string | null): HeadersInit {
-  const headers: HeadersInit = {
-    "Content-Type": "application/json",
-  };
-
-  const apiKey = process.env.PROXY_API_KEY || process.env.NEXT_PUBLIC_PROXY_API_KEY;
-  if (apiKey) {
-    headers["X-Api-Key"] = apiKey;
-  }
-
-  if (country) {
-    headers["X-User-Country"] = country;
-  }
-
-  return headers;
-}
 
 function transformSearchResults(response: MultiSearchResponse): SearchResults {
   return {
@@ -47,8 +32,16 @@ export async function getSearchResults(
     limit: "20",
   });
 
+  let requestId: string;
+  try {
+    const h = await headers();
+    requestId = h.get("x-request-id") ?? generateRequestId();
+  } catch {
+    requestId = generateRequestId();
+  }
+
   const response = await fetch(`${getProxyApiUrl()}/search?${searchParams.toString()}`, {
-    headers: getProxyHeaders(country),
+    headers: buildProxyHeaders(country, { requestId }),
     cache: "no-store",
   });
 

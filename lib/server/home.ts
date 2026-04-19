@@ -1,8 +1,19 @@
 import "server-only";
 
+import { headers } from "next/headers";
 import { getApiUrl, getProxyApiUrl } from "@/lib/env";
+import { buildProxyHeaders, generateRequestId } from "@/lib/server/proxy";
 import type { HomepageResponse, ListWithItems, PaginatedUserListList } from "@/lib/types";
 import type { SessionSnapshot } from "@/lib/auth/session-server";
+
+async function inboundRequestId(): Promise<string> {
+  try {
+    const h = await headers();
+    return h.get("x-request-id") ?? generateRequestId();
+  } catch {
+    return generateRequestId();
+  }
+}
 
 const SUGGESTIONS_PAGE_SIZE = 20;
 const LISTS_ITEMS_SIZE = 8;
@@ -22,30 +33,13 @@ const EMPTY_HOME_DATA: HomePageData = {
   listsError: null,
 };
 
-function getProxyHeaders(country: string | null): HeadersInit {
-  const headers: HeadersInit = {
-    "Content-Type": "application/json",
-  };
-
-  const apiKey = process.env.PROXY_API_KEY || process.env.NEXT_PUBLIC_PROXY_API_KEY;
-  if (apiKey) {
-    headers["X-Api-Key"] = apiKey;
-  }
-
-  if (country) {
-    headers["X-User-Country"] = country;
-  }
-
-  return headers;
-}
-
-async function fetchSuggestions(country: string | null): Promise<HomepageResponse> {
+async function fetchSuggestions(country: string | null, requestId: string): Promise<HomepageResponse> {
   const searchParams = new URLSearchParams({
     limit: String(SUGGESTIONS_PAGE_SIZE),
   });
 
   const response = await fetch(`${getProxyApiUrl()}/homepage?${searchParams.toString()}`, {
-    headers: getProxyHeaders(country),
+    headers: buildProxyHeaders(country, { requestId }),
     cache: "no-store",
   });
 
@@ -58,7 +52,8 @@ async function fetchSuggestions(country: string | null): Promise<HomepageRespons
 
 async function fetchLists(
   accessToken: string,
-  country: string | null
+  country: string | null,
+  requestId: string
 ): Promise<ListWithItems[]> {
   const searchParams = new URLSearchParams({
     items_size: String(LISTS_ITEMS_SIZE),
@@ -83,6 +78,7 @@ async function fetchLists(
     headers: {
       Authorization: `Bearer ${accessToken}`,
       "Content-Type": "application/json",
+      "X-Request-Id": requestId,
     },
     cache: "no-store",
   });
@@ -103,9 +99,11 @@ export async function getHomePageData(
     return EMPTY_HOME_DATA;
   }
 
+  const requestId = await inboundRequestId();
+
   const [suggestionsResult, listsResult] = await Promise.allSettled([
-    fetchSuggestions(country),
-    fetchLists(session.accessToken, country),
+    fetchSuggestions(country, requestId),
+    fetchLists(session.accessToken, country, requestId),
   ]);
 
   return {

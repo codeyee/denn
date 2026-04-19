@@ -235,10 +235,13 @@ export const useAuthStore = create<AuthStore>()(
     {
       name: "auth-storage",
       storage: createJSONStorage(() => localStorage),
+      // Phase 1 of docs/adr/0002-web-auth-cookies.md: stop persisting JWTs
+      // to localStorage. The tokens still live in (non-HttpOnly) cookies and
+      // are re-hydrated server-side via resolveSession() + AuthSessionBootstrap
+      // on every navigation, so removing them from localStorage does not
+      // break SSR-protected routes.
       partialize: (state) => ({
         user: state.user,
-        accessToken: state.accessToken,
-        refreshToken: state.refreshToken,
         isAuthenticated: state.isAuthenticated,
       }),
       onRehydrateStorage: () => {

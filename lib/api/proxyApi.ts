@@ -14,12 +14,26 @@ async function handleResponse<T>(response: Response): Promise<T> {
 
   if (!response.ok) {
     if (isJson) {
-      const errorData = await response.json().catch(() => ({}));
+      const errorData = (await response.json().catch(() => ({}))) as Record<
+        string,
+        unknown
+      >;
+      const code =
+        typeof errorData.error === "string" ? errorData.error : null;
       const message =
-        typeof errorData.message === "string" ? errorData.message :
-        typeof errorData.error === "string" ? errorData.error :
-        JSON.stringify(errorData);
-      throw new Error(`Proxy request failed (${response.status}): ${message}`);
+        typeof errorData.message === "string"
+          ? errorData.message
+          : typeof errorData.error === "string"
+          ? errorData.error
+          : JSON.stringify(errorData);
+      const requestId =
+        typeof errorData.request_id === "string"
+          ? ` request_id=${errorData.request_id}`
+          : "";
+      const codePrefix = code ? `[${code}] ` : "";
+      throw new Error(
+        `Proxy request failed (${response.status}): ${codePrefix}${message}${requestId}`
+      );
     }
     throw new Error(`Proxy request failed (${response.status}): ${response.statusText}`);
   }
