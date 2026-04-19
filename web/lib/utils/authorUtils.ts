@@ -1,0 +1,59 @@
+import { Author, Platform } from "@/lib/types";
+
+function isEmptyArray(arr: unknown): arr is null | undefined {
+  return !arr || !Array.isArray(arr) || arr.length === 0;
+}
+
+function isAuthorArray(authors: Author[] | string[]): authors is Author[] {
+  if (authors.length === 0) return false;
+  const firstItem = authors[0];
+
+  return (
+    typeof firstItem === "object" &&
+    firstItem !== null &&
+    "name" in firstItem
+  );
+}
+
+function isPlatformArray(platforms: Platform[] | string[]): platforms is Platform[] {
+  if (platforms.length === 0) return false;
+  const firstItem = platforms[0];
+
+  return (
+    typeof firstItem === "object" &&
+    firstItem !== null &&
+    "name" in firstItem
+  );
+}
+
+export function formatAuthors(authors: Author[] | string[] | null | undefined, max = 3): string {
+  if (isEmptyArray(authors)) return "";
+
+  const names = isAuthorArray(authors)
+    ? authors.map((author) => author.name)
+    : [...authors];
+
+  if (names.length <= max) return names.join(", ");
+
+  return `${names.slice(0, max).join(", ")} & ${names.length - max} more`;
+}
+
+export function getAuthorNames(authors: Author[] | string[] | null | undefined): string[] {
+  if (isEmptyArray(authors)) return [];
+
+  if (isAuthorArray(authors)) {
+    return authors.map((author) => author.name);
+  }
+
+  return authors;
+}
+
+export function formatPlatforms(platforms: Platform[] | string[] | null | undefined): string {
+  if (isEmptyArray(platforms)) return "";
+
+  if (isPlatformArray(platforms)) {
+      return platforms.map((platform) => platform.name).join(", ");
+  }
+
+  return platforms.join(", ");
+}

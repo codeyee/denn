@@ -1,0 +1,24 @@
+{
+  "name": "Denn",
+  "short_name": "Denn",
+  "description": "Denn",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0d030b",
+  "theme_color": "#0d030b",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}
+
