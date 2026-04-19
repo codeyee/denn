@@ -1,7 +1,29 @@
+"""Canonical error envelope for `core`.
+
+Contract (shared with `proxy`, see `docs/contracts/internal-http.md`):
+
+    {
+        "error":      "MACHINE_CODE",     # required, stable identifier
+        "message":    "Human readable",   # required
+        "fields":     { "name": ["msg"] }, # optional, validation only
+        "request_id": "uuid",              # added by RequestIdMiddleware
+        ...extra_data                      # optional, error-specific
+    }
+"""
 from rest_framework.views import exception_handler
 from rest_framework.response import Response
 from rest_framework import status as http_status
+
 from core.error_codes import ErrorCode, ErrorCodeData
+
+
+def _current_request_id() -> str:
+    """Return the request_id set by RequestIdMiddleware (PR-6C), or ''."""
+    try:
+        from core.middleware.request_id import get_current_request_id
+        return get_current_request_id() or ''
+    except Exception:
+        return ''
 
 
 class APIError(Exception):
@@ -15,8 +37,11 @@ class APIError(Exception):
         response_data = {
             'error': self.error_code.code,
             'message': self.message,
-            **self.extra_data
+            **self.extra_data,
         }
+        request_id = _current_request_id()
+        if request_id:
+            response_data['request_id'] = request_id
 
         return Response(response_data, status=self.error_code.http_status)
 
@@ -120,19 +145,31 @@ def custom_exception_handler(exc, context):
     if response is None:
         return None
 
+    request_id = _current_request_id()
+
     if isinstance(response.data, dict):
-        response.data = {
+        envelope = {
             'error': _error_code_from_status(response.status_code),
             'message': _extract_message(response.data),
             'fields': _extract_field_errors(response.data),
         }
     elif isinstance(response.data, list):
-        response.data = {
+        envelope = {
             'error': _error_code_from_status(response.status_code),
             'message': response.data[0] if response.data else 'An error occurred',
             'fields': {},
         }
+    else:
+        envelope = {
+            'error': _error_code_from_status(response.status_code),
+            'message': str(response.data),
+            'fields': {},
+        }
 
+    if request_id:
+        envelope['request_id'] = request_id
+
+    response.data = envelope
     return response
 
 

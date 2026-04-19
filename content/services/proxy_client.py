@@ -4,6 +4,8 @@ from typing import Optional, Dict, Any, List
 import requests
 from django.conf import settings
 
+from core.middleware.request_id import get_current_request_id
+
 logger = logging.getLogger(__name__)
 
 DEFAULT_TIMEOUT = 15
@@ -29,6 +31,9 @@ class ProxyAPIClient:
         headers: Dict[str, str] = {}
         if country:
             headers["X-User-Country"] = country
+        request_id = get_current_request_id()
+        if request_id:
+            headers["X-Request-Id"] = request_id
         return headers
 
     def _get(
@@ -54,10 +59,16 @@ class ProxyAPIClient:
             resp.raise_for_status()
             return resp.json()
         except requests.exceptions.HTTPError as e:
-            logger.warning("Proxy API HTTP error: %s %s -> %s", path, params, e)
+            logger.warning(
+                "proxy_api_http_error",
+                extra={"path": path, "params": params, "error": str(e)},
+            )
             return None
         except requests.exceptions.RequestException as e:
-            logger.error("Proxy API request failed: %s %s -> %s", path, params, e)
+            logger.error(
+                "proxy_api_request_failed",
+                extra={"path": path, "params": params, "error": str(e)},
+            )
             return None
 
     # ── Detail endpoints ──────────────────────────────────────────────

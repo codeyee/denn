@@ -55,7 +55,10 @@ PROJECT_APPS = [
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + PROJECT_APPS
 
 # Middleware configuration
+# RequestIdMiddleware MUST stay first so every request — including those
+# rejected by SecurityMiddleware or auth — carries a correlation ID.
 MIDDLEWARE = [
+    "core.middleware.RequestIdMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
@@ -65,7 +68,14 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "core.middleware.AccessLogMiddleware",
 ]
+
+# Structured logging (JSON, stdlib only — see core/logging.py).
+# Tests opt out so unittest output stays readable.
+if not TESTING:
+    from core.logging import build_logging_config
+    LOGGING = build_logging_config(level=os.getenv("LOG_LEVEL", "INFO"))
 
 # URL configuration
 ROOT_URLCONF = "core.urls"
