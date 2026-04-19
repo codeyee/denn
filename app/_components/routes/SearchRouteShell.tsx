@@ -6,7 +6,9 @@ import { SearchPage } from "@/app/_components/pages/SearchPage";
 import { useSearchResults } from "@/app/_components/pages/SearchPage/hooks/useSearchResults";
 import type { SearchResults } from "@/app/_components/pages/SearchPage/types";
 import type { SessionSnapshot } from "@/lib/auth/session-server";
-import { AuthSessionBootstrap } from "./AuthSessionBootstrap";
+
+// AuthSessionBootstrap is mounted globally in app/layout.tsx; this shell only
+// needs the SSR session snapshot for initial-render branching.
 
 const SEARCH_DEBOUNCE_MS = 400;
 
@@ -82,7 +84,6 @@ export function SearchRouteShell({
 
   return (
     <div className="relative w-full overflow-x-hidden">
-      <AuthSessionBootstrap session={session} />
       <Navbar
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}

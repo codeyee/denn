@@ -19,26 +19,15 @@ import { AddToListModal } from "@/app/_components/common/modals/AddToListModal";
 import { Footer } from "../../layout/Footer";
 
 interface ContentDetailPageProps {
-  contentId?: number;
-  externalId?: string;
-  sourceApi?: string;
-  contentType?: string;
+  contentId: number;
 }
 
-export function ContentDetailPage({
-  contentId,
-  externalId,
-  sourceApi,
-  contentType: contentTypeStr
-}: ContentDetailPageProps) {
+export function ContentDetailPage({ contentId }: ContentDetailPageProps) {
   const router = useRouter();
   const { user } = useAuthStore();
 
   const { loading, error, contentItem, detailData, tvShowTitle } = useContentData({
     contentId,
-    externalId,
-    sourceApi,
-    contentType: contentTypeStr
   });
 
   const rating = useUserRating({
@@ -93,11 +82,39 @@ export function ContentDetailPage({
     );
   }
 
-  const displayItem = detailData || (contentItem.source_data
+  // `detailData` is already populated from `contentItem.source_data` inside
+  // `useContentData`, so the only legitimate fallback chain is detailData →
+  // a parsed source_data the hook somehow missed → render an explicit
+  // "details unavailable" state. We never coerce to the bare ContentItem
+  // shape, which lacks `type`/`title`/`image_url` and would crash the banner.
+  const displayItem = detailData ?? (contentItem.source_data
     ? (typeof contentItem.source_data === 'string'
       ? JSON.parse(contentItem.source_data)
       : contentItem.source_data)
-    : contentItem);
+    : null);
+
+  if (!displayItem) {
+    return (
+      <div className="relative w-full min-h-screen bg-background-logged-in">
+        <div className="container mx-auto px-4 mt-8 py-20">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <p className="text-yellow-400 text-xl mb-4">Details unavailable</p>
+              <p className="text-gray-400 mb-4">
+                We could not load the metadata for this item right now. Please try again in a moment.
+              </p>
+              <button
+                onClick={() => router.refresh()}
+                className="text-white/80 hover:text-white underline"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative w-full min-h-screen bg-background-logged-in">

@@ -11,8 +11,7 @@ import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { formatSeasonTitle } from "@/lib/utils/titleUtils";
 import { getRatingBadgeData, isPersonalList } from "../utils";
 import { Film } from "lucide-react";
-import { buildContentUrl } from "@/lib/utils/navigationUtils";
-import { getSourceApi } from "@/lib/utils/contentTypeUtils";
+import { buildContentUrlById } from "@/lib/utils/navigationUtils";
 import { useRouter } from "next/navigation";
 
 interface ListItemRendererProps {
@@ -57,12 +56,7 @@ export function ListItemRenderer({
   const personal = isPersonalList(list);
 
   const handleViewContent = () => {
-    const url = buildContentUrl({
-      externalId: String(contentItem.external_id),
-      sourceApi: getSourceApi(contentItem.content_type),
-      contentType: contentItem.content_type,
-    });
-    router.push(url);
+    router.push(buildContentUrlById(contentItem.id));
   };
 
   return (

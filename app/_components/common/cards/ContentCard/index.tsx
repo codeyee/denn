@@ -8,8 +8,8 @@ import { Content } from "@/lib/types";
 import { Plus } from "lucide-react";
 import { Button } from "@/app/_components/common/ui/Button";
 import { AddToListModal } from "@/app/_components/common/modals/AddToListModal";
-import { getSourceApi } from "@/lib/utils/contentTypeUtils";
-import { buildContentUrl } from "@/lib/utils/navigationUtils";
+import { buildContentUrlById } from "@/lib/utils/navigationUtils";
+import { contentItemActions } from "@/lib/api";
 import { useSmartNavigation } from "@/app/_hooks/useSmartNavigation";
 import { useContentCardModal } from "./hooks/useContentCardModal";
 import {
@@ -27,19 +27,14 @@ interface ContentCardProps {
 }
 
 export function ContentCard({ item, className }: ContentCardProps) {
-  const getNavigationUrl = () => {
+  const getNavigationUrl = async () => {
     try {
       const contentType = item.type as ContentType;
-      const sourceApi = getSourceApi(contentType);
       const externalId = String(item.id);
-
-      return buildContentUrl({
-        externalId,
-        sourceApi,
-        contentType,
-      });
+      const resolved = await contentItemActions.getOrCreate(externalId, contentType);
+      return buildContentUrlById(resolved.id);
     } catch (error) {
-      console.error("Failed to build navigation URL:", error);
+      console.error("Failed to resolve navigation URL:", error);
       return null;
     }
   };

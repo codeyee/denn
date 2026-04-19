@@ -180,12 +180,32 @@ The application uses Next.js App Router with the following key routes:
 
 - `/` - Landing page
 - `/search` - Universal content search
-- `/content` - Content detail page (with query params)
+- `/content/[id]` - Content detail page (id-first, since Sprint 07)
+- `/content?external_id=…&source_api=…&content_type=…` - **Legacy
+  redirect**. Resolves the triple via `contentItemActions.getOrCreate`
+  and `router.replace`s to `/content/<id>`. New code must call
+  `buildContentUrlById(id)` directly to avoid the extra round-trip;
+  the legacy `buildContentUrl` / `buildContentUrlSimple` /
+  `navigateToContent` helpers emit a one-shot `console.warn` in dev.
 - `/lists/[id]` - List detail page
 - `/profile` - User profile
 - `/login`, `/register` - Authentication pages
 
 Protected routes use the `ProtectedRoute` wrapper component for authentication.
+
+#### Navigating to content
+
+```ts
+import { contentItemActions } from "@/lib/api";
+import { buildContentUrlById, navigateToContentById } from "@/lib/utils/navigationUtils";
+
+// Card has an external id (TMDB / IGDB / Spotify / OpenLibrary):
+const item = await contentItemActions.getOrCreate(externalId, contentType);
+router.push(buildContentUrlById(item.id));
+
+// ListItem already has the resolved id (it's a row from our DB):
+router.push(buildContentUrlById(listItem.content_item.id));
+```
 
 ### State Management
 

@@ -1,10 +1,12 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { SourceApi, Author, ContentType } from "@/lib/types";
 import { getBannerImageUrl } from "@/lib/utils/imageUtils";
 import { formatAuthors } from "@/lib/utils/authorUtils";
-import { buildContentUrlSimple } from "@/lib/utils/navigationUtils";
+import { buildContentUrlById } from "@/lib/utils/navigationUtils";
+import { contentItemActions } from "@/lib/api";
 import { CONTENT_TYPE_ICONS } from "@/lib/icons/contentTypeIcons";
 import { Button } from "@/app/_components/common/ui/Button";
 import { ListPlus, Star } from "lucide-react";
@@ -30,8 +32,16 @@ export function ContentBanner({
   isAuthenticated,
   hasUserRating,
 }: ContentBannerProps) {
-  const contentType = item.type;
-  const Icon = CONTENT_TYPE_ICONS[contentType];
+  // `item.type` comes from the proxy detail payload (uppercase content type
+  // like "MOVIE"). When the payload failed to load we still receive a bare
+  // ContentItem-shaped object, so we coerce safely instead of crashing.
+  const rawType = (
+    ("type" in item && item.type) ||
+    ("content_type" in item && (item as { content_type?: string }).content_type) ||
+    ""
+  ) as string;
+  const normalizedType = rawType.toUpperCase();
+  const Icon = CONTENT_TYPE_ICONS[normalizedType as ContentType];
   const backgroundUrl = getBannerImageUrl(item.images, item.image_url) || undefined;
 
   const getOriginalTitle = (item: Content): string => {
@@ -48,21 +58,42 @@ export function ContentBanner({
     return "";
   };
 
+  const itemTitle = ("title" in item && item.title) ? item.title : "";
   const originalTitle = getOriginalTitle(item);
   const originalTitleIsSame =
-    originalTitle && originalTitle.toLowerCase() === item.title.toLowerCase();
+    originalTitle && itemTitle && originalTitle.toLowerCase() === itemTitle.toLowerCase();
 
   // For albums and books, show authors/artists as metadata
   const authors = getAuthors(item);
-  const normalizedType = item.type.toUpperCase();
   const isAlbum = normalizedType === "ALBUM";
   const isBook = normalizedType === "BOOK";
   const isSeason = normalizedType === "SEASON";
 
-  const displayTitle = item.title;
+  const displayTitle = itemTitle;
   const tvShowName = isSeason ? (('tv_show_name' in item && item.tv_show_name) || tvShowTitle) : null;
-  const tvShowId = isSeason && externalId ? externalId.split(":")[0] : null;
-  const tvShowUrl = tvShowId ? buildContentUrlSimple(tvShowId, ContentType.TV_SHOW) : null;
+  const tvShowExternalId = isSeason && externalId ? externalId.split(":")[0] : null;
+  const [tvShowUrl, setTvShowUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!tvShowExternalId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const resolved = await contentItemActions.getOrCreate(
+          tvShowExternalId,
+          ContentType.TV_SHOW
+        );
+        if (!cancelled) {
+          setTvShowUrl(buildContentUrlById(resolved.id));
+        }
+      } catch (error) {
+        console.error("Failed to resolve TV show URL:", error);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [tvShowExternalId]);
 
   if (!backgroundUrl) {
     return (

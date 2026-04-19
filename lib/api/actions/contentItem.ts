@@ -20,8 +20,12 @@ export const contentItemActions = {
   },
 
   get: (id: number, country?: string): Promise<ContentItem> => {
+    // Sprint 07 canonical id-first endpoint: hits ContentItemDetailByIdView
+    // which always hydrates `source_data` (the legacy `/content/items/<id>/`
+    // ViewSet does not include it by default, leaving the UI with a bare
+    // ContentItem and crashing the detail page).
     const query = buildQueryString({ addCountry: true, country });
-    return api.get<ContentItem>(`/content/items/${id}/${query}`, true);
+    return api.get<ContentItem>(`/content/${id}/${query}`, true);
   },
 
   create: (item: Partial<ContentItem>): Promise<ContentItem> => {

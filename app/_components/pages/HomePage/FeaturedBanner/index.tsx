@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { Noise } from "@/app/_components/common/Noise";
 import { Content } from "@/lib/types";
 import { ContentType } from "@/lib/types";
-import { getSourceApi } from "@/lib/utils/contentTypeUtils";
-import { navigateToContent } from "@/lib/utils/navigationUtils";
+import { contentItemActions } from "@/lib/api";
+import { navigateToContentById } from "@/lib/utils/navigationUtils";
 import { useBannerAutoRotation } from "./hooks/useBannerAutoRotation";
 import { getBestImageUrl } from "./utils";
 import { BannerContent } from "./components/BannerContent";
@@ -30,16 +30,15 @@ export function FeaturedBanner({ items, autoRotateMs = 5000 }: FeaturedBannerPro
     autoRotateMs,
   });
 
-  const handleViewDetails = (item: Content) => {
+  const handleViewDetails = async (item: Content) => {
     const contentType = item.type as ContentType;
-    const sourceApi = getSourceApi(contentType);
     const externalId = String(item.id);
-
-    navigateToContent(router, {
-      externalId,
-      sourceApi,
-      contentType,
-    });
+    try {
+      const resolved = await contentItemActions.getOrCreate(externalId, contentType);
+      navigateToContentById(router, resolved.id);
+    } catch (error) {
+      console.error("Failed to resolve content for navigation:", error);
+    }
   };
 
   if (validItems.length === 0) return null;

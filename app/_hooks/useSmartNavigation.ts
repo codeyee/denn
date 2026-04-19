@@ -20,8 +20,10 @@ function handleNavigationError(
   }
 }
 
+type UrlGetter = () => string | null | Promise<string | null>;
+
 export function useSmartNavigation(
-  getUrl: () => string | null,
+  getUrl: UrlGetter,
   options: UseSmartNavigationOptions = {}
 ) {
   const router = useRouter();
@@ -52,11 +54,11 @@ export function useSmartNavigation(
   }, []);
 
   const handleMiddleClick = useCallback(
-    (e: React.MouseEvent) => {
+    async (e: React.MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
       middleClickHandled.current = true;
-      const url = getUrl();
+      const url = await getUrl();
       if (url) {
         openInBackgroundTab(url);
       }
@@ -66,16 +68,15 @@ export function useSmartNavigation(
   );
 
   const handleClick = useCallback(
-    (e: React.MouseEvent) => {
+    async (e: React.MouseEvent) => {
       e.stopPropagation();
 
-      const url = getUrl();
+      const isModifierClick = e.ctrlKey || e.metaKey;
+      const url = await getUrl();
       if (!url) {
         handleNavigationError(onNavigationError);
         return;
       }
-
-      const isModifierClick = e.ctrlKey || e.metaKey;
 
       if (isModifierClick) {
         openInBackgroundTab(url);
@@ -105,11 +106,11 @@ export function useSmartNavigation(
   );
 
   const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
+    async (e: React.KeyboardEvent) => {
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
         e.stopPropagation();
-        const url = getUrl();
+        const url = await getUrl();
         if (url) {
           router.push(url);
         }
