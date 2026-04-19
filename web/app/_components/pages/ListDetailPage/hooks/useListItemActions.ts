@@ -134,8 +134,8 @@ export function useListItemActions({
   });
 
   const rateMutation = useRateContentMutation<RateSnapshot>({
-    onMutate: ({ data }) => {
-      const targetId = Number(data.list_item);
+    onMutate: ({ itemId, data }) => {
+      const targetId = Number(itemId);
       const target = listItems.find((i) => i.id === targetId);
 
       const previousMemberRatings = Array.isArray(target?.member_ratings)
@@ -165,8 +165,8 @@ export function useListItemActions({
 
       return { previousMemberRatings, previousMemberRatingCount };
     },
-    onError: (err, { data }, snapshot) => {
-      const targetId = Number(data.list_item);
+    onError: (err, { itemId }, snapshot) => {
+      const targetId = Number(itemId);
       setListItems((prev) =>
         prev.map((prevItem) =>
           prevItem.id === targetId
