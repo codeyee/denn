@@ -20,6 +20,15 @@ La ganancia concreta: un blockbuster recién estrenado refleja su rating actuali
 - El comando `rehydrate_content_details` selecciona por TTL dinámico vía SQL (`Case/When`) y loggea métricas por banda de edad.
 - Política formalizada en `docs/architecture/content-rehydration-policy.md` con las bandas, justificación y cómo ajustar.
 - Backfill controlado que normalice el primer `last_refreshed_at` de items preexistentes bajo la nueva política.
+- Política de elegibilidad para metadata de usuario: search, homepage y
+  previews no deben devolver items con `release_date` futura más allá de
+  un margen de 1 día ni items sin `release_date`, salvo que el flujo
+  declare explícitamente que acepta próximos estrenos.
+- Normalización de temporadas inválidas: no devolver temporadas con 0
+  episodios, con un único episodio sin `release_date`, con episodios sólo
+  futuros, o temporadas completas en el futuro.
+- Cache de búsqueda normalizada por query en minúscula para evitar
+  duplicar entradas equivalentes.
 
 ## Skills guía
 - `django-expert`
@@ -37,6 +46,9 @@ La ganancia concreta: un blockbuster recién estrenado refleja su rating actuali
 - `core/content/tests/commands/test_rehydrate_content_details.py` — actualizar fixtures para cubrir TTL dinámico.
 - `docs/architecture/content-rehydration-policy.md` (nuevo) — documento de política.
 - `docs/runbooks/rehydrate-content-details.md` (nuevo o extendido) — cómo se opera el job.
+- `proxy` providers/mappers y BFF reads que alimentan search/homepage —
+  aplicar el mismo filtro de elegibilidad sin mover credenciales ni
+  ownership fuera del `proxy`.
 
 ## No objetivos
 - **No** convertir esto en un sistema de webhooks/push desde proveedores. Eso queda como follow-up (solo Spotify lo soporta razonablemente).
@@ -45,6 +57,9 @@ La ganancia concreta: un blockbuster recién estrenado refleja su rating actuali
 - **No** cambiar la arquitectura de ownership: `core` sigue siendo el único que escribe en DB, `proxy` sigue stateless.
 - **No** tocar el TTL de Redis en el `proxy`: ese es un cache HTTP de corto plazo, distinto al de DB local.
 - **No** retirar el parámetro `--ttl-override` del comando; sigue siendo útil para backfills ad hoc.
+- **No** ocultar futuros lanzamientos en flujos que sí sean
+  explícitamente de upcoming/pre-release si se crean más adelante. La
+  restricción aplica a resultados generales del MVP.
 
 ## Dependencias
 - **Requiere Sprint 07** (Lotes 7A–7D). Específicamente: tablas `*Detail` con `release_date` y `last_refreshed_at`, comando `rehydrate_content_details`, `ensure_content_detail`.
@@ -250,6 +265,12 @@ Eso permite detectar desviaciones: si la banda `hot` tiene error rate > 10% cons
 **Nombre:** Observabilidad y política documentada
 **Resultado:** evento por item + resumen por banda + dashboard mental documentado. `docs/architecture/content-rehydration-policy.md` explica bandas, cuándo ajustarlas, cómo impacta el proxy.
 
+### Lote 10F
+**Nombre:** Elegibilidad de metadata para superficies de usuario
+**Resultado:** search/homepage/previews filtran resultados futuros o sin
+fecha según la política MVP, las temporadas inválidas quedan fuera del
+detalle, y las búsquedas comparten cache por query normalizada.
+
 ## Secuencia sugerida de PRs
 
 ### PR-10A Refresh policy pure function
@@ -300,6 +321,17 @@ Eso permite detectar desviaciones: si la banda `hot` tiene error rate > 10% cons
   - cómo leer el resumen por banda;
   - qué métricas vigilar (error rate por banda, latencia p95).
 - Si Sprint 6C está entregado, emitir los eventos JSON en formato compatible.
+
+### PR-10F Metadata eligibility and search cache normalization
+- Aplicar el filtro MVP de `release_date` en search/homepage/previews:
+  ocultar items futuros más allá de 1 día de margen y items sin fecha en
+  resultados generales.
+- Filtrar temporadas inválidas en content detail según la política del
+  sprint.
+- Normalizar cache keys de búsqueda a minúscula, preservando el texto
+  original sólo para presentación/logs.
+- Tests de proxy/core/BFF donde corresponda para confirmar que el filtro
+  no rompe flujos futuros explícitos cuando existan.
 
 ## Tareas
 
@@ -406,6 +438,12 @@ Eso permite detectar desviaciones: si la banda `hot` tiene error rate > 10% cons
 - [ ] `ADR` o addendum al existente registra el cambio de política estática → dinámica.
 - [ ] `CONTENT_REHYDRATION_TTL` removido de `settings/base.py` (deprecación cerrada).
 
+### Lote 10F
+- [ ] Search/homepage/previews aplican el filtro de fecha MVP.
+- [ ] Temporadas inválidas quedan fuera del detalle.
+- [ ] Cache de búsqueda usa query normalizada en minúscula.
+- [ ] Tests cubren margen de 1 día para timezones.
+
 ## Checklist de validación
 - [ ] Correr `rehydrate_content_details --content-type ALL --dry-run`: el output reporta distintas bandas para items del mismo tipo.
 - [ ] Insertar fixture de un `MovieDetail` con `release_date=hoy - 10 días` y `last_refreshed_at=hoy - 3 días` → es stale (banda `hot`, TTL 2d).
@@ -415,6 +453,9 @@ Eso permite detectar desviaciones: si la banda `hot` tiene error rate > 10% cons
 - [ ] El número de items stale reportado por `--dry-run` es >= al del TTL estático anterior (esperable porque items nuevos ahora se refrescan más seguido) y <= al peor caso (todos stale).
 - [ ] `manage.py test content.tests.services.test_refresh_policy` pasa.
 - [ ] `manage.py test content.tests.commands.test_rehydrate_content_details` pasa.
+- [ ] Tests de season filtering y release-date eligibility pasan.
+- [ ] Búsquedas equivalentes con distinta capitalización reutilizan la
+      misma entrada de cache.
 - [ ] El comando corrido contra la DB de staging no excede el rate limit del proxy (logs sin errores de throttling).
 - [ ] `EXPLAIN ANALYZE` de la queryset anotada sobre la tabla más grande (`MovieDetail` con ~5K filas) se ejecuta en <200ms.
 
@@ -438,6 +479,9 @@ Eso permite detectar desviaciones: si la banda `hot` tiene error rate > 10% cons
 - El resumen del comando reporta totales por banda, permitiendo observar la salud del sistema.
 - La política está documentada en un solo lugar (`docs/architecture/content-rehydration-policy.md`) y es ajustable sin reescritura.
 - Ningún item con política `force=True` del read-path normal — esa bandera queda para admin/debug.
+- Search/homepage/previews no exponen resultados generales sin fecha o
+  con fecha futura fuera del margen MVP.
+- Temporadas vacías o artificiales no aparecen en content detail.
 
 ## Interdependencias
 - **Sprint 05 (proxy reliability)**: el rate limiter y retry policy del proxy deben tolerar el volumen de la banda `hot`. Coordinar antes de deploy.

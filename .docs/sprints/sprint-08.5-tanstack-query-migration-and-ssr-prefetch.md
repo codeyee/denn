@@ -46,6 +46,10 @@ La tesis del sprint:
   `/content/[id]`, `/search` — el HTML llega ya con datos serializados.
 - Hover-prefetch ampliado a `SearchPage` y a las cards de
   recomendaciones de `HomePage`.
+- Polish de UX integrado en los flujos migrados: placeholders
+  dimensionalmente estables, estados vacíos por sección, búsqueda sin
+  resultados obsoletos, hover expandible consistente y modales de rating
+  reutilizados.
 - Documento `docs/architecture/data-fetching.md` que codifica la regla
   "server state → React Query, client state → Zustand" con ejemplos.
 - Tests de regresión: `staleTime` por recurso respetado, mutaciones
@@ -79,7 +83,8 @@ La tesis del sprint:
   completo a `useSuggestionsQuery` + `useUserListsQuery`.
 - `web/app/_components/pages/SearchPage/hooks/useSearchResults.ts` —
   refactor a `useMultiSearchQuery` con `placeholderData: keepPreviousData`
-  y debounce server-side via `useDeferredValue`.
+  y debounce server-side via `useDeferredValue`; cada query nueva cancela
+  o descarta la request anterior para no mostrar resultados viejos.
 - `web/app/_components/pages/ListDetailPage/hooks/useListData.ts` y
   `useDataStrategy.ts` — refactor a 3 queries paralelas (`metadata`,
   `stats`, `items`) con `keepPreviousData` para paginación sin
@@ -88,10 +93,15 @@ La tesis del sprint:
   y `components/RatingsSection.tsx` — pasar a `useUserRatingQuery` +
   `useRatingsListQuery` + `useUpsertUserRatingMutation`.
 - `web/app/_components/common/modals/AddToListModal/index.tsx` —
-  consumir `useUserListsQuery` en vez de `fetchLists` del store.
+  consumir `useUserListsQuery` en vez de `fetchLists` del store y dejar
+  el flujo listo para selección tipo checkbox, sin cerrar el modal al
+  añadir o quitar una lista.
 - `web/app/_stores/lists-store.ts`, `content-store.ts` — vaciar la
   lógica de fetch; sólo quedan acciones de mutación que el store
   expone hoy y que ya están encapsuladas en mutaciones.
+- `web/app/_stores/settings-store.ts` — eliminar el toggle de
+  animaciones si ya no hay settings persistentes que justifiquen el
+  store.
 - `web/app/page.tsx`, `web/app/lists/[id]/page.tsx`,
   `web/app/content/[id]/page.tsx`, `web/app/search/page.tsx` —
   prefetch server-side + `<HydrationBoundary state={dehydrate(qc)}>`.
@@ -126,6 +136,14 @@ La tesis del sprint:
 - **No** introducir Suspense queries (`useSuspenseQuery`) en este
   sprint. Los `loading.tsx` y skeletons existentes ya cubren el caso.
   Migrar a Suspense queries va aparte.
+- **No** hacer fetch automático de la lista completa en segundo plano
+  para todos los casos paginados. La lista completa sólo se carga de
+  forma lazy cuando una interacción concreta la necesita, como reorder.
+- **No** volver al contrato `page_size=0`; si un endpoint necesita
+  devolver todo, usar el contrato explícito vigente.
+- **No** implementar agrupamiento de listas en N niveles. Este sprint
+  sólo corrige presentación, headers y controles de paginación donde el
+  flujo existente lo requiera.
 
 ## Dependencias
 
@@ -275,6 +293,8 @@ Convenciones que el dev debe seguir:
 - Para queries con `country`, incluir `country` en la queryKey
   (ya está documentado en `useContentDetailQuery`).
 - Wrappear los `*Actions` existentes — no reescribir HTTP.
+- Para listas paginadas, usar `placeholderData`/skeletons estables y no
+  bloquear la navegación por una carga completa no solicitada.
 
 DoD de PR-8.5A.1:
 - [ ] 7 hooks nuevos, cada uno con su test unitario mínimo
@@ -357,6 +377,14 @@ Eliminar:
   `setResults` manuales.
 - Refs de "current query" — la dedup la hace Query.
 
+UX requerida:
+- Mantener la sección visible con estado "no items found" cuando una
+  búsqueda no trae resultados, en vez de ocultarla por completo.
+- No renderizar resultados de una query anterior después de que el input
+  ya cambió.
+- El estado de carga debe tener dimensiones estables y no desplazar las
+  secciones al escribir.
+
 ### PR-8.5B.3 — Migrar ListDetailPage
 
 Esta es la más compleja porque `useListData` orquesta 3 reads en
@@ -412,6 +440,9 @@ Cambios sutiles a los que el dev tiene que prestar atención:
 - `useDataStrategy` se simplifica drásticamente — buena parte de su
   lógica era reconciliar `pageItems` y `fullItems`. Con Query,
   ambas cachés viven separadas y consistentes por construcción.
+- Revisar headers de agrupamiento, títulos de grupo y botones de
+  paginación durante la migración. El objetivo es corregir el flujo
+  existente, no abrir agrupamiento arbitrario en N niveles.
 
 ### PR-8.5B.4 — Migrar sub-componentes de ContentDetailPage
 
@@ -554,6 +585,10 @@ Extender a:
 
 - Cards de resultado de búsqueda (`SearchResultCard` o el que aplique).
 - Cards de "featured" en HomePage (`useFeaturedItems`).
+- Cards/list previews de HomePage, manteniendo hover expandible y
+  mostrando metadata útil en vez de descripción larga.
+- Hover cards con cursor correcto, título legible sin truncamiento
+  agresivo y botón Add-to-List con affordance clara.
 - Si existe alguna card en LandingPage o profile, también.
 
 Cero código nuevo de hooks — sólo wireing.
@@ -679,6 +714,12 @@ Notas:
       (registrado en `baseline.md`).
 - [ ] No hay double-fetch en SSR + CSR (verificado por turno en cada
       page route).
+- [ ] Search no muestra resultados obsoletos y conserva estados vacíos
+      por sección.
+- [ ] AddToListModal no desborda en pantallas pequeñas.
+- [ ] ListDetail mantiene paginación estable sin flash a vacío.
+- [ ] Cards de Home/Search/ListDetail tienen hover consistente, cursor
+      correcto y títulos inspeccionables.
 - [ ] `docs/architecture/data-fetching.md` existe y es referenciable
       desde el onboarding.
 - [ ] CONTRIBUTING tiene la regla "no nuevos `useEffect`+`fetch`".
