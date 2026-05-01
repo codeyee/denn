@@ -17,10 +17,6 @@ This file summarizes the work that is still open, partially implemented, or next
 
 Decisions:
 
-- Frontend perceived-speed, search, list-detail, Add-to-List, hover-card
-  and rating-modal polish belong in `Sprint 08.5` because they should land
-  while Home, Search, ListDetail, AddToListModal and rating reads move to
-  TanStack Query.
 - Metadata eligibility, future-release filtering, invalid season
   filtering and lowercase search cache keys belong in `Sprint 10` because
   they are part of the content freshness and provider-normalization path.
@@ -100,7 +96,6 @@ Detailed sprint plans:
 ## Performance Baseline And Perceived Speed
 
 - Status: partial
-- Detailed plan: see the performance plan under `.docs/sprints/`.
 
 Already merged:
 

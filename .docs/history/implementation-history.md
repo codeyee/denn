@@ -81,6 +81,21 @@ This document keeps the durable outcomes of completed implementation plans after
 - The legacy external triple route remained only as a compatibility
   bridge.
 
+## React Query Migration And SSR Prefetch
+
+- Frontend server state moved onto TanStack Query across Home, Search,
+  Content Detail, ratings, Add-to-List, and List Detail flows.
+- The legacy `lists-store` and `content-store` response caches were
+  removed, leaving Zustand for client and UI state instead of remote
+  reads.
+- Major routes began prefetching on the server and hydrating with
+  `HydrationBoundary`, reducing first-load waterfalls on authenticated
+  pages.
+- Query keys, read hooks, and mutation invalidation became the
+  canonical frontend data-fetching pattern.
+- The data-fetching architecture and performance baseline docs were
+  updated to reflect the new model and the remaining measurement work.
+
 ## What This History Replaces
 
 The detailed execution plans were intentionally removed after their durable outcomes were extracted here and into the architecture, features, debt, and roadmap docs.
