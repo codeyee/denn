@@ -58,11 +58,12 @@ The "before" column captures the earlier known baseline before the current optim
 
 ### Frontend flows
 
-| Flow | LCP (p75) before | INP (p75) before | TTFB before | FCP before | CLS before | LCP after 8C | INP after 8C | Notes |
-|---|---|---|---|---|---|---|---|---|
-| Hard refresh `/` (home) | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | Threshold: LCP < 2500, INP < 200, CLS < 0.1 |
-| Open `/content/[id]` from a card click | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | Threshold: LCP < 2500 (with hover prefetch < 1800), CLS < 0.1 |
-| Open `/lists/[id]` for a 100-item list | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | Threshold: LCP < 3000, INP < 200 |
+| Flow | LCP (p75) before | INP (p75) before | TTFB before | FCP before | CLS before | LCP after 8C | INP after 8C | LCP after 8.5 | INP after 8.5 | TTFB after 8.5 | FCP after 8.5 | CLS after 8.5 | Notes |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Hard refresh `/` (home) | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | Threshold: LCP < 2500, INP < 200, CLS < 0.1 |
+| Hard refresh `/search?q=matrix` | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | Threshold: LCP < 2500, INP < 200, CLS < 0.1 |
+| Open `/content/[id]` from a card click | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | Threshold: LCP < 2500 (with hover prefetch < 1800), CLS < 0.1 |
+| Open `/lists/[id]` for a 100-item list | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | Threshold: LCP < 3000, INP < 200 |
 
 ## Acceptable Thresholds
 

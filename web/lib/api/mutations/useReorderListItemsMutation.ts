@@ -1,8 +1,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { useToast } from "@/app/_components/common/Toast";
-import { useListsStore } from "@/app/_stores/lists-store";
+import { listItemActions } from "@/lib/api";
 import { queryKeys } from "@/lib/api/queries/keys";
+import type { PaginatedListItemList } from "@/lib/types";
 
 interface ReorderVariables {
   listId: number;
@@ -32,11 +33,10 @@ export function useReorderListItemsMutation<TContext = unknown>(
 ) {
   const qc = useQueryClient();
   const { showToast } = useToast();
-  const { reorderListItems } = useListsStore();
 
-  return useMutation<unknown, Error, ReorderVariables, TContext | undefined>({
+  return useMutation<PaginatedListItemList, Error, ReorderVariables, TContext | undefined>({
     mutationFn: ({ listId, itemIds, page, pageSize }) =>
-      reorderListItems(listId, itemIds, page, pageSize),
+      listItemActions.reorder(listId, itemIds, page, pageSize),
     onMutate: async (vars) => {
       await qc.cancelQueries({ queryKey: queryKeys.listItems.all(vars.listId) });
       return options.onMutate

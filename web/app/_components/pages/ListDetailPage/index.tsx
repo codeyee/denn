@@ -8,7 +8,7 @@ import { VerticalList } from "../../common/lists/VerticalList";
 import { ItemStatus, ListItem, MemberRating } from "@/lib/types";
 import { isQueryEmpty } from "@/lib/types/listView";
 import { useAuthStore } from "@/app/_stores/auth-store";
-import { listItemActions } from "@/lib/api";
+import { useApplySortAsListOrderMutation } from "@/lib/api/mutations";
 
 import { useListModals } from "./hooks/useListModals";
 import { useExploreQuery } from "./hooks/useExploreQuery";
@@ -33,16 +33,18 @@ import { ListModals } from "./components/ListModals";
 
 interface ListDetailPageProps {
   listId: number;
+  country?: string | null;
 }
 
-export function ListDetailPage({ listId }: ListDetailPageProps) {
+export function ListDetailPage({ listId, country }: ListDetailPageProps) {
   const { user: currentUser } = useAuthStore();
 
   const modals = useListModals();
   const explore = useExploreQuery(listId);
   const { query } = explore;
 
-  const data = useDataStrategy({ listId, query });
+  const data = useDataStrategy({ listId, query, country });
+  const applySortMutation = useApplySortAsListOrderMutation();
 
   const viewer = useViewerState({
     pageItems: data.pageItems,
@@ -124,11 +126,11 @@ export function ListDetailPage({ listId }: ListDetailPageProps) {
       !window.confirm(
         "This will replace the canonical list order with the current sort. Continue?",
       )
-    )
+      )
       return;
     setApplySortPending(true);
     try {
-      await listItemActions.applySortAsListOrder(listId, query.sort);
+      await applySortMutation.mutateAsync({ listId, sort: query.sort });
       explore.setSort([]);
       await data.refetchCurrentPage();
     } catch (err) {
@@ -143,7 +145,7 @@ export function ListDetailPage({ listId }: ListDetailPageProps) {
     } finally {
       setApplySortPending(false);
     }
-  }, [applySortPending, canApplySort, data, explore, listId, query.sort]);
+  }, [applySortMutation, applySortPending, canApplySort, data, explore, listId, query.sort]);
 
   if (data.loading) {
     return (

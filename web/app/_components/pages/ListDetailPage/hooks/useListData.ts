@@ -1,13 +1,28 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import { listActions, listItemActions } from "@/lib/api";
-import { ListItem, ListStatsResponse, PaginationMetadata, UserListDetail } from "@/lib/types";
-import { ListItemQuery } from "@/lib/types/listView";
+import { useCallback, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
-const VIEWER_SOURCE_FIELDS = "title,original_title,tv_show_name,image_url,authors";
+import {
+  LIST_DETAIL_METADATA_PARAMS,
+  LIST_VIEWER_SOURCE_FIELDS,
+  useFullListItemsQuery,
+  useListItemsQuery,
+  useListStatsQuery,
+  useUserListQuery,
+  queryKeys,
+} from "@/lib/api/queries";
+import type {
+  ListItem,
+  ListStatsResponse,
+  PaginatedListItemList,
+  PaginationMetadata,
+  UserListDetail,
+} from "@/lib/types";
+import type { ListItemQuery } from "@/lib/types/listView";
 
 interface UseListDataOptions {
   listId: number;
   query: ListItemQuery;
+  country?: string | null;
 }
 
 interface UseListDataReturn {
@@ -32,152 +47,139 @@ interface UseListDataReturn {
   ensureFullItems: () => Promise<ListItem[]>;
 }
 
-async function fetchListMetadata(listId: number): Promise<UserListDetail> {
-  return listActions.get(listId, {
-    expand: "owner,members",
-    omit: "items",
+export function useListData({
+  listId,
+  query,
+  country,
+}: UseListDataOptions): UseListDataReturn {
+  const qc = useQueryClient();
+  const itemOptions = useMemo(
+    () => ({
+      country: country ?? undefined,
+      expand: "content_item",
+      source_fields: LIST_VIEWER_SOURCE_FIELDS,
+      query: {
+        filters: query.filters,
+        rangeFilters: query.rangeFilters,
+        sort: query.sort,
+        groupBy: query.groupBy,
+      },
+    }),
+    [country, query.filters, query.groupBy, query.rangeFilters, query.sort],
+  );
+
+  const metadata = useUserListQuery(listId, LIST_DETAIL_METADATA_PARAMS);
+  const stats = useListStatsQuery(listId);
+  const items = useListItemsQuery(listId, {
+    page: query.page,
+    pageSize: query.pageSize,
+    options: itemOptions,
   });
-}
+  const fullItems = useFullListItemsQuery(listId, {
+    ...itemOptions,
+    enabled: false,
+  });
 
-async function fetchListStats(listId: number): Promise<ListStatsResponse> {
-  return listActions.getStats(listId);
-}
+  const pageKey = queryKeys.listItems.page(listId, {
+    page: query.page,
+    pageSize: query.pageSize,
+    options: itemOptions,
+  });
+  const fullKey = queryKeys.listItems.full(listId, itemOptions);
 
-async function fetchListPage(listId: number, query: ListItemQuery) {
-  return listItemActions.list(listId, query.page, query.pageSize, {
-    expand: "content_item",
-    source_fields: VIEWER_SOURCE_FIELDS,
-    query: {
-      filters: query.filters,
-      rangeFilters: query.rangeFilters,
-      sort: query.sort,
-      groupBy: query.groupBy,
+  const setList = useCallback<UseListDataReturn["setList"]>(
+    (updater) => {
+      qc.setQueryData<UserListDetail | null>(
+        queryKeys.lists.detail(listId, LIST_DETAIL_METADATA_PARAMS),
+        (prev) => resolveUpdate(updater, prev ?? null),
+      );
     },
-  });
-}
+    [listId, qc],
+  );
 
-async function fetchAllListItems(listId: number): Promise<ListItem[]> {
-  return listItemActions.listAll(listId, {
-    expand: "content_item",
-    source_fields: VIEWER_SOURCE_FIELDS,
-  });
-}
+  const setPageItems = useCallback<UseListDataReturn["setPageItems"]>(
+    (updater) => {
+      qc.setQueryData<PaginatedListItemList>(pageKey, (prev) => {
+        if (!prev) return prev;
+        return { ...prev, results: resolveUpdate(updater, prev.results) };
+      });
+    },
+    [pageKey, qc],
+  );
 
-function querySignature(query: ListItemQuery): string {
-  return JSON.stringify({
-    f: query.filters,
-    r: query.rangeFilters,
-    s: query.sort,
-    g: query.groupBy,
-    p: query.page,
-    ps: query.pageSize,
-  });
-}
+  const setFullItems = useCallback<UseListDataReturn["setFullItems"]>(
+    (updater) => {
+      qc.setQueryData<ListItem[] | null>(fullKey, (prev) =>
+        resolveUpdate(updater, prev ?? null),
+      );
+    },
+    [fullKey, qc],
+  );
 
-export function useListData({ listId, query }: UseListDataOptions): UseListDataReturn {
-  const [loading, setLoading] = useState(true);
-  const [itemsLoading, setItemsLoading] = useState(false);
-  const [fullItemsLoading, setFullItemsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [list, setList] = useState<UserListDetail | null>(null);
-  const [pageItems, setPageItems] = useState<ListItem[]>([]);
-  const [fullItems, setFullItems] = useState<ListItem[] | null>(null);
-  const [stats, setStats] = useState<ListStatsResponse | null>(null);
-  const [totalItemCount, setTotalItemCount] = useState(0);
-  const [pageMetadata, setPageMetadata] = useState<PaginationMetadata | null>(null);
+  const setStats = useCallback<UseListDataReturn["setStats"]>(
+    (updater) => {
+      qc.setQueryData<ListStatsResponse | null>(
+        queryKeys.lists.stats(listId),
+        (prev) => resolveUpdate(updater, prev ?? null),
+      );
+    },
+    [listId, qc],
+  );
 
-  const hasBootstrappedRef = useRef(false);
-  const lastSignatureRef = useRef("");
-  const queryRef = useRef(query);
-  queryRef.current = query;
+  const setTotalItemCount = useCallback<UseListDataReturn["setTotalItemCount"]>(
+    (updater) => {
+      qc.setQueryData<PaginatedListItemList>(pageKey, (prev) => {
+        if (!prev) return prev;
+        const nextCount = resolveUpdate(updater, prev.metadata.count);
+        return {
+          ...prev,
+          metadata: {
+            ...prev.metadata,
+            count: nextCount,
+            total_pages: Math.max(
+              1,
+              Math.ceil(nextCount / prev.metadata.page_size),
+            ),
+          },
+        };
+      });
+    },
+    [pageKey, qc],
+  );
 
   const refetchMetadata = useCallback(async () => {
-    const metadata = await fetchListMetadata(listId);
-    setList(metadata);
-  }, [listId]);
+    await metadata.refetch();
+  }, [metadata]);
 
   const refetchStats = useCallback(async () => {
-    const nextStats = await fetchListStats(listId);
-    setStats(nextStats);
-  }, [listId]);
+    await stats.refetch();
+  }, [stats]);
 
   const refetchCurrentPage = useCallback(async () => {
-    setItemsLoading(true);
-    try {
-      const response = await fetchListPage(listId, queryRef.current);
-      setPageItems(response.results);
-      setPageMetadata(response.metadata);
-      setTotalItemCount(response.metadata.count);
-      lastSignatureRef.current = querySignature(queryRef.current);
-    } finally {
-      setItemsLoading(false);
-    }
-  }, [listId]);
+    await items.refetch();
+  }, [items]);
 
   const ensureFullItems = useCallback(async () => {
-    if (fullItems) return fullItems;
-    setFullItemsLoading(true);
-    try {
-      const items = await fetchAllListItems(listId);
-      setFullItems(items);
-      return items;
-    } finally {
-      setFullItemsLoading(false);
-    }
-  }, [fullItems, listId]);
+    if (fullItems.data) return fullItems.data;
+    const result = await fullItems.refetch();
+    return result.data ?? [];
+  }, [fullItems]);
 
-  useEffect(() => {
-    let cancelled = false;
-    async function bootstrap() {
-      setLoading(true);
-      setError(null);
-      setFullItems(null);
-      setPageItems([]);
-      hasBootstrappedRef.current = false;
-      try {
-        const [metadata, nextStats, response] = await Promise.all([
-          fetchListMetadata(listId),
-          fetchListStats(listId),
-          fetchListPage(listId, queryRef.current),
-        ]);
-        if (cancelled) return;
-        setList(metadata);
-        setStats(nextStats);
-        setPageItems(response.results);
-        setPageMetadata(response.metadata);
-        setTotalItemCount(response.metadata.count);
-        hasBootstrappedRef.current = true;
-        lastSignatureRef.current = querySignature(queryRef.current);
-      } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load list");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-    bootstrap();
-    return () => {
-      cancelled = true;
-    };
-  }, [listId]);
-
-  useEffect(() => {
-    if (loading || !hasBootstrappedRef.current) return;
-    const sig = querySignature(query);
-    if (sig === lastSignatureRef.current) return;
-    void refetchCurrentPage();
-  }, [loading, query, refetchCurrentPage]);
+  const pageMetadata = items.data?.metadata ?? null;
+  const totalItemCount = pageMetadata?.count ?? 0;
+  const error = firstError(metadata.error, stats.error, items.error);
 
   return {
-    loading,
-    itemsLoading,
-    fullItemsLoading,
+    loading: metadata.isLoading || items.isLoading,
+    itemsLoading: items.isFetching && !items.isPlaceholderData,
+    fullItemsLoading: fullItems.isFetching,
     error,
-    list,
-    pageItems,
-    fullItems,
+    list: metadata.data ?? null,
+    pageItems: items.data?.results ?? [],
+    fullItems: fullItems.data ?? null,
     totalItemCount,
     pageMetadata,
-    stats,
+    stats: stats.data ?? null,
     setList,
     setPageItems,
     setFullItems,
@@ -188,4 +190,15 @@ export function useListData({ listId, query }: UseListDataOptions): UseListDataR
     refetchStats,
     ensureFullItems,
   };
+}
+
+function resolveUpdate<T>(updater: React.SetStateAction<T>, previous: T): T {
+  return typeof updater === "function"
+    ? (updater as (current: T) => T)(previous)
+    : updater;
+}
+
+function firstError(...errors: unknown[]) {
+  const error = errors.find(Boolean);
+  return error instanceof Error ? error.message : error ? "Failed to load list" : null;
 }

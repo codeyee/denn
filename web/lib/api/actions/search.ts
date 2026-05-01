@@ -4,7 +4,8 @@ import type { MultiSearchParams, MultiSearchResponse } from "@/lib/types";
 export const searchActions = {
   multiSearch: (
     params: MultiSearchParams,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    country?: string,
   ): Promise<MultiSearchResponse> => {
     const queryParams = new URLSearchParams();
     queryParams.append("q", params.q);
@@ -13,7 +14,7 @@ export const searchActions = {
 
     return proxyApi.get<MultiSearchResponse>(
       `/search?${queryParams.toString()}`,
-      { signal }
+      { signal, country }
     );
   },
 };

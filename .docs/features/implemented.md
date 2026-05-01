@@ -32,8 +32,8 @@ considered part of the project baseline.
 - Periodic rehydration command for persisted content details.
 - `browse_metadata` derived model to support list exploration and
   canonical ordering.
-- Global frontend query provider, query-key factory, and extracted query
-  hooks/mutations for the TanStack Query migration path.
+- Global frontend query provider, query-key factory, extracted query
+  hooks/mutations, and server-side prefetch for the main frontend flows.
 - Hover prefetch for detail navigation from content cards and list item
   cards.
 

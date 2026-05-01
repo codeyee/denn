@@ -1,6 +1,11 @@
-import { useEffect, useState, useRef, useCallback } from "react";
-import { ratingActions, contentItemActions } from "@/lib/api";
-import { Rating, RatingCreate, ContentItem, User } from "@/lib/types";
+import { useCallback } from "react";
+
+import {
+  useDeleteRatingMutation,
+  useUpsertUserRatingMutation,
+} from "@/lib/api/mutations";
+import { useUserRatingQuery } from "@/lib/api/queries";
+import type { ContentItem, Rating, RatingCreate, User } from "@/lib/types";
 
 interface UseUserRatingParams {
   contentItem: ContentItem | null;
@@ -10,135 +15,47 @@ interface UseUserRatingParams {
 interface UseUserRatingReturn {
   userRating: Rating | null;
   isRatingLoading: boolean;
-  ratingRefreshKey: number;
   handleSubmitRating: (data: RatingCreate) => Promise<void>;
   handleDeleteRating: () => Promise<void>;
-  setContentItem: (item: ContentItem) => void;
 }
 
 export function useUserRating({
   contentItem,
-  user
+  user,
 }: UseUserRatingParams): UseUserRatingReturn {
-  const [userRating, setUserRating] = useState<Rating | null>(null);
-  const [isRatingLoading, setIsRatingLoading] = useState(false);
-  const [ratingRefreshKey, setRatingRefreshKey] = useState(0);
-  const [internalContentItem, setInternalContentItem] = useState<ContentItem | null>(contentItem);
-  const userRatingFetchRef = useRef<{ contentItemId: number | null; userId: number | null }>({
-    contentItemId: null,
-    userId: null
-  });
+  const userRating = useUserRatingQuery(contentItem?.id, user?.id);
+  const upsertRating = useUpsertUserRatingMutation();
+  const deleteRating = useDeleteRatingMutation();
 
-  useEffect(() => {
-    setInternalContentItem(contentItem);
-  }, [contentItem]);
+  const handleSubmitRating = useCallback(
+    async (data: RatingCreate) => {
+      if (!contentItem) return;
 
-  useEffect(() => {
-    const fetchUserRating = async () => {
-      if (!contentItem?.id || !user?.id) {
-        setUserRating(null);
-        userRatingFetchRef.current = { contentItemId: null, userId: null };
-        return;
-      }
-
-      if (
-        userRatingFetchRef.current.contentItemId === contentItem.id &&
-        userRatingFetchRef.current.userId === user.id
-      ) {
-        return;
-      }
-
-      userRatingFetchRef.current = { contentItemId: contentItem.id, userId: user.id };
-
-      try {
-        const ratingsResponse = await ratingActions.list({
-          content_item_id: contentItem.id,
-          user_id: user.id,
-          page_size: 1,
-        });
-
-        if (
-          userRatingFetchRef.current.contentItemId === contentItem.id &&
-          userRatingFetchRef.current.userId === user.id
-        ) {
-          if (ratingsResponse.results.length > 0) {
-            setUserRating(ratingsResponse.results[0]);
-          } else {
-            setUserRating(null);
-          }
-        }
-      } catch (err) {
-        console.warn("Could not fetch user rating:", err);
-        if (
-          userRatingFetchRef.current.contentItemId === contentItem.id &&
-          userRatingFetchRef.current.userId === user.id
-        ) {
-          setUserRating(null);
-        }
-      }
-    };
-
-    fetchUserRating();
-  }, [contentItem?.id, user?.id]);
-
-  const handleSubmitRating = useCallback(async (data: RatingCreate) => {
-    if (!internalContentItem) return;
-
-    setIsRatingLoading(true);
-    try {
-      if (userRating) {
-        const updatedRating = await ratingActions.patch(userRating.id, {
-          score: data.score,
-          comment: data.comment,
-        });
-        setUserRating(updatedRating);
-      } else {
-        const newRating = await ratingActions.create({
-          source_api: internalContentItem.source_api,
-          external_id: internalContentItem.external_id,
-          content_type: internalContentItem.content_type,
-          score: data.score,
-          comment: data.comment,
-        });
-        setUserRating(newRating);
-      }
-
-      const updatedItem = await contentItemActions.get(internalContentItem.id);
-      setInternalContentItem(updatedItem);
-
-      setRatingRefreshKey((prev) => prev + 1);
-    } catch (err) {
-      throw err;
-    } finally {
-      setIsRatingLoading(false);
-    }
-  }, [userRating, internalContentItem]);
+      await upsertRating.mutateAsync({
+        contentItem,
+        currentRating: userRating.data,
+        data,
+        userId: user?.id,
+      });
+    },
+    [contentItem, upsertRating, user?.id, userRating.data],
+  );
 
   const handleDeleteRating = useCallback(async () => {
-    if (!userRating || !internalContentItem) return;
+    if (!contentItem || !userRating.data) return;
 
-    setIsRatingLoading(true);
-    try {
-      await ratingActions.delete(userRating.id);
-      setUserRating(null);
-
-      const updatedItem = await contentItemActions.get(internalContentItem.id);
-      setInternalContentItem(updatedItem);
-
-      setRatingRefreshKey((prev) => prev + 1);
-    } catch (err) {
-      console.error("Error deleting rating:", err);
-    } finally {
-      setIsRatingLoading(false);
-    }
-  }, [userRating, internalContentItem]);
+    await deleteRating.mutateAsync({
+      contentItemId: contentItem.id,
+      ratingId: userRating.data.id,
+      userId: user?.id,
+    });
+  }, [contentItem, deleteRating, user?.id, userRating.data]);
 
   return {
-    userRating,
-    isRatingLoading,
-    ratingRefreshKey,
+    userRating: userRating.data ?? null,
+    isRatingLoading:
+      userRating.isLoading || upsertRating.isPending || deleteRating.isPending,
     handleSubmitRating,
     handleDeleteRating,
-    setContentItem: setInternalContentItem
   };
 }

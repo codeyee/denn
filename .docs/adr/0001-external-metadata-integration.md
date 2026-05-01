@@ -27,7 +27,7 @@ core → proxy                       (enriquecimiento de ContentItem.source_data
 Evidencia en código:
 
 - `web → core`: [`web/lib/server/home.ts`](../../web/lib/server/home.ts), [`web/lib/api/api.ts`](../../web/lib/api/api.ts), [`web/app/_stores/auth-store.ts`](../../web/app/_stores/auth-store.ts).
-- `web → proxy` (BFF y SSR): [`web/app/api/proxy/[...path]/route.ts`](../../web/app/api/proxy/[...path]/route.ts), [`web/lib/server/home.ts`](../../web/lib/server/home.ts), [`web/lib/server/search.ts`](../../web/lib/server/search.ts), [`web/lib/api/proxyApi.ts`](../../web/lib/api/proxyApi.ts).
+- `web → proxy` (BFF, cliente y SSR): [`web/app/api/proxy/[...path]/route.ts`](../../web/app/api/proxy/[...path]/route.ts), [`web/lib/api/proxyApi.ts`](../../web/lib/api/proxyApi.ts), [`web/lib/api/queries/server.ts`](../../web/lib/api/queries/server.ts).
 - `core → proxy`: [`core/content/services/proxy_client.py`](../../core/content/services/proxy_client.py), [`core/content/utils.py`](../../core/content/utils.py), [`core/content/serializers/content_item.py`](../../core/content/serializers/content_item.py).
 - Superficie del `proxy`: [`proxy/cmd/api/main.go`](../../proxy/cmd/api/main.go), [`proxy/internal/middleware/auth.go`](../../proxy/internal/middleware/auth.go).
 

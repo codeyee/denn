@@ -1,7 +1,9 @@
 import { useState, useCallback } from "react";
-import { useListsStore } from "@/app/_stores/lists-store";
 import { listItemActions } from "@/lib/api";
-import { useAddContentToListMutation } from "@/lib/api/mutations";
+import {
+    useAddContentToListMutation,
+    useCreateListMutation,
+} from "@/lib/api/mutations";
 import { ListItemCreate, ContentType, SourceApi, TVSeason } from "@/lib/types";
 import { useToast } from "@/app/_components/common/Toast";
 import { generateRandomListName } from "@/lib/utils/randomListNames";
@@ -39,13 +41,13 @@ export function useListOperations({
     tvShowId,
     refreshLists,
 }: UseListOperationsParams): UseListOperationsReturn {
-    const { createList } = useListsStore();
     const [loadingListIds, setLoadingListIds] = useState<Set<number>>(
         new Set()
     );
     const [creatingNewList, setCreatingNewList] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const { showToast } = useToast();
+    const createListMutation = useCreateListMutation();
 
     // T7: shared add-to-list mutation. We let the mutation surface the
     // error toast and keep `setError` for the modal-local state.
@@ -61,7 +63,9 @@ export function useListOperations({
 
         try {
             const listName = generateRandomListName();
-            const newList = await createList(listName);
+            const newList = await createListMutation.mutateAsync({
+                name: listName,
+            });
 
             await addToListMutation.mutateAsync({
                 listId: newList.id,
@@ -86,7 +90,7 @@ export function useListOperations({
         } finally {
             setCreatingNewList(false);
         }
-    }, [contentItem, createList, refreshLists, showToast, addToListMutation]);
+    }, [contentItem, createListMutation, refreshLists, showToast, addToListMutation]);
 
     const addSeasonsToList = useCallback(
         async (

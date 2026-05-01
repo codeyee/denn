@@ -13,6 +13,7 @@
  */
 
 import type { ListItemQuery } from "@/lib/types/listView";
+import type { BulkCheckItem } from "@/lib/types";
 
 interface ListItemsParams {
   page?: number;
@@ -28,21 +29,50 @@ interface ListItemsParams {
 }
 
 export const queryKeys = {
+  suggestions: {
+    all: ["suggestions"] as const,
+    byParams: (params: { limit: number; country?: string | null }) =>
+      ["suggestions", params] as const,
+  },
+  search: {
+    all: ["search"] as const,
+    multi: (params: { query: string; limit: number; country?: string | null }) =>
+      ["search", "multi", params] as const,
+  },
   lists: {
     all: ["lists"] as const,
     list: (params?: Record<string, unknown>) =>
       ["lists", "list", params ?? null] as const,
     detail: (id: number, params?: Record<string, unknown>) =>
       ["lists", "detail", id, params ?? null] as const,
+    stats: (id: number) => ["lists", "stats", id] as const,
+    bulkCheck: (items: BulkCheckItem[]) =>
+      ["lists", "bulk-check", items] as const,
   },
   listItems: {
     all: (listId: number) => ["list-items", listId] as const,
     page: (listId: number, params: ListItemsParams) =>
       ["list-items", listId, params] as const,
+    full: (listId: number, params?: ListItemsParams["options"]) =>
+      ["list-items", listId, "full", params ?? null] as const,
   },
   contentDetail: {
     all: ["content-detail"] as const,
     byId: (id: number, country?: string) =>
       ["content-detail", id, country ?? null] as const,
+  },
+  contentResolution: {
+    byExternal: (
+      externalId: string,
+      contentType: string,
+      country?: string | null,
+    ) => ["content-resolution", externalId, contentType, country ?? null] as const,
+  },
+  ratings: {
+    all: ["ratings"] as const,
+    list: (contentItemId: number, page: number, pageSize: number) =>
+      ["ratings", "list", contentItemId, page, pageSize] as const,
+    byUser: (contentItemId: number, userId: number) =>
+      ["ratings", "user", contentItemId, userId] as const,
   },
 } as const;

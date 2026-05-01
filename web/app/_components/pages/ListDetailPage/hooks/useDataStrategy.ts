@@ -13,6 +13,7 @@ import { useListData } from "./useListData";
 interface UseDataStrategyOptions {
   listId: number;
   query: ListItemQuery;
+  country?: string | null;
 }
 
 interface UseDataStrategyReturn {
@@ -46,6 +47,7 @@ interface UseDataStrategyReturn {
 export function useDataStrategy({
   listId,
   query,
+  country,
 }: UseDataStrategyOptions): UseDataStrategyReturn {
   const {
     loading,
@@ -65,7 +67,7 @@ export function useDataStrategy({
     setStats,
     refetchCurrentPage,
     ensureFullItems,
-  } = useListData({ listId, query });
+  } = useListData({ listId, query, country });
 
   const setCachedItems = useCallback(
     (updater: React.SetStateAction<ListItem[]>) => {

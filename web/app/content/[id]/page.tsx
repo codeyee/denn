@@ -1,43 +1,50 @@
-"use client";
+import { Suspense } from "react";
+import { redirect } from "next/navigation";
+import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 
-import { Suspense, use } from "react";
-import { useRouter } from "next/navigation";
 import { Navbar } from "@/app/_components/layout/Navbar";
 import { ContentDetailPage } from "@/app/_components/pages/ContentDetailPage";
 import { ContentDetailSkeleton } from "@/app/_components/pages/ContentDetailPage/ContentDetailSkeleton";
 import { ProtectedRoute } from "@/app/_components/common/providers/ProtectedRoute";
-
-function ContentByIdContent({ id }: { id: string }) {
-  const router = useRouter();
-  const numericId = Number.parseInt(id, 10);
-
-  if (!Number.isFinite(numericId) || numericId <= 0) {
-    if (typeof window !== "undefined") {
-      router.replace("/");
-    }
-    return null;
-  }
-
-  return <ContentDetailPage contentId={numericId} />;
-}
+import {
+  getCachedServerCountryCode,
+  getCachedSession,
+} from "@/lib/auth/session-server";
+import {
+  getServerQueryClient,
+  prefetchContentDetailQueries,
+} from "@/lib/api/queries/server";
 
 interface ContentByIdPageProps {
   params: Promise<{ id: string }>;
 }
 
-export default function ContentByIdPage({ params }: ContentByIdPageProps) {
-  const { id } = use(params);
+export default async function ContentByIdPage({ params }: ContentByIdPageProps) {
+  const { id } = await params;
+  const contentId = Number.parseInt(id, 10);
+
+  if (!Number.isFinite(contentId) || contentId <= 0) {
+    redirect("/");
+  }
+
+  const session = await getCachedSession();
+  const country = await getCachedServerCountryCode();
+  const qc = getServerQueryClient();
+
+  await prefetchContentDetailQueries(qc, session, contentId, country);
 
   return (
-    <div className="relative w-full overflow-x-hidden">
-      <Suspense fallback={null}>
-        <Navbar />
-      </Suspense>
-      <ProtectedRoute>
-        <Suspense fallback={<ContentDetailSkeleton />}>
-          <ContentByIdContent id={id} />
+    <HydrationBoundary state={dehydrate(qc)}>
+      <div className="relative w-full overflow-x-hidden">
+        <Suspense fallback={null}>
+          <Navbar />
         </Suspense>
-      </ProtectedRoute>
-    </div>
+        <ProtectedRoute>
+          <Suspense fallback={<ContentDetailSkeleton />}>
+            <ContentDetailPage contentId={contentId} country={country} />
+          </Suspense>
+        </ProtectedRoute>
+      </div>
+    </HydrationBoundary>
   );
 }

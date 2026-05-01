@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { Navbar } from "@/app/_components/layout/Navbar";
 import { SearchPage } from "@/app/_components/pages/SearchPage";
 import { useSearchResults } from "@/app/_components/pages/SearchPage/hooks/useSearchResults";
-import type { SearchResults } from "@/app/_components/pages/SearchPage/types";
 import type { SessionSnapshot } from "@/lib/auth/session-server";
 
 // AuthSessionBootstrap is mounted globally in app/layout.tsx; this shell only
@@ -15,15 +14,13 @@ const SEARCH_DEBOUNCE_MS = 400;
 interface SearchRouteShellProps {
   session: SessionSnapshot;
   initialQuery: string;
-  initialResults: SearchResults;
-  initialError: string | null;
+  country?: string | null;
 }
 
 export function SearchRouteShell({
   session,
   initialQuery,
-  initialResults,
-  initialError,
+  country,
 }: SearchRouteShellProps) {
   const mobileInputRef = useRef<HTMLInputElement>(null);
   const hasFocusedRef = useRef(false);
@@ -76,11 +73,10 @@ export function SearchRouteShell({
     });
   }, []);
 
-  const { results, isLoading, error, hasResults } = useSearchResults(debouncedQuery, {
-    initialQuery,
-    initialResults,
-    initialError,
-  });
+  const { results, isLoading, error, hasResults } = useSearchResults(
+    debouncedQuery,
+    { country, enabled: session.isAuthenticated },
+  );
 
   return (
     <div className="relative w-full overflow-x-hidden">

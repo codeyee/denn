@@ -21,14 +21,16 @@ import { Footer } from "../../layout/Footer";
 
 interface ContentDetailPageProps {
   contentId: number;
+  country?: string | null;
 }
 
-export function ContentDetailPage({ contentId }: ContentDetailPageProps) {
+export function ContentDetailPage({ contentId, country }: ContentDetailPageProps) {
   const router = useRouter();
   const { user } = useAuthStore();
 
   const { loading, error, contentItem, detailData, tvShowTitle } = useContentData({
     contentId,
+    country: country ?? undefined,
   });
 
   const rating = useUserRating({
@@ -131,7 +133,6 @@ export function ContentDetailPage({ contentId }: ContentDetailPageProps) {
 
         {contentItem.content_type !== ContentType.SEASON && (
           <RatingsSection
-            key={rating.ratingRefreshKey}
             contentItem={contentItem}
             userRating={rating.userRating}
             onEditRating={modals.openRatingModal}

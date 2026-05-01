@@ -1,50 +1,40 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Navbar } from "@/app/_components/layout/Navbar";
 import { ProtectedRoute } from "@/app/_components/common/providers/ProtectedRoute";
 import { ContentType } from "@/lib/types";
-import { contentItemActions } from "@/lib/api";
 import { isValidContentType } from "@/lib/utils/contentTypeUtils";
 import { buildContentUrlById } from "@/lib/utils/navigationUtils";
+import { useContentItemResolutionQuery } from "@/lib/api/queries";
 
 function LegacyContentRedirect() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [error, setError] = useState<string | null>(null);
+  const externalId = searchParams.get("external_id") ?? "";
+  const contentTypeRaw = searchParams.get("content_type") ?? "";
+  const isValid = Boolean(externalId) && isValidContentType(contentTypeRaw);
+  const resolution = useContentItemResolutionQuery(
+    externalId,
+    contentTypeRaw as ContentType,
+    { enabled: isValid },
+  );
 
   useEffect(() => {
-    const externalId = searchParams.get("external_id");
-    const contentTypeRaw = searchParams.get("content_type");
-
-    if (!externalId || !contentTypeRaw || !isValidContentType(contentTypeRaw)) {
+    if (!isValid) {
       router.replace("/");
-      return;
     }
+  }, [isValid, router]);
 
-    let cancelled = false;
-    (async () => {
-      try {
-        const item = await contentItemActions.getOrCreate(
-          externalId,
-          contentTypeRaw as ContentType
-        );
-        if (!cancelled) {
-          router.replace(buildContentUrlById(item.id));
-        }
-      } catch (err) {
-        console.error("Legacy content redirect failed:", err);
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Failed to resolve content");
-        }
-      }
-    })();
+  useEffect(() => {
+    if (resolution.data) {
+      router.replace(buildContentUrlById(resolution.data.id));
+    }
+  }, [resolution.data, router]);
 
-    return () => {
-      cancelled = true;
-    };
-  }, [searchParams, router]);
+  const error =
+    resolution.error instanceof Error ? resolution.error.message : null;
 
   return (
     <div className="relative w-full min-h-screen bg-background-logged-in">

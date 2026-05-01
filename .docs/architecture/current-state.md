@@ -40,14 +40,11 @@ The hybrid topology is deliberate and documented in
 
 ## Current Frontend State
 
-- TanStack Query is mounted globally and is the intended direction for
-  server state.
-- The migration is incomplete: some flows already use query hooks and
-  optimistic mutations, while Home, Search, List Detail, and parts of
-  rating/list interactions still depend on Zustand plus `useEffect`
-  fetch flows.
+- TanStack Query is mounted globally and owns frontend server state for
+  Home, Search, Content Detail, List Detail, Add-to-List, ratings, and
+  list mutations.
 - Hover prefetch exists for content cards and list item cards.
-- SSR prefetch with `HydrationBoundary` is not generalized yet.
+- The major protected routes use SSR prefetch with `HydrationBoundary`.
 
 See [`data-fetching.md`](./data-fetching.md).
 

@@ -1,81 +1,80 @@
-import { useEffect, useState } from "react";
-import { useContentStore } from "@/app/_stores/content-store";
-import { useListsStore } from "@/app/_stores/lists-store";
+import { useMemo } from "react";
 
-const SUGGESTIONS_PAGE_SIZE = 20;
-const LISTS_ITEMS_SIZE = 8;
-const LISTS_IMAGES_SIZE = 4;
+import {
+    HOME_LIST_FIELDS,
+    HOME_LIST_IMAGES_SIZE,
+    HOME_LIST_ITEMS_SIZE,
+    HOME_LIST_SOURCE_FIELDS,
+    SUGGESTIONS_PAGE_SIZE,
+    useSuggestionsQuery,
+    useUserListsQuery,
+} from "@/lib/api/queries";
+import { useCreateListMutation } from "@/lib/api/mutations";
+import type { ListType } from "@/lib/types";
 
-export function useHomeData() {
-    const {
-        suggestions,
-        isLoading: suggestionsLoading,
-        error: suggestionsError,
-        fetchSuggestions,
-    } = useContentStore();
+interface UseHomeDataOptions {
+    country?: string | null;
+}
 
-    const {
-        lists,
-        isLoading: listsLoading,
-        error: listsError,
-        fetchLists,
-        createList,
-    } = useListsStore();
+export function useHomeData({ country }: UseHomeDataOptions = {}) {
+    const suggestionsQuery = useSuggestionsQuery(SUGGESTIONS_PAGE_SIZE, { country });
+    const listsQuery = useUserListsQuery({
+        items_size: HOME_LIST_ITEMS_SIZE,
+        images_size: HOME_LIST_IMAGES_SIZE,
+        fields: HOME_LIST_FIELDS,
+        source_fields: HOME_LIST_SOURCE_FIELDS,
+        country: country ?? undefined,
+    });
+    const createListMutation = useCreateListMutation();
 
-    const [suggestionsLoaded, setSuggestionsLoaded] = useState(false);
+    const suggestions = useMemo(
+        () => ({
+            movies: suggestionsQuery.data?.movies?.results ?? [],
+            tvShows: suggestionsQuery.data?.["tv-shows"]?.results ?? [],
+            games: suggestionsQuery.data?.games?.results ?? [],
+            music: suggestionsQuery.data?.albums?.results ?? [],
+            books: suggestionsQuery.data?.books?.results ?? [],
+        }),
+        [suggestionsQuery.data],
+    );
 
-    useEffect(() => {
-        fetchSuggestions(SUGGESTIONS_PAGE_SIZE)
-            .then(() => {
-                setSuggestionsLoaded(true);
-            })
-            .catch(() => {
-                setSuggestionsLoaded(true);
-            });
-    }, [fetchSuggestions]);
-
-    useEffect(() => {
-        if (!suggestionsLoaded) return;
-
-        const listFields = [
-            "id",
-            "name",
-            "item_count",
-            "member_count",
-            "list_type",
-            "items.id",
-            "items.content_item.source_data",
-        ];
-
-        const listSourceFields = ["id", "images"];
-
-        fetchLists({
-            items_size: LISTS_ITEMS_SIZE,
-            images_size: LISTS_IMAGES_SIZE,
-            fields: listFields.join(","),
-            source_fields: listSourceFields.join(","),
-        });
-    }, [suggestionsLoaded, fetchLists]);
-
+    const lists = listsQuery.data?.results ?? [];
+    const suggestionsError = errorMessage(suggestionsQuery.error);
+    const listsError = errorMessage(listsQuery.error);
     const hasAnyError = Boolean(suggestionsError || listsError);
 
     const isAllEmpty =
-        !suggestionsLoading &&
+        !suggestionsQuery.isLoading &&
+        !listsQuery.isLoading &&
         suggestions.movies.length === 0 &&
         suggestions.tvShows.length === 0 &&
         suggestions.games.length === 0 &&
         suggestions.music.length === 0 &&
-        suggestions.books.length === 0;
+        suggestions.books.length === 0 &&
+        lists.length === 0;
+
+    const createList = async (
+        name: string,
+        description?: string,
+        listType?: ListType,
+    ) => {
+        await createListMutation.mutateAsync({ name, description, listType });
+    };
 
     return {
         suggestions,
-        suggestionsLoading,
+        suggestionsLoading: suggestionsQuery.isLoading,
         suggestionsError,
         lists,
-        listsLoading,
+        listsLoading: listsQuery.isLoading,
         listsError,
         createList,
+        isCreatingList: createListMutation.isPending,
         hasAnyError,
         isAllEmpty,
     };
+}
+
+function errorMessage(error: unknown) {
+    return error instanceof Error ? error.message : null;
 }

@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 import { listItemActions } from "@/lib/api";
 import type { ListItemQuery } from "@/lib/types/listView";
@@ -15,6 +15,7 @@ interface UseListItemsParams {
     source_fields?: string;
     query?: Pick<ListItemQuery, "filters" | "rangeFilters" | "sort" | "groupBy">;
   };
+  enabled?: boolean;
 }
 
 /**
@@ -24,14 +25,15 @@ interface UseListItemsParams {
  */
 export function useListItemsQuery(
   listId: number,
-  { page, pageSize, options }: UseListItemsParams = {},
+  { page, pageSize, options, enabled: optionsEnabled = true }: UseListItemsParams = {},
 ) {
   const enabled = Number.isFinite(listId) && listId > 0;
 
   return useQuery({
     queryKey: queryKeys.listItems.page(listId, { page, pageSize, options }),
     queryFn: () => listItemActions.list(listId, page, pageSize, options),
-    enabled,
+    enabled: enabled && optionsEnabled,
+    placeholderData: keepPreviousData,
     staleTime: 30_000,
   });
 }

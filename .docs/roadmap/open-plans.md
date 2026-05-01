@@ -4,11 +4,10 @@ This file summarizes the work that is still open, partially implemented, or next
 
 ## Priority Order
 
-1. Finish the frontend server-state migration and SSR prefetch path.
-2. Close the remaining auth/session hardening gaps.
-3. Turn performance documentation into measured, maintained baseline
+1. Close the remaining auth/session hardening gaps.
+2. Turn performance documentation into measured, maintained baseline
    data.
-4. Replace static content rehydration TTLs with a dynamic policy.
+3. Replace static content rehydration TTLs with a dynamic policy.
 
 ## Old TODO Triage
 
@@ -120,22 +119,22 @@ Still open:
 
 ## React Query Migration And SSR Prefetch
 
-- Status: partial
-- Detailed plan: see the frontend data-layer migration plan under `.docs/sprints/`.
+- Status: implemented, with follow-up testing depth remaining.
 
-Already merged:
+Merged behavior:
 
-- Global `QueryProvider`.
-- Shared `queryKeys`.
-- Base read hooks for lists, list items, and content detail.
-- Critical mutations and hover-prefetch primitives.
+- Home, Search, Content Detail, List Detail, Add-to-List, ratings, and
+  list mutation flows use TanStack Query for server state.
+- Legacy `lists-store` and `content-store` server-response caches were
+  removed.
+- Major routes prefetch server-side with `HydrationBoundary`.
 
 Still open:
 
-- Migrate Home, Search, List Detail, Add-to-List, and remaining rating
-  flows off legacy store-driven fetch logic.
-- Remove manual TTL caching from `lists-store` and `content-store`.
-- Add server-side prefetch with `HydrationBoundary` for major routes.
+- Replace placeholder values in `.docs/perf/baseline.md` with measured
+  `after 8.5` Web Vitals.
+- Expand frontend interaction coverage beyond the current Query smoke
+  tests.
 
 ## Client Session Bootstrap And Continuity
 

@@ -6,7 +6,7 @@ import { ToastProvider } from "@/app/_components/common/Toast";
 import { EnvConfig } from "@/app/_components/common/EnvConfig";
 import { WebVitalsReporter } from "@/app/_components/common/WebVitalsReporter";
 import { AuthSessionBootstrap } from "@/app/_components/routes/AuthSessionBootstrap";
-import { resolveSession, type SessionSnapshot } from "@/lib/auth/session-server";
+import { getCachedSession, type SessionSnapshot } from "@/lib/auth/session-server";
 
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
@@ -71,7 +71,7 @@ export default async function RootLayout({
   // available", and bounce the user back to /login.
   let session: SessionSnapshot = EMPTY_SESSION;
   try {
-    session = await resolveSession();
+    session = await getCachedSession();
   } catch (err) {
     // Backend down or unreachable: render the shell as a logged-out user
     // instead of crashing the entire app at the layout boundary.

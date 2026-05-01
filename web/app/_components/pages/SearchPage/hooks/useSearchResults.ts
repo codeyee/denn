@@ -1,14 +1,13 @@
-import { useState, useEffect, useRef } from "react";
-import { searchActions } from "@/lib/api/actions";
-import type {
-    MultiSearchResponse,
-} from "@/lib/types";
+import { useMemo } from "react";
+
+import { SEARCH_RESULT_LIMIT, useMultiSearchQuery } from "@/lib/api/queries";
+import type { MultiSearchResponse } from "@/lib/types";
 import {
-    transformMovieResults,
-    transformTVShowResults,
-    transformGameResults,
-    transformMusicResults,
     transformBookResults,
+    transformGameResults,
+    transformMovieResults,
+    transformMusicResults,
+    transformTVShowResults,
 } from "../utils";
 import { EMPTY_SEARCH_RESULTS, type SearchResults } from "../types";
 
@@ -20,12 +19,13 @@ interface UseSearchResultsReturn {
 }
 
 interface UseSearchResultsOptions {
-    initialQuery?: string;
-    initialResults?: SearchResults;
-    initialError?: string | null;
+    country?: string | null;
+    enabled?: boolean;
 }
 
-function transformSearchResponse(response: MultiSearchResponse): SearchResults {
+function transformSearchResponse(response?: MultiSearchResponse): SearchResults {
+    if (!response) return EMPTY_SEARCH_RESULTS;
+
     return {
         movies: transformMovieResults(response.movies?.results || []),
         tvShows: transformTVShowResults(response["tv-shows"]?.results || []),
@@ -37,102 +37,19 @@ function transformSearchResponse(response: MultiSearchResponse): SearchResults {
 
 export function useSearchResults(
     query: string,
-    options: UseSearchResultsOptions = {}
+    { country, enabled = true }: UseSearchResultsOptions = {},
 ): UseSearchResultsReturn {
-    const initialQuery = options.initialQuery?.trim() ?? "";
-    const initialResults = options.initialResults ?? EMPTY_SEARCH_RESULTS;
-    const initialError = options.initialError ?? null;
-    const skippedInitialFetchRef = useRef(false);
-    const [results, setResults] = useState<SearchResults>(
-        initialQuery ? initialResults : EMPTY_SEARCH_RESULTS
+    const trimmedQuery = query.trim();
+    const searchQuery = useMultiSearchQuery(trimmedQuery, {
+        limit: SEARCH_RESULT_LIMIT,
+        country,
+        enabled: enabled && trimmedQuery.length > 0,
+    });
+
+    const results = useMemo(
+        () => transformSearchResponse(searchQuery.data),
+        [searchQuery.data],
     );
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(initialError);
-
-    const currentSearchQueryRef = useRef<string>("");
-
-    useEffect(() => {
-        // Create AbortController for this search request
-        const controller = new AbortController();
-        const { signal } = controller;
-
-        const performSearch = async () => {
-            // Clear results if no query
-            if (!query.trim()) {
-                setResults(EMPTY_SEARCH_RESULTS);
-                setIsLoading(false);
-                setError(null);
-                currentSearchQueryRef.current = "";
-                return;
-            }
-
-            const searchQueryForThisRequest = query.trim();
-            currentSearchQueryRef.current = searchQueryForThisRequest;
-
-            if (
-                !skippedInitialFetchRef.current &&
-                searchQueryForThisRequest === initialQuery
-            ) {
-                skippedInitialFetchRef.current = true;
-                setResults(initialResults);
-                setError(initialError);
-                setIsLoading(false);
-                return;
-            }
-
-            setIsLoading(true);
-            setError(null);
-
-            try {
-                const response = await searchActions.multiSearch(
-                    {
-                        q: searchQueryForThisRequest,
-                        limit: 20,
-                    },
-                    signal
-                );
-
-                if (
-                    currentSearchQueryRef.current !== searchQueryForThisRequest
-                ) {
-                    return;
-                }
-
-                setResults(transformSearchResponse(response));
-            } catch (err) {
-                // Ignore abort errors (expected when user types quickly)
-                if (err instanceof Error && err.name === "AbortError") {
-                    return;
-                }
-
-                // Only update error if this is still the current search
-                if (
-                    currentSearchQueryRef.current === searchQueryForThisRequest
-                ) {
-                    setError(
-                        err instanceof Error
-                            ? err.message
-                            : "An error occurred while searching"
-                    );
-                    setResults(EMPTY_SEARCH_RESULTS);
-                }
-            } finally {
-                // Only update loading state if this is still the current search
-                if (
-                    currentSearchQueryRef.current === searchQueryForThisRequest
-                ) {
-                    setIsLoading(false);
-                }
-            }
-        };
-
-        performSearch();
-
-        // Cleanup: abort pending request when query changes or component unmounts
-        return () => {
-            controller.abort();
-        };
-    }, [initialError, initialQuery, initialResults, query]);
 
     const hasResults =
         results.movies.length > 0 ||
@@ -142,9 +59,9 @@ export function useSearchResults(
         results.books.length > 0;
 
     return {
-        results,
-        isLoading,
-        error,
+        results: trimmedQuery ? results : EMPTY_SEARCH_RESULTS,
+        isLoading: searchQuery.isLoading,
+        error: searchQuery.error instanceof Error ? searchQuery.error.message : null,
         hasResults,
     };
 }

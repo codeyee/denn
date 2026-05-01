@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { useToast } from "@/app/_components/common/Toast";
-import { useListsStore } from "@/app/_stores/lists-store";
+import { listItemActions } from "@/lib/api";
 import { queryKeys } from "@/lib/api/queries/keys";
 import { ItemStatus } from "@/lib/types";
 
@@ -35,11 +35,14 @@ export function useToggleListItemStatusMutation<TContext = unknown>(
 ) {
   const qc = useQueryClient();
   const { showToast } = useToast();
-  const { updateListItemStatus } = useListsStore();
 
   return useMutation<unknown, Error, ToggleVariables, TContext | undefined>({
     mutationFn: ({ listId, itemId, nextStatus }) =>
-      updateListItemStatus(listId, itemId, nextStatus),
+      listItemActions.patch(listId, itemId, {
+        status: nextStatus,
+        completed_at:
+          nextStatus === ItemStatus.COMPLETED ? new Date().toISOString() : null,
+      }),
     onMutate: async (vars) => {
       await qc.cancelQueries({ queryKey: queryKeys.listItems.all(vars.listId) });
       return options.onMutate ? await options.onMutate(vars) : (undefined as TContext | undefined);
@@ -56,6 +59,7 @@ export function useToggleListItemStatusMutation<TContext = unknown>(
     },
     onSettled: (_data, _error, vars) => {
       qc.invalidateQueries({ queryKey: queryKeys.listItems.all(vars.listId) });
+      qc.invalidateQueries({ queryKey: queryKeys.lists.stats(vars.listId) });
     },
   });
 }

@@ -1,15 +1,18 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { Modal } from "@/app/_components/common/modals/Modal";
 import { Button } from "@/app/_components/common/ui/Button";
-import { ContentType, TVSeason, UserListWithMatches, BulkCheckItem, MatchedItem, ContentItem, TVShowDetail } from "@/lib/types";
-import { listActions, contentItemActions } from "@/lib/api";
+import { ContentType, TVSeason, UserListWithMatches, BulkCheckItem, MatchedItem, TVShowDetail } from "@/lib/types";
 import { useListOperations } from "./hooks/useListOperations";
 import { useSeasonSelection } from "./hooks/useSeasonSelection";
 import { useModalPhases } from "./hooks/useModalPhases";
 import { SelectionPhase } from "./components/SelectionPhase";
 import { ListsPhase } from "./components/ListsPhase";
+import {
+  useBulkListMembershipQuery,
+  useContentItemResolutionQuery,
+} from "@/lib/api/queries";
 
 interface AddToListModalProps {
   isOpen: boolean;
@@ -30,11 +33,17 @@ export function AddToListModal({
   tvShowSeasons,
   tvShowId,
 }: AddToListModalProps) {
-  // Local state for lists (separate from global store)
-  const [lists, setLists] = useState<UserListWithMatches[]>([]);
-  const [listsLoading, setListsLoading] = useState(false);
-  const [fetchedContentItem, setFetchedContentItem] = useState<ContentItem | null>(null);
-  const [loadingContent, setLoadingContent] = useState(false);
+  const needsTvShowContent =
+    isOpen &&
+    contentItem.content_type === ContentType.TV_SHOW &&
+    (!tvShowSeasons || tvShowSeasons.length === 0);
+  const fetchedContent = useContentItemResolutionQuery(
+    contentItem.external_id,
+    contentItem.content_type as ContentType,
+    { enabled: needsTvShowContent },
+  );
+  const fetchedContentItem = fetchedContent.data ?? null;
+  const loadingContent = fetchedContent.isLoading;
 
   // Determine effective data (props or fetched)
   const effectiveSeasons = useMemo(() => (tvShowSeasons && tvShowSeasons.length > 0)
@@ -45,58 +54,13 @@ export function AddToListModal({
 
   const isMultiSeasonShow = Boolean(effectiveSeasons && effectiveSeasons.length > 0 && effectiveTvShowId);
 
-  // Fetch content if needed (missing seasons for TV show)
-  useEffect(() => {
-    const shouldFetch =
-      isOpen &&
-      contentItem.content_type === ContentType.TV_SHOW &&
-      (!tvShowSeasons || tvShowSeasons.length === 0) &&
-      !fetchedContentItem &&
-      !loadingContent;
-
-    if (shouldFetch) {
-      const fetchContent = async () => {
-        setLoadingContent(true);
-        try {
-          const item = await contentItemActions.getOrCreate(
-            contentItem.external_id,
-            contentItem.content_type as ContentType
-          );
-          setFetchedContentItem(item);
-        } catch (error) {
-          console.error("Error fetching content item:", error);
-        } finally {
-          setLoadingContent(false);
-        }
-      };
-      fetchContent();
-    }
-  }, [isOpen, contentItem, tvShowSeasons, fetchedContentItem, loadingContent]);
-
-  // Fetch lists locally (independent of global store)
-  const fetchModalLists = useCallback(async (items: BulkCheckItem[]) => {
-    setListsLoading(true);
-    try {
-      const response = await listActions.bulkCheck(items);
-      setLists(response.lists || []);
-    } catch (error) {
-      console.error("Error fetching lists for modal:", error);
-      setLists([]);
-    } finally {
-      setListsLoading(false);
-    }
-  }, []);
-
-  // Refresh lists with same filters as initial fetch (used after add/remove operations)
-  const refreshModalLists = useCallback(async () => {
-    // Always check the main item
+  const membershipItems = useMemo<BulkCheckItem[]>(() => {
     const items: BulkCheckItem[] = [{
       external_id: contentItem.external_id,
       source_api: contentItem.source_api,
       content_type: contentItem.content_type,
     }];
 
-    // If it's a multi-season show, also check all seasons
     if (isMultiSeasonShow && effectiveSeasons && effectiveTvShowId) {
       const seasonItems = effectiveSeasons.map(season => ({
         external_id: `${effectiveTvShowId}:${season.season_number}`,
@@ -106,14 +70,22 @@ export function AddToListModal({
       items.push(...seasonItems);
     }
 
-    await fetchModalLists(items);
-  }, [fetchModalLists, isMultiSeasonShow, effectiveSeasons, effectiveTvShowId, contentItem.external_id, contentItem.source_api, contentItem.content_type]);
+    return items;
+  }, [isMultiSeasonShow, effectiveSeasons, effectiveTvShowId, contentItem]);
+
+  const membershipQuery = useBulkListMembershipQuery(membershipItems, {
+    enabled: isOpen && !loadingContent,
+  });
+  const lists = membershipQuery.data?.lists ?? [];
+  const listsLoading = membershipQuery.isLoading || membershipQuery.isFetching;
 
   const operations = useListOperations({
     contentItem,
     tvShowSeasons: effectiveSeasons,
     tvShowId: effectiveTvShowId,
-    refreshLists: refreshModalLists,
+    refreshLists: async () => {
+      await membershipQuery.refetch();
+    },
   });
 
   const seasonSelection = useSeasonSelection(effectiveSeasons);
@@ -124,25 +96,6 @@ export function AddToListModal({
 
   useEffect(() => {
     if (isOpen) {
-      // Always check the main item
-      const items: BulkCheckItem[] = [{
-        external_id: contentItem.external_id,
-        source_api: contentItem.source_api,
-        content_type: contentItem.content_type,
-      }];
-
-      // If it's a multi-season show, also check all seasons
-      if (isMultiSeasonShow && effectiveSeasons && effectiveTvShowId) {
-        const seasonItems = effectiveSeasons.map(season => ({
-          external_id: `${effectiveTvShowId}:${season.season_number}`,
-          source_api: contentItem.source_api,
-          content_type: ContentType.SEASON,
-        }));
-        items.push(...seasonItems);
-      }
-
-      // Fetch lists locally (doesn't affect global store)
-      fetchModalLists(items);
       operations.setError(null);
       seasonSelection.resetSelection();
       phases.resetPhases();

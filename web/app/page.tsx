@@ -1,16 +1,24 @@
 import { HomeRouteShell } from "@/app/_components/routes/HomeRouteShell";
-import { resolveSession, getServerCountryCode } from "@/lib/auth/session-server";
-import { getHomePageData } from "@/lib/server/home";
+import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
+import {
+  getCachedServerCountryCode,
+  getCachedSession,
+} from "@/lib/auth/session-server";
+import {
+  getServerQueryClient,
+  prefetchHomeQueries,
+} from "@/lib/api/queries/server";
 
 export default async function Home() {
-  const session = await resolveSession();
-  const country = await getServerCountryCode();
-  const initialData = await getHomePageData(session, country);
+  const session = await getCachedSession();
+  const country = await getCachedServerCountryCode();
+  const qc = getServerQueryClient();
+
+  await prefetchHomeQueries(qc, session, country);
 
   return (
-    <HomeRouteShell
-      session={session}
-      initialData={initialData}
-    />
+    <HydrationBoundary state={dehydrate(qc)}>
+      <HomeRouteShell session={session} country={country} />
+    </HydrationBoundary>
   );
 }

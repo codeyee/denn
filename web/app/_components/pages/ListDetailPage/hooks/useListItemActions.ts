@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useListsStore } from "@/app/_stores/lists-store";
 import {
+  useDeleteListItemMutation,
+  useDeleteListMutation,
   useRateContentMutation,
   useToggleListItemStatusMutation,
+  useUpdateListMutation,
 } from "@/lib/api/mutations";
 import { ListType, ItemStatus, User, RatingCreate } from "@/lib/types";
 import { ListItem, MemberRating } from "@/lib/types";
@@ -60,11 +61,12 @@ export function useListItemActions({
   currentUserId,
   onRatingModalOpen,
 }: UseListItemActionsOptions): UseListItemActionsReturn {
-  const router = useRouter();
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { updateList, deleteList, deleteListItem } = useListsStore();
+  const updateListMutation = useUpdateListMutation();
+  const deleteListMutation = useDeleteListMutation();
+  const deleteListItemMutation = useDeleteListItemMutation();
 
   // T7: optimistic toggle. The mutation cancels in-flight reads,
   // applies the patch via setListItems in onMutate, restores the
@@ -195,7 +197,12 @@ export function useListItemActions({
   ) => {
     setActionLoading(true);
     try {
-      await updateList(listId, name, description, listType);
+      await updateListMutation.mutateAsync({
+        listId,
+        name,
+        description,
+        listType,
+      });
       onListUpdated?.(name, description, listType);
     } finally {
       setActionLoading(false);
@@ -205,8 +212,7 @@ export function useListItemActions({
   const handleDeleteList = async () => {
     setActionLoading(true);
     try {
-      await deleteList(listId);
-      router.push("/");
+      await deleteListMutation.mutateAsync(listId);
     } catch (err) {
       setActionLoading(false);
       setError(err instanceof Error ? err.message : "Failed to delete list");
@@ -217,7 +223,7 @@ export function useListItemActions({
     setActionLoading(true);
     try {
       const itemToDelete = listItems.find((item) => item.id === itemId);
-      await deleteListItem(listId, itemId);
+      await deleteListItemMutation.mutateAsync({ listId, itemId });
       setListItems((prev) => prev.filter((item) => item.id !== itemId));
       if (itemToDelete) {
         onItemDeleted?.(itemToDelete);
@@ -258,7 +264,12 @@ export function useListItemActions({
 
   return {
     actionLoading:
-      actionLoading || toggleStatusMutation.isPending || rateMutation.isPending,
+      actionLoading ||
+      toggleStatusMutation.isPending ||
+      rateMutation.isPending ||
+      updateListMutation.isPending ||
+      deleteListMutation.isPending ||
+      deleteListItemMutation.isPending,
     error,
     handleUpdateList,
     handleDeleteList,

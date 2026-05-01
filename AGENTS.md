@@ -166,6 +166,8 @@ Frontend (`web`):
 - New loading states should be dimensionally stable; add `loading.tsx` where a route needs one.
 - New server reads should follow the repo's TanStack Query patterns instead of `useEffect` + ad hoc `fetch`.
 - New mutations should be optimistic and reversible, with proper rollback on failure.
+- Mutations that change server state must live under `web/lib/api/mutations/` and invalidate or patch the affected `queryKeys`.
+- Routes that know their initial server data should prefetch into a per-request QueryClient and render through `HydrationBoundary`.
 - Use hover prefetch on cards that lead to detail pages when it materially improves UX.
 - Do not disable Next.js link prefetch without a written reason.
 

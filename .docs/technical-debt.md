@@ -11,10 +11,6 @@ their lasting outcome is reflected in architecture or history docs.
   [`adr/0002-web-auth-cookies.md`](./adr/0002-web-auth-cookies.md)
   and
   [`architecture/auth-session-bootstrap.md`](./architecture/auth-session-bootstrap.md)
-- The frontend server-state migration is incomplete; multiple important
-  flows still use legacy store-plus-`useEffect` orchestration.
-  Reference:
-  [`architecture/data-fetching.md`](./architecture/data-fetching.md)
 - Protected-route redirect remains client-side; no Next middleware guard
   exists yet.
   Reference:
@@ -28,8 +24,8 @@ their lasting outcome is reflected in architecture or history docs.
   local content details. This is too coarse for newly released content.
 - Cross-service typed contract generation is still duplicated across
   `web` and `core`; there is no generated shared client or schema layer.
-- SSR prefetch and `HydrationBoundary` are not generalized across the
-  major frontend routes.
+- Frontend Query migration now has only smoke-level automated coverage;
+  Add-to-List and ListDetail need broader interaction tests.
 
 ## Medium
 

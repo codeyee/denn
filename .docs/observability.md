@@ -39,9 +39,9 @@ Implementation:
   `core.middleware.request_id.get_current_request_id()` for use inside
   log formatters and downstream HTTP clients).
 - `web`: `lib/server/proxy.ts` (`buildProxyHeaders` always sets
-  `X-Request-Id`; SSR helpers in `lib/server/home.ts` and
-  `lib/server/search.ts` propagate the incoming Next.js request id when
-  available).
+  `X-Request-Id`; TanStack Query server prefetch helpers in
+  `lib/api/queries/server.ts` propagate the incoming Next.js request id
+  when available).
 
 When debugging, grab the `request_id` from the user-visible error or
 the `X-Request-Id` response header and `grep` it across the three

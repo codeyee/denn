@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { AUTH_ACCESS_COOKIE, AUTH_REFRESH_COOKIE } from "./constants";
 import type { Profile, TokenRefresh } from "@/lib/types";
@@ -134,5 +135,8 @@ export async function resolveSession(): Promise<SessionSnapshot> {
 
 export async function getServerCountryCode(): Promise<string | null> {
   const cookieStore = await cookies();
-  return cookieStore.get("user-country")?.value ?? null;
+  return cookieStore.get("user-country")?.value ?? "CO";
 }
+
+export const getCachedSession = cache(resolveSession);
+export const getCachedServerCountryCode = cache(getServerCountryCode);
