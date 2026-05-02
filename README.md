@@ -6,7 +6,7 @@ The project is built as a single monorepo with three cooperating services:
 
 | Path    | Stack                     | Responsibility |
 | ------- | ------------------------- | -------------- |
-| `web/`  | Next.js 16 + React 19 + TypeScript | Frontend UI, SSR, protected routes, and the browser-facing BFF for metadata |
+| `web/`  | TanStack Start (Vite + Nitro) + React 19 + TypeScript | Frontend UI, SSR, protected routes, and the browser-facing BFF for metadata |
 | `core/` | Django 5.2 + DRF          | Auth, lists, ratings, invitations, content persistence, and local-first detail reads |
 | `proxy/`| Go 1.25 + Gin             | External metadata gateway for TMDB, IGDB, Spotify, and OpenLibrary |
 
@@ -34,7 +34,7 @@ The integration model is intentionally hybrid:
 
 - **Browser -> `web` -> `core`** for authenticated domain data.
 - **Browser -> `web` BFF -> `proxy`** for public metadata calls.
-- **`web` server-side code -> `proxy`** for SSR metadata reads.
+- **`web` server loaders and server functions -> `proxy`** for SSR metadata reads.
 - **`core` -> `proxy`** for enrichment and refresh of persisted content.
 
 In other words:
@@ -50,7 +50,7 @@ This boundary is a deliberate architectural decision, not an accident. The ratio
 
 Denn uses an internal content id as the stable public route key:
 
-- frontend detail route: `/content/[id]`
+- frontend detail route: `/content/<id>` (TanStack file route `web/src/routes/content/$id.tsx`)
 - persistence anchor: `core.content.models.ContentItem`
 - upstream identifiers: kept as provider-specific source fields behind
   the internal id
@@ -62,8 +62,8 @@ Denn uses an internal content id as the stable public route key:
 The auth model is in transition:
 
 - JWTs are no longer persisted to `localStorage`
-- the layout resolves session server-side and bootstraps the client
-  store globally
+- the root route resolves session server-side (`beforeLoad` / server
+  functions) and bootstraps the client store globally
 - cookies are still not `HttpOnly` yet, so the final hardening phase is
   still open
 
@@ -73,7 +73,7 @@ That roadmap is documented in [`.docs/adr/0002-web-auth-cookies.md`](./.docs/adr
 
 ```text
 .
-├── web/      # Next.js frontend + BFF
+├── web/      # TanStack Start (Vite + Nitro) frontend + BFF
 ├── core/     # Django/DRF domain API
 ├── proxy/    # Go metadata gateway
 ├── .docs/    # Architecture, contracts, roadmap, runbooks, history
@@ -88,18 +88,18 @@ The frontend owns UI composition, SSR, route protection, and the browser-facing 
 
 Important directories:
 
-- `web/app/` - routes, layouts, loading states, BFF handlers
-- `web/lib/` - API clients, query hooks, helpers, utilities
-- `web/app/_components/` - shared and page-specific UI
+- `web/src/routes/` - TanStack Router file routes (pages + `api/*` server handlers)
+- `web/src/components/`, `web/src/hooks/`, `web/src/providers/`, `web/src/stores/` - UI and client state
+- `web/src/lib/` - API clients, TanStack Query keys/hooks, utilities
+- `web/src/server/` - server-only helpers (`createServerFn`, proxy BFF helpers, session)
 
 Key implementation traits:
 
-- Next.js App Router
+- TanStack Start + TanStack Router + Vite 7; production server is Nitro (`.output/`)
 - id-first content routing
-- TanStack Query as the intended server-state layer
-- Zustand still used for client/UI state and some transitional fetch
-  flows
-- `next build --webpack` is intentional and part of the repo contract
+- TanStack Query for server-state; route loaders call `ensureQueryData` (no Next.js `HydrationBoundary`)
+- Zustand for auth/session UI state
+- Runtime public config for the browser is injected via `window.__ENV__` from the server (see `web/src/server/runtime-env.ts`); `NEXT_PUBLIC_*` in `.env` remains supported for `API_URL` / proxy URL compatibility
 
 ### `core/`
 
@@ -141,15 +141,19 @@ Key implementation traits:
 
 ### Frontend
 
-- Next.js 16
+- TanStack Start + TanStack Router
+- Vite 7 + Nitro (production Node server)
 - React 19
 - TypeScript 5
-- Tailwind CSS 4
+- Tailwind CSS 4 (`@tailwindcss/vite`)
 - TanStack Query 5
 - Zustand 5
 - Radix UI
 - React Hook Form + Zod
 - DnD Kit
+- Vitest + Testing Library (frontend tests)
+
+Use a **current Node.js LTS** locally (TanStack Start / Vite 7 expect **Node 20.19+** or **22.12+** per upstream engine ranges).
 
 ### Core API
 
@@ -175,8 +179,8 @@ Key implementation traits:
 These are non-negotiable unless the docs and tests are updated in the same change:
 
 - `proxy` is the only owner of provider credentials.
-- `PROXY_API_KEY` is server-only. Never expose it with a
-  `NEXT_PUBLIC_` prefix.
+- `PROXY_API_KEY` is server-only. Never expose it in client bundles or
+  `window.__ENV__` (do not use a public env prefix for secrets).
 - `core` is not a general-purpose metadata gateway.
 - `proxy` must remain stateless with respect to PostgreSQL and user
   sessions.
@@ -213,8 +217,8 @@ cd core && python3 -m venv .venv && source .venv/bin/activate \
 # proxy (Go, port 8081)
 cd proxy && cp .env.example .env && make run
 
-# web (Next.js, port 3000)
-cd web && cp .env.example .env.local && npm install && npm run dev
+# web (TanStack Start / Vite, port 3000)
+cd web && cp .env.example .env && npm install && npm run dev
 ```
 
 The canonical env-var ownership matrix lives in [`.docs/contracts/internal-http.md`](./.docs/contracts/internal-http.md). The most important rule is still: `PROXY_API_KEY` must remain server-only.
@@ -267,6 +271,12 @@ Start here when you need project context:
 - [`.docs/technical-debt.md`](./.docs/technical-debt.md) - active debt
 - [`.docs/roadmap/open-plans.md`](./.docs/roadmap/open-plans.md) -
   open and partially implemented work
+- [`.docs/adr/0001-external-metadata-integration.md`](./.docs/adr/0001-external-metadata-integration.md) -
+  hybrid topology `web` / `core` / `proxy`
+- [`.docs/adr/0002-web-auth-cookies.md`](./.docs/adr/0002-web-auth-cookies.md) -
+  web session / cookie direction
+- [`.docs/adr/0003-migrate-web-from-nextjs-to-tanstack-start.md`](./.docs/adr/0003-migrate-web-from-nextjs-to-tanstack-start.md) -
+  frontend stack (TanStack Start)
 - [`.docs/contracts/internal-http.md`](./.docs/contracts/internal-http.md) -
   cross-service contract
 - [`.docs/observability.md`](./.docs/observability.md) - log schema,

@@ -7,13 +7,20 @@ import { ErrorState } from "../../common/state/ErrorState";
 import { EmptyState } from "../../common/state/EmptyState";
 import { ContentCarousels } from "./components/ContentCarousels";
 import { useHomeData } from "./hooks/useHomeData";
+import type { HomepageResponse, PaginatedUserListList } from "@/lib/types";
 
 interface HomePageProps {
   country?: string | null;
+  initialSuggestions?: HomepageResponse;
+  initialLists?: PaginatedUserListList;
 }
 
-export function HomePage({ country }: HomePageProps) {
-  const data = useHomeData({ country });
+export function HomePage({
+  country,
+  initialSuggestions,
+  initialLists,
+}: HomePageProps) {
+  const data = useHomeData({ country, initialSuggestions, initialLists });
 
   const { featuredItems } = useFeaturedItems({
     movies: data.suggestions.movies,

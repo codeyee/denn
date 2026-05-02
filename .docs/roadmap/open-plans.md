@@ -145,7 +145,7 @@ Already merged:
 
 Still open:
 
-- Add Next middleware for server-side redirects on protected routes.
+- Add TanStack Router-level (e.g. `beforeLoad`) redirects for protected routes so unauthenticated users do not rely only on client `ProtectedRoute`.
 - Add automated regression coverage for hard refresh, stale cookies, and
   backend-down cases.
 - Finish the documentation and observability around the bootstrap

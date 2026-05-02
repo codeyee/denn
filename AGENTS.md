@@ -29,6 +29,7 @@ Start with:
 - `.docs/technical-debt.md`
 - `.docs/roadmap/open-plans.md`
 - `.docs/adr/0001-external-metadata-integration.md`
+- `.docs/adr/0003-migrate-web-from-nextjs-to-tanstack-start.md`
 - `.docs/contracts/internal-http.md`
 - `.docs/workspace-operating-model.md`
 - `AGENTS.md`
@@ -55,7 +56,7 @@ Notes:
 ## Cross-Service Invariants
 
 - `proxy` is the sole owner of upstream provider credentials.
-- `PROXY_API_KEY` is server-only. Never expose it with a `NEXT_PUBLIC_` prefix.
+- `PROXY_API_KEY` is server-only. Never expose it to the browser or add it to `window.__ENV__` (treat any `NEXT_PUBLIC_*` secret as forbidden).
 - `core` is not a general-purpose metadata gateway.
 - `proxy` must remain stateless with respect to PostgreSQL and user/session data.
 - `X-Request-Id` propagation and the canonical error envelope are shared contracts across `core` and `proxy`.
@@ -74,7 +75,7 @@ The frontend has the strictest code-quality bar in the repo. Preserve it.
 - Prefer named exports. There are no framework-mandated default exports in TanStack Start; route files export a `Route` (and optionally `ServerRoute`) and the root route exports `Route` from `__root.tsx`.
 - Treat ~150 lines as a refactor warning and 200 lines as a hard limit for React components. Split orchestration, hooks, and UI before adding more logic.
 - Put shared UI in `web/src/components/common/`, page-specific UI in `web/src/components/pages/<Feature>/components/`, reusable hooks in `web/src/hooks/` or feature `hooks/`, server-only utilities in `web/src/server/`, and shared utilities in `web/src/lib/utils/`.
-- Routes live in `web/src/routes/` using TanStack Router file conventions: `__root.tsx`, `index.tsx`, `<segment>.tsx`, `$param.tsx` for dynamic segments, `$.ts` for catch-alls. API routes live next to page routes (e.g. `web/src/routes/api/proxy/$.ts`) and export `ServerRoute = createServerFileRoute(...)`.
+- Routes live in `web/src/routes/` using TanStack Router file conventions: `__root.tsx`, `index.tsx`, `<segment>.tsx`, `$param.tsx` for dynamic segments, `$.ts` for catch-alls. API routes live next to page routes (e.g. `web/src/routes/api/proxy/$.ts`) and use `createFileRoute` with `server.handlers` (`GET`, `POST`, etc.).
 - Loaders prefetch into the per-request `QueryClient` via `context.queryClient.ensureQueryData(...)`. The router rehydrates the cache on the client; do not wrap routes with `<HydrationBoundary>`.
 - Use the typed `Link`, `useNavigate`, `useLocation`, and `useSearch` from `@tanstack/react-router`. Do not import from `next/*` (next has been removed).
 - Avoid single-file folders and keep file-local helper functions at the end of the file.

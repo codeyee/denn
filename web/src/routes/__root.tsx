@@ -47,6 +47,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
         { name: "theme-color", content: "#0d030b" },
         { title: "Denn" },
         { name: "description", content: "Denn" },
+        { name: "mobile-web-app-capable", content: "yes" },
         { name: "apple-mobile-web-app-capable", content: "yes" },
         {
           name: "apple-mobile-web-app-status-bar-style",
@@ -78,10 +79,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <head>
         <HeadContent />
       </head>
-      <body
-        className="font-mono antialiased"
-        style={{ fontFamily: "var(--font-azeret-mono)" }}
-      >
+      <body className="font-mono antialiased">
         {children}
         <Scripts />
       </body>

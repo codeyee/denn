@@ -10,20 +10,31 @@ import {
     useUserListsQuery,
 } from "@/lib/api/queries";
 import { useCreateListMutation } from "@/lib/api/mutations";
-import type { ListType } from "@/lib/types";
+import type { HomepageResponse, ListType, PaginatedUserListList } from "@/lib/types";
 
 interface UseHomeDataOptions {
     country?: string | null;
+    initialSuggestions?: HomepageResponse;
+    initialLists?: PaginatedUserListList;
 }
 
-export function useHomeData({ country }: UseHomeDataOptions = {}) {
-    const suggestionsQuery = useSuggestionsQuery(SUGGESTIONS_PAGE_SIZE, { country });
+export function useHomeData({
+    country,
+    initialSuggestions,
+    initialLists,
+}: UseHomeDataOptions = {}) {
+    const suggestionsQuery = useSuggestionsQuery(SUGGESTIONS_PAGE_SIZE, {
+        country,
+        initialData: initialSuggestions,
+    });
     const listsQuery = useUserListsQuery({
         items_size: HOME_LIST_ITEMS_SIZE,
         images_size: HOME_LIST_IMAGES_SIZE,
         fields: HOME_LIST_FIELDS,
         source_fields: HOME_LIST_SOURCE_FIELDS,
         country: country ?? undefined,
+    }, {
+        initialData: initialLists,
     });
     const createListMutation = useCreateListMutation();
 

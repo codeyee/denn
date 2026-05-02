@@ -43,10 +43,7 @@ Tips:
    and POSTed to `/api/perf/vitals` in production builds.
 4. Record p75 across at least 5 cold loads (Cmd+Shift+R) per row.
 
-> Migration note: the LCP/INP/CLS/TTFB/FCP thresholds carry over from
-> the Next.js App Router baseline. After ADR 0003 lands, rerun a
-> production build and re-measure each frontend flow row to refresh
-> the post-migration columns.
+> Tras la migración a TanStack Start (ADR 0003), rebaselines las filas de frontend con un build de producción (`vite build` + `npm start`) cuando cambien rutas críticas o el tamaño del bundle.
 
 ## Tables
 

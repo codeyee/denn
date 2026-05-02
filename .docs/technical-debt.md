@@ -11,7 +11,7 @@ their lasting outcome is reflected in architecture or history docs.
   [`adr/0002-web-auth-cookies.md`](./adr/0002-web-auth-cookies.md)
   and
   [`architecture/auth-session-bootstrap.md`](./architecture/auth-session-bootstrap.md)
-- Protected-route redirect remains client-side; no Next middleware guard
+- Protected-route redirect remains client-side; no router `beforeLoad` auth guard
   exists yet.
   Reference:
   [`roadmap/open-plans.md`](./roadmap/open-plans.md)

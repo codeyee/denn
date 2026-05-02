@@ -11,7 +11,7 @@
 
 El workspace tiene tres servicios independientes:
 
-- `web` — Next.js 16. Sirve UI, hace SSR y expone una ruta BFF en [`web/app/api/proxy/[...path]/route.ts`](../../web/app/api/proxy/[...path]/route.ts).
+- `web` — TanStack Start (Vite + Nitro). Sirve UI, hace SSR y expone el BFF en [`web/src/routes/api/proxy/$.ts`](../../web/src/routes/api/proxy/$.ts).
 - `core` — Django/DRF. Dueño del dominio (auth, lists, content_items, ratings, invitations).
 - `proxy` — Go/Gin. Gateway hacia metadata externa (TMDB, IGDB, Spotify, OpenLibrary). Tiene caché Redis y rate-limiting.
 
@@ -19,15 +19,15 @@ Hoy las flechas de integración existentes son:
 
 ```
 Browser → web → core               (auth, lists, content)
-Browser → web → /api/proxy → proxy (metadata desde el navegador, vía BFF de Next)
-web (SSR) → proxy                  (homepage, search en server components)
+Browser → web → /api/proxy → proxy (metadata desde el navegador, vía BFF)
+web (SSR: loaders y server functions) → proxy                  (homepage, search, prefetch)
 core → proxy                       (enriquecimiento de ContentItem.source_data vía ProxyAPIClient)
 ```
 
 Evidencia en código:
 
-- `web → core`: [`web/lib/server/home.ts`](../../web/lib/server/home.ts), [`web/lib/api/api.ts`](../../web/lib/api/api.ts), [`web/app/_stores/auth-store.ts`](../../web/app/_stores/auth-store.ts).
-- `web → proxy` (BFF, cliente y SSR): [`web/app/api/proxy/[...path]/route.ts`](../../web/app/api/proxy/[...path]/route.ts), [`web/lib/api/proxyApi.ts`](../../web/lib/api/proxyApi.ts), [`web/lib/api/queries/server.ts`](../../web/lib/api/queries/server.ts).
+- `web → core`: [`web/src/lib/api/api.ts`](../../web/src/lib/api/api.ts), [`web/src/stores/auth-store.ts`](../../web/src/stores/auth-store.ts).
+- `web → proxy` (BFF, cliente y SSR): [`web/src/routes/api/proxy/$.ts`](../../web/src/routes/api/proxy/$.ts), [`web/src/lib/api/proxyApi.ts`](../../web/src/lib/api/proxyApi.ts), [`web/src/lib/api/queries/server.ts`](../../web/src/lib/api/queries/server.ts).
 - `core → proxy`: [`core/content/services/proxy_client.py`](../../core/content/services/proxy_client.py), [`core/content/utils.py`](../../core/content/utils.py), [`core/content/serializers/content_item.py`](../../core/content/serializers/content_item.py).
 - Superficie del `proxy`: [`proxy/cmd/api/main.go`](../../proxy/cmd/api/main.go), [`proxy/internal/middleware/auth.go`](../../proxy/internal/middleware/auth.go).
 
@@ -38,8 +38,8 @@ El problema a resolver era estructural: la topología nunca fue una decisión, f
 **Se formaliza el modelo híbrido con contratos explícitos**, así:
 
 1. `web → proxy` es la ruta canónica para **toda metadata externa lectura-pública** (búsqueda, homepage, detalle).
-   - Desde el navegador: siempre vía la ruta BFF [`/api/proxy/*`](../../web/app/api/proxy/[...path]/route.ts) (la API key del proxy nunca se expone al cliente).
-   - Desde server components / route handlers: directo a `proxy`, con la API key inyectada server-side.
+   - Desde el navegador: siempre vía la ruta BFF [`/api/proxy/*`](../../web/src/routes/api/proxy/$.ts) (la API key del proxy nunca se expone al cliente).
+   - Desde server loaders / server functions: directo a `proxy`, con la API key inyectada server-side.
 2. `core → proxy` se mantiene **sólo para enriquecimiento de entidades persistidas** (poblar `ContentItem.source_data`, `browse_metadata`). No para servir respuestas de búsqueda al frontend.
 3. `web → core` se reserva para **dominio del usuario**: auth, lists, items, ratings, invitations.
 4. `core` **no expone** rutas de metadata externa al frontend (no `/api/proxy/...` en Django). Si el frontend necesita datos enriquecidos por dominio (e.g. una list-item con su `source_data`), `core` los compone server-side.
@@ -84,7 +84,7 @@ Las dos flechas con `proxy` (`web → proxy` y `core → proxy`) son legítimas 
 
 ### Código
 
-- `web` deja de aceptar el fallback inseguro `NEXT_PUBLIC_PROXY_API_KEY` en cualquier path server-side ([`web/app/api/proxy/[...path]/route.ts`](../../web/app/api/proxy/[...path]/route.ts), [`web/lib/server/home.ts`](../../web/lib/server/home.ts), [`web/lib/server/search.ts`](../../web/lib/server/search.ts)). Tratado en PR-6B.
+- `web` deja de aceptar el fallback inseguro `NEXT_PUBLIC_PROXY_API_KEY` en cualquier path server-side ([`web/src/routes/api/proxy/$.ts`](../../web/src/routes/api/proxy/$.ts), [`web/src/lib/api/queries/server.ts`](../../web/src/lib/api/queries/server.ts)). Tratado en PR-6B.
 - `proxy` falla cerrado cuando `API_KEY` está vacío en producción ([`proxy/internal/middleware/auth.go`](../../proxy/internal/middleware/auth.go)). Tratado en PR-6B.
 - `core` no añade rutas `/api/proxy/...`. La superficie HTTP de `core` queda en `/api/auth/*`, `/api/content/*`, `/api/cache/*`.
 - El versionado de URLs queda asimétrico y declarado: `core` en `/api`, `proxy` en `/v1/proxy`. No se introduce `/v1/` en `core` en esta decisión.
@@ -103,7 +103,7 @@ Las dos flechas con `proxy` (`web → proxy` y `core → proxy`) son legítimas 
 
 ### Deuda explícita
 
-- La duplicación de cliente HTTP entre `web/lib/api/proxyApi.ts` y `core/content/services/proxy_client.py` no se resuelve aquí. Generar tipos compartidos desde `proxy/docs/openapi.yaml` queda como trabajo futuro.
+- La duplicación de cliente HTTP entre `web/src/lib/api/proxyApi.ts` y `core/content/services/proxy_client.py` no se resuelve aquí. Generar tipos compartidos desde `proxy/docs/openapi.yaml` queda como trabajo futuro.
 - El header `X-Api-Consumer` para diferenciar tráfico es opcional y entra sólo si la observabilidad lo requiere.
 
 ## Referencias

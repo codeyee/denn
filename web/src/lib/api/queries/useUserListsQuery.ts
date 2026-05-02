@@ -1,11 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { listActions } from "@/lib/api";
-import type { ListQueryParams } from "@/lib/types";
+import type { ListQueryParams, PaginatedUserListList } from "@/lib/types";
 import { queryKeys } from "./keys";
 
 interface UseUserListsQueryOptions {
   enabled?: boolean;
+  initialData?: PaginatedUserListList;
 }
 
 /**
@@ -22,6 +23,7 @@ export function useUserListsQuery(
     queryKey: queryKeys.lists.list(params as Record<string, unknown> | undefined),
     queryFn: () => listActions.list(params),
     enabled: options.enabled ?? true,
+    initialData: options.initialData,
     staleTime: 60_000,
   });
 }

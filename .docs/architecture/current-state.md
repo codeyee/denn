@@ -17,8 +17,8 @@ today.
 
 - Browser -> `web` -> `core` for authenticated domain data.
 - Browser -> `web` BFF (`/api/proxy/*`) -> `proxy` for public metadata.
-- `web` server components / route handlers -> `proxy` for server-side
-  metadata reads.
+- `web` route loaders and server-side fetch helpers -> `proxy` for
+  server-side metadata reads.
 - `core` -> `proxy` only for enrichment and refresh of persisted content
   data.
 
@@ -27,7 +27,8 @@ The hybrid topology is deliberate and documented in
 
 ## Current System Facts
 
-- Content detail routes are id-first: `/content/[id]`.
+- Content detail routes are id-first: `/content/<id>` (file route
+  `web/src/routes/content/$id.tsx`).
 - The legacy external triple route still exists only as a compatibility
   bridge toward the id-first route.
 - `core` stores per-type local detail rows and reconstructs proxy-shaped
@@ -49,6 +50,9 @@ The hybrid topology is deliberate and documented in
 - SSR prefetch happens inside `loader` functions that call
   `context.queryClient.ensureQueryData(...)`. The router rehydrates the
   cache on the client; routes do not wrap with `<HydrationBoundary>`.
+- List-style routes that are URL-driven should prefer typed TanStack
+  search params over reparsing raw `searchStr`, because URL values may
+  be serialized differently from the validated route search object.
 - Server-only RPC lives in `web/src/server/` (`getSessionFn`,
   `getCountryFn`, `getRuntimeEnvFn`) using `createServerFn` from
   `@tanstack/react-start`.

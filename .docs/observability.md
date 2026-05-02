@@ -38,10 +38,9 @@ Implementation:
   first; value is exposed both as `request.request_id` and via
   `core.middleware.request_id.get_current_request_id()` for use inside
   log formatters and downstream HTTP clients).
-- `web`: `lib/server/proxy.ts` (`buildProxyHeaders` always sets
-  `X-Request-Id`; TanStack Query server prefetch helpers in
-  `lib/api/queries/server.ts` propagate the incoming Next.js request id
-  when available).
+- `web`: [`web/src/server/proxy.ts`](../../web/src/server/proxy.ts) (`buildProxyHeaders` always sets
+  `X-Request-Id`); TanStack Query server prefetch in
+  [`web/src/lib/api/queries/server.ts`](../../web/src/lib/api/queries/server.ts) sets `X-Request-Id` on outbound `core` fetches. The browser BFF [`web/src/routes/api/proxy/$.ts`](../../web/src/routes/api/proxy/$.ts) forwards or generates request IDs for upstream proxy calls.
 
 When debugging, grab the `request_id` from the user-visible error or
 the `X-Request-Id` response header and `grep` it across the three

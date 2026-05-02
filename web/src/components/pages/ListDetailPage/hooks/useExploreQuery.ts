@@ -95,9 +95,10 @@ function saveToStorage(listId: number, query: ListItemQuery): void {
 }
 
 function parseSort(raw: string | null): SortClause[] {
-  if (!raw) return [];
+  const value = decodeRouteSearchValue(raw);
+  if (!value) return [];
   const out: SortClause[] = [];
-  for (const tokenRaw of raw.split(",")) {
+  for (const tokenRaw of value.split(",")) {
     const token = tokenRaw.trim();
     if (!token) continue;
     let direction: "asc" | "desc" = "asc";
@@ -114,21 +115,22 @@ function parseSort(raw: string | null): SortClause[] {
 }
 
 function parsePageSize(raw: string | null): PageSize {
-  const n = Number(raw);
+  const n = Number(decodeRouteSearchValue(raw));
   if (VALID_PAGE_SIZES.includes(n as PageSize)) return n as PageSize;
   return DEFAULT_LIST_ITEM_QUERY.pageSize;
 }
 
 function parsePage(raw: string | null): number {
-  const n = Number(raw);
+  const n = Number(decodeRouteSearchValue(raw));
   return Number.isFinite(n) && n >= 1 ? Math.floor(n) : 1;
 }
 
-function parseQueryFromParams(params: URLSearchParams): ListItemQuery {
+export function parseQueryFromParams(params: URLSearchParams): ListItemQuery {
   const filters: Partial<Record<FilterField, FilterValue>> = {};
   const rangeFilters: Partial<Record<RangeFilterField, string | number>> = {};
 
-  params.forEach((value, key) => {
+  params.forEach((rawValue, key) => {
+    const value = decodeRouteSearchValue(rawValue);
     const m = /^filter\[(.+)\]$/.exec(key);
     if (!m) return;
     const field = m[1];
@@ -144,7 +146,7 @@ function parseQueryFromParams(params: URLSearchParams): ListItemQuery {
     }
   });
 
-  const groupRaw = params.get("group_by");
+  const groupRaw = decodeRouteSearchValue(params.get("group_by"));
   const groupBy = groupRaw && ALLOWED_GROUPS.has(groupRaw)
     ? (groupRaw as GroupByField)
     : null;
@@ -157,6 +159,21 @@ function parseQueryFromParams(params: URLSearchParams): ListItemQuery {
     page: parsePage(params.get("page")),
     pageSize: parsePageSize(params.get("page_size")),
   };
+}
+
+function decodeRouteSearchValue(raw: string | null): string | null {
+  if (raw === null) return null;
+  if (raw.length >= 2 && raw.startsWith("\"") && raw.endsWith("\"")) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (typeof parsed === "string") {
+        return parsed;
+      }
+    } catch {
+      // Fall back to the raw value when it is not valid JSON.
+    }
+  }
+  return raw;
 }
 
 function serializeQueryToParams(query: ListItemQuery): URLSearchParams {
