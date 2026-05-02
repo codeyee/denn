@@ -34,6 +34,40 @@ Start with:
 - `.docs/workspace-operating-model.md`
 - `AGENTS.md`
 
+## Resume Flow
+
+When retaking the project, do not jump straight into the first sprint
+file.
+
+Use this order:
+
+1. `README.md`
+2. `.docs/README.md`
+3. `.docs/architecture/current-state.md`
+4. `.docs/features/implemented.md`
+5. `.docs/technical-debt.md`
+6. `.docs/roadmap/open-plans.md`
+7. the relevant active sprint under `.docs/sprints/`
+
+Interpretation:
+
+- `current-state.md` explains how the system works today.
+- `features/implemented.md` tells you what is already baseline.
+- `technical-debt.md` tells you what quality constraints still matter.
+- `open-plans.md` tells you priority and sequencing.
+- sprint docs provide detailed execution context only after the current
+  state is understood.
+
+Practical lookup flow:
+
+1. To understand the repo: `README.md` -> `.docs/README.md`
+2. To understand current behavior: `.docs/architecture/current-state.md`
+3. To know what already exists: `.docs/features/implemented.md`
+4. To know what comes next: `.docs/roadmap/open-plans.md`
+5. To operate or verify a sensitive path: `.docs/runbooks/`
+6. To change a structural decision: `.docs/adr/`
+7. To evaluate something not yet approved: `.docs/ideas/`
+
 ## Root Commands
 
 Use root `make` targets unless you are debugging a service in isolation.
@@ -78,6 +112,10 @@ The frontend has the strictest code-quality bar in the repo. Preserve it.
 - Routes live in `web/src/routes/` using TanStack Router file conventions: `__root.tsx`, `index.tsx`, `<segment>.tsx`, `$param.tsx` for dynamic segments, `$.ts` for catch-alls. API routes live next to page routes (e.g. `web/src/routes/api/proxy/$.ts`) and use `createFileRoute` with `server.handlers` (`GET`, `POST`, etc.).
 - Loaders prefetch into the per-request `QueryClient` via `context.queryClient.ensureQueryData(...)`. The router rehydrates the cache on the client; do not wrap routes with `<HydrationBoundary>`.
 - Use the typed `Link`, `useNavigate`, `useLocation`, and `useSearch` from `@tanstack/react-router`. Do not import from `next/*` (next has been removed).
+- Protected routes must enforce auth in both places: TanStack Router
+  `beforeLoad` for SSR redirect behavior and `ProtectedRoute` for the
+  client bootstrap race / unavailable-backend fallback. See
+  `.docs/architecture/client-rehydration.md`.
 - Avoid single-file folders and keep file-local helper functions at the end of the file.
 - Keep `npm run lint` and `npm run build` reproducible without hidden network assumptions.
 
@@ -115,6 +153,10 @@ Security rule:
 - Use the modular settings layout in `core/core/settings/`; do not scatter runtime configuration across ad hoc modules.
 - `core` owns authentication, lists, ratings, invitations, and normalized content persistence. Keep views thin and push orchestration into serializers, service modules, and utility layers where appropriate.
 - If you need a new external metadata integration, add it in `proxy` first, then call it from `core/content/services/`. Do not add direct third-party API clients to `core`.
+- Treat provider payloads as integration inputs, not as the target shape
+  of the persisted domain model. Avoid mirroring provider-specific
+  semantics such as external `status` fields into `core` unless a
+  documented transitional reason exists.
 - Preserve permission checks around shared lists, rating ownership, and membership rules. Do not bypass them in views or serializers for convenience.
 - Keep API documentation annotations current when changing API shape; `drf-spectacular` is part of the contract surface.
 - Django tests live under `core/*/tests/` and follow `test_*.py`.
@@ -136,6 +178,10 @@ Security rule:
 - Architecture changes belong in ADRs under `.docs/adr/`.
 - CI or validation workflow changes must stay aligned with `.docs/workspace-operating-model.md`.
 - `architecture/` documents merged behavior, `roadmap/open-plans.md` summarizes active work, and `history/implementation-history.md` stores extracted outcomes from completed sprints.
+- The dated product-analysis docs under `.docs/roadmap/` are secondary
+  strategy references. When they disagree with current route structure
+  or technical implementation, prefer `architecture/current-state.md`,
+  active sprint docs, and this file.
 - `.docs/sprints/` is only for open or future plans. When a sprint is finished, extract the durable outcomes into the canonical docs and remove the stale done plan.
 - If you delete or rename developer-facing files, update any README references in the same change.
 - Keep service directories free of duplicated agent/editor scaffolding; repository-wide guidance belongs at the root.

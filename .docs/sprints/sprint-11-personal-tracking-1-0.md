@@ -44,15 +44,16 @@ incorrecta.
 - `core/content/views/` / servicios — escritura de estados, activación
   de ratings, agregados que ignoran ratings inactivos.
 - `core/content/tests/` — unit, API y migración.
-- `web/app/content/[id]/page.tsx` y componentes relacionados — CTA de
-  tracking, backlog y rating ligado a completion.
+- `web/src/routes/content/$id.tsx`,
+  `web/src/components/pages/ContentDetailPage/` y componentes
+  relacionados — CTA de tracking, backlog y rating ligado a completion.
 - Componentes de listas que permitan puntuar desde un item — usar el
   mismo flujo/control que la ficha, sin perder precisión decimal.
-- `web/app/_hooks/` o hooks de feature — reads/mutations de tracking.
-- `web/app/_components/pages/ContentDetail/` — presentación de estado y
-  acciones.
-- `web/app/profile/` y listas — adaptación mínima para no asumir que el
-  tracking vive en `ListItem.Status`.
+- `web/src/lib/api/queries/`, `web/src/lib/api/mutations/` o hooks de
+  feature — reads/mutations de tracking.
+- `web/src/routes/profile.tsx`,
+  `web/src/routes/lists/$id.tsx` y páginas relacionadas — adaptación
+  mínima para no asumir que el tracking vive en `ListItem.Status`.
 - Migraciones de datos y plan de release.
 - Documentación en `.docs/architecture/` y `.docs/features/`.
 
@@ -64,12 +65,17 @@ incorrecta.
 - No resolver todavía recap/stats avanzadas.
 
 ## Dependencias
-- Requiere que `Sprint 08.5` deje estable el modelo de reads en `web`.
-- Requiere que `Sprint 09` cierre la continuidad de sesión en rutas
+- Construye sobre la fundación ya implementada de TanStack Query +
+  SSR prefetch en `web`.
+- Construye sobre la continuidad de sesión ya implementada en rutas
   protegidas.
 - Coordina con `Sprint 10`: si el detalle de contenido se refresca, los
   agregados no deben recalcularse de forma incorrecta bajo la nueva
   semántica.
+- Requiere que el cierre de `Sprint 10` o un `Sprint 10.5` deje
+  resuelto el rumbo de eliminación de `status` proveedor-dependiente en
+  `core`, para que tracking y futuras features de producto no nazcan
+  atadas a semánticas externas.
 - Precede a `Sprint 12`, `Sprint 13`, `Sprint 14` y `Sprint 15`.
 
 ## Contexto funcional y técnico

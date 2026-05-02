@@ -44,7 +44,7 @@ class RehydrateCommandTests(TestCase):
 
     def test_dry_run_does_not_call_proxy_or_write(self):
         item = _seed_movie('77')
-        _age_movie(item, days=120)
+        _age_movie(item, days=365)
         item.movie_detail.refresh_from_db()
         last_before = item.movie_detail.last_refreshed_at
 
@@ -65,7 +65,7 @@ class RehydrateCommandTests(TestCase):
 
     def test_real_run_refreshes_stale_items(self):
         item = _seed_movie('77')
-        _age_movie(item, days=120)
+        _age_movie(item, days=365)
 
         refreshed_payload = dict(MOVIE_MEMENTO)
         refreshed_payload['id'] = '77'
@@ -95,6 +95,7 @@ class RehydrateCommandTests(TestCase):
         self.assertEqual(evt['total'], 1)
         self.assertEqual(evt['refreshed'], 1)
         self.assertEqual(evt['errors'], 0)
+        self.assertIn('by_band', evt)
 
     def test_fresh_items_are_skipped(self):
         item = _seed_movie('77')
@@ -139,6 +140,7 @@ class RehydrateCommandTests(TestCase):
         )
         evt = json.loads(log_line)
         self.assertEqual(evt['total'], 1)
+        self.assertIn('by_band', evt)
 
     def test_all_runs_every_type(self):
         # Just verify it iterates: no items in any table → six structured lines.

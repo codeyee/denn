@@ -19,7 +19,11 @@ const loginSchema = z.object({
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
-export function LoginForm() {
+interface LoginFormProps {
+  next?: string | null;
+}
+
+export function LoginForm({ next }: LoginFormProps) {
   const { login, isLoading, error, clearError } = useAuth();
 
   const {
@@ -40,7 +44,7 @@ export function LoginForm() {
 
   const onSubmit = async (data: LoginFormData) => {
     try {
-      await login(data.email, data.password);
+      await login(data.email, data.password, next ?? undefined);
       // Redirect is handled in useAuth hook
     } catch (err) {
       // Error is already set in the store

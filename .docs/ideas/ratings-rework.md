@@ -1,5 +1,19 @@
 # Especificación Técnica: Refactor del Sistema de Calificaciones y Ranking
 
+## Cómo usar este documento
+
+`ideas/` no es backlog aprobado. Este archivo funciona como material de
+entrada para decisiones de producto y diseño técnico.
+
+Estado actual:
+
+- la parte de tracking/rating/favorite se absorbe en `Sprint 11`;
+- la parte de ranking/leaderboards se absorbe en `Sprint 15`.
+
+Si esas decisiones quedan cerradas en los sprint docs y en los
+documentos canónicos, este archivo debería reducirse o retirarse para
+evitar narrativas paralelas.
+
 ## Roadmap Placement
 
 Esta idea queda absorbida parcialmente por `Sprint 11` y `Sprint 15`.

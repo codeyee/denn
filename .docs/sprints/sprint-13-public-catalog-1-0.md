@@ -28,7 +28,8 @@ content pages públicas con capa social mínima.
 - `security-review`
 
 ## Alcance
-- `web/app/search/`, browse público y rutas de contenido.
+- `web/src/routes/search.tsx`, futuras rutas públicas bajo
+  `web/src/routes/`, browse público y rutas de contenido.
 - Eliminación de auth-gating en superficies seleccionadas.
 - Metadata, sitemap y canonical URLs.
 - Galería de imágenes en fichas con expansión modal accesible.
@@ -46,7 +47,8 @@ content pages públicas con capa social mínima.
 ## Dependencias
 - Requiere `Sprint 11` para semántica correcta de ratings.
 - Requiere `Sprint 12` para tener listas públicas bien definidas.
-- Requiere que `Sprint 08.5` y `Sprint 09` estabilicen SSR y auth.
+- Construye sobre la fundación ya implementada de SSR/query y auth en
+  TanStack Start.
 - Coordina con `Sprint 10` por tráfico anónimo y freshness de metadata.
 
 ## Contexto funcional y técnico
@@ -163,7 +165,7 @@ por un hub dedicado.
 - `make validate-web`
 - Medir carga anónima básica en rutas públicas.
 - Probar manualmente:
-  - abrir `/content/[id]` sin login;
+  - abrir `/content/<id>` sin login;
   - abrir y cerrar una imagen de gallery en desktop y móvil;
   - buscar una obra sin login;
   - navegar browse por tipo;

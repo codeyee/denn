@@ -92,8 +92,9 @@ func TestSearchGames(t *testing.T) {
 func TestGetGameComplete(t *testing.T) {
 	mockData := []map[string]any{
 		{
-			"id":   123,
-			"name": "Single Game",
+			"id":                 123,
+			"name":               "Single Game",
+			"first_release_date": time.Now().AddDate(-1, 0, 0).Unix(),
 			"genres": []map[string]any{
 				{"id": 1, "name": "RPG"},
 			},
@@ -150,15 +151,17 @@ func TestGetBulkGames(t *testing.T) {
 func TestGetPopularGames(t *testing.T) {
 	mockData := []map[string]any{
 		{
-			"id":   1,
-			"name": "Popular Game",
+			"id":                 1,
+			"name":               "Popular Game",
+			"first_release_date": time.Now().AddDate(-1, 0, 0).Unix(),
 			"platforms": []map[string]any{
 				{"id": 6, "name": "PC"},
 			},
 		},
 		{
-			"id":   2,
-			"name": "Browser Game",
+			"id":                 2,
+			"name":               "Browser Game",
+			"first_release_date": time.Now().AddDate(-1, 0, 0).Unix(),
 			"platforms": []map[string]any{
 				{"id": 82, "name": "Web browser"},
 			},
@@ -238,7 +241,11 @@ func TestGetTrendingGames_Fallback(t *testing.T) {
 				return testutil.JSONResponse(http.StatusInternalServerError, map[string]string{"error": "boom"}), nil
 			case strings.Contains(req.URL.Path, "games"):
 				return testutil.JSONResponse(http.StatusOK, []map[string]any{
-					{"id": 99, "name": "Popular Fallback"},
+					{
+						"id":                 99,
+						"name":               "Popular Fallback",
+						"first_release_date": time.Now().AddDate(-1, 0, 0).Unix(),
+					},
 				}), nil
 			default:
 				return testutil.JSONResponse(http.StatusOK, []any{}), nil

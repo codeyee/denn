@@ -10,8 +10,16 @@ interface AuthSessionBootstrapProps {
 export function AuthSessionBootstrap({ session }: AuthSessionBootstrapProps) {
   const setSession = useAuthStore((state) => state.setSession);
   const clearSession = useAuthStore((state) => state.clearSession);
+  const setSessionResolution = useAuthStore(
+    (state) => state.setSessionResolution,
+  );
 
   useEffect(() => {
+    if (session.resolution === "unavailable") {
+      setSessionResolution("unavailable");
+      return;
+    }
+
     // The server detected that the refresh failed and the cookies are now
     // stale (see resolveSession in lib/auth/session-server.ts). Clear the
     // client-side state and the non-HttpOnly cookies so the next navigation
@@ -31,8 +39,10 @@ export function AuthSessionBootstrap({ session }: AuthSessionBootstrapProps) {
     session.refreshToken,
     session.user,
     session.needsCookieSync,
+    session.resolution,
     setSession,
     clearSession,
+    setSessionResolution,
   ]);
 
   return null;

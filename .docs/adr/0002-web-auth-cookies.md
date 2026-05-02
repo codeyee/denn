@@ -96,6 +96,23 @@ Migrar la sesión web a **cookies `HttpOnly` / `Secure` / `SameSite=Lax`** emiti
 - [`../architecture/auth-session-bootstrap.md`](../architecture/auth-session-bootstrap.md)
   documenta el estado real del bootstrap global y sus gaps todavía
   abiertos.
+- [`../architecture/client-rehydration.md`](../architecture/client-rehydration.md)
+  documenta la política vigente de `beforeLoad` + `ProtectedRoute` +
+  `next` redirect tras la migración a TanStack Start.
+
+## Addendum — fase 1 completada en TanStack Start
+
+Tras la migración de `web` a TanStack Start:
+
+- la resolución de sesión sigue centralizada en el root route SSR;
+- `AuthSessionBootstrap` permanece como el único bridge SSR -> Zustand;
+- las rutas protegidas ya redirigen server-side con TanStack Router
+  `beforeLoad` cuando el estado es `anonymous`;
+- `ProtectedRoute` ya no es la primera barrera de auth sino el fallback
+  para la ventana de bootstrap cliente y para el estado
+  `resolution="unavailable"`;
+- el login soporta `next` seguro para reanudar la navegación original
+  tras autenticación.
 
 ## Referencias
 

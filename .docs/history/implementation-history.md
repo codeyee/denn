@@ -89,12 +89,34 @@ This document keeps the durable outcomes of completed implementation plans after
   removed, leaving Zustand for client and UI state instead of remote
   reads.
 - Major routes began prefetching on the server and hydrating with
-  `HydrationBoundary`, reducing first-load waterfalls on authenticated
-  pages.
+  the per-request `QueryClient`, reducing first-load waterfalls on
+  authenticated pages.
 - Query keys, read hooks, and mutation invalidation became the
   canonical frontend data-fetching pattern.
 - The data-fetching architecture and performance baseline docs were
   updated to reflect the new model and the remaining measurement work.
+
+## Session Continuity On Protected Routes
+
+- Session bootstrap moved fully to the TanStack Start root route and now
+  feeds a single global `AuthSessionBootstrap`.
+- Protected routes gained route-level SSR redirects plus a cleaner
+  client fallback for the bootstrap race and backend-unavailable cases.
+- Login gained a safe `next` redirect path so protected deep-links can
+  resume after authentication.
+- Regression coverage was added around bootstrap, redirect helpers, and
+  protected-route client behavior.
+
+## Dynamic Content Rehydration And Discovery Eligibility
+
+- Static per-type TTLs were replaced with a dynamic
+  `CONTENT_REHYDRATION_POLICY`.
+- `rehydrate_content_details` now selects stale rows by computed
+  `refresh_due_at` and reports age-band summaries.
+- `normalize_rehydration_timestamps` was added to help stagger rollout
+  after policy changes.
+- Discovery surfaces in `proxy` now normalize search cache keys and
+  filter future/undated general results plus invalid season payloads.
 
 ## What This History Replaces
 

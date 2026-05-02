@@ -1,25 +1,4 @@
-"""
-Rehydrate per-type ContentDetail rows that are older than the TTL.
-
-Iterates the local Detail tables (one per content_type), finds rows whose
-`last_refreshed_at` is older than `settings.CONTENT_REHYDRATION_TTL[type]`
-(or `--ttl-override` days), and re-fetches each from the proxy via the
-shared orchestration entry point `ensure_content_detail`.
-
-This is the periodic refresh job. The first-time backfill of items that
-have NO Detail row at all lives in `backfill_content_details` (PR-7E).
-
-Args:
-  --content-type=ALL|MOVIE|TV_SHOW|SEASON|ALBUM|GAME|BOOK
-  --limit=N         Per content_type cap. Default: 200.
-  --dry-run         Print planned work, don't write.
-  --ttl-override=D  Use D days as the TTL instead of the per-type setting.
-  --workers=K       Parallel proxy fetches per content_type. Default: 4.
-
-Emits one structured log line per content_type with the same
-`event=rehydrate` shape used by the Sprint 6C metrics scaffolding so
-observability tooling can chart hit ratios over time.
-"""
+"""Rehydrate per-type ContentDetail rows whose dynamic refresh window expired."""
 from __future__ import annotations
 
 import json
@@ -30,14 +9,19 @@ from dataclasses import dataclass, field
 from datetime import timedelta
 from typing import Iterable, List, Optional
 
-from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
-from django.utils import timezone
+from django.db.models.functions import Now
 
 from content.models import ContentItem
 from content.services.local_content_store import (
     detail_for,
     ensure_content_detail,
+)
+from content.services.local_content_store.refresh_policy import (
+    DETAIL_RELATED_NAME,
+    build_age_band_expression,
+    build_refresh_due_at_expression,
+    compute_refresh_policy,
 )
 
 
@@ -58,6 +42,7 @@ class _TypeStats:
     errors: int = 0
     latency_ms: int = 0
     error_samples: List[str] = field(default_factory=list)
+    by_band: dict = field(default_factory=dict)
 
     def as_event(self) -> dict:
         return {
@@ -68,6 +53,7 @@ class _TypeStats:
             'unchanged': self.unchanged,
             'errors': self.errors,
             'latency_ms': self.latency_ms,
+            'by_band': self.by_band,
         }
 
 
@@ -166,16 +152,25 @@ class Command(BaseCommand):
             results = _generate()
 
         for it, outcome in results:
-            ok, refreshed, exc = outcome
+            ok, refreshed, exc, policy = outcome
+            band = policy.age_band if policy is not None else 'unknown'
+            bucket = stats.by_band.setdefault(
+                band,
+                {'total': 0, 'refreshed': 0, 'unchanged': 0, 'errors': 0},
+            )
+            bucket['total'] += 1
             if not ok:
                 stats.errors += 1
+                bucket['errors'] += 1
                 if len(stats.error_samples) < 5:
                     stats.error_samples.append(f'{it.id}: {exc!r}')
                 continue
             if refreshed:
                 stats.refreshed += 1
+                bucket['refreshed'] += 1
             else:
                 stats.unchanged += 1
+                bucket['unchanged'] += 1
 
         stats.latency_ms = int((time.monotonic() - started) * 1000)
         self._log(stats)
@@ -191,12 +186,25 @@ class Command(BaseCommand):
     @staticmethod
     def _safe_refresh(item: ContentItem):
         try:
-            return True, ensure_content_detail(item, force=True), None
+            detail = detail_for(item)
+            policy = compute_refresh_policy(item, detail)
+            logger.info(
+                'rehydrate_item',
+                extra={
+                    'event': 'rehydrate_item',
+                    'content_type': item.content_type,
+                    'content_item_id': item.id,
+                    'age_band': policy.age_band,
+                    'age_days': policy.age_days,
+                    'ttl_days': policy.ttl.days,
+                },
+            )
+            return True, ensure_content_detail(item, force=True), None, policy
         except Exception as exc:
             logger.exception(
                 'rehydrate_content_details: failed for content_item=%s', item.id,
             )
-            return False, False, exc
+            return False, False, exc, None
 
     @staticmethod
     def _select_stale_items(
@@ -204,29 +212,31 @@ class Command(BaseCommand):
         limit: int,
         ttl_override: Optional[timedelta],
     ) -> List[ContentItem]:
-        ttls: dict = getattr(settings, 'CONTENT_REHYDRATION_TTL', {})
-        ttl = ttl_override or ttls.get(content_type, timedelta(days=30))
-        cutoff = timezone.now() - ttl
-
-        related_name = {
-            ContentItem.ContentType.MOVIE: 'movie_detail',
-            ContentItem.ContentType.TV_SHOW: 'tv_show_detail',
-            ContentItem.ContentType.SEASON: 'season_detail',
-            ContentItem.ContentType.ALBUM: 'album_detail',
-            ContentItem.ContentType.GAME: 'game_detail',
-            ContentItem.ContentType.BOOK: 'book_detail',
-        }.get(content_type)
+        related_name = DETAIL_RELATED_NAME.get(content_type)
 
         if not related_name:
             return []
 
-        filter_kwargs = {f'{related_name}__last_refreshed_at__lt': cutoff}
-        order_field = f'{related_name}__last_refreshed_at'
-
         qs = (
             ContentItem.objects
-            .filter(content_type=content_type, **filter_kwargs)
-            .order_by(order_field)[:limit]
+            .filter(
+                content_type=content_type,
+                **{f'{related_name}__isnull': False},
+            )
+            .annotate(
+                refresh_due_at=build_refresh_due_at_expression(
+                    content_type,
+                    related_name=related_name,
+                    ttl_override=ttl_override,
+                ),
+                refresh_age_band=build_age_band_expression(
+                    content_type,
+                    related_name=related_name,
+                ),
+            )
+            .filter(refresh_due_at__lt=Now())
+            .select_related(related_name)
+            .order_by('refresh_due_at')[:limit]
         )
         return list(qs)
 

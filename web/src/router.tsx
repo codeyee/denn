@@ -28,6 +28,7 @@ export function getRouter() {
         refreshToken: null,
         isAuthenticated: false,
         needsCookieSync: false,
+        resolution: "anonymous",
       },
       country: null,
     } satisfies RouterContext,

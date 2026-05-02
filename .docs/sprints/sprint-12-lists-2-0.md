@@ -35,7 +35,8 @@ privada, roles explícitos y estado por miembro en listas compartidas.
 - Endpoints de lectura pública de listas.
 - Endpoints y reglas de escritura para settings, colaboración y orden.
 - Persistencia de estado por miembro en items colaborativos.
-- `web/app/lists/[id]/page.tsx` y settings de lista.
+- `web/src/routes/lists/$id.tsx`,
+  `web/src/components/pages/ListDetailPage/` y settings de lista.
 - UX de miembros, roles, visibilidad e invitaciones.
 - UX de Add-to-List sobre el nuevo contrato de membresía, incluyendo
   metadata de listas y estados seleccionados.
@@ -56,7 +57,8 @@ privada, roles explícitos y estado por miembro en listas compartidas.
 
 ## Dependencias
 - Requiere `Sprint 11` para separar tracking personal de listas.
-- Requiere `Sprint 08.5` y `Sprint 09` para UX pública/SSR estable.
+- Construye sobre la fundación ya implementada de SSR/query en `web` y
+  continuidad de sesión estable.
 - Precede a `Sprint 13` y `Sprint 14`, que necesitan listas públicas
   coherentes.
 

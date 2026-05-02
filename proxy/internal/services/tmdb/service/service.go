@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"log"
 	"sync"
+	"time"
 
 	"github.com/codeyee/denn-proxy/internal/clients"
 	"github.com/codeyee/denn-proxy/internal/models"
 	tmdbclient "github.com/codeyee/denn-proxy/internal/providers/tmdb"
-	"github.com/codeyee/denn-proxy/internal/services/common"
+	servicecommon "github.com/codeyee/denn-proxy/internal/services/common"
 	"github.com/codeyee/denn-proxy/internal/services/tmdb"
 	"github.com/codeyee/denn-proxy/internal/services/tmdb/mapper"
 )
@@ -61,7 +62,7 @@ func unmarshalResponse[T any](resp *clients.Response, err error) (T, error) {
 		return zero, err
 	}
 
-	if cerr := common.ClassifyStatus("TMDB", resp.StatusCode); cerr != nil {
+	if cerr := servicecommon.ClassifyStatus("TMDB", resp.StatusCode); cerr != nil {
 		return zero, cerr
 	}
 
@@ -86,6 +87,7 @@ func (s *Service) SearchMovies(ctx context.Context, query string, page, limit in
 	for _, r := range data.Results {
 		items = append(items, mapper.MapSearchItemMovie(r))
 	}
+	items = servicecommon.FilterEligibleSearchItems(items, time.Now())
 
 	if len(items) > limit {
 		items = items[:limit]
@@ -111,6 +113,7 @@ func (s *Service) SearchTVShows(ctx context.Context, query string, page, limit i
 	for _, r := range data.Results {
 		items = append(items, mapper.MapSearchItemTV(r))
 	}
+	items = servicecommon.FilterEligibleSearchItems(items, time.Now())
 
 	if len(items) > limit {
 		items = items[:limit]
@@ -136,6 +139,7 @@ func (s *Service) GetPopularMovies(ctx context.Context, page, limit int) (Search
 	for _, r := range data.Results {
 		items = append(items, mapper.MapSearchItemMovie(r))
 	}
+	items = servicecommon.FilterEligibleSearchItems(items, time.Now())
 
 	if len(items) > limit {
 		items = items[:limit]
@@ -161,6 +165,7 @@ func (s *Service) GetPopularTVShows(ctx context.Context, page, limit int) (Searc
 	for _, r := range data.Results {
 		items = append(items, mapper.MapSearchItemTV(r))
 	}
+	items = servicecommon.FilterEligibleSearchItems(items, time.Now())
 
 	if len(items) > limit {
 		items = items[:limit]
@@ -204,8 +209,7 @@ func (s *Service) GetTVShowComplete(ctx context.Context, tvID int, country strin
 			seasons = append(seasons, mapper.MapSeasonSummary(s))
 		}
 	}
-
-	show.Seasons = seasons
+	show.Seasons = servicecommon.FilterValidSeasonSummaries(seasons, time.Now())
 
 	return show, nil
 }
@@ -289,7 +293,11 @@ func (s *Service) GetSeasonComplete(ctx context.Context, tvID, seasonNumber int,
 		return models.Season{}, detailErr
 	}
 
-	return mapper.MapSeason(sd.detail, sd.tvDetail.Name, sd.images, sd.providers, country), nil
+	season := mapper.MapSeason(sd.detail, sd.tvDetail.Name, sd.images, sd.providers, country)
+	if !servicecommon.IsValidSeasonContent(season, time.Now()) {
+		return models.Season{}, fmt.Errorf("season detail: %w", clients.ErrNotFound)
+	}
+	return season, nil
 }
 
 // GetMoviePreview is the homepage-card variant of GetMovieComplete. It hits
@@ -303,7 +311,11 @@ func (s *Service) GetMoviePreview(ctx context.Context, movieID int, country stri
 	if err != nil {
 		return models.Movie{}, fmt.Errorf("get movie preview %d: %w", movieID, err)
 	}
-	return mapper.MapMovie(data, country), nil
+	movie := mapper.MapMovie(data, country)
+	if !servicecommon.IsGeneralReleaseEligible(movie.ReleaseDate, time.Now()) {
+		return models.Movie{}, fmt.Errorf("get movie preview %d: %w", movieID, clients.ErrNotFound)
+	}
+	return movie, nil
 }
 
 // GetTVShowPreview mirrors GetMoviePreview for TV shows. Season list is
@@ -322,7 +334,10 @@ func (s *Service) GetTVShowPreview(ctx context.Context, tvID int, country string
 			seasons = append(seasons, mapper.MapSeasonSummary(season))
 		}
 	}
-	show.Seasons = seasons
+	show.Seasons = servicecommon.FilterValidSeasonSummaries(seasons, time.Now())
+	if !servicecommon.IsGeneralReleaseEligible(show.ReleaseDate, time.Now()) {
+		return models.TVShow{}, fmt.Errorf("get tv preview %d: %w", tvID, clients.ErrNotFound)
+	}
 	return show, nil
 }
 

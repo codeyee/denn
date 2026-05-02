@@ -168,6 +168,7 @@ func TestGetTVShowComplete(t *testing.T) {
 				ID:           1,
 				SeasonNumber: 1,
 				Name:         "Season 1",
+				AirDate:      "2023-01-08",
 				EpisodeCount: 10,
 			},
 		},

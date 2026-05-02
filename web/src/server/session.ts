@@ -11,6 +11,7 @@ export interface SessionSnapshot {
   refreshToken: string | null;
   isAuthenticated: boolean;
   needsCookieSync: boolean;
+  resolution: "anonymous" | "authenticated" | "unavailable";
 }
 
 const EMPTY_SESSION: SessionSnapshot = {
@@ -19,6 +20,7 @@ const EMPTY_SESSION: SessionSnapshot = {
   refreshToken: null,
   isAuthenticated: false,
   needsCookieSync: false,
+  resolution: "anonymous",
 };
 
 async function fetchUserProfile(accessToken: string): Promise<Profile | null> {
@@ -67,6 +69,7 @@ async function resolveSession(): Promise<SessionSnapshot> {
         refreshToken,
         isAuthenticated: true,
         needsCookieSync: false,
+        resolution: "authenticated",
       };
     }
   }
@@ -91,6 +94,7 @@ async function resolveSession(): Promise<SessionSnapshot> {
     needsCookieSync:
       refreshedTokens.access !== accessToken ||
       (refreshedTokens.refresh ?? refreshToken) !== refreshToken,
+    resolution: "authenticated",
   };
 }
 
@@ -102,7 +106,7 @@ export const getSessionFn = createServerFn({ method: "GET" }).handler(
       // Backend down or unreachable: render the shell as a logged-out user
       // instead of crashing the entire request.
       console.error("getSessionFn: failed to resolve session", err);
-      return EMPTY_SESSION;
+      return { ...EMPTY_SESSION, resolution: "unavailable" };
     }
   },
 );

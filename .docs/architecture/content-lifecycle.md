@@ -5,7 +5,7 @@ refreshed inside the system today.
 
 ## Identity And Routing
 
-- Public content routes are internal-id first: `/content/[id]`.
+- Public content routes are internal-id first: `/content/<id>`.
 - `core` owns the `ContentItem` identity.
 - The ingest endpoint in current code is
   `POST /api/content/get-or-create/`.
@@ -56,9 +56,13 @@ Primary implementation:
 - First-time population can be backfilled with
   `backfill_content_details`.
 - Periodic refresh uses `rehydrate_content_details`.
-- Freshness is currently determined by static per-type TTLs in
-  `CONTENT_REHYDRATION_TTL`.
-- Dynamic age-based refresh policy is planned but not implemented.
+- Freshness is determined by `CONTENT_REHYDRATION_POLICY`, a dynamic
+  age/type-aware policy applied in both the read path and the periodic
+  command.
+- The periodic command keeps stale selection in SQL by annotating each
+  row with a computed `refresh_due_at`.
+- `normalize_rehydration_timestamps` exists as an operational helper to
+  report or stagger fresh rows after policy changes.
 
 Operational runbook:
 [`../runbooks/rehydrate-content.md`](../runbooks/rehydrate-content.md)
@@ -75,13 +79,16 @@ Operational runbook:
 
 - `proxy` does not write to PostgreSQL.
 - `core` remains the only writer of content persistence.
-- Freshness policy is static, so newly released content may stay stale
-  longer than ideal.
 - The system still depends on proxy availability for missing or stale
   items that have no usable local fallback.
+- Search, homepage, and preview surfaces now filter out items without a
+  usable release date or with dates too far in the future for the MVP.
 
 ## Open Work
 
-- Dynamic rehydration policy by age and type remains planned; detailed execution notes live under `.docs/sprints/`.
-- Remaining auth/session alignment for protected content routes:
-  [`./auth-session-bootstrap.md`](./auth-session-bootstrap.md)
+- The dynamic rehydration policy is already implemented; the remaining
+  follow-up is documented in
+  [`../sprints/sprint-10-dynamic-content-rehydration-by-age.md`](../sprints/sprint-10-dynamic-content-rehydration-by-age.md).
+- Country-scoped platform availability still needs an independent
+  freshness lifecycle instead of piggybacking entirely on the global
+  detail refresh decision.

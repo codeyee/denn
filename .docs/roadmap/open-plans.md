@@ -4,10 +4,16 @@ This file summarizes the work that is still open, partially implemented, or next
 
 ## Priority Order
 
-1. Close the remaining auth/session hardening gaps.
-2. Turn performance documentation into measured, maintained baseline
+1. Close the remaining `Sprint 10` follow-up work: future-release
+   filtering leak, country-scoped availability freshness, and provider
+   status cleanup.
+2. Prepare the repo for `Sprint 11` by keeping the persisted content
+   model aligned with Denn-owned semantics rather than provider-shaped
+   vocabularies.
+3. Turn performance documentation into measured, maintained baseline
    data.
-3. Replace static content rehydration TTLs with a dynamic policy.
+4. Keep ADR 0002 auth hardening visible, but behind the content/domain
+   cleanup needed before the product-heavy sprint line continues.
 
 ## Old TODO Triage
 
@@ -107,7 +113,7 @@ Already merged:
 
 Still open:
 
-- Fill `perf/baseline.md` with real before/after numbers instead of
+- Fill `perf/baseline.md` with real current measurements instead of
   placeholders.
 - Generalize streaming/prefetch patterns to the main user flows.
 - Make performance verification a maintained engineering habit instead of a one-off planning artifact.
@@ -122,52 +128,44 @@ Merged behavior:
   list mutation flows use TanStack Query for server state.
 - Legacy `lists-store` and `content-store` server-response caches were
   removed.
-- Major routes prefetch server-side with `HydrationBoundary`.
+- Major routes prefetch server-side into the per-request `QueryClient`,
+  and the router rehydrates that cache on the client.
 
 Still open:
 
 - Replace placeholder values in `.docs/perf/baseline.md` with measured
-  `after 8.5` Web Vitals.
+  current Web Vitals.
 - Expand frontend interaction coverage beyond the current Query smoke
   tests.
 
-## Client Session Bootstrap And Continuity
-
-- Status: partial
-- Detailed plan: see the auth continuity plan under `.docs/sprints/`.
-
-Already merged:
-
-- Session resolution moved to `RootLayout`.
-- Global `AuthSessionBootstrap`.
-- `needsCookieSync` cleanup path.
-- `ProtectedRoute` boot guard for the store hydration race.
-
-Still open:
-
-- Add TanStack Router-level (e.g. `beforeLoad`) redirects for protected routes so unauthenticated users do not rely only on client `ProtectedRoute`.
-- Add automated regression coverage for hard refresh, stale cookies, and
-  backend-down cases.
-- Finish the documentation and observability around the bootstrap
-  window.
-
 ## Dynamic Content Rehydration Policy
 
-- Status: planned
-- Detailed plan: see the dynamic rehydration plan under `.docs/sprints/`.
+- Status: implemented, with rollout follow-up
+- Detailed plan: see the remaining dynamic rehydration follow-up plan
+  under `.docs/sprints/`.
 
 Current reality:
 
 - Rehydration already exists.
-- Freshness still depends on static `CONTENT_REHYDRATION_TTL` by content
-  type.
+- Freshness now depends on `CONTENT_REHYDRATION_POLICY`, using
+  release-date bands and SQL-side stale selection.
+- Country-scoped platform availability is already stored separately, but
+  it still lacks an independent freshness lifecycle.
+- `core` still carries some provider-shaped fields that should be
+  reduced before `Sprint 11`, especially external `status` semantics.
 
 Work to land:
 
-- Introduce `compute_refresh_policy(...)`.
-- Replace static TTL decisions with dynamic age/type-aware policy.
-- Keep the selection logic in SQL for the periodic refresh command.
-- Document and observe the new policy.
+- Use the normalization/reporting command during rollout to avoid a
+  first-run spike.
+- Rebaseline performance and ops guidance once real measurements are
+  collected.
+- Split or supplement the current detail freshness model so platform
+  availability can refresh independently per country.
+- Close the remaining homepage future-release leak so `Popular` buckets
+  do not surface items months ahead of release.
+- Remove or isolate provider-derived `status` fields so the persisted
+  domain model keeps converging toward Denn-owned semantics.
 
 ## Further Auth Hardening
 

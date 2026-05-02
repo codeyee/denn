@@ -3,6 +3,7 @@ package mapper
 import (
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/codeyee/denn-proxy/internal/models"
 	"github.com/codeyee/denn-proxy/internal/services/tmdb"
@@ -114,7 +115,16 @@ func extractAuthors(companies []tmdb.TmdbCompany) []models.Author {
 }
 
 func IsValidSeason(s tmdb.TmdbSeasonSummary) bool {
-	return s.SeasonNumber > 0 && s.EpisodeCount > 0
+	if s.SeasonNumber <= 0 || s.EpisodeCount <= 0 || s.AirDate == "" {
+		return false
+	}
+
+	releaseAt, err := time.Parse("2006-01-02", s.AirDate)
+	if err != nil {
+		return false
+	}
+
+	return !releaseAt.After(time.Now().UTC().AddDate(0, 0, 1))
 }
 
 func strPtr(s string) *string {

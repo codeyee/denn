@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/codeyee/denn-proxy/internal/clients"
+	servicecommon "github.com/codeyee/denn-proxy/internal/services/common"
 )
 
 func (c *Client) SearchAlbums(ctx context.Context, query string, limit, offset int) (*clients.Response, error) {
@@ -22,7 +23,7 @@ func (c *Client) SearchAlbums(ctx context.Context, query string, limit, offset i
 	}
 
 	return c.CachedGet(ctx, "search", "spotify_search", params, map[string]string{
-		"query":  query,
+		"query":  servicecommon.NormalizeSearchCacheKey(query),
 		"limit":  strconv.Itoa(limit),
 		"offset": strconv.Itoa(offset),
 	})

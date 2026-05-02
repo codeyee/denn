@@ -21,12 +21,15 @@ At a product level, Denn currently supports:
 - User authentication with protected routes.
 - Personal and shared lists.
 - List invitations and membership workflows.
-- Item status tracking, ratings, and canonical list ordering.
+- List-item status workflows, ratings, and canonical list ordering.
 - Advanced list exploration with filters, grouping, range filters, and
   multi-field sort.
 - Local-first content detail persistence in `core`, so detail payloads
   can be reconstructed from PostgreSQL instead of always hitting the
   upstream metadata layer.
+
+First-class personal tracking, public catalog surfaces, public profiles,
+and leaderboards are planned but not yet part of the shipped baseline.
 
 ## Architecture
 
@@ -45,6 +48,61 @@ In other words:
   metadata providers.
 
 This boundary is a deliberate architectural decision, not an accident. The rationale and tradeoffs live in [`.docs/adr/0001-external-metadata-integration.md`](./.docs/adr/0001-external-metadata-integration.md).
+
+## Documentation Map
+
+The canonical documentation entrypoint is [`.docs/README.md`](./.docs/README.md).
+
+For most work, read in this order:
+
+1. [`.docs/architecture/current-state.md`](./.docs/architecture/current-state.md)
+2. [`.docs/features/implemented.md`](./.docs/features/implemented.md)
+3. [`.docs/technical-debt.md`](./.docs/technical-debt.md)
+4. [`.docs/roadmap/open-plans.md`](./.docs/roadmap/open-plans.md)
+5. [`.docs/contracts/internal-http.md`](./.docs/contracts/internal-http.md)
+6. [`.docs/adr/0001-external-metadata-integration.md`](./.docs/adr/0001-external-metadata-integration.md)
+7. [`.docs/adr/0002-web-auth-cookies.md`](./.docs/adr/0002-web-auth-cookies.md)
+8. [`.docs/adr/0003-migrate-web-from-nextjs-to-tanstack-start.md`](./.docs/adr/0003-migrate-web-from-nextjs-to-tanstack-start.md)
+
+Operational rule:
+
+- `architecture/*` documents merged behavior.
+- `features/implemented.md` is the shipped baseline.
+- `roadmap/open-plans.md` is the condensed backlog.
+- `.docs/sprints/` contains only open or future execution plans.
+- `history/implementation-history.md` stores outcomes extracted from
+  completed sprint docs.
+
+Practical usage flow:
+
+1. If you want to understand the repo: `README.md` ->
+   `.docs/README.md`
+2. If you want to know how the system works today:
+   `architecture/current-state.md`
+3. If you want to know what already exists:
+   `features/implemented.md`
+4. If you want to know what comes next:
+   `roadmap/open-plans.md`
+5. If you are about to execute or verify something sensitive:
+   `runbooks/`
+6. If you are changing a structural decision:
+   `adr/`
+7. If you are evaluating an idea that is not approved yet:
+   `ideas/`
+
+When resuming the project, do not jump directly into the first sprint
+file. Read:
+
+1. `README.md`
+2. `.docs/README.md`
+3. `architecture/current-state.md`
+4. `features/implemented.md`
+5. `technical-debt.md`
+6. `roadmap/open-plans.md`
+7. then the first relevant active sprint under `.docs/sprints/`
+
+That keeps implementation work anchored to the real current state, not
+to stale assumptions inside an older plan.
 
 ### Content Lifecycle
 
@@ -214,7 +272,7 @@ cd core && python3 -m venv .venv && source .venv/bin/activate \
   && ./.venv/bin/python manage.py migrate \
   && ./.venv/bin/python manage.py runserver
 
-# proxy (Go, port 8081)
+# proxy (Go, port 8080)
 cd proxy && cp .env.example .env && make run
 
 # web (TanStack Start / Vite, port 3000)

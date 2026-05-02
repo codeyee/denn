@@ -2,6 +2,8 @@ import { useAuthStore } from "@/stores/auth-store";
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback } from "react";
 
+import { normalizeInternalRedirectTarget } from "@/lib/auth/redirect";
+
 export function useAuth() {
   const navigate = useNavigate();
   const {
@@ -11,6 +13,7 @@ export function useAuth() {
     isAuthenticated,
     isLoading,
     error,
+    sessionResolution,
     login,
     register,
     logout,
@@ -18,10 +21,10 @@ export function useAuth() {
   } = useAuthStore();
 
   const handleLogin = useCallback(
-    async (email: string, password: string) => {
+    async (email: string, password: string, next?: string) => {
       try {
         await login(email, password);
-        void navigate({ to: "/" });
+        void navigate({ to: normalizeInternalRedirectTarget(next) ?? "/" });
       } catch (error) {
         console.error("Login error:", error);
       }
@@ -53,6 +56,7 @@ export function useAuth() {
     isAuthenticated,
     isLoading,
     error,
+    sessionResolution,
     login: handleLogin,
     register: handleRegister,
     logout: handleLogout,

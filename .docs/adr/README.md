@@ -25,6 +25,18 @@ Esta carpeta contiene las decisiones de arquitectura del workspace `denn` (`web`
 - Una elección entre dos o más alternativas con tradeoffs reales.
 - Cualquier decisión que un nuevo contribuidor debería poder leer en menos de 10 minutos.
 
+## ADR vs `architecture/`
+
+- Un ADR explica una decisión importante y por qué se tomó.
+- Un documento en `architecture/` explica cómo funciona el sistema hoy.
+
+Ejemplo:
+
+- `adr/0003-...` explica por qué `web` migró de Next.js a TanStack
+  Start.
+- `architecture/current-state.md` explica cómo está organizado `web`
+  hoy después de esa migración.
+
 ## Cuándo NO escribir un ADR
 
 - Refactors internos a un solo servicio.

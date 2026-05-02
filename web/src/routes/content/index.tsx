@@ -8,6 +8,7 @@ import { ContentType } from "@/lib/types";
 import { isValidContentType } from "@/lib/utils/contentTypeUtils";
 import { buildContentUrlById } from "@/lib/utils/navigationUtils";
 import { useContentItemResolutionQuery } from "@/lib/api/queries";
+import { requireAuthenticatedSession } from "@/lib/auth/protected-route";
 
 const legacySearchSchema = z.object({
   external_id: z.string().optional().catch(undefined),
@@ -17,6 +18,13 @@ const legacySearchSchema = z.object({
 
 export const Route = createFileRoute("/content/")({
   validateSearch: legacySearchSchema,
+  beforeLoad: ({ context, location }) => {
+    requireAuthenticatedSession(
+      context.session,
+      location.pathname,
+      location.searchStr,
+    );
+  },
   component: LegacyContentRoute,
 });
 

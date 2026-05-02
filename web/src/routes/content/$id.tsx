@@ -5,8 +5,16 @@ import { ContentDetailPage } from "@/components/pages/ContentDetailPage";
 import { ContentDetailSkeleton } from "@/components/pages/ContentDetailPage/ContentDetailSkeleton";
 import { ProtectedRoute } from "@/components/common/providers/ProtectedRoute";
 import { prefetchContentDetailQueries } from "@/lib/api/queries/server";
+import { requireAuthenticatedSession } from "@/lib/auth/protected-route";
 
 export const Route = createFileRoute("/content/$id")({
+  beforeLoad: ({ context, location }) => {
+    requireAuthenticatedSession(
+      context.session,
+      location.pathname,
+      location.searchStr,
+    );
+  },
   loader: async ({ context, params }) => {
     const contentId = Number.parseInt(params.id, 10);
     if (!Number.isFinite(contentId) || contentId <= 0) {

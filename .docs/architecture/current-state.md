@@ -58,8 +58,8 @@ The hybrid topology is deliberate and documented in
   `@tanstack/react-start`.
 - BFF API routes live next to page routes
   (`web/src/routes/api/cards.ts`, `api/perf/vitals.ts`, `api/proxy/$.ts`)
-  and use `createServerFileRoute(...).methods({ GET, POST })` over
-  standard `Request`/`Response`.
+  and use `createFileRoute(...)` with `server.handlers` over standard
+  `Request`/`Response`.
 - Hover prefetch exists for content cards and list item cards via the
   router's default `preload="intent"`.
 - Decision recorded in [ADR 0003](../adr/0003-migrate-web-from-nextjs-to-tanstack-start.md).
@@ -76,8 +76,9 @@ See [`data-fetching.md`](./data-fetching.md).
   `AuthSessionBootstrap`.
 - `ProtectedRoute` blocks during the store bootstrap window with
   `isBootingSession`.
-- Server-side redirects on protected routes via router `beforeLoad` are
-  not implemented yet.
+- Protected routes also redirect server-side via route `beforeLoad`,
+  while preserving a client fallback for the bootstrap race and the
+  unavailable-backend path.
 
 See [`auth-session-bootstrap.md`](./auth-session-bootstrap.md).
 
@@ -89,9 +90,8 @@ See [`auth-session-bootstrap.md`](./auth-session-bootstrap.md).
 - The canonical read path for `source_data` is local-first:
   fresh local detail -> stale local fallback with `is_stale=true` ->
   proxy refresh when needed.
-- Periodic refresh uses static per-type TTLs via
-  `CONTENT_REHYDRATION_TTL`.
-- Dynamic age-based refresh policy is still planned, not merged.
+- Periodic refresh uses `CONTENT_REHYDRATION_POLICY`, including
+  SQL-side `refresh_due_at` selection and age-band-aware logging.
 
 See [`content-lifecycle.md`](./content-lifecycle.md).
 

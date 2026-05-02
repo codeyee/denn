@@ -241,8 +241,9 @@ func TestGetTrendingBooks_Page2(t *testing.T) {
 	docs := make([]map[string]interface{}, 25)
 	for i := 0; i < 25; i++ {
 		docs[i] = map[string]interface{}{
-			"key":   "/works/OL" + string(rune('A'+i)) + "W",
-			"title": "Book " + string(rune('A'+i)),
+			"key":                "/works/OL" + string(rune('A'+i)) + "W",
+			"title":              "Book " + string(rune('A'+i)),
+			"first_publish_year": 2000 + i,
 		}
 	}
 

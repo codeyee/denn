@@ -122,16 +122,26 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 PROXY_API_BASE_URL = os.getenv("PROXY_API_BASE_URL", "http://localhost:8080/v1/proxy")
 PROXY_API_KEY = os.getenv("PROXY_API_KEY", "")
 
-# Sprint 07: per-content-type TTL for the local Detail rows. The
-# rehydration job (and read-time stale check) consults this map; missing
-# keys fall back to the longest TTL to err on the side of fewer proxy hits.
-CONTENT_REHYDRATION_TTL = {
-    "BOOK": timedelta(days=90),
-    "MOVIE": timedelta(days=30),
-    "GAME": timedelta(days=30),
-    "ALBUM": timedelta(days=30),
-    "TV_SHOW": timedelta(days=7),
-    "SEASON": timedelta(days=7),
+CONTENT_REHYDRATION_POLICY = {
+    "BANDS": [
+        {"name": "pre_release", "max_age_days": -1, "ttl_days": 1},
+        {"name": "hot", "max_age_days": 29, "ttl_days": 2},
+        {"name": "recent", "max_age_days": 179, "ttl_days": 7},
+        {"name": "first_year", "max_age_days": 364, "ttl_days": 14},
+        {"name": "stable", "max_age_days": 1094, "ttl_days": 30},
+        {"name": "aged", "max_age_days": 3649, "ttl_days": 90},
+        {"name": "classic", "max_age_days": None, "ttl_days": 180},
+    ],
+    "UNKNOWN_TTL_DAYS": 30,
+    "TYPE_OVERRIDES": {
+        "BOOK": {"multiplier": 2.0, "classic_ttl_days": 365},
+        "ALBUM": {"classic_ttl_days": 365},
+        "TV_SHOW": {
+            "active_statuses": ["returning series", "in production"],
+            "active_ttl_days": 2,
+            "active_band": "hot",
+        },
+    },
 }
 
 # Country used when the request did not specify one. Streaming providers

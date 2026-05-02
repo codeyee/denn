@@ -4,6 +4,7 @@ import { z } from "zod";
 import { ListDetailPage } from "@/components/pages/ListDetailPage";
 import { ProtectedRoute } from "@/components/common/providers/ProtectedRoute";
 import { prefetchListDetailQueries } from "@/lib/api/queries/server";
+import { requireAuthenticatedSession } from "@/lib/auth/protected-route";
 import {
   DEFAULT_LIST_ITEM_QUERY,
   type FilterField,
@@ -30,6 +31,13 @@ type ListSearch = z.infer<typeof listSearchSchema>;
 
 export const Route = createFileRoute("/lists/$id")({
   validateSearch: listSearchSchema,
+  beforeLoad: ({ context, location }) => {
+    requireAuthenticatedSession(
+      context.session,
+      location.pathname,
+      location.searchStr,
+    );
+  },
   loaderDeps: ({ search }) => ({ query: parseListQuery(search) }),
   loader: async ({ context, params, deps }) => {
     const listId = Number.parseInt(params.id, 10);

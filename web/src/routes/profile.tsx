@@ -6,8 +6,16 @@ import { Button } from "@/components/common/ui/Button";
 import { Card } from "@/components/common/ui/Card";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
+import { requireAuthenticatedSession } from "@/lib/auth/protected-route";
 
 export const Route = createFileRoute("/profile")({
+  beforeLoad: ({ context, location }) => {
+    requireAuthenticatedSession(
+      context.session,
+      location.pathname,
+      location.searchStr,
+    );
+  },
   component: ProfileRoute,
 });
 

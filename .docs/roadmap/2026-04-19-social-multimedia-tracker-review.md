@@ -2,6 +2,13 @@
 
 Date: 2026-04-19
 
+Technical note:
+
+- This review remains useful as product analysis.
+- It was written before the TanStack Start migration settled fully, so
+  when concrete file paths differ, trust
+  `architecture/current-state.md`, active sprint docs, and `AGENTS.md`.
+
 ## Why This Document Exists
 
 This review translates the current codebase into product reality.
@@ -16,12 +23,12 @@ It is intentionally functional and blunt:
 
 This document is grounded in the current repo, especially:
 
-- `web/app/page.tsx`
-- `web/app/search/page.tsx`
-- `web/app/content/[id]/page.tsx`
-- `web/app/lists/[id]/page.tsx`
-- `web/app/profile/page.tsx`
-- `web/app/_components/pages/LandingPage/sections/FeaturesSection.tsx`
+- `web/src/routes/index.tsx`
+- `web/src/routes/search.tsx`
+- `web/src/routes/content/$id.tsx`
+- `web/src/routes/lists/$id.tsx`
+- `web/src/routes/profile.tsx`
+- `web/src/components/pages/HomePage/`
 - `core/content/models/user_list.py`
 - `core/content/models/list_item.py`
 - `core/content/models/rating.py`
@@ -149,8 +156,8 @@ catalog app with shared lists.
 
 Current major routes are protected:
 
-- `/content/[id]`
-- `/lists/[id]`
+- `/content/<id>`
+- `/lists/<id>`
 - `/profile`
 - legacy content redirect path
 

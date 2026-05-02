@@ -87,9 +87,9 @@ steady pace.
 
 - The current optimization track must reach a "no longer blocking
   product work" state before Sprint 11 starts.
-- `Sprint 08.5` and `Sprint 09` are hard blockers for public-facing
-  feature work because SSR data flow and auth continuity need to be
-  stable first.
+- The old `Sprint 08.5` / `Sprint 09` blocker set is effectively
+  resolved: SSR data flow, TanStack Query prefetch, and auth continuity
+  are now part of the merged foundation.
 - `Sprint 10` is a soft blocker for large anonymous catalog traffic.
   It does not need to be perfect before Sprint 11 starts, but public
   catalog traffic should not launch while freshness policy is still

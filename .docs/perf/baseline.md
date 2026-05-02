@@ -1,102 +1,108 @@
 # Performance Baseline
 
-This document is the source of truth for performance expectations on the main request paths. Every row is a measurement, not an opinion. The process is part of the contract: if a number is undocumented, treat it as inexistent.
+This document is the source of truth for performance expectations on the
+main request paths. It has two jobs:
 
-## How to reproduce
+- define how measurements must be taken;
+- store the latest agreed baseline for the most important flows.
 
-### Backend (Django)
+If a value is still `_TBD_`, it is not a baseline yet. Treat it as a
+known documentation gap, not as an implicit pass.
 
-1. Make sure the local stack is up: `./.scripts/workspace-dev.sh up`.
-2. Enable the per-request perf instrumentation:
-   `export PERF_LOGGING_ENABLED=true` and restart `core` so the env
-   var is picked up. The middleware is documented in
-   `core/core/middleware/perf_timing.py`.
-3. Hit the endpoint a few times to warm caches, then run the load:
+## Measurement Rules
 
-       hey -n 50 -c 5 -m GET \
-           -H "Authorization: Bearer <token>" \
-           http://localhost:8000/api/content/lists/
+### Backend (`core`)
 
-   Replace `hey` with `ab` if you do not have it installed
-   (`apt install apache2-utils`).
-4. Read p50/p95 from `hey`'s output and pull `query_count`,
-   `db_time_ms`, `proxy_time_ms`, `proxy_calls` from the JSON
-   `http_request` log lines emitted by `AccessLogMiddleware`.
-5. Record the results in the table below.
+1. Start the local stack with `make up`.
+2. Enable request instrumentation in `core`:
+   `export PERF_LOGGING_ENABLED=true`
+3. Warm the endpoint a few times if the row says "warm".
+4. Run a small repeatable load, for example:
 
-Tips:
-- Restart `core` between scenarios that warm in-process caches if you
-  want to measure a cold path.
-- If a row needs a specific `n`, prepare the fixture once with a
-  management command or a test factory and reuse the list ID.
+   ```bash
+   hey -n 50 -c 5 -m GET \
+     -H "Authorization: Bearer <token>" \
+     http://localhost:8000/api/content/lists/
+   ```
 
-### Frontend (TanStack Start)
+5. Record:
+   - p50 / p95 latency from `hey`
+   - `query_count`
+   - `proxy_calls`
+   - `proxy_time_ms`
+   from the structured `http_request` log lines.
 
-1. Start `web` in production mode for representative numbers:
-   `cd web && npm run build && npm start`. The Vite + Nitro build
-   emits `web/.output/`; `npm start` runs `node .output/server/index.mjs`.
-2. Open Chrome DevTools → Performance → "Web Vitals" overlay
-   (or the Lighthouse panel for a one-shot report).
-3. Navigate the flow described in the row, capture LCP, INP, CLS,
-   TTFB, FCP. The values are also emitted to the browser console by
-   `WebVitalsReporter` (`web/src/components/common/WebVitalsReporter.tsx`)
-   and POSTed to `/api/perf/vitals` in production builds.
-4. Record p75 across at least 5 cold loads (Cmd+Shift+R) per row.
+### Frontend (`web`)
 
-> Tras la migración a TanStack Start (ADR 0003), rebaselines las filas de frontend con un build de producción (`vite build` + `npm start`) cuando cambien rutas críticas o el tamaño del bundle.
+1. Build and run production mode:
 
-## Tables
+   ```bash
+   cd web
+   npm run build
+   npm start
+   ```
 
-The "before" column captures the earlier known baseline before the current optimization work. Additional columns can be added as measurable changes land. Numbers should be filled in before the PR ships; rows still showing `_TBD_` block the PR per the checklist below.
+2. Use Chrome DevTools or Lighthouse on production output only.
+3. Capture at least 5 cold loads per flow.
+4. Record p75 for:
+   - LCP
+   - INP
+   - CLS
+   - TTFB
+   - FCP
+5. `WebVitalsReporter` console output is acceptable as the source.
+
+## Baseline Tables
 
 ### Backend endpoints
 
-| Endpoint | Conditions | p50 (ms) before | p95 (ms) before | query_count | proxy_time_ms | p50 after 8B | p95 after 8B | Notes |
-|---|---|---|---|---|---|---|---|---|
-| `GET /api/content/lists/` | authenticated user with 5 lists | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | Threshold: p95 < 250 ms |
-| `GET /api/content/lists/<id>/` | list with 20 items, source_data=true | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | Threshold: p95 < 400 ms warm |
-| `GET /api/content/lists/<id>/items/?page_size=100` | list with 100 items | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | Threshold: p95 < 400 ms warm / < 1500 ms cold |
-| `GET /api/content/<id>/?include_source_data=true` | warm proxy cache | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | Threshold: p95 < 200 ms warm / < 600 ms cold |
-| `GET /api/content/search/?q=matrix` | aggregate search | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | Threshold: p95 < 1200 ms |
+| Endpoint | Conditions | p50 current (ms) | p95 current (ms) | query_count | proxy_calls | proxy_time_ms | Notes |
+|---|---|---|---|---|---|---|---|
+| `GET /api/content/lists/` | authenticated user with 5 lists | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | Threshold: p95 < 250 ms |
+| `GET /api/content/lists/<id>/` | list with 20 items, `source_data=true` | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | Threshold: p95 < 400 ms warm |
+| `GET /api/content/lists/<id>/items/?page_size=100` | list with 100 items | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | Threshold: p95 < 400 ms warm / < 1500 ms cold |
+| `GET /api/content/<id>/?include_source_data=true` | warm proxy cache | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | Threshold: p95 < 200 ms warm / < 600 ms cold |
+| `GET /api/content/search/?q=matrix` | aggregate search | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | Threshold: p95 < 1200 ms |
 
 ### Frontend flows
 
-| Flow | LCP (p75) before | INP (p75) before | TTFB before | FCP before | CLS before | LCP after 8C | INP after 8C | LCP after 8.5 | INP after 8.5 | TTFB after 8.5 | FCP after 8.5 | CLS after 8.5 | Notes |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Hard refresh `/` (home) | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | Threshold: LCP < 2500, INP < 200, CLS < 0.1 |
-| Hard refresh `/search?q=matrix` | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | Threshold: LCP < 2500, INP < 200, CLS < 0.1 |
-| Open `/content/[id]` from a card click | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | Threshold: LCP < 2500 (with hover prefetch < 1800), CLS < 0.1 |
-| Open `/lists/[id]` for a 100-item list | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | Threshold: LCP < 3000, INP < 200 |
+| Flow | LCP current (p75) | INP current (p75) | TTFB current | FCP current | CLS current | Notes |
+|---|---|---|---|---|---|---|
+| Hard refresh `/` (home) | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | Threshold: LCP < 2500, INP < 200, CLS < 0.1 |
+| Hard refresh `/search?q=matrix` | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | Threshold: LCP < 2500, INP < 200, CLS < 0.1 |
+| Open `/content/<id>` from a card click | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | Threshold: LCP < 2500, hover-prefetched target < 1800, CLS < 0.1 |
+| Open `/lists/<id>` for a 100-item list | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | Threshold: LCP < 3000, INP < 200 |
 
-## Acceptable Thresholds
+## Thresholds
 
-These are the targets the performance program commits to. A PR that regresses any of them needs an explicit "yes, this is acceptable" sign-off in the description.
+### Backend
 
-### Backend (per request)
-
-| Metric | Endpoint | Threshold | Source |
-|---|---|---|---|
-| p95 latency | `GET /api/content/lists/` | < 250 ms | `hey` p95 |
-| p95 latency | `GET /api/content/lists/<id>/items/?page_size=100` | < 400 ms warm, < 1500 ms cold | `hey` p95 |
-| p95 latency | `GET /api/content/<id>/` | < 200 ms warm, < 600 ms cold | `hey` p95 |
-| p95 latency | `GET /api/content/search/?q=...` | < 1200 ms | `hey` p95 |
-| query_count | any list endpoint | <= 10 (else justify) | `http_request` log |
-| proxy_calls | any list endpoint | <= 2 per request | `http_request` log |
-| proxy_time_ms | any single endpoint | <= 500 ms p95 | `http_request` log |
-
-### Frontend (per flow, p75 across 5 cold loads)
-
-| Metric | Threshold | Source |
+| Metric | Scope | Threshold |
 |---|---|---|
-| LCP | < 2500 ms ("good") | Web Vitals reporter |
-| INP | < 200 ms ("good") | Web Vitals reporter |
-| CLS | < 0.10 ("good") | Web Vitals reporter |
-| TTFB | < 800 ms ("good") | Web Vitals reporter |
-| FCP | < 1800 ms ("good") | Web Vitals reporter |
+| p95 latency | `GET /api/content/lists/` | < 250 ms |
+| p95 latency | `GET /api/content/lists/<id>/items/?page_size=100` | < 400 ms warm, < 1500 ms cold |
+| p95 latency | `GET /api/content/<id>/` | < 200 ms warm, < 600 ms cold |
+| p95 latency | `GET /api/content/search/?q=...` | < 1200 ms |
+| `query_count` | list endpoints | <= 10 unless justified |
+| `proxy_calls` | list endpoints | <= 2 per request unless justified |
+| `proxy_time_ms` | any single endpoint | <= 500 ms p95 |
 
-If a flow exceeds a threshold, the PR description must call it out
-explicitly under a "Performance impact" heading.
+### Frontend
 
-## Notes For Local-First Comparison
+| Metric | Threshold |
+|---|---|
+| LCP | < 2500 ms |
+| INP | < 200 ms |
+| CLS | < 0.10 |
+| TTFB | < 800 ms |
+| FCP | < 1800 ms |
 
-If the local-first detail model changes materially, re-measure the same rows into a new comparison column so the impact is auditable.
+## Update Policy
+
+- If a PR changes one of these request paths materially, update the row
+  or explicitly state why the existing measurement still applies.
+- If a new critical endpoint or route is introduced, add a row before
+  calling the path "production ready".
+- If a one-off optimization needs historical comparison, add a dated
+  comparison note in the PR or in `history/implementation-history.md`
+  rather than renaming table columns after sprint numbers.

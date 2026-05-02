@@ -17,6 +17,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
+  sessionResolution: "pending" | "anonymous" | "authenticated" | "unavailable";
 }
 
 interface AuthActions {
@@ -37,6 +38,9 @@ interface AuthActions {
   setRefreshToken: (refreshToken: string | null) => void;
   clearSession: () => void;
   clearError: () => void;
+  setSessionResolution: (
+    resolution: AuthState["sessionResolution"],
+  ) => void;
 }
 
 export type AuthStore = AuthState & AuthActions;
@@ -48,6 +52,7 @@ const initialState: AuthState = {
   isAuthenticated: false,
   isLoading: false,
   error: null,
+  sessionResolution: "pending",
 };
 
 import { getApiUrl } from "@/lib/env";
@@ -84,6 +89,7 @@ export const useAuthStore = create<AuthStore>()(
             isAuthenticated: true,
             isLoading: false,
             error: null,
+            sessionResolution: "authenticated",
           });
           syncAuthCookies({
             accessToken: data.access,
@@ -138,6 +144,7 @@ export const useAuthStore = create<AuthStore>()(
             isAuthenticated: true,
             isLoading: false,
             error: null,
+            sessionResolution: "authenticated",
           });
           syncAuthCookies({
             accessToken: data.access,
@@ -201,6 +208,8 @@ export const useAuthStore = create<AuthStore>()(
           isAuthenticated: Boolean(user && accessToken),
           isLoading: false,
           error: null,
+          sessionResolution:
+            user && accessToken ? "authenticated" : "anonymous",
         });
       },
 
@@ -225,11 +234,19 @@ export const useAuthStore = create<AuthStore>()(
         set({
           ...initialState,
           isLoading: false,
+          sessionResolution: "anonymous",
         });
       },
 
       clearError: () => {
         set({ error: null });
+      },
+
+      setSessionResolution: (sessionResolution) => {
+        set({
+          sessionResolution,
+          isLoading: false,
+        });
       },
     }),
     {
@@ -250,7 +267,13 @@ export const useAuthStore = create<AuthStore>()(
             console.error("Error rehydrating auth store:", error);
           }
           setTimeout(() => {
-            useAuthStore.setState({ isLoading: false });
+            useAuthStore.setState((state) => ({
+              isLoading: false,
+              sessionResolution:
+                state.sessionResolution === "pending"
+                  ? "anonymous"
+                  : state.sessionResolution,
+            }));
           }, 0);
         };
       },
