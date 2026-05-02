@@ -105,7 +105,7 @@ core/staticfiles/
 core/site
 core/.mypy_cache/
 
-# Node / Next.js
+# Node / TanStack Start (Vite)
 web/node_modules/
 web/.pnp
 web/.pnp.*
@@ -115,13 +115,15 @@ web/.yarn/*
 !web/.yarn/releases
 !web/.yarn/versions
 web/coverage/
-web/.next/
+web/.output/
+web/.tanstack/
+web/.vinxi/
+web/dist/
 web/out/
 web/build/
 web/.vercel/
 web/.env*
 web/*.tsbuildinfo
-web/next-env.d.ts
 web/npm-debug.log*
 web/yarn-debug.log*
 web/yarn-error.log*

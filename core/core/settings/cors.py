@@ -1,6 +1,8 @@
 import os
 import re
 
+from corsheaders.defaults import default_headers
+
 CORS_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "")
 CORS_ALLOWED_ORIGINS = [
     origin.strip().rstrip("/") for origin in CORS_ORIGINS.split(",") if origin.strip()
@@ -16,7 +18,23 @@ else:
     CORS_ALLOWED_ORIGIN_REGEXES = []
 
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOW_ALL_HEADERS = True
+
+# `django-cors-headers` only honours `CORS_ALLOW_HEADERS` (there is no
+# `CORS_ALLOW_ALL_HEADERS`). Without explicit entries, the browser blocks
+# preflight for any custom header the SPA sends (e.g. `X-Request-Id` from
+# the internal HTTP contract).
+CORS_ALLOW_HEADERS = tuple(default_headers) + (
+    "x-request-id",
+    "x-user-country",
+)
+
+# Let client-side `fetch` read correlation headers on credentialed responses.
+CORS_EXPOSE_HEADERS = (
+    "x-request-id",
+    "x-ratelimit-limit",
+    "x-ratelimit-remaining",
+    "x-ratelimit-degraded",
+)
 
 # CSRF Configuration
 CSRF_TRUSTED_ORIGINS = []

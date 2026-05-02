@@ -4,7 +4,7 @@ This file is the single canonical guide for agents and contributors working in t
 
 ## Monorepo Topology
 
-- `web/`: Next.js 16 App Router frontend plus the browser-facing BFF for metadata calls.
+- `web/`: TanStack Start (Vite + Nitro) frontend plus the browser-facing BFF for metadata calls.
 - `core/`: Django + DRF API for accounts, lists, ratings, invitations, and normalized content persistence.
 - `proxy/`: Go + Gin metadata service; the only service that talks to TMDB, IGDB, Spotify, and OpenLibrary directly.
 - `.docs/`: central project memory for architecture, implemented features, technical debt, roadmap, ADRs, contracts, runbooks, performance notes, and workspace policy.
@@ -41,14 +41,14 @@ Use root `make` targets unless you are debugging a service in isolation.
 - `make up` / `make down`: start or stop the full stack (`web`, `core`, `proxy`, Redis).
 - `make status` / `make logs` / `make doctor`: inspect the local workspace.
 - `make test`: run the default backend suite (`proxy` + `core`).
-- `make validate-web`: run frontend lint + production build.
+- `make validate-web`: run frontend lint + Vite production build.
 - `make validate-core`: run Django tests.
 - `make validate-proxy`: run Go tests.
 - `make build-proxy`: verify the Go service builds cleanly.
 
 Notes:
 
-- `make validate-web` wraps the minimum CI gate for `web`. `next build --webpack` is intentional; do not switch it back to Turbopack without validating CI and sandbox behavior.
+- `make validate-web` wraps the minimum CI gate for `web`. It runs ESLint and `vite build`; the build emits a Nitro bundle to `web/.output/`.
 - `make validate-core` depends on a working test database and valid env configuration.
 - `make validate-proxy` must stay deterministic and offline-safe by default.
 
@@ -71,9 +71,12 @@ If you change the error envelope or shared headers, update:
 The frontend has the strictest code-quality bar in the repo. Preserve it.
 
 - TypeScript is strict. Avoid `any`, `@ts-ignore`, `@ts-expect-error`, and unnecessary type assertions.
-- Prefer named exports. The exception is Next.js framework files such as `page.tsx`, `layout.tsx`, and `route.ts`.
+- Prefer named exports. There are no framework-mandated default exports in TanStack Start; route files export a `Route` (and optionally `ServerRoute`) and the root route exports `Route` from `__root.tsx`.
 - Treat ~150 lines as a refactor warning and 200 lines as a hard limit for React components. Split orchestration, hooks, and UI before adding more logic.
-- Put shared UI in `web/app/_components/common/`, page-specific UI in `web/app/_components/pages/<Feature>/components/`, reusable hooks in `web/app/_hooks/` or feature `hooks/`, and utilities in `web/lib/utils/`.
+- Put shared UI in `web/src/components/common/`, page-specific UI in `web/src/components/pages/<Feature>/components/`, reusable hooks in `web/src/hooks/` or feature `hooks/`, server-only utilities in `web/src/server/`, and shared utilities in `web/src/lib/utils/`.
+- Routes live in `web/src/routes/` using TanStack Router file conventions: `__root.tsx`, `index.tsx`, `<segment>.tsx`, `$param.tsx` for dynamic segments, `$.ts` for catch-alls. API routes live next to page routes (e.g. `web/src/routes/api/proxy/$.ts`) and export `ServerRoute = createServerFileRoute(...)`.
+- Loaders prefetch into the per-request `QueryClient` via `context.queryClient.ensureQueryData(...)`. The router rehydrates the cache on the client; do not wrap routes with `<HydrationBoundary>`.
+- Use the typed `Link`, `useNavigate`, `useLocation`, and `useSearch` from `@tanstack/react-router`. Do not import from `next/*` (next has been removed).
 - Avoid single-file folders and keep file-local helper functions at the end of the file.
 - Keep `npm run lint` and `npm run build` reproducible without hidden network assumptions.
 
@@ -86,7 +89,7 @@ Commenting and naming:
 Component organization:
 
 - Components should do one thing well. If a file handles data fetching, mutation logic, pagination, and presentation, it is already too large.
-- Extract duplicated logic immediately. Use `web/lib/utils/` for pure helpers, `web/app/_components/common/` for shared UI, and hooks for reusable stateful behavior.
+- Extract duplicated logic immediately. Use `web/src/lib/utils/` for pure helpers, `web/src/components/common/` for shared UI, and hooks for reusable stateful behavior.
 - Composition beats prop drilling and giant switch-heavy components.
 
 Frontend review checklist:
@@ -104,7 +107,7 @@ Navigation rule:
 
 Security rule:
 
-- The browser must never receive `PROXY_API_KEY`. Only SSR code and the Next.js BFF may attach it to outbound requests.
+- The browser must never receive `PROXY_API_KEY`. Only TanStack Start server functions, route loaders running on the server, and the BFF API routes under `web/src/routes/api/` may attach it to outbound requests.
 
 ## Core Rules
 
@@ -163,13 +166,13 @@ Backend (`core`):
 Frontend (`web`):
 
 - Run a production build and validate LCP, INP, and CLS for touched flows against `.docs/perf/baseline.md`.
-- New loading states should be dimensionally stable; add `loading.tsx` where a route needs one.
+- New loading states should be dimensionally stable; routes that need one should set `pendingComponent` on the route definition.
 - New server reads should follow the repo's TanStack Query patterns instead of `useEffect` + ad hoc `fetch`.
 - New mutations should be optimistic and reversible, with proper rollback on failure.
-- Mutations that change server state must live under `web/lib/api/mutations/` and invalidate or patch the affected `queryKeys`.
-- Routes that know their initial server data should prefetch into a per-request QueryClient and render through `HydrationBoundary`.
-- Use hover prefetch on cards that lead to detail pages when it materially improves UX.
-- Do not disable Next.js link prefetch without a written reason.
+- Mutations that change server state must live under `web/src/lib/api/mutations/` and invalidate or patch the affected `queryKeys`.
+- Routes that know their initial server data should prefetch into the per-request `QueryClient` from the route loader via `context.queryClient.ensureQueryData(...)`. The router rehydrates the cache automatically; do not wrap with `<HydrationBoundary>`.
+- Prefer the typed `<Link to=... params={...} search={...}>` and `useNavigate({ to, ... })` API over hand-built URL strings.
+- Use hover prefetch (`preload="intent"`, the router default) on cards that lead to detail pages when it materially improves UX.
 
 Documentation:
 

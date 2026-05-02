@@ -40,11 +40,25 @@ The hybrid topology is deliberate and documented in
 
 ## Current Frontend State
 
+- `web` runs on **TanStack Start** (Vite + Nitro). Routes live in
+  `web/src/routes/` using TanStack Router file conventions
+  (`__root.tsx`, `index.tsx`, `<segment>.tsx`, `$param.tsx`, `$.ts`).
 - TanStack Query is mounted globally and owns frontend server state for
   Home, Search, Content Detail, List Detail, Add-to-List, ratings, and
   list mutations.
-- Hover prefetch exists for content cards and list item cards.
-- The major protected routes use SSR prefetch with `HydrationBoundary`.
+- SSR prefetch happens inside `loader` functions that call
+  `context.queryClient.ensureQueryData(...)`. The router rehydrates the
+  cache on the client; routes do not wrap with `<HydrationBoundary>`.
+- Server-only RPC lives in `web/src/server/` (`getSessionFn`,
+  `getCountryFn`, `getRuntimeEnvFn`) using `createServerFn` from
+  `@tanstack/react-start`.
+- BFF API routes live next to page routes
+  (`web/src/routes/api/cards.ts`, `api/perf/vitals.ts`, `api/proxy/$.ts`)
+  and use `createServerFileRoute(...).methods({ GET, POST })` over
+  standard `Request`/`Response`.
+- Hover prefetch exists for content cards and list item cards via the
+  router's default `preload="intent"`.
+- Decision recorded in [ADR 0003](../adr/0003-migrate-web-from-nextjs-to-tanstack-start.md).
 
 See [`data-fetching.md`](./data-fetching.md).
 
@@ -53,12 +67,13 @@ See [`data-fetching.md`](./data-fetching.md).
 - ADR 0002 is only in phase 1.
 - JWTs are no longer persisted to `localStorage`.
 - Tokens still exist in JS-readable cookies and in-memory Zustand state.
-- `RootLayout` resolves the session server-side and mounts a global
+- The TanStack Start root route (`web/src/routes/__root.tsx`) resolves
+  the session server-side via `getSessionFn` and mounts a global
   `AuthSessionBootstrap`.
 - `ProtectedRoute` blocks during the store bootstrap window with
   `isBootingSession`.
-- Next.js middleware for server-side redirects on protected routes does
-  not exist yet.
+- Server-side redirects on protected routes via router `beforeLoad` are
+  not implemented yet.
 
 See [`auth-session-bootstrap.md`](./auth-session-bootstrap.md).
 

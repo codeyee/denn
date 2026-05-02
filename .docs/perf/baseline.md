@@ -30,17 +30,23 @@ Tips:
 - If a row needs a specific `n`, prepare the fixture once with a
   management command or a test factory and reuse the list ID.
 
-### Frontend (Next.js)
+### Frontend (TanStack Start)
 
 1. Start `web` in production mode for representative numbers:
-   `cd web && npm run build && npm start`.
+   `cd web && npm run build && npm start`. The Vite + Nitro build
+   emits `web/.output/`; `npm start` runs `node .output/server/index.mjs`.
 2. Open Chrome DevTools → Performance → "Web Vitals" overlay
    (or the Lighthouse panel for a one-shot report).
 3. Navigate the flow described in the row, capture LCP, INP, CLS,
    TTFB, FCP. The values are also emitted to the browser console by
-   `WebVitalsReporter` (`web/app/_components/common/WebVitalsReporter.tsx`)
+   `WebVitalsReporter` (`web/src/components/common/WebVitalsReporter.tsx`)
    and POSTed to `/api/perf/vitals` in production builds.
 4. Record p75 across at least 5 cold loads (Cmd+Shift+R) per row.
+
+> Migration note: the LCP/INP/CLS/TTFB/FCP thresholds carry over from
+> the Next.js App Router baseline. After ADR 0003 lands, rerun a
+> production build and re-measure each frontend flow row to refresh
+> the post-migration columns.
 
 ## Tables
 
