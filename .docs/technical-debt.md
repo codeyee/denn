@@ -11,25 +11,21 @@ their lasting outcome is reflected in architecture or history docs.
   [`adr/0002-web-auth-cookies.md`](./adr/0002-web-auth-cookies.md)
   and
   [`architecture/auth-session-bootstrap.md`](./architecture/auth-session-bootstrap.md)
-- The frontend server-state migration is incomplete; multiple important
-  flows still use legacy store-plus-`useEffect` orchestration.
-  Reference:
-  [`architecture/data-fetching.md`](./architecture/data-fetching.md)
-- Protected-route redirect remains client-side; no Next middleware guard
-  exists yet.
-  Reference:
-  [`roadmap/open-plans.md`](./roadmap/open-plans.md)
 
 ## High
 
 - `perf/baseline.md` still contains mostly placeholder values, so the
   repo has performance rules without a maintained measured baseline.
-- Static `CONTENT_REHYDRATION_TTL` is still the freshness policy for
-  local content details. This is too coarse for newly released content.
 - Cross-service typed contract generation is still duplicated across
   `web` and `core`; there is no generated shared client or schema layer.
-- SSR prefetch and `HydrationBoundary` are not generalized across the
-  major frontend routes.
+- Frontend Query migration now has only smoke-level automated coverage;
+  Add-to-List and ListDetail need broader interaction tests.
+- Country-scoped streaming availability is persisted separately, but
+  freshness is still tied to the global content detail lifecycle instead
+  of an independent per-country policy.
+- `core` still persists some provider-derived semantics such as external
+  `status`, which pulls the local model toward upstream vocabularies
+  instead of a Denn-owned domain shape.
 
 ## Medium
 
@@ -37,8 +33,9 @@ their lasting outcome is reflected in architecture or history docs.
   transformation, and orchestration concerns.
 - `browse_metadata` has a working base model, but its refresh strategy
   is still lighter than the main local detail lifecycle.
-- The auth bootstrap policy needs stronger automated coverage and a
-  canonical `next` redirect flow after login.
+- The auth bootstrap policy still lacks full browser-level E2E coverage,
+  even though route-level redirects and `next` login redirects are now
+  formalized.
 
 ## Notes
 

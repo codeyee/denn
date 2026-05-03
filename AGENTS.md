@@ -4,7 +4,7 @@ This file is the single canonical guide for agents and contributors working in t
 
 ## Monorepo Topology
 
-- `web/`: Next.js 16 App Router frontend plus the browser-facing BFF for metadata calls.
+- `web/`: TanStack Start (Vite + Nitro) frontend plus the browser-facing BFF for metadata calls.
 - `core/`: Django + DRF API for accounts, lists, ratings, invitations, and normalized content persistence.
 - `proxy/`: Go + Gin metadata service; the only service that talks to TMDB, IGDB, Spotify, and OpenLibrary directly.
 - `.docs/`: central project memory for architecture, implemented features, technical debt, roadmap, ADRs, contracts, runbooks, performance notes, and workspace policy.
@@ -29,9 +29,44 @@ Start with:
 - `.docs/technical-debt.md`
 - `.docs/roadmap/open-plans.md`
 - `.docs/adr/0001-external-metadata-integration.md`
+- `.docs/adr/0003-migrate-web-from-nextjs-to-tanstack-start.md`
 - `.docs/contracts/internal-http.md`
 - `.docs/workspace-operating-model.md`
 - `AGENTS.md`
+
+## Resume Flow
+
+When retaking the project, do not jump straight into the first sprint
+file.
+
+Use this order:
+
+1. `README.md`
+2. `.docs/README.md`
+3. `.docs/architecture/current-state.md`
+4. `.docs/features/implemented.md`
+5. `.docs/technical-debt.md`
+6. `.docs/roadmap/open-plans.md`
+7. the relevant active sprint under `.docs/sprints/`
+
+Interpretation:
+
+- `current-state.md` explains how the system works today.
+- `features/implemented.md` tells you what is already baseline.
+- `technical-debt.md` tells you what quality constraints still matter.
+- `open-plans.md` tells you priority and sequencing.
+- sprint docs provide detailed execution context only after the current
+  state is understood.
+
+Practical lookup flow:
+
+1. To understand the repo: `README.md` -> `.docs/README.md`
+2. To understand current behavior: `.docs/architecture/current-state.md`
+3. To know what already exists: `.docs/features/implemented.md`
+4. To know what comes next: `.docs/roadmap/open-plans.md`
+5. To operate or verify a sensitive path: `.docs/runbooks/`
+6. To change a structural decision: `.docs/adr/`
+7. To evaluate something not yet approved: `.docs/ideas/`
 
 ## Root Commands
 
@@ -41,21 +76,21 @@ Use root `make` targets unless you are debugging a service in isolation.
 - `make up` / `make down`: start or stop the full stack (`web`, `core`, `proxy`, Redis).
 - `make status` / `make logs` / `make doctor`: inspect the local workspace.
 - `make test`: run the default backend suite (`proxy` + `core`).
-- `make validate-web`: run frontend lint + production build.
+- `make validate-web`: run frontend lint + Vite production build.
 - `make validate-core`: run Django tests.
 - `make validate-proxy`: run Go tests.
 - `make build-proxy`: verify the Go service builds cleanly.
 
 Notes:
 
-- `make validate-web` wraps the minimum CI gate for `web`. `next build --webpack` is intentional; do not switch it back to Turbopack without validating CI and sandbox behavior.
+- `make validate-web` wraps the minimum CI gate for `web`. It runs ESLint and `vite build`; the build emits a Nitro bundle to `web/.output/`.
 - `make validate-core` depends on a working test database and valid env configuration.
 - `make validate-proxy` must stay deterministic and offline-safe by default.
 
 ## Cross-Service Invariants
 
 - `proxy` is the sole owner of upstream provider credentials.
-- `PROXY_API_KEY` is server-only. Never expose it with a `NEXT_PUBLIC_` prefix.
+- `PROXY_API_KEY` is server-only. Never expose it to the browser or add it to `window.__ENV__` (treat any `NEXT_PUBLIC_*` secret as forbidden).
 - `core` is not a general-purpose metadata gateway.
 - `proxy` must remain stateless with respect to PostgreSQL and user/session data.
 - `X-Request-Id` propagation and the canonical error envelope are shared contracts across `core` and `proxy`.
@@ -71,9 +106,16 @@ If you change the error envelope or shared headers, update:
 The frontend has the strictest code-quality bar in the repo. Preserve it.
 
 - TypeScript is strict. Avoid `any`, `@ts-ignore`, `@ts-expect-error`, and unnecessary type assertions.
-- Prefer named exports. The exception is Next.js framework files such as `page.tsx`, `layout.tsx`, and `route.ts`.
+- Prefer named exports. There are no framework-mandated default exports in TanStack Start; route files export a `Route` (and optionally `ServerRoute`) and the root route exports `Route` from `__root.tsx`.
 - Treat ~150 lines as a refactor warning and 200 lines as a hard limit for React components. Split orchestration, hooks, and UI before adding more logic.
-- Put shared UI in `web/app/_components/common/`, page-specific UI in `web/app/_components/pages/<Feature>/components/`, reusable hooks in `web/app/_hooks/` or feature `hooks/`, and utilities in `web/lib/utils/`.
+- Put shared UI in `web/src/components/common/`, page-specific UI in `web/src/components/pages/<Feature>/components/`, reusable hooks in `web/src/hooks/` or feature `hooks/`, server-only utilities in `web/src/server/`, and shared utilities in `web/src/lib/utils/`.
+- Routes live in `web/src/routes/` using TanStack Router file conventions: `__root.tsx`, `index.tsx`, `<segment>.tsx`, `$param.tsx` for dynamic segments, `$.ts` for catch-alls. API routes live next to page routes (e.g. `web/src/routes/api/proxy/$.ts`) and use `createFileRoute` with `server.handlers` (`GET`, `POST`, etc.).
+- Loaders prefetch into the per-request `QueryClient` via `context.queryClient.ensureQueryData(...)`. The router rehydrates the cache on the client; do not wrap routes with `<HydrationBoundary>`.
+- Use the typed `Link`, `useNavigate`, `useLocation`, and `useSearch` from `@tanstack/react-router`. Do not import from `next/*` (next has been removed).
+- Protected routes must enforce auth in both places: TanStack Router
+  `beforeLoad` for SSR redirect behavior and `ProtectedRoute` for the
+  client bootstrap race / unavailable-backend fallback. See
+  `.docs/architecture/client-rehydration.md`.
 - Avoid single-file folders and keep file-local helper functions at the end of the file.
 - Keep `npm run lint` and `npm run build` reproducible without hidden network assumptions.
 
@@ -86,7 +128,7 @@ Commenting and naming:
 Component organization:
 
 - Components should do one thing well. If a file handles data fetching, mutation logic, pagination, and presentation, it is already too large.
-- Extract duplicated logic immediately. Use `web/lib/utils/` for pure helpers, `web/app/_components/common/` for shared UI, and hooks for reusable stateful behavior.
+- Extract duplicated logic immediately. Use `web/src/lib/utils/` for pure helpers, `web/src/components/common/` for shared UI, and hooks for reusable stateful behavior.
 - Composition beats prop drilling and giant switch-heavy components.
 
 Frontend review checklist:
@@ -104,13 +146,17 @@ Navigation rule:
 
 Security rule:
 
-- The browser must never receive `PROXY_API_KEY`. Only SSR code and the Next.js BFF may attach it to outbound requests.
+- The browser must never receive `PROXY_API_KEY`. Only TanStack Start server functions, route loaders running on the server, and the BFF API routes under `web/src/routes/api/` may attach it to outbound requests.
 
 ## Core Rules
 
 - Use the modular settings layout in `core/core/settings/`; do not scatter runtime configuration across ad hoc modules.
 - `core` owns authentication, lists, ratings, invitations, and normalized content persistence. Keep views thin and push orchestration into serializers, service modules, and utility layers where appropriate.
 - If you need a new external metadata integration, add it in `proxy` first, then call it from `core/content/services/`. Do not add direct third-party API clients to `core`.
+- Treat provider payloads as integration inputs, not as the target shape
+  of the persisted domain model. Avoid mirroring provider-specific
+  semantics such as external `status` fields into `core` unless a
+  documented transitional reason exists.
 - Preserve permission checks around shared lists, rating ownership, and membership rules. Do not bypass them in views or serializers for convenience.
 - Keep API documentation annotations current when changing API shape; `drf-spectacular` is part of the contract surface.
 - Django tests live under `core/*/tests/` and follow `test_*.py`.
@@ -132,6 +178,10 @@ Security rule:
 - Architecture changes belong in ADRs under `.docs/adr/`.
 - CI or validation workflow changes must stay aligned with `.docs/workspace-operating-model.md`.
 - `architecture/` documents merged behavior, `roadmap/open-plans.md` summarizes active work, and `history/implementation-history.md` stores extracted outcomes from completed sprints.
+- The dated product-analysis docs under `.docs/roadmap/` are secondary
+  strategy references. When they disagree with current route structure
+  or technical implementation, prefer `architecture/current-state.md`,
+  active sprint docs, and this file.
 - `.docs/sprints/` is only for open or future plans. When a sprint is finished, extract the durable outcomes into the canonical docs and remove the stale done plan.
 - If you delete or rename developer-facing files, update any README references in the same change.
 - Keep service directories free of duplicated agent/editor scaffolding; repository-wide guidance belongs at the root.
@@ -163,11 +213,13 @@ Backend (`core`):
 Frontend (`web`):
 
 - Run a production build and validate LCP, INP, and CLS for touched flows against `.docs/perf/baseline.md`.
-- New loading states should be dimensionally stable; add `loading.tsx` where a route needs one.
+- New loading states should be dimensionally stable; routes that need one should set `pendingComponent` on the route definition.
 - New server reads should follow the repo's TanStack Query patterns instead of `useEffect` + ad hoc `fetch`.
 - New mutations should be optimistic and reversible, with proper rollback on failure.
-- Use hover prefetch on cards that lead to detail pages when it materially improves UX.
-- Do not disable Next.js link prefetch without a written reason.
+- Mutations that change server state must live under `web/src/lib/api/mutations/` and invalidate or patch the affected `queryKeys`.
+- Routes that know their initial server data should prefetch into the per-request `QueryClient` from the route loader via `context.queryClient.ensureQueryData(...)`. The router rehydrates the cache automatically; do not wrap with `<HydrationBoundary>`.
+- Prefer the typed `<Link to=... params={...} search={...}>` and `useNavigate({ to, ... })` API over hand-built URL strings.
+- Use hover prefetch (`preload="intent"`, the router default) on cards that lead to detail pages when it materially improves UX.
 
 Documentation:
 

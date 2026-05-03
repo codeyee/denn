@@ -5,12 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/codeyee/denn-proxy/internal/clients"
 	"github.com/codeyee/denn-proxy/internal/models"
 	olclient "github.com/codeyee/denn-proxy/internal/providers/openlibrary"
 	"github.com/codeyee/denn-proxy/internal/services/books"
-	"github.com/codeyee/denn-proxy/internal/services/common"
+	servicecommon "github.com/codeyee/denn-proxy/internal/services/common"
 	"github.com/codeyee/denn-proxy/internal/services/books/mapper"
 )
 
@@ -42,7 +43,7 @@ func unmarshalResponse[T any](resp *clients.Response, err error) (T, error) {
 		return zero, err
 	}
 
-	if cerr := common.ClassifyStatus("OpenLibrary", resp.StatusCode); cerr != nil {
+	if cerr := servicecommon.ClassifyStatus("OpenLibrary", resp.StatusCode); cerr != nil {
 		return zero, cerr
 	}
 
@@ -64,6 +65,7 @@ func (s *Service) SearchBooks(ctx context.Context, query string, page, limit int
 	for _, doc := range data.Docs {
 		items = append(items, mapper.MapSearchItem(doc))
 	}
+	items = servicecommon.FilterEligibleSearchItems(items, time.Now())
 
 	totalPages := 0
 	if data.NumFound > 0 && limit > 0 {
@@ -115,6 +117,10 @@ loop:
 				results[idx] = BulkBookResult{ID: bookID, Error: err.Error()}
 				return
 			}
+			if !servicecommon.IsGeneralReleaseEligible(book.ReleaseDate, time.Now()) {
+				results[idx] = BulkBookResult{ID: bookID, Error: clients.ErrNotFound.Error()}
+				return
+			}
 
 			results[idx] = BulkBookResult{ID: bookID, Book: &book}
 		}(i, id)
@@ -136,6 +142,7 @@ func (s *Service) GetTrendingBooks(ctx context.Context, page, limit int) (Search
 	for _, doc := range data.Docs {
 		items = append(items, mapper.MapSearchItem(doc))
 	}
+	items = servicecommon.FilterEligibleSearchItems(items, time.Now())
 
 	total := len(items)
 	offset := (page - 1) * limit

@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/codeyee/denn-proxy/internal/clients"
+	servicecommon "github.com/codeyee/denn-proxy/internal/services/common"
 )
 
 func (c *Client) SearchBooks(ctx context.Context, query string, page, limit int) (*clients.Response, error) {
@@ -19,7 +20,7 @@ func (c *Client) SearchBooks(ctx context.Context, query string, page, limit int)
 	}
 
 	return c.CachedGet(ctx, "search.json", "ol_search", params, map[string]string{
-		"query": query,
+		"query": servicecommon.NormalizeSearchCacheKey(query),
 		"page":  strconv.Itoa(page),
 		"limit": strconv.Itoa(limit),
 	})

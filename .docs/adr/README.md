@@ -16,6 +16,7 @@ Esta carpeta contiene las decisiones de arquitectura del workspace `denn` (`web`
 |-----|--------|--------|
 | [0001](./0001-external-metadata-integration.md) | Integración de metadata externa (`web`/`core`/`proxy`) | Accepted |
 | [0002](./0002-web-auth-cookies.md) | Sesión web sobre cookies `HttpOnly` | Accepted |
+| [0003](./0003-migrate-web-from-nextjs-to-tanstack-start.md) | Migrar `web/` de Next.js App Router a TanStack Start | Accepted |
 
 ## Cuándo escribir un ADR
 
@@ -23,6 +24,18 @@ Esta carpeta contiene las decisiones de arquitectura del workspace `denn` (`web`
 - Una decisión de seguridad con impacto cross-layer (auth, secretos, CORS).
 - Una elección entre dos o más alternativas con tradeoffs reales.
 - Cualquier decisión que un nuevo contribuidor debería poder leer en menos de 10 minutos.
+
+## ADR vs `architecture/`
+
+- Un ADR explica una decisión importante y por qué se tomó.
+- Un documento en `architecture/` explica cómo funciona el sistema hoy.
+
+Ejemplo:
+
+- `adr/0003-...` explica por qué `web` migró de Next.js a TanStack
+  Start.
+- `architecture/current-state.md` explica cómo está organizado `web`
+  hoy después de esa migración.
 
 ## Cuándo NO escribir un ADR
 

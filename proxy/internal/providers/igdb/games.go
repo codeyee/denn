@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/codeyee/denn-proxy/internal/clients"
+	servicecommon "github.com/codeyee/denn-proxy/internal/services/common"
 )
 
 const (
@@ -25,7 +26,7 @@ func (c *Client) SearchGames(ctx context.Context, query string, limit, offset in
 		query, defaultFields, includedGameTypes, limit, offset)
 
 	return c.CachedPost(ctx, "games", "api_igdb_search", body, nil, map[string]string{
-		"query":     query,
+		"query":     servicecommon.NormalizeSearchCacheKey(query),
 		"limit":     strconv.Itoa(limit),
 		"offset":    strconv.Itoa(offset),
 		"body_hash": hashBody(body),

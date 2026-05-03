@@ -38,6 +38,10 @@ core            → proxy   (/v1/proxy/*)   [enriquecimiento de ContentItem]
 | `X-RateLimit-Remaining` | `proxy` | Llamadas restantes en la ventana actual. |
 | `X-RateLimit-Degraded`  | `proxy` | Presente cuando el rate limiter está fail-open por caché degradado. Valores: `cache-error`, `noop-cache`. |
 
+### 2.3 CORS (`web` navegador → `core`)
+
+Cuando el SPA en `web` llama a `core` desde el navegador (origen distinto, p. ej. `localhost:3000` → `localhost:8000`), `core` debe listar en `Access-Control-Allow-Headers` los encabezados de request que el cliente envía en preflight. La configuración vive en `core/core/settings/cors.py`: además de los defaults de `django-cors-headers`, se permiten **`x-request-id`** y **`x-user-country`**, y se exponen cabeceras de correlación / rate limit en `Access-Control-Expose-Headers` cuando aplica.
+
 ## 3. Sobre canónico de errores
 
 Forma exacta usada por `core` y `proxy`:
@@ -119,7 +123,7 @@ Los dos backends tienen formas distintas porque sus semánticas son distintas. A
 
 - Middleware en `core` y `proxy` lee `X-Request-Id` del request. Si falta, genera UUIDv4.
 - El ID se setea en `gin.Context` (proxy) y `request.request_id` (core) y se emite en el header de respuesta.
-- El BFF de `web` (`/api/proxy/*`) y los SSR helpers (`web/lib/server/*`) propagan el `x-request-id` recibido del navegador o generan uno.
+- El BFF de `web` (`/api/proxy/*`, [`web/src/routes/api/proxy/$.ts`](../../web/src/routes/api/proxy/$.ts)) y los helpers SSR ([`web/src/lib/api/queries/server.ts`](../../web/src/lib/api/queries/server.ts), [`web/src/server/proxy.ts`](../../web/src/server/proxy.ts)) propagan el `X-Request-Id` o generan uno nuevo.
 - Cada línea de log estructurado incluye `request_id` cuando esté disponible.
 
 ## 6. Versionado
@@ -133,7 +137,7 @@ Cualquier cambio incompatible en `proxy` requiere `/v2/proxy/...` y un período 
 
 ## 7. Env vars (matriz de propiedad)
 
-Server-only significa que la variable **nunca** debe aparecer en bundles de cliente. En `web` esto implica no usar el prefijo `NEXT_PUBLIC_`.
+Server-only significa que la variable **nunca** debe aparecer en bundles de cliente. En `web` (TanStack Start) no inyectes secretos en `window.__ENV__`; evita cualquier prefijo público (`NEXT_PUBLIC_*`) para datos sensibles. Las URLs públicas de API pueden seguir usando `NEXT_PUBLIC_API_URL` / `NEXT_PUBLIC_PROXY_API_URL` en `.env` o el script de runtime inyectado por el servidor.
 
 | Variable                 | Servicio  | Visibilidad   | Notas |
 |--------------------------|-----------|---------------|-------|

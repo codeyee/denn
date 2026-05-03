@@ -44,6 +44,7 @@ __all__ = [
     "CORS_ALLOWED_ORIGINS",
     "CORS_ALLOWED_ORIGIN_REGEXES",
     "CORS_ALLOW_HEADERS",
+    "CORS_EXPOSE_HEADERS",
     "CORS_ALLOW_CREDENTIALS",
     "CSRF_TRUSTED_ORIGINS",
     # Documentation
@@ -54,7 +55,7 @@ __all__ = [
     "PROXY_API_BASE_URL",
     "PROXY_API_KEY",
     # Sprint 07 — local-first content domain
-    "CONTENT_REHYDRATION_TTL",
+    "CONTENT_REHYDRATION_POLICY",
     "DEFAULT_COUNTRY",
     "FORCE_PROXY_FETCH",
 ]

@@ -12,26 +12,16 @@ from __future__ import annotations
 
 import logging
 from datetime import timedelta
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Optional, Tuple
 
-from django.conf import settings
 from django.utils import timezone
 
 from content.models import ContentItem
 
 from .mappers import MAPPERS
+from .refresh_policy import DETAIL_RELATED_NAME, compute_refresh_policy
 
 logger = logging.getLogger(__name__)
-
-
-_DETAIL_RELATED_NAME = {
-    ContentItem.ContentType.MOVIE: 'movie_detail',
-    ContentItem.ContentType.TV_SHOW: 'tv_show_detail',
-    ContentItem.ContentType.SEASON: 'season_detail',
-    ContentItem.ContentType.ALBUM: 'album_detail',
-    ContentItem.ContentType.GAME: 'game_detail',
-    ContentItem.ContentType.BOOK: 'book_detail',
-}
 
 
 def get_or_create_content_item(
@@ -51,7 +41,7 @@ def get_or_create_content_item(
 
 def detail_for(content_item: ContentItem):
     """Return the Detail instance for this item, or None if missing."""
-    related = _DETAIL_RELATED_NAME.get(content_item.content_type)
+    related = DETAIL_RELATED_NAME.get(content_item.content_type)
     if not related:
         return None
     try:
@@ -61,10 +51,14 @@ def detail_for(content_item: ContentItem):
 
 
 def _ttl_for(content_type: str) -> timedelta:
-    ttls: Dict[str, timedelta] = getattr(settings, 'CONTENT_REHYDRATION_TTL', {})
-    if content_type in ttls:
-        return ttls[content_type]
-    return max(ttls.values(), default=timedelta(days=30))
+    logger.warning(
+        'local_content_store._ttl_for is deprecated; use compute_refresh_policy instead',
+        extra={'content_type': content_type},
+    )
+    return compute_refresh_policy(
+        ContentItem(content_type=content_type),
+        detail=None,
+    ).ttl
 
 
 def detail_is_fresh(content_item: ContentItem) -> bool:
@@ -75,13 +69,16 @@ def detail_is_fresh(content_item: ContentItem) -> bool:
     last = getattr(detail, 'last_refreshed_at', None)
     if not last:
         return False
-    return (timezone.now() - last) <= _ttl_for(content_item.content_type)
+    return (timezone.now() - last) <= compute_refresh_policy(
+        content_item,
+        detail,
+    ).ttl
 
 
 def ensure_content_detail(
     content_item: ContentItem,
     *,
-    payload: Optional[Dict[str, Any]] = None,
+    payload: Optional[dict[str, Any]] = None,
     request_country: Optional[str] = None,
     force: bool = False,
 ) -> bool:

@@ -7,9 +7,9 @@
 
 Hoy `web` guarda los JWT de usuario en tres lugares simultáneos:
 
-1. Estado en memoria (Zustand) — [`web/app/_stores/auth-store.ts`](../../web/app/_stores/auth-store.ts).
+1. Estado en memoria (Zustand) — [`web/src/stores/auth-store.ts`](../../web/src/stores/auth-store.ts).
 2. `localStorage`, vía el `partialize` del middleware `persist` de Zustand (claves `accessToken`, `refreshToken`, `user`, `isAuthenticated`).
-3. Cookies escritas con `js-cookie` desde [`web/lib/auth/session-client.ts`](../../web/lib/auth/session-client.ts). Las cookies **no** son `HttpOnly` (`Cookies.set` no soporta esa flag desde JavaScript).
+3. Cookies escritas con `js-cookie` desde [`web/src/lib/auth/session-client.ts`](../../web/src/lib/auth/session-client.ts). Las cookies **no** son `HttpOnly` (`Cookies.set` no soporta esa flag desde JavaScript).
 
 El backend está alineado con esa elección:
 
@@ -26,7 +26,7 @@ REST_AUTH = {
 
 Consecuencia práctica: cualquier XSS en el frontend permite exfiltrar la sesión completa (access + refresh) en una sola línea de JavaScript. Esto rompe la propiedad básica de "los JWT no deben ser legibles por código no confiable".
 
-`resolveSession` ([`web/lib/auth/session-server.ts`](../../web/lib/auth/session-server.ts)) ya lee los tokens desde cookies en SSR y los re-hidrata vía `AuthSessionBootstrap` ([`web/app/_components/routes/AuthSessionBootstrap.tsx`](../../web/app/_components/routes/AuthSessionBootstrap.tsx)). El campo `needsCookieSync` de `SessionSnapshot` ya se consume para limpiar cookies + estado cuando el refresh falla, pero la migración a `HttpOnly` sigue pendiente.
+`resolveSession` ([`web/src/server/session.ts`](../../web/src/server/session.ts)) ya lee los tokens desde cookies en SSR y los re-hidrata vía `AuthSessionBootstrap` ([`web/src/components/routes/AuthSessionBootstrap.tsx`](../../web/src/components/routes/AuthSessionBootstrap.tsx)). El campo `needsCookieSync` de `SessionSnapshot` ya se consume para limpiar cookies + estado cuando el refresh falla, pero la migración a `HttpOnly` sigue pendiente.
 
 ## Decisión
 
@@ -43,7 +43,7 @@ Migrar la sesión web a **cookies `HttpOnly` / `Secure` / `SameSite=Lax`** emiti
 
 - Cambiar `JWT_AUTH_HTTPONLY: False -> True` en `core/core/settings/drf.py`.
 - Configurar `JWT_AUTH_SAMESITE`, `JWT_AUTH_SECURE`, dominio y path explícitamente.
-- Mover login/register/refresh/logout a un BFF en `web/app/api/auth/*` para que el browser nunca toque `core/auth/*` directo (necesario para mantener `SameSite=Lax` y evitar problemas de cross-site cookie con dominios distintos).
+- Mover login/register/refresh/logout a rutas BFF en `web/src/routes/api/auth/*` (TanStack server handlers) para que el browser nunca toque `core/auth/*` directo (necesario para mantener `SameSite=Lax` y evitar problemas de cross-site cookie con dominios distintos).
 - Implementar protección CSRF: token CSRF en cookie no-HttpOnly + header `X-CSRF-Token` en mutaciones, validado server-side.
 
 ### Fase 3 — Eliminar tokens client-side
@@ -73,16 +73,16 @@ Migrar la sesión web a **cookies `HttpOnly` / `Secure` / `SameSite=Lax`** emiti
 
 ### Código (fase 1)
 
-- `web/app/_stores/auth-store.ts`: `partialize` excluye `accessToken` y `refreshToken`.
-- `web/app/_components/routes/AuthSessionBootstrap.tsx`: si `session.needsCookieSync` es true y `session.accessToken` es null, llama `clearSession()`.
+- `web/src/stores/auth-store.ts`: `partialize` excluye `accessToken` y `refreshToken`.
+- `web/src/components/routes/AuthSessionBootstrap.tsx`: si `session.needsCookieSync` es true y `session.accessToken` es null, llama `clearSession()`.
 - Documentar en este ADR las fases 2 y 3 con el alcance que tendrán.
 
 ### Código (fases 2–3)
 
 - `core/core/settings/drf.py`: flip de `JWT_AUTH_HTTPONLY`, `JWT_AUTH_SAMESITE`, `JWT_AUTH_SECURE`.
-- Nuevo BFF `web/app/api/auth/[login|register|logout|refresh]/route.ts` que media entre el browser y `core`.
+- Nuevo BFF bajo `web/src/routes/api/auth/*` que media entre el browser y `core`.
 - CSRF: cookie + header.
-- Eliminar `js-cookie` y `web/lib/auth/session-client.ts`.
+- Eliminar `js-cookie` y `web/src/lib/auth/session-client.ts`.
 
 ### Operación
 
@@ -96,9 +96,26 @@ Migrar la sesión web a **cookies `HttpOnly` / `Secure` / `SameSite=Lax`** emiti
 - [`../architecture/auth-session-bootstrap.md`](../architecture/auth-session-bootstrap.md)
   documenta el estado real del bootstrap global y sus gaps todavía
   abiertos.
+- [`../architecture/client-rehydration.md`](../architecture/client-rehydration.md)
+  documenta la política vigente de `beforeLoad` + `ProtectedRoute` +
+  `next` redirect tras la migración a TanStack Start.
+
+## Addendum — fase 1 completada en TanStack Start
+
+Tras la migración de `web` a TanStack Start:
+
+- la resolución de sesión sigue centralizada en el root route SSR;
+- `AuthSessionBootstrap` permanece como el único bridge SSR -> Zustand;
+- las rutas protegidas ya redirigen server-side con TanStack Router
+  `beforeLoad` cuando el estado es `anonymous`;
+- `ProtectedRoute` ya no es la primera barrera de auth sino el fallback
+  para la ventana de bootstrap cliente y para el estado
+  `resolution="unavailable"`;
+- el login soporta `next` seguro para reanudar la navegación original
+  tras autenticación.
 
 ## Referencias
 
 - Historia de implementación: [`../history/implementation-history.md`](../history/implementation-history.md).
-- Inventario de lecturas de token: [`web/app/_stores/auth-store.ts`](../../web/app/_stores/auth-store.ts), [`web/lib/auth/session-client.ts`](../../web/lib/auth/session-client.ts), [`web/lib/api/api.ts`](../../web/lib/api/api.ts), [`web/lib/auth/session-server.ts`](../../web/lib/auth/session-server.ts).
+- Inventario de lecturas de token: [`web/src/stores/auth-store.ts`](../../web/src/stores/auth-store.ts), [`web/src/lib/auth/session-client.ts`](../../web/src/lib/auth/session-client.ts), [`web/src/lib/api/api.ts`](../../web/src/lib/api/api.ts), [`web/src/server/session.ts`](../../web/src/server/session.ts).
 - Configuración backend actual: [`core/core/settings/drf.py`](../../core/core/settings/drf.py).

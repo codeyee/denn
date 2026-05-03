@@ -25,7 +25,7 @@ tooling.
 
 - `web`
   - `npm ci`
-  - `make validate-web`
+  - `make validate-web` (ESLint + `vite build`; artefacto Nitro en `web/.output/`)
 - `core`
   - `make validate-core`
 - `proxy`

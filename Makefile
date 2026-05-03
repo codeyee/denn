@@ -32,7 +32,7 @@ help:
 	@echo "  make validate-proxy   run go tests"
 	@echo "  make test-proxy       go test ./..."
 	@echo "  make test-core        django tests"
-	@echo "  make test-web         vitest / next test if configured"
+	@echo "  make test-web         vitest run if configured"
 	@echo "  make lint-web         run frontend lint"
 	@echo "  make build-web        run frontend production build"
 	@echo

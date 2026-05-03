@@ -171,7 +171,7 @@ func TestIsValidSeason(t *testing.T) {
 	}{
 		{
 			name:     "Valid season",
-			season:   tmdb.TmdbSeasonSummary{SeasonNumber: 1, EpisodeCount: 10},
+			season:   tmdb.TmdbSeasonSummary{SeasonNumber: 1, EpisodeCount: 10, AirDate: "2023-01-01"},
 			expected: true,
 		},
 		{
@@ -182,6 +182,20 @@ func TestIsValidSeason(t *testing.T) {
 		{
 			name:     "No episodes",
 			season:   tmdb.TmdbSeasonSummary{SeasonNumber: 1, EpisodeCount: 0},
+			expected: false,
+		},
+		{
+			name:     "Missing release date",
+			season:   tmdb.TmdbSeasonSummary{SeasonNumber: 1, EpisodeCount: 10},
+			expected: false,
+		},
+		{
+			name: "Future season",
+			season: tmdb.TmdbSeasonSummary{
+				SeasonNumber: 1,
+				EpisodeCount: 10,
+				AirDate:      "2099-01-01",
+			},
 			expected: false,
 		},
 	}

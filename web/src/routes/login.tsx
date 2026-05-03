@@ -1,0 +1,33 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { z } from "zod";
+
+import { LoginForm } from "@/components/forms/LoginForm";
+import { Navbar } from "@/components/layout/Navbar";
+import { Footer } from "@/components/layout/Footer";
+import { normalizeInternalRedirectTarget } from "@/lib/auth/redirect";
+
+const loginSearchSchema = z.object({
+  next: z.string().optional(),
+});
+
+export const Route = createFileRoute("/login")({
+  validateSearch: loginSearchSchema,
+  component: LoginRoute,
+});
+
+function LoginRoute() {
+  const search = Route.useSearch();
+  const next = normalizeInternalRedirectTarget(search.next);
+
+  return (
+    <div className="min-h-screen flex flex-col bg-background-logged-in">
+      <Navbar />
+      <div className="flex-1 flex items-center justify-center p-4 pt-20">
+        <LoginForm next={next} />
+      </div>
+      <Footer />
+
+      <div className="pointer-events-none fixed left-0 right-0 bottom-0 h-16 bg-bottom-gradient z-10" />
+    </div>
+  );
+}

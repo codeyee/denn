@@ -1,22 +1,30 @@
 # Runbook — `rehydrate_content_details`
 
-The `rehydrate_content_details` Django management command refreshes locally cached `MovieDetail` / `TvShowDetail` / `SeasonDetail` / `AlbumDetail` / `GameDetail` / `BookDetail` rows that have aged past their per-type TTL by re-fetching from the Go proxy and re-running the type-specific mapper.
+The `rehydrate_content_details` Django management command refreshes
+locally cached `MovieDetail` / `TvShowDetail` / `SeasonDetail` /
+`AlbumDetail` / `GameDetail` / `BookDetail` rows whose dynamic refresh
+window has expired, by re-fetching from the Go proxy and re-running the
+type-specific mapper.
 
 This is the **periodic refresh** job. The first-time backfill of items that do not yet have a Detail row at all is `backfill_content_details`.
 
 ## When to run
 
-Recommended cadence per type — the TTLs live in
-`core.settings.CONTENT_REHYDRATION_TTL`:
+Recommended cadence depends on
+`core.settings.CONTENT_REHYDRATION_POLICY`, not on a fixed per-type TTL.
+The exact stale selection is now computed from release-date age bands in
+`core/content/services/local_content_store/refresh_policy.py`.
 
-| content_type | default TTL | suggested cron |
-| --- | --- | --- |
-| `MOVIE` | 30 days | weekly |
-| `TV_SHOW` | 7 days | daily |
-| `SEASON` | 7 days | daily |
-| `ALBUM` | 30 days | weekly |
-| `GAME` | 30 days | weekly |
-| `BOOK` | 90 days | monthly |
+Operational defaults:
+
+| content_type | suggested cron |
+| --- | --- |
+| `MOVIE` | daily or weekly depending on volume |
+| `TV_SHOW` | daily |
+| `SEASON` | daily |
+| `ALBUM` | weekly |
+| `GAME` | weekly |
+| `BOOK` | weekly or monthly depending on volume |
 
 Run after any of the following:
 
@@ -25,6 +33,7 @@ Run after any of the following:
 - A proxy-side schema bump documented in `docs/contracts/internal-http.md`.
 - Spike in stale-on-failure responses observed in the
   `event=orchestrator` logs (`fresh_local` ratio dropping).
+- A change to `CONTENT_REHYDRATION_POLICY`.
 
 ## Usage
 
@@ -43,17 +52,27 @@ Common flags:
 - `--dry-run` — print the planned work without calling the proxy or
   writing.
 - `--ttl-override DAYS` — use `DAYS` as the TTL instead of the per-type
-  setting. Useful for catch-up jobs after a config change.
+  policy result. Useful for catch-up jobs after a config change.
 - `--workers K` — parallel proxy fetches per content_type. Default: 4.
   Use `--workers 1` when running against SQLite locally to avoid
   table-lock contention.
+
+Related rollout helper:
+
+```bash
+python manage.py normalize_rehydration_timestamps --dry-run
+python manage.py normalize_rehydration_timestamps --apply --stagger-hours 24
+```
+
+Use `normalize_rehydration_timestamps` when a policy change would make
+too many currently-fresh rows expire around the same time.
 
 ## Output and metrics
 
 Every type emits one structured log line on stdout:
 
 ```json
-{"event":"rehydrate","content_type":"MOVIE","total":42,"refreshed":40,"unchanged":1,"errors":1,"latency_ms":12345}
+{"event":"rehydrate","content_type":"MOVIE","total":42,"refreshed":40,"unchanged":1,"errors":1,"latency_ms":12345,"by_band":{"hot":{"total":12,"refreshed":12,"unchanged":0,"errors":0}}}
 ```
 
 - `refreshed` — `ensure_content_detail` ran and persisted a new payload.
@@ -61,6 +80,8 @@ Every type emits one structured log line on stdout:
   upstream miss), so the existing Detail was kept untouched.
 - `errors` — a mapper raised. Sample stack traces appear in `logger.exception`
   output and the first five `content_item` ids surface to stderr.
+- `by_band` — grouped summary by age band (`hot`, `recent`, `classic`,
+  etc.) so rollout behavior can be inspected quickly.
 
 Plot `refreshed / total` per type to monitor proxy-side health, and
 alert when `errors > 0` for any type.
@@ -83,20 +104,22 @@ alert when `errors > 0` for any type.
 ## Verifying a run
 
 ```bash
-# Stale detail rows by type, before:
-python manage.py shell -c "
-from datetime import timedelta
-from django.utils import timezone
-from content.models import ContentItem
-from content.models.detail import MovieDetail
-cutoff = timezone.now() - timedelta(days=30)
-print(MovieDetail.objects.filter(last_refreshed_at__lt=cutoff).count())
-"
+# Dry-run first:
+python manage.py rehydrate_content_details --content-type MOVIE --limit 50 --dry-run
 
+# Then run a small live batch:
 python manage.py rehydrate_content_details --content-type MOVIE --limit 50
 
-# After: the count above should be approximately N - 50.
+# For policy changes, inspect rollout shape before applying:
+python manage.py normalize_rehydration_timestamps --dry-run
 ```
+
+For a release or policy change, look for:
+
+- `errors == 0`
+- no unexpected spike in `total` for hot/recent bands
+- reasonable `by_band` distribution
+- no proxy throttling or request storms in downstream logs
 
 ## Related
 
@@ -104,4 +127,5 @@ python manage.py rehydrate_content_details --content-type MOVIE --limit 50
 - Local persistence entry point: `core/content/services/local_content_store/__init__.py`
 - Mappers: `core/content/services/local_content_store/mappers/`
 - First-time backfill: `backfill_content_details`
-- TTL settings: `CONTENT_REHYDRATION_TTL` in `core/core/settings/base.py`
+- Policy settings: `CONTENT_REHYDRATION_POLICY` in `core/core/settings/base.py`
+- Policy design: `../architecture/content-rehydration-policy.md`

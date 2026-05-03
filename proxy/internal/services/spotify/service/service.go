@@ -7,11 +7,12 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/codeyee/denn-proxy/internal/clients"
 	"github.com/codeyee/denn-proxy/internal/models"
 	spotifyclient "github.com/codeyee/denn-proxy/internal/providers/spotify"
-	"github.com/codeyee/denn-proxy/internal/services/common"
+	servicecommon "github.com/codeyee/denn-proxy/internal/services/common"
 	"github.com/codeyee/denn-proxy/internal/services/spotify"
 	"github.com/codeyee/denn-proxy/internal/services/spotify/mapper"
 )
@@ -44,7 +45,7 @@ func unmarshalResponse[T any](resp *clients.Response, err error) (T, error) {
 		return zero, err
 	}
 
-	if cerr := common.ClassifyStatus("Spotify", resp.StatusCode); cerr != nil {
+	if cerr := servicecommon.ClassifyStatus("Spotify", resp.StatusCode); cerr != nil {
 		return zero, cerr
 	}
 
@@ -80,6 +81,7 @@ func (s *Service) SearchAlbums(ctx context.Context, query string, page, limit in
 		}
 		items = append(items, mapper.MapSearchItem(album))
 	}
+	items = servicecommon.FilterEligibleSearchItems(items, time.Now())
 
 	totalPages := 0
 	if data.Albums.Total > 0 && limit > 0 {
@@ -130,6 +132,10 @@ loop:
 				results[idx] = BulkAlbumResult{ID: albumID, Error: err.Error()}
 				return
 			}
+			if !servicecommon.IsGeneralReleaseEligible(album.ReleaseDate, time.Now()) {
+				results[idx] = BulkAlbumResult{ID: albumID, Error: clients.ErrNotFound.Error()}
+				return
+			}
 
 			results[idx] = BulkAlbumResult{ID: albumID, Album: &album}
 		}(i, id)
@@ -151,6 +157,7 @@ func (s *Service) GetTrendingAlbums(ctx context.Context, page, limit int) (Searc
 	for _, album := range data.Albums.Items {
 		items = append(items, mapper.MapSearchItem(album))
 	}
+	items = servicecommon.FilterEligibleSearchItems(items, time.Now())
 
 	totalPages := 0
 	if data.Albums.Total > 0 && limit > 0 {

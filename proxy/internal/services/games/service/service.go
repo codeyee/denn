@@ -14,7 +14,7 @@ import (
 	"github.com/codeyee/denn-proxy/internal/clients"
 	"github.com/codeyee/denn-proxy/internal/models"
 	igdbclient "github.com/codeyee/denn-proxy/internal/providers/igdb"
-	"github.com/codeyee/denn-proxy/internal/services/common"
+	servicecommon "github.com/codeyee/denn-proxy/internal/services/common"
 	"github.com/codeyee/denn-proxy/internal/services/games"
 	"github.com/codeyee/denn-proxy/internal/services/games/mapper"
 )
@@ -57,6 +57,7 @@ func (s *Service) SearchGames(ctx context.Context, query string, limit, offset i
 	for _, item := range data {
 		items = append(items, mapper.MapSearchItem(item))
 	}
+	items = servicecommon.FilterEligibleSearchItems(items, time.Now())
 
 	return SearchResult{Results: items}, nil
 }
@@ -144,7 +145,7 @@ func (s *Service) GetPopularGames(ctx context.Context, limit, offset int) ([]mod
 		}
 		items = append(items, mapper.MapSearchItem(item))
 	}
-	return items, nil
+	return servicecommon.FilterEligibleSearchItems(items, time.Now()), nil
 }
 
 func (s *Service) GetTrendingGames(ctx context.Context, limit, offset int) ([]models.SearchItem, error) {
@@ -173,7 +174,7 @@ func (s *Service) GetTrendingGames(ctx context.Context, limit, offset int) ([]mo
 			isBrowserOnly = true
 		}
 
-		if !isBrowserOnly {
+		if !isBrowserOnly && servicecommon.IsGeneralReleaseEligible(game.ReleaseDate, time.Now()) {
 			filteredGames = append(filteredGames, game)
 		}
 	}
@@ -212,7 +213,9 @@ func (s *Service) GetTrendingGamesDetail(ctx context.Context, limit, offset int)
 		if len(g.Platforms) == 1 && g.Platforms[0].Name == "Web browser" {
 			continue
 		}
-		filtered = append(filtered, g)
+		if servicecommon.IsGeneralReleaseEligible(g.ReleaseDate, time.Now()) {
+			filtered = append(filtered, g)
+		}
 	}
 
 	scored := s.calculateScores(filtered, wantMap, visitsMap)
@@ -225,7 +228,7 @@ func unmarshalResponse[T any](resp *clients.Response, err error) (T, error) {
 		return zero, err
 	}
 
-	if cerr := common.ClassifyStatus("IGDB", resp.StatusCode); cerr != nil {
+	if cerr := servicecommon.ClassifyStatus("IGDB", resp.StatusCode); cerr != nil {
 		return zero, cerr
 	}
 	var result T
