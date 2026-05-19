@@ -2,6 +2,7 @@
   "name": "denn-web",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@10.6.3",
   "type": "module",
   "scripts": {
     "dev": "vite dev",

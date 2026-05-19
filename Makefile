@@ -63,10 +63,10 @@ validate-core: test-core
 validate-proxy: test-proxy
 
 lint-web:
-	cd web && npm run lint
+	cd web && pnpm run lint
 
 build-web:
-	cd web && npm run build
+	cd web && pnpm run build
 
 test-proxy:
 	cd proxy && go test ./...
@@ -75,7 +75,7 @@ test-core:
 	cd core && .venv/bin/python manage.py test
 
 test-web:
-	cd web && npm test --silent || echo "(no test script configured)"
+	cd web && pnpm test --silent || echo "(no test script configured)"
 
 build-proxy:
 	cd proxy && go build -o /tmp/denn-proxy-build ./cmd/api && rm -f /tmp/denn-proxy-build

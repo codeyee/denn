@@ -24,7 +24,7 @@ tooling.
 ## Minimum Local Validation Commands
 
 - `web`
-  - `npm ci`
+  - `pnpm install --frozen-lockfile`
   - `make validate-web` (ESLint + `vite build`; artefacto Nitro en `web/.output/`)
 - `core`
   - `make validate-core`
@@ -67,5 +67,5 @@ Tags are per app and include `latest` plus a short SHA tag.
   - a temporary Redis container with no persistent volume
   - `proxy` with `go run ./cmd/api`
   - `core` with `./.venv/bin/python manage.py runserver`
-  - `web` with `npm run dev`
+  - `web` with `pnpm run dev`
 - `core` and `proxy` receive `REDIS_URL` from the root launcher, so local cache lives only while the stack is up.

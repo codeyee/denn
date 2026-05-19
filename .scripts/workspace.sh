@@ -200,7 +200,7 @@ start_service() {
 
   (
     cd "$workdir"
-    # NO_COLOR strips ANSI from libraries that honor it (django, npm).
+    # NO_COLOR strips ANSI from libraries that honor it (django, pnpm).
     # GIN_MODE=release silences gin's banner and reduces color noise.
     NO_COLOR=1 GIN_MODE=release \
       nohup "$@" >"$log_file" 2>&1 &
@@ -327,13 +327,13 @@ stop_redis() {
 # ─── checks ──────────────────────────────────────────────────────────────────
 
 check_workspace() {
-  require_cmd npm
+  require_cmd pnpm
   require_cmd go
   require_cmd python3
   require_cmd docker
   require_cmd curl
 
-  require_file "$ROOT_DIR/web/package.json"      "install web deps: cd web && npm install"
+  require_file "$ROOT_DIR/web/package.json"      "install web deps: cd web && pnpm install"
   require_file "$ROOT_DIR/proxy/go.mod"          "proxy repository is incomplete"
   require_file "$ROOT_DIR/core/manage.py"        "core repository is incomplete"
   require_file "$ROOT_DIR/core/.venv/bin/python" \
@@ -354,7 +354,7 @@ cmd_up() {
     env "REDIS_URL=${REDIS_URL}" go run ./cmd/api
   start_service "core" "$ROOT_DIR/core" \
     env "REDIS_URL=${REDIS_URL}" "$ROOT_DIR/core/.venv/bin/python" manage.py runserver
-  start_service "web" "$ROOT_DIR/web" npm run dev
+  start_service "web" "$ROOT_DIR/web" pnpm run dev
 
   cat <<EOF
 
@@ -473,7 +473,7 @@ cmd_doctor() {
 
   echo
   echo "▸ tools"
-  for c in node npm go python3 docker curl; do
+  for c in node pnpm go python3 docker curl; do
     if command -v "$c" >/dev/null 2>&1; then
       printf '  %-7s ✓ %s\n' "$c" "$(command -v "$c")"
     else
