@@ -276,7 +276,7 @@ cd core && python3 -m venv .venv && source .venv/bin/activate \
 cd proxy && cp .env.example .env && make run
 
 # web (TanStack Start / Vite, port 3000)
-cd web && cp .env.example .env && npm install && npm run dev
+cd web && cp .env.example .env && pnpm install && pnpm run dev
 ```
 
 The canonical env-var ownership matrix lives in [`.docs/contracts/internal-http.md`](./.docs/contracts/internal-http.md). The most important rule is still: `PROXY_API_KEY` must remain server-only.

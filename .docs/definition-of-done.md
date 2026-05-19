@@ -16,6 +16,6 @@ This Definition of Done applies to `web`, `core`, and `proxy`.
 
 ## Quality Gate Expectations
 
-- `web` must keep `npm run lint` and `npm run build` green.
+- `web` must keep `pnpm run lint` and `pnpm run build` green.
 - `core` must keep the default Django test suite green.
 - `proxy` must keep the default `go test ./...` suite deterministic and offline-safe.

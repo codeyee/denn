@@ -38,8 +38,8 @@ known documentation gap, not as an implicit pass.
 
    ```bash
    cd web
-   npm run build
-   npm start
+   pnpm run build
+   pnpm start
    ```
 
 2. Use Chrome DevTools or Lighthouse on production output only.

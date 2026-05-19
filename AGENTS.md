@@ -117,7 +117,7 @@ The frontend has the strictest code-quality bar in the repo. Preserve it.
   client bootstrap race / unavailable-backend fallback. See
   `.docs/architecture/client-rehydration.md`.
 - Avoid single-file folders and keep file-local helper functions at the end of the file.
-- Keep `npm run lint` and `npm run build` reproducible without hidden network assumptions.
+- Keep `pnpm run lint` and `pnpm run build` reproducible without hidden network assumptions.
 
 Commenting and naming:
 
