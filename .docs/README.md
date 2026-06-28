@@ -179,6 +179,7 @@ Use the rest as specialized references:
 - [`roadmap/2026-04-20-mvp-functional-design.md`](./roadmap/2026-04-20-mvp-functional-design.md)
 - [`roadmap/2026-04-20-post-foundation-mvp-feature-roadmap.md`](./roadmap/2026-04-20-post-foundation-mvp-feature-roadmap.md)
 - [`perf/baseline.md`](./perf/baseline.md)
+- [`runbooks/spotify-token-mode.md`](./runbooks/spotify-token-mode.md)
 - [`runbooks/rehydrate-content.md`](./runbooks/rehydrate-content.md)
 - [`runbooks/client-session-bootstrap-smoke.md`](./runbooks/client-session-bootstrap-smoke.md)
 - [`history/implementation-history.md`](./history/implementation-history.md)
