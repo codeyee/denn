@@ -6,10 +6,13 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"net/url"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/codeyee/denn-proxy/internal/clients"
+	"github.com/codeyee/denn-proxy/internal/testutil"
 )
 
 type MockRoundTripper struct {
@@ -61,6 +64,59 @@ func (m *MockCache) Expire(ctx context.Context, key string, ttl time.Duration) (
 
 func (m *MockCache) Close() error {
 	return nil
+}
+
+func TestFetchNewTokenUsesClientCredentialsGrant(t *testing.T) {
+	called := false
+	rt := testutil.RoundTripFunc(func(req *http.Request) (*http.Response, error) {
+		called = true
+		if req.URL.String() != AuthURL {
+			t.Fatalf("expected auth URL %s, got %s", AuthURL, req.URL.String())
+		}
+		if req.Header.Get("Content-Type") != "application/x-www-form-urlencoded" {
+			t.Fatalf("expected form content type, got %q", req.Header.Get("Content-Type"))
+		}
+		if !strings.HasPrefix(req.Header.Get("Authorization"), "Basic ") {
+			t.Fatalf("expected basic auth header, got %q", req.Header.Get("Authorization"))
+		}
+
+		rawBody, err := io.ReadAll(req.Body)
+		if err != nil {
+			t.Fatalf("read request body: %v", err)
+		}
+		form, err := url.ParseQuery(string(rawBody))
+		if err != nil {
+			t.Fatalf("parse request body: %v", err)
+		}
+		if form.Get("grant_type") != "client_credentials" {
+			t.Fatalf("expected client_credentials grant, got %q", form.Get("grant_type"))
+		}
+		if form.Get("refresh_token") != "" {
+			t.Fatal("client-credentials auth must not send a refresh_token")
+		}
+
+		return testutil.JSONResponse(http.StatusOK, map[string]any{
+			"access_token": "test-token",
+			"expires_in":   3600,
+			"token_type":   "Bearer",
+		}), nil
+	})
+
+	client := NewClient("id", "secret", clients.NoOpCache{}, clients.WithHTTPClient(testutil.HTTPClient(rt)))
+
+	token, expires, err := client.fetchNewToken()
+	if err != nil {
+		t.Fatalf("fetchNewToken failed: %v", err)
+	}
+	if token != "test-token" {
+		t.Fatalf("expected token test-token, got %q", token)
+	}
+	if expires != 3600 {
+		t.Fatalf("expected expiry 3600, got %d", expires)
+	}
+	if !called {
+		t.Fatal("expected token endpoint to be called")
+	}
 }
 
 func TestSearchAlbums(t *testing.T) {
