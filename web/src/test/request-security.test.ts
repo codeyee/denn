@@ -1,0 +1,61 @@
+import { describe, expect, it } from "vitest";
+
+import {
+  createFixedWindowRateLimiter,
+  readLimitedJson,
+  RequestBodyTooLargeError,
+} from "@/server/request-security";
+import {
+  buildProxyUrl,
+  isSafeProxyPath,
+} from "@/routes/api/proxy/$";
+import { isValidPayload } from "@/routes/api/perf/vitals";
+
+describe("BFF request security", () => {
+  it("keeps proxy requests under the configured base path", () => {
+    expect(buildProxyUrl("http://proxy:8080/v1/proxy", "movies/123", "?country=CO"))
+      .toBe("http://proxy:8080/v1/proxy/movies/123?country=CO");
+    expect(isSafeProxyPath("../health")).toBe(false);
+    expect(isSafeProxyPath("%2e%2e/health")).toBe(false);
+    expect(isSafeProxyPath("%252e%252e/health")).toBe(false);
+    expect(isSafeProxyPath("movies\\..\\health")).toBe(false);
+    expect(() => buildProxyUrl("http://proxy:8080/v1/proxy", "../health", ""))
+      .toThrow("Unsafe proxy path");
+  });
+
+  it("accepts only bounded Web Vitals fields", () => {
+    expect(isValidPayload({ name: "LCP", value: 1_200, route: "/content/1" }))
+      .toBe(true);
+    expect(isValidPayload({ name: "custom", value: 1 })).toBe(false);
+    expect(isValidPayload({ name: "LCP", value: Number.POSITIVE_INFINITY }))
+      .toBe(false);
+    expect(isValidPayload({ name: "LCP", value: 1, route: "x".repeat(600) }))
+      .toBe(false);
+  });
+
+  it("rejects oversized JSON bodies even without content-length", async () => {
+    const request = new Request("http://localhost/api/perf/vitals", {
+      method: "POST",
+      body: JSON.stringify({ value: "x".repeat(100) }),
+    });
+
+    await expect(readLimitedJson(request, 32)).rejects.toBeInstanceOf(
+      RequestBodyTooLargeError,
+    );
+  });
+
+  it("resets the fixed-window limiter after the configured interval", () => {
+    let now = 0;
+    const limiter = createFixedWindowRateLimiter({
+      limit: 2,
+      windowMs: 1_000,
+      now: () => now,
+    });
+
+    expect(limiter.consume()).toBe(true);
+    expect(limiter.consume()).toBe(true);
+    expect(limiter.consume()).toBe(false);
+    now = 1_000;
+    expect(limiter.consume()).toBe(true);
+  });
+});
