@@ -60,6 +60,9 @@ The hybrid topology is deliberate and documented in
   (`web/src/routes/api/cards.ts`, `api/perf/vitals.ts`, `api/proxy/$.ts`)
   and use `createFileRoute(...)` with `server.handlers` over standard
   `Request`/`Response`.
+- Public BFF inputs fail closed: proxy splats are confined to the configured
+  proxy base path, and Web Vitals ingestion bounds request size, accepted
+  fields, and per-instance log volume.
 - Hover prefetch exists for content cards and list item cards via the
   router's default `preload="intent"`.
 - Decision recorded in [ADR 0003](../adr/0003-migrate-web-from-nextjs-to-tanstack-start.md).
