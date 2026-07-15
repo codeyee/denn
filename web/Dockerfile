@@ -8,7 +8,7 @@ RUN apk add --no-cache libc6-compat
 RUN corepack enable
 WORKDIR /app
 
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 
 # Build the TanStack Start app. Vite produces `.output/` (Nitro server +
