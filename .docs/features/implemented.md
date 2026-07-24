@@ -56,10 +56,24 @@ considered part of the project baseline.
   skip link, one main landmark, semantic card navigation, labeled
   search controls, visible focus behavior, reduced-motion support, and
   44px interactive targets.
+- Shared semantic responsive media for hero, cards, episodes, and
+  detail banners, with reserved dimensions, provider-aware `srcset`,
+  useful alt text, async decoding, lazy non-critical media, and one
+  priority LCP image.
+- Accessible featured-content carousel with user pause/resume,
+  focus/hover pause, reduced-motion opt-out, roving tab stops, stable
+  geometry, and delayed loading of inactive artwork.
+- Responsive mobile search, touch/keyboard horizontal carousels, and
+  verified 320–1440px plus landscape reflow without horizontal
+  overflow.
+- Real About, Privacy, Terms, and Contact routes with route metadata,
+  canonical links, hard-refresh support, an operational contact
+  channel, and a coherent application 404.
 - Deterministic production-build Playwright fixtures, desktop/mobile
   critical-flow smoke, promoted auth/navigation regression coverage,
-  sub-100ms navigation-feedback checks, redacted browser failure
-  artifacts and a scheduled cold/warm baseline.
+  automated axe coverage across critical and legal routes, responsive
+  and keyboard checks, sub-100ms navigation-feedback checks, redacted
+  browser failure artifacts and a scheduled cold/warm baseline.
 
 ## Current Compatibility Guarantees
 

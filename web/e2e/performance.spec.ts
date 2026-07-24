@@ -181,4 +181,10 @@ test("records a repeatable cold/warm production-build baseline", async ({
   });
 
   expect(Object.keys(baseline)).toEqual(Object.keys(flows));
+  expect(baseline.home.cold.p75.cls).toBeLessThan(0.1);
+  expect(baseline.home.warm.p75.cls).toBeLessThan(0.1);
+  expect(baseline.home.cold.p75.lcp).toBeLessThan(2_500);
+  expect(baseline.home.warm.p75.lcp).toBeLessThan(2_500);
+  expect(baseline.home.cold.p75.inp).toBeLessThan(200);
+  expect(baseline.home.warm.p75.inp).toBeLessThan(200);
 });

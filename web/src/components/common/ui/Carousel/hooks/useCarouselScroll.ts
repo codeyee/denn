@@ -1,6 +1,12 @@
-import { useState, useEffect, useCallback } from "react";
+import {
+  useCallback,
+  useEffect,
+  useState,
+  type RefObject,
+} from "react";
 
 interface UseCarouselScrollOptions {
+  containerRef: RefObject<HTMLDivElement | null>;
   totalItems: number;
   itemsPerView?: number;
   targetCardWidth?: number;
@@ -8,83 +14,72 @@ interface UseCarouselScrollOptions {
 }
 
 export function useCarouselScroll({
+  containerRef,
   totalItems,
   itemsPerView,
   targetCardWidth = 250,
   gap = 16,
 }: UseCarouselScrollOptions) {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isHovered, setIsHovered] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
   const [visibleItems, setVisibleItems] = useState(itemsPerView || 4);
+  const [canScrollPrevious, setCanScrollPrevious] = useState(false);
+  const [canScrollNext, setCanScrollNext] = useState(false);
+
+  const updateScrollState = useCallback(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    setCanScrollPrevious(container.scrollLeft > 2);
+    setCanScrollNext(
+      container.scrollLeft + container.clientWidth < container.scrollWidth - 2,
+    );
+  }, [containerRef]);
 
   useEffect(() => {
-    const handleResize = () => {
+    const calculate = () => {
       const width = window.innerWidth;
-      setIsMobile(width < 768);
-
       if (itemsPerView !== undefined) {
-        if (width < 640) {
-          setVisibleItems(2);
-        } else if (width < 768) {
-          setVisibleItems(2);
-        } else if (width < 1024) {
-          setVisibleItems(3);
-        } else {
-          setVisibleItems(itemsPerView);
-        }
+        setVisibleItems(
+          width < 768 ? Math.min(2, itemsPerView) : itemsPerView,
+        );
       } else {
         const horizontalPadding = width < 768 ? 32 : 96;
         const availableWidth = width - horizontalPadding;
         const calculatedItems = Math.floor(
-          (availableWidth + gap) / (targetCardWidth + gap)
+          (availableWidth + gap) / (targetCardWidth + gap),
         );
-
-        if (width < 640) {
-          setVisibleItems(Math.max(2, Math.min(calculatedItems, 3)));
-        } else if (width < 768) {
-          setVisibleItems(Math.max(2, Math.min(calculatedItems, 4)));
-        } else if (width < 1024) {
-          setVisibleItems(Math.max(3, Math.min(calculatedItems, 6)));
-        } else {
-          setVisibleItems(Math.max(4, Math.min(calculatedItems, 10)));
-        }
+        setVisibleItems(Math.max(2, Math.min(calculatedItems, 10)));
       }
+      requestAnimationFrame(updateScrollState);
     };
 
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, [itemsPerView, targetCardWidth, gap]);
+    calculate();
+    window.addEventListener("resize", calculate);
+    return () => window.removeEventListener("resize", calculate);
+  }, [gap, itemsPerView, targetCardWidth, updateScrollState]);
 
-  const maxIndex = Math.max(0, totalItems - visibleItems);
+  useEffect(() => {
+    requestAnimationFrame(updateScrollState);
+  }, [totalItems, updateScrollState, visibleItems]);
 
-  const handlePrevious = useCallback(() => {
-    setCurrentIndex((prev) => {
-      if (prev === 0) {
-        return maxIndex;
-      }
-      return Math.max(0, prev - visibleItems);
-    });
-  }, [maxIndex, visibleItems]);
-
-  const handleNext = useCallback(() => {
-    setCurrentIndex((prev) => {
-      if (prev >= maxIndex) {
-        return 0;
-      }
-      return Math.min(maxIndex, prev + visibleItems);
-    });
-  }, [maxIndex, visibleItems]);
+  const scroll = useCallback(
+    (direction: -1 | 1) => {
+      const container = containerRef.current;
+      if (!container) return;
+      container.scrollBy({
+        left: direction * container.clientWidth * 0.85,
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "auto"
+          : "smooth",
+      });
+    },
+    [containerRef],
+  );
 
   return {
-    currentIndex,
-    isHovered,
-    isMobile,
+    canScrollNext,
+    canScrollPrevious,
     visibleItems,
-    maxIndex,
-    setIsHovered,
-    handlePrevious,
-    handleNext,
+    handleNext: () => scroll(1),
+    handlePrevious: () => scroll(-1),
+    updateScrollState,
   };
 }

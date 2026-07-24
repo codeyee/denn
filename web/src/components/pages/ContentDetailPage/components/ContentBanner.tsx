@@ -10,6 +10,7 @@ import { CONTENT_TYPE_ICONS } from "@/lib/icons/contentTypeIcons";
 import { Button } from "@/components/common/ui/Button";
 import { ListPlus, Star } from "lucide-react";
 import { Content } from "@/lib/types";
+import { ResponsiveMedia } from "@/components/common/media/ResponsiveMedia";
 
 interface ContentBannerProps {
   item: Content;
@@ -106,10 +107,14 @@ export function ContentBanner({
 
   return (
     <div className="relative w-full aspect-16/16 md:aspect-16/13 lg:aspect-16/10 xl:aspect-16/7 4xl:aspect-16/5 15xl:aspect-16/3 overflow-hidden mb-6 md:mb-10 rounded-none md:rounded-2xl">
-      {/* Background */}
-      <div
-        className="absolute inset-0 bg-center bg-cover"
-        style={{ backgroundImage: `url(${backgroundUrl})` }}
+      <ResponsiveMedia
+        src={backgroundUrl}
+        alt={`${displayTitle} artwork`}
+        width={1600}
+        height={900}
+        sizes="100vw"
+        priority
+        className="absolute inset-0 h-full w-full object-cover"
       />
 
       {/* Overlay gradients */}

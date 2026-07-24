@@ -64,10 +64,10 @@ export function RegisterForm() {
 
   return (
     <Card className="w-full max-w-md mx-auto p-8">
-      <h2 className="text-2xl font-bold text-center mb-6">Create Account</h2>
+      <h1 className="text-2xl font-bold text-center mb-6">Create Account</h1>
       
       {error && (
-        <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/20 border border-red-400 dark:border-red-800 text-red-700 dark:text-red-400 rounded">
+        <div role="alert" className="mb-4 rounded border border-red-400 bg-red-100 p-3 text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300">
           {error}
         </div>
       )}

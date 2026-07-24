@@ -26,7 +26,7 @@ function ProfileRoute() {
     <ProtectedRoute>
       <div className="min-h-screen flex flex-col bg-background-logged-in">
         <Navbar />
-        <div className="flex-1 p-8 pt-24">
+        <main id="main-content" tabIndex={-1} className="flex-1 p-4 pt-24 sm:p-8 sm:pt-24">
           <Card className="max-w-2xl mx-auto p-8">
             <h1 className="text-3xl font-bold mb-6">Profile</h1>
 
@@ -57,7 +57,7 @@ function ProfileRoute() {
               </Button>
             </div>
           </Card>
-        </div>
+        </main>
         <Footer />
 
         <div className="pointer-events-none fixed left-0 right-0 bottom-0 h-16 bg-bottom-gradient z-10" />

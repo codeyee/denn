@@ -7,7 +7,7 @@ interface ApiAttributionProps {
 export function ApiAttribution({ contentItem }: ApiAttributionProps) {
   return (
     <div className="container mx-auto px-4 mt-8 font-sans">
-      <div className="text-center text-sm text-white/40">
+      <div className="text-center text-sm text-gray-300">
         {contentItem.source_api === SourceApi.TMDB && (
           <div className="flex flex-row justify-center gap-2">
             <p>
@@ -16,7 +16,7 @@ export function ApiAttribution({ contentItem }: ApiAttributionProps) {
                 href="https://www.themoviedb.org"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:text-white/60 underline"
+                className="hover:text-white underline"
               >
                 TMDB
               </a>
@@ -27,7 +27,7 @@ export function ApiAttribution({ contentItem }: ApiAttributionProps) {
                 href="https://www.justwatch.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:text-white/60 underline"
+                className="hover:text-white underline"
               >
                 JustWatch
               </a>
@@ -41,7 +41,7 @@ export function ApiAttribution({ contentItem }: ApiAttributionProps) {
               href="https://www.igdb.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-white/60 underline"
+              className="hover:text-white underline"
             >
               IGDB
             </a>
@@ -54,7 +54,7 @@ export function ApiAttribution({ contentItem }: ApiAttributionProps) {
               href="https://www.spotify.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-white/60 underline"
+              className="hover:text-white underline"
             >
               Spotify
             </a>
@@ -67,7 +67,7 @@ export function ApiAttribution({ contentItem }: ApiAttributionProps) {
               href="https://openlibrary.org"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-white/60 underline"
+              className="hover:text-white underline"
             >
               Open Library
             </a>

@@ -1,10 +1,13 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Noise } from "@/components/common/Noise";
+import { ResponsiveMedia } from "@/components/common/media/ResponsiveMedia";
 import { Content } from "@/lib/types";
 import { ContentType } from "@/lib/types";
 import { contentItemActions } from "@/lib/api";
 import { navigateToContentById } from "@/lib/utils/navigationUtils";
+import { useSettings } from "@/hooks/useSettings";
 import { useBannerAutoRotation } from "./hooks/useBannerAutoRotation";
 import { getBestImageUrl } from "./utils";
 import { BannerContent } from "./components/BannerContent";
@@ -17,21 +20,37 @@ interface FeaturedBannerProps {
 
 export function FeaturedBanner({ items, autoRotateMs = 5000 }: FeaturedBannerProps) {
   const navigate = useNavigate();
+  const shouldReduceMotion = useReducedMotion();
+  const { settings } = useSettings();
+  const [interactionPaused, setInteractionPaused] = useState(false);
+  const autoplayAvailable = settings.animationsEnabled && !shouldReduceMotion;
 
   const validItems = useMemo(
     () => items.filter((i) => Boolean(getBestImageUrl(i))),
     [items]
   );
 
-  const { index, setIndex } = useBannerAutoRotation({
+  const {
+    index,
+    setIndex,
+    isPaused,
+    pausedByUser,
+    togglePaused,
+  } = useBannerAutoRotation({
     itemCount: validItems.length,
     autoRotateMs,
+    enabled: autoplayAvailable,
+    interactionPaused,
   });
 
   const handleViewDetails = async (item: Content) => {
     const contentType = item.type as ContentType;
     const externalId = String(item.id);
     try {
+      if (item.denn_id) {
+        navigateToContentById(navigate, item.denn_id);
+        return;
+      }
       const resolved = await contentItemActions.getOrCreate(externalId, contentType);
       navigateToContentById(navigate, resolved.id);
     } catch (error) {
@@ -42,26 +61,45 @@ export function FeaturedBanner({ items, autoRotateMs = 5000 }: FeaturedBannerPro
   if (validItems.length === 0) return null;
 
   const current = validItems[index];
+  const currentImage = getBestImageUrl(current);
 
   return (
-    <div className="relative w-full aspect-16/16 md:aspect-16/13 lg:aspect-16/10 xl:aspect-16/7 4xl:aspect-16/5 15xl:aspect-16/3 overflow-hidden mb-6 md:mb-10 rounded-none md:rounded-2xl">
-      <div className="absolute inset-0">
-        {validItems.map((item, i) => {
-          const url = getBestImageUrl(item);
-          const isActive = i === index;
-
-          return (
-            <div
-              key={item.id}
-              className="absolute inset-0 bg-center bg-cover transition-opacity duration-500 ease-in-out"
-              style={{
-                backgroundImage: `url(${url})`,
-                opacity: isActive ? 1 : 0,
-                zIndex: isActive ? 1 : 0
-              }}
-            />
-          );
-        })}
+    <section
+      aria-roledescription="carousel"
+      aria-label="Featured content"
+      onMouseEnter={() => setInteractionPaused(true)}
+      onMouseLeave={() => setInteractionPaused(false)}
+      onFocusCapture={() => setInteractionPaused(true)}
+      onBlurCapture={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) {
+          setInteractionPaused(false);
+        }
+      }}
+      className="relative mb-6 aspect-[4/5] w-full overflow-hidden md:mb-10 md:aspect-[16/11] md:rounded-2xl lg:aspect-[16/9] xl:aspect-[16/7]"
+    >
+      <div id="featured-slide" role="tabpanel" className="absolute inset-0">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={current.id}
+            className="absolute inset-0"
+            initial={shouldReduceMotion ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={shouldReduceMotion ? undefined : { opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+          >
+            {currentImage && (
+              <ResponsiveMedia
+                src={currentImage}
+                alt={`${current.title} featured artwork`}
+                width={1600}
+                height={900}
+                sizes="100vw"
+                priority
+                className="h-full w-full object-cover"
+              />
+            )}
+          </motion.div>
+        </AnimatePresence>
       </div>
 
       <div className="absolute inset-0 pointer-events-none z-10">
@@ -84,7 +122,11 @@ export function FeaturedBanner({ items, autoRotateMs = 5000 }: FeaturedBannerPro
         itemCount={validItems.length}
         currentIndex={index}
         onIndexChange={setIndex}
+        isPaused={isPaused}
+        pausedByUser={pausedByUser}
+        autoplayAvailable={autoplayAvailable}
+        onTogglePaused={togglePaused}
       />
-    </div>
+    </section>
   );
 }

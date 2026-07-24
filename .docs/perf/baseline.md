@@ -91,6 +91,48 @@ backend request prefetches identity, rating, and related detail rows in
 six queries, below the repository's `query_count <= 10` list-path
 ceiling, and performs no per-item provider waterfall.
 
+## Phase 2 Local After Snapshot
+
+Captured 2026-07-24 with the same production-build fixture method after
+semantic responsive media, stable hero geometry, reduced-motion and
+responsive accessibility changes. Five fresh contexts per state were
+used; raw evidence remains in
+`web/test-results/phase0-baseline.json`.
+
+| Flow | State | TTFB p50/p75/p95 | FCP p75 | LCP p50/p75/p95 | INP p75/p95 | CLS p75/p95 |
+|---|---|---|---:|---|---|---|
+| Login | cold | 5.2 / 7.4 / 12.3 | 28 | 28 / 28 / 36 | 0 / 0 | 0 / 0 |
+| Login | warm | 5.2 / 5.7 / 7.6 | 40 | 40 / 40 / 40 | 0 / 0 | 0 / 0 |
+| Home | cold | 16.3 / 19.0 / 32.5 | 48 | 44 / 48 / 60 | 0 / 16 | 0 / 0 |
+| Home | warm | 19.3 / 19.9 / 20.3 | 64 | 64 / 64 / 68 | 16 / 16 | 0 / 0 |
+| Search | cold | 15.4 / 16.0 / 16.4 | 36 | 36 / 36 / 36 | 0 / 0 | 0 / 0 |
+| Search | warm | 13.4 / 13.4 / 14.2 | 56 | 56 / 56 / 56 | 0 / 0 | 0 / 0 |
+| Detail | cold | 9.7 / 11.2 / 13.5 | 32 | 92 / 92 / 92 | 0 / 0 | 0 / 0 |
+| Detail | warm | 9.9 / 10.0 / 10.3 | 48 | 68 / 72 / 72 | 0 / 0 | 0 / 0 |
+| Lists | cold | 7.9 / 8.0 / 13.0 | 84 | 100 / 100 / 104 | 0 / 0 | 0.03 / 0.03 |
+| Lists | warm | 6.5 / 6.6 / 6.7 | 68 | 80 / 80 / 88 | 0 / 0 | 0.03 / 0.03 |
+| Profile | cold | 6.9 / 7.0 / 7.4 | 68 | 68 / 68 / 72 | 0 / 0 | 0 / 0 |
+| Profile | warm | 5.6 / 5.8 / 7.8 | 68 | 64 / 68 / 72 | 0 / 24 | 0 / 0 |
+
+Home remains comfortably within the release budgets at p75:
+LCP 48 ms cold / 64 ms warm, CLS 0, and INP 0 ms cold / 16 ms warm.
+
+The deterministic three-item media fixture also records the cold request
+burst before autoplay approaches the next slide:
+
+| Home media behavior | Image requests | Payload bytes |
+|---|---:|---:|
+| Legacy-equivalent active plus two hidden hero slides | 6 | 1,944 |
+| Phase 2 active hero plus three visible card posters | 4 | 1,296 |
+
+That is a measured 33.3% reduction in both requests and payload bytes for
+the controlled fixture. The original deployed audit observed 114–125
+CSS-initiated image resources but did not preserve raw byte totals, so
+this document does not invent a production-byte comparison. The
+production-build test additionally proves that inactive hero artwork is
+not requested during the first second and is only loaded when its
+five-second activation approaches.
+
 ## Backend Telemetry Contract
 
 With `PERF_LOGGING_ENABLED=true`, every critical `core` request emits:

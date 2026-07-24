@@ -159,6 +159,30 @@ This document keeps the durable outcomes of completed implementation plans after
   former Phase 0 expected failures became passing desktop/mobile
   regressions with a measured sub-100ms feedback gate.
 
+## Phase 2 Experience, Media, And Accessibility
+
+- Hero, card, episode, and detail artwork moved from CSS backgrounds to
+  semantic responsive images with dimensions, useful alt text, lazy
+  loading, async decoding, provider variants, and fallback behavior.
+- The hero mounts one active priority image. Hidden artwork waits until
+  its slide approaches activation, cutting the deterministic cold
+  fixture from six image requests / 1,944 payload bytes to four /
+  1,296.
+- Featured-content rotation gained pause/resume, focus/hover pause,
+  reduced-motion behavior, stable geometry, and roving tab stops.
+- Mobile gained an expandable, focus-managed search form. Content
+  carousels moved to native horizontal scroll and snap while preserving
+  touch, keyboard focus, and position.
+- Critical and legal routes gained coherent main/H1 structure,
+  route-change focus, semantic navigation, named controls, contrast
+  corrections, and 44px primary touch targets.
+- About, Privacy, Terms, and Contact became real routes with metadata,
+  canonical links, hard-refresh behavior, an operational support
+  channel, and a coherent application 404.
+- Production-build browser coverage now runs axe on critical/legal
+  routes plus reduced-motion, keyboard, responsive, landscape,
+  touch-target, media-budget, route, and Web Vitals checks.
+
 ## What This History Replaces
 
 The detailed execution plans were intentionally removed after their durable outcomes were extracted here and into the architecture, features, debt, and roadmap docs.

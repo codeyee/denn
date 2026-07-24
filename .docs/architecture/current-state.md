@@ -79,6 +79,21 @@ The hybrid topology is deliberate and documented in
   in desktop and mobile production-build smoke, including the former
   session-loss, logout-loop, hover-write, delayed-detail, and React 418
   regressions.
+- Hero, card, episode, and detail artwork use semantic responsive images.
+  Only the active hero image is mounted with high fetch priority;
+  non-critical card media is lazy and dimensions are reserved.
+- The featured carousel exposes pause/resume, interaction pause,
+  reduced-motion behavior, one roving tab stop among its selectors, and
+  stable aspect-ratio geometry. Content carousels use native horizontal
+  scroll and snap so touch and keyboard focus preserve browser
+  behavior.
+- Route transitions focus the new main landmark, critical and legal
+  routes expose one coherent H1, and the production-build browser suite
+  runs axe plus keyboard, touch-target, reduced-motion, legal-route, and
+  320–1440px reflow checks.
+- Mobile navigation includes an expandable named search form. About,
+  Privacy, Terms, and Contact are real routes with metadata/canonical
+  links, and unknown routes render the application 404.
 - Decision recorded in [ADR 0003](../adr/0003-migrate-web-from-nextjs-to-tanstack-start.md).
 
 See [`data-fetching.md`](./data-fetching.md).

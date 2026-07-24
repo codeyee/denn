@@ -13,6 +13,8 @@ import { CountryProvider } from "@/components/common/providers/CountryProvider";
 import { ToastProvider } from "@/components/common/Toast";
 import { WebVitalsReporter } from "@/components/common/WebVitalsReporter";
 import { AuthSessionBootstrap } from "@/components/routes/AuthSessionBootstrap";
+import { NotFoundPage } from "@/components/pages/NotFoundPage";
+import { RouteFocusManager } from "@/components/routes/RouteFocusManager";
 
 import type { RouterContext } from "@/router";
 import { getSessionFn, getCountryFn } from "@/server/session";
@@ -75,6 +77,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     };
   },
   component: RootComponent,
+  notFoundComponent: NotFoundPage,
 });
 
 function RootDocument({ children }: { children: React.ReactNode }) {
@@ -114,6 +117,7 @@ function RootComponent() {
             <ToastProvider>
               <CountryProvider />
               <WebVitalsReporter />
+              <RouteFocusManager />
               <Outlet />
               {import.meta.env.DEV ? (
                 <TanStackRouterDevtools position="bottom-right" />

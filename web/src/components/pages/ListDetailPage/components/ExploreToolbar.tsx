@@ -159,6 +159,7 @@ export function ExploreToolbar({
             Status
           </label>
           <Select
+            aria-label="Status filter"
             value={singleFilterValue(query.filters, "status")}
             onChange={(e) =>
               onSetFilter("status", e.target.value || null)
@@ -179,6 +180,7 @@ export function ExploreToolbar({
             Content type
           </label>
           <Select
+            aria-label="Content type filter"
             value={singleFilterValue(query.filters, "content_type")}
             onChange={(e) =>
               onSetFilter("content_type", e.target.value || null)
@@ -199,6 +201,7 @@ export function ExploreToolbar({
             <Layers className="w-3 h-3" /> Group by
           </label>
           <Select
+            aria-label="Group results by"
             value={query.groupBy ?? ""}
             onChange={(e) =>
               onSetGroupBy(
@@ -248,6 +251,7 @@ export function ExploreToolbar({
                   {index + 1}.
                 </span>
                 <Select
+                  aria-label={`Sort field ${index + 1}`}
                   value={clause.field}
                   onChange={(e) =>
                     handleSortFieldChange(index, e.target.value as SortField)

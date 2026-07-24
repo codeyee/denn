@@ -21,15 +21,64 @@ const movie = {
   title: "Phase Zero Movie",
   original_title: "Phase Zero Movie",
   description: "Deterministic metadata for browser guardrails.",
-  image_url: null,
+  image_url: `${fixtureOrigin()}/__fixture__/images/poster-1.svg`,
   tagline: null,
   imdb_id: null,
   release_date: "2024-01-01",
   duration_minutes: 120,
   status: "Released",
   authors: [{ name: "Fixture Director", type: "DIRECTOR" }],
-  images: [],
+  images: [
+    {
+      type: "GALLERY",
+      size: "ORIGINAL",
+      image_url: `${fixtureOrigin()}/__fixture__/images/banner-1.svg`,
+    },
+    {
+      type: "POSTER",
+      size: "STANDARD",
+      image_url: `${fixtureOrigin()}/__fixture__/images/poster-1.svg`,
+    },
+  ],
   platforms: null,
+};
+const movieTwo = {
+  ...movie,
+  id: "102",
+  title: "Phase Two Movie",
+  original_title: "Phase Two Movie",
+  image_url: `${fixtureOrigin()}/__fixture__/images/poster-2.svg`,
+  images: [
+    {
+      type: "GALLERY",
+      size: "ORIGINAL",
+      image_url: `${fixtureOrigin()}/__fixture__/images/banner-2.svg`,
+    },
+    {
+      type: "POSTER",
+      size: "STANDARD",
+      image_url: `${fixtureOrigin()}/__fixture__/images/poster-2.svg`,
+    },
+  ],
+};
+const movieThree = {
+  ...movie,
+  id: "103",
+  title: "Phase Three Movie",
+  original_title: "Phase Three Movie",
+  image_url: `${fixtureOrigin()}/__fixture__/images/poster-3.svg`,
+  images: [
+    {
+      type: "GALLERY",
+      size: "ORIGINAL",
+      image_url: `${fixtureOrigin()}/__fixture__/images/banner-3.svg`,
+    },
+    {
+      type: "POSTER",
+      size: "STANDARD",
+      image_url: `${fixtureOrigin()}/__fixture__/images/poster-3.svg`,
+    },
+  ],
 };
 const contentItem = {
   id: 1,
@@ -60,7 +109,11 @@ const emptyProxyCategory = {
   error: "",
 };
 const homepage = {
-  movies: { metadata: proxyMetadata, results: [movie], error: "" },
+  movies: {
+    metadata: { page: 1, total_results: 3, total_pages: 1 },
+    results: [movie, movieTwo, movieThree],
+    error: "",
+  },
   "tv-shows": emptyProxyCategory,
   games: emptyProxyCategory,
   albums: emptyProxyCategory,
@@ -126,6 +179,21 @@ function json(response, status, body, headers = {}) {
   response.end(payload);
 }
 
+function fixtureOrigin() {
+  return `http://127.0.0.1:${corePort}`;
+}
+
+function svg(response, name) {
+  const hue = [...name].reduce((sum, character) => sum + character.charCodeAt(0), 0) % 360;
+  const payload = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="1200" viewBox="0 0 800 1200"><rect width="800" height="1200" fill="hsl(${hue} 45% 24%)"/><circle cx="400" cy="440" r="220" fill="hsl(${hue} 60% 45%)"/><text x="400" y="900" text-anchor="middle" fill="white" font-size="64" font-family="sans-serif">${name}</text></svg>`;
+  response.writeHead(200, {
+    "Cache-Control": "public, max-age=3600",
+    "Content-Length": Buffer.byteLength(payload),
+    "Content-Type": "image/svg+xml",
+  });
+  response.end(payload);
+}
+
 async function readJson(request) {
   const chunks = [];
   for await (const chunk of request) chunks.push(chunk);
@@ -164,6 +232,9 @@ const core = createServer(async (request, response) => {
   }
   if (url.pathname === "/__fixture__/requests") {
     return json(response, 200, state.requests, corsHeaders(requestId));
+  }
+  if (url.pathname.startsWith("/__fixture__/images/")) {
+    return svg(response, url.pathname.split("/").at(-1) ?? "fixture");
   }
 
   record("core", request, url, requestId);

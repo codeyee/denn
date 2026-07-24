@@ -86,16 +86,6 @@ export function ContentCard({ item, className }: ContentCardProps) {
         className={`relative group ${className || ""}`}
         {...hoverPrefetchHandlers}
       >
-        {item.denn_id && (
-          <Link
-            to="/content/$id"
-            params={{ id: String(item.denn_id) }}
-            preload="intent"
-            onClick={handleNavigation}
-            className="absolute inset-0 z-10 rounded-xl outline-none focus-visible:ring-4 focus-visible:ring-white/80"
-            aria-label={`View details for ${title}`}
-          />
-        )}
         <Card
           type={type as ContentType}
           id={id}
@@ -125,6 +115,16 @@ export function ContentCard({ item, className }: ContentCardProps) {
             </Card.HoverContent>
           }
         >
+          {item.denn_id && (
+            <Link
+              to="/content/$id"
+              params={{ id: String(item.denn_id) }}
+              preload="intent"
+              onClick={handleNavigation}
+              className="absolute inset-0 z-20 rounded-xl outline-none focus-visible:ring-4 focus-visible:ring-white/80"
+              aria-label={`View details for ${title}`}
+            />
+          )}
           <Card.Footer>
             <div className="flex flex-col gap-1.5">
               {originalTitle && !originalTitleIsSameAsTitle && (

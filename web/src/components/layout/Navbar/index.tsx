@@ -1,5 +1,4 @@
 import { Link } from "@tanstack/react-router";
-import { useNavigate } from "@tanstack/react-router";
 import {
   NavigationMenu,
   NavigationMenuItem,
@@ -16,6 +15,7 @@ import {
 } from "@/components/common/ui/Dropdown";
 import { useSettings } from "@/hooks/useSettings";
 import { useNavbarSearch } from "./hooks/useNavbarSearch";
+import { MobileSearch } from "./MobileSearch";
 
 interface NavbarProps {
   searchQuery?: string;
@@ -25,7 +25,6 @@ interface NavbarProps {
 export function Navbar({ searchQuery, onSearchChange }: NavbarProps) {
   const { user, isAuthenticated, logout } = useAuth();
   const { settings, toggleAnimations } = useSettings();
-  const navigate = useNavigate();
   const {
     searchQuery: internalSearchQuery,
     searchInputRef,
@@ -38,7 +37,7 @@ export function Navbar({ searchQuery, onSearchChange }: NavbarProps) {
     <header className="fixed top-0 left-0 right-0 z-50">
       <div className="relative w-full">
         <div className="pointer-events-none absolute inset-0 bg-navbar-gradient" style={{ zIndex: 1 }} />
-        <div className="relative z-10 w-full max-w-screen-2xl mx-auto px-6 py-8">
+        <div className="relative z-10 mx-auto w-full max-w-screen-2xl px-3 py-4 sm:px-6 md:py-8">
           <div className="flex justify-between items-center w-full gap-4">
           <NavigationMenu>
             <NavigationMenuList>
@@ -74,19 +73,11 @@ export function Navbar({ searchQuery, onSearchChange }: NavbarProps) {
           )}
 
           <div className="flex items-center gap-3">
-            {/* Search Icon Button - Only visible on mobile/tablet (below lg) when logged in */}
             {isAuthenticated && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="cursor-pointer lg:hidden"
-                onClick={() => {
-                  void navigate({ to: "/search" });
-                }}
-                aria-label="Search"
-              >
-                <Search className="h-5 w-5" />
-              </Button>
+              <MobileSearch
+                value={resolvedSearchQuery}
+                onChange={resolvedHandleSearchChange}
+              />
             )}
 
             {isAuthenticated && user ? (

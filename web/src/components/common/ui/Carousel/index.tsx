@@ -1,7 +1,5 @@
-
-import { useRef } from "react";
+import { Children, useId, useRef } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { motion, AnimatePresence } from "motion/react";
 import { useCarouselScroll } from "./hooks/useCarouselScroll";
 
 interface CarouselProps {
@@ -24,124 +22,90 @@ export function Carousel({
   disableNavigation = false,
 }: CarouselProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-
-  const items = Array.isArray(children) ? children : [children];
-  const totalItems = items.length;
-
-  const {
-    currentIndex,
-    isHovered,
-    isMobile,
-    visibleItems,
-    setIsHovered,
-    handlePrevious,
-    handleNext,
-  } = useCarouselScroll({
-    totalItems,
+  const titleId = useId();
+  const items = Children.toArray(children);
+  const scroll = useCarouselScroll({
+    containerRef,
+    totalItems: items.length,
     itemsPerView,
     targetCardWidth,
     gap,
   });
-
-  const showNavigation = !disableNavigation && totalItems > visibleItems;
+  const showNavigation = !disableNavigation && items.length > scroll.visibleItems;
 
   return (
-    <div className={`relative group ${className}`}>
-      {/* Title */}
+    <section
+      aria-roledescription="carousel"
+      aria-labelledby={title ? titleId : undefined}
+      aria-label={title ? undefined : "Content carousel"}
+      className={`group relative ${className}`}
+    >
       {title && (
-        <h2 className="text-2xl md:text-3xl font-bold text-white pl-4 md:pl-12">
+        <h2
+          id={titleId}
+          className="pl-4 text-2xl font-bold text-white md:pl-12 md:text-3xl"
+        >
           {title}
         </h2>
       )}
 
-      {/* Carousel Container */}
-      <div
-        className="relative"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-      >
-        {/* Invisible blocker for left navigation area - prevents hover on cards behind arrows */}
-        <div 
-          className="absolute left-0 top-0 bottom-0 w-16 md:w-24 z-30 pointer-events-auto"
-        />
-        
-        {/* Invisible blocker for right navigation area - prevents hover on cards behind arrows */}
-        <div 
-          className="absolute right-0 top-0 bottom-0 w-16 md:w-24 z-30 pointer-events-auto"
-        />
+      <div className="relative">
+        {showNavigation && scroll.canScrollPrevious && (
+          <CarouselButton
+            direction="previous"
+            onClick={scroll.handlePrevious}
+          />
+        )}
+        {showNavigation && scroll.canScrollNext && (
+          <CarouselButton direction="next" onClick={scroll.handleNext} />
+        )}
 
-        {/* Left Navigation Button */}
-        <AnimatePresence>
-          {showNavigation && (isMobile || isHovered) && (
-            <motion.button
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={handlePrevious}
-              className="absolute left-0 top-1/2 -translate-y-1/2 z-40 bg-black/70 hover:bg-black/90 text-white p-2 md:p-4 rounded-r-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-white/50"
-              aria-label="Previous items"
-            >
-              <ChevronLeft className="w-6 h-6 md:w-8 md:h-8" />
-            </motion.button>
-          )}
-        </AnimatePresence>
-
-        {/* Right Navigation Button */}
-        <AnimatePresence>
-          {showNavigation && (isMobile || isHovered) && (
-            <motion.button
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={handleNext}
-              className="absolute right-0 top-1/2 -translate-y-1/2 z-40 bg-black/70 hover:bg-black/90 text-white p-2 md:p-4 rounded-l-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-white/50"
-              aria-label="Next items"
-            >
-              <ChevronRight className="w-6 h-6 md:w-8 md:h-8" />
-            </motion.button>
-          )}
-        </AnimatePresence>
-
-        {/* Carousel Items Container */}
         <div
-          className="overflow-hidden pl-4 md:pl-12 pr-4 md:pr-12 py-4"
           ref={containerRef}
+          onScroll={scroll.updateScrollState}
+          className="flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 py-4 [scroll-padding-inline:1rem] md:px-12 md:[scroll-padding-inline:3rem]"
+          style={{ scrollbarWidth: "thin" }}
         >
-          <motion.div
-            className="flex"
-            animate={{
-              x: disableNavigation ? 0 : `-${currentIndex * (100 / visibleItems)}%`,
-            }}
-            transition={{
-              type: "spring",
-              stiffness: 300,
-              damping: 30,
-            }}
-            style={{ gap: `${gap}px` }}
-          >
-            <AnimatePresence mode="popLayout">
-              {items.map((child, index) => {
-                const childKey = (typeof child === 'object' && child !== null && 'key' in child && typeof child.key === 'string')
-                  ? child.key
-                  : `carousel-item-${index}`;
-                return (
-                  <motion.div
-                    key={childKey}
-                    className="shrink-0"
-                    style={{
-                      width: `calc((100% - ${
-                        gap * visibleItems
-                      }px) / ${visibleItems})`,
-                    }}
-                  >
-                    {child}
-                  </motion.div>
-                );
-              })}
-            </AnimatePresence>
-          </motion.div>
+          {items.map((child, index) => (
+            <div
+              key={typeof child === "object" && child && "key" in child && child.key
+                ? child.key
+                : `carousel-item-${index}`}
+              role="group"
+              aria-roledescription="slide"
+              aria-label={`${index + 1} of ${items.length}`}
+              className="shrink-0 snap-start"
+              style={{
+                width: `calc((100% - ${gap * (scroll.visibleItems - 1)}px) / ${scroll.visibleItems})`,
+              }}
+            >
+              {child}
+            </div>
+          ))}
         </div>
       </div>
-    </div>
+    </section>
+  );
+}
+
+interface CarouselButtonProps {
+  direction: "previous" | "next";
+  onClick: () => void;
+}
+
+function CarouselButton({ direction, onClick }: CarouselButtonProps) {
+  const isPrevious = direction === "previous";
+  const Icon = isPrevious ? ChevronLeft : ChevronRight;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={`${isPrevious ? "Previous" : "Next"} items`}
+      className={`absolute top-1/2 z-40 flex size-12 -translate-y-1/2 items-center justify-center bg-black/80 text-white opacity-100 transition-opacity hover:bg-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 ${
+        isPrevious ? "left-0 rounded-r-lg" : "right-0 rounded-l-lg"
+      }`}
+    >
+      <Icon aria-hidden="true" className="size-7" />
+    </button>
   );
 }

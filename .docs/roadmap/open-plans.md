@@ -4,22 +4,20 @@ This file summarizes the work that is still open, partially implemented, or next
 
 ## Priority Order
 
-1. Merge and preserve the completed Phase 1 gate from roadmap epic
-   [#35](https://github.com/codeyee/denn/issues/35): auth/hydration,
-   side-effect-free navigation, local-first detail, provider budgets,
-   aggregate cache hardening, and accessibility base.
-2. Complete the remaining accessibility, content eligibility, and
-   domain-normalization
-   work (#32/#33 and the active Sprint 10 follow-ups) before product
-   work expands the same critical routes.
-3. Execute the Phase 2 architecture/dependency work from #35.
+1. Preserve the completed Phase 1 and Phase 2 gates from roadmap epic
+   [#35](https://github.com/codeyee/denn/issues/35): critical-path
+   stabilization plus semantic media, accessibility, responsive UX,
+   controlled hero behavior, and real legal/support routes.
+2. Complete the remaining content-preference work in #32 before product
+   work expands the same discovery surfaces.
+3. Execute Phase 3 auth hardening from #19, then the Phase 4
+   staging/cache validation and deployed smoke gate.
 4. Resume the product sprint line only after the roadmap release gates
    that protect the same critical routes are met.
 
 ## Post-Audit Remediation Roadmap
 
-- Status: Phase 0 and Phase 1 implementation complete; later epic phases
-  remain open.
+- Status: Phases 0–2 implementation complete; Phases 3–4 remain open.
 - Epic: [#35](https://github.com/codeyee/denn/issues/35).
 - Phase 0 evidence:
   [`../perf/baseline.md`](../perf/baseline.md),
@@ -43,7 +41,19 @@ tests. Its durable outcomes are:
 - the critical path has immediate feedback and an accessibility base.
 
 The epic itself remains open because its Definition of Done also covers
-Phases 2–4.
+Phases 3–4.
+
+Phase 2 added a shared semantic responsive-media path, requests only the
+active hero artwork, lazily loads card media, and reserves stable image
+dimensions. The featured carousel now has pause/resume, interaction
+pause, reduced-motion behavior, stable geometry, and roving tab stops.
+The critical routes have one main landmark and one H1, route-change
+focus, semantic navigation, named controls, contrast fixes, and 44px
+primary targets. Mobile search, native horizontal carousel scrolling,
+the 320–1440px reflow matrix, legal/support routes, canonical metadata,
+hard-refresh behavior, and coherent 404 handling are covered by the
+production-build Playwright suite. Exact Web Vitals and media-request
+evidence live in [`../perf/baseline.md`](../perf/baseline.md).
 
 ## Old TODO Triage
 

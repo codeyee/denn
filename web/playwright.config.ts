@@ -59,6 +59,11 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
     {
+      name: "accessibility-responsive",
+      testMatch: /accessibility-responsive\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"] },
+    },
+    {
       name: "performance",
       testMatch: /performance\.spec\.ts/,
       timeout: 120_000,
