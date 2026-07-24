@@ -21,14 +21,19 @@ const movie = {
   type: "MOVIE",
   title: "Phase Zero Movie",
   original_title: "Phase Zero Movie",
-  description: "Deterministic metadata for browser guardrails.",
+  description:
+    "Deterministic metadata for browser guardrails with enough additional copy to verify that the featured description remains concise and never covers the full artwork on narrow mobile screens.",
   image_url: `${fixtureOrigin()}/__fixture__/images/poster-1.svg`,
   tagline: null,
   imdb_id: null,
   release_date: "2024-01-01",
   duration_minutes: 120,
   status: "Released",
-  authors: [{ name: "Fixture Director", type: "DIRECTOR" }],
+  authors: [
+    { name: "Fixture Studio One", type: "STUDIO" },
+    { name: "Fixture Studio Two", type: "STUDIO" },
+    { name: "Fixture Studio Three", type: "STUDIO" },
+  ],
   images: [
     {
       type: "GALLERY",
@@ -103,7 +108,7 @@ const list = {
   created_at: now,
   updated_at: now,
 };
-const proxyMetadata = { page: 1, total_results: 1, total_pages: 1 };
+const proxyMetadata = { page: 1, total_results: 3, total_pages: 1 };
 const emptyProxyCategory = {
   metadata: { page: 1, total_results: 0, total_pages: 0 },
   results: [],
@@ -123,18 +128,16 @@ const homepage = {
 const search = {
   movies: {
     metadata: proxyMetadata,
-    results: [
-      {
-        id: movie.id,
-        type: movie.type,
-        title: movie.title,
-        original_title: movie.original_title,
-        description: movie.description,
+    results: [movie, movieTwo, movieThree].map((item) => ({
+        id: item.id,
+        type: item.type,
+        title: item.title,
+        original_title: item.original_title,
+        description: item.description,
         image_url: null,
-        release_date: movie.release_date,
-        authors: movie.authors,
-      },
-    ],
+        release_date: item.release_date,
+        authors: item.authors,
+      })),
     error: null,
   },
   "tv-shows": { ...emptyProxyCategory, error: null },

@@ -63,7 +63,11 @@ export function Carousel({
         <div
           ref={containerRef}
           onScroll={scroll.updateScrollState}
-          className="flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 py-4 [scroll-padding-inline:1rem] md:px-12 md:[scroll-padding-inline:3rem]"
+          onWheel={scroll.handleWheel}
+          tabIndex={0}
+          aria-label={title ? `${title} items` : "Carousel items"}
+          data-carousel-scroller
+          className="flex snap-x snap-proximity touch-pan-x touch-pan-y gap-4 overflow-x-auto overscroll-x-contain px-4 py-4 [scroll-padding-inline:1rem] [-webkit-overflow-scrolling:touch] md:px-12 md:[scroll-padding-inline:3rem]"
           style={{ scrollbarWidth: "thin" }}
         >
           {items.map((child, index) => (

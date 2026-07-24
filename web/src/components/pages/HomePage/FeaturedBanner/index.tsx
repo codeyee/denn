@@ -30,13 +30,7 @@ export function FeaturedBanner({ items, autoRotateMs = 5000 }: FeaturedBannerPro
     [items]
   );
 
-  const {
-    index,
-    setIndex,
-    isPaused,
-    pausedByUser,
-    togglePaused,
-  } = useBannerAutoRotation({
+  const { index, setIndex } = useBannerAutoRotation({
     itemCount: validItems.length,
     autoRotateMs,
     enabled: autoplayAvailable,
@@ -75,7 +69,7 @@ export function FeaturedBanner({ items, autoRotateMs = 5000 }: FeaturedBannerPro
           setInteractionPaused(false);
         }
       }}
-      className="relative mb-6 aspect-[4/5] w-full overflow-hidden md:mb-10 md:aspect-[16/11] md:rounded-2xl lg:aspect-[16/9] xl:aspect-[16/7]"
+      className="group relative mb-6 aspect-[4/5] w-full overflow-hidden md:mb-10 md:aspect-[16/11] md:rounded-2xl lg:aspect-[16/9] xl:aspect-[16/7]"
     >
       <div id="featured-slide" role="tabpanel" className="absolute inset-0">
         <AnimatePresence mode="wait">
@@ -122,10 +116,14 @@ export function FeaturedBanner({ items, autoRotateMs = 5000 }: FeaturedBannerPro
         itemCount={validItems.length}
         currentIndex={index}
         onIndexChange={setIndex}
-        isPaused={isPaused}
-        pausedByUser={pausedByUser}
-        autoplayAvailable={autoplayAvailable}
-        onTogglePaused={togglePaused}
+        onPrevious={() =>
+          setIndex((currentIndex) =>
+            (currentIndex - 1 + validItems.length) % validItems.length
+          )
+        }
+        onNext={() =>
+          setIndex((currentIndex) => (currentIndex + 1) % validItems.length)
+        }
       />
     </section>
   );
