@@ -208,7 +208,14 @@ renderizar enlaces.
 - Multi-search tiene presupuesto agregado de 1.5 s y 900 ms por bucket.
 - Homepage tiene presupuesto agregado de 2.5 s y 1.1 s por bucket.
 - Las claves de caché de agregados incluyen todos los inputs que cambian
-  la respuesta (`query`, tipos, página, límite, país) y las versiones de
-  política `adult-exclude` y `future-24h`.
+  la respuesta (`query`, tipos, página, límite, país), la versión
+  `future-24h` y la política adulta explícita (`adult-exclude` o
+  `adult-include`). Homepage siempre usa exclusión; sólo la búsqueda
+  directa puede solicitar inclusión.
+- `GET /v1/proxy/search` acepta `adult=exclude|include`, usa `exclude`
+  por defecto, rechaza otros valores con `400` y devuelve
+  `X-Content-Policy`. La inclusión sólo cambia los buckets de TMDB,
+  porque IGDB, Spotify y OpenLibrary no exponen una clasificación
+  equivalente y confiable.
 - Un fallo de Redis degrada a ejecución sin caché; no abre el proxy ni
   convierte un fallo de infraestructura de caché en un `5xx` obligatorio.

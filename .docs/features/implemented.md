@@ -52,6 +52,10 @@ considered part of the project baseline.
   provider retries, and circuit breakers.
 - General-discovery release eligibility with a 24-hour grace window and
   TMDB adult exclusion before aggregate cache writes.
+- Safe-by-default adult-content preference: automatic discovery remains
+  filtered, direct search can opt into reliably classified TMDB results,
+  policy-specific cache entries prevent cross-user reuse, and the active
+  scope is explained in Search and Profile.
 - Accessibility foundation for the critical flow: zoomable viewport,
   skip link, one main landmark, semantic card navigation, labeled
   search controls, visible focus behavior, reduced-motion support, and

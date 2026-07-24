@@ -8,8 +8,8 @@ This file summarizes the work that is still open, partially implemented, or next
    [#35](https://github.com/codeyee/denn/issues/35): critical-path
    stabilization plus semantic media, accessibility, responsive UX,
    controlled hero behavior, and real legal/support routes.
-2. Complete the remaining content-preference work in #32 before product
-   work expands the same discovery surfaces.
+2. Preserve the completed safe-default content preference and
+   policy-scoped cache boundary from #32.
 3. Execute Phase 3 auth hardening from #19, then the Phase 4
    staging/cache validation and deployed smoke gate.
 4. Resume the product sprint line only after the roadmap release gates
@@ -17,7 +17,8 @@ This file summarizes the work that is still open, partially implemented, or next
 
 ## Post-Audit Remediation Roadmap
 
-- Status: Phases 0–2 implementation complete; Phases 3–4 remain open.
+- Status: Phases 0–2 and the #32 safety dependency are implementation
+  complete; Phases 3–4 remain open.
 - Epic: [#35](https://github.com/codeyee/denn/issues/35).
 - Phase 0 evidence:
   [`../perf/baseline.md`](../perf/baseline.md),
@@ -54,6 +55,13 @@ the 320–1440px reflow matrix, legal/support routes, canonical metadata,
 hard-refresh behavior, and coherent 404 handling are covered by the
 production-build Playwright suite. Exact Web Vitals and media-request
 evidence live in [`../perf/baseline.md`](../perf/baseline.md).
+
+The #32 dependency now has a persisted safe-by-default profile
+preference. Automatic discovery cannot be opted out of safety filtering;
+only deliberate direct search can include reliably classified TMDB
+results. The selected policy is carried into both provider and aggregate
+cache keys, while unclassified providers are documented and never
+inferred from free text.
 
 ## Old TODO Triage
 

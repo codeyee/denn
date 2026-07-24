@@ -80,12 +80,14 @@ export async function prefetchSearchQuery(
   const trimmedQuery = query.trim();
   if (!session.isAuthenticated || !trimmedQuery) return;
   const requestId = getLogicalRequestId();
+  const allowAdult = session.user?.allow_adult_content ?? false;
 
   await qc.prefetchQuery({
     queryKey: queryKeys.search.multi({
       query: trimmedQuery,
       limit: SEARCH_RESULT_LIMIT,
       country,
+      allowAdult,
     }),
     queryFn: () =>
       fetchServerSearch(
@@ -93,6 +95,7 @@ export async function prefetchSearchQuery(
         trimmedQuery,
         country,
         requestId,
+        allowAdult,
       ),
   });
 }
@@ -272,10 +275,12 @@ async function fetchServerSearch(
   query: string,
   country: string | null,
   requestId: string,
+  allowAdult: boolean,
 ) {
   const params = new URLSearchParams({
     q: query,
     limit: String(SEARCH_RESULT_LIMIT),
+    adult: allowAdult ? "include" : "exclude",
   });
   const response = await fetchJson<MultiSearchResponse>(
     `${getProxyApiUrl()}/search?${params.toString()}`,

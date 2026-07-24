@@ -25,8 +25,8 @@ import (
 )
 
 type VideoService interface {
-	SearchMovies(ctx context.Context, query string, page, limit int) (tmdbservice.SearchResult, error)
-	SearchTVShows(ctx context.Context, query string, page, limit int) (tmdbservice.SearchResult, error)
+	SearchMoviesWithAdult(ctx context.Context, query string, page, limit int, allowAdult bool) (tmdbservice.SearchResult, error)
+	SearchTVShowsWithAdult(ctx context.Context, query string, page, limit int, allowAdult bool) (tmdbservice.SearchResult, error)
 }
 
 type GamesService interface {
@@ -76,6 +76,7 @@ func NewHandler(
 }
 
 type contentType string
+type adultPolicy string
 
 const (
 	typeMovies  contentType = "movies"
@@ -83,6 +84,9 @@ const (
 	typeGames   contentType = "games"
 	typeAlbums  contentType = "albums"
 	typeBooks   contentType = "books"
+
+	adultExclude adultPolicy = "exclude"
+	adultInclude adultPolicy = "include"
 )
 
 var responseKey = map[contentType]string{
@@ -120,6 +124,7 @@ type MultiSearchResponse struct {
 // @Param        page   query    int     false  "Page number (min 1)"        default(1)   minimum(1)
 // @Param        limit  query    int     false  "Results per page (max 50)"  default(20)  minimum(1)  maximum(50)
 // @Param        types  query    string  false  "Comma-separated content types to search: movies,tv-shows,games,albums,books (default: all)"
+// @Param        adult  query    string  false  "Adult-content policy for direct search: exclude,include (default: exclude)"
 // @Success      200    {object} multisearch.MultiSearchResponse
 // @Failure      400    {object} common.ErrorResponse
 // @Failure      401    {object} map[string]string
@@ -140,9 +145,16 @@ func (h *Handler) Search(c *gin.Context) {
 		return
 	}
 
+	policy, err := parseAdultPolicy(c.Query("adult"))
+	if err != nil {
+		common.RespondError(c, http.StatusBadRequest, common.CodeInvalidParameter, err.Error())
+		return
+	}
+
 	page, limit := common.ParsePagination(c)
 	country := common.GetCountryFromHeader(c)
-	cacheKey := multiSearchCacheKey(query, page, limit, country, types)
+	cacheKey := multiSearchCacheKey(query, page, limit, country, types, policy)
+	c.Header("X-Content-Policy", "adult-"+string(policy))
 	if cached, cacheErr := h.cache.Get(c.Request.Context(), cacheKey); cacheErr == nil && len(cached) > 0 {
 		c.Header("X-Cache", "HIT")
 		c.Data(http.StatusOK, "application/json", cached)
@@ -151,7 +163,7 @@ func (h *Handler) Search(c *gin.Context) {
 
 	ctx, cancel := context.WithTimeout(c.Request.Context(), searchTotalBudget)
 	defer cancel()
-	results := h.searchAll(ctx, query, page, limit, types)
+	results := h.searchAll(ctx, query, page, limit, types, policy == adultInclude)
 
 	response := make(map[string]ContentResult, len(types))
 	for _, t := range types {
@@ -174,6 +186,7 @@ func multiSearchCacheKey(
 	page, limit int,
 	country string,
 	types []contentType,
+	policy adultPolicy,
 ) string {
 	sum := sha256.Sum256([]byte(strings.ToLower(strings.TrimSpace(query))))
 	typeNames := make([]string, 0, len(types))
@@ -182,13 +195,25 @@ func multiSearchCacheKey(
 	}
 	sort.Strings(typeNames)
 	return fmt.Sprintf(
-		"search:v2:adult-exclude:future-24h:q%s:p%d:l%d:c%s:t%s",
+		"search:v3:adult-%s:future-24h:q%s:p%d:l%d:c%s:t%s",
+		policy,
 		hex.EncodeToString(sum[:8]),
 		page,
 		limit,
 		strings.ToUpper(country),
 		strings.Join(typeNames, ","),
 	)
+}
+
+func parseAdultPolicy(raw string) (adultPolicy, error) {
+	switch adultPolicy(strings.TrimSpace(strings.ToLower(raw))) {
+	case "", adultExclude:
+		return adultExclude, nil
+	case adultInclude:
+		return adultInclude, nil
+	default:
+		return "", fmt.Errorf("invalid adult policy: %s. valid values are: exclude, include", raw)
+	}
 }
 
 func parseTypes(raw string) ([]contentType, error) {
@@ -231,7 +256,13 @@ func (e *invalidTypeError) Error() string {
 	return "invalid content type: " + e.value + ". valid types are: " + strings.Join(names, ", ")
 }
 
-func (h *Handler) searchAll(ctx context.Context, query string, page, limit int, types []contentType) map[contentType]ContentResult {
+func (h *Handler) searchAll(
+	ctx context.Context,
+	query string,
+	page, limit int,
+	types []contentType,
+	allowAdult bool,
+) map[contentType]ContentResult {
 	results := make(map[contentType]ContentResult, len(types))
 	slots := make([]ContentResult, len(types))
 
@@ -243,7 +274,7 @@ func (h *Handler) searchAll(ctx context.Context, query string, page, limit int, 
 			defer wg.Done()
 			bucketCtx, cancel := context.WithTimeout(ctx, searchBucketTimeout)
 			defer cancel()
-			slots[idx] = h.searchOne(bucketCtx, ct, query, page, limit)
+			slots[idx] = h.searchOne(bucketCtx, ct, query, page, limit, allowAdult)
 		}(i, t)
 	}
 
@@ -256,14 +287,20 @@ func (h *Handler) searchAll(ctx context.Context, query string, page, limit int, 
 	return results
 }
 
-func (h *Handler) searchOne(ctx context.Context, ct contentType, query string, page, limit int) ContentResult {
+func (h *Handler) searchOne(
+	ctx context.Context,
+	ct contentType,
+	query string,
+	page, limit int,
+	allowAdult bool,
+) ContentResult {
 	switch ct {
 
 	case typeMovies:
-		return h.searchMovies(ctx, query, page, limit)
+		return h.searchMovies(ctx, query, page, limit, allowAdult)
 
 	case typeTVShows:
-		return h.searchTVShows(ctx, query, page, limit)
+		return h.searchTVShows(ctx, query, page, limit, allowAdult)
 
 	case typeGames:
 		return h.searchGames(ctx, query, page, limit)
@@ -279,8 +316,13 @@ func (h *Handler) searchOne(ctx context.Context, ct contentType, query string, p
 	}
 }
 
-func (h *Handler) searchMovies(ctx context.Context, query string, page, limit int) ContentResult {
-	res, err := h.tmdbSvc.SearchMovies(ctx, query, page, limit)
+func (h *Handler) searchMovies(
+	ctx context.Context,
+	query string,
+	page, limit int,
+	allowAdult bool,
+) ContentResult {
+	res, err := h.tmdbSvc.SearchMoviesWithAdult(ctx, query, page, limit, allowAdult)
 	if err != nil {
 		return errorResult(err.Error())
 	}
@@ -292,8 +334,13 @@ func (h *Handler) searchMovies(ctx context.Context, query string, page, limit in
 	})
 }
 
-func (h *Handler) searchTVShows(ctx context.Context, query string, page, limit int) ContentResult {
-	res, err := h.tmdbSvc.SearchTVShows(ctx, query, page, limit)
+func (h *Handler) searchTVShows(
+	ctx context.Context,
+	query string,
+	page, limit int,
+	allowAdult bool,
+) ContentResult {
+	res, err := h.tmdbSvc.SearchTVShowsWithAdult(ctx, query, page, limit, allowAdult)
 	if err != nil {
 		return errorResult(err.Error())
 	}

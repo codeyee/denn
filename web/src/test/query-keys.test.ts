@@ -9,8 +9,22 @@ describe("queryKeys", () => {
     ).toEqual(["suggestions", { limit: 20, country: "CO" }]);
 
     expect(
-      queryKeys.search.multi({ query: "matrix", limit: 20, country: "CO" }),
-    ).toEqual(["search", "multi", { query: "matrix", limit: 20, country: "CO" }]);
+      queryKeys.search.multi({
+        query: "matrix",
+        limit: 20,
+        country: "CO",
+        allowAdult: false,
+      }),
+    ).toEqual([
+      "search",
+      "multi",
+      {
+        query: "matrix",
+        limit: 20,
+        country: "CO",
+        allowAdult: false,
+      },
+    ]);
   });
 
   it("separates list page and full-list caches", () => {

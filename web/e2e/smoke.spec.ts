@@ -118,6 +118,33 @@ test("authenticated cold and warm navigation covers critical routes", async ({
   await expect(page.locator(":focus")).toBeVisible();
 });
 
+test("adult search stays safe by default and changes only after explicit opt-in", async ({
+  context,
+  page,
+}) => {
+  await authenticate(context);
+
+  await page.goto("/search?q=phase");
+  await expect(
+    page.getByText("Adult content is filtered from direct search."),
+  ).toBeVisible();
+  await expect(page.getByText("Explicit Opt-In Result")).toHaveCount(0);
+
+  await page.goto("/profile");
+  const preference = page.getByRole("checkbox", {
+    name: "Allow adult content in direct search",
+  });
+  await expect(preference).not.toBeChecked();
+  await preference.check();
+  await expect(preference).toBeChecked();
+
+  await page.goto("/search?q=phase");
+  await expect(
+    page.getByText("Adult content is included in direct search"),
+  ).toBeVisible();
+  await expect(page.getByText("Explicit Opt-In Result").first()).toBeVisible();
+});
+
 test("one navigation keeps a bounded request id across web, core and proxy", async ({
   context,
   page,

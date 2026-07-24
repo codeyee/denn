@@ -22,6 +22,7 @@ interface UseSearchResultsOptions {
     country?: string | null;
     enabled?: boolean;
     initialData?: MultiSearchResponse;
+    allowAdult?: boolean;
 }
 
 function transformSearchResponse(response?: MultiSearchResponse): SearchResults {
@@ -42,6 +43,7 @@ export function useSearchResults(
         country,
         enabled = true,
         initialData,
+        allowAdult = false,
     }: UseSearchResultsOptions = {},
 ): UseSearchResultsReturn {
     const trimmedQuery = query.trim();
@@ -50,6 +52,7 @@ export function useSearchResults(
         country,
         enabled: enabled && trimmedQuery.length > 0,
         initialData,
+        allowAdult,
     });
 
     const results = useMemo(

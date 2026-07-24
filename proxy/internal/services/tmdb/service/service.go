@@ -76,7 +76,18 @@ func unmarshalResponse[T any](resp *clients.Response, err error) (T, error) {
 }
 
 func (s *Service) SearchMovies(ctx context.Context, query string, page, limit int) (SearchResult, error) {
-	data, err := unmarshalResponse[tmdb.TmdbSearchResponse](s.client.SearchMovies(ctx, query, page))
+	return s.SearchMoviesWithAdult(ctx, query, page, limit, false)
+}
+
+func (s *Service) SearchMoviesWithAdult(
+	ctx context.Context,
+	query string,
+	page, limit int,
+	allowAdult bool,
+) (SearchResult, error) {
+	data, err := unmarshalResponse[tmdb.TmdbSearchResponse](
+		s.client.SearchMoviesWithAdult(ctx, query, page, allowAdult),
+	)
 
 	if err != nil {
 		return SearchResult{}, fmt.Errorf("search movies: %w", err)
@@ -85,7 +96,7 @@ func (s *Service) SearchMovies(ctx context.Context, query string, page, limit in
 	items := make([]models.SearchItem, 0, len(data.Results))
 
 	for _, r := range data.Results {
-		if r.Adult {
+		if r.Adult && !allowAdult {
 			continue
 		}
 		items = append(items, mapper.MapSearchItemMovie(r))
@@ -105,7 +116,18 @@ func (s *Service) SearchMovies(ctx context.Context, query string, page, limit in
 }
 
 func (s *Service) SearchTVShows(ctx context.Context, query string, page, limit int) (SearchResult, error) {
-	data, err := unmarshalResponse[tmdb.TmdbSearchResponse](s.client.SearchTVShows(ctx, query, page))
+	return s.SearchTVShowsWithAdult(ctx, query, page, limit, false)
+}
+
+func (s *Service) SearchTVShowsWithAdult(
+	ctx context.Context,
+	query string,
+	page, limit int,
+	allowAdult bool,
+) (SearchResult, error) {
+	data, err := unmarshalResponse[tmdb.TmdbSearchResponse](
+		s.client.SearchTVShowsWithAdult(ctx, query, page, allowAdult),
+	)
 
 	if err != nil {
 		return SearchResult{}, fmt.Errorf("search tv shows: %w", err)
@@ -114,7 +136,7 @@ func (s *Service) SearchTVShows(ctx context.Context, query string, page, limit i
 	items := make([]models.SearchItem, 0, len(data.Results))
 
 	for _, r := range data.Results {
-		if r.Adult {
+		if r.Adult && !allowAdult {
 			continue
 		}
 		items = append(items, mapper.MapSearchItemTV(r))

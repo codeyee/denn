@@ -1,6 +1,6 @@
 # Discovery Content Eligibility
 
-This document defines the Phase 1 browse/search eligibility boundary.
+This document defines the browse/search eligibility boundary.
 It applies to the public homepage and multi-search surfaces before their
 aggregate responses are cached.
 
@@ -28,26 +28,40 @@ discovery browse request.
 
 ## Adult-Safety Boundary
 
-- TMDB requests set `include_adult=false`.
-- TMDB movie search and popular results are also filtered from the raw
-  `adult` field before mapping, so provider/query drift fails closed.
-- Aggregate cache keys include the `adult-exclude` policy version.
+- Homepage, featured content, previews, and other automatic discovery
+  always exclude adult content. A user preference cannot relax those
+  surfaces.
+- New accounts default `allow_adult_content=false`.
+- Direct search accepts the explicit `adult=exclude|include` policy.
+  The web derives it from the authenticated profile preference and
+  communicates the active behavior next to the results.
+- TMDB requests use `include_adult=false` by default. With direct-search
+  opt-in they use `include_adult=true`; without opt-in, raw adult results
+  are filtered again before mapping so provider/query drift fails closed.
+- Provider and aggregate cache keys include the selected adult policy.
+  Default and opted-in responses can never share an entry.
 - IGDB, Spotify, and OpenLibrary do not expose one equivalent,
   trustworthy cross-provider adult flag in the normalized contracts.
-  Phase 1 does not infer safety from titles, descriptions, or genres.
-
-The remaining user-preference and provider-classification product design
-stays tracked by
-[#32](https://github.com/codeyee/denn/issues/32). Phase 1 guarantees the
-available TMDB signal and prevents unsafe cache reuse; it does not claim
-a universal content-rating system.
+  Denn passes their unclassified results through and never infers adult
+  status from titles, descriptions, genres, or keywords. Opt-in therefore
+  means “include reliably classified TMDB results,” not a universal
+  cross-provider rating system.
+- Direct id detail remains an explicit lookup and is not hidden by this
+  discovery preference.
+- Logs contain the request route/cache status but not the user's
+  preference value.
 
 ## Verification
 
 - Provider service tests cover release-date eligibility across supported
   media families.
-- TMDB tests prove both the upstream exclusion parameter and raw adult
-  filtering.
+- TMDB tests prove the upstream policy, raw adult filtering, and
+  explicit opt-in behavior.
 - Homepage and multi-search handler tests prove policy-scoped keys,
   cache hits, stale reads, fail-open cache behavior, and single-flight
   collapse where applicable.
+- Core tests prove the safe account default and authenticated opt-in/out
+  persistence.
+- Production-build browser smoke proves the default search excludes the
+  opted-in fixture and that it appears only after the profile control is
+  enabled.

@@ -15,6 +15,7 @@ interface SearchPageProps {
   error: string | null;
   hasResults: boolean;
   mobileInputRef: React.RefObject<HTMLInputElement | null>;
+  allowAdult: boolean;
 }
 
 export function SearchPage({
@@ -26,6 +27,7 @@ export function SearchPage({
   error,
   hasResults,
   mobileInputRef,
+  allowAdult,
 }: SearchPageProps) {
 
   const showLoading = isLoading || (searchQuery.trim() && !hasResults && !error);
@@ -47,6 +49,16 @@ export function SearchPage({
       />
 
       <div className="pt-5 lg:pt-30 pb-20">
+        {searchQuery.trim() && (
+          <p
+            className="container mx-auto px-4 pb-2 text-sm text-gray-300"
+            role="status"
+          >
+            {allowAdult
+              ? "Adult content is included in direct search when a provider supplies a reliable classification. Automatic recommendations remain filtered."
+              : "Adult content is filtered from direct search. You can opt in from your profile."}
+          </p>
+        )}
         {/* Error State */}
         {error && !isLoading && (
           <div className="container mx-auto px-4 mt-8 py-8">

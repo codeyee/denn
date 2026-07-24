@@ -8,6 +8,7 @@ export interface User {
   email: string;
   first_name?: string;
   last_name?: string;
+  allow_adult_content?: boolean;
 }
 
 interface AuthState {

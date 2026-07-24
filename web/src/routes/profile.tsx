@@ -7,6 +7,7 @@ import { Card } from "@/components/common/ui/Card";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { requireAuthenticatedSession } from "@/lib/auth/protected-route";
+import { AdultContentPreference } from "@/components/pages/ProfilePage/AdultContentPreference";
 
 export const Route = createFileRoute("/profile")({
   beforeLoad: ({ context, location }) => {
@@ -46,6 +47,10 @@ function ProfileRoute() {
                 <p className="text-lg font-mono">{user?.id}</p>
               </div>
             </div>
+
+            <AdultContentPreference
+              enabled={user?.allow_adult_content ?? false}
+            />
 
             <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
               <Button

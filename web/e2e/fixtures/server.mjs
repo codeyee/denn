@@ -13,6 +13,7 @@ const user = {
   email: "phase0@example.test",
   first_name: "Phase",
   last_name: "Zero",
+  allow_adult_content: false,
 };
 const now = "2026-07-23T12:00:00Z";
 const movie = {
@@ -141,6 +142,22 @@ const search = {
   albums: { ...emptyProxyCategory, error: null },
   books: { ...emptyProxyCategory, error: null },
 };
+const adultSearch = {
+  ...search,
+  movies: {
+    metadata: { page: 1, total_results: 2, total_pages: 1 },
+    results: [
+      ...search.movies.results,
+      {
+        ...search.movies.results[0],
+        id: "199",
+        title: "Explicit Opt-In Result",
+        original_title: "Explicit Opt-In Result",
+      },
+    ],
+    error: null,
+  },
+};
 const pagination = {
   count: 0,
   page_size: 20,
@@ -164,6 +181,7 @@ function corsHeaders(requestId) {
     "Access-Control-Allow-Credentials": "true",
     "Access-Control-Allow-Headers":
       "authorization,content-type,x-request-id,x-user-country",
+    "Access-Control-Allow-Methods": "GET,POST,PUT,PATCH,DELETE,OPTIONS",
     "Access-Control-Expose-Headers": "x-request-id,x-cache,server-timing",
     "Content-Type": "application/json",
     "X-Request-Id": requestId,
@@ -224,6 +242,7 @@ const core = createServer(async (request, response) => {
     state.cacheStatus = "MISS";
     state.detailDelayMs = 0;
     state.detailStatus = 200;
+    user.allow_adult_content = false;
     return json(response, 200, { ok: true }, corsHeaders(requestId));
   }
   if (url.pathname === "/__fixture__/scenario" && request.method === "POST") {
@@ -277,6 +296,10 @@ const core = createServer(async (request, response) => {
     const authorization = request.headers.authorization ?? "";
     if (authorization === "Bearer expired-access") {
       return json(response, 401, { detail: "expired" }, headers);
+    }
+    if (request.method === "PATCH") {
+      const body = await readJson(request);
+      user.allow_adult_content = body.allow_adult_content === true;
     }
     return json(response, 200, user, headers);
   }
@@ -381,7 +404,12 @@ const proxy = createServer((request, response) => {
     return json(response, 200, homepage, { ...headers, "X-Cache": current });
   }
   if (url.pathname === "/v1/proxy/search") {
-    return json(response, 200, search, { ...headers, "X-Cache": "BYPASS" });
+    const allowAdult = url.searchParams.get("adult") === "include";
+    return json(response, 200, allowAdult ? adultSearch : search, {
+      ...headers,
+      "X-Cache": "BYPASS",
+      "X-Content-Policy": allowAdult ? "adult-include" : "adult-exclude",
+    });
   }
   return json(response, 404, { error: "fixture route not found" }, headers);
 });

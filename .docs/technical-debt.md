@@ -19,9 +19,10 @@ their lasting outcome is reflected in architecture or history docs.
 - Frontend Query migration has production-build smoke coverage for the
   critical routes, but Add-to-List and ListDetail still need broader
   mutation/rollback interaction tests.
-- Adult exclusion is explicit for TMDB and cache-policy safe, but other
-  providers lack an equivalent trusted flag and the product still needs
-  a documented user-preference/classification model (#32).
+- Adult search preference and cache isolation are implemented. IGDB,
+  Spotify, and OpenLibrary still lack an equivalent trusted classifier;
+  their results remain explicitly unclassified and Denn must not infer
+  safety from free text.
 - Country-scoped streaming availability is persisted separately, but
   freshness is still tied to the global content detail lifecycle instead
   of an independent per-country policy.

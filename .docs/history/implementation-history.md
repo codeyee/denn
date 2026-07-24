@@ -183,6 +183,21 @@ This document keeps the durable outcomes of completed implementation plans after
   routes plus reduced-motion, keyboard, responsive, landscape,
   touch-target, media-budget, route, and Web Vitals checks.
 
+## Adult-Content Search Preference
+
+- New accounts default to excluding adult content, and authenticated
+  users can explicitly opt into adult results for deliberate searches
+  from Profile.
+- Homepage, featured content, previews, and automatic recommendations
+  remain filtered regardless of that preference.
+- TMDB receives the matching upstream policy and is filtered again when
+  exclusion is active. Other providers remain explicitly unclassified
+  because they do not expose an equivalent trustworthy signal.
+- Provider and aggregate cache keys include the policy, preventing
+  default and opted-in users from sharing a search payload.
+- Core persistence tests, proxy policy/cache tests, and production-build
+  browser smoke cover the safe default and opt-in path.
+
 ## What This History Replaces
 
 The detailed execution plans were intentionally removed after their durable outcomes were extracted here and into the architecture, features, debt, and roadmap docs.

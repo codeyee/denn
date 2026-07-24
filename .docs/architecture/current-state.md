@@ -137,6 +137,9 @@ See [`auth-session-bootstrap.md`](./auth-session-bootstrap.md).
 See [`content-lifecycle.md`](./content-lifecycle.md).
 Discovery filtering is defined in
 [`content-eligibility.md`](./content-eligibility.md).
+Automatic discovery always applies the safe policy. Authenticated users
+may opt into reliably classified adult results only for deliberate
+direct search; both provider and aggregate caches isolate that policy.
 
 ## Canonical Supporting Docs
 

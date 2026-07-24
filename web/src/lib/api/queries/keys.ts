@@ -36,7 +36,12 @@ export const queryKeys = {
   },
   search: {
     all: ["search"] as const,
-    multi: (params: { query: string; limit: number; country?: string | null }) =>
+    multi: (params: {
+      query: string;
+      limit: number;
+      country?: string | null;
+      allowAdult: boolean;
+    }) =>
       ["search", "multi", params] as const,
   },
   lists: {

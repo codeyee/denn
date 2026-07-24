@@ -9,6 +9,7 @@ interface UseMultiSearchQueryOptions {
   country?: string | null;
   enabled?: boolean;
   initialData?: MultiSearchResponse;
+  allowAdult?: boolean;
 }
 
 export function useMultiSearchQuery(
@@ -18,6 +19,7 @@ export function useMultiSearchQuery(
     country,
     enabled = true,
     initialData,
+    allowAdult = false,
   }: UseMultiSearchQueryOptions = {},
 ) {
   const trimmedQuery = query.trim();
@@ -27,10 +29,15 @@ export function useMultiSearchQuery(
       query: trimmedQuery,
       limit,
       country: country ?? null,
+      allowAdult,
     }),
     queryFn: ({ signal }) =>
       searchActions.multiSearch(
-        { q: trimmedQuery, limit },
+        {
+          q: trimmedQuery,
+          limit,
+          adult: allowAdult ? "include" : "exclude",
+        },
         signal,
         country ?? undefined,
       ),

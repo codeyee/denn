@@ -1,14 +1,21 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from django.db.models import Q
+from authentication.models import UserPreferences
 from content.models import UserList, Rating
 from content.serializers import UserListSerializer, RatingSerializer
+
 
 class ProfileSerializer(serializers.ModelSerializer):
     lists = serializers.SerializerMethodField()
     ratings = serializers.SerializerMethodField()
     lists_count = serializers.SerializerMethodField()
     ratings_count = serializers.SerializerMethodField()
+    allow_adult_content = serializers.BooleanField(
+        source='preferences.allow_adult_content',
+        required=False,
+        default=False,
+    )
 
     class Meta:
         model = User
@@ -22,7 +29,8 @@ class ProfileSerializer(serializers.ModelSerializer):
             'lists',
             'ratings',
             'lists_count',
-            'ratings_count'
+            'ratings_count',
+            'allow_adult_content',
         ]
 
         read_only_fields = ['id']
@@ -47,3 +55,18 @@ class ProfileSerializer(serializers.ModelSerializer):
 
     def get_ratings_count(self, obj):
         return Rating.objects.filter(user=obj).count()
+
+    def update(self, instance, validated_data):
+        preferences = validated_data.pop('preferences', None)
+        user = super().update(instance, validated_data)
+
+        if preferences and 'allow_adult_content' in preferences:
+            preference, _ = UserPreferences.objects.update_or_create(
+                user=user,
+                defaults={
+                    'allow_adult_content': preferences['allow_adult_content'],
+                },
+            )
+            user.preferences = preference
+
+        return user

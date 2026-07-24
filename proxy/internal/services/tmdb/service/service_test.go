@@ -103,6 +103,33 @@ func TestSearchMovies(t *testing.T) {
 	}
 }
 
+func TestSearchMoviesAllowsFlaggedResultsAfterExplicitOptIn(t *testing.T) {
+	mockResponse := tmdb.TmdbSearchResponse{
+		Page:         1,
+		TotalPages:   1,
+		TotalResults: 2,
+		Results: []tmdb.TmdbSearchResult{
+			{ID: 1, Title: "Unflagged", ReleaseDate: "2023-01-01"},
+			{ID: 2, Adult: true, Title: "Flagged", ReleaseDate: "2023-01-01"},
+		},
+	}
+
+	service := newTestService(func(req *http.Request) (*http.Response, error) {
+		if req.URL.Query().Get("include_adult") != "true" {
+			t.Errorf("expected include_adult=true, got %s", req.URL.Query().Get("include_adult"))
+		}
+		return makeJSONResponse(http.StatusOK, mockResponse)
+	})
+
+	result, err := service.SearchMoviesWithAdult(context.Background(), "test", 1, 20, true)
+	if err != nil {
+		t.Fatalf("SearchMoviesWithAdult failed: %v", err)
+	}
+	if len(result.Results) != 2 {
+		t.Fatalf("expected flagged and unflagged results, got %d", len(result.Results))
+	}
+}
+
 func TestGetMovieComplete(t *testing.T) {
 	mockResponse := tmdb.TmdbMovieDetail{
 		ID:          1,
