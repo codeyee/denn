@@ -103,7 +103,7 @@ See [`data-fetching.md`](./data-fetching.md).
 
 ## Current Auth State
 
-- ADR 0002 is only in phase 1.
+- ADR 0002 phases 1–3 are implemented.
 - JWTs exist only in server-readable `HttpOnly` cookies and outbound
   server-to-core Authorization headers.
 - Zustand/localStorage persist only non-sensitive identity/UI state.
@@ -120,6 +120,9 @@ See [`data-fetching.md`](./data-fetching.md).
 - Protected routes redirect only for confirmed anonymous/expired
   sessions. Operational failures preserve known credentials, render a
   recoverable fallback, and never masquerade as logout.
+- Content-detail client reads have one bounded attempt; timeout or
+  upstream failure renders an explicit retry instead of leaving an
+  unbounded skeleton or discarding the session.
 
 See [`auth-session-bootstrap.md`](./auth-session-bootstrap.md).
 

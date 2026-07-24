@@ -33,6 +33,7 @@ interface UseContentDataReturn {
   contentItem: ContentItem | null;
   detailData: DetailPayload;
   tvShowTitle: string | null;
+  retry: () => void;
 }
 
 /**
@@ -89,5 +90,8 @@ export function useContentData({
     contentItem: item,
     detailData,
     tvShowTitle,
+    retry: () => {
+      void query.refetch();
+    },
   };
 }

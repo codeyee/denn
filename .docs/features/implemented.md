@@ -80,6 +80,9 @@ considered part of the project baseline.
   automated axe coverage across critical and legal routes, responsive
   and keyboard checks, sub-100ms navigation-feedback checks, redacted
   browser failure artifacts and a scheduled cold/warm baseline.
+- Bounded content-detail failure handling: a slow/failed client read
+  exits the skeleton at five seconds, preserves authentication, and
+  offers an explicit retry covered by the degraded-browser matrix.
 
 ## Current Compatibility Guarantees
 

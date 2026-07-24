@@ -79,6 +79,17 @@ for (const detailDelayMs of [500, 2_000, 6_500]) {
     await expect(
       page.getByRole("heading", { name: "Movies" }),
     ).toHaveCount(0);
+
+    if (detailDelayMs > 5_000) {
+      await expect(
+        page.getByRole("heading", { name: "Could not open this content" }),
+      ).toBeVisible({ timeout: detailDelayMs + 2_000 });
+      await request.post(`${fixtureUrl}/__fixture__/scenario`, {
+        data: { detailDelayMs: 0 },
+      });
+      await page.getByRole("button", { name: "Retry" }).click();
+    }
+
     await expect(
       page.getByText("Deterministic metadata for browser guardrails."),
     ).toBeVisible({ timeout: detailDelayMs + 5_000 });
@@ -93,8 +104,8 @@ for (const detailDelayMs of [500, 2_000, 6_500]) {
       requests.filter(
         ({ method, path }) =>
           method === "GET" && path === "/api/content/1/",
-      ),
-    ).toHaveLength(1);
+      ).length,
+    ).toBe(detailDelayMs > 5_000 ? 2 : 1);
     expect(
       requests.filter(
         ({ method, path }) =>
@@ -179,7 +190,10 @@ test("logout reaches the public home without a redirect loop @regression", async
 }) => {
   await page.goto("/profile");
   await expect(page.getByRole("heading", { name: "Profile" })).toBeVisible();
-  await page.getByRole("button", { name: "Logout", exact: true }).click();
+  await page
+    .locator("main")
+    .getByRole("button", { name: "Logout", exact: true })
+    .click();
 
   await expect(page).toHaveURL(/\/$/);
   await expect(page.getByRole("link", { name: "Sign In" })).toBeVisible();

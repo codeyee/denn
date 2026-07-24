@@ -27,5 +27,6 @@ export function useContentDetailQuery(
     enabled,
     initialData,
     staleTime: 5 * 60_000,
+    retry: false,
   });
 }

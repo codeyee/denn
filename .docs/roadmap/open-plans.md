@@ -10,16 +10,17 @@ This file summarizes the work that is still open, partially implemented, or next
    controlled hero behavior, and real legal/support routes.
 2. Preserve the completed safe-default content preference and
    policy-scoped cache boundary from #32.
-3. Preserve the completed Phase 3 BFF/HttpOnly auth boundary from #19,
-   then execute the Phase 4 staging/cache validation and deployed smoke
-   gate.
+3. Preserve the completed Phase 3 BFF/HttpOnly auth boundary and the
+   completed local Phase 4 release-candidate gate, then execute the
+   staging/deployed smoke and observation window.
 4. Resume the product sprint line only after the roadmap release gates
    that protect the same critical routes are met.
 
 ## Post-Audit Remediation Roadmap
 
-- Status: Phases 0–3 and the #32 safety dependency are implementation
-  complete; Phase 4 remains open.
+- Status: Phases 0–3, the #32 safety dependency, and the local Phase 4
+  release-candidate gate are complete. Staging/deployed validation and
+  its observation window remain open.
 - Epic: [#35](https://github.com/codeyee/denn/issues/35).
 - Phase 0 evidence:
   [`../perf/baseline.md`](../perf/baseline.md),
@@ -63,6 +64,15 @@ only deliberate direct search can include reliably classified TMDB
 results. The selected policy is carried into both provider and aggregate
 cache keys, while unclassified providers are documented and never
 inferred from free text.
+
+Phase 4 local evidence is recorded in
+[`../perf/baseline.md`](../perf/baseline.md): all three root validation
+commands, 14 desktop/mobile smoke scenarios, 10 applicable regression
+scenarios, 24 accessibility/responsive scenarios, and the 60-sample
+cold/warm baseline pass. The fixture smoke proves exact
+`MISS`/`HIT`/`STALE` propagation. This evidence must still be repeated
+against the deployed validated SHA with a non-personal account; local
+fixtures are not staging evidence.
 
 ## Old TODO Triage
 
@@ -150,7 +160,7 @@ Detailed sprint plans:
 
 ## Performance Baseline And Perceived Speed
 
-- Status: Phase 1 local after-snapshot recorded; deployed
+- Status: Phase 4 local release-candidate snapshot recorded; deployed
   after-measurement remains a release-gate activity.
 
 Implemented baseline:

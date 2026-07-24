@@ -43,8 +43,8 @@ tooling.
 - Changes under `web/**` also run the deterministic desktop Playwright
   smoke. Browser failure artifacts are retained for diagnosis.
 - `.github/workflows/browser-baseline.yml` runs weekly and on demand for
-  cold/warm measurements plus expected-failure audit characterization;
-  it is evidence, not a deploy gate.
+  cold/warm measurements plus the promoted regression matrix; it is
+  evidence, not a deploy gate.
 - Pushes to `main` deploy by path:
   - `web/**` -> `.github/workflows/deploy-web.yml`
   - `core/**` -> `.github/workflows/deploy-core.yml`

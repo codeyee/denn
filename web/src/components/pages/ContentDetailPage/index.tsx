@@ -30,11 +30,12 @@ export function ContentDetailPage({
 }: ContentDetailPageProps) {
   const { user } = useAuthStore();
 
-  const { loading, error, contentItem, detailData, tvShowTitle } = useContentData({
-    contentId,
-    country: country ?? undefined,
-    initialData: initialContentItem,
-  });
+  const { loading, error, contentItem, detailData, tvShowTitle, retry } =
+    useContentData({
+      contentId,
+      country: country ?? undefined,
+      initialData: initialContentItem,
+    });
 
   const rating = useUserRating({
     contentItem,
@@ -59,11 +60,11 @@ export function ContentDetailPage({
   if (error || !contentItem) {
     return (
       <ContentDetailState
-        title="Error loading content"
+        title="Could not open this content"
         message={error || "Content not found"}
         tone="error"
-        actionLabel="Go back"
-        onAction={() => window.history.back()}
+        actionLabel="Retry"
+        onAction={retry}
       />
     );
   }

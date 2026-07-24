@@ -133,6 +133,41 @@ production-build test additionally proves that inactive hero artwork is
 not requested during the first second and is only loaded when its
 five-second activation approaches.
 
+## Phase 4 Local Release-Candidate Snapshot
+
+Captured 2026-07-24 from the release-candidate branch after the Phase 3
+BFF/HttpOnly auth migration and the final degraded-detail recovery
+gate. The method and sample count are unchanged: five fresh contexts and
+five warm reloads per flow against the deterministic production bundle.
+Raw evidence remains in `web/test-results/phase0-baseline.json`.
+
+| Flow | State | TTFB p50/p75/p95 | FCP p75 | LCP p50/p75/p95 | INP p75/p95 | CLS p75/p95 |
+|---|---|---|---:|---|---|---|
+| Login | cold | 6.2 / 6.9 / 11.6 | 36 | 464 / 468 / 472 | 0 / 0 | 0 / 0 |
+| Login | warm | 6.4 / 7.2 / 7.6 | 48 | 44 / 48 / 464 | 0 / 0 | 0 / 0 |
+| Home | cold | 19.4 / 32.8 / 35.3 | 64 | 48 / 64 / 64 | 16 / 16 | 0 / 0 |
+| Home | warm | 17.4 / 17.8 / 18.3 | 60 | 60 / 60 / 64 | 16 / 16 | 0 / 0 |
+| Search | cold | 14.7 / 14.7 / 15.9 | 36 | 36 / 36 / 36 | 0 / 0 | 0 / 0 |
+| Search | warm | 13.5 / 13.7 / 14.2 | 52 | 48 / 52 / 52 | 0 / 16 | 0 / 0 |
+| Detail | cold | 8.7 / 10.8 / 14.6 | 32 | 92 / 92 / 100 | 0 / 0 | 0 / 0 |
+| Detail | warm | 9.6 / 9.8 / 10.5 | 48 | 68 / 72 / 72 | 0 / 0 | 0 / 0 |
+| Lists | cold | 7.1 / 8.3 / 13.1 | 88 | 100 / 104 / 104 | 0 / 0 | 0.03 / 0.03 |
+| Lists | warm | 6.7 / 7.0 / 7.4 | 72 | 80 / 80 / 92 | 16 / 24 | 0.03 / 0.03 |
+| Profile | cold | 4.9 / 5.3 / 6.5 | 72 | 72 / 72 / 76 | 0 / 0 | 0 / 0 |
+| Profile | warm | 5.1 / 5.1 / 11.9 | 60 | 60 / 60 / 64 | 0 / 0 | 0 / 0 |
+
+The local release gates passed with Home p75 LCP 64 ms in both states,
+INP 16 ms, and CLS 0. The full browser matrix also proved exact
+`MISS`, `HIT`, and `STALE` propagation through the BFF and
+`Server-Timing`, bounded 5-second detail failure with an explicit retry,
+desktop/mobile session continuity, and absence of the named React 418,
+hover-write, unnamed-control, and transient-logout regressions.
+
+These are fixture results, not deployed after-measurements. Phase 4 is
+not operationally complete until the same commit is deployed, exercised
+with the dedicated non-personal account, and observed for the agreed
+release window.
+
 ## Backend Telemetry Contract
 
 With `PERF_LOGGING_ENABLED=true`, every critical `core` request emits:

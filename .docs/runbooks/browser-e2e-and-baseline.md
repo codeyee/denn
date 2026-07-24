@@ -46,20 +46,19 @@ part of the local full smoke so responsive coverage is cheap to repeat.
 make e2e-web-regressions
 ```
 
-Expected result: exit `0`, with failures reported as expected and
-unimplemented/intermittent cases reported as skipped/fixme.
+Expected result: exit `0`. Ten promoted regression gates pass and the
+deliberate artifact probe is skipped unless explicitly enabled.
 
-The quarantined scenarios intentionally document current failures:
+The suite proves:
 
-- #20: hover/focus/touch prefetch can perform
-  `POST /api/content/items/get_or_create/`;
-- #18: transient `core` 5xx can lose a valid protected session;
-- #18: logout from a protected route can enter a recursive login redirect;
-- #18: auth bootstrap lacks a bounded timeout/retry state;
-- #17: intermittent React 418/hydration mismatch.
-
-Move a scenario into the stable smoke only after its product fix is
-merged. Do not delete it to make CI green.
+- hover/focus prefetch performs no content mutation;
+- 500 ms and 2 s detail reads complete with feedback in under 100 ms;
+- a 6.5 s detail read reaches the bounded error state and recovers by
+  explicit retry without losing the session;
+- detail `5xx`, transient session `5xx`, and session timeout all expose
+  recoverable UI;
+- logout does not loop, critical navigation emits no React 418/hydration
+  error, and the base landmark/zoom/touch contract holds.
 
 ## Failure Artifact Probe
 
@@ -105,6 +104,30 @@ The fixture separates browser cold/warm and proxy
 Never combine deterministic fixture measurements with deployed browser
 measurements. A deployed run must record target, commit SHA, region,
 cache state, browser/device, fixture account and sample count.
+
+## Phase 4 Release Gate
+
+Before asking to close roadmap issue #35:
+
+1. Run `make validate-web`, `make validate-core`, and
+   `make validate-proxy`.
+2. Run `make e2e-web`, `make e2e-web-regressions`, and
+   `make e2e-web-performance`.
+3. Run
+   `pnpm exec playwright test --project=accessibility-responsive` from
+   `web/`.
+4. Confirm the smoke observes exact `MISS`, `HIT`, and `STALE` values in
+   both `X-Cache` and `Server-Timing`.
+5. Deploy the exact validated SHA to staging, rerun the critical
+   desktop/mobile/keyboard/degraded matrix with the dedicated fixture
+   account, and record target, region, SHA, device, and cache state.
+6. Promote the same SHA, repeat the productive smoke with that
+   non-personal account, and monitor the thresholds in
+   [`../perf/baseline.md`](../perf/baseline.md) through the agreed
+   observation window.
+
+Local fixture evidence cannot satisfy steps 5–6 and must never be
+relabeled as staging or production evidence.
 
 ## CI
 

@@ -32,7 +32,9 @@ their lasting outcome is reflected in architecture or history docs.
   is still lighter than the main local detail lifecycle.
 - Deployed before/after measurements still depend on a non-personal
   staging fixture and an agreed observation window. CI numbers are a
-  deterministic engineering floor, not production latency.
+  deterministic engineering floor, not production latency. The Phase 4
+  local release candidate is green but does not close this operational
+  gap.
 
 ## Notes
 
