@@ -129,6 +129,12 @@ Before asking to close roadmap issue #35:
 Local fixture evidence cannot satisfy steps 5–6 and must never be
 relabeled as staging or production evidence.
 
+Latest closure record: roadmap #35 completed this gate on 2026-07-24.
+The canonical deployed samples, target, release SHA, cache states,
+fixture-account scope, and observation window are recorded separately
+from fixture results in
+[`../perf/baseline.md`](../perf/baseline.md).
+
 ## CI
 
 - `.github/workflows/monorepo-ci.yml` runs the desktop production-build

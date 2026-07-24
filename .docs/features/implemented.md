@@ -83,6 +83,10 @@ considered part of the project baseline.
 - Bounded content-detail failure handling: a slow/failed client read
   exits the skeleton at five seconds, preserves authentication, and
   offers an explicit retry covered by the degraded-browser matrix.
+- Production-verified release gate for roadmap #35: exact Web SHA
+  exposure, ordered cross-service deployment, Core migrations before
+  Gunicorn, dedicated-account headed-browser smoke, exact cache timing,
+  and deployed cold/warm Home percentiles.
 
 ## Current Compatibility Guarantees
 

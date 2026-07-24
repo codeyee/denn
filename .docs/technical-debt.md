@@ -30,11 +30,12 @@ their lasting outcome is reflected in architecture or history docs.
   surfaces still need the same coverage as they are changed.
 - `browse_metadata` has a working base model, but its refresh strategy
   is still lighter than the main local detail lifecycle.
-- Deployed before/after measurements still depend on a non-personal
-  staging fixture and an agreed observation window. CI numbers are a
-  deterministic engineering floor, not production latency. The Phase 4
-  local release candidate is green but does not close this operational
-  gap.
+- The deployed Home after-snapshot closed the roadmap's operational
+  measurement gap, but cold browser TTFB remains above the initial
+  800 ms warning threshold at p75 (891.8 ms) and p95 (1,091.2 ms).
+  Warm p75 is 435.5 ms and proxy MISS/HIT budgets pass, so further work
+  should target authenticated SSR/session and delivery overhead rather
+  than reopening the aggregate-cache implementation.
 
 ## Notes
 
