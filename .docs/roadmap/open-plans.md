@@ -46,8 +46,9 @@ before/after measurement.
 
 Phase 2 added a shared semantic responsive-media path, requests only the
 active hero artwork, lazily loads card media, and reserves stable image
-dimensions. The featured carousel now has pause/resume, interaction
-pause, reduced-motion behavior, stable geometry, and roving tab stops.
+dimensions. The featured carousel now has direct previous/next controls,
+interaction pause, reduced-motion behavior, stable geometry, and roving
+tab stops.
 The critical routes have one main landmark and one H1, route-change
 focus, semantic navigation, named controls, contrast fixes, and 44px
 primary targets. Mobile search, native horizontal carousel scrolling,

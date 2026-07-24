@@ -14,8 +14,7 @@ export function useBannerAutoRotation({
   interactionPaused,
 }: UseBannerAutoRotationParams) {
   const [index, setIndex] = useState(0);
-  const [pausedByUser, setPausedByUser] = useState(false);
-  const isPaused = !enabled || interactionPaused || pausedByUser;
+  const isPaused = !enabled || interactionPaused;
 
   useEffect(() => {
     setIndex((current) => Math.min(current, Math.max(0, itemCount - 1)));
@@ -33,8 +32,5 @@ export function useBannerAutoRotation({
   return {
     index,
     setIndex,
-    isPaused,
-    pausedByUser,
-    togglePaused: () => setPausedByUser((paused) => !paused),
   };
 }

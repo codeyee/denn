@@ -130,15 +130,19 @@ test("home mounts semantic responsive media without hidden hero slides", async (
   );
 });
 
-test("featured carousel pauses, uses one tab stop and respects reduced motion", async ({
+test("featured carousel navigates in both directions, uses one tab stop and respects reduced motion", async ({
   page,
 }) => {
   await page.goto("/");
-  const pause = page.getByRole("button", { name: "Pause featured carousel" });
-  await pause.click();
-  const title = await activeFeaturedTitle(page);
-  await page.waitForTimeout(5_250);
-  expect(await activeFeaturedTitle(page)).toBe(title);
+  const initialTitle = await activeFeaturedTitle(page);
+  await page
+    .getByRole("button", { name: "Show next featured item" })
+    .click();
+  expect(await activeFeaturedTitle(page)).not.toBe(initialTitle);
+  await page
+    .getByRole("button", { name: "Show previous featured item" })
+    .click();
+  expect(await activeFeaturedTitle(page)).toBe(initialTitle);
 
   const tabs = page.getByRole("tab");
   await expect(tabs).toHaveCount(3);
@@ -191,12 +195,45 @@ test("mobile first viewport exposes featured content and the next section", asyn
   const description = page
     .getByRole("region", { name: "Featured content" })
     .locator("p");
+  const featuredTitle = page
+    .getByRole("region", { name: "Featured content" })
+    .getByRole("heading", { level: 2 });
+  await expect(
+    page
+      .getByRole("region", { name: "Featured content" })
+      .getByRole("img", { name: "Content type: Movie" }),
+  ).toBeVisible();
 
   expect(featured, "Featured content must be visible").not.toBeNull();
   expect(featured?.y ?? viewport.height).toBeLessThan(viewport.height);
   expect(nextSection, "The next content section must be rendered").not.toBeNull();
   expect(nextSection?.y ?? viewport.height).toBeLessThan(viewport.height);
   await expect(description).toHaveCSS("-webkit-line-clamp", "2");
+  const descriptionBox = await description.boundingBox();
+  expect(descriptionBox, "Featured description must be visible").not.toBeNull();
+  expect(descriptionBox?.y ?? 0).toBeGreaterThanOrEqual(featured?.y ?? 0);
+  expect(
+    (descriptionBox?.y ?? 0) + (descriptionBox?.height ?? 0),
+  ).toBeLessThanOrEqual((featured?.y ?? 0) + (featured?.height ?? 0));
+  const titleBox = await featuredTitle.boundingBox();
+  const previousBox = await page
+    .getByRole("button", { name: "Show previous featured item" })
+    .boundingBox();
+  const nextBox = await page
+    .getByRole("button", { name: "Show next featured item" })
+    .boundingBox();
+  expect((previousBox?.y ?? 0) + (previousBox?.height ?? 0)).toBeLessThanOrEqual(
+    titleBox?.y ?? 0,
+  );
+  expect((nextBox?.y ?? 0) + (nextBox?.height ?? 0)).toBeLessThanOrEqual(
+    titleBox?.y ?? 0,
+  );
+  await expect(
+    page
+      .getByRole("region", { name: "Popular Movies" })
+      .getByText("Fixture Studio One, Fixture Studio Two & 1 more")
+      .first(),
+  ).toBeVisible();
 });
 
 test("primary mobile controls keep 44px targets", async ({ page }) => {
@@ -205,7 +242,8 @@ test("primary mobile controls keep 44px targets", async ({ page }) => {
   const tabs = await page.getByRole("tab").all();
   const controls = [
     page.getByRole("button", { name: "Open search" }),
-    page.getByRole("button", { name: "Pause featured carousel" }),
+    page.getByRole("button", { name: "Show previous featured item" }),
+    page.getByRole("button", { name: "Show next featured item" }),
     ...tabs,
   ];
 
@@ -217,7 +255,29 @@ test("primary mobile controls keep 44px targets", async ({ page }) => {
   }
 });
 
-test("content carousel scrolls without losing keyboard focus", async ({
+test("desktop featured controls stay clear of the title", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/");
+  const featured = page.getByRole("region", { name: "Featured content" });
+  await featured.hover();
+
+  const titleBox = await featured.getByRole("heading", { level: 2 }).boundingBox();
+  const previousBox = await featured
+    .getByRole("button", { name: "Show previous featured item" })
+    .boundingBox();
+  const nextBox = await featured
+    .getByRole("button", { name: "Show next featured item" })
+    .boundingBox();
+
+  expect((previousBox?.y ?? 0) + (previousBox?.height ?? 0)).toBeLessThanOrEqual(
+    titleBox?.y ?? 0,
+  );
+  expect((nextBox?.y ?? 0) + (nextBox?.height ?? 0)).toBeLessThanOrEqual(
+    titleBox?.y ?? 0,
+  );
+});
+
+test("content carousel accepts horizontal gestures without losing keyboard focus", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
@@ -225,7 +285,14 @@ test("content carousel scrolls without losing keyboard focus", async ({
   const carousel = page
     .locator('section[aria-roledescription="carousel"]')
     .filter({ has: page.getByRole("heading", { name: "Popular Movies" }) });
-  const scroller = carousel.locator(".overflow-x-auto");
+  const scroller = carousel.locator("[data-carousel-scroller]");
+  await scroller.hover();
+  await page.mouse.wheel(220, 0);
+  await expect
+    .poll(() => scroller.evaluate((node) => node.scrollLeft))
+    .toBeGreaterThan(0);
+
+  await scroller.evaluate((node) => node.scrollTo({ left: 0 }));
   const next = carousel.getByRole("button", { name: "Next items" });
   await next.focus();
   await next.press("Enter");
@@ -233,6 +300,47 @@ test("content carousel scrolls without losing keyboard focus", async ({
     .poll(() => scroller.evaluate((node) => node.scrollLeft))
     .toBeGreaterThan(0);
   await expect(next).toBeFocused();
+});
+
+test("desktop card previews preserve horizontal trackpad scrolling", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1024, height: 900 });
+  await page.goto("/");
+  const carousel = page
+    .locator('section[aria-roledescription="carousel"]')
+    .filter({ has: page.getByRole("heading", { name: "Popular Movies" }) });
+  const scroller = carousel.locator("[data-carousel-scroller]");
+
+  await scroller.evaluate((node) => {
+    const firstSlide = node.querySelector('[role="group"]');
+    if (firstSlide) node.appendChild(firstSlide.cloneNode(true));
+  });
+  await scroller.locator('[role="group"]').first().hover();
+  const preview = page.locator("body > div.fixed.overflow-hidden").last();
+  await expect(preview).toBeVisible();
+
+  await preview.dispatchEvent("wheel", { deltaX: 220, deltaY: 0 });
+  await expect
+    .poll(() => scroller.evaluate((node) => node.scrollLeft))
+    .toBeGreaterThan(0);
+});
+
+test("search result carousels accept horizontal trackpad gestures", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/search?q=phase");
+  const carousel = page
+    .locator('section[aria-roledescription="carousel"]')
+    .filter({ has: page.getByRole("heading", { name: "Movies" }) });
+  const scroller = carousel.locator("[data-carousel-scroller]");
+
+  await scroller.hover();
+  await page.mouse.wheel(220, 0);
+  await expect
+    .poll(() => scroller.evaluate((node) => node.scrollLeft))
+    .toBeGreaterThan(0);
 });
 
 test("landscape and 200-percent-equivalent reflow remain usable", async ({

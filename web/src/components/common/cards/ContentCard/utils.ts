@@ -58,19 +58,7 @@ export function getFooterInfo(item: Content): string {
 
 export function getAuthorsText(item: Content): string {
   if ("authors" in item && item.authors && item.authors.length > 0) {
-    if (
-      item.type === "MOVIE" ||
-      item.type === "TV_SHOW" ||
-      item.type === "GAME"
-    ) {
-      const firstAuthor = item.authors[0];
-      if (typeof firstAuthor === "string") {
-        return firstAuthor;
-      } else if (firstAuthor && "name" in firstAuthor) {
-        return firstAuthor.name;
-      }
-    }
-    return formatAuthors(item.authors as Author[]);
+    return formatAuthors(item.authors as Author[] | string[], 2);
   }
   return "";
 }

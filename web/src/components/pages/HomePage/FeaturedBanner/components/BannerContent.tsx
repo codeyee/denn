@@ -1,7 +1,9 @@
 import { Content } from "@/lib/types";
-import { ContentType } from "@/lib/types";
-import { Film, Tv, Gamepad2, Book, Music, LucideIcon } from "lucide-react";
 import { Button } from "@/components/common/ui/Button";
+import {
+  getContentTypeIcon,
+  getContentTypeLabel,
+} from "@/lib/icons/contentTypeIcons";
 import {
   getAuthors,
   getReleaseDate,
@@ -11,21 +13,14 @@ import {
   isOriginalTitleSame,
 } from "../utils";
 
-const TYPE_ICON_MAP: Record<string, LucideIcon> = {
-  [ContentType.MOVIE]: Film,
-  [ContentType.TV_SHOW]: Tv,
-  [ContentType.GAME]: Gamepad2,
-  [ContentType.BOOK]: Book,
-  [ContentType.ALBUM]: Music,
-};
-
 interface BannerContentProps {
   item: Content;
   onViewDetails: (item: Content) => void;
 }
 
 export function BannerContent({ item, onViewDetails }: BannerContentProps) {
-  const Icon = TYPE_ICON_MAP[item.type];
+  const Icon = getContentTypeIcon(item.type);
+  const typeLabel = getContentTypeLabel(item.type);
   const authors = getAuthors(item);
   const releaseDate = getReleaseDate(item);
   const originalTitle = getOriginalTitle(item);
@@ -36,8 +31,15 @@ export function BannerContent({ item, onViewDetails }: BannerContentProps) {
   return (
     <div className="relative z-30 flex h-full items-end">
       <div className="w-full px-4 pb-20 md:px-12 md:pb-24">
-        <div className="flex items-center gap-3 mb-1 md:mb-2">
-          {Icon && <Icon className="w-6 h-6 md:w-8 md:h-8 text-white/90" />}
+        <div className="mb-1 flex items-center gap-3 md:mb-2">
+          <span
+            role="img"
+            aria-label={`Content type: ${typeLabel}`}
+            title={typeLabel}
+            className="shrink-0 text-white/90"
+          >
+            <Icon aria-hidden="true" className="size-6 md:size-8" />
+          </span>
           <h2 className="line-clamp-2 text-2xl font-extrabold text-white drop-shadow-text text-balance sm:text-3xl md:text-5xl">
             {item.title}
           </h2>
@@ -64,7 +66,7 @@ export function BannerContent({ item, onViewDetails }: BannerContentProps) {
         </div>
 
         {"description" in item && item.description && (
-          <p className="mt-2 line-clamp-2 max-w-3xl text-xs text-white/90 text-pretty md:mt-3 md:line-clamp-3 md:text-base">
+          <p className="mt-2 line-clamp-2 max-h-10 max-w-3xl overflow-hidden text-pretty text-xs text-white/90 [overflow-wrap:anywhere] md:mt-3 md:max-h-[4.5rem] md:line-clamp-3 md:text-base">
             {item.description}
           </p>
         )}

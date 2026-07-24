@@ -3,6 +3,7 @@ import {
   useEffect,
   useState,
   type RefObject,
+  type WheelEvent,
 } from "react";
 
 interface UseCarouselScrollOptions {
@@ -74,12 +75,33 @@ export function useCarouselScroll({
     [containerRef],
   );
 
+  const handleWheel = useCallback(
+    (event: WheelEvent<HTMLDivElement>) => {
+      const container = containerRef.current;
+      if (!container || container.contains(event.target as Node)) return;
+
+      const horizontalDelta =
+        event.deltaX || (event.shiftKey ? event.deltaY : 0);
+      if (
+        horizontalDelta === 0 ||
+        Math.abs(horizontalDelta) <= Math.abs(event.deltaY)
+      ) {
+        return;
+      }
+
+      event.preventDefault();
+      container.scrollLeft += horizontalDelta;
+    },
+    [containerRef],
+  );
+
   return {
     canScrollNext,
     canScrollPrevious,
     visibleItems,
     handleNext: () => scroll(1),
     handlePrevious: () => scroll(-1),
+    handleWheel,
     updateScrollState,
   };
 }
