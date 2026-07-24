@@ -15,7 +15,10 @@ today.
 
 ## Canonical Request Paths
 
-- Browser -> `web` -> `core` for authenticated domain data.
+- Browser -> `web` BFF (`/api/core/*`) -> `core` for authenticated
+  domain data.
+- Browser -> fixed `web` BFF auth routes (`/api/auth/*`) -> `core` for
+  login, registration, refresh and logout.
 - Browser -> `web` BFF (`/api/proxy/*`) -> `proxy` for public metadata.
 - `web` route loaders and server-side fetch helpers -> `proxy` for
   server-side metadata reads.
@@ -101,8 +104,12 @@ See [`data-fetching.md`](./data-fetching.md).
 ## Current Auth State
 
 - ADR 0002 is only in phase 1.
-- JWTs are no longer persisted to `localStorage`.
-- Tokens still exist in JS-readable cookies and in-memory Zustand state.
+- JWTs exist only in server-readable `HttpOnly` cookies and outbound
+  server-to-core Authorization headers.
+- Zustand/localStorage persist only non-sensitive identity/UI state.
+- Browser mutations use same-origin BFF routes with double-submit CSRF;
+  refresh rotation is coalesced and logout-all blacklists every
+  outstanding refresh credential.
 - The TanStack Start root route (`web/src/routes/__root.tsx`) resolves
   the session server-side via `getSessionFn` and mounts a global
   `AuthSessionBootstrap`.

@@ -21,7 +21,7 @@ export const Route = createFileRoute("/profile")({
 });
 
 function ProfileRoute() {
-  const { user, logout } = useAuth();
+  const { user, logout, logoutEverywhere } = useAuth();
 
   return (
     <ProtectedRoute>
@@ -52,13 +52,20 @@ function ProfileRoute() {
               enabled={user?.allow_adult_content ?? false}
             />
 
-            <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+            <div className="mt-8 flex flex-wrap gap-3 border-t border-gray-200 pt-6 dark:border-gray-700">
               <Button
                 onClick={logout}
                 variant="destructive"
                 className="cursor-pointer"
               >
                 Logout
+              </Button>
+              <Button
+                onClick={logoutEverywhere}
+                variant="outline"
+                className="cursor-pointer"
+              >
+                Logout everywhere
               </Button>
             </div>
           </Card>

@@ -311,7 +311,10 @@ const core = createServer(async (request, response) => {
       headers,
     );
   }
-  if (url.pathname === "/api/auth/logout/") {
+  if (
+    url.pathname === "/api/auth/logout/" ||
+    url.pathname === "/api/auth/logout-all/"
+  ) {
     return json(response, 200, { detail: "ok" }, headers);
   }
   if (url.pathname === "/api/content/lists/") {

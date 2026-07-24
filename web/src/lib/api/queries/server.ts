@@ -1,5 +1,8 @@
 import { QueryClient } from "@tanstack/react-query";
+import { createIsomorphicFn } from "@tanstack/react-start";
+import { getCookie } from "@tanstack/react-start/server";
 
+import { AUTH_ACCESS_COOKIE } from "@/lib/auth/constants";
 import { getApiUrl, getProxyApiUrl } from "@/lib/env";
 import type { SessionSnapshot } from "@/server/session";
 import { buildProxyHeaders, getLogicalRequestId } from "@/server/proxy";
@@ -45,7 +48,8 @@ export async function prefetchHomeQueries(
   session: SessionSnapshot,
   country: string | null,
 ) {
-  if (!session.isAuthenticated || !session.accessToken) return undefined;
+  const accessToken = getServerAccessToken(session);
+  if (!accessToken) return undefined;
 
   const listParams = homeListParams(country);
   const requestId = getLogicalRequestId();
@@ -57,16 +61,12 @@ export async function prefetchHomeQueries(
         country,
       }),
       queryFn: () =>
-        fetchServerSuggestions(
-          session.accessToken!,
-          country,
-          requestId,
-        ),
+        fetchServerSuggestions(accessToken, country, requestId),
     }),
     qc.prefetchQuery({
       queryKey: queryKeys.lists.list(listParams),
       queryFn: () =>
-        fetchServerUserLists(session.accessToken!, listParams, requestId),
+        fetchServerUserLists(accessToken, listParams, requestId),
     }),
   ]);
 }
@@ -78,7 +78,8 @@ export async function prefetchSearchQuery(
   country: string | null,
 ) {
   const trimmedQuery = query.trim();
-  if (!session.isAuthenticated || !trimmedQuery) return;
+  const accessToken = getServerAccessToken(session);
+  if (!accessToken || !trimmedQuery) return;
   const requestId = getLogicalRequestId();
   const allowAdult = session.user?.allow_adult_content ?? false;
 
@@ -91,7 +92,7 @@ export async function prefetchSearchQuery(
     }),
     queryFn: () =>
       fetchServerSearch(
-        session.accessToken!,
+        accessToken,
         trimmedQuery,
         country,
         requestId,
@@ -106,14 +107,15 @@ export async function prefetchContentDetailQueries(
   contentId: number,
   country: string | null,
 ) {
-  if (!session.isAuthenticated || !session.accessToken) return;
+  const accessToken = getServerAccessToken(session);
+  if (!accessToken) return;
   const requestId = getLogicalRequestId();
 
   const contentItem = await qc.fetchQuery({
     queryKey: queryKeys.contentDetail.byId(contentId, country ?? undefined),
     queryFn: () =>
       fetchServerContentDetail(
-        session.accessToken!,
+        accessToken,
         contentId,
         country,
         requestId,
@@ -137,7 +139,8 @@ export async function prefetchListDetailQueries(
   query: ListItemQuery,
   country: string | null,
 ) {
-  if (!session.isAuthenticated || !session.accessToken) return;
+  const accessToken = getServerAccessToken(session);
+  if (!accessToken) return;
 
   const options = listItemsOptions(query, country);
   const requestId = getLogicalRequestId();
@@ -146,12 +149,12 @@ export async function prefetchListDetailQueries(
     qc.prefetchQuery({
       queryKey: queryKeys.lists.detail(listId, LIST_DETAIL_METADATA_PARAMS),
       queryFn: () =>
-        fetchServerListMetadata(session.accessToken!, listId, requestId),
+        fetchServerListMetadata(accessToken, listId, requestId),
     }),
     qc.prefetchQuery({
       queryKey: queryKeys.lists.stats(listId),
       queryFn: () =>
-        fetchServerListStats(session.accessToken!, listId, requestId),
+        fetchServerListStats(accessToken, listId, requestId),
     }),
     qc.prefetchQuery({
       queryKey: queryKeys.listItems.page(listId, {
@@ -161,7 +164,7 @@ export async function prefetchListDetailQueries(
       }),
       queryFn: () =>
         fetchServerListItems(
-          session.accessToken!,
+          accessToken,
           listId,
           query.page,
           query.pageSize,
@@ -171,6 +174,15 @@ export async function prefetchListDetailQueries(
     }),
   ]);
 }
+
+function getServerAccessToken(session: SessionSnapshot) {
+  if (!session.isAuthenticated) return null;
+  return readAccessToken();
+}
+
+const readAccessToken = createIsomorphicFn()
+  .server(() => getCookie(AUTH_ACCESS_COOKIE) ?? null)
+  .client(() => null);
 
 export function homeListParams(country: string | null) {
   return {

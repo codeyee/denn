@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 
@@ -17,8 +17,15 @@ export function AdultContentPreference({
   const router = useRouter();
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentEnabled, setCurrentEnabled] = useState(enabled);
+
+  useEffect(() => {
+    setCurrentEnabled(enabled);
+  }, [enabled]);
 
   async function updatePreference(nextEnabled: boolean) {
+    const previousEnabled = currentEnabled;
+    setCurrentEnabled(nextEnabled);
     setIsPending(true);
     setError(null);
 
@@ -30,6 +37,7 @@ export function AdultContentPreference({
       await queryClient.invalidateQueries({ queryKey: queryKeys.search.all });
       await router.invalidate();
     } catch (caughtError) {
+      setCurrentEnabled(previousEnabled);
       setError(
         caughtError instanceof Error
           ? caughtError.message
@@ -61,11 +69,11 @@ export function AdultContentPreference({
           <input
             type="checkbox"
             className="h-5 w-5 accent-primary"
-            checked={enabled}
+            checked={currentEnabled}
             disabled={isPending}
             onChange={(event) => void updatePreference(event.target.checked)}
           />
-          <span aria-hidden="true">{enabled ? "On" : "Off"}</span>
+          <span aria-hidden="true">{currentEnabled ? "On" : "Off"}</span>
         </label>
       </div>
       <p className="mt-3 text-sm text-gray-400" aria-live="polite">

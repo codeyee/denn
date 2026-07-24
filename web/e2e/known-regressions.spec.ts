@@ -11,6 +11,7 @@ test.beforeEach(async ({ context, request }) => {
       domain: "127.0.0.1",
       path: "/",
       sameSite: "Lax",
+      httpOnly: true,
     },
     {
       name: "refresh-token",
@@ -18,6 +19,7 @@ test.beforeEach(async ({ context, request }) => {
       domain: "127.0.0.1",
       path: "/",
       sameSite: "Lax",
+      httpOnly: true,
     },
   ]);
 });
@@ -177,7 +179,7 @@ test("logout reaches the public home without a redirect loop @regression", async
 }) => {
   await page.goto("/profile");
   await expect(page.getByRole("heading", { name: "Profile" })).toBeVisible();
-  await page.locator("button").filter({ hasText: "Logout" }).click();
+  await page.getByRole("button", { name: "Logout", exact: true }).click();
 
   await expect(page).toHaveURL(/\/$/);
   await expect(page.getByRole("link", { name: "Sign In" })).toBeVisible();

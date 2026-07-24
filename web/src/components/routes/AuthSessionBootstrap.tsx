@@ -23,25 +23,17 @@ export function AuthSessionBootstrap({ session }: AuthSessionBootstrapProps) {
       return;
     }
 
-    // The server detected that the refresh failed and the cookies are now
-    // stale (see resolveSession in lib/auth/session-server.ts). Clear the
-    // client-side state and the non-HttpOnly cookies so the next navigation
-    // does not re-attempt auth with a known-dead token.
-    if (session.needsCookieSync && !session.accessToken) {
+    if (session.resolution === "expired") {
       clearSession();
+      setSessionResolution("expired");
       return;
     }
 
     setSession({
       user: session.user,
-      accessToken: session.accessToken,
-      refreshToken: session.refreshToken,
     });
   }, [
-    session.accessToken,
-    session.refreshToken,
     session.user,
-    session.needsCookieSync,
     session.resolution,
     setSession,
     clearSession,

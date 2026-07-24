@@ -3,6 +3,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, OpenApiExample
 from authentication.serializers import RegisterSerializer, UserSerializer
+from dj_rest_auth.jwt_auth import set_jwt_cookies
 from core.throttling import AuthRateThrottle
 
 @extend_schema(
@@ -63,11 +64,11 @@ class RegisterView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
-        return Response(
+        response = Response(
             {
                 'user': UserSerializer(user).data,
-                'access': user.access,
-                'refresh': user.refresh,
             },
             status=status.HTTP_201_CREATED
         )
+        set_jwt_cookies(response, user.access, user.refresh)
+        return response

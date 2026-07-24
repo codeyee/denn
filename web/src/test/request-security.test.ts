@@ -10,6 +10,7 @@ import {
   isSafeProxyPath,
 } from "@/routes/api/proxy/$";
 import { isValidPayload } from "@/routes/api/perf/vitals";
+import { buildCoreUrl, isSafeCorePath } from "@/server/core-bff";
 
 describe("BFF request security", () => {
   it("keeps proxy requests under the configured base path", () => {
@@ -21,6 +22,21 @@ describe("BFF request security", () => {
     expect(isSafeProxyPath("movies\\..\\health")).toBe(false);
     expect(() => buildProxyUrl("http://proxy:8080/v1/proxy", "../health", ""))
       .toThrow("Unsafe proxy path");
+  });
+
+  it("keeps authenticated core requests under the configured API path", () => {
+    expect(
+      buildCoreUrl(
+        "http://core:8000/api",
+        "content/lists/1/",
+        "?country=CO",
+      ),
+    ).toBe("http://core:8000/api/content/lists/1/?country=CO");
+    expect(isSafeCorePath("../admin/")).toBe(false);
+    expect(isSafeCorePath("%252e%252e/admin/")).toBe(false);
+    expect(() =>
+      buildCoreUrl("http://core:8000/api", "../admin/", ""),
+    ).toThrow("Unsafe core path");
   });
 
   it("accepts only bounded Web Vitals fields", () => {

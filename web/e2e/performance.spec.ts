@@ -72,6 +72,7 @@ async function addAuthCookies(context: BrowserContext) {
       domain: "127.0.0.1",
       path: "/",
       sameSite: "Lax",
+      httpOnly: true,
     },
     {
       name: "refresh-token",
@@ -79,6 +80,7 @@ async function addAuthCookies(context: BrowserContext) {
       domain: "127.0.0.1",
       path: "/",
       sameSite: "Lax",
+      httpOnly: true,
     },
   ]);
 }

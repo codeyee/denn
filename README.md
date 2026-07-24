@@ -35,7 +35,8 @@ and leaderboards are planned but not yet part of the shipped baseline.
 
 The integration model is intentionally hybrid:
 
-- **Browser -> `web` -> `core`** for authenticated domain data.
+- **Browser -> `web` BFF -> `core`** for authenticated domain data and
+  auth lifecycle calls.
 - **Browser -> `web` BFF -> `proxy`** for public metadata calls.
 - **`web` server loaders and server functions -> `proxy`** for SSR metadata reads.
 - **`core` -> `proxy`** for enrichment and refresh of persisted content.
@@ -117,13 +118,15 @@ Denn uses an internal content id as the stable public route key:
 
 ### Auth State
 
-The auth model is in transition:
+The auth model is server-mediated:
 
-- JWTs are no longer persisted to `localStorage`
+- JWTs exist only in `HttpOnly`, production-`Secure`,
+  `SameSite=Lax` cookies
 - the root route resolves session server-side (`beforeLoad` / server
   functions) and bootstraps the client store globally
-- cookies are still not `HttpOnly` yet, so the final hardening phase is
-  still open
+- browser API calls use same-origin BFF routes and mutations require a
+  double-submit CSRF token
+- Zustand/localStorage contain identity and UI state, never JWTs
 
 That roadmap is documented in [`.docs/adr/0002-web-auth-cookies.md`](./.docs/adr/0002-web-auth-cookies.md).
 
@@ -157,7 +160,9 @@ Key implementation traits:
 - id-first content routing
 - TanStack Query for server-state; route loaders call `ensureQueryData` (no Next.js `HydrationBoundary`)
 - Zustand for auth/session UI state
-- Runtime public config for the browser is injected via `window.__ENV__` from the server (see `web/src/server/runtime-env.ts`); `NEXT_PUBLIC_*` in `.env` remains supported for `API_URL` / proxy URL compatibility
+- Runtime public config for the browser is injected via `window.__ENV__`
+  from the server (see `web/src/server/runtime-env.ts`); authenticated
+  core URLs and credentials remain server-only
 
 ### `core/`
 

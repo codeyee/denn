@@ -10,15 +10,16 @@ This file summarizes the work that is still open, partially implemented, or next
    controlled hero behavior, and real legal/support routes.
 2. Preserve the completed safe-default content preference and
    policy-scoped cache boundary from #32.
-3. Execute Phase 3 auth hardening from #19, then the Phase 4
-   staging/cache validation and deployed smoke gate.
+3. Preserve the completed Phase 3 BFF/HttpOnly auth boundary from #19,
+   then execute the Phase 4 staging/cache validation and deployed smoke
+   gate.
 4. Resume the product sprint line only after the roadmap release gates
    that protect the same critical routes are met.
 
 ## Post-Audit Remediation Roadmap
 
-- Status: Phases 0–2 and the #32 safety dependency are implementation
-  complete; Phases 3–4 remain open.
+- Status: Phases 0–3 and the #32 safety dependency are implementation
+  complete; Phase 4 remains open.
 - Epic: [#35](https://github.com/codeyee/denn/issues/35).
 - Phase 0 evidence:
   [`../perf/baseline.md`](../perf/baseline.md),
@@ -220,13 +221,9 @@ Work to land:
 
 ## Further Auth Hardening
 
-Independent of the bootstrap work, ADR 0002 phases 2 and 3 are still
-open:
-
-- Move to `HttpOnly` auth cookies.
-- Add a BFF-mediated auth flow in `web`.
-- Remove JS-managed auth cookies and in-memory token plumbing from
-  normal client code.
+ADR 0002 phases 2 and 3 are complete. Preserve `HttpOnly` BFF auth,
+CSRF enforcement, refresh rotation, logout-all, and the no-JWT-in-browser
+regression gates.
 
 Reference:
 [`../adr/0002-web-auth-cookies.md`](../adr/0002-web-auth-cookies.md)

@@ -26,6 +26,7 @@ async function authenticate(
       domain: "127.0.0.1",
       path: "/",
       sameSite: "Lax",
+      httpOnly: true,
     },
     {
       name: "refresh-token",
@@ -33,6 +34,7 @@ async function authenticate(
       domain: "127.0.0.1",
       path: "/",
       sameSite: "Lax",
+      httpOnly: true,
     },
   ]);
 }
@@ -67,7 +69,13 @@ test("login honors next and reaches id-first detail without hydration errors", a
   await page.getByLabel("Email").fill(fixtureUser.email);
   await page.getByLabel("Password").fill(fixtureUser.password);
   const loginStartedAt = Date.now();
+  const loginResponsePromise = page.waitForResponse(
+    (response) =>
+      response.url().endsWith("/api/auth/login") &&
+      response.request().method() === "POST",
+  );
   await page.getByRole("button", { name: "Sign In" }).click();
+  const loginResponse = await loginResponsePromise;
 
   await expect(page).toHaveURL(/\/content\/1$/);
   await expect(
@@ -75,6 +83,27 @@ test("login honors next and reaches id-first detail without hydration errors", a
   ).toBeVisible();
   expect(Date.now() - loginStartedAt).toBeLessThan(1_500);
   await expect(page.getByRole("link", { name: "Sign In" })).toHaveCount(0);
+  const loginPayload = (await loginResponse.json()) as Record<string, unknown>;
+  expect(loginPayload).not.toHaveProperty("access");
+  expect(loginPayload).not.toHaveProperty("refresh");
+
+  const authCookies = (await page.context().cookies()).filter(({ name }) =>
+    ["auth-token", "refresh-token"].includes(name),
+  );
+  expect(authCookies).toHaveLength(2);
+  expect(authCookies.every(({ httpOnly }) => httpOnly)).toBe(true);
+  expect(authCookies.every(({ sameSite }) => sameSite === "Lax")).toBe(true);
+  expect(
+    await page.evaluate(() => ({
+      cookies: document.cookie,
+      storage: localStorage.getItem("auth-storage") ?? "",
+    })),
+  ).toEqual(
+    expect.objectContaining({
+      cookies: expect.not.stringMatching(/auth-token|refresh-token/),
+      storage: expect.not.stringMatching(/access|refresh|eyJ/),
+    }),
+  );
   expect(consoleErrors).toEqual([]);
 });
 
@@ -137,12 +166,36 @@ test("adult search stays safe by default and changes only after explicit opt-in"
   await expect(preference).not.toBeChecked();
   await preference.check();
   await expect(preference).toBeChecked();
+  await expect(preference).toBeEnabled();
 
   await page.goto("/search?q=phase");
   await expect(
     page.getByText("Adult content is included in direct search"),
   ).toBeVisible();
   await expect(page.getByText("Explicit Opt-In Result").first()).toBeVisible();
+});
+
+test("logout everywhere clears the local session and reaches the blacklist endpoint", async ({
+  context,
+  page,
+  request,
+}) => {
+  await authenticate(context);
+  await page.goto("/profile");
+
+  await page.getByRole("button", { name: "Logout everywhere" }).click();
+
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole("link", { name: "Sign In" })).toBeVisible();
+  const authCookieNames = (await context.cookies()).map(({ name }) => name);
+  expect(authCookieNames).not.toContain("auth-token");
+  expect(authCookieNames).not.toContain("refresh-token");
+
+  const recorded = await request.get(`${fixtureUrl}/__fixture__/requests`);
+  const requests = (await recorded.json()) as Array<{ path: string }>;
+  expect(requests.some(({ path }) => path === "/api/auth/logout-all/")).toBe(
+    true,
+  );
 });
 
 test("one navigation keeps a bounded request id across web, core and proxy", async ({

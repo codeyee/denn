@@ -24,6 +24,13 @@ import { Route as ContentIdRouteImport } from './routes/content/$id'
 import { Route as ApiCardsRouteImport } from './routes/api/cards'
 import { Route as ApiProxySplatRouteImport } from './routes/api/proxy/$'
 import { Route as ApiPerfVitalsRouteImport } from './routes/api/perf/vitals'
+import { Route as ApiCoreSplatRouteImport } from './routes/api/core/$'
+import { Route as ApiAuthRegisterRouteImport } from './routes/api/auth/register'
+import { Route as ApiAuthRefreshRouteImport } from './routes/api/auth/refresh'
+import { Route as ApiAuthLogoutAllRouteImport } from './routes/api/auth/logout-all'
+import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
+import { Route as ApiAuthLoginRouteImport } from './routes/api/auth/login'
+import { Route as ApiAuthCsrfRouteImport } from './routes/api/auth/csrf'
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
@@ -100,6 +107,41 @@ const ApiPerfVitalsRoute = ApiPerfVitalsRouteImport.update({
   path: '/api/perf/vitals',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiCoreSplatRoute = ApiCoreSplatRouteImport.update({
+  id: '/api/core/$',
+  path: '/api/core/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthRegisterRoute = ApiAuthRegisterRouteImport.update({
+  id: '/api/auth/register',
+  path: '/api/auth/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthRefreshRoute = ApiAuthRefreshRouteImport.update({
+  id: '/api/auth/refresh',
+  path: '/api/auth/refresh',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthLogoutAllRoute = ApiAuthLogoutAllRouteImport.update({
+  id: '/api/auth/logout-all',
+  path: '/api/auth/logout-all',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthLogoutRoute = ApiAuthLogoutRouteImport.update({
+  id: '/api/auth/logout',
+  path: '/api/auth/logout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthLoginRoute = ApiAuthLoginRouteImport.update({
+  id: '/api/auth/login',
+  path: '/api/auth/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthCsrfRoute = ApiAuthCsrfRouteImport.update({
+  id: '/api/auth/csrf',
+  path: '/api/auth/csrf',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -115,6 +157,13 @@ export interface FileRoutesByFullPath {
   '/content/$id': typeof ContentIdRoute
   '/lists/$id': typeof ListsIdRoute
   '/content/': typeof ContentIndexRoute
+  '/api/auth/csrf': typeof ApiAuthCsrfRoute
+  '/api/auth/login': typeof ApiAuthLoginRoute
+  '/api/auth/logout': typeof ApiAuthLogoutRoute
+  '/api/auth/logout-all': typeof ApiAuthLogoutAllRoute
+  '/api/auth/refresh': typeof ApiAuthRefreshRoute
+  '/api/auth/register': typeof ApiAuthRegisterRoute
+  '/api/core/$': typeof ApiCoreSplatRoute
   '/api/perf/vitals': typeof ApiPerfVitalsRoute
   '/api/proxy/$': typeof ApiProxySplatRoute
 }
@@ -132,6 +181,13 @@ export interface FileRoutesByTo {
   '/content/$id': typeof ContentIdRoute
   '/lists/$id': typeof ListsIdRoute
   '/content': typeof ContentIndexRoute
+  '/api/auth/csrf': typeof ApiAuthCsrfRoute
+  '/api/auth/login': typeof ApiAuthLoginRoute
+  '/api/auth/logout': typeof ApiAuthLogoutRoute
+  '/api/auth/logout-all': typeof ApiAuthLogoutAllRoute
+  '/api/auth/refresh': typeof ApiAuthRefreshRoute
+  '/api/auth/register': typeof ApiAuthRegisterRoute
+  '/api/core/$': typeof ApiCoreSplatRoute
   '/api/perf/vitals': typeof ApiPerfVitalsRoute
   '/api/proxy/$': typeof ApiProxySplatRoute
 }
@@ -150,6 +206,13 @@ export interface FileRoutesById {
   '/content/$id': typeof ContentIdRoute
   '/lists/$id': typeof ListsIdRoute
   '/content/': typeof ContentIndexRoute
+  '/api/auth/csrf': typeof ApiAuthCsrfRoute
+  '/api/auth/login': typeof ApiAuthLoginRoute
+  '/api/auth/logout': typeof ApiAuthLogoutRoute
+  '/api/auth/logout-all': typeof ApiAuthLogoutAllRoute
+  '/api/auth/refresh': typeof ApiAuthRefreshRoute
+  '/api/auth/register': typeof ApiAuthRegisterRoute
+  '/api/core/$': typeof ApiCoreSplatRoute
   '/api/perf/vitals': typeof ApiPerfVitalsRoute
   '/api/proxy/$': typeof ApiProxySplatRoute
 }
@@ -169,6 +232,13 @@ export interface FileRouteTypes {
     | '/content/$id'
     | '/lists/$id'
     | '/content/'
+    | '/api/auth/csrf'
+    | '/api/auth/login'
+    | '/api/auth/logout'
+    | '/api/auth/logout-all'
+    | '/api/auth/refresh'
+    | '/api/auth/register'
+    | '/api/core/$'
     | '/api/perf/vitals'
     | '/api/proxy/$'
   fileRoutesByTo: FileRoutesByTo
@@ -186,6 +256,13 @@ export interface FileRouteTypes {
     | '/content/$id'
     | '/lists/$id'
     | '/content'
+    | '/api/auth/csrf'
+    | '/api/auth/login'
+    | '/api/auth/logout'
+    | '/api/auth/logout-all'
+    | '/api/auth/refresh'
+    | '/api/auth/register'
+    | '/api/core/$'
     | '/api/perf/vitals'
     | '/api/proxy/$'
   id:
@@ -203,6 +280,13 @@ export interface FileRouteTypes {
     | '/content/$id'
     | '/lists/$id'
     | '/content/'
+    | '/api/auth/csrf'
+    | '/api/auth/login'
+    | '/api/auth/logout'
+    | '/api/auth/logout-all'
+    | '/api/auth/refresh'
+    | '/api/auth/register'
+    | '/api/core/$'
     | '/api/perf/vitals'
     | '/api/proxy/$'
   fileRoutesById: FileRoutesById
@@ -221,6 +305,13 @@ export interface RootRouteChildren {
   ContentIdRoute: typeof ContentIdRoute
   ListsIdRoute: typeof ListsIdRoute
   ContentIndexRoute: typeof ContentIndexRoute
+  ApiAuthCsrfRoute: typeof ApiAuthCsrfRoute
+  ApiAuthLoginRoute: typeof ApiAuthLoginRoute
+  ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
+  ApiAuthLogoutAllRoute: typeof ApiAuthLogoutAllRoute
+  ApiAuthRefreshRoute: typeof ApiAuthRefreshRoute
+  ApiAuthRegisterRoute: typeof ApiAuthRegisterRoute
+  ApiCoreSplatRoute: typeof ApiCoreSplatRoute
   ApiPerfVitalsRoute: typeof ApiPerfVitalsRoute
   ApiProxySplatRoute: typeof ApiProxySplatRoute
 }
@@ -332,6 +423,55 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPerfVitalsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/core/$': {
+      id: '/api/core/$'
+      path: '/api/core/$'
+      fullPath: '/api/core/$'
+      preLoaderRoute: typeof ApiCoreSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/register': {
+      id: '/api/auth/register'
+      path: '/api/auth/register'
+      fullPath: '/api/auth/register'
+      preLoaderRoute: typeof ApiAuthRegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/refresh': {
+      id: '/api/auth/refresh'
+      path: '/api/auth/refresh'
+      fullPath: '/api/auth/refresh'
+      preLoaderRoute: typeof ApiAuthRefreshRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/logout-all': {
+      id: '/api/auth/logout-all'
+      path: '/api/auth/logout-all'
+      fullPath: '/api/auth/logout-all'
+      preLoaderRoute: typeof ApiAuthLogoutAllRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/logout': {
+      id: '/api/auth/logout'
+      path: '/api/auth/logout'
+      fullPath: '/api/auth/logout'
+      preLoaderRoute: typeof ApiAuthLogoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/login': {
+      id: '/api/auth/login'
+      path: '/api/auth/login'
+      fullPath: '/api/auth/login'
+      preLoaderRoute: typeof ApiAuthLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/csrf': {
+      id: '/api/auth/csrf'
+      path: '/api/auth/csrf'
+      fullPath: '/api/auth/csrf'
+      preLoaderRoute: typeof ApiAuthCsrfRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -349,6 +489,13 @@ const rootRouteChildren: RootRouteChildren = {
   ContentIdRoute: ContentIdRoute,
   ListsIdRoute: ListsIdRoute,
   ContentIndexRoute: ContentIndexRoute,
+  ApiAuthCsrfRoute: ApiAuthCsrfRoute,
+  ApiAuthLoginRoute: ApiAuthLoginRoute,
+  ApiAuthLogoutRoute: ApiAuthLogoutRoute,
+  ApiAuthLogoutAllRoute: ApiAuthLogoutAllRoute,
+  ApiAuthRefreshRoute: ApiAuthRefreshRoute,
+  ApiAuthRegisterRoute: ApiAuthRegisterRoute,
+  ApiCoreSplatRoute: ApiCoreSplatRoute,
   ApiPerfVitalsRoute: ApiPerfVitalsRoute,
   ApiProxySplatRoute: ApiProxySplatRoute,
 }

@@ -1,6 +1,6 @@
 # 0002. Sesión web sobre cookies `HttpOnly`
 
-- Estado: Accepted
+- Estado: Implemented
 - Fecha: 2026-04-18
 
 ## Contexto
@@ -85,6 +85,24 @@ Migrar la sesión web a **cookies `HttpOnly` / `Secure` / `SameSite=Lax`** emiti
 - Nuevo BFF bajo `web/src/routes/api/auth/*` que media entre el browser y `core`.
 - CSRF: cookie + header.
 - Eliminar `js-cookie` y `web/src/lib/auth/session-client.ts`.
+
+### Implementación completada
+
+- `web` emite las cookies de sesión; `core` también configura sus
+  respuestas de auth como `HttpOnly` para mantener una frontera segura.
+- Login, registro, refresh, logout y logout-all viven bajo
+  `web/src/routes/api/auth/`.
+- Todas las llamadas autenticadas del navegador pasan por
+  `/api/core/*`; el BFF añade `Authorization` server-side y reintenta una
+  vez tras refresh.
+- Las mutaciones requieren cookie/header CSRF coincidentes, origen
+  same-origin y `Sec-Fetch-Site` no cross-site.
+- Zustand y su persistencia contienen sólo identidad/estado UI. No hay
+  access/refresh ni dependencia `js-cookie`.
+- Refresh rota y blacklistea el token anterior. El BFF agrupa refreshes
+  concurrentes; logout-all blacklistea todos los refresh pendientes.
+- Despliegue y rollback:
+  [`../runbooks/auth-bff-rollout.md`](../runbooks/auth-bff-rollout.md).
 
 ### Operación
 

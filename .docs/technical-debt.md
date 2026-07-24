@@ -3,15 +3,6 @@
 Only active debt belongs here. Resolved issues should be removed once
 their lasting outcome is reflected in architecture or history docs.
 
-## Critical
-
-- Frontend auth still depends on JS-readable cookies and in-memory JWT
-  handling.
-  Reference:
-  [`adr/0002-web-auth-cookies.md`](./adr/0002-web-auth-cookies.md)
-  and
-  [`architecture/auth-session-bootstrap.md`](./architecture/auth-session-bootstrap.md)
-
 ## High
 
 - Cross-service typed contract generation is still duplicated across

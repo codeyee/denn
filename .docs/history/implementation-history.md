@@ -198,6 +198,22 @@ This document keeps the durable outcomes of completed implementation plans after
 - Core persistence tests, proxy policy/cache tests, and production-build
   browser smoke cover the safe default and opt-in path.
 
+## Phase 3 BFF Authentication Hardening
+
+- Login, registration, refresh, logout, logout-all, and authenticated
+  domain calls moved behind same-origin `web` BFF routes.
+- Access and refresh JWTs are issued as host-only `HttpOnly`,
+  production-`Secure`, `SameSite=Lax`, `Path=/` cookies. They are absent
+  from browser JSON, Zustand, localStorage, and JavaScript-readable
+  cookies.
+- Mutations require a double-submit CSRF token plus same-origin/fetch-site
+  validation.
+- Refresh credentials rotate and blacklist their predecessors;
+  concurrent refresh attempts share one server-side operation.
+- Logout-all blacklists every outstanding refresh credential for the
+  current user. Existing access JWTs remain bounded by their one-hour
+  lifetime.
+
 ## What This History Replaces
 
 The detailed execution plans were intentionally removed after their durable outcomes were extracted here and into the architecture, features, debt, and roadmap docs.

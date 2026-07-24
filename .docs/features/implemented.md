@@ -5,8 +5,10 @@ considered part of the project baseline.
 
 ## Product Capabilities
 
-- User authentication with login, registration, logout, and protected
-  routes.
+- User authentication with login, registration, logout, logout-all, and
+  protected routes through a same-origin BFF. JWTs remain in
+  `HttpOnly`/`Secure`/`SameSite=Lax` cookies, mutations require CSRF, and
+  the browser stores identity only.
 - Homepage and multi-source discovery across movies, TV shows, games,
   albums, and books.
 - Search flow with typed result transformation per media family.

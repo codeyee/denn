@@ -25,6 +25,7 @@ test.beforeEach(async ({ context, request }) => {
       domain: "127.0.0.1",
       path: "/",
       sameSite: "Lax",
+      httpOnly: true,
     },
     {
       name: "refresh-token",
@@ -32,6 +33,7 @@ test.beforeEach(async ({ context, request }) => {
       domain: "127.0.0.1",
       path: "/",
       sameSite: "Lax",
+      httpOnly: true,
     },
   ]);
 });

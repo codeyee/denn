@@ -79,3 +79,34 @@ class LogoutView(DjRestAuthLogoutView):
                 pass
 
         return super().post(request, *args, **kwargs)
+
+
+@extend_schema(
+    tags=['Authentication'],
+    summary='Logout user from every session',
+    description=(
+        'Blacklists every outstanding refresh token owned by the current '
+        'user. Existing access tokens remain bounded by their one-hour '
+        'lifetime.'
+    ),
+    request=None,
+    responses={200: OpenApiExample(
+        'Logout All Success',
+        value={'detail': 'Successfully logged out from all sessions.'},
+    )},
+)
+class LogoutAllView(DjRestAuthLogoutView):
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [AuthRateThrottle]
+
+    def post(self, request, *args, **kwargs):
+        outstanding_tokens = OutstandingToken.objects.filter(
+            user=request.user,
+        )
+        for token in outstanding_tokens.iterator():
+            BlacklistedToken.objects.get_or_create(token=token)
+
+        return Response(
+            {'detail': 'Successfully logged out from all sessions.'},
+            status=status.HTTP_200_OK,
+        )

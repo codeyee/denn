@@ -35,7 +35,8 @@ export default defineConfig({
       command:
         `API_URL=${fixtureCoreUrl}/api ` +
         `PROXY_API_URL=${fixtureProxyUrl}/v1/proxy ` +
-        "PROXY_API_KEY=fixture-key HOST=127.0.0.1 PORT=4173 " +
+        "PROXY_API_KEY=fixture-key AUTH_COOKIE_SECURE=false " +
+        "HOST=127.0.0.1 PORT=4173 " +
         "node .output/server/index.mjs",
       url: appUrl,
       reuseExistingServer: !process.env.CI,
