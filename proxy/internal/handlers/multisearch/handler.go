@@ -103,6 +103,7 @@ type MultiSearchResponse struct {
 // @Security     BearerAuth
 // @Router       /search [get]
 func (h *Handler) Search(c *gin.Context) {
+	c.Header("X-Cache", "BYPASS")
 	query := c.Query("q")
 	if query == "" {
 		common.RespondError(c, http.StatusBadRequest, common.CodeMissingParameter, "query parameter is required")

@@ -2,7 +2,7 @@ import { QueryClient } from "@tanstack/react-query";
 
 import { getApiUrl, getProxyApiUrl } from "@/lib/env";
 import type { SessionSnapshot } from "@/server/session";
-import { buildProxyHeaders, generateRequestId } from "@/server/proxy";
+import { buildProxyHeaders, getLogicalRequestId } from "@/server/proxy";
 import type {
   ContentItem,
   HomepageResponse,
@@ -45,6 +45,7 @@ export async function prefetchHomeQueries(
   if (!session.isAuthenticated || !session.accessToken) return;
 
   const listParams = homeListParams(country);
+  const requestId = getLogicalRequestId();
 
   await Promise.allSettled([
     qc.prefetchQuery({
@@ -52,11 +53,12 @@ export async function prefetchHomeQueries(
         limit: SUGGESTIONS_PAGE_SIZE,
         country,
       }),
-      queryFn: () => fetchServerSuggestions(country),
+      queryFn: () => fetchServerSuggestions(country, requestId),
     }),
     qc.prefetchQuery({
       queryKey: queryKeys.lists.list(listParams),
-      queryFn: () => fetchServerUserLists(session.accessToken!, listParams),
+      queryFn: () =>
+        fetchServerUserLists(session.accessToken!, listParams, requestId),
     }),
   ]);
 }
@@ -69,6 +71,7 @@ export async function prefetchSearchQuery(
 ) {
   const trimmedQuery = query.trim();
   if (!session.isAuthenticated || !trimmedQuery) return;
+  const requestId = getLogicalRequestId();
 
   await qc.prefetchQuery({
     queryKey: queryKeys.search.multi({
@@ -76,7 +79,7 @@ export async function prefetchSearchQuery(
       limit: SEARCH_RESULT_LIMIT,
       country,
     }),
-    queryFn: () => fetchServerSearch(trimmedQuery, country),
+    queryFn: () => fetchServerSearch(trimmedQuery, country, requestId),
   });
 }
 
@@ -87,11 +90,17 @@ export async function prefetchContentDetailQueries(
   country: string | null,
 ) {
   if (!session.isAuthenticated || !session.accessToken) return;
+  const requestId = getLogicalRequestId();
 
   const contentItem = await qc.fetchQuery({
     queryKey: queryKeys.contentDetail.byId(contentId, country ?? undefined),
     queryFn: () =>
-      fetchServerContentDetail(session.accessToken!, contentId, country),
+      fetchServerContentDetail(
+        session.accessToken!,
+        contentId,
+        country,
+        requestId,
+      ),
     staleTime: 5 * 60_000,
   });
 
@@ -103,6 +112,7 @@ export async function prefetchContentDetailQueries(
           session.accessToken!,
           contentItem.id,
           session.user!.id,
+          requestId,
         ),
     });
   }
@@ -118,16 +128,18 @@ export async function prefetchListDetailQueries(
   if (!session.isAuthenticated || !session.accessToken) return;
 
   const options = listItemsOptions(query, country);
+  const requestId = getLogicalRequestId();
 
   await Promise.allSettled([
     qc.prefetchQuery({
       queryKey: queryKeys.lists.detail(listId, LIST_DETAIL_METADATA_PARAMS),
       queryFn: () =>
-        fetchServerListMetadata(session.accessToken!, listId),
+        fetchServerListMetadata(session.accessToken!, listId, requestId),
     }),
     qc.prefetchQuery({
       queryKey: queryKeys.lists.stats(listId),
-      queryFn: () => fetchServerListStats(session.accessToken!, listId),
+      queryFn: () =>
+        fetchServerListStats(session.accessToken!, listId, requestId),
     }),
     qc.prefetchQuery({
       queryKey: queryKeys.listItems.page(listId, {
@@ -142,6 +154,7 @@ export async function prefetchListDetailQueries(
           query.page,
           query.pageSize,
           options,
+          requestId,
         ),
     }),
   ]);
@@ -174,58 +187,99 @@ export function listItemsOptions(
   };
 }
 
-function inboundRequestId(): string {
-  // We used to propagate an incoming X-Request-Id via next/headers, but the
-  // helpers here run on both server and client now. A fresh id is good
-  // enough for tracing — the BFF still stamps its own id on outbound calls.
-  return generateRequestId();
+interface OutboundTelemetry {
+  requestId: string;
+  targetService: "core" | "proxy";
+  route: string;
 }
 
-async function fetchJson<T>(url: string, init: RequestInit) {
+async function fetchJson<T>(
+  url: string,
+  init: RequestInit,
+  telemetry: OutboundTelemetry,
+) {
+  const started = performance.now();
   const response = await fetch(url, { ...init, cache: "no-store" });
+  const body = await response.text();
+  const durationMs = Math.round((performance.now() - started) * 100) / 100;
+
+  if (typeof window === "undefined") {
+    console.log(
+      JSON.stringify({
+        ts: new Date().toISOString(),
+        level: response.ok ? "info" : "warn",
+        msg: "outbound_http_request",
+        service: "web",
+        request_id: telemetry.requestId,
+        target_service: telemetry.targetService,
+        path: telemetry.route,
+        status: response.status,
+        duration_ms: durationMs,
+        payload_size_bytes: new TextEncoder().encode(body).byteLength,
+        cache_status: response.headers.get("x-cache") ?? undefined,
+      }),
+    );
+  }
 
   if (!response.ok) {
     throw new Error(`Request failed (${response.status})`);
   }
 
-  return response.json() as Promise<T>;
+  return JSON.parse(body) as T;
 }
 
-async function coreHeaders(accessToken: string) {
+function coreHeaders(accessToken: string, requestId: string) {
   return {
     Authorization: `Bearer ${accessToken}`,
     "Content-Type": "application/json",
-    "X-Request-Id": await inboundRequestId(),
+    "X-Request-Id": requestId,
   };
 }
 
-async function fetchServerSuggestions(country: string | null) {
+async function fetchServerSuggestions(
+  country: string | null,
+  requestId: string,
+) {
   const params = new URLSearchParams({ limit: String(SUGGESTIONS_PAGE_SIZE) });
   return fetchJson<HomepageResponse>(
     `${getProxyApiUrl()}/homepage?${params.toString()}`,
     {
       headers: buildProxyHeaders(country, {
-        requestId: await inboundRequestId(),
+        requestId,
       }),
+    },
+    {
+      requestId,
+      targetService: "proxy",
+      route: "/v1/proxy/homepage",
     },
   );
 }
 
-async function fetchServerSearch(query: string, country: string | null) {
+async function fetchServerSearch(
+  query: string,
+  country: string | null,
+  requestId: string,
+) {
   const params = new URLSearchParams({
     q: query,
     limit: String(SEARCH_RESULT_LIMIT),
   });
   return fetchJson(`${getProxyApiUrl()}/search?${params.toString()}`, {
     headers: buildProxyHeaders(country, {
-      requestId: await inboundRequestId(),
+      requestId,
     }),
+  }, {
+    requestId,
+    targetService: "proxy",
+    route: "/v1/proxy/search",
   });
 }
 
 async function fetchServerUserLists(
   accessToken: string,
   params: ReturnType<typeof homeListParams>,
+  requestId: string,
 ) {
   const searchParams = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {
@@ -233,7 +287,12 @@ async function fetchServerUserLists(
   });
   return fetchJson<PaginatedUserListList>(
     `${getApiUrl()}/content/lists/?${searchParams.toString()}`,
-    { headers: await coreHeaders(accessToken) },
+    { headers: coreHeaders(accessToken, requestId) },
+    {
+      requestId,
+      targetService: "core",
+      route: "/api/content/lists/",
+    },
   );
 }
 
@@ -241,13 +300,19 @@ async function fetchServerContentDetail(
   accessToken: string,
   contentId: number,
   country: string | null,
+  requestId: string,
 ) {
   const params = new URLSearchParams();
   if (country) params.set("country", country);
 
   return fetchJson<ContentItem>(
     `${getApiUrl()}/content/${contentId}/${params.toString() ? `?${params}` : ""}`,
-    { headers: await coreHeaders(accessToken) },
+    { headers: coreHeaders(accessToken, requestId) },
+    {
+      requestId,
+      targetService: "core",
+      route: "/api/content/:id/",
+    },
   );
 }
 
@@ -255,6 +320,7 @@ async function fetchServerUserRating(
   accessToken: string,
   contentItemId: number,
   userId: number,
+  requestId: string,
 ) {
   const params = new URLSearchParams({
     content_item_id: String(contentItemId),
@@ -263,23 +329,46 @@ async function fetchServerUserRating(
   });
   const response = await fetchJson<PaginatedRatingList>(
     `${getApiUrl()}/content/ratings/?${params.toString()}`,
-    { headers: await coreHeaders(accessToken) },
+    { headers: coreHeaders(accessToken, requestId) },
+    {
+      requestId,
+      targetService: "core",
+      route: "/api/content/ratings/",
+    },
   );
   return response.results[0] ?? null;
 }
 
-async function fetchServerListMetadata(accessToken: string, listId: number) {
+async function fetchServerListMetadata(
+  accessToken: string,
+  listId: number,
+  requestId: string,
+) {
   const params = new URLSearchParams(LIST_DETAIL_METADATA_PARAMS);
   return fetchJson<UserListDetail>(
     `${getApiUrl()}/content/lists/${listId}/?${params.toString()}`,
-    { headers: await coreHeaders(accessToken) },
+    { headers: coreHeaders(accessToken, requestId) },
+    {
+      requestId,
+      targetService: "core",
+      route: "/api/content/lists/:id/",
+    },
   );
 }
 
-async function fetchServerListStats(accessToken: string, listId: number) {
+async function fetchServerListStats(
+  accessToken: string,
+  listId: number,
+  requestId: string,
+) {
   return fetchJson<ListStatsResponse>(
     `${getApiUrl()}/content/lists/${listId}/stats/`,
-    { headers: await coreHeaders(accessToken) },
+    { headers: coreHeaders(accessToken, requestId) },
+    {
+      requestId,
+      targetService: "core",
+      route: "/api/content/lists/:id/stats/",
+    },
   );
 }
 
@@ -289,6 +378,7 @@ async function fetchServerListItems(
   page: number,
   pageSize: number,
   options: ReturnType<typeof listItemsOptions>,
+  requestId: string,
 ) {
   const params = new URLSearchParams({
     page: String(page),
@@ -323,6 +413,11 @@ async function fetchServerListItems(
 
   return fetchJson<PaginatedListItemList>(
     `${getApiUrl()}/content/lists/${listId}/items/?${params.toString()}`,
-    { headers: await coreHeaders(accessToken) },
+    { headers: coreHeaders(accessToken, requestId) },
+    {
+      requestId,
+      targetService: "core",
+      route: "/api/content/lists/:id/items/",
+    },
   );
 }

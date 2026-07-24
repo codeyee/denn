@@ -118,6 +118,26 @@ This document keeps the durable outcomes of completed implementation plans after
 - Discovery surfaces in `proxy` now normalize search cache keys and
   filter future/undated general results plus invalid season payloads.
 
+## Phase 0 Post-Audit Guardrails
+
+- The repository gained a production-build Playwright harness backed by
+  deterministic, non-personal `core` and `proxy` fixtures.
+- Desktop/mobile smoke now covers login/deep-link return, token refresh,
+  critical routes, click navigation, hard refresh, keyboard focus,
+  request correlation and bounded cache states.
+- Audit bugs in auth/session resilience, logout, hydration and hover
+  mutation became expected-failure or fixme scenarios with retained,
+  redacted failure artifacts.
+- One logical request ID now crosses `web`, `core` and `proxy`; structured
+  logs separate browser, cache, DB freshness and provider-fetch states
+  without JWTs, credentials or user identifiers.
+- The placeholder performance document was replaced with a repeatable
+  p50/p75/p95 cold/warm fixture baseline, deployed before evidence,
+  route thresholds and alert guidance.
+- Pull requests run the stable desktop smoke, while a weekly/manual
+  workflow regenerates the more expensive baseline and regression
+  evidence.
+
 ## What This History Replaces
 
 The detailed execution plans were intentionally removed after their durable outcomes were extracted here and into the architecture, features, debt, and roadmap docs.

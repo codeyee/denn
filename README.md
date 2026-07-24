@@ -290,6 +290,9 @@ make validate-web
 make validate-core
 make validate-proxy
 make test
+make e2e-web
+make e2e-web-regressions
+make e2e-web-performance
 ```
 
 Notes:
@@ -297,6 +300,10 @@ Notes:
 - `make validate-web` runs lint plus the production build.
 - `make validate-core` depends on a working test database and valid env.
 - `make validate-proxy` must remain deterministic and offline-safe.
+- `make e2e-web` builds the Nitro production bundle and runs the stable
+  Playwright smoke on desktop and mobile.
+- `make e2e-web-regressions` reproduces quarantined audit failures;
+  `make e2e-web-performance` writes the repeatable cold/warm baseline.
 
 The shared error-envelope contract is locked down in:
 
@@ -310,7 +317,11 @@ The repo validates changes from the root and deploys each app independently.
 - Pull requests run
   [`.github/workflows/monorepo-ci.yml`](./.github/workflows/monorepo-ci.yml),
   which detects touched paths and finishes with a single `ci-summary`
-  check for branch protection.
+  check for branch protection. Changes to `web` also run the stable
+  desktop production-build browser smoke.
+- Weekly and manual
+  [`.github/workflows/browser-baseline.yml`](./.github/workflows/browser-baseline.yml)
+  runs preserve cold/warm measurements and known-regression artifacts.
 - Pushes to `main` trigger app-specific deploy workflows:
   - [`deploy-web.yml`](./.github/workflows/deploy-web.yml)
   - [`deploy-core.yml`](./.github/workflows/deploy-core.yml)
@@ -339,6 +350,8 @@ Start here when you need project context:
   cross-service contract
 - [`.docs/observability.md`](./.docs/observability.md) - log schema,
   request correlation, and alerting guidance
+- [`.docs/runbooks/browser-e2e-and-baseline.md`](./.docs/runbooks/browser-e2e-and-baseline.md) -
+  production-build browser smoke, regression and baseline procedure
 - [`.docs/history/implementation-history.md`](./.docs/history/implementation-history.md) -
   durable summary of completed sprint outcomes
 - [`AGENTS.md`](./AGENTS.md) - contributor and agent rules for the repo

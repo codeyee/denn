@@ -15,12 +15,14 @@ from __future__ import annotations
 
 import threading
 import uuid
+import re
 from typing import Callable, Optional
 
 from django.http import HttpRequest, HttpResponse
 
 REQUEST_ID_HEADER = "X-Request-Id"
 _META_KEY = "HTTP_X_REQUEST_ID"
+_REQUEST_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
 
 _local = threading.local()
 
@@ -38,6 +40,11 @@ def _set_current_request_id(value: Optional[str]) -> None:
     _local.request_id = value
 
 
+def normalize_request_id(value: str) -> Optional[str]:
+    normalized = value.strip()
+    return normalized if _REQUEST_ID_RE.fullmatch(normalized) else None
+
+
 class RequestIdMiddleware:
     """Bind a stable request ID to every Django request/response cycle."""
 
@@ -45,7 +52,7 @@ class RequestIdMiddleware:
         self.get_response = get_response
 
     def __call__(self, request: HttpRequest) -> HttpResponse:
-        incoming = request.META.get(_META_KEY, "").strip()
+        incoming = normalize_request_id(request.META.get(_META_KEY, ""))
         request_id = incoming or uuid.uuid4().hex
         request.request_id = request_id  # type: ignore[attr-defined]
         _set_current_request_id(request_id)

@@ -5,6 +5,7 @@ import {
   buildProxyHeaders,
   generateRequestId,
   getProxyBaseUrl,
+  normalizeRequestId,
 } from "@/server/proxy";
 
 function jsonResponse(data: unknown, status: number, headers: HeadersInit = {}) {
@@ -49,6 +50,13 @@ export function buildProxyUrl(baseUrl: string, path: string, search: string): st
   return target.toString();
 }
 
+function normalizeCacheStatus(value: string | null): string | null {
+  const normalized = value?.trim().toUpperCase();
+  return normalized && ["HIT", "MISS", "STALE", "BYPASS"].includes(normalized)
+    ? normalized
+    : null;
+}
+
 export const Route = createFileRoute("/api/proxy/$")({
   server: {
     handlers: {
@@ -69,22 +77,58 @@ export const Route = createFileRoute("/api/proxy/$")({
 
         const country = request.headers.get("x-user-country");
         const requestId =
-          request.headers.get("x-request-id") ?? generateRequestId();
+          normalizeRequestId(request.headers.get("x-request-id")) ??
+          generateRequestId();
         const headers = buildProxyHeaders(country, { requestId });
+        const started = performance.now();
 
         try {
           const response = await fetch(url, { headers });
           const data = await response.json();
+          const durationMs =
+            Math.round((performance.now() - started) * 100) / 100;
+          const cacheStatus = normalizeCacheStatus(
+            response.headers.get("x-cache"),
+          );
+          const body = JSON.stringify(data);
+
+          console.log(
+            JSON.stringify({
+              ts: new Date().toISOString(),
+              level: response.ok ? "info" : "warn",
+              msg: "http_request",
+              service: "web",
+              request_id: requestId,
+              method: "GET",
+              path: "/api/proxy/*",
+              target_service: "proxy",
+              status: response.status,
+              duration_ms: durationMs,
+              payload_size_bytes: new TextEncoder().encode(body).byteLength,
+              cache_status: cacheStatus ?? undefined,
+            }),
+          );
+
           return jsonResponse(data, response.status, {
             "X-Request-Id": requestId,
+            ...(cacheStatus ? { "X-Cache": cacheStatus } : {}),
+            "Server-Timing": `proxy;dur=${durationMs}${
+              cacheStatus ? `;desc="${cacheStatus}"` : ""
+            }`,
           });
         } catch (error) {
+          const durationMs =
+            Math.round((performance.now() - started) * 100) / 100;
           console.error(
             JSON.stringify({
+              ts: new Date().toISOString(),
               level: "error",
               msg: "bff_proxy_unreachable",
+              service: "web",
               request_id: requestId,
-              url,
+              path: "/api/proxy/*",
+              target_service: "proxy",
+              duration_ms: durationMs,
               error: error instanceof Error ? error.message : String(error),
             }),
           );
@@ -95,7 +139,10 @@ export const Route = createFileRoute("/api/proxy/$")({
               request_id: requestId,
             },
             502,
-            { "X-Request-Id": requestId },
+            {
+              "X-Request-Id": requestId,
+              "Server-Timing": `proxy;dur=${durationMs};desc="unreachable"`,
+            },
           );
         }
       },

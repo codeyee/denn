@@ -3,6 +3,9 @@
 Use this manual smoke when changing auth bootstrap, protected routes, or
 login redirect behavior in `web`.
 
+Run the automated production-build characterization first:
+[`browser-e2e-and-baseline.md`](./browser-e2e-and-baseline.md).
+
 ## Preconditions
 
 - `web` and `core` are running.
@@ -69,8 +72,21 @@ Expected:
 - ProtectedRoute shows the unavailable fallback instead of redirecting
   as if the user logged out intentionally.
 
+### 6. Logout from a protected route
+
+1. Log in and open `/profile`.
+2. Use the visible Logout control.
+
+Expected:
+
+- The final URL is `/`.
+- The public landing renders once.
+- The URL does not recursively grow `/login?next=/login?...`.
+
 ## Developer Signals
 
-- Watch for `slow_session_bootstrap` in the browser console.
-- `stuck_session_bootstrap` is a regression-level event and should not
-  appear in a healthy local environment.
+- Inspect structured `session_bootstrap` events in the server logs and
+  correlate them with outbound requests by `request_id`.
+- An unavailable/slow session must remain distinguishable from an
+  anonymous session; do not infer logout from a transient transport
+  failure.

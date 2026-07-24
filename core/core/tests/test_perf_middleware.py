@@ -1,8 +1,8 @@
 """Tests for core.middleware.perf_timing.
 
-Validates the four contractual signals (query_count, db_time_ms,
-proxy_calls, proxy_time_ms) are captured when the env flag is on, and
-that the middleware short-circuits when off.
+Validates the DB, proxy and local-first data-source signals captured
+when the env flag is on, and that the middleware short-circuits when
+off.
 """
 from __future__ import annotations
 
@@ -17,6 +17,8 @@ from core.middleware.access_log import AccessLogMiddleware
 from core.middleware.perf_timing import (
     PerfTimingMiddleware,
     get_request_perf_metrics,
+    perf_record_data_source,
+    perf_record_proxy_batch,
     perf_record_proxy_call,
 )
 
@@ -31,8 +33,13 @@ def _hit_db(_request):
 
 
 def _hit_proxy(_request):
-    perf_record_proxy_call(0.025)
-    perf_record_proxy_call(0.010)
+    perf_record_proxy_batch(2, 0.035)
+    perf_record_data_source(
+        fresh=3,
+        stale=1,
+        missing=2,
+        provider_fetches=3,
+    )
     return HttpResponse("ok")
 
 
@@ -57,7 +64,7 @@ class PerfTimingMiddlewareDisabledTests(TestCase):
 
 
 class PerfTimingMiddlewareEnabledTests(TestCase):
-    """When PERF_LOGGING_ENABLED=true the four signals are captured."""
+    """When PERF_LOGGING_ENABLED=true the bounded signals are captured."""
 
     def setUp(self):
         self.factory = RequestFactory()
@@ -82,9 +89,13 @@ class PerfTimingMiddlewareEnabledTests(TestCase):
         metrics = get_request_perf_metrics(request)
         self.assertIsNotNone(metrics)
         self.assertEqual(metrics["proxy_calls"], 2)
-        # 25 + 10 = 35 ms within rounding noise.
+        # The two-call parallel batch occupied a 35 ms wall-time window.
         self.assertGreaterEqual(metrics["proxy_time_ms"], 30.0)
         self.assertLessEqual(metrics["proxy_time_ms"], 50.0)
+        self.assertEqual(metrics["data_fresh"], 3)
+        self.assertEqual(metrics["data_stale"], 1)
+        self.assertEqual(metrics["data_missing"], 2)
+        self.assertEqual(metrics["provider_fetches"], 3)
 
     @mock.patch.dict(os.environ, {"PERF_LOGGING_ENABLED": "true"}, clear=False)
     def test_proxy_counter_isolated_between_requests(self):
@@ -99,6 +110,8 @@ class PerfTimingMiddlewareEnabledTests(TestCase):
         self.assertEqual(m1["proxy_calls"], 2)
         self.assertEqual(m2["proxy_calls"], 0)
         self.assertEqual(m2["proxy_time_ms"], 0.0)
+        self.assertEqual(m2["data_fresh"], 0)
+        self.assertEqual(m2["provider_fetches"], 0)
 
     @mock.patch.dict(os.environ, {"PERF_LOGGING_ENABLED": "true"}, clear=False)
     def test_record_proxy_outside_request_is_noop(self):
@@ -125,6 +138,10 @@ class AccessLogIntegrationTests(TestCase):
         self.assertEqual(record.proxy_calls, 2)
         self.assertGreaterEqual(record.proxy_time_ms, 30.0)
         self.assertGreaterEqual(record.query_count, 0)
+        self.assertEqual(record.data_fresh, 3)
+        self.assertEqual(record.provider_fetches, 3)
+        self.assertEqual(record.payload_size_bytes, 2)
+        self.assertFalse(record.authenticated)
 
     @mock.patch.dict(os.environ, {"PERF_LOGGING_ENABLED": "false"}, clear=False)
     def test_access_log_omits_perf_fields_when_disabled(self):

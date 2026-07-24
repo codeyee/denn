@@ -1,8 +1,6 @@
 /**
- * Sprint 08 / T2 — Web Vitals reporter.
- *
  * Pure functions; the React glue lives in
- * `app/_components/common/WebVitalsReporter.tsx` so this module can be
+ * `src/components/common/WebVitalsReporter.tsx` so this module can be
  * unit-tested without importing any React/Next runtime.
  *
  * Behaviour:
@@ -13,8 +11,8 @@
  *   if `sendBeacon` is unavailable (old Safari, server-side calls,
  *   tests).
  *
- * The endpoint is intentionally minimal (it just `console.log`s the
- * payload structured) until Sprint 6C decides on observability.
+ * The endpoint validates and emits bounded structured telemetry for the
+ * deployment log backend.
  */
 
 export type WebVitalName =
@@ -34,6 +32,8 @@ export interface WebVitalMetric {
 }
 
 const ENDPOINT = "/api/perf/vitals";
+const BROWSER_STATE_KEY = "denn-perf-browser-seen";
+let currentBrowserState: "cold" | "warm" | "unknown" | null = null;
 
 // Official Web Vitals thresholds (web.dev/articles/vitals).
 // Unit: ms unless noted otherwise (CLS is unitless score).
@@ -70,6 +70,8 @@ export function reportWebVital(metric: WebVitalMetric, route: string): void {
     id: metric.id,
     route,
     ts: Date.now(),
+    browser_state: getBrowserState(),
+    navigation_type: getNavigationType(),
   };
 
   if (process.env.NODE_ENV === "development") {
@@ -107,4 +109,32 @@ export function reportWebVital(metric: WebVitalMetric, route: string): void {
   } catch {
     // Swallow: never let perf telemetry crash the app.
   }
+}
+
+function getBrowserState(): "cold" | "warm" | "unknown" {
+  if (currentBrowserState) return currentBrowserState;
+  if (typeof window === "undefined") return "unknown";
+
+  try {
+    currentBrowserState = sessionStorage.getItem(BROWSER_STATE_KEY)
+      ? "warm"
+      : "cold";
+    sessionStorage.setItem(BROWSER_STATE_KEY, "1");
+  } catch {
+    currentBrowserState = "unknown";
+  }
+  return currentBrowserState;
+}
+
+function getNavigationType():
+  | "navigate"
+  | "reload"
+  | "back_forward"
+  | "prerender"
+  | "unknown" {
+  if (typeof performance === "undefined") return "unknown";
+  const entry = performance.getEntriesByType(
+    "navigation",
+  )[0] as PerformanceNavigationTiming | undefined;
+  return entry?.type ?? "unknown";
 }

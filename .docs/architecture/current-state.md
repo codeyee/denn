@@ -37,6 +37,9 @@ The hybrid topology is deliberate and documented in
   and sorting.
 - The canonical cross-service error envelope and `X-Request-Id`
   propagation are already implemented in `core` and `proxy`.
+- A logical SSR navigation now keeps one bounded `X-Request-Id` across
+  parallel `web` reads to `core` and `proxy`; responses expose bounded
+  cache state and non-sensitive `Server-Timing`.
 - `proxy` remains stateless relative to PostgreSQL and user data.
 
 ## Current Frontend State
@@ -63,6 +66,9 @@ The hybrid topology is deliberate and documented in
 - Public BFF inputs fail closed: proxy splats are confined to the configured
   proxy base path, and Web Vitals ingestion bounds request size, accepted
   fields, and per-instance log volume.
+- The production-build Playwright harness uses non-personal deterministic
+  fixtures. Desktop smoke is a PR gate; mobile smoke, known-regression
+  characterization and cold/warm baselines are repeatable root commands.
 - Hover prefetch exists for content cards and list item cards via the
   router's default `preload="intent"`.
 - Decision recorded in [ADR 0003](../adr/0003-migrate-web-from-nextjs-to-tanstack-start.md).
@@ -104,4 +110,6 @@ See [`content-lifecycle.md`](./content-lifecycle.md).
 - Observability: [`../observability.md`](../observability.md)
 - Performance baseline: [`../perf/baseline.md`](../perf/baseline.md)
 - Workspace operation: [`../workspace-operating-model.md`](../workspace-operating-model.md)
+- Browser verification:
+  [`../runbooks/browser-e2e-and-baseline.md`](../runbooks/browser-e2e-and-baseline.md)
 - Open work: [`../roadmap/open-plans.md`](../roadmap/open-plans.md)

@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 import time
 from typing import Optional, Dict, Any, List
 
@@ -28,6 +29,20 @@ DEFAULT_TIMEOUT = _env_int("PROXY_GET_TIMEOUT", 15)
 BULK_TIMEOUT = _env_int("PROXY_BULK_TIMEOUT", 30)
 
 
+def _bounded_path(path: str) -> str:
+    """Collapse provider identifiers so log labels stay low-cardinality."""
+    return re.sub(
+        r"^/(movies|tv-shows|games|albums|books)/[^/]+",
+        r"/\1/:id",
+        path,
+    )
+
+
+def _bounded_cache_status(value: Optional[str]) -> Optional[str]:
+    normalized = value.strip().upper() if value else ""
+    return normalized if normalized in {"HIT", "MISS", "STALE", "BYPASS"} else None
+
+
 class ProxyAPIError(Exception):
     def __init__(self, status_code: int, message: str):
         self.status_code = status_code
@@ -42,7 +57,9 @@ class ProxyAPIClient:
         self.base_url = settings.PROXY_API_BASE_URL.rstrip("/")
         self.api_key = settings.PROXY_API_KEY
         self._session = requests.Session()
-        self._session.headers.update({"X-Api-Key": self.api_key})
+        self._session.headers.update(
+            {"X-Api-Key": self.api_key, "X-Api-Consumer": "core"}
+        )
 
     def _headers(self, country: Optional[str] = None) -> Dict[str, str]:
         headers: Dict[str, str] = {}
@@ -69,6 +86,8 @@ class ProxyAPIClient:
         # successful ones. The thread-local counter is a no-op outside an
         # instrumented request.
         started = time.perf_counter()
+        status_code = None
+        cache_status = None
         try:
             resp = self._session.get(
                 url,
@@ -76,6 +95,8 @@ class ProxyAPIClient:
                 headers=self._headers(country),
                 timeout=timeout,
             )
+            status_code = resp.status_code
+            cache_status = _bounded_cache_status(resp.headers.get("X-Cache"))
             if resp.status_code == 404:
                 return None
             resp.raise_for_status()
@@ -83,17 +104,35 @@ class ProxyAPIClient:
         except requests.exceptions.HTTPError as e:
             logger.warning(
                 "proxy_api_http_error",
-                extra={"path": path, "params": params, "error": str(e)},
+                extra={
+                    "path": _bounded_path(path),
+                    "error_type": type(e).__name__,
+                    "status": status_code,
+                },
             )
             return None
         except requests.exceptions.RequestException as e:
             logger.error(
                 "proxy_api_request_failed",
-                extra={"path": path, "params": params, "error": str(e)},
+                extra={
+                    "path": _bounded_path(path),
+                    "error_type": type(e).__name__,
+                },
             )
             return None
         finally:
-            perf_record_proxy_call(time.perf_counter() - started)
+            duration_seconds = time.perf_counter() - started
+            perf_record_proxy_call(duration_seconds)
+            logger.info(
+                "outbound_http_request",
+                extra={
+                    "target_service": "proxy",
+                    "path": _bounded_path(path),
+                    "status": status_code,
+                    "duration_ms": round(duration_seconds * 1000.0, 2),
+                    "cache_status": cache_status,
+                },
+            )
 
     # ── Detail endpoints ──────────────────────────────────────────────
 

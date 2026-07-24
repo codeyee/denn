@@ -1,13 +1,15 @@
-"""Per-request performance timing middleware.
+"""Per-request performance timing and data-source middleware.
 
-Sprint 08 / T1. Captures four extra signals per request and stashes them
-on the request object so :class:`AccessLogMiddleware` can include them in
-the existing ``http_request`` log line:
+Captures bounded signals per request and stashes them on the request
+object so :class:`AccessLogMiddleware` can include them in the existing
+``http_request`` log line:
 
 - ``query_count``  total ORM queries executed
 - ``db_time_ms``   wall time spent inside the DB driver
 - ``proxy_time_ms`` wall time spent calling the Go proxy
 - ``proxy_calls``  number of proxy HTTP calls
+- ``data_fresh`` / ``data_stale`` / ``data_missing`` local data states
+- ``provider_fetches`` source rows that required proxy/provider work
 
 Activation
 ----------
@@ -57,6 +59,10 @@ def perf_start_request() -> None:
     """Initialise per-request proxy counters in the thread-local store."""
     _perf_local.proxy_calls = 0
     _perf_local.proxy_time_ms = 0.0
+    _perf_local.data_fresh = 0
+    _perf_local.data_stale = 0
+    _perf_local.data_missing = 0
+    _perf_local.provider_fetches = 0
     _perf_local.active = True
 
 
@@ -65,21 +71,52 @@ def perf_end_request() -> dict[str, Any]:
     metrics = {
         "proxy_calls": getattr(_perf_local, "proxy_calls", 0),
         "proxy_time_ms": round(getattr(_perf_local, "proxy_time_ms", 0.0), 2),
+        "data_fresh": getattr(_perf_local, "data_fresh", 0),
+        "data_stale": getattr(_perf_local, "data_stale", 0),
+        "data_missing": getattr(_perf_local, "data_missing", 0),
+        "provider_fetches": getattr(_perf_local, "provider_fetches", 0),
     }
     _perf_local.active = False
     _perf_local.proxy_calls = 0
     _perf_local.proxy_time_ms = 0.0
+    _perf_local.data_fresh = 0
+    _perf_local.data_stale = 0
+    _perf_local.data_missing = 0
+    _perf_local.provider_fetches = 0
     return metrics
 
 
 def perf_record_proxy_call(duration_seconds: float) -> None:
     """Record one proxy HTTP call. No-op if no request is active."""
+    perf_record_proxy_batch(1, duration_seconds)
+
+
+def perf_record_proxy_batch(call_count: int, duration_seconds: float) -> None:
+    """Record a parallel proxy batch on the owning request thread."""
     if not getattr(_perf_local, "active", False):
         return
-    _perf_local.proxy_calls = getattr(_perf_local, "proxy_calls", 0) + 1
+    _perf_local.proxy_calls = (
+        getattr(_perf_local, "proxy_calls", 0) + max(call_count, 0)
+    )
     _perf_local.proxy_time_ms = (
         getattr(_perf_local, "proxy_time_ms", 0.0) + duration_seconds * 1000.0
     )
+
+
+def perf_record_data_source(
+    *,
+    fresh: int,
+    stale: int,
+    missing: int,
+    provider_fetches: int,
+) -> None:
+    """Record bounded local-first source-data counters for this request."""
+    if not getattr(_perf_local, "active", False):
+        return
+    _perf_local.data_fresh += max(fresh, 0)
+    _perf_local.data_stale += max(stale, 0)
+    _perf_local.data_missing += max(missing, 0)
+    _perf_local.provider_fetches += max(provider_fetches, 0)
 
 
 class PerfTimingMiddleware:
@@ -128,6 +165,10 @@ class PerfTimingMiddleware:
                 "db_time_ms": round(db_time_ms, 2),
                 "proxy_calls": proxy_metrics["proxy_calls"],
                 "proxy_time_ms": proxy_metrics["proxy_time_ms"],
+                "data_fresh": proxy_metrics["data_fresh"],
+                "data_stale": proxy_metrics["data_stale"],
+                "data_missing": proxy_metrics["data_missing"],
+                "provider_fetches": proxy_metrics["provider_fetches"],
             }
 
         return response
@@ -140,6 +181,8 @@ def get_request_perf_metrics(request: HttpRequest) -> Optional[dict[str, Any]]:
 
 __all__ = [
     "PerfTimingMiddleware",
+    "perf_record_proxy_batch",
     "perf_record_proxy_call",
+    "perf_record_data_source",
     "get_request_perf_metrics",
 ]

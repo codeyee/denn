@@ -1,0 +1,58 @@
+name: Browser Baseline
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 9 * * 1"
+
+jobs:
+  production-build-baseline:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.6.3
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browser
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Build production bundle
+        run: pnpm run build
+
+      - name: Run cold and warm browser baseline
+        run: pnpm exec playwright test --project=performance
+
+      - name: Reproduce known audit regressions
+        run: pnpm exec playwright test --project=known-regressions
+
+      - name: Upload baseline and browser artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-baseline-${{ github.run_id }}
+          path: |
+            web/test-results/phase0-baseline.json
+            web/test-results/artifacts
+            web/test-results/report
+          if-no-files-found: warn
+          retention-days: 30

@@ -182,6 +182,7 @@ Use the rest as specialized references:
 - [`runbooks/spotify-token-mode.md`](./runbooks/spotify-token-mode.md)
 - [`runbooks/rehydrate-content.md`](./runbooks/rehydrate-content.md)
 - [`runbooks/client-session-bootstrap-smoke.md`](./runbooks/client-session-bootstrap-smoke.md)
+- [`runbooks/browser-e2e-and-baseline.md`](./runbooks/browser-e2e-and-baseline.md)
 - [`history/implementation-history.md`](./history/implementation-history.md)
 - [`definition-of-done.md`](./definition-of-done.md)
 

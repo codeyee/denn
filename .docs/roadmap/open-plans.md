@@ -4,16 +4,31 @@ This file summarizes the work that is still open, partially implemented, or next
 
 ## Priority Order
 
-1. Close the remaining `Sprint 10` follow-up work: future-release
-   filtering leak, country-scoped availability freshness, and provider
-   status cleanup.
-2. Prepare the repo for `Sprint 11` by keeping the persisted content
-   model aligned with Denn-owned semantics rather than provider-shaped
-   vocabularies.
-3. Turn performance documentation into measured, maintained baseline
-   data.
-4. Keep ADR 0002 auth hardening visible, but behind the content/domain
-   cleanup needed before the product-heavy sprint line continues.
+1. Execute Phase 1 of roadmap epic
+   [#35](https://github.com/codeyee/denn/issues/35): auth/hydration
+   (#17/#18), navigation (#20/#21), local-first detail (#22/#23),
+   provider budgets/home cold (#25/#24) and accessibility base (#29).
+2. Keep the Phase 0 telemetry and Playwright harness green and extend
+   its quarantined scenarios as each P1 fix lands.
+3. Complete the remaining content eligibility and domain-normalization
+   work (#32/#33 and the active Sprint 10 follow-ups) before product
+   work expands the same critical routes.
+4. Resume the product sprint line only after the Phase 1 gate is met.
+
+## Post-Audit Remediation Roadmap
+
+- Status: Phase 0 complete; Phase 1 is the active gate.
+- Epic: [#35](https://github.com/codeyee/denn/issues/35).
+- Phase 0 evidence:
+  [`../perf/baseline.md`](../perf/baseline.md),
+  [`../observability.md`](../observability.md), and
+  [`../runbooks/browser-e2e-and-baseline.md`](../runbooks/browser-e2e-and-baseline.md).
+
+Phase 0 established the before evidence rather than repairing the known
+failures: one logical request ID, cache/data-source dimensions,
+production-build browser smoke, cold/warm baseline, redacted failure
+artifacts, and expected-failure characterization for #17, #18 and #20.
+Those quarantined tests are the executable entry criteria for Phase 1.
 
 ## Old TODO Triage
 
@@ -101,22 +116,27 @@ Detailed sprint plans:
 
 ## Performance Baseline And Perceived Speed
 
-- Status: partial
+- Status: Phase 0 baseline implemented; deployed after-measurement remains
+  a release-gate activity.
 
-Already merged:
+Implemented baseline:
 
 - `core` perf timing middleware behind `PERF_LOGGING_ENABLED`.
 - Structured `http_request` logging enriched with DB/proxy timing.
 - `WebVitalsReporter` mounted in `web`.
 - Query provider, base query hooks, hover prefetch, and optimistic
   mutations foundation.
+- p50/p75/p95 fixture measurements for login, home, search, detail,
+  lists and profile in cold/warm browser states.
+- Request correlation, bounded cache/data-source fields, alert
+  thresholds, weekly/manual browser job and redacted Playwright
+  artifacts.
 
 Still open:
 
-- Fill `perf/baseline.md` with real current measurements instead of
-  placeholders.
 - Generalize streaming/prefetch patterns to the main user flows.
-- Make performance verification a maintained engineering habit instead of a one-off planning artifact.
+- Capture comparable deployed after-measurements during Phase 4 without
+  replacing the existing before snapshot or fixture floor.
 
 ## React Query Migration And SSR Prefetch
 
@@ -133,8 +153,6 @@ Merged behavior:
 
 Still open:
 
-- Replace placeholder values in `.docs/perf/baseline.md` with measured
-  current Web Vitals.
 - Expand frontend interaction coverage beyond the current Query smoke
   tests.
 

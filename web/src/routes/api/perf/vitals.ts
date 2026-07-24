@@ -26,10 +26,20 @@ interface VitalPayload {
   id?: string;
   route?: string;
   ts?: number;
+  browser_state?: string;
+  navigation_type?: string;
 }
 
 const METRIC_NAMES = new Set(["CLS", "FCP", "INP", "LCP", "TTFB"]);
 const METRIC_RATINGS = new Set(["good", "needs-improvement", "poor"]);
+const BROWSER_STATES = new Set(["cold", "warm", "unknown"]);
+const NAVIGATION_TYPES = new Set([
+  "navigate",
+  "reload",
+  "back_forward",
+  "prerender",
+  "unknown",
+]);
 const vitalsRateLimiter = createFixedWindowRateLimiter({
   limit: 300,
   windowMs: 60_000,
@@ -60,7 +70,28 @@ export function isValidPayload(value: unknown): value is VitalPayload {
         v.route.startsWith("/") &&
         v.route.length <= 512)) &&
     (v.ts === undefined || (typeof v.ts === "number" && Number.isFinite(v.ts)))
+    && (v.browser_state === undefined ||
+      (typeof v.browser_state === "string" &&
+        BROWSER_STATES.has(v.browser_state)))
+    && (v.navigation_type === undefined ||
+      (typeof v.navigation_type === "string" &&
+        NAVIGATION_TYPES.has(v.navigation_type)))
   );
+}
+
+export function normalizeMetricRoute(route?: string): string {
+  if (!route?.startsWith("/")) return "/";
+  const pathname = route.split("?")[0].replace(/\/+$/, "") || "/";
+  if (/^\/content\/\d+$/.test(pathname)) return "/content/:id";
+  if (/^\/lists\/\d+$/.test(pathname)) return "/lists/:id";
+  if (
+    ["/", "/login", "/register", "/search", "/profile", "/lists"].includes(
+      pathname,
+    )
+  ) {
+    return pathname;
+  }
+  return "/other";
 }
 
 export const Route = createFileRoute("/api/perf/vitals")({
@@ -87,13 +118,16 @@ export const Route = createFileRoute("/api/perf/vitals")({
 
         console.log(
           JSON.stringify({
-            event: "web_vital",
+            ts: new Date(body.ts ?? Date.now()).toISOString(),
+            level: "info",
+            msg: "web_vital",
+            service: "web",
             name: body.name,
             value: body.value,
             rating: body.rating,
-            id: body.id,
-            route: body.route,
-            ts: body.ts ?? Date.now(),
+            route: normalizeMetricRoute(body.route),
+            browser_state: body.browser_state ?? "unknown",
+            navigation_type: body.navigation_type ?? "unknown",
           }),
         );
 

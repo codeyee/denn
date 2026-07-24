@@ -34,7 +34,6 @@ import (
 
 	"github.com/codeyee/denn-proxy/internal/clients"
 	"github.com/codeyee/denn-proxy/internal/config"
-	"github.com/codeyee/denn-proxy/internal/logging"
 	"github.com/codeyee/denn-proxy/internal/handlers/albums"
 	"github.com/codeyee/denn-proxy/internal/handlers/books"
 	"github.com/codeyee/denn-proxy/internal/handlers/games"
@@ -43,6 +42,7 @@ import (
 	"github.com/codeyee/denn-proxy/internal/handlers/movies"
 	"github.com/codeyee/denn-proxy/internal/handlers/multisearch"
 	"github.com/codeyee/denn-proxy/internal/handlers/tvshows"
+	"github.com/codeyee/denn-proxy/internal/logging"
 	"github.com/codeyee/denn-proxy/internal/middleware"
 
 	tmdbclient "github.com/codeyee/denn-proxy/internal/providers/tmdb"
@@ -113,8 +113,8 @@ func main() {
 		corsConfig.AllowOrigins = strings.Split(cfg.CorsAllowOrigins, ",")
 	}
 	corsConfig.AllowMethods = []string{"GET", "OPTIONS"}
-	corsConfig.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "X-User-Country", "X-Api-Key", "X-Request-Id", "Authorization"}
-	corsConfig.ExposeHeaders = []string{"X-Request-Id", "X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Degraded"}
+	corsConfig.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "X-User-Country", "X-Api-Key", "X-Api-Consumer", "X-Request-Id", "Authorization"}
+	corsConfig.ExposeHeaders = []string{"X-Request-Id", "X-Cache", "Server-Timing", "X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Degraded"}
 	r.Use(cors.New(corsConfig))
 
 	api := r.Group("/v1/proxy")
