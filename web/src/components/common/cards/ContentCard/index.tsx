@@ -66,6 +66,15 @@ export function ContentCard({ item, className }: ContentCardProps) {
     isSeason && "tv_show_name" in item
       ? formatSeasonTitle(item.tv_show_name, item.title)
       : item.title;
+  const detailLinkProps = item.denn_id
+    ? {
+        to: "/content/$id" as const,
+        params: { id: String(item.denn_id) },
+        preload: "intent" as const,
+        onClick: handleNavigation,
+        "aria-label": `View details for ${title}`,
+      }
+    : null;
 
   const imageUrl = getPosterImageUrl(item);
   const id = String(item.id);
@@ -93,6 +102,14 @@ export function ContentCard({ item, className }: ContentCardProps) {
           backgroundImage={imageUrl || ""}
           backgroundImageAlt={`${title} cover image`}
           isEmpty={!imageUrl}
+          hoverOverlay={
+            detailLinkProps ? (
+              <Link
+                {...detailLinkProps}
+                className="absolute inset-0 z-20 rounded-2xl outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white/80"
+              />
+            ) : undefined
+          }
           hoverContent={
             <Card.HoverContent>
               <div className="space-y-3">
@@ -106,7 +123,7 @@ export function ContentCard({ item, className }: ContentCardProps) {
                   onClick={modal.openModal}
                   variant="secondary"
                   size="sm"
-                  className="relative z-20 w-full bg-white/10 hover:bg-white/20 text-white border-white/20"
+                  className="relative z-30 w-full bg-white/10 hover:bg-white/20 text-white border-white/20"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Add to List
@@ -115,14 +132,10 @@ export function ContentCard({ item, className }: ContentCardProps) {
             </Card.HoverContent>
           }
         >
-          {item.denn_id && (
+          {detailLinkProps && (
             <Link
-              to="/content/$id"
-              params={{ id: String(item.denn_id) }}
-              preload="intent"
-              onClick={handleNavigation}
+              {...detailLinkProps}
               className="absolute inset-0 z-20 rounded-xl outline-none focus-visible:ring-4 focus-visible:ring-white/80"
-              aria-label={`View details for ${title}`}
             />
           )}
           <Card.Footer>
