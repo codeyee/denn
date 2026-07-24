@@ -4,23 +4,20 @@ This file summarizes the work that is still open, partially implemented, or next
 
 ## Priority Order
 
-1. Preserve the completed Phase 1 and Phase 2 gates from roadmap epic
-   [#35](https://github.com/codeyee/denn/issues/35): critical-path
-   stabilization plus semantic media, accessibility, responsive UX,
-   controlled hero behavior, and real legal/support routes.
-2. Preserve the completed safe-default content preference and
-   policy-scoped cache boundary from #32.
-3. Preserve the completed Phase 3 BFF/HttpOnly auth boundary and the
-   completed local Phase 4 release-candidate gate, then execute the
-   staging/deployed smoke and observation window.
-4. Resume the product sprint line only after the roadmap release gates
-   that protect the same critical routes are met.
+1. Preserve the completed roadmap epic
+   [#35](https://github.com/codeyee/denn/issues/35) as the quality floor:
+   critical-path stabilization, semantic media, accessibility,
+   responsive UX, content safety, BFF/HttpOnly auth, and measured
+   production release gates.
+2. Resume the product sprint line without weakening the roadmap's
+   browser, security, performance, and observability regressions.
+3. Expand interaction coverage as Add-to-List and List Detail evolve.
 
 ## Post-Audit Remediation Roadmap
 
-- Status: Phases 0–3, the #32 safety dependency, and the local Phase 4
-  release-candidate gate are complete. Staging/deployed validation and
-  its observation window remain open.
+- Status: completed and production-verified 2026-07-24. All phases and
+  child issues are closed; the durable outcomes remain regression
+  requirements.
 - Epic: [#35](https://github.com/codeyee/denn/issues/35).
 - Phase 0 evidence:
   [`../perf/baseline.md`](../perf/baseline.md),
@@ -43,8 +40,9 @@ tests. Its durable outcomes are:
   handling;
 - the critical path has immediate feedback and an accessibility base.
 
-The epic itself remains open because its Definition of Done also covers
-Phases 3–4.
+The epic Definition of Done was completed after Phases 3–4, the
+production deploys, the dedicated-account smoke, and the deployed
+before/after measurement.
 
 Phase 2 added a shared semantic responsive-media path, requests only the
 active hero artwork, lazily loads card media, and reserves stable image
@@ -65,14 +63,13 @@ results. The selected policy is carried into both provider and aggregate
 cache keys, while unclassified providers are documented and never
 inferred from free text.
 
-Phase 4 local evidence is recorded in
+Phase 4 evidence is recorded in
 [`../perf/baseline.md`](../perf/baseline.md): all three root validation
 commands, 16 desktop/mobile smoke scenarios, 10 applicable regression
-scenarios, 25 accessibility/responsive scenarios, and the 60-sample
-cold/warm baseline pass. The fixture smoke proves exact
-`MISS`/`HIT`/`STALE` propagation. This evidence must still be repeated
-against the deployed validated SHA with a non-personal account; local
-fixtures are not staging evidence.
+scenarios, 25 accessibility/responsive scenarios, the 60-sample fixture
+baseline, and a separate deployed Home after-snapshot. Production
+served the exact release SHA, exposed `MISS` then `HIT`, and passed the
+dedicated-account desktop/mobile/keyboard/degraded/session smoke.
 
 ## Old TODO Triage
 
@@ -160,8 +157,7 @@ Detailed sprint plans:
 
 ## Performance Baseline And Perceived Speed
 
-- Status: Phase 4 local release-candidate snapshot recorded; deployed
-  after-measurement remains a release-gate activity.
+- Status: implemented and production-verified.
 
 Implemented baseline:
 
@@ -175,12 +171,12 @@ Implemented baseline:
 - Request correlation, bounded cache/data-source fields, alert
   thresholds, weekly/manual browser job and redacted Playwright
   artifacts.
+- Deployed Home p50/p75/p95 cold/warm after-measurements and exact
+  `MISS`/`HIT` timing from the final production release.
 
 Still open:
 
 - Generalize streaming/prefetch patterns to the main user flows.
-- Capture comparable deployed after-measurements during Phase 4 without
-  replacing the existing before snapshot or fixture floor.
 
 ## React Query Migration And SSR Prefetch
 

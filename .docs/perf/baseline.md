@@ -23,9 +23,42 @@ Source: browser audit captured before Phase 0 fixes, recorded in issue
 | Home | browser warm | 780–840 ms | 2,170–2,240 ms | Cache helps, but does not remove the slow path |
 
 The original audit did not publish raw samples for the other routes, so
-Phase 0 does not invent production percentiles for them. The scheduled
-browser job preserves the repeatable harness until a non-personal staging
-fixture is available for deployed after-measurements.
+Phase 0 does not invent production percentiles for them. The comparable
+deployed Home after-measurement is recorded below; the deterministic
+fixture remains the broader six-flow engineering floor.
+
+## Phase 4 Deployed After Snapshot
+
+Captured 2026-07-24 against `https://denn.codeyee.dev/` after release
+`52951909f4483dd9f667c3e026ad09bdf8e83533`, using headed Chrome at
+1200 × 900, the dedicated non-personal fixture account, five fresh
+authenticated browser contexts, and one warm reload in each context.
+The pause-carousel interaction supplied a qualifying INP event.
+
+Values below are milliseconds except CLS.
+
+| Flow | State | TTFB p50/p75/p95 | FCP p50/p75/p95 | LCP p50/p75/p95 | INP p50/p75/p95 | CLS p50/p75/p95 | Data/cache state |
+|---|---|---|---|---|---|---|---|
+| Home | browser cold | 760.8 / 891.8 / 1,091.2 | 988 / 1,124 / 1,236 | 1,724 / 1,948 / 1,986.4 | 24 / 24 / 24 | 0.0001 / 0.0001 / 0.0001 | fresh browser context; authenticated SSR |
+| Home | browser warm | 393.8 / 435.5 / 439.7 | 432 / 472 / 472 | 924 / 1,032 / 1,204.8 | 24 / 24 / 24 | 0 / 0 / 0 | same-context browser cache |
+
+The matching BFF cache probe recorded
+`proxy;dur=1235.51;desc="MISS"` followed by
+`proxy;dur=51.02;desc="HIT"` in `Server-Timing`. Both satisfy #24's
+agreed proxy budgets: partial cold miss below 2.5 seconds and warm hit
+below 500 ms. Home also satisfies the browser release gates at p75:
+LCP 1.948 seconds, INP 24 ms, and CLS 0.0001 cold; LCP 1.032 seconds,
+INP 24 ms, and CLS 0 warm.
+
+The broader production smoke covered registration, hard-reload session
+continuity, search, keyboard id-first navigation, detail, back,
+safe-default and opted-in direct search, CSRF rejection, transient Core
+failure, 390 × 844 mobile reflow, reduced motion, logout, and login.
+The account preference was restored to `Off`, temporary credentials
+were removed from browser storage, and the visible browser remained
+authenticated. The operational observation ran from 13:41 through
+14:18 UTC; the final Web SHA was publicly confirmed before the last
+smoke.
 
 ## Repeatable Production-Build Baseline
 
@@ -163,10 +196,9 @@ INP 16 ms, and CLS 0. The full browser matrix also proved exact
 desktop/mobile session continuity, and absence of the named React 418,
 hover-write, unnamed-control, and transient-logout regressions.
 
-These are fixture results, not deployed after-measurements. Phase 4 is
-not operationally complete until the same commit is deployed, exercised
-with the dedicated non-personal account, and observed for the agreed
-release window.
+These remain fixture results rather than deployed measurements. The
+separate deployed after snapshot above closes the operational Phase 4
+gate without relabeling or combining the two data sources.
 
 ## Backend Telemetry Contract
 

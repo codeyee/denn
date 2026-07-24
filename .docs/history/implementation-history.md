@@ -214,7 +214,7 @@ This document keeps the durable outcomes of completed implementation plans after
   current user. Existing access JWTs remain bounded by their one-hour
   lifetime.
 
-## Phase 4 Local Release-Candidate Validation
+## Phase 4 Release Validation
 
 - The three root gates passed together: frontend lint/production build,
   212 Django tests, and the full offline-safe Go suite.
@@ -232,9 +232,25 @@ This document keeps the durable outcomes of completed implementation plans after
   cross-service push blocks the core deploy webhook until that matching
   BFF release is live. This makes the documented web-first auth cutover
   enforceable instead of relying on workflow timing.
-- Staging, production smoke, and the observation window remain an
-  operational release gate; local fixture evidence is explicitly not a
-  substitute.
+- Production deployment exposed the exact non-cacheable Web SHA and
+  completed both Web and Core workflows, including the cross-service
+  release gate, image publication, database migrations before Gunicorn,
+  and deployment webhooks.
+- A headed Chrome smoke created a dedicated fixture account and proved
+  registration, hard-reload session continuity, HttpOnly auth cookies,
+  CSRF rejection, search, keyboard id-first detail navigation, back,
+  safe-default and opted-in direct search, transient 503 resilience,
+  mobile reflow, reduced motion, logout, and login.
+- The smoke found and closed two production-only rollout gaps before
+  roadmap closure: compatibility with the legacy Core URL environment
+  and lowercase provider-type normalization for bulk id resolution.
+- Five fresh production contexts plus five warm reloads recorded Home
+  p75 LCP of 1,948 / 1,032 ms, INP 24 / 24 ms, and CLS
+  0.0001 / 0. Exact BFF `Server-Timing` recorded a 1,235.51 ms `MISS`
+  followed by a 51.02 ms `HIT`.
+- The production observation window exceeded the requested five minutes,
+  and the final preference was restored to safe default with temporary
+  credentials removed from browser storage.
 
 ## What This History Replaces
 
