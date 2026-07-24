@@ -255,6 +255,28 @@ test("primary mobile controls keep 44px targets", async ({ page }) => {
   }
 });
 
+test("desktop featured controls stay clear of the title", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/");
+  const featured = page.getByRole("region", { name: "Featured content" });
+  await featured.hover();
+
+  const titleBox = await featured.getByRole("heading", { level: 2 }).boundingBox();
+  const previousBox = await featured
+    .getByRole("button", { name: "Show previous featured item" })
+    .boundingBox();
+  const nextBox = await featured
+    .getByRole("button", { name: "Show next featured item" })
+    .boundingBox();
+
+  expect((previousBox?.y ?? 0) + (previousBox?.height ?? 0)).toBeLessThanOrEqual(
+    titleBox?.y ?? 0,
+  );
+  expect((nextBox?.y ?? 0) + (nextBox?.height ?? 0)).toBeLessThanOrEqual(
+    titleBox?.y ?? 0,
+  );
+});
+
 test("content carousel accepts horizontal gestures without losing keyboard focus", async ({
   page,
 }) => {

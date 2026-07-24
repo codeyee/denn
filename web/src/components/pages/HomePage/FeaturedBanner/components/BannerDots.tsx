@@ -25,7 +25,7 @@ export function BannerDots({
         type="button"
         aria-label="Show previous featured item"
         onClick={onPrevious}
-        className="absolute left-2 top-[38%] z-40 flex size-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/65 text-white transition-colors hover:bg-black/85 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white md:left-4 md:top-1/2 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100"
+        className="absolute left-2 top-[36%] z-40 flex size-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/65 text-white transition-colors hover:bg-black/85 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white md:left-4 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100"
       >
         <ChevronLeft aria-hidden="true" className="size-6" />
       </button>
@@ -77,7 +77,7 @@ export function BannerDots({
         type="button"
         aria-label="Show next featured item"
         onClick={onNext}
-        className="absolute right-2 top-[38%] z-40 flex size-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/65 text-white transition-colors hover:bg-black/85 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white md:right-4 md:top-1/2 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100"
+        className="absolute right-2 top-[36%] z-40 flex size-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/65 text-white transition-colors hover:bg-black/85 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white md:right-4 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100"
       >
         <ChevronRight aria-hidden="true" className="size-6" />
       </button>
