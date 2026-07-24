@@ -201,7 +201,7 @@ test("mobile first viewport exposes featured content and the next section", asyn
   await expect(
     page
       .getByRole("region", { name: "Featured content" })
-      .getByText("Movie", { exact: true }),
+      .getByRole("img", { name: "Content type: Movie" }),
   ).toBeVisible();
 
   expect(featured, "Featured content must be visible").not.toBeNull();

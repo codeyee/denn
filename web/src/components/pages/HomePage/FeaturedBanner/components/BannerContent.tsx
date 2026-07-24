@@ -31,14 +31,18 @@ export function BannerContent({ item, onViewDetails }: BannerContentProps) {
   return (
     <div className="relative z-30 flex h-full items-end">
       <div className="w-full px-4 pb-20 md:px-12 md:pb-24">
-        <div className="mb-1 flex flex-wrap items-center gap-2 md:mb-2 md:gap-3">
+        <div className="mb-1 flex items-center gap-3 md:mb-2">
+          <span
+            role="img"
+            aria-label={`Content type: ${typeLabel}`}
+            title={typeLabel}
+            className="shrink-0 text-white/90"
+          >
+            <Icon aria-hidden="true" className="size-6 md:size-8" />
+          </span>
           <h2 className="line-clamp-2 text-2xl font-extrabold text-white drop-shadow-text text-balance sm:text-3xl md:text-5xl">
             {item.title}
           </h2>
-          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-black/65 px-2.5 py-1 text-xs font-medium text-white/90 md:px-3 md:text-sm">
-            <Icon aria-hidden="true" className="size-3.5 md:size-4" />
-            {typeLabel}
-          </span>
         </div>
 
         <div className="mt-2 md:mt-3 text-white/85 space-y-1 font-sans">
