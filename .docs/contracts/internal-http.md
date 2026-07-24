@@ -173,6 +173,7 @@ same-origin.
 | `PROXY_API_URL`          | web       | server-only   | Override SSR del proxy URL. |
 | `NEXT_PUBLIC_PROXY_API_URL` | web    | público       | Sólo URL pública, nunca clave. |
 | `API_URL`                | web       | server-only   | Override SSR de la URL de core. |
+| `NEXT_PUBLIC_API_URL`    | web       | server-only legacy | Fallback temporal de despliegues anteriores; nunca se copia a `window.__ENV__`. Migrar a `API_URL`. |
 | `BUILD_SHA`              | web       | server-only   | SHA completo inyectado en la imagen; `/api/version` lo expone sin caché para coordinar releases. |
 | `PORT`                   | proxy     | server-only   | |
 | `CORS_ALLOW_ORIGINS`     | proxy     | server-only   | |

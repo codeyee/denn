@@ -68,21 +68,48 @@ export async function createAuthenticatedSession(
     );
   }
 
-  const response = await fetch(`${getApiUrl()}/auth/${endpoint}/`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Request-Id": getLogicalRequestId(),
-    },
-    body: JSON.stringify(body),
-    cache: "no-store",
-    signal: AbortSignal.timeout(5_000),
-  });
+  const requestId = getLogicalRequestId();
+  let response: Response;
+  try {
+    response = await fetch(`${getApiUrl()}/auth/${endpoint}/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Request-Id": requestId,
+      },
+      body: JSON.stringify(body),
+      cache: "no-store",
+      signal: AbortSignal.timeout(5_000),
+    });
+  } catch (error) {
+    console.error(
+      JSON.stringify({
+        level: "error",
+        msg: "auth_upstream_unavailable",
+        request_id: requestId,
+        endpoint,
+        error:
+          error instanceof Error ? error.name : "UnknownError",
+      }),
+    );
+    return jsonResponse(
+      {
+        error: "AUTH_UPSTREAM_UNAVAILABLE",
+        detail: "Authentication service is temporarily unavailable.",
+      },
+      502,
+      { "x-request-id": requestId },
+    );
+  }
   const payload = (await response.json().catch(() => ({}))) as Partial<
     AuthSuccessPayload
   >;
 
-  if (!response.ok) return jsonResponse(payload, response.status);
+  if (!response.ok) {
+    return jsonResponse(payload, response.status, {
+      "x-request-id": requestId,
+    });
+  }
 
   const access =
     extractUpstreamCookie(response, AUTH_ACCESS_COOKIE) ?? payload.access;
@@ -96,11 +123,14 @@ export async function createAuthenticatedSession(
         detail: "Authentication service returned an incomplete session.",
       },
       502,
+      { "x-request-id": requestId },
     );
   }
 
   setAuthCookies({ access, refresh });
-  return jsonResponse({ user: payload.user }, response.status);
+  return jsonResponse({ user: payload.user }, response.status, {
+    "x-request-id": requestId,
+  });
 }
 
 export async function destroyAuthenticatedSession(everywhere: boolean) {
