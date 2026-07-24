@@ -22,7 +22,7 @@ const movie = {
   title: "Phase Zero Movie",
   original_title: "Phase Zero Movie",
   description:
-    "Deterministic metadata for browser guardrails with enough additional copy to verify that the featured description remains concise and never covers the full artwork on narrow mobile screens.",
+    "Deterministic metadata for browser guardrails. Additional copy verifies that the featured description remains concise and never covers the full artwork on narrow mobile screens.",
   image_url: `${fixtureOrigin()}/__fixture__/images/poster-1.svg`,
   tagline: null,
   imdb_id: null,
