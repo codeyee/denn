@@ -157,7 +157,6 @@ func (s *Service) GetTrendingAlbums(ctx context.Context, page, limit int) (Searc
 	for _, album := range data.Albums.Items {
 		items = append(items, mapper.MapSearchItem(album))
 	}
-	items = servicecommon.FilterEligibleSearchItems(items, time.Now())
 
 	totalPages := 0
 	if data.Albums.Total > 0 && limit > 0 {

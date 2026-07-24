@@ -184,3 +184,127 @@ func TestGetAlbum(t *testing.T) {
 		t.Errorf("Expected status 200, got %d", resp.StatusCode)
 	}
 }
+
+func TestFetchAndParseChartsUsesStableBrowserHeaders(t *testing.T) {
+	rt := testutil.RoundTripFunc(func(req *http.Request) (*http.Response, error) {
+		if req.URL.String() != ChartsURL {
+			t.Fatalf("expected charts URL %s, got %s", ChartsURL, req.URL.String())
+		}
+		for header, expected := range map[string]string{
+			"Accept":              "application/json",
+			"App-Platform":        "Browser",
+			"Origin":              "https://charts.spotify.com",
+			"Referer":             "https://charts.spotify.com/",
+			"Spotify-App-Version": "0.0.0.production",
+		} {
+			if got := req.Header.Get(header); got != expected {
+				t.Fatalf("expected %s header %q, got %q", header, expected, got)
+			}
+		}
+		if got := req.Header.Get("Authorization"); got != "" {
+			t.Fatalf("charts request must not use an expiring browser bearer token, got %q", got)
+		}
+
+		return testutil.JSONResponse(http.StatusOK, map[string]any{
+			"chartEntryViewResponses": []any{
+				map[string]any{"entries": []any{
+					map[string]any{"albumMetadata": map[string]any{
+						"albumUri":  "spotify:album:album-1",
+						"albumName": "Album One",
+					}},
+				}},
+			},
+		}), nil
+	})
+
+	client := NewClient("id", "secret", clients.NoOpCache{},
+		clients.WithHTTPClient(testutil.HTTPClient(rt)))
+
+	albums, err := client.fetchAndParseCharts(context.Background())
+	if err != nil {
+		t.Fatalf("fetchAndParseCharts failed: %v", err)
+	}
+	if len(albums) != 1 || albums[0].ID != "album-1" {
+		t.Fatalf("expected parsed album-1, got %#v", albums)
+	}
+}
+
+func TestParseChartAlbumsFindsAlbumEntriesByShape(t *testing.T) {
+	data := chartsResponse{
+		ChartEntryViewResponses: []chartEntryView{
+			{Entries: []chartEntry{{}}},
+			{Entries: []chartEntry{{
+				AlbumMetadata: chartAlbumMetadata{
+					AlbumURI:  "spotify:album:album-1",
+					AlbumName: "Album One",
+				},
+			}}},
+			{Entries: []chartEntry{
+				{AlbumMetadata: chartAlbumMetadata{
+					AlbumURI:  "spotify:album:album-2",
+					AlbumName: "Album Two",
+				}},
+				{AlbumMetadata: chartAlbumMetadata{
+					AlbumURI:  "spotify:album:album-1",
+					AlbumName: "Duplicate Album One",
+				}},
+				{AlbumMetadata: chartAlbumMetadata{
+					AlbumURI:  "spotify:track:not-an-album",
+					AlbumName: "Malformed",
+				}},
+			}},
+		},
+	}
+
+	albums, err := parseChartAlbums(data)
+	if err != nil {
+		t.Fatalf("parseChartAlbums failed: %v", err)
+	}
+	if len(albums) != 2 {
+		t.Fatalf("expected 2 unique albums, got %d", len(albums))
+	}
+	if albums[0].ID != "album-1" || albums[1].ID != "album-2" {
+		t.Fatalf("expected chart order [album-1 album-2], got [%s %s]", albums[0].ID, albums[1].ID)
+	}
+}
+
+func TestParseChartAlbumsRejectsSchemaWithoutAlbums(t *testing.T) {
+	data := chartsResponse{
+		ChartEntryViewResponses: []chartEntryView{
+			{Entries: []chartEntry{{}}},
+		},
+	}
+
+	albums, err := parseChartAlbums(data)
+	if err == nil {
+		t.Fatalf("expected schema error, got albums %#v", albums)
+	}
+}
+
+func TestGetChartAlbumsFallsBackToLastKnownGoodChart(t *testing.T) {
+	cache := NewMockCache()
+	stale, err := json.Marshal([]chartAlbum{{
+		ID:   "stale-album",
+		Name: "Last Known Good",
+	}})
+	if err != nil {
+		t.Fatalf("marshal stale chart: %v", err)
+	}
+	cache.data[ChartsStaleKey] = stale
+
+	rt := testutil.RoundTripFunc(func(req *http.Request) (*http.Response, error) {
+		return testutil.JSONResponse(http.StatusBadRequest, map[string]any{
+			"error": "upstream contract changed",
+		}), nil
+	})
+	client := NewClient("id", "secret", cache,
+		clients.WithHTTPClient(testutil.HTTPClient(rt)))
+
+	albums, err := client.getChartAlbums(context.Background())
+	if err != nil {
+		t.Fatalf("expected stale fallback, got error: %v", err)
+	}
+	if len(albums) != 1 || albums[0].ID != "stale-album" {
+		t.Fatalf("expected stale-album fallback, got %#v", albums)
+	}
+}

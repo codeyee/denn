@@ -17,17 +17,19 @@ import (
 )
 
 const (
-	AuthURL     = "https://accounts.spotify.com/api/token"
-	BaseURL     = "https://api.spotify.com/v1"
-	ChartsURL   = "https://charts-spotify-com-service.spotify.com/public/v0/charts"
-	authBase    = "https://accounts.spotify.com"
-	authPath    = "/api/token"
-	chartsBase  = "https://charts-spotify-com-service.spotify.com"
-	chartsPath  = "/public/v0/charts"
-	TokenKey    = "auth:spotify:token"
-	ChartsKey   = "api:spotify:charts:albums"
-	TokenBuffer = 5 * time.Minute
-	ChartsTTL   = 7 * 24 * time.Hour
+	AuthURL        = "https://accounts.spotify.com/api/token"
+	BaseURL        = "https://api.spotify.com/v1"
+	ChartsURL      = "https://charts-spotify-com-service.spotify.com/public/v0/charts"
+	authBase       = "https://accounts.spotify.com"
+	authPath       = "/api/token"
+	chartsBase     = "https://charts-spotify-com-service.spotify.com"
+	chartsPath     = "/public/v0/charts"
+	TokenKey       = "auth:spotify:token"
+	ChartsKey      = "api:spotify:charts:albums"
+	ChartsStaleKey = "api:spotify:charts:albums:stale"
+	TokenBuffer    = 5 * time.Minute
+	ChartsTTL      = cachettl.CatalogueTTL
+	ChartsStaleTTL = 14 * 24 * time.Hour
 )
 
 type Client struct {
@@ -151,11 +153,16 @@ func (c *Client) oauthHeaders() map[string]string {
 	}
 }
 
-// chartsHeaders is a thin wrapper because Spotify's charts API does not
-// require auth but does want a JSON Accept header.
+// chartsHeaders mirrors the stable, non-user-specific headers sent by the
+// Spotify Charts web app. The endpoint is public today, so do not couple this
+// request to an expiring browser bearer token.
 func (c *Client) chartsHeaders() map[string]string {
 	return map[string]string{
-		"Accept": "application/json",
+		"Accept":              "application/json",
+		"App-Platform":        "Browser",
+		"Origin":              "https://charts.spotify.com",
+		"Referer":             "https://charts.spotify.com/",
+		"Spotify-App-Version": "0.0.0.production",
 	}
 }
 

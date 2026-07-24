@@ -13,6 +13,13 @@ aggregate responses are cached.
   discovery surfaces.
 - Filtering runs in every provider service used by homepage and search,
   before aggregation and cache writes.
+- Spotify Charts is used only to rank album IDs. Because its current
+  album payload omits release dates, homepage enriches those IDs through
+  Spotify's album endpoint and applies release eligibility to the
+  enriched records before writing the aggregate cache.
+- A valid chart is cached for 24 hours and retained as a 14-day
+  last-known-good fallback. Empty or incompatible chart payloads are
+  never promoted into either cache.
 - Aggregate cache keys include the `future-24h` policy version so entries
   from an older policy cannot leak into the current response.
 
@@ -55,6 +62,8 @@ discovery browse request.
 
 - Provider service tests cover release-date eligibility across supported
   media families.
+- Spotify provider tests cover chart-view reordering, missing chart
+  release dates, malformed entries, and empty-schema failures.
 - TMDB tests prove the upstream policy, raw adult filtering, and
   explicit opt-in behavior.
 - Homepage and multi-search handler tests prove policy-scoped keys,
