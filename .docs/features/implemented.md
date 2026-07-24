@@ -24,7 +24,9 @@ considered part of the project baseline.
 - Canonical hybrid metadata topology formalized by ADR 0001.
 - Canonical internal HTTP contract for headers, error envelope,
   pagination, env var ownership, and request-id propagation.
-- Structured logging and request correlation in `core` and `proxy`.
+- Structured logging and bounded request correlation across `web`,
+  `core` and `proxy`, including cache/data-source state and payload
+  timing without user identifiers.
 - Deterministic root validation workflow via `make validate-web`,
   `make validate-core`, and `make validate-proxy`.
 - Local-first content detail persistence in `core` with per-type detail
@@ -40,6 +42,9 @@ considered part of the project baseline.
   cards.
 - Global session bootstrap plus route-level protected redirects in
   TanStack Router for authenticated pages.
+- Deterministic production-build Playwright fixtures, desktop/mobile
+  critical-flow smoke, expected-failure audit characterization, redacted
+  browser failure artifacts and a scheduled cold/warm baseline.
 
 ## Current Compatibility Guarantees
 

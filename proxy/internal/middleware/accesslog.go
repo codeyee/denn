@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -12,8 +13,8 @@ import (
 // RequestID so log lines can be joined across services via request_id.
 //
 // Fields: ts (handled by slog), level, msg, request_id, method, path
-// (matched route template), raw_path, status, duration_ms, bytes_out,
-// client_ip, optional cache_status, optional ratelimit_degraded.
+// (matched route template), status, duration_ms, bytes_out,
+// consumer, optional cache_status, optional ratelimit_degraded.
 //
 // Per-route latency aggregation is deliberately delegated to whatever
 // log/metrics backend ingests these lines. We do not maintain an
@@ -26,19 +27,22 @@ func AccessLog() gin.HandlerFunc {
 		c.Next()
 
 		durationMs := time.Since(start).Milliseconds()
+		path := c.FullPath()
+		if path == "" {
+			path = "/unmatched"
+		}
 
 		fields := []any{
 			"request_id", requestIDOrEmpty(c),
 			"method", c.Request.Method,
-			"path", c.FullPath(),
-			"raw_path", c.Request.URL.Path,
+			"path", path,
 			"status", c.Writer.Status(),
 			"duration_ms", durationMs,
 			"bytes_out", c.Writer.Size(),
-			"client_ip", c.ClientIP(),
+			"consumer", boundedConsumer(c.GetHeader("X-Api-Consumer")),
 		}
 
-		if cacheStatus, ok := c.Get("cache_status"); ok {
+		if cacheStatus := boundedCacheStatus(c.Writer.Header().Get("X-Cache")); cacheStatus != "" {
 			fields = append(fields, "cache_status", cacheStatus)
 		}
 
@@ -54,6 +58,32 @@ func AccessLog() gin.HandlerFunc {
 		default:
 			log.Info("http_request", fields...)
 		}
+	}
+}
+
+func boundedConsumer(value string) string {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "web":
+		return "web"
+	case "core":
+		return "core"
+	default:
+		return "unknown"
+	}
+}
+
+func boundedCacheStatus(value string) string {
+	switch strings.ToUpper(strings.TrimSpace(value)) {
+	case "HIT":
+		return "HIT"
+	case "MISS":
+		return "MISS"
+	case "STALE":
+		return "STALE"
+	case "BYPASS":
+		return "BYPASS"
+	default:
+		return ""
 	}
 }
 

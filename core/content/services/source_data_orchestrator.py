@@ -19,6 +19,10 @@ from typing import Any, Dict, List, Optional
 from django.conf import settings
 
 from content.models import ContentItem
+from core.middleware.perf_timing import (
+    perf_record_data_source,
+    perf_record_proxy_batch,
+)
 
 from .local_content_store import detail_is_fresh
 from .local_content_store.mappers import MAPPERS
@@ -100,6 +104,7 @@ def _proxy_fetch(items: List[ContentItem], country_code: Optional[str]) -> Dict[
         grouped[item.source_api].append(item)
 
     out: Dict[int, Optional[Dict[str, Any]]] = {}
+    started = time.monotonic()
     with ThreadPoolExecutor(max_workers=4) as executor:
         futures = []
         if ContentItem.SourceAPI.TMDB in grouped:
@@ -116,7 +121,32 @@ def _proxy_fetch(items: List[ContentItem], country_code: Optional[str]) -> Dict[
                 out.update(future.result())
             except Exception:
                 logger.warning('proxy_fetch_partition_failed', exc_info=True)
+    perf_record_proxy_batch(
+        _proxy_call_count(items),
+        time.monotonic() - started,
+    )
     return out
+
+
+def _proxy_call_count(items: List[ContentItem]) -> int:
+    """Count actual bulk/detail HTTP calls issued by the partition helpers."""
+    content_types = {item.content_type for item in items}
+    count = int(ContentItem.ContentType.MOVIE in content_types)
+    count += int(ContentItem.ContentType.TV_SHOW in content_types)
+    count += sum(
+        1
+        for item in items
+        if item.content_type == ContentItem.ContentType.SEASON
+        and len(item.external_id.split(":")) == 2
+    )
+    count += int(any(item.source_api == ContentItem.SourceAPI.IGDB for item in items))
+    count += int(
+        any(item.source_api == ContentItem.SourceAPI.SPOTIFY for item in items)
+    )
+    count += int(
+        any(item.source_api == ContentItem.SourceAPI.OPENLIBRARY for item in items)
+    )
+    return count
 
 
 def _persist(item: ContentItem, payload: Dict[str, Any], request_country: Optional[str]) -> None:
@@ -148,6 +178,12 @@ def fetch_bulk_source_data(
     fresh_items = classified['fresh']
     stale_items = classified['stale']
     missing_items = classified['missing']
+    perf_record_data_source(
+        fresh=len(fresh_items),
+        stale=len(stale_items),
+        missing=len(missing_items),
+        provider_fetches=len(stale_items) + len(missing_items),
+    )
 
     results: Dict[int, Dict[str, Any]] = {}
     proxy_calls = 0
@@ -161,7 +197,7 @@ def fetch_bulk_source_data(
 
     needs_proxy = stale_items + missing_items
     if needs_proxy:
-        proxy_calls = len(needs_proxy)
+        proxy_calls = _proxy_call_count(needs_proxy)
         proxy_results = _proxy_fetch(needs_proxy, country_code)
         stale_id_set = {i.id for i in stale_items}
         persisted: List[ContentItem] = []

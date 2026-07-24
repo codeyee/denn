@@ -31,9 +31,11 @@ CORS_ALLOW_HEADERS = tuple(default_headers) + (
 # Let client-side `fetch` read correlation headers on credentialed responses.
 CORS_EXPOSE_HEADERS = (
     "x-request-id",
+    "x-cache",
     "x-ratelimit-limit",
     "x-ratelimit-remaining",
     "x-ratelimit-degraded",
+    "server-timing",
 )
 
 # CSRF Configuration

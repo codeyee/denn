@@ -24,6 +24,7 @@ core            → proxy   (/v1/proxy/*)   [enriquecimiento de ContentItem]
 |-------------------|--------------------|--------------|----------------|-------|
 | `Authorization: Bearer <jwt>` | `web` (cliente y SSR) | `core` | Requerido en endpoints autenticados de `core` | JWT de usuario emitido por `core/auth/`. |
 | `X-Api-Key`       | `web` (server-only), `core` | `proxy` | Requerido en `/v1/proxy/*` excepto `/health` | API key compartida del proxy. **Nunca viaja al navegador.** |
+| `X-Api-Consumer`  | `web` (server-only), `core` | `proxy` | Requerido por convención interna | Valor acotado `web` o `core`; permite separar latencia/cache sin identidad de usuario. |
 | `Authorization: Bearer <api-key>` | (alternativa a `X-Api-Key`) | `proxy` | Opcional | Soportado por el proxy; preferir `X-Api-Key` para no confundir con el JWT de usuario. |
 | `X-User-Country`  | `web`, `core`      | `proxy` | Opcional | ISO-3166 alpha-2. Por defecto `US` en `proxy`. |
 | `X-Request-Id`    | cualquiera         | todos   | Opcional (entrada) / generado por middleware si falta | Ver §5. |
@@ -34,13 +35,15 @@ core            → proxy   (/v1/proxy/*)   [enriquecimiento de ContentItem]
 | Header             | Emite     | Significado |
 |--------------------|-----------|-------------|
 | `X-Request-Id`     | `core`, `proxy` | Eco del request ID para correlacionar logs entre capas. |
+| `X-Cache`          | `proxy`, `web` BFF | Estado acotado `HIT`, `MISS`, `STALE` o `BYPASS`. |
+| `Server-Timing`    | `core`, `web` BFF | Desglose no sensible de app/DB/proxy para diagnóstico de navegador. |
 | `X-RateLimit-Limit`     | `proxy` | Límite por minuto del rate limiter. |
 | `X-RateLimit-Remaining` | `proxy` | Llamadas restantes en la ventana actual. |
 | `X-RateLimit-Degraded`  | `proxy` | Presente cuando el rate limiter está fail-open por caché degradado. Valores: `cache-error`, `noop-cache`. |
 
 ### 2.3 CORS (`web` navegador → `core`)
 
-Cuando el SPA en `web` llama a `core` desde el navegador (origen distinto, p. ej. `localhost:3000` → `localhost:8000`), `core` debe listar en `Access-Control-Allow-Headers` los encabezados de request que el cliente envía en preflight. La configuración vive en `core/core/settings/cors.py`: además de los defaults de `django-cors-headers`, se permiten **`x-request-id`** y **`x-user-country`**, y se exponen cabeceras de correlación / rate limit en `Access-Control-Expose-Headers` cuando aplica.
+Cuando el SPA en `web` llama a `core` desde el navegador (origen distinto, p. ej. `localhost:3000` → `localhost:8000`), `core` debe listar en `Access-Control-Allow-Headers` los encabezados de request que el cliente envía en preflight. La configuración vive en `core/core/settings/cors.py`: además de los defaults de `django-cors-headers`, se permiten **`x-request-id`** y **`x-user-country`**, y se exponen `x-request-id`, `x-cache` y `server-timing` cuando aplica.
 
 ## 3. Sobre canónico de errores
 
@@ -119,11 +122,12 @@ Los dos backends tienen formas distintas porque sus semánticas son distintas. A
 
 ## 5. Request ID y correlación
 
-> Implementado en PR-6C.
-
 - Middleware en `core` y `proxy` lee `X-Request-Id` del request. Si falta, genera UUIDv4.
+- Un ID de entrada sólo es válido si tiene 1–128 caracteres y cumple
+  `[A-Za-z0-9][A-Za-z0-9._:-]*`; cualquier valor inválido se reemplaza
+  antes de registrarlo o propagarlo.
 - El ID se setea en `gin.Context` (proxy) y `request.request_id` (core) y se emite en el header de respuesta.
-- El BFF de `web` (`/api/proxy/*`, [`web/src/routes/api/proxy/$.ts`](../../web/src/routes/api/proxy/$.ts)) y los helpers SSR ([`web/src/lib/api/queries/server.ts`](../../web/src/lib/api/queries/server.ts), [`web/src/server/proxy.ts`](../../web/src/server/proxy.ts)) propagan el `X-Request-Id` o generan uno nuevo.
+- El BFF de `web` (`/api/proxy/*`, [`web/src/routes/api/proxy/$.ts`](../../web/src/routes/api/proxy/$.ts)) y los helpers SSR ([`web/src/lib/api/queries/server.ts`](../../web/src/lib/api/queries/server.ts), [`web/src/server/proxy.ts`](../../web/src/server/proxy.ts)) comparten un único ID por navegación lógica entre los fetches paralelos a `core` y `proxy`.
 - Cada línea de log estructurado incluye `request_id` cuando esté disponible.
 
 ## 6. Versionado

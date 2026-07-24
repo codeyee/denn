@@ -1,6 +1,15 @@
+import { createIsomorphicFn } from "@tanstack/react-start";
+import {
+  getRequest,
+  getRequestHeader,
+  setResponseHeader,
+} from "@tanstack/react-start/server";
+
 const FALLBACK_BASE_URL = "http://localhost:8080/v1/proxy";
+const REQUEST_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
 
 let warnedMissingKey = false;
+const serverRequestIds = new WeakMap<Request, string>();
 
 export function getProxyBaseUrl(): string {
   return (
@@ -30,10 +39,14 @@ export function getProxyApiKey(): string {
 
 export function buildProxyHeaders(
   country: string | null,
-  options: { requestId?: string | null } = {}
+  options: {
+    requestId?: string | null;
+    consumer?: "web" | "core";
+  } = {},
 ): HeadersInit {
   const headers: HeadersInit = {
     "Content-Type": "application/json",
+    "X-Api-Consumer": options.consumer ?? "web",
   };
 
   const apiKey = getProxyApiKey();
@@ -45,16 +58,12 @@ export function buildProxyHeaders(
     headers["X-User-Country"] = country;
   }
 
-  const requestId = options.requestId ?? generateRequestId();
+  const requestId = normalizeRequestId(options.requestId) ?? generateRequestId();
   headers["X-Request-Id"] = requestId;
 
   return headers;
 }
 
-// Lightweight UUIDv4 generator. We avoid pulling `uuid` into the server
-// bundle when the runtime already exposes crypto.randomUUID (Node ≥19,
-// modern edge runtimes). Falls back to a non-cryptographic stub only in
-// ancient environments — those should never reach prod.
 export function generateRequestId(): string {
   const g = globalThis as { crypto?: { randomUUID?: () => string } };
   if (g.crypto?.randomUUID) {
@@ -62,3 +71,23 @@ export function generateRequestId(): string {
   }
   return `req-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
+
+export function normalizeRequestId(value?: string | null): string | null {
+  const normalized = value?.trim() ?? "";
+  return REQUEST_ID_PATTERN.test(normalized) ? normalized : null;
+}
+
+export const getLogicalRequestId = createIsomorphicFn()
+  .server(() => {
+    const request = getRequest();
+    const existing = serverRequestIds.get(request);
+    if (existing) return existing;
+
+    const requestId =
+      normalizeRequestId(getRequestHeader("X-Request-Id")) ??
+      generateRequestId();
+    serverRequestIds.set(request, requestId);
+    setResponseHeader("X-Request-Id", requestId);
+    return requestId;
+  })
+  .client(() => generateRequestId());

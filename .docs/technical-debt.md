@@ -14,12 +14,14 @@ their lasting outcome is reflected in architecture or history docs.
 
 ## High
 
-- `perf/baseline.md` still contains mostly placeholder values, so the
-  repo has performance rules without a maintained measured baseline.
 - Cross-service typed contract generation is still duplicated across
   `web` and `core`; there is no generated shared client or schema layer.
-- Frontend Query migration now has only smoke-level automated coverage;
-  Add-to-List and ListDetail need broader interaction tests.
+- Browser characterization now reproduces the auth/session, hydration,
+  hover-mutation and logout regressions from #17, #18 and #20, but those
+  scenarios remain quarantined until the Phase 1 product fixes land.
+- Frontend Query migration has production-build smoke coverage for the
+  critical routes, but Add-to-List and ListDetail still need broader
+  mutation/rollback interaction tests.
 - Country-scoped streaming availability is persisted separately, but
   freshness is still tied to the global content detail lifecycle instead
   of an independent per-country policy.
@@ -33,9 +35,9 @@ their lasting outcome is reflected in architecture or history docs.
   transformation, and orchestration concerns.
 - `browse_metadata` has a working base model, but its refresh strategy
   is still lighter than the main local detail lifecycle.
-- The auth bootstrap policy still lacks full browser-level E2E coverage,
-  even though route-level redirects and `next` login redirects are now
-  formalized.
+- Deployed before/after measurements still depend on a non-personal
+  staging fixture and an agreed observation window. CI numbers are a
+  deterministic engineering floor, not production latency.
 
 ## Notes
 

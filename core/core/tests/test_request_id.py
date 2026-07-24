@@ -44,3 +44,23 @@ class RequestIdMiddlewareTests(SimpleTestCase):
         self.assertNotEqual(request.request_id, "")
         self.assertNotEqual(request.request_id, "   ")
         self.assertEqual(response[REQUEST_ID_HEADER], request.request_id)
+
+    def test_invalid_or_high_cardinality_value_is_replaced(self):
+        request = self.factory.get(
+            "/",
+            HTTP_X_REQUEST_ID="contains spaces and user@example.com",
+        )
+        response = self.middleware(request)
+
+        self.assertNotEqual(
+            response[REQUEST_ID_HEADER],
+            "contains spaces and user@example.com",
+        )
+        self.assertLessEqual(len(response[REQUEST_ID_HEADER]), 128)
+
+    def test_bounded_traceparent_style_value_is_preserved(self):
+        request_id = "browser:nav-01.trace_02"
+        request = self.factory.get("/", HTTP_X_REQUEST_ID=request_id)
+        response = self.middleware(request)
+
+        self.assertEqual(response[REQUEST_ID_HEADER], request_id)

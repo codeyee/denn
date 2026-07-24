@@ -26,6 +26,7 @@ tooling.
 - `web`
   - `pnpm install --frozen-lockfile`
   - `make validate-web` (ESLint + `vite build`; artefacto Nitro en `web/.output/`)
+  - `make e2e-web` (production-build Playwright smoke; desktop + móvil)
 - `core`
   - `make validate-core`
 - `proxy`
@@ -39,6 +40,11 @@ tooling.
   checks plus any workspace-level checks.
 - Branch protection should require the final `ci-summary` job rather
   than app-specific jobs directly, because untouched apps are skipped.
+- Changes under `web/**` also run the deterministic desktop Playwright
+  smoke. Browser failure artifacts are retained for diagnosis.
+- `.github/workflows/browser-baseline.yml` runs weekly and on demand for
+  cold/warm measurements plus expected-failure audit characterization;
+  it is evidence, not a deploy gate.
 - Pushes to `main` deploy by path:
   - `web/**` -> `.github/workflows/deploy-web.yml`
   - `core/**` -> `.github/workflows/deploy-core.yml`

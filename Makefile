@@ -1,6 +1,7 @@
 .PHONY: help up down restart status doctor logs check kill-orphans \
         tail-proxy tail-core tail-web tail-redis \
         test test-proxy test-core test-web \
+        e2e-web e2e-web-regressions e2e-web-performance e2e-web-artifact-check \
         validate-web validate-core validate-proxy \
         lint-web build-web \
         build-proxy \
@@ -33,6 +34,10 @@ help:
 	@echo "  make test-proxy       go test ./..."
 	@echo "  make test-core        django tests"
 	@echo "  make test-web         vitest run if configured"
+	@echo "  make e2e-web          production-build Playwright smoke (desktop + mobile)"
+	@echo "  make e2e-web-regressions  expected-failure audit reproductions"
+	@echo "  make e2e-web-performance repeatable cold/warm browser baseline"
+	@echo "  make e2e-web-artifact-check verify retained/redacted failure artifacts (expected non-zero)"
 	@echo "  make lint-web         run frontend lint"
 	@echo "  make build-web        run frontend production build"
 	@echo
@@ -76,6 +81,18 @@ test-core:
 
 test-web:
 	cd web && pnpm test --silent || echo "(no test script configured)"
+
+e2e-web:
+	cd web && pnpm run test:e2e
+
+e2e-web-regressions:
+	cd web && pnpm run test:e2e:regressions
+
+e2e-web-performance:
+	cd web && pnpm run test:e2e:performance
+
+e2e-web-artifact-check:
+	cd web && pnpm run test:e2e:artifact-check
 
 build-proxy:
 	cd proxy && go build -o /tmp/denn-proxy-build ./cmd/api && rm -f /tmp/denn-proxy-build

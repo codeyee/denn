@@ -41,3 +41,16 @@ func TestRequestID_PreservesIncoming(t *testing.T) {
 		t.Fatalf("expected echoed X-Request-Id, got %q", got)
 	}
 }
+
+func TestRequestID_ReplacesInvalidOrUnboundedIncoming(t *testing.T) {
+	r := newRouter()
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/x", nil)
+	req.Header.Set("X-Request-Id", "user@example.com contains spaces")
+	r.ServeHTTP(w, req)
+
+	got := w.Header().Get("X-Request-Id")
+	if got == "" || got == "user@example.com contains spaces" {
+		t.Fatalf("expected bounded generated request id, got %q", got)
+	}
+}

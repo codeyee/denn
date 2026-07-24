@@ -1,9 +1,9 @@
 """One-line-per-request access log.
 
 Emits a structured ``http_request`` record after every response,
-including ``request_id``, ``status``, ``duration_ms`` and ``user_id``
-(when authenticated). Pair with RequestIdMiddleware so the line shares a
-correlation key with the proxy and the BFF.
+including ``request_id``, ``status``, ``duration_ms`` and a bounded
+authenticated boolean. Pair with RequestIdMiddleware so the line shares
+a correlation key with the proxy and the BFF.
 """
 from __future__ import annotations
 
@@ -27,22 +27,28 @@ class AccessLogMiddleware:
         response = self.get_response(request)
         duration_ms = int((time.perf_counter() - start) * 1000)
 
-        user_id = None
         user = getattr(request, "user", None)
-        if user is not None and getattr(user, "is_authenticated", False):
-            user_id = user.pk
+        authenticated = bool(
+            user is not None and getattr(user, "is_authenticated", False)
+        )
 
         extra = {
             "method": request.method,
-            "path": request.path,
+            "path": _route_template(request),
             "status": response.status_code,
             "duration_ms": duration_ms,
-            "user_id": user_id,
+            "authenticated": authenticated,
+            "payload_size_bytes": _response_size(response),
         }
 
         perf_metrics = get_request_perf_metrics(request)
         if perf_metrics is not None:
             extra.update(perf_metrics)
+            response["Server-Timing"] = (
+                f'app;dur={duration_ms}, '
+                f'db;dur={perf_metrics["db_time_ms"]}, '
+                f'proxy;dur={perf_metrics["proxy_time_ms"]}'
+            )
 
         if response.status_code >= 500:
             logger.error("http_request", extra=extra)
@@ -52,3 +58,23 @@ class AccessLogMiddleware:
             logger.info("http_request", extra=extra)
 
         return response
+
+
+def _response_size(response: HttpResponse) -> int:
+    content_length = response.get("Content-Length")
+    if content_length:
+        try:
+            return max(int(content_length), 0)
+        except ValueError:
+            pass
+    if getattr(response, "streaming", False):
+        return 0
+    return len(response.content)
+
+
+def _route_template(request: HttpRequest) -> str:
+    resolver_match = getattr(request, "resolver_match", None)
+    route = getattr(resolver_match, "route", None)
+    if not isinstance(route, str) or not route:
+        return "/unmatched"
+    return f"/{route.lstrip('/')}"
