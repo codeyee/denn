@@ -31,7 +31,7 @@ export function Carousel({
     targetCardWidth,
     gap,
   });
-  const showNavigation = !disableNavigation && items.length > scroll.visibleItems;
+  const showNavigation = !disableNavigation && scroll.hasOverflow;
 
   return (
     <section
@@ -50,13 +50,13 @@ export function Carousel({
       )}
 
       <div className="relative">
-        {showNavigation && scroll.canScrollPrevious && (
+        {showNavigation && (
           <CarouselButton
             direction="previous"
             onClick={scroll.handlePrevious}
           />
         )}
-        {showNavigation && scroll.canScrollNext && (
+        {showNavigation && (
           <CarouselButton direction="next" onClick={scroll.handleNext} />
         )}
 
