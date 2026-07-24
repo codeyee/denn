@@ -61,6 +61,49 @@ test("hover does not mutate persisted content @regression", async ({
   expect(hoverMutations).toHaveLength(0);
 });
 
+for (const sourceRoute of ["/", "/search?q=phase"]) {
+  test(`hover preview preserves mouse navigation from ${sourceRoute} @regression`, async ({
+    page,
+  }) => {
+    await page.goto(sourceRoute);
+    const detailLink = page.getByRole("link", {
+      name: "View details for Phase Zero Movie",
+    });
+    await expect(detailLink).toHaveCount(1);
+    await detailLink.scrollIntoViewIfNeeded();
+
+    const cardBounds = await detailLink.boundingBox();
+    expect(cardBounds).not.toBeNull();
+    if (!cardBounds) return;
+
+    const cardCenter = {
+      x: cardBounds.x + cardBounds.width / 2,
+      y: cardBounds.y + cardBounds.height / 2,
+    };
+    await page.mouse.move(cardCenter.x, cardCenter.y);
+    await expect(detailLink).toHaveCount(2);
+    await page.mouse.click(cardCenter.x, cardCenter.y);
+
+    await expect(page).toHaveURL(/\/content\/1$/);
+  });
+}
+
+test("hover preview keeps the add-to-list action interactive @regression", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 1_000 });
+  await page.goto("/search?q=phase");
+  await page
+    .getByRole("link", { name: "View details for Phase Zero Movie" })
+    .hover();
+  await page.getByRole("button", { name: "Add to List" }).click();
+
+  await expect(
+    page.getByRole("heading", { name: "Add to List" }),
+  ).toBeVisible();
+  await expect(page).toHaveURL(/\/search\?q=phase$/);
+});
+
 for (const detailDelayMs of [500, 2_000, 6_500]) {
   test(`content navigation exposes feedback within 100ms with ${detailDelayMs}ms latency @regression`, async ({
     page,

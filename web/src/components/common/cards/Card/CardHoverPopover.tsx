@@ -16,6 +16,7 @@ interface CardHoverPopoverProps {
   isOpen: boolean;
   onMouseEnter: () => void;
   onMouseLeave: () => void;
+  overlay?: React.ReactNode;
   position: { top: number; left: number; width: number };
   title: string;
 }
@@ -32,6 +33,7 @@ export function CardHoverPopover({
   isOpen,
   onMouseEnter,
   onMouseLeave,
+  overlay,
   position,
   title,
 }: CardHoverPopoverProps) {
@@ -79,6 +81,7 @@ export function CardHoverPopover({
               </div>
             </div>
           </div>
+          {overlay}
           {children}
         </motion.div>
       )}

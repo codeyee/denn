@@ -32,6 +32,7 @@ interface CardProps {
   priorityImage?: boolean;
   children?: React.ReactNode;
   hoverContent?: React.ReactNode;
+  hoverOverlay?: React.ReactNode;
   onHoverChange?: (isHovered: boolean) => void;
   disableHover?: boolean;
 }
@@ -75,6 +76,7 @@ function Card({
   className = "",
   children,
   hoverContent,
+  hoverOverlay,
   onHoverChange,
   disableHover = false,
 }: CardProps) {
@@ -146,6 +148,7 @@ function Card({
           isOpen={hover.isHovered && hover.shouldShowHoverContent}
           onMouseEnter={hover.handleMouseEnter}
           onMouseLeave={hover.handleMouseLeave}
+          overlay={hoverOverlay}
           position={hover.popoverPosition}
           title={title}
         >
