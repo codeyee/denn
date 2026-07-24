@@ -9,6 +9,12 @@ refreshed inside the system today.
 - `core` owns the `ContentItem` identity.
 - The ingest endpoint in current code is
   `POST /api/content/get-or-create/`.
+- Discovery surfaces resolve up to 100 unique external triples with
+  `POST /api/content/resolve-ids/`; the response preserves input order
+  and returns the stable internal id for every resolved item.
+- Bulk identity resolution does not accept provider metadata as a
+  trusted write. A new item's detail is materialized only through the
+  canonical server-side `core` -> `proxy` path.
 - The legacy external triple route still exists only as a compatibility
   shim toward the internal id route.
 
@@ -40,16 +46,26 @@ The canonical `source_data` read path is local-first:
 1. Load `ContentItem` plus related detail rows.
 2. If the local detail is fresh, reconstruct the proxy-shaped payload
    from PostgreSQL.
-3. If the local detail is stale or missing, call `proxy`.
-4. If proxy refresh succeeds, persist the refreshed detail and rebuild
-   the payload locally.
-5. If proxy refresh fails but stale local data exists, return the local
-   payload with `is_stale=true`.
+3. If local detail is stale, return it immediately with
+   `is_stale=true` and schedule one bounded background refresh per
+   content set.
+4. If local detail is missing, call the proxy synchronously through its
+   bulk endpoint.
+5. If a refresh succeeds, persist the refreshed detail and rebuild the
+   payload locally. A background failure does not invalidate the stale
+   response already served.
 
 Primary implementation:
 
 - [`../../core/content/services/source_data_orchestrator.py`](../../core/content/services/source_data_orchestrator.py)
 - [`../../core/content/services/local_content_store/__init__.py`](../../core/content/services/local_content_store/__init__.py)
+
+The critical detail route has one browser-to-`core` round trip. Its
+response includes local `source_data`, aggregate rating fields, and the
+current user's rating. The public ratings list is a secondary,
+progressive query and is not a prerequisite for first detail render.
+Missing metadata may add one server-side bulk `core` -> `proxy`
+operation; fresh and stale local reads add none synchronously.
 
 ## Refresh Path
 
@@ -79,10 +95,13 @@ Operational runbook:
 
 - `proxy` does not write to PostgreSQL.
 - `core` remains the only writer of content persistence.
-- The system still depends on proxy availability for missing or stale
-  items that have no usable local fallback.
+- The system still depends on proxy availability for missing items that
+  have no usable local fallback.
 - Search, homepage, and preview surfaces now filter out items without a
   usable release date or with dates too far in the future for the MVP.
+- Discovery safety and release eligibility are applied before responses
+  enter shared aggregate caches. See
+  [`content-eligibility.md`](./content-eligibility.md).
 
 ## Open Work
 

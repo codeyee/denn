@@ -11,7 +11,10 @@ export function requireAuthenticatedSession(
   pathname: string,
   searchStr = "",
 ) {
-  if (session.resolution === "anonymous") {
+  if (
+    session.resolution === "anonymous" ||
+    session.resolution === "expired"
+  ) {
     throw redirect({
       to: "/login",
       search: {

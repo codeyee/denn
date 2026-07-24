@@ -51,6 +51,11 @@ This document defines the data-layer split in `web`.
 - Server prefetch for authenticated `core` reads must use the server
   session snapshot (from `beforeLoad` / server functions) and never rely
   on the client Zustand auth store alone.
+- Critical loaders return their initial Home/Search/Detail payload to the
+  matching query hook as `initialData`. This explicit serialized bridge
+  guarantees that SSR and the first client render share the same query
+  key without a duplicate network request; it is not a second cache and
+  does not require `<HydrationBoundary>`.
 
 ## Route Search Params
 

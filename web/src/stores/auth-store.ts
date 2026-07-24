@@ -17,7 +17,13 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
-  sessionResolution: "pending" | "anonymous" | "authenticated" | "unavailable";
+  sessionResolution:
+    | "pending"
+    | "anonymous"
+    | "authenticated"
+    | "expired"
+    | "unavailable"
+    | "timeout";
 }
 
 interface AuthActions {
@@ -73,6 +79,7 @@ export const useAuthStore = create<AuthStore>()(
               "Content-Type": "application/json",
             },
             body: JSON.stringify({ email, password }),
+            signal: AbortSignal.timeout(5_000),
           });
 
           if (!response.ok) {
@@ -122,6 +129,7 @@ export const useAuthStore = create<AuthStore>()(
               password,
               password_confirm: password,
             }),
+            signal: AbortSignal.timeout(5_000),
           });
 
           if (!response.ok) {
@@ -183,7 +191,11 @@ export const useAuthStore = create<AuthStore>()(
           console.error("Logout error:", error);
         } finally {
           clearAuthCookies();
-          set(initialState);
+          set({
+            ...initialState,
+            isLoading: false,
+            sessionResolution: "anonymous",
+          });
         }
       },
 

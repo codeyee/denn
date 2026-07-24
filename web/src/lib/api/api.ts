@@ -14,16 +14,26 @@ async function performTokenRefresh(): Promise<void> {
   if (refreshPromise) return refreshPromise;
 
   refreshPromise = (async () => {
-    const { refreshToken, setAccessToken, setRefreshToken, clearSession } =
+    const {
+      refreshToken,
+      setAccessToken,
+      setRefreshToken,
+      clearSession,
+      setSessionResolution,
+    } =
       useAuthStore.getState();
     if (!refreshToken) {
-      throw new Error("No refresh token available");
+      clearSession();
+      setSessionResolution("expired");
+      logSessionRefresh("expired");
+      throw new Error("Session expired. Please log in again.");
     }
 
     const response = await fetch(`${getApiUrl()}/auth/token/refresh/`, {
       method: "POST",
       headers: { "Content-Type": CONTENT_TYPE_JSON },
       body: JSON.stringify({ refresh: refreshToken }),
+      signal: AbortSignal.timeout(3_000),
     });
 
     if (!response.ok) {
@@ -32,6 +42,8 @@ async function performTokenRefresh(): Promise<void> {
 
       if (response.status === HTTP_STATUS_UNAUTHORIZED) {
         clearSession();
+        setSessionResolution("expired");
+        logSessionRefresh("expired");
         throw new Error(
           `Session expired. Please log in again.${errorMessage ? ` ${errorMessage}` : ""}`
         );
@@ -49,17 +61,21 @@ async function performTokenRefresh(): Promise<void> {
       accessToken: data?.access ?? useAuthStore.getState().accessToken,
       refreshToken: data?.refresh ?? useAuthStore.getState().refreshToken,
     });
+    setSessionResolution("authenticated");
+    logSessionRefresh("authenticated");
   })()
     .catch((err) => {
-      const { clearSession, setAccessToken, setRefreshToken } = useAuthStore.getState();
-
       if (err instanceof Error && err.message.startsWith("Session expired.")) {
         throw err;
       }
 
-      setAccessToken(null);
-      setRefreshToken(null);
-      clearSession();
+      const resolution =
+        err instanceof DOMException &&
+        (err.name === "TimeoutError" || err.name === "AbortError")
+          ? "timeout"
+          : "unavailable";
+      useAuthStore.getState().setSessionResolution(resolution);
+      logSessionRefresh(resolution);
       throw err;
     })
     .finally(() => {
@@ -67,6 +83,17 @@ async function performTokenRefresh(): Promise<void> {
     });
 
   return refreshPromise;
+}
+
+function logSessionRefresh(
+  resolution: "authenticated" | "expired" | "unavailable" | "timeout",
+) {
+  console.info(
+    JSON.stringify({
+      msg: "session_refresh",
+      resolution,
+    }),
+  );
 }
 
 interface RequestConfig extends RequestInit {

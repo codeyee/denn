@@ -15,8 +15,11 @@ export function AuthSessionBootstrap({ session }: AuthSessionBootstrapProps) {
   );
 
   useEffect(() => {
-    if (session.resolution === "unavailable") {
-      setSessionResolution("unavailable");
+    if (
+      session.resolution === "unavailable" ||
+      session.resolution === "timeout"
+    ) {
+      setSessionResolution(session.resolution);
       return;
     }
 

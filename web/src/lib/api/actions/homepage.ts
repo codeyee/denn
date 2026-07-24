@@ -1,4 +1,5 @@
 import { proxyApi } from "../proxyApi";
+import { resolveContentIds } from "../contentResolution";
 import type { HomepageResponse } from "@/lib/types";
 
 export interface HomepageQueryParams {
@@ -19,6 +20,6 @@ export const homepageActions = {
     return proxyApi.getWithCountry<HomepageResponse>(
       `/homepage?${searchParams}`,
       { country: params?.country }
-    );
+    ).then((response) => resolveContentIds(response, params?.country));
   },
 };

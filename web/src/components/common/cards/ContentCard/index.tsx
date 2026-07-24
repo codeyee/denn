@@ -1,5 +1,11 @@
 
-import { useCallback, useMemo } from "react";
+import {
+  useCallback,
+  useMemo,
+  useState,
+  type MouseEvent,
+} from "react";
+import { Link } from "@tanstack/react-router";
 import { Card } from "../Card";
 import { ContentType } from "@/lib/types";
 import { formatSeasonTitle } from "@/lib/utils/titleUtils";
@@ -7,11 +13,8 @@ import { Content } from "@/lib/types";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/common/ui/Button";
 import { AddToListModal } from "@/components/common/modals/AddToListModal";
-import { buildContentUrlById } from "@/lib/utils/navigationUtils";
-import { contentItemActions } from "@/lib/api";
 import { usePrefetchContentDetail } from "@/lib/api/queries/usePrefetchContentDetail";
 import { useHoverPrefetch } from "@/lib/perf/useHoverPrefetch";
-import { useSmartNavigation } from "@/hooks/useSmartNavigation";
 import { useContentCardModal } from "./hooks/useContentCardModal";
 import {
   getPosterImageUrl,
@@ -28,37 +31,35 @@ interface ContentCardProps {
 }
 
 export function ContentCard({ item, className }: ContentCardProps) {
-  const getNavigationUrl = async () => {
-    try {
-      const contentType = item.type as ContentType;
-      const externalId = String(item.id);
-      const resolved = await contentItemActions.getOrCreate(externalId, contentType);
-      return buildContentUrlById(resolved.id);
-    } catch (error) {
-      console.error("Failed to resolve navigation URL:", error);
-      return null;
-    }
-  };
-
-  const navigation = useSmartNavigation(getNavigationUrl);
+  const [isNavigating, setIsNavigating] = useState(false);
   const modal = useContentCardModal(item);
 
-  // T8: prefetch the ContentDetail payload after 200ms hover intent.
-  // We resolve the internal id via `getOrCreate` (the same call
-  // `getNavigationUrl` makes) and warm `useContentDetailQuery`'s cache,
-  // so the destination page already has data on first paint.
+  // Hover/focus/touch intent is read-only. Canonical ids were resolved once
+  // when the enclosing homepage/search payload was loaded.
   const prefetchContentDetail = usePrefetchContentDetail();
-  const handlePrefetch = useCallback(async () => {
-    try {
-      const contentType = item.type as ContentType;
-      const externalId = String(item.id);
-      const resolved = await contentItemActions.getOrCreate(externalId, contentType);
-      prefetchContentDetail(resolved.id);
-    } catch {
-      // best-effort, never block navigation on prefetch failure
-    }
-  }, [item.id, item.type, prefetchContentDetail]);
+  const handlePrefetch = useCallback(() => {
+    if (item.denn_id) prefetchContentDetail(item.denn_id);
+  }, [item.denn_id, prefetchContentDetail]);
   const hoverPrefetchHandlers = useHoverPrefetch(handlePrefetch);
+  const handleNavigation = useCallback(
+    (event: MouseEvent<HTMLAnchorElement>) => {
+      if (
+        event.button !== 0 ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey
+      ) {
+        return;
+      }
+      if (isNavigating) {
+        event.preventDefault();
+        return;
+      }
+      setIsNavigating(true);
+    },
+    [isNavigating],
+  );
 
   const isSeason = item.type === "SEASON";
   const title =
@@ -82,16 +83,19 @@ export function ContentCard({ item, className }: ContentCardProps) {
   return (
     <>
       <div
-        onClick={navigation.handleClick}
-        onAuxClick={navigation.handleAuxClick}
-        onMouseDown={navigation.handleMouseDown}
-        className={`cursor-pointer ${className || ""}`}
-        role="button"
-        tabIndex={0}
-        onKeyDown={navigation.handleKeyDown}
-        aria-label={`View details for ${title}`}
+        className={`relative group ${className || ""}`}
         {...hoverPrefetchHandlers}
       >
+        {item.denn_id && (
+          <Link
+            to="/content/$id"
+            params={{ id: String(item.denn_id) }}
+            preload="intent"
+            onClick={handleNavigation}
+            className="absolute inset-0 z-10 rounded-xl outline-none focus-visible:ring-4 focus-visible:ring-white/80"
+            aria-label={`View details for ${title}`}
+          />
+        )}
         <Card
           type={type as ContentType}
           id={id}
@@ -112,7 +116,7 @@ export function ContentCard({ item, className }: ContentCardProps) {
                   onClick={modal.openModal}
                   variant="secondary"
                   size="sm"
-                  className="w-full bg-white/10 hover:bg-white/20 text-white border-white/20"
+                  className="relative z-20 w-full bg-white/10 hover:bg-white/20 text-white border-white/20"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Add to List
@@ -132,6 +136,14 @@ export function ContentCard({ item, className }: ContentCardProps) {
             </div>
           </Card.Footer>
         </Card>
+        {isNavigating && (
+          <div
+            className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center rounded-xl bg-black/55 text-sm font-medium text-white"
+            role="status"
+          >
+            Opening details…
+          </div>
+        )}
       </div>
 
       <AddToListModal

@@ -16,12 +16,15 @@ their lasting outcome is reflected in architecture or history docs.
 
 - Cross-service typed contract generation is still duplicated across
   `web` and `core`; there is no generated shared client or schema layer.
-- Browser characterization now reproduces the auth/session, hydration,
-  hover-mutation and logout regressions from #17, #18 and #20, but those
-  scenarios remain quarantined until the Phase 1 product fixes land.
 - Frontend Query migration has production-build smoke coverage for the
   critical routes, but Add-to-List and ListDetail still need broader
   mutation/rollback interaction tests.
+- The critical flow has a semantic/accessibility base, but full
+  automated axe coverage, screen-reader QA, contrast review, and the
+  remaining application surfaces stay tracked by #29.
+- Adult exclusion is explicit for TMDB and cache-policy safe, but other
+  providers lack an equivalent trusted flag and the product still needs
+  a documented user-preference/classification model (#32).
 - Country-scoped streaming availability is persisted separately, but
   freshness is still tied to the global content detail lifecycle instead
   of an independent per-country policy.

@@ -14,6 +14,7 @@ type MemoryCache struct {
 	data    map[string][]byte
 	counts  map[string]int64
 	expires map[string]time.Time
+	Err     error
 }
 
 // NewMemoryCache returns a fresh, empty MemoryCache.
@@ -26,6 +27,9 @@ func NewMemoryCache() *MemoryCache {
 }
 
 func (c *MemoryCache) Get(_ context.Context, key string) ([]byte, error) {
+	if c.Err != nil {
+		return nil, c.Err
+	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if exp, ok := c.expires[key]; ok && time.Now().After(exp) {
@@ -41,6 +45,9 @@ func (c *MemoryCache) Get(_ context.Context, key string) ([]byte, error) {
 }
 
 func (c *MemoryCache) Set(_ context.Context, key string, value []byte, ttl time.Duration) error {
+	if c.Err != nil {
+		return c.Err
+	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.data[key] = value
@@ -51,6 +58,9 @@ func (c *MemoryCache) Set(_ context.Context, key string, value []byte, ttl time.
 }
 
 func (c *MemoryCache) TTL(_ context.Context, key string) (time.Duration, error) {
+	if c.Err != nil {
+		return 0, c.Err
+	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if exp, ok := c.expires[key]; ok {
@@ -60,6 +70,9 @@ func (c *MemoryCache) TTL(_ context.Context, key string) (time.Duration, error) 
 }
 
 func (c *MemoryCache) DeletePattern(_ context.Context, _ string) (int64, error) {
+	if c.Err != nil {
+		return 0, c.Err
+	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	n := int64(len(c.data))
@@ -69,6 +82,9 @@ func (c *MemoryCache) DeletePattern(_ context.Context, _ string) (int64, error) 
 }
 
 func (c *MemoryCache) Incr(_ context.Context, key string) (int64, error) {
+	if c.Err != nil {
+		return 0, c.Err
+	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.counts[key]++
@@ -76,6 +92,9 @@ func (c *MemoryCache) Incr(_ context.Context, key string) (int64, error) {
 }
 
 func (c *MemoryCache) Expire(_ context.Context, key string, ttl time.Duration) (bool, error) {
+	if c.Err != nil {
+		return false, c.Err
+	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if _, ok := c.data[key]; !ok {

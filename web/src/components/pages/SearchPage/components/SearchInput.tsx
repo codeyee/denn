@@ -20,7 +20,11 @@ export function SearchInput({
     <div className="lg:hidden container mx-auto px-4 mt-8 pt-24 pb-4">
       <div className="relative">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-300 pointer-events-none z-10" />
+        <label htmlFor="mobile-search" className="sr-only">
+          Search movies, TV shows, games, albums, and books
+        </label>
         <input
+          id="mobile-search"
           ref={inputRef}
           type="text"
           value={value}

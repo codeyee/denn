@@ -1,9 +1,9 @@
 """Local-first read path for proxy-shaped source data (Sprint 07 / PR-7B).
 
 `fetch_bulk_source_data` is the canonical entry point: it classifies each
-item as `fresh_local`, `stale_local`, or `missing` and only pays the
-proxy round-trip for the latter two. Stale items that fail to refresh
-fall back to their local copy with `is_stale=True`.
+item as `fresh_local`, `stale_local`, or `missing`. Canonical detail
+reads serve stale rows immediately and schedule a bounded background
+refresh; callers can still request synchronous stale refresh explicitly.
 
 The legacy `content.utils.bulk_fetch_source_data` shim was removed in
 Sprint 07 / PR-7E — import this module directly.
@@ -11,12 +11,14 @@ Sprint 07 / PR-7E — import this module directly.
 from __future__ import annotations
 
 import logging
+import threading
 import time
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Dict, List, Optional
 
 from django.conf import settings
+from django.db import close_old_connections
 
 from content.models import ContentItem
 from core.middleware.perf_timing import (
@@ -30,6 +32,9 @@ from . import payload_reconstructor
 
 
 logger = logging.getLogger(__name__)
+_refresh_executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix='source-data-refresh')
+_refresh_lock = threading.Lock()
+_refreshing_ids: set[int] = set()
 
 
 _DETAIL_RELATED_NAMES = (
@@ -159,15 +164,51 @@ def _persist(item: ContentItem, payload: Dict[str, Any], request_country: Option
         logger.exception('orchestrator_mapper_failed', extra={'content_item_id': item.id})
 
 
+def _refresh_stale_items(item_ids: tuple[int, ...], country_code: Optional[str]) -> None:
+    close_old_connections()
+    try:
+        items = list(ContentItem.objects.filter(id__in=item_ids))
+        fetch_bulk_source_data(items, country_code=country_code)
+    except Exception:
+        logger.exception(
+            'orchestrator_background_refresh_failed',
+            extra={'content_item_ids': item_ids},
+        )
+    finally:
+        close_old_connections()
+        with _refresh_lock:
+            _refreshing_ids.difference_update(item_ids)
+
+
+def _schedule_stale_refresh(
+    items: List[ContentItem],
+    country_code: Optional[str],
+) -> int:
+    scheduled: list[int] = []
+    with _refresh_lock:
+        for item in items:
+            if item.id not in _refreshing_ids:
+                _refreshing_ids.add(item.id)
+                scheduled.append(item.id)
+    if scheduled:
+        _refresh_executor.submit(
+            _refresh_stale_items,
+            tuple(scheduled),
+            country_code,
+        )
+    return len(scheduled)
+
+
 def fetch_bulk_source_data(
     content_items: List[ContentItem],
     country_code: Optional[str] = None,
+    *,
+    stale_while_revalidate: bool = False,
 ) -> Dict[int, Dict[str, Any]]:
     """Local-first replacement for `bulk_fetch_source_data`.
 
     Returns `{content_item.id: source_data_dict}`. Items whose payload
-    came from a stale local row that we couldn't refresh include
-    `'is_stale': True`.
+    came from a stale local row include `'is_stale': True`.
     """
     if not content_items:
         return {}
@@ -178,11 +219,12 @@ def fetch_bulk_source_data(
     fresh_items = classified['fresh']
     stale_items = classified['stale']
     missing_items = classified['missing']
+    synchronous_provider_items = missing_items + ([] if stale_while_revalidate else stale_items)
     perf_record_data_source(
         fresh=len(fresh_items),
         stale=len(stale_items),
         missing=len(missing_items),
-        provider_fetches=len(stale_items) + len(missing_items),
+        provider_fetches=len(synchronous_provider_items),
     )
 
     results: Dict[int, Dict[str, Any]] = {}
@@ -193,9 +235,18 @@ def fetch_bulk_source_data(
         if payload is not None:
             results[item.id] = payload
 
+    scheduled_refreshes = 0
+    if stale_while_revalidate:
+        for item in stale_items:
+            payload = payload_reconstructor.from_local(item)
+            if payload is not None:
+                payload['is_stale'] = True
+                results[item.id] = payload
+        scheduled_refreshes = _schedule_stale_refresh(stale_items, country_code)
+
     refreshed_ids: List[int] = []
 
-    needs_proxy = stale_items + missing_items
+    needs_proxy = synchronous_provider_items
     if needs_proxy:
         proxy_calls = _proxy_call_count(needs_proxy)
         proxy_results = _proxy_fetch(needs_proxy, country_code)
@@ -235,6 +286,7 @@ def fetch_bulk_source_data(
             'stale': len(stale_items),
             'missing': len(missing_items),
             'proxy_calls': proxy_calls,
+            'scheduled_refreshes': scheduled_refreshes,
             'latency_ms': elapsed_ms,
         },
     )

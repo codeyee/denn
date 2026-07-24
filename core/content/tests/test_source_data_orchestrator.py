@@ -58,6 +58,24 @@ class OrchestratorAllStaleTests(TestCase):
         items[0].refresh_from_db()
         self.assertEqual(items[0].movie_detail.title, 'Memento (refreshed)')
 
+    def test_stale_while_revalidate_returns_local_and_schedules_once(self):
+        item = _ingest_movie('77')
+        _make_stale(item)
+
+        with patch(
+            'content.services.source_data_orchestrator._schedule_stale_refresh',
+            return_value=1,
+        ) as schedule:
+            with patch('content.services.source_data_orchestrator._proxy_fetch') as proxy:
+                results = fetch_bulk_source_data(
+                    [item],
+                    stale_while_revalidate=True,
+                )
+
+        self.assertTrue(results[item.id]['is_stale'])
+        proxy.assert_not_called()
+        schedule.assert_called_once()
+
 
 class OrchestratorMissingTests(TestCase):
     def test_missing_triggers_proxy_and_creates_detail(self):

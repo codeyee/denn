@@ -12,7 +12,12 @@ export interface SessionSnapshot {
   refreshToken: string | null;
   isAuthenticated: boolean;
   needsCookieSync: boolean;
-  resolution: "anonymous" | "authenticated" | "unavailable";
+  resolution:
+    | "anonymous"
+    | "authenticated"
+    | "expired"
+    | "unavailable"
+    | "timeout";
 }
 
 const EMPTY_SESSION: SessionSnapshot = {
@@ -35,6 +40,7 @@ async function fetchUserProfile(
       "X-Request-Id": requestId,
     },
     cache: "no-store",
+    signal: AbortSignal.timeout(3_000),
   });
 
   if (response.status === 401) return null;
@@ -56,6 +62,7 @@ async function refreshTokens(
     },
     body: JSON.stringify({ refresh: refreshToken }),
     cache: "no-store",
+    signal: AbortSignal.timeout(3_000),
   });
 
   if (response.status === 401) return null;
@@ -86,16 +93,30 @@ async function resolveSession(): Promise<SessionSnapshot> {
     }
   }
 
-  if (!refreshToken) return EMPTY_SESSION;
+  if (!refreshToken) {
+    return {
+      ...EMPTY_SESSION,
+      needsCookieSync: true,
+      resolution: "expired",
+    };
+  }
 
   const refreshedTokens = await refreshTokens(refreshToken, requestId);
   if (!refreshedTokens?.access) {
-    return { ...EMPTY_SESSION, needsCookieSync: true };
+    return {
+      ...EMPTY_SESSION,
+      needsCookieSync: true,
+      resolution: "expired",
+    };
   }
 
   const user = await fetchUserProfile(refreshedTokens.access, requestId);
   if (!user) {
-    return { ...EMPTY_SESSION, needsCookieSync: true };
+    return {
+      ...EMPTY_SESSION,
+      needsCookieSync: true,
+      resolution: "expired",
+    };
   }
 
   return {
@@ -130,6 +151,11 @@ export const getSessionFn = createServerFn({ method: "GET" }).handler(
       );
       return session;
     } catch (err) {
+      const resolution =
+        err instanceof DOMException &&
+        (err.name === "TimeoutError" || err.name === "AbortError")
+          ? "timeout"
+          : "unavailable";
       console.error(
         JSON.stringify({
           ts: new Date().toISOString(),
@@ -137,13 +163,18 @@ export const getSessionFn = createServerFn({ method: "GET" }).handler(
           msg: "session_bootstrap",
           service: "web",
           request_id: requestId,
-          resolution: "unavailable",
+          resolution,
           duration_ms:
             Math.round((performance.now() - started) * 100) / 100,
           error: err instanceof Error ? err.message : String(err),
         }),
       );
-      return { ...EMPTY_SESSION, resolution: "unavailable" };
+      return {
+        ...EMPTY_SESSION,
+        accessToken: getCookie(AUTH_ACCESS_COOKIE) ?? null,
+        refreshToken: getCookie(AUTH_REFRESH_COOKIE) ?? null,
+        resolution,
+      };
     }
   },
 );

@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { contentItemActions } from "@/lib/api";
 import { queryKeys } from "./keys";
+import type { ContentItem } from "@/lib/types";
 
 /**
  * Fetch a single ContentItem (by internal id) with its `source_data`
@@ -16,6 +17,7 @@ import { queryKeys } from "./keys";
 export function useContentDetailQuery(
   contentId: number,
   country?: string,
+  initialData?: ContentItem,
 ) {
   const enabled = Number.isFinite(contentId) && contentId > 0;
 
@@ -23,6 +25,7 @@ export function useContentDetailQuery(
     queryKey: queryKeys.contentDetail.byId(contentId, country),
     queryFn: () => contentItemActions.get(contentId, country),
     enabled,
+    initialData,
     staleTime: 5 * 60_000,
   });
 }

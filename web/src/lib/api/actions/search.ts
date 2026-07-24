@@ -1,4 +1,5 @@
 import { proxyApi } from "../proxyApi";
+import { resolveContentIds } from "../contentResolution";
 import type { MultiSearchParams, MultiSearchResponse } from "@/lib/types";
 
 export const searchActions = {
@@ -15,6 +16,6 @@ export const searchActions = {
     return proxyApi.get<MultiSearchResponse>(
       `/search?${queryParams.toString()}`,
       { signal, country }
-    );
+    ).then((response) => resolveContentIds(response, country));
   },
 };

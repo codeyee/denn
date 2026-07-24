@@ -71,8 +71,34 @@ Expected:
 - The app does not crash.
 - ProtectedRoute shows the unavailable fallback instead of redirecting
   as if the user logged out intentionally.
+- Auth cookies remain present.
+- After `core` recovers, **Retry session check** restores the protected
+  route without another login.
 
-### 6. Logout from a protected route
+### 6. Slow backend
+
+1. Add 6–10 seconds of latency to the auth profile endpoint.
+2. Hard refresh a protected route.
+
+Expected:
+
+- The route displays **Session check timed out** and a retry action.
+- The known session and cookies remain intact.
+- Recovery plus retry restores the route.
+
+### 7. Explicitly expired refresh
+
+1. Keep an expired access token and make refresh return a confirmed
+   `401`.
+2. Open a protected route.
+
+Expected:
+
+- Cookies and in-memory credentials are cleared.
+- The route redirects to `/login?next=...` once.
+- The session log resolution is `expired`, not `unavailable`.
+
+### 8. Logout from a protected route
 
 1. Log in and open `/profile`.
 2. Use the visible Logout control.
@@ -90,3 +116,5 @@ Expected:
 - An unavailable/slow session must remain distinguishable from an
   anonymous session; do not infer logout from a transient transport
   failure.
+- `session_refresh` logs must contain only the bounded resolution and
+  must never include tokens.

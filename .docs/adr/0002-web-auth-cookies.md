@@ -36,7 +36,9 @@ Migrar la sesión web a **cookies `HttpOnly` / `Secure` / `SameSite=Lax`** emiti
 
 - Quitar `accessToken` y `refreshToken` del `partialize` de Zustand. Sólo se persisten `user` e `isAuthenticated` (datos de UI no sensibles).
 - Los tokens siguen existiendo en cookies legibles por JS (no se quita `js-cookie` aún), pero deja de existir la copia en `localStorage`.
-- Cablear `needsCookieSync`: cuando el SSR detecta que el refresh falló, el cliente limpia cookies + estado.
+- Cablear `needsCookieSync`: sólo un refresh credential explícitamente
+  rechazado limpia cookies + estado. Timeout, red y `5xx` preservan la
+  última sesión conocida.
 - Hacer que cualquier flujo de cliente que necesite el access token lo lea de la store de Zustand (que ahora se hidrata desde el server snapshot) o de la cookie en cada request.
 
 ### Fase 2 — `core` emite cookies `HttpOnly`
@@ -113,6 +115,14 @@ Tras la migración de `web` a TanStack Start:
   `resolution="unavailable"`;
 - el login soporta `next` seguro para reanudar la navegación original
   tras autenticación.
+- la máquina de estados distingue `anonymous`, `expired`,
+  `unavailable`, `timeout` y `authenticated`;
+- profile y refresh tienen deadlines de 3 s; login/register tienen 5 s;
+- refreshes concurrentes comparten una única promesa en curso;
+- `ProtectedRoute` ofrece retry para fallos operativos y nunca destruye
+  la sesión por su timeout de bootstrap;
+- login/register invalidan el router antes de entrar al destino y logout
+  navega al home antes de invalidarlo para evitar loops.
 
 ## Referencias
 

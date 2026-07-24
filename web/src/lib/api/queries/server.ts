@@ -5,13 +5,16 @@ import type { SessionSnapshot } from "@/server/session";
 import { buildProxyHeaders, getLogicalRequestId } from "@/server/proxy";
 import type {
   ContentItem,
+  ContentType,
   HomepageResponse,
   ListStatsResponse,
+  MultiSearchResponse,
   PaginatedListItemList,
-  PaginatedRatingList,
   PaginatedUserListList,
+  SearchItem,
   UserListDetail,
 } from "@/lib/types";
+import { getSourceApi } from "@/lib/utils/contentTypeUtils";
 import type { ListItemQuery } from "@/lib/types/listView";
 import {
   HOME_LIST_FIELDS,
@@ -42,7 +45,7 @@ export async function prefetchHomeQueries(
   session: SessionSnapshot,
   country: string | null,
 ) {
-  if (!session.isAuthenticated || !session.accessToken) return;
+  if (!session.isAuthenticated || !session.accessToken) return undefined;
 
   const listParams = homeListParams(country);
   const requestId = getLogicalRequestId();
@@ -53,7 +56,12 @@ export async function prefetchHomeQueries(
         limit: SUGGESTIONS_PAGE_SIZE,
         country,
       }),
-      queryFn: () => fetchServerSuggestions(country, requestId),
+      queryFn: () =>
+        fetchServerSuggestions(
+          session.accessToken!,
+          country,
+          requestId,
+        ),
     }),
     qc.prefetchQuery({
       queryKey: queryKeys.lists.list(listParams),
@@ -79,7 +87,13 @@ export async function prefetchSearchQuery(
       limit: SEARCH_RESULT_LIMIT,
       country,
     }),
-    queryFn: () => fetchServerSearch(trimmedQuery, country, requestId),
+    queryFn: () =>
+      fetchServerSearch(
+        session.accessToken!,
+        trimmedQuery,
+        country,
+        requestId,
+      ),
   });
 }
 
@@ -105,17 +119,12 @@ export async function prefetchContentDetailQueries(
   });
 
   if (session.user?.id) {
-    await qc.prefetchQuery({
-      queryKey: queryKeys.ratings.byUser(contentItem.id, session.user.id),
-      queryFn: () =>
-        fetchServerUserRating(
-          session.accessToken!,
-          contentItem.id,
-          session.user!.id,
-          requestId,
-        ),
-    });
+    qc.setQueryData(
+      queryKeys.ratings.byUser(contentItem.id, session.user.id),
+      contentItem.current_user_rating,
+    );
   }
+  return contentItem;
 }
 
 export async function prefetchListDetailQueries(
@@ -237,11 +246,12 @@ function coreHeaders(accessToken: string, requestId: string) {
 }
 
 async function fetchServerSuggestions(
+  accessToken: string,
   country: string | null,
   requestId: string,
 ) {
   const params = new URLSearchParams({ limit: String(SUGGESTIONS_PAGE_SIZE) });
-  return fetchJson<HomepageResponse>(
+  const response = await fetchJson<HomepageResponse>(
     `${getProxyApiUrl()}/homepage?${params.toString()}`,
     {
       headers: buildProxyHeaders(country, {
@@ -254,9 +264,11 @@ async function fetchServerSuggestions(
       route: "/v1/proxy/homepage",
     },
   );
+  return resolveServerContentIds(accessToken, response, country, requestId);
 }
 
 async function fetchServerSearch(
+  accessToken: string,
   query: string,
   country: string | null,
   requestId: string,
@@ -265,15 +277,92 @@ async function fetchServerSearch(
     q: query,
     limit: String(SEARCH_RESULT_LIMIT),
   });
-  return fetchJson(`${getProxyApiUrl()}/search?${params.toString()}`, {
-    headers: buildProxyHeaders(country, {
+  const response = await fetchJson<MultiSearchResponse>(
+    `${getProxyApiUrl()}/search?${params.toString()}`,
+    {
+      headers: buildProxyHeaders(country, {
+        requestId,
+      }),
+    },
+    {
       requestId,
+      targetService: "proxy",
+      route: "/v1/proxy/search",
+    },
+  );
+  return resolveServerContentIds(accessToken, response, country, requestId);
+}
+
+type ResolvableServerContent = SearchItem;
+
+interface BulkResolvedIdentity {
+  id: number;
+  external_id: string;
+  content_type: ContentType;
+}
+
+async function resolveServerContentIds<
+  T extends HomepageResponse | MultiSearchResponse,
+>(
+  accessToken: string,
+  response: T,
+  country: string | null,
+  requestId: string,
+): Promise<T> {
+  const unique = new Map<string, ResolvableServerContent>();
+  for (const category of Object.values(response)) {
+    for (const item of category.results) {
+      unique.set(`${item.type}:${item.id}`, item);
+    }
+  }
+  const items = [...unique.values()];
+  if (items.length === 0) return response;
+
+  const params = new URLSearchParams();
+  if (country) params.set("country", country);
+  const resolved = await fetchJson<{ results: BulkResolvedIdentity[] }>(
+    `${getApiUrl()}/content/resolve-ids/${params.size ? `?${params}` : ""}`,
+    {
+      method: "POST",
+      headers: coreHeaders(accessToken, requestId),
+      body: JSON.stringify({
+        items: items.map((item) => ({
+          source_api: getSourceApi(item.type),
+          external_id: String(item.id),
+          content_type: item.type,
+        })),
+      }),
+    },
+    {
+      requestId,
+      targetService: "core",
+      route: "/api/content/resolve-ids/",
+    },
+  );
+  const ids = new Map(
+    resolved.results.map((item) => [
+      `${item.content_type}:${item.external_id}`,
+      item.id,
+    ]),
+  );
+
+  return Object.fromEntries(
+    Object.entries(response).map(([key, rawCategory]) => {
+      const category = rawCategory as {
+        results: ResolvableServerContent[];
+      };
+      return [
+      key,
+      {
+        ...category,
+        results: category.results.map((item) => ({
+          ...item,
+          denn_id: ids.get(`${item.type}:${item.id}`),
+        })),
+      },
+      ];
     }),
-  }, {
-    requestId,
-    targetService: "proxy",
-    route: "/v1/proxy/search",
-  });
+  ) as unknown as T;
 }
 
 async function fetchServerUserLists(
@@ -314,29 +403,6 @@ async function fetchServerContentDetail(
       route: "/api/content/:id/",
     },
   );
-}
-
-async function fetchServerUserRating(
-  accessToken: string,
-  contentItemId: number,
-  userId: number,
-  requestId: string,
-) {
-  const params = new URLSearchParams({
-    content_item_id: String(contentItemId),
-    user_id: String(userId),
-    page_size: "1",
-  });
-  const response = await fetchJson<PaginatedRatingList>(
-    `${getApiUrl()}/content/ratings/?${params.toString()}`,
-    { headers: coreHeaders(accessToken, requestId) },
-    {
-      requestId,
-      targetService: "core",
-      route: "/api/content/ratings/",
-    },
-  );
-  return response.results[0] ?? null;
 }
 
 async function fetchServerListMetadata(

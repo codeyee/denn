@@ -13,20 +13,22 @@ from core.middleware.request_id import get_current_request_id
 logger = logging.getLogger(__name__)
 
 
-def _env_int(name: str, default: int) -> int:
-    """Read a positive int from env, falling back to ``default`` on errors."""
+def _env_float(name: str, default: float) -> float:
+    """Read a positive timeout from env, falling back on invalid values."""
     raw = os.getenv(name)
     if not raw:
         return default
     try:
-        value = int(raw)
+        value = float(raw)
         return value if value > 0 else default
     except ValueError:
         return default
 
 
-DEFAULT_TIMEOUT = _env_int("PROXY_GET_TIMEOUT", 15)
-BULK_TIMEOUT = _env_int("PROXY_BULK_TIMEOUT", 30)
+# Phase 1 budget contract: core's outer timeout stays just above proxy's
+# 2.5-second provider budget, so callers never outlive the service they call.
+DEFAULT_TIMEOUT = _env_float("PROXY_GET_TIMEOUT", 3.0)
+BULK_TIMEOUT = _env_float("PROXY_BULK_TIMEOUT", 3.0)
 
 
 def _bounded_path(path: str) -> str:
@@ -75,7 +77,7 @@ class ProxyAPIClient:
         path: str,
         params: Optional[Dict[str, Any]] = None,
         country: Optional[str] = None,
-        timeout: int = DEFAULT_TIMEOUT,
+        timeout: float = DEFAULT_TIMEOUT,
     ) -> Optional[Dict[str, Any]]:
         url = f"{self.base_url}{path}"
         if getattr(settings, "TESTING", False):

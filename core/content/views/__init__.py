@@ -5,6 +5,7 @@ from .rating import RatingViewSet
 from .list_invitation import ListInvitationViewSet
 from .content_item import (
     ContentItemViewSet,
+    ContentItemBulkResolveView,
     ContentItemDetailByIdView,
     ContentItemGetOrCreateView,
     LegacyContentRedirectView,
@@ -17,6 +18,7 @@ __all__ = [
     'RatingViewSet',
     'ListInvitationViewSet',
     'ContentItemViewSet',
+    'ContentItemBulkResolveView',
     'ContentItemDetailByIdView',
     'ContentItemGetOrCreateView',
     'LegacyContentRedirectView',

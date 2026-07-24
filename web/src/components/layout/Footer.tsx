@@ -1,5 +1,5 @@
 
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import { Separator } from "@/components/common/ui/Separator";
 
 const fadeInUp = {
@@ -11,10 +11,11 @@ const fadeInUp = {
 };
 
 export function Footer() {
+  const shouldReduceMotion = useReducedMotion();
   return (
-    <motion.div
+    <motion.footer
       className="w-full max-w-screen-2xl mx-auto px-8 pb-8 pt-10"
-      initial="hidden"
+      initial={shouldReduceMotion ? false : "hidden"}
       whileInView="visible"
       viewport={{ once: true }}
       variants={fadeInUp}
@@ -37,6 +38,6 @@ export function Footer() {
           </a>
         </div>
       </div>
-    </motion.div>
+    </motion.footer>
   );
 }

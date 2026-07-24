@@ -82,6 +82,12 @@ Service-specific fields are additive. The current implementations:
 - Rate-limit cache outages emit `msg = "ratelimit_cache_unavailable"` /
   `msg = "ratelimit_set_failed"` from
   `internal/middleware/ratelimit.go`.
+- Provider calls emit `msg = "provider_request"` with bounded provider,
+  attempts, duration, timeout, and circuit state; URLs and query values
+  are excluded.
+- A stale homepage response emits `msg = "homepage_refresh"` at start
+  and completion, including success and duration. Aggregate cache write
+  failures use `msg = "homepage_cache_set_failed"`.
 
 ### `core` (Django, custom `JsonFormatter`)
 
@@ -97,11 +103,16 @@ Service-specific fields are additive. The current implementations:
   `content/services/proxy_client.py` as `outbound_http_request` with a
   bounded route template, status, duration, cache status, target service,
   and request ID. Query values and raw provider URLs are not logged.
+- Bulk identity resolution emits `msg=content_id_bulk_resolution` with
+  requested/resolved counts and duration, never payload data.
 
 ### `web`
 
 - SSR session resolution emits `msg=session_bootstrap` with resolution
   and duration.
+- Client refresh emits `msg=session_refresh` with only the bounded
+  resolution (`authenticated`, `expired`, `unavailable`, or `timeout`);
+  no token or user identifier is logged.
 - SSR loaders emit `msg=outbound_http_request` for `core`/`proxy`.
 - The BFF emits `msg=http_request` with status, duration, payload size,
   cache status, and `Server-Timing`.

@@ -35,7 +35,7 @@ export function Navbar({ searchQuery, onSearchChange }: NavbarProps) {
   const resolvedHandleSearchChange = onSearchChange ?? handleSearchChange;
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-50">
+    <header className="fixed top-0 left-0 right-0 z-50">
       <div className="relative w-full">
         <div className="pointer-events-none absolute inset-0 bg-navbar-gradient" style={{ zIndex: 1 }} />
         <div className="relative z-10 w-full max-w-screen-2xl mx-auto px-6 py-8">
@@ -43,11 +43,11 @@ export function Navbar({ searchQuery, onSearchChange }: NavbarProps) {
           <NavigationMenu>
             <NavigationMenuList>
               <NavigationMenuItem>
-                <Link to="/">
-                  <Button variant="link" className="cursor-pointer text-2xl font-bold font-mono">
+                <Button asChild variant="link" className="cursor-pointer text-2xl font-bold font-mono">
+                  <Link to="/">
                     Denn
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
               </NavigationMenuItem>
             </NavigationMenuList>
           </NavigationMenu>
@@ -57,7 +57,11 @@ export function Navbar({ searchQuery, onSearchChange }: NavbarProps) {
             <div className="flex-1 max-w-md mx-auto hidden lg:block font-sans">
               <div className="relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-300 pointer-events-none z-10" />
+                <label htmlFor="navbar-search" className="sr-only">
+                  Search movies, TV shows, games, albums, and books
+                </label>
                 <input
+                  id="navbar-search"
                   ref={searchInputRef}
                   type="text"
                   value={resolvedSearchQuery}
@@ -88,41 +92,46 @@ export function Navbar({ searchQuery, onSearchChange }: NavbarProps) {
             {isAuthenticated && user ? (
               <>
                 {/* Profile Link - Icon only in all views */}
-                <Link to="/profile">
-                  <Button variant="ghost" size="icon" className="cursor-pointer" aria-label="Profile">
+                <Button asChild variant="ghost" size="icon" className="cursor-pointer">
+                  <Link to="/profile" aria-label="Profile">
                     <User className="h-5 w-5" />
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
               </>
             ) : (
               <>
                 {/* Login Link - Text on desktop, icon on mobile */}
-                <Link to="/login" className="hidden lg:block">
-                  <Button variant="link" className="cursor-pointer">
+                <Button asChild variant="link" className="hidden lg:inline-flex cursor-pointer">
+                  <Link to="/login">
                     Login
-                  </Button>
-                </Link>
-                <Link to="/login" className="lg:hidden">
-                  <Button variant="ghost" size="icon" className="cursor-pointer" aria-label="Login">
+                  </Link>
+                </Button>
+                <Button asChild variant="ghost" size="icon" className="lg:hidden cursor-pointer">
+                  <Link to="/login" aria-label="Login">
                     <LogIn className="h-5 w-5" />
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
                 {/* Register Button - Text on desktop, icon on mobile */}
-                <Link to="/register" className="hidden lg:block">
-                  <Button className="cursor-pointer">Register</Button>
-                </Link>
-                <Link to="/register" className="lg:hidden">
-                  <Button variant="ghost" size="icon" className="cursor-pointer" aria-label="Register">
+                <Button asChild className="hidden lg:inline-flex cursor-pointer">
+                  <Link to="/register">Register</Link>
+                </Button>
+                <Button asChild variant="ghost" size="icon" className="lg:hidden cursor-pointer">
+                  <Link to="/register" aria-label="Register">
                     <UserPlus className="h-5 w-5" />
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
               </>
             )}
 
             {/* Settings Button */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="cursor-pointer">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="cursor-pointer"
+                  aria-label="Settings"
+                >
                   <Settings className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
@@ -133,6 +142,8 @@ export function Navbar({ searchQuery, onSearchChange }: NavbarProps) {
                       type="checkbox"
                       checked={settings.animationsEnabled}
                       onChange={() => {}}
+                      aria-label="Enable animations"
+                      tabIndex={-1}
                       className="cursor-pointer"
                     />
                     <span>Enable Animations</span>
@@ -157,6 +168,6 @@ export function Navbar({ searchQuery, onSearchChange }: NavbarProps) {
           </div>
         </div>
       </div>
-    </div>
+    </header>
   );
 }

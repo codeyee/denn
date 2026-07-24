@@ -59,13 +59,19 @@ func TestSearchMovies(t *testing.T) {
 	mockResponse := tmdb.TmdbSearchResponse{
 		Page:         1,
 		TotalPages:   1,
-		TotalResults: 1,
+		TotalResults: 2,
 		Results: []tmdb.TmdbSearchResult{
 			{
 				ID:          1,
 				Title:       "Test Movie",
 				Overview:    "Test Overview",
 				PosterPath:  stringPtr("/poster.jpg"),
+				ReleaseDate: "2023-01-01",
+			},
+			{
+				ID:          2,
+				Adult:       true,
+				Title:       "Explicit Movie",
 				ReleaseDate: "2023-01-01",
 			},
 		},
@@ -77,6 +83,9 @@ func TestSearchMovies(t *testing.T) {
 		}
 		if req.URL.Query().Get("query") != "test" {
 			t.Errorf("expected query 'test', got %s", req.URL.Query().Get("query"))
+		}
+		if req.URL.Query().Get("include_adult") != "false" {
+			t.Errorf("expected include_adult=false, got %s", req.URL.Query().Get("include_adult"))
 		}
 		return makeJSONResponse(200, mockResponse)
 	})
@@ -124,13 +133,24 @@ func TestGetPopularMovies(t *testing.T) {
 	mockResponse := tmdb.TmdbSearchResponse{
 		Page:         1,
 		TotalPages:   1,
-		TotalResults: 1,
+		TotalResults: 3,
 		Results: []tmdb.TmdbSearchResult{
 			{
 				ID:          1,
 				Title:       "Popular Movie",
 				Overview:    "Overview",
 				PosterPath:  stringPtr("/poster.jpg"),
+				ReleaseDate: "2023-01-01",
+			},
+			{
+				ID:          2,
+				Title:       "Far Future Movie",
+				ReleaseDate: "2099-01-01",
+			},
+			{
+				ID:          3,
+				Adult:       true,
+				Title:       "Explicit Movie",
 				ReleaseDate: "2023-01-01",
 			},
 		},
@@ -152,7 +172,7 @@ func TestGetPopularMovies(t *testing.T) {
 		t.Errorf("expected 1 result, got %d", len(result.Results))
 	}
 	if result.Results[0].Title != "Popular Movie" {
-		t.Errorf("expected title 'Popular Movie', got %s", result.Results[0].Title)
+		t.Errorf("expected only eligible popular movie, got %s", result.Results[0].Title)
 	}
 }
 

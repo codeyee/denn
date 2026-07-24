@@ -4,20 +4,22 @@ This file summarizes the work that is still open, partially implemented, or next
 
 ## Priority Order
 
-1. Execute Phase 1 of roadmap epic
-   [#35](https://github.com/codeyee/denn/issues/35): auth/hydration
-   (#17/#18), navigation (#20/#21), local-first detail (#22/#23),
-   provider budgets/home cold (#25/#24) and accessibility base (#29).
-2. Keep the Phase 0 telemetry and Playwright harness green and extend
-   its quarantined scenarios as each P1 fix lands.
-3. Complete the remaining content eligibility and domain-normalization
+1. Merge and preserve the completed Phase 1 gate from roadmap epic
+   [#35](https://github.com/codeyee/denn/issues/35): auth/hydration,
+   side-effect-free navigation, local-first detail, provider budgets,
+   aggregate cache hardening, and accessibility base.
+2. Complete the remaining accessibility, content eligibility, and
+   domain-normalization
    work (#32/#33 and the active Sprint 10 follow-ups) before product
    work expands the same critical routes.
-4. Resume the product sprint line only after the Phase 1 gate is met.
+3. Execute the Phase 2 architecture/dependency work from #35.
+4. Resume the product sprint line only after the roadmap release gates
+   that protect the same critical routes are met.
 
 ## Post-Audit Remediation Roadmap
 
-- Status: Phase 0 complete; Phase 1 is the active gate.
+- Status: Phase 0 and Phase 1 implementation complete; later epic phases
+  remain open.
 - Epic: [#35](https://github.com/codeyee/denn/issues/35).
 - Phase 0 evidence:
   [`../perf/baseline.md`](../perf/baseline.md),
@@ -28,7 +30,20 @@ Phase 0 established the before evidence rather than repairing the known
 failures: one logical request ID, cache/data-source dimensions,
 production-build browser smoke, cold/warm baseline, redacted failure
 artifacts, and expected-failure characterization for #17, #18 and #20.
-Those quarantined tests are the executable entry criteria for Phase 1.
+Phase 1 promoted those quarantined scenarios to passing regression
+tests. Its durable outcomes are:
+
+- transient auth failures no longer destroy a known session;
+- discovery resolves stable ids in bulk and hover/focus performs no
+  writes;
+- stale detail returns immediately and current-user rating is bundled;
+- provider and aggregate requests have explicit budgets, scoped caches,
+  single-flight refresh, retry/circuit behavior, and fail-open cache
+  handling;
+- the critical path has immediate feedback and an accessibility base.
+
+The epic itself remains open because its Definition of Done also covers
+Phases 2–4.
 
 ## Old TODO Triage
 
@@ -116,8 +131,8 @@ Detailed sprint plans:
 
 ## Performance Baseline And Perceived Speed
 
-- Status: Phase 0 baseline implemented; deployed after-measurement remains
-  a release-gate activity.
+- Status: Phase 1 local after-snapshot recorded; deployed
+  after-measurement remains a release-gate activity.
 
 Implemented baseline:
 

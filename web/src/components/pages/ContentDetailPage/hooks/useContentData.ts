@@ -15,6 +15,7 @@ import {
 interface UseContentDataParams {
   contentId: number;
   country?: string;
+  initialData?: ContentItem;
 }
 
 type DetailPayload =
@@ -48,8 +49,9 @@ interface UseContentDataReturn {
 export function useContentData({
   contentId,
   country,
+  initialData,
 }: UseContentDataParams): UseContentDataReturn {
-  const query = useContentDetailQuery(contentId, country);
+  const query = useContentDetailQuery(contentId, country, initialData);
 
   const item = query.data ?? null;
 

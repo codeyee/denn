@@ -18,14 +18,19 @@ bootstrap in `web`.
 
 ## Session Model
 
-`SessionSnapshot` currently distinguishes three states:
+`SessionSnapshot` distinguishes six states:
 
 - `authenticated`: user and access token were resolved successfully.
 - `anonymous`: no valid session exists and protected routes should
   redirect to `/login`.
+- `expired`: the refresh credential was explicitly rejected and the
+  client may safely clear the dead session.
 - `unavailable`: `core` could not be reached or session resolution
   failed operationally; the UI must degrade without pretending the user
   explicitly logged out.
+- `timeout`: session resolution exceeded its bounded deadline; the user
+  can retry without losing the known session.
+- `pending`: the client bootstrap has not reached a terminal resolution.
 
 Additional flags:
 
@@ -45,7 +50,8 @@ Additional flags:
 
 - Any protected route must call the shared helper in
   `web/src/lib/auth/protected-route.ts` from `beforeLoad`.
-- `beforeLoad` redirects only when session resolution is `anonymous`.
+- `beforeLoad` redirects only when session resolution is `anonymous` or
+  `expired`.
 - `ProtectedRoute` must not be the only protection layer for a route.
 - `ProtectedRoute` still gates `isBootingSession =
   isAuthenticated && !accessToken` to avoid protected child effects
@@ -62,18 +68,21 @@ Additional flags:
 
 ## Failure Behavior
 
-- `anonymous` + protected route: SSR redirect to `/login?next=...`.
-- `unavailable` + protected route: no redirect; render the unavailable
-  fallback in `ProtectedRoute`.
-- `needsCookieSync=true` and no access token: clear cookies and Zustand
-  auth state so future navigations stop retrying a dead session.
+- `anonymous` or `expired` + protected route: SSR redirect to
+  `/login?next=...`.
+- `unavailable` or `timeout` + protected route: no redirect and no token
+  clearing; render a recoverable fallback with retry unless an already
+  authenticated snapshot can continue safely.
+- `needsCookieSync=true` is reserved for an explicitly expired refresh
+  credential, never a timeout, network error, or upstream `5xx`.
 
 ## Observability
 
 - `ProtectedRoute` emits `slow_session_bootstrap` when the client
   bootstrap window exceeds 200 ms.
-- It emits `stuck_session_bootstrap` and clears the session if the boot
-  window exceeds 5 seconds.
+- It emits `stuck_session_bootstrap` and moves to the recoverable
+  `timeout` state if the boot window exceeds 5 seconds. It does not clear
+  the session.
 - These events are currently client console signals, not a dedicated
   telemetry pipeline.
 
