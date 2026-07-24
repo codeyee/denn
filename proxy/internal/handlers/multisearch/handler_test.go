@@ -21,17 +21,31 @@ import (
 )
 
 type mockVideo struct {
-	moviesResult tmdbservice.SearchResult
-	moviesErr    error
-	tvResult     tmdbservice.SearchResult
-	tvErr        error
+	moviesResult     tmdbservice.SearchResult
+	moviesErr        error
+	tvResult         tmdbservice.SearchResult
+	tvErr            error
+	moviesAllowAdult bool
+	tvAllowAdult     bool
 }
 
-func (m *mockVideo) SearchMovies(_ context.Context, _ string, _, _ int) (tmdbservice.SearchResult, error) {
+func (m *mockVideo) SearchMoviesWithAdult(
+	_ context.Context,
+	_ string,
+	_, _ int,
+	allowAdult bool,
+) (tmdbservice.SearchResult, error) {
+	m.moviesAllowAdult = allowAdult
 	return m.moviesResult, m.moviesErr
 }
 
-func (m *mockVideo) SearchTVShows(_ context.Context, _ string, _, _ int) (tmdbservice.SearchResult, error) {
+func (m *mockVideo) SearchTVShowsWithAdult(
+	_ context.Context,
+	_ string,
+	_, _ int,
+	allowAdult bool,
+) (tmdbservice.SearchResult, error) {
+	m.tvAllowAdult = allowAdult
 	return m.tvResult, m.tvErr
 }
 
@@ -116,21 +130,80 @@ func decodeErrorResponse(t *testing.T, w *httptest.ResponseRecorder) map[string]
 }
 
 func TestMultiSearchCacheKeyScopesAllPayloadInputs(t *testing.T) {
-	base := multiSearchCacheKey(" Dune ", 1, 20, "CO", []contentType{typeMovies})
+	base := multiSearchCacheKey(" Dune ", 1, 20, "CO", []contentType{typeMovies}, adultExclude)
 	cases := []string{
-		multiSearchCacheKey("Foundation", 1, 20, "CO", []contentType{typeMovies}),
-		multiSearchCacheKey("Dune", 2, 20, "CO", []contentType{typeMovies}),
-		multiSearchCacheKey("Dune", 1, 10, "CO", []contentType{typeMovies}),
-		multiSearchCacheKey("Dune", 1, 20, "US", []contentType{typeMovies}),
-		multiSearchCacheKey("Dune", 1, 20, "CO", []contentType{typeBooks}),
+		multiSearchCacheKey("Foundation", 1, 20, "CO", []contentType{typeMovies}, adultExclude),
+		multiSearchCacheKey("Dune", 2, 20, "CO", []contentType{typeMovies}, adultExclude),
+		multiSearchCacheKey("Dune", 1, 10, "CO", []contentType{typeMovies}, adultExclude),
+		multiSearchCacheKey("Dune", 1, 20, "US", []contentType{typeMovies}, adultExclude),
+		multiSearchCacheKey("Dune", 1, 20, "CO", []contentType{typeBooks}, adultExclude),
+		multiSearchCacheKey("Dune", 1, 20, "CO", []contentType{typeMovies}, adultInclude),
 	}
 	for _, candidate := range cases {
 		if candidate == base {
 			t.Fatalf("cache key collision for distinct inputs: %s", candidate)
 		}
 	}
-	if normalized := multiSearchCacheKey("dune", 1, 20, "CO", []contentType{typeMovies}); normalized != base {
+	if normalized := multiSearchCacheKey("dune", 1, 20, "CO", []contentType{typeMovies}, adultExclude); normalized != base {
 		t.Fatalf("expected normalized query key, got %s and %s", base, normalized)
+	}
+}
+
+func TestSearchScopesAdultPolicyToDirectTMDBSearch(t *testing.T) {
+	tmdb, games, spotify, books := defaultMocks()
+	r := setupRouter(tmdb, games, spotify, books)
+
+	response := doRequest(r, "/search?q=dune&adult=include")
+
+	if response.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", response.Code)
+	}
+	if response.Header().Get("X-Content-Policy") != "adult-include" {
+		t.Fatalf("unexpected content policy header: %q", response.Header().Get("X-Content-Policy"))
+	}
+	if !tmdb.moviesAllowAdult || !tmdb.tvAllowAdult {
+		t.Fatal("expected adult opt-in to reach both TMDB search buckets")
+	}
+}
+
+func TestSearchAdultPolicyDoesNotInferClassificationForOtherProviders(t *testing.T) {
+	tmdb, games, spotify, books := defaultMocks()
+	r := setupRouter(tmdb, games, spotify, books)
+
+	response := doRequest(r, "/search?q=dune&adult=include")
+
+	if response.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", response.Code)
+	}
+	raw := decodeResponse(t, response)
+	cases := map[string]string{
+		"games":  "Test Game",
+		"albums": "Test Album",
+		"books":  "Test Book",
+	}
+	for bucket, expectedTitle := range cases {
+		result := decodeContentResult(t, raw[bucket])
+		if len(result.Results) != 1 || result.Results[0].Title != expectedTitle {
+			t.Fatalf(
+				"adult policy must preserve unclassified %s results, got %+v",
+				bucket,
+				result.Results,
+			)
+		}
+	}
+}
+
+func TestSearchRejectsUnknownAdultPolicy(t *testing.T) {
+	tmdb, games, spotify, books := defaultMocks()
+	r := setupRouter(tmdb, games, spotify, books)
+
+	response := doRequest(r, "/search?q=dune&adult=maybe")
+
+	if response.Code != http.StatusBadRequest {
+		t.Fatalf("expected status 400, got %d", response.Code)
+	}
+	if tmdb.moviesAllowAdult || tmdb.tvAllowAdult {
+		t.Fatal("invalid policy must not reach TMDB")
 	}
 }
 

@@ -9,8 +9,6 @@ export function useAuth() {
   const router = useRouter();
   const {
     user,
-    accessToken,
-    refreshToken,
     isAuthenticated,
     isLoading,
     error,
@@ -18,6 +16,7 @@ export function useAuth() {
     login,
     register,
     logout,
+    logoutEverywhere,
     clearError,
   } = useAuthStore();
 
@@ -53,10 +52,14 @@ export function useAuth() {
     await router.invalidate();
   }, [logout, navigate, router]);
 
+  const handleLogoutEverywhere = useCallback(async () => {
+    await logoutEverywhere();
+    await navigate({ to: "/" });
+    await router.invalidate();
+  }, [logoutEverywhere, navigate, router]);
+
   return {
     user,
-    accessToken,
-    refreshToken,
     isAuthenticated,
     isLoading,
     error,
@@ -64,6 +67,7 @@ export function useAuth() {
     login: handleLogin,
     register: handleRegister,
     logout: handleLogout,
+    logoutEverywhere: handleLogoutEverywhere,
     clearError,
   };
 }

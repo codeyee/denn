@@ -94,3 +94,37 @@ func TestGetPopularTVShows(t *testing.T) {
 		})
 	}
 }
+
+func TestSearchTVShowsScopesCacheByAdultPolicy(t *testing.T) {
+	var includeAdultValues []string
+	transport := roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		includeAdultValues = append(includeAdultValues, req.URL.Query().Get("include_adult"))
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(bytes.NewBufferString(`{"page":1,"results":[]}`)),
+			Header:     make(http.Header),
+		}, nil
+	})
+	cache := NewMockCache()
+	client := NewClient(
+		"test-key",
+		cache,
+		clients.WithHTTPClient(&http.Client{Transport: transport}),
+	)
+
+	if _, err := client.SearchTVShowsWithAdult(context.Background(), "Dune", 1, false); err != nil {
+		t.Fatalf("default search failed: %v", err)
+	}
+	if _, err := client.SearchTVShowsWithAdult(context.Background(), "Dune", 1, true); err != nil {
+		t.Fatalf("opt-in search failed: %v", err)
+	}
+
+	if len(includeAdultValues) != 2 ||
+		includeAdultValues[0] != "false" ||
+		includeAdultValues[1] != "true" {
+		t.Fatalf("unexpected include_adult values: %v", includeAdultValues)
+	}
+	if len(cache.data) != 2 {
+		t.Fatalf("expected separate cache entries for both policies, got %d", len(cache.data))
+	}
+}

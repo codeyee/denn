@@ -9,7 +9,8 @@ Fuente única de verdad para headers, env vars, paginación y forma de errores e
 
 ```
 web (browser)   → web BFF (/api/proxy/*)  → proxy (/v1/proxy/*)
-web (browser)   → core   (/api/*)
+web (browser)   → web BFF (/api/core/*)   → core (/api/*)
+web (browser)   → web BFF (/api/auth/*)   → core auth (/api/auth/*)
 web (server)    → proxy   (/v1/proxy/*)
 core            → proxy   (/v1/proxy/*)   [enriquecimiento de ContentItem]
 ```
@@ -22,7 +23,8 @@ core            → proxy   (/v1/proxy/*)   [enriquecimiento de ContentItem]
 
 | Header            | Quién lo envía     | Quién lo lee | Obligatoriedad | Notas |
 |-------------------|--------------------|--------------|----------------|-------|
-| `Authorization: Bearer <jwt>` | `web` (cliente y SSR) | `core` | Requerido en endpoints autenticados de `core` | JWT de usuario emitido por `core/auth/`. |
+| `Authorization: Bearer <jwt>` | `web` server-only | `core` | Requerido en endpoints autenticados de `core` | El BFF/SSR lo obtiene de cookies `HttpOnly`; nunca lo construuye JavaScript del navegador. |
+| `X-CSRF-Token` | navegador | `web` BFF | Requerido en POST/PUT/PATCH/DELETE | Debe coincidir con la cookie no-HttpOnly `csrf-token`; además se validan origen y `Sec-Fetch-Site`. |
 | `X-Api-Key`       | `web` (server-only), `core` | `proxy` | Requerido en `/v1/proxy/*` excepto `/health` | API key compartida del proxy. **Nunca viaja al navegador.** |
 | `X-Api-Consumer`  | `web` (server-only), `core` | `proxy` | Requerido por convención interna | Valor acotado `web` o `core`; permite separar latencia/cache sin identidad de usuario. |
 | `Authorization: Bearer <api-key>` | (alternativa a `X-Api-Key`) | `proxy` | Opcional | Soportado por el proxy; preferir `X-Api-Key` para no confundir con el JWT de usuario. |
@@ -41,9 +43,18 @@ core            → proxy   (/v1/proxy/*)   [enriquecimiento de ContentItem]
 | `X-RateLimit-Remaining` | `proxy` | Llamadas restantes en la ventana actual. |
 | `X-RateLimit-Degraded`  | `proxy` | Presente cuando el rate limiter está fail-open por caché degradado. Valores: `cache-error`, `noop-cache`. |
 
-### 2.3 CORS (`web` navegador → `core`)
+### 2.3 Browser same-origin boundary
 
-Cuando el SPA en `web` llama a `core` desde el navegador (origen distinto, p. ej. `localhost:3000` → `localhost:8000`), `core` debe listar en `Access-Control-Allow-Headers` los encabezados de request que el cliente envía en preflight. La configuración vive en `core/core/settings/cors.py`: además de los defaults de `django-cors-headers`, se permiten **`x-request-id`** y **`x-user-country`**, y se exponen `x-request-id`, `x-cache` y `server-timing` cuando aplica.
+El navegador no llama a `core` directamente. Lecturas y mutaciones usan
+`/api/core/*`; login, registro, refresh y logout usan rutas fijas
+`/api/auth/*`. El BFF añade el JWT server-side, rota refresh de forma
+single-flight y nunca devuelve access/refresh en JSON. Las cookies
+`auth-token` y `refresh-token` son `HttpOnly`, `Secure` en producción,
+`SameSite=Lax`, `Path=/` y host-only salvo que `AUTH_COOKIE_DOMAIN`
+configure explícitamente otro alcance.
+
+La cookie `csrf-token` sí es legible por el navegador y sólo se usa para
+doble envío. No es una credencial de sesión.
 
 ## 3. Sobre canónico de errores
 
@@ -141,7 +152,10 @@ Cualquier cambio incompatible en `proxy` requiere `/v2/proxy/...` y un período 
 
 ## 7. Env vars (matriz de propiedad)
 
-Server-only significa que la variable **nunca** debe aparecer en bundles de cliente. En `web` (TanStack Start) no inyectes secretos en `window.__ENV__`; evita cualquier prefijo público (`NEXT_PUBLIC_*`) para datos sensibles. Las URLs públicas de API pueden seguir usando `NEXT_PUBLIC_API_URL` / `NEXT_PUBLIC_PROXY_API_URL` en `.env` o el script de runtime inyectado por el servidor.
+Server-only significa que la variable **nunca** debe aparecer en bundles
+de cliente. En `web` (TanStack Start) no inyectes secretos ni la URL
+interna de `core` en `window.__ENV__`; el navegador usa rutas BFF
+same-origin.
 
 | Variable                 | Servicio  | Visibilidad   | Notas |
 |--------------------------|-----------|---------------|-------|
@@ -152,12 +166,14 @@ Server-only significa que la variable **nunca** debe aparecer en bundles de clie
 | `REDIS_URL`              | core, proxy | server-only | El launcher inyecta uno temporal en local. |
 | `CORS_ALLOWED_ORIGINS`   | core      | server-only   | |
 | `CSRF_TRUSTED_ORIGINS`   | core      | server-only   | |
+| `AUTH_COOKIE_SECURE`     | core, web | server-only   | `True`/`true` en HTTPS; sólo fixtures HTTP lo desactivan. |
+| `AUTH_COOKIE_DOMAIN`     | core, web | server-only   | Omitir para cookies host-only; configurar sólo con alcance revisado. |
 | `PROXY_API_BASE_URL`     | core      | server-only   | URL del proxy desde core. |
 | `PROXY_API_KEY`          | core, web | **server-only** | Misma cadena que `proxy:API_KEY`. **No** definir `NEXT_PUBLIC_PROXY_API_KEY`. |
 | `PROXY_API_URL`          | web       | server-only   | Override SSR del proxy URL. |
 | `NEXT_PUBLIC_PROXY_API_URL` | web    | público       | Sólo URL pública, nunca clave. |
 | `API_URL`                | web       | server-only   | Override SSR de la URL de core. |
-| `NEXT_PUBLIC_API_URL`    | web       | público       | URL pública de core para fetches del cliente. |
+| `BUILD_SHA`              | web       | server-only   | SHA completo inyectado en la imagen; `/api/version` lo expone sin caché para coordinar releases. |
 | `PORT`                   | proxy     | server-only   | |
 | `CORS_ALLOW_ORIGINS`     | proxy     | server-only   | |
 | `RATE_LIMIT_PER_MINUTE`  | proxy     | server-only   | |
@@ -208,7 +224,14 @@ renderizar enlaces.
 - Multi-search tiene presupuesto agregado de 1.5 s y 900 ms por bucket.
 - Homepage tiene presupuesto agregado de 2.5 s y 1.1 s por bucket.
 - Las claves de caché de agregados incluyen todos los inputs que cambian
-  la respuesta (`query`, tipos, página, límite, país) y las versiones de
-  política `adult-exclude` y `future-24h`.
+  la respuesta (`query`, tipos, página, límite, país), la versión
+  `future-24h` y la política adulta explícita (`adult-exclude` o
+  `adult-include`). Homepage siempre usa exclusión; sólo la búsqueda
+  directa puede solicitar inclusión.
+- `GET /v1/proxy/search` acepta `adult=exclude|include`, usa `exclude`
+  por defecto, rechaza otros valores con `400` y devuelve
+  `X-Content-Policy`. La inclusión sólo cambia los buckets de TMDB,
+  porque IGDB, Spotify y OpenLibrary no exponen una clasificación
+  equivalente y confiable.
 - Un fallo de Redis degrada a ejecución sin caché; no abre el proxy ni
   convierte un fallo de infraestructura de caché en un `5xx` obligatorio.

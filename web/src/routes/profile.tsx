@@ -7,6 +7,7 @@ import { Card } from "@/components/common/ui/Card";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { requireAuthenticatedSession } from "@/lib/auth/protected-route";
+import { AdultContentPreference } from "@/components/pages/ProfilePage/AdultContentPreference";
 
 export const Route = createFileRoute("/profile")({
   beforeLoad: ({ context, location }) => {
@@ -20,13 +21,13 @@ export const Route = createFileRoute("/profile")({
 });
 
 function ProfileRoute() {
-  const { user, logout } = useAuth();
+  const { user, logout, logoutEverywhere } = useAuth();
 
   return (
     <ProtectedRoute>
       <div className="min-h-screen flex flex-col bg-background-logged-in">
         <Navbar />
-        <div className="flex-1 p-8 pt-24">
+        <main id="main-content" tabIndex={-1} className="flex-1 p-4 pt-24 sm:p-8 sm:pt-24">
           <Card className="max-w-2xl mx-auto p-8">
             <h1 className="text-3xl font-bold mb-6">Profile</h1>
 
@@ -47,7 +48,11 @@ function ProfileRoute() {
               </div>
             </div>
 
-            <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+            <AdultContentPreference
+              enabled={user?.allow_adult_content ?? false}
+            />
+
+            <div className="mt-8 flex flex-wrap gap-3 border-t border-gray-200 pt-6 dark:border-gray-700">
               <Button
                 onClick={logout}
                 variant="destructive"
@@ -55,9 +60,16 @@ function ProfileRoute() {
               >
                 Logout
               </Button>
+              <Button
+                onClick={logoutEverywhere}
+                variant="outline"
+                className="cursor-pointer"
+              >
+                Logout everywhere
+              </Button>
             </div>
           </Card>
-        </div>
+        </main>
         <Footer />
 
         <div className="pointer-events-none fixed left-0 right-0 bottom-0 h-16 bg-bottom-gradient z-10" />

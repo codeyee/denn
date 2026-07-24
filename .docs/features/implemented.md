@@ -5,8 +5,10 @@ considered part of the project baseline.
 
 ## Product Capabilities
 
-- User authentication with login, registration, logout, and protected
-  routes.
+- User authentication with login, registration, logout, logout-all, and
+  protected routes through a same-origin BFF. JWTs remain in
+  `HttpOnly`/`Secure`/`SameSite=Lax` cookies, mutations require CSRF, and
+  the browser stores identity only.
 - Homepage and multi-source discovery across movies, TV shows, games,
   albums, and books.
 - Search flow with typed result transformation per media family.
@@ -52,14 +54,35 @@ considered part of the project baseline.
   provider retries, and circuit breakers.
 - General-discovery release eligibility with a 24-hour grace window and
   TMDB adult exclusion before aggregate cache writes.
+- Safe-by-default adult-content preference: automatic discovery remains
+  filtered, direct search can opt into reliably classified TMDB results,
+  policy-specific cache entries prevent cross-user reuse, and the active
+  scope is explained in Search and Profile.
 - Accessibility foundation for the critical flow: zoomable viewport,
   skip link, one main landmark, semantic card navigation, labeled
   search controls, visible focus behavior, reduced-motion support, and
   44px interactive targets.
+- Shared semantic responsive media for hero, cards, episodes, and
+  detail banners, with reserved dimensions, provider-aware `srcset`,
+  useful alt text, async decoding, lazy non-critical media, and one
+  priority LCP image.
+- Accessible featured-content carousel with user pause/resume,
+  focus/hover pause, reduced-motion opt-out, roving tab stops, stable
+  geometry, and delayed loading of inactive artwork.
+- Responsive mobile search, touch/keyboard horizontal carousels, and
+  verified 320–1440px plus landscape reflow without horizontal
+  overflow.
+- Real About, Privacy, Terms, and Contact routes with route metadata,
+  canonical links, hard-refresh support, an operational contact
+  channel, and a coherent application 404.
 - Deterministic production-build Playwright fixtures, desktop/mobile
   critical-flow smoke, promoted auth/navigation regression coverage,
-  sub-100ms navigation-feedback checks, redacted browser failure
-  artifacts and a scheduled cold/warm baseline.
+  automated axe coverage across critical and legal routes, responsive
+  and keyboard checks, sub-100ms navigation-feedback checks, redacted
+  browser failure artifacts and a scheduled cold/warm baseline.
+- Bounded content-detail failure handling: a slow/failed client read
+  exits the skeleton at five seconds, preserves authentication, and
+  offers an explicit retry covered by the degraded-browser matrix.
 
 ## Current Compatibility Guarantees
 

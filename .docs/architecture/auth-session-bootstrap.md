@@ -1,19 +1,20 @@
 # Auth Session Bootstrap
 
-This document records the current frontend session model and the gaps
-that still exist after ADR 0002 phase 1.
+This document records the frontend session model after all ADR 0002
+phases.
 
 ## Current State
 
-- `localStorage` persists only `user` and `isAuthenticated`.
-- `accessToken` and `refreshToken` are not persisted to `localStorage`.
-- Tokens still live in JS-readable cookies and in-memory Zustand state.
+- `localStorage` and Zustand persist only `user`, `isAuthenticated`, and
+  non-sensitive resolution/UI state.
+- Access and refresh JWTs live only in `HttpOnly`, production-`Secure`,
+  `SameSite=Lax`, `Path=/` cookies owned by `web`.
 - The root route (`__root.tsx`) resolves session server-side on every
   request (`beforeLoad` calling `getSessionFn` / `getCountryFn`).
-- `AuthSessionBootstrap` copies the server snapshot into the client
-  store from a single global mount point.
-- `ProtectedRoute` guards the bootstrap race window with
-  `isBootingSession = isAuthenticated && !accessToken`.
+- `AuthSessionBootstrap` copies only identity and resolution into the
+  client store from a single global mount point.
+- `ProtectedRoute` guards the bootstrap race using persisted identity
+  plus `sessionResolution=pending`; it never reads a token.
 - Protected routes also enforce SSR redirects at the route level via
   TanStack Router `beforeLoad`, so anonymous users do not depend only on
   a client-side redirect.
@@ -39,19 +40,18 @@ Relevant code:
 
 - A hard refresh on a protected route no longer depends on
   `localStorage` carrying the JWTs.
-- Only an explicit refresh rejection (`401`) produces `expired` and
-  `needsCookieSync`; timeouts, network failures, and upstream `5xx`
-  preserve the last known user and tokens.
+- Only an explicit refresh rejection produces `expired` and server-side
+  cookie deletion; timeouts, network failures, and upstream `5xx`
+  preserve the last known client identity.
 - Login and registration requests have bounded deadlines. Successful
   auth invalidates router state before entering the destination route;
   logout navigates home before invalidation to avoid redirect loops.
 - A protected route in `unavailable` or `timeout` state exposes a retry
   action rather than clearing credentials.
 
-## Current Gaps
+## Remaining Constraints
 
-- Cookies are still not `HttpOnly`; ADR 0002 phases 2 and 3 are pending.
-- `ProtectedRoute` still keeps the client-side redirect as a fallback,
+- `ProtectedRoute` keeps the client-side redirect as a fallback,
   so protected-route policy now exists in both route-level and client
   guard layers and must stay aligned.
 - Browser E2E covers hard refresh, delayed detail, transient auth
@@ -66,13 +66,16 @@ Relevant code:
   unavailable-backend fallback.
 - Do not mount extra copies of `AuthSessionBootstrap` inside shells,
   pages, or feature components.
-- Do not persist JWTs back into `localStorage`.
+- Do not add JWTs to browser JSON, Zustand, localStorage, or
+  JavaScript-readable cookies.
+- Authenticated browser API calls must use `/api/core/*`; auth lifecycle
+  calls must use fixed `/api/auth/*` routes.
 - If a new route needs special auth behavior, document it here and in
   ADR 0002 rather than creating another local policy.
 
-## Next Steps
+## Operational Verification
 
-- Keep adding protected-route helpers instead of hand-writing auth logic
-  in individual route files.
-- Keep the production-build session regression scenarios in the PR gate.
-- Migrate to `HttpOnly` auth cookies with a BFF-mediated auth flow.
+Keep the production-build session regression scenarios in the PR gate
+and use
+[`../runbooks/auth-bff-rollout.md`](../runbooks/auth-bff-rollout.md)
+for deployment order, cookie/CSRF checks, and rollback.

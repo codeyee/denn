@@ -159,6 +159,83 @@ This document keeps the durable outcomes of completed implementation plans after
   former Phase 0 expected failures became passing desktop/mobile
   regressions with a measured sub-100ms feedback gate.
 
+## Phase 2 Experience, Media, And Accessibility
+
+- Hero, card, episode, and detail artwork moved from CSS backgrounds to
+  semantic responsive images with dimensions, useful alt text, lazy
+  loading, async decoding, provider variants, and fallback behavior.
+- The hero mounts one active priority image. Hidden artwork waits until
+  its slide approaches activation, cutting the deterministic cold
+  fixture from six image requests / 1,944 payload bytes to four /
+  1,296.
+- Featured-content rotation gained pause/resume, focus/hover pause,
+  reduced-motion behavior, stable geometry, and roving tab stops.
+- Mobile gained an expandable, focus-managed search form. Content
+  carousels moved to native horizontal scroll and snap while preserving
+  touch, keyboard focus, and position.
+- Critical and legal routes gained coherent main/H1 structure,
+  route-change focus, semantic navigation, named controls, contrast
+  corrections, and 44px primary touch targets.
+- About, Privacy, Terms, and Contact became real routes with metadata,
+  canonical links, hard-refresh behavior, an operational support
+  channel, and a coherent application 404.
+- Production-build browser coverage now runs axe on critical/legal
+  routes plus reduced-motion, keyboard, responsive, landscape,
+  touch-target, media-budget, route, and Web Vitals checks.
+
+## Adult-Content Search Preference
+
+- New accounts default to excluding adult content, and authenticated
+  users can explicitly opt into adult results for deliberate searches
+  from Profile.
+- Homepage, featured content, previews, and automatic recommendations
+  remain filtered regardless of that preference.
+- TMDB receives the matching upstream policy and is filtered again when
+  exclusion is active. Other providers remain explicitly unclassified
+  because they do not expose an equivalent trustworthy signal.
+- Provider and aggregate cache keys include the policy, preventing
+  default and opted-in users from sharing a search payload.
+- Core persistence tests, proxy policy/cache tests, and production-build
+  browser smoke cover the safe default and opt-in path.
+
+## Phase 3 BFF Authentication Hardening
+
+- Login, registration, refresh, logout, logout-all, and authenticated
+  domain calls moved behind same-origin `web` BFF routes.
+- Access and refresh JWTs are issued as host-only `HttpOnly`,
+  production-`Secure`, `SameSite=Lax`, `Path=/` cookies. They are absent
+  from browser JSON, Zustand, localStorage, and JavaScript-readable
+  cookies.
+- Mutations require a double-submit CSRF token plus same-origin/fetch-site
+  validation.
+- Refresh credentials rotate and blacklist their predecessors;
+  concurrent refresh attempts share one server-side operation.
+- Logout-all blacklists every outstanding refresh credential for the
+  current user. Existing access JWTs remain bounded by their one-hour
+  lifetime.
+
+## Phase 4 Local Release-Candidate Validation
+
+- The three root gates passed together: frontend lint/production build,
+  212 Django tests, and the full offline-safe Go suite.
+- The production-build browser matrix passed 16 desktop/mobile smoke,
+  10 applicable regression, and 25 accessibility/responsive scenarios;
+  the artifact probe remained intentionally opt-in.
+- The BFF path proved exact `MISS`, `HIT`, and `STALE` response/timing
+  states, and the critical route matrix remained free of React 418,
+  hover writes, unnamed primary controls, and transient-session loss.
+- A 60-sample cold/warm snapshot recorded final fixture p50/p75/p95
+  evidence without replacing the older deployed before snapshot.
+- Slow or failed detail navigation now terminates in a bounded,
+  retryable state instead of an indefinite skeleton.
+- The web image exposes its exact non-cacheable release SHA, and a
+  cross-service push blocks the core deploy webhook until that matching
+  BFF release is live. This makes the documented web-first auth cutover
+  enforceable instead of relying on workflow timing.
+- Staging, production smoke, and the observation window remain an
+  operational release gate; local fixture evidence is explicitly not a
+  substitute.
+
 ## What This History Replaces
 
 The detailed execution plans were intentionally removed after their durable outcomes were extracted here and into the architecture, features, debt, and roadmap docs.

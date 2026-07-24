@@ -8,8 +8,6 @@ describe("AuthSessionBootstrap", () => {
   beforeEach(() => {
     useAuthStore.setState({
       user: null,
-      accessToken: null,
-      refreshToken: null,
       isAuthenticated: false,
       isLoading: true,
       error: null,
@@ -21,7 +19,7 @@ describe("AuthSessionBootstrap", () => {
     localStorage.clear();
   });
 
-  it("hydrates an authenticated session snapshot into the store", async () => {
+  it("hydrates only the authenticated identity snapshot", async () => {
     render(
       <AuthSessionBootstrap
         session={{
@@ -30,10 +28,7 @@ describe("AuthSessionBootstrap", () => {
             username: "alice",
             email: "alice@example.com",
           },
-          accessToken: "access-token",
-          refreshToken: "refresh-token",
           isAuthenticated: true,
-          needsCookieSync: false,
           resolution: "authenticated",
         }}
       />,
@@ -42,23 +37,20 @@ describe("AuthSessionBootstrap", () => {
     await waitFor(() => {
       const state = useAuthStore.getState();
       expect(state.isAuthenticated).toBe(true);
-      expect(state.accessToken).toBe("access-token");
+      expect(state.user?.username).toBe("alice");
+      expect("accessToken" in state).toBe(false);
       expect(state.sessionResolution).toBe("authenticated");
     });
   });
 
-  it("clears stale client auth when the server asks for cookie sync", async () => {
+  it("clears stale client identity after server-confirmed expiry", async () => {
     useAuthStore.setState({
       user: {
         id: 1,
         username: "alice",
         email: "alice@example.com",
       },
-      accessToken: "stale-access",
-      refreshToken: "stale-refresh",
       isAuthenticated: true,
-      isLoading: true,
-      error: null,
       sessionResolution: "pending",
     });
 
@@ -66,11 +58,8 @@ describe("AuthSessionBootstrap", () => {
       <AuthSessionBootstrap
         session={{
           user: null,
-          accessToken: null,
-          refreshToken: null,
           isAuthenticated: false,
-          needsCookieSync: true,
-          resolution: "anonymous",
+          resolution: "expired",
         }}
       />,
     );
@@ -78,20 +67,24 @@ describe("AuthSessionBootstrap", () => {
     await waitFor(() => {
       const state = useAuthStore.getState();
       expect(state.isAuthenticated).toBe(false);
-      expect(state.accessToken).toBeNull();
-      expect(state.sessionResolution).toBe("anonymous");
+      expect(state.sessionResolution).toBe("expired");
     });
   });
 
-  it("marks the session as unavailable without redirecting to anonymous", async () => {
+  it("marks the session unavailable without overwriting known identity", async () => {
+    useAuthStore.setState({
+      user: {
+        id: 1,
+        username: "alice",
+        email: "alice@example.com",
+      },
+      isAuthenticated: true,
+    });
     render(
       <AuthSessionBootstrap
         session={{
           user: null,
-          accessToken: null,
-          refreshToken: null,
           isAuthenticated: false,
-          needsCookieSync: false,
           resolution: "unavailable",
         }}
       />,
@@ -99,6 +92,7 @@ describe("AuthSessionBootstrap", () => {
 
     await waitFor(() => {
       expect(useAuthStore.getState().sessionResolution).toBe("unavailable");
+      expect(useAuthStore.getState().user?.username).toBe("alice");
     });
   });
 });

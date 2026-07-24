@@ -3,15 +3,6 @@
 Only active debt belongs here. Resolved issues should be removed once
 their lasting outcome is reflected in architecture or history docs.
 
-## Critical
-
-- Frontend auth still depends on JS-readable cookies and in-memory JWT
-  handling.
-  Reference:
-  [`adr/0002-web-auth-cookies.md`](./adr/0002-web-auth-cookies.md)
-  and
-  [`architecture/auth-session-bootstrap.md`](./architecture/auth-session-bootstrap.md)
-
 ## High
 
 - Cross-service typed contract generation is still duplicated across
@@ -19,12 +10,10 @@ their lasting outcome is reflected in architecture or history docs.
 - Frontend Query migration has production-build smoke coverage for the
   critical routes, but Add-to-List and ListDetail still need broader
   mutation/rollback interaction tests.
-- The critical flow has a semantic/accessibility base, but full
-  automated axe coverage, screen-reader QA, contrast review, and the
-  remaining application surfaces stay tracked by #29.
-- Adult exclusion is explicit for TMDB and cache-policy safe, but other
-  providers lack an equivalent trusted flag and the product still needs
-  a documented user-preference/classification model (#32).
+- Adult search preference and cache isolation are implemented. IGDB,
+  Spotify, and OpenLibrary still lack an equivalent trusted classifier;
+  their results remain explicitly unclassified and Denn must not infer
+  safety from free text.
 - Country-scoped streaming availability is persisted separately, but
   freshness is still tied to the global content detail lifecycle instead
   of an independent per-country policy.
@@ -36,11 +25,16 @@ their lasting outcome is reflected in architecture or history docs.
 
 - Some frontend coordination modules remain large and still mix loading,
   transformation, and orchestration concerns.
+- Automated axe, keyboard, responsive, and touch-target coverage now
+  protects the critical and legal routes. Less-used application
+  surfaces still need the same coverage as they are changed.
 - `browse_metadata` has a working base model, but its refresh strategy
   is still lighter than the main local detail lifecycle.
 - Deployed before/after measurements still depend on a non-personal
   staging fixture and an agreed observation window. CI numbers are a
-  deterministic engineering floor, not production latency.
+  deterministic engineering floor, not production latency. The Phase 4
+  local release candidate is green but does not close this operational
+  gap.
 
 ## Notes
 

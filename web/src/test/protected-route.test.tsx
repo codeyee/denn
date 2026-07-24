@@ -23,8 +23,6 @@ describe("ProtectedRoute", () => {
     invalidateMock.mockReset();
     useAuthStore.setState({
       user: null,
-      accessToken: null,
-      refreshToken: null,
       isAuthenticated: false,
       isLoading: false,
       error: null,
@@ -71,8 +69,6 @@ describe("ProtectedRoute", () => {
         username: "alice",
         email: "alice@example.com",
       },
-      accessToken: "access-token",
-      refreshToken: "refresh-token",
       isAuthenticated: true,
       sessionResolution: "authenticated",
     });

@@ -1,11 +1,13 @@
-import { useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { useState, useEffect, useMemo } from "react";
+import { useReducedMotion } from "motion/react";
 import { List as ListIcon, Package, Lock, Users } from "lucide-react";
 
 import { Card } from "./Card";
 import { ListType } from "@/lib/types";
 import { ListWithItems, SourceData } from "@/lib/types";
 import { getCardImageUrl } from "@/lib/utils/imageUtils";
+import { useSettings } from "@/hooks/useSettings";
 
 interface ListCardProps {
   list: ListWithItems;
@@ -13,17 +15,15 @@ interface ListCardProps {
 }
 
 export function ListCard({ list, className }: ListCardProps) {
-  const navigate = useNavigate();
+  const shouldReduceMotion = useReducedMotion();
+  const { settings } = useSettings();
   const id = String(list.id);
   const title = list.name;
 
-  // Check if list has items
   const hasItems = list.items && list.items.length > 0;
-
-  // Calculate actual item count from items array
   const actualItemCount = list.items?.length || 0;
   const itemCount = list.item_count || String(actualItemCount);
-  const memberCount = (list.members?.length || 1); // Default to 1 (owner)
+  const memberCount = list.members?.length || 1;
 
   const memberInfo = `${memberCount} ${memberCount === 1 ? "member" : "members"}`;
   const itemInfo = `${itemCount} ${parseInt(itemCount) === 1 ? "item" : "items"}`;
@@ -50,29 +50,34 @@ export function ListCard({ list, className }: ListCardProps) {
     return images;
   }, [hasItems, list.items]);
 
-  // Set up image rotation
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   useEffect(() => {
-    if (backgroundImages.length <= 1) return; // No rotation needed for 0 or 1 image
+    if (
+      backgroundImages.length <= 1 ||
+      shouldReduceMotion ||
+      !settings.animationsEnabled
+    ) {
+      return;
+    }
 
     const interval = setInterval(() => {
       setCurrentImageIndex((prevIndex) =>
         (prevIndex + 1) % backgroundImages.length
       );
-    }, 3000); // Rotate every 3 seconds
+    }, 3000);
 
     return () => clearInterval(interval);
-  }, [backgroundImages.length]);
-
-
-
-  const handleClick = () => {
-    void navigate({ to: `/lists/${id}` });
-  };
+  }, [backgroundImages.length, settings.animationsEnabled, shouldReduceMotion]);
 
   return (
-    <div onClick={handleClick} className="cursor-pointer">
+    <Link
+      to="/lists/$id"
+      params={{ id }}
+      preload="intent"
+      aria-label={`Open list ${title}`}
+      className="block rounded-2xl outline-none focus-visible:ring-4 focus-visible:ring-white/80"
+    >
       <Card
         id={id}
         title={title}
@@ -95,6 +100,6 @@ export function ListCard({ list, className }: ListCardProps) {
           </div>
         </Card.Footer>
       </Card>
-    </div>
+    </Link>
   );
 }

@@ -1,6 +1,7 @@
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
-import { clearAuthCookies, syncAuthCookies } from "@/lib/auth/session-client";
+import { createJSONStorage, persist } from "zustand/middleware";
+
+import { authMutation } from "@/lib/auth/client";
 
 export interface User {
   id: number;
@@ -8,12 +9,11 @@ export interface User {
   email: string;
   first_name?: string;
   last_name?: string;
+  allow_adult_content?: boolean;
 }
 
 interface AuthState {
   user: User | null;
-  accessToken: string | null;
-  refreshToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
@@ -31,17 +31,12 @@ interface AuthActions {
   register: (
     username: string,
     email: string,
-    password: string
+    password: string,
   ) => Promise<void>;
   logout: () => Promise<void>;
+  logoutEverywhere: () => Promise<void>;
   setUser: (user: User | null) => void;
-  setSession: (session: {
-    user: User | null;
-    accessToken: string | null;
-    refreshToken: string | null;
-  }) => void;
-  setAccessToken: (accessToken: string | null) => void;
-  setRefreshToken: (refreshToken: string | null) => void;
+  setSession: (session: { user: User | null }) => void;
   clearSession: () => void;
   clearError: () => void;
   setSessionResolution: (
@@ -53,15 +48,11 @@ export type AuthStore = AuthState & AuthActions;
 
 const initialState: AuthState = {
   user: null,
-  accessToken: null,
-  refreshToken: null,
   isAuthenticated: false,
   isLoading: false,
   error: null,
   sessionResolution: "pending",
 };
-
-import { getApiUrl } from "@/lib/env";
 
 export const useAuthStore = create<AuthStore>()(
   persist(
@@ -69,185 +60,68 @@ export const useAuthStore = create<AuthStore>()(
       ...initialState,
       isLoading: true,
 
-      login: async (email: string, password: string) => {
+      login: async (email, password) => {
         set({ isLoading: true, error: null });
         try {
-          const apiUrl = getApiUrl();
-          const response = await fetch(`${apiUrl}/auth/login/`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ email, password }),
-            signal: AbortSignal.timeout(5_000),
-          });
-
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.detail || errorData.message || "Login failed");
-          }
-
-          const data = await response.json();
-
-          set({
-            user: data.user,
-            accessToken: data.access,
-            refreshToken: data.refresh,
-            isAuthenticated: true,
-            isLoading: false,
-            error: null,
-            sessionResolution: "authenticated",
-          });
-          syncAuthCookies({
-            accessToken: data.access,
-            refreshToken: data.refresh,
-          });
+          const { user } = await authMutation<{ user: User }>(
+            "/api/auth/login",
+            { email, password },
+          );
+          setAuthenticatedUser(set, user);
         } catch (error) {
-          set({
-            error:
-              error instanceof Error
-                ? error.message
-                : "An error occurred during login",
-            isLoading: false,
-          });
+          setAuthError(set, error, "An error occurred during login");
           throw error;
         }
       },
 
-      register: async (username: string, email: string, password: string) => {
+      register: async (username, email, password) => {
         set({ isLoading: true, error: null });
         try {
-          const apiUrl = getApiUrl();
-          const response = await fetch(`${apiUrl}/auth/register/`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
+          const { user } = await authMutation<{ user: User }>(
+            "/api/auth/register",
+            {
               username,
               email,
               password,
               password_confirm: password,
-            }),
-            signal: AbortSignal.timeout(5_000),
-          });
-
-          if (!response.ok) {
-            const errorData = await response.json();
-
-            const errorMessage =
-              errorData.detail ||
-              errorData.message ||
-              Object.values(errorData).flat().join(" ");
-
-            throw new Error(errorMessage);
-          }
-
-          const data = await response.json();
-
-          set({
-            user: data.user,
-            accessToken: data.access,
-            refreshToken: data.refresh,
-            isAuthenticated: true,
-            isLoading: false,
-            error: null,
-            sessionResolution: "authenticated",
-          });
-          syncAuthCookies({
-            accessToken: data.access,
-            refreshToken: data.refresh,
-          });
+            },
+          );
+          setAuthenticatedUser(set, user);
         } catch (error) {
-          set({
-            error:
-              error instanceof Error
-                ? error.message
-                : "An error occurred during registration",
-            isLoading: false,
-          });
+          setAuthError(set, error, "An error occurred during registration");
           throw error;
         }
       },
 
       logout: async () => {
-        try {
-          const state = useAuthStore.getState();
-          const apiUrl = getApiUrl();
-          if (state.accessToken) {
-            // Call the logout endpoint to invalidate the token
-            await fetch(`${apiUrl}/auth/logout/`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${state.accessToken}`,
-              },
-              body: JSON.stringify({
-                refresh: state.refreshToken,
-              }),
-            });
-          }
-        } catch (error) {
-          console.error("Logout error:", error);
-        } finally {
-          clearAuthCookies();
-          set({
-            ...initialState,
-            isLoading: false,
-            sessionResolution: "anonymous",
-          });
-        }
+        await authMutation("/api/auth/logout");
+        setAnonymous(set);
       },
 
-      setUser: (user: User | null) => {
+      logoutEverywhere: async () => {
+        await authMutation("/api/auth/logout-all");
+        setAnonymous(set);
+      },
+
+      setUser: (user) => {
         set({
           user,
-          isAuthenticated: !!user,
+          isAuthenticated: Boolean(user),
         });
       },
 
-      setSession: ({ user, accessToken, refreshToken }) => {
-        if (accessToken || refreshToken) {
-          syncAuthCookies({ accessToken, refreshToken });
-        } else {
-          clearAuthCookies();
-        }
-
+      setSession: ({ user }) => {
         set({
           user,
-          accessToken,
-          refreshToken,
-          isAuthenticated: Boolean(user && accessToken),
+          isAuthenticated: Boolean(user),
           isLoading: false,
           error: null,
-          sessionResolution:
-            user && accessToken ? "authenticated" : "anonymous",
+          sessionResolution: user ? "authenticated" : "anonymous",
         });
-      },
-
-      setAccessToken: (accessToken: string | null) => {
-        syncAuthCookies({
-          accessToken,
-          refreshToken: useAuthStore.getState().refreshToken,
-        });
-        set({ accessToken });
-      },
-
-      setRefreshToken: (refreshToken: string | null) => {
-        syncAuthCookies({
-          accessToken: useAuthStore.getState().accessToken,
-          refreshToken,
-        });
-        set({ refreshToken });
       },
 
       clearSession: () => {
-        clearAuthCookies();
-        set({
-          ...initialState,
-          isLoading: false,
-          sessionResolution: "anonymous",
-        });
+        setAnonymous(set);
       },
 
       clearError: () => {
@@ -264,11 +138,6 @@ export const useAuthStore = create<AuthStore>()(
     {
       name: "auth-storage",
       storage: createJSONStorage(() => localStorage),
-      // Phase 1 of .docs/adr/0002-web-auth-cookies.md: stop persisting JWTs
-      // to localStorage. The tokens still live in (non-HttpOnly) cookies and
-      // are re-hydrated server-side via resolveSession() + AuthSessionBootstrap
-      // on every navigation, so removing them from localStorage does not
-      // break SSR-protected routes.
       partialize: (state) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,
@@ -279,16 +148,51 @@ export const useAuthStore = create<AuthStore>()(
             console.error("Error rehydrating auth store:", error);
           }
           setTimeout(() => {
-            useAuthStore.setState((state) => ({
+            useAuthStore.setState((current) => ({
               isLoading: false,
               sessionResolution:
-                state.sessionResolution === "pending"
+                current.sessionResolution === "pending"
                   ? "anonymous"
-                  : state.sessionResolution,
+                  : current.sessionResolution,
             }));
           }, 0);
         };
       },
-    }
-  )
+    },
+  ),
 );
+
+type StoreSetter = (
+  partial:
+    | Partial<AuthStore>
+    | ((state: AuthStore) => Partial<AuthStore>),
+) => void;
+
+function setAuthenticatedUser(set: StoreSetter, user: User) {
+  set({
+    user,
+    isAuthenticated: true,
+    isLoading: false,
+    error: null,
+    sessionResolution: "authenticated",
+  });
+}
+
+function setAnonymous(set: StoreSetter) {
+  set({
+    ...initialState,
+    isLoading: false,
+    sessionResolution: "anonymous",
+  });
+}
+
+function setAuthError(
+  set: StoreSetter,
+  error: unknown,
+  fallback: string,
+) {
+  set({
+    error: error instanceof Error ? error.message : fallback,
+    isLoading: false,
+  });
+}

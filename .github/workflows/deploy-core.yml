@@ -51,6 +51,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -81,6 +83,40 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Wait for matching web release
+        if: success() && env.DEPLOY_WEBHOOK != ''
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+          DEPLOY_WEBHOOK: ${{ secrets.CORE_DEPLOY_WEBHOOK }}
+          WEB_PUBLIC_URL: ${{ vars.WEB_PUBLIC_URL || 'https://denn.codeyee.dev' }}
+        run: |
+          if git diff --quiet "$BEFORE_SHA" "$GITHUB_SHA" -- web/; then
+            echo "No web changes in this push; core can deploy independently."
+            exit 0
+          fi
+
+          version_url="${WEB_PUBLIC_URL%/}/api/version"
+          for attempt in $(seq 1 90); do
+            deployed_payload="$(
+              curl --fail --silent --show-error \
+                --max-time 5 \
+                "$version_url" 2>/dev/null || true
+            )"
+            deployed_sha="$(
+              printf '%s' "$deployed_payload" |
+                sed -n 's/.*"sha":"\\([0-9a-f]\\{40\\}\\)".*/\\1/p'
+            )"
+            if [ "$deployed_sha" = "$GITHUB_SHA" ]; then
+              echo "Web release $GITHUB_SHA is live; core deployment may continue."
+              exit 0
+            fi
+            echo "Waiting for web release $GITHUB_SHA (attempt $attempt/90)."
+            sleep 10
+          done
+
+          echo "Timed out waiting for web release $GITHUB_SHA at $version_url."
+          exit 1
 
       - name: Deploy via webhook
         if: success() && env.DEPLOY_WEBHOOK != ''

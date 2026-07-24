@@ -26,10 +26,7 @@ export function getRouter() {
       queryClient,
       session: {
         user: null,
-        accessToken: null,
-        refreshToken: null,
         isAuthenticated: false,
-        needsCookieSync: false,
         resolution: "anonymous",
       },
       country: null,

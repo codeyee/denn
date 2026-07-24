@@ -15,7 +15,10 @@ today.
 
 ## Canonical Request Paths
 
-- Browser -> `web` -> `core` for authenticated domain data.
+- Browser -> `web` BFF (`/api/core/*`) -> `core` for authenticated
+  domain data.
+- Browser -> fixed `web` BFF auth routes (`/api/auth/*`) -> `core` for
+  login, registration, refresh and logout.
 - Browser -> `web` BFF (`/api/proxy/*`) -> `proxy` for public metadata.
 - `web` route loaders and server-side fetch helpers -> `proxy` for
   server-side metadata reads.
@@ -69,6 +72,9 @@ The hybrid topology is deliberate and documented in
 - Public BFF inputs fail closed: proxy splats are confined to the configured
   proxy base path, and Web Vitals ingestion bounds request size, accepted
   fields, and per-instance log volume.
+- `GET /api/version` exposes only the full web `BUILD_SHA` with
+  `Cache-Control: no-store`. Cross-service deploys use it to prove the
+  compatible BFF is live before the core auth cutover.
 - The production-build Playwright harness uses non-personal deterministic
   fixtures. Desktop smoke is a PR gate; mobile smoke, known-regression
   characterization and cold/warm baselines are repeatable root commands.
@@ -79,15 +85,34 @@ The hybrid topology is deliberate and documented in
   in desktop and mobile production-build smoke, including the former
   session-loss, logout-loop, hover-write, delayed-detail, and React 418
   regressions.
+- Hero, card, episode, and detail artwork use semantic responsive images.
+  Only the active hero image is mounted with high fetch priority;
+  non-critical card media is lazy and dimensions are reserved.
+- The featured carousel exposes pause/resume, interaction pause,
+  reduced-motion behavior, one roving tab stop among its selectors, and
+  stable aspect-ratio geometry. Content carousels use native horizontal
+  scroll and snap so touch and keyboard focus preserve browser
+  behavior.
+- Route transitions focus the new main landmark, critical and legal
+  routes expose one coherent H1, and the production-build browser suite
+  runs axe plus keyboard, touch-target, reduced-motion, legal-route, and
+  320–1440px reflow checks.
+- Mobile navigation includes an expandable named search form. About,
+  Privacy, Terms, and Contact are real routes with metadata/canonical
+  links, and unknown routes render the application 404.
 - Decision recorded in [ADR 0003](../adr/0003-migrate-web-from-nextjs-to-tanstack-start.md).
 
 See [`data-fetching.md`](./data-fetching.md).
 
 ## Current Auth State
 
-- ADR 0002 is only in phase 1.
-- JWTs are no longer persisted to `localStorage`.
-- Tokens still exist in JS-readable cookies and in-memory Zustand state.
+- ADR 0002 phases 1–3 are implemented.
+- JWTs exist only in server-readable `HttpOnly` cookies and outbound
+  server-to-core Authorization headers.
+- Zustand/localStorage persist only non-sensitive identity/UI state.
+- Browser mutations use same-origin BFF routes with double-submit CSRF;
+  refresh rotation is coalesced and logout-all blacklists every
+  outstanding refresh credential.
 - The TanStack Start root route (`web/src/routes/__root.tsx`) resolves
   the session server-side via `getSessionFn` and mounts a global
   `AuthSessionBootstrap`.
@@ -98,6 +123,9 @@ See [`data-fetching.md`](./data-fetching.md).
 - Protected routes redirect only for confirmed anonymous/expired
   sessions. Operational failures preserve known credentials, render a
   recoverable fallback, and never masquerade as logout.
+- Content-detail client reads have one bounded attempt; timeout or
+  upstream failure renders an explicit retry instead of leaving an
+  unbounded skeleton or discarding the session.
 
 See [`auth-session-bootstrap.md`](./auth-session-bootstrap.md).
 
@@ -122,6 +150,9 @@ See [`auth-session-bootstrap.md`](./auth-session-bootstrap.md).
 See [`content-lifecycle.md`](./content-lifecycle.md).
 Discovery filtering is defined in
 [`content-eligibility.md`](./content-eligibility.md).
+Automatic discovery always applies the safe policy. Authenticated users
+may opt into reliably classified adult results only for deliberate
+direct search; both provider and aggregate caches isolate that policy.
 
 ## Canonical Supporting Docs
 

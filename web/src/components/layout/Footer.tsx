@@ -1,5 +1,6 @@
 
 import { motion, useReducedMotion } from "motion/react";
+import { Link } from "@tanstack/react-router";
 import { Separator } from "@/components/common/ui/Separator";
 
 const fadeInUp = {
@@ -23,20 +24,20 @@ export function Footer() {
       <Separator className="bg-white/10 mb-8" />
       <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-gray-400">
         <p>&copy; 2026 Denn. All rights reserved.</p>
-        <div className="flex gap-6">
-          <a href="#" className="hover:text-white transition-colors">
+        <nav aria-label="Legal and project information" className="flex flex-wrap justify-center gap-x-6 gap-y-2">
+          <Link to="/about" className="inline-flex min-h-11 items-center hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
             About
-          </a>
-          <a href="#" className="hover:text-white transition-colors">
+          </Link>
+          <Link to="/privacy" className="inline-flex min-h-11 items-center hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
             Privacy
-          </a>
-          <a href="#" className="hover:text-white transition-colors">
+          </Link>
+          <Link to="/terms" className="inline-flex min-h-11 items-center hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
             Terms
-          </a>
-          <a href="#" className="hover:text-white transition-colors">
+          </Link>
+          <Link to="/contact" className="inline-flex min-h-11 items-center hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
             Contact
-          </a>
-        </div>
+          </Link>
+        </nav>
       </div>
     </motion.footer>
   );

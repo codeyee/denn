@@ -16,7 +16,6 @@ export function ProtectedRoute({
   children,
 }: ProtectedRouteProps) {
   const { isAuthenticated, isLoading, sessionResolution } = useAuth();
-  const accessToken = useAuthStore((state) => state.accessToken);
   const navigate = useNavigate();
   const router = useRouter();
   const location = useLocation({
@@ -26,18 +25,12 @@ export function ProtectedRoute({
   const bootWarnedRef = useRef(false);
   const redirectStartedRef = useRef(false);
 
-  // Hydration window: zustand-persist restored `isAuthenticated: true` from
-  // localStorage, but <AuthSessionBootstrap /> in the root layout hasn't yet
-  // copied the auth cookies into the store. Without this guard the protected
-  // children would mount, fire authed fetches with no Authorization header,
-  // get 401s, fail the refresh path with "No refresh token available", and
-  // bounce the user back to /login on every hard refresh.
+  // Hydration window: Zustand restored the last non-sensitive user snapshot,
+  // but the server has not yet confirmed the HttpOnly-cookie session.
   const isBootingSession =
     isAuthenticated &&
-    !accessToken &&
     sessionResolution === "pending";
   const isDegradedSession =
-    !accessToken &&
     (sessionResolution === "unavailable" ||
       sessionResolution === "timeout");
 

@@ -1,5 +1,4 @@
 import { useSettingsStore } from "@/stores/settings-store";
-import Cookies from "js-cookie";
 
 export const DEFAULT_COUNTRY = "CO";
 export const CLOUDFLARE_TRACE_URL = "https://www.cloudflare.com/cdn-cgi/trace";
@@ -12,7 +11,7 @@ export function getUserCountryCode(): string {
                 return state.countryCode;
             }
 
-            const cookieCountry = Cookies.get("user-country");
+            const cookieCountry = readBrowserCookie("user-country");
             if (cookieCountry && cookieCountry !== "XX") {
                 return cookieCountry.toUpperCase();
             }
@@ -45,9 +44,19 @@ export async function detectCountryFromCloudflare(): Promise<string> {
 }
 
 export function getCountryFromCookie(): string | null {
-    const cookieCountry = Cookies.get("user-country");
+    const cookieCountry = readBrowserCookie("user-country");
     if (cookieCountry && cookieCountry !== "XX") {
         return cookieCountry;
     }
     return null;
+}
+
+function readBrowserCookie(name: string): string | null {
+    if (typeof document === "undefined") return null;
+    const prefix = `${encodeURIComponent(name)}=`;
+    const match = document.cookie
+        .split(";")
+        .map((part) => part.trim())
+        .find((part) => part.startsWith(prefix));
+    return match ? decodeURIComponent(match.slice(prefix.length)) : null;
 }

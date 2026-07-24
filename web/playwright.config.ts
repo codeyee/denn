@@ -3,6 +3,7 @@ import { defineConfig, devices } from "@playwright/test";
 const fixtureCoreUrl = "http://127.0.0.1:18000";
 const fixtureProxyUrl = "http://127.0.0.1:18080";
 const appUrl = "http://127.0.0.1:4173";
+const fixtureBuildSha = "f".repeat(40);
 
 export default defineConfig({
   testDir: "./e2e",
@@ -35,7 +36,9 @@ export default defineConfig({
       command:
         `API_URL=${fixtureCoreUrl}/api ` +
         `PROXY_API_URL=${fixtureProxyUrl}/v1/proxy ` +
-        "PROXY_API_KEY=fixture-key HOST=127.0.0.1 PORT=4173 " +
+        "PROXY_API_KEY=fixture-key AUTH_COOKIE_SECURE=false " +
+        `BUILD_SHA=${fixtureBuildSha} ` +
+        "HOST=127.0.0.1 PORT=4173 " +
         "node .output/server/index.mjs",
       url: appUrl,
       reuseExistingServer: !process.env.CI,
@@ -56,6 +59,11 @@ export default defineConfig({
     {
       name: "known-regressions",
       testMatch: /known-regressions\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"] },
+    },
+    {
+      name: "accessibility-responsive",
+      testMatch: /accessibility-responsive\.spec\.ts/,
       use: { ...devices["Desktop Chrome"] },
     },
     {

@@ -4,22 +4,23 @@ This file summarizes the work that is still open, partially implemented, or next
 
 ## Priority Order
 
-1. Merge and preserve the completed Phase 1 gate from roadmap epic
-   [#35](https://github.com/codeyee/denn/issues/35): auth/hydration,
-   side-effect-free navigation, local-first detail, provider budgets,
-   aggregate cache hardening, and accessibility base.
-2. Complete the remaining accessibility, content eligibility, and
-   domain-normalization
-   work (#32/#33 and the active Sprint 10 follow-ups) before product
-   work expands the same critical routes.
-3. Execute the Phase 2 architecture/dependency work from #35.
+1. Preserve the completed Phase 1 and Phase 2 gates from roadmap epic
+   [#35](https://github.com/codeyee/denn/issues/35): critical-path
+   stabilization plus semantic media, accessibility, responsive UX,
+   controlled hero behavior, and real legal/support routes.
+2. Preserve the completed safe-default content preference and
+   policy-scoped cache boundary from #32.
+3. Preserve the completed Phase 3 BFF/HttpOnly auth boundary and the
+   completed local Phase 4 release-candidate gate, then execute the
+   staging/deployed smoke and observation window.
 4. Resume the product sprint line only after the roadmap release gates
    that protect the same critical routes are met.
 
 ## Post-Audit Remediation Roadmap
 
-- Status: Phase 0 and Phase 1 implementation complete; later epic phases
-  remain open.
+- Status: Phases 0–3, the #32 safety dependency, and the local Phase 4
+  release-candidate gate are complete. Staging/deployed validation and
+  its observation window remain open.
 - Epic: [#35](https://github.com/codeyee/denn/issues/35).
 - Phase 0 evidence:
   [`../perf/baseline.md`](../perf/baseline.md),
@@ -43,7 +44,35 @@ tests. Its durable outcomes are:
 - the critical path has immediate feedback and an accessibility base.
 
 The epic itself remains open because its Definition of Done also covers
-Phases 2–4.
+Phases 3–4.
+
+Phase 2 added a shared semantic responsive-media path, requests only the
+active hero artwork, lazily loads card media, and reserves stable image
+dimensions. The featured carousel now has pause/resume, interaction
+pause, reduced-motion behavior, stable geometry, and roving tab stops.
+The critical routes have one main landmark and one H1, route-change
+focus, semantic navigation, named controls, contrast fixes, and 44px
+primary targets. Mobile search, native horizontal carousel scrolling,
+the 320–1440px reflow matrix, legal/support routes, canonical metadata,
+hard-refresh behavior, and coherent 404 handling are covered by the
+production-build Playwright suite. Exact Web Vitals and media-request
+evidence live in [`../perf/baseline.md`](../perf/baseline.md).
+
+The #32 dependency now has a persisted safe-by-default profile
+preference. Automatic discovery cannot be opted out of safety filtering;
+only deliberate direct search can include reliably classified TMDB
+results. The selected policy is carried into both provider and aggregate
+cache keys, while unclassified providers are documented and never
+inferred from free text.
+
+Phase 4 local evidence is recorded in
+[`../perf/baseline.md`](../perf/baseline.md): all three root validation
+commands, 16 desktop/mobile smoke scenarios, 10 applicable regression
+scenarios, 25 accessibility/responsive scenarios, and the 60-sample
+cold/warm baseline pass. The fixture smoke proves exact
+`MISS`/`HIT`/`STALE` propagation. This evidence must still be repeated
+against the deployed validated SHA with a non-personal account; local
+fixtures are not staging evidence.
 
 ## Old TODO Triage
 
@@ -131,7 +160,7 @@ Detailed sprint plans:
 
 ## Performance Baseline And Perceived Speed
 
-- Status: Phase 1 local after-snapshot recorded; deployed
+- Status: Phase 4 local release-candidate snapshot recorded; deployed
   after-measurement remains a release-gate activity.
 
 Implemented baseline:
@@ -202,13 +231,9 @@ Work to land:
 
 ## Further Auth Hardening
 
-Independent of the bootstrap work, ADR 0002 phases 2 and 3 are still
-open:
-
-- Move to `HttpOnly` auth cookies.
-- Add a BFF-mediated auth flow in `web`.
-- Remove JS-managed auth cookies and in-memory token plumbing from
-  normal client code.
+ADR 0002 phases 2 and 3 are complete. Preserve `HttpOnly` BFF auth,
+CSRF enforcement, refresh rotation, logout-all, and the no-JWT-in-browser
+regression gates.
 
 Reference:
 [`../adr/0002-web-auth-cookies.md`](../adr/0002-web-auth-cookies.md)

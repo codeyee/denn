@@ -11,6 +11,7 @@ export default tseslint.config(
       ".tanstack/**",
       ".nitro/**",
       "dist/**",
+      "test-results/**",
       "src/routeTree.gen.ts",
     ],
   },

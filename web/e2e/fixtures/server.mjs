@@ -13,6 +13,7 @@ const user = {
   email: "phase0@example.test",
   first_name: "Phase",
   last_name: "Zero",
+  allow_adult_content: false,
 };
 const now = "2026-07-23T12:00:00Z";
 const movie = {
@@ -21,15 +22,64 @@ const movie = {
   title: "Phase Zero Movie",
   original_title: "Phase Zero Movie",
   description: "Deterministic metadata for browser guardrails.",
-  image_url: null,
+  image_url: `${fixtureOrigin()}/__fixture__/images/poster-1.svg`,
   tagline: null,
   imdb_id: null,
   release_date: "2024-01-01",
   duration_minutes: 120,
   status: "Released",
   authors: [{ name: "Fixture Director", type: "DIRECTOR" }],
-  images: [],
+  images: [
+    {
+      type: "GALLERY",
+      size: "ORIGINAL",
+      image_url: `${fixtureOrigin()}/__fixture__/images/banner-1.svg`,
+    },
+    {
+      type: "POSTER",
+      size: "STANDARD",
+      image_url: `${fixtureOrigin()}/__fixture__/images/poster-1.svg`,
+    },
+  ],
   platforms: null,
+};
+const movieTwo = {
+  ...movie,
+  id: "102",
+  title: "Phase Two Movie",
+  original_title: "Phase Two Movie",
+  image_url: `${fixtureOrigin()}/__fixture__/images/poster-2.svg`,
+  images: [
+    {
+      type: "GALLERY",
+      size: "ORIGINAL",
+      image_url: `${fixtureOrigin()}/__fixture__/images/banner-2.svg`,
+    },
+    {
+      type: "POSTER",
+      size: "STANDARD",
+      image_url: `${fixtureOrigin()}/__fixture__/images/poster-2.svg`,
+    },
+  ],
+};
+const movieThree = {
+  ...movie,
+  id: "103",
+  title: "Phase Three Movie",
+  original_title: "Phase Three Movie",
+  image_url: `${fixtureOrigin()}/__fixture__/images/poster-3.svg`,
+  images: [
+    {
+      type: "GALLERY",
+      size: "ORIGINAL",
+      image_url: `${fixtureOrigin()}/__fixture__/images/banner-3.svg`,
+    },
+    {
+      type: "POSTER",
+      size: "STANDARD",
+      image_url: `${fixtureOrigin()}/__fixture__/images/poster-3.svg`,
+    },
+  ],
 };
 const contentItem = {
   id: 1,
@@ -60,7 +110,11 @@ const emptyProxyCategory = {
   error: "",
 };
 const homepage = {
-  movies: { metadata: proxyMetadata, results: [movie], error: "" },
+  movies: {
+    metadata: { page: 1, total_results: 3, total_pages: 1 },
+    results: [movie, movieTwo, movieThree],
+    error: "",
+  },
   "tv-shows": emptyProxyCategory,
   games: emptyProxyCategory,
   albums: emptyProxyCategory,
@@ -88,6 +142,22 @@ const search = {
   albums: { ...emptyProxyCategory, error: null },
   books: { ...emptyProxyCategory, error: null },
 };
+const adultSearch = {
+  ...search,
+  movies: {
+    metadata: { page: 1, total_results: 2, total_pages: 1 },
+    results: [
+      ...search.movies.results,
+      {
+        ...search.movies.results[0],
+        id: "199",
+        title: "Explicit Opt-In Result",
+        original_title: "Explicit Opt-In Result",
+      },
+    ],
+    error: null,
+  },
+};
 const pagination = {
   count: 0,
   page_size: 20,
@@ -111,6 +181,7 @@ function corsHeaders(requestId) {
     "Access-Control-Allow-Credentials": "true",
     "Access-Control-Allow-Headers":
       "authorization,content-type,x-request-id,x-user-country",
+    "Access-Control-Allow-Methods": "GET,POST,PUT,PATCH,DELETE,OPTIONS",
     "Access-Control-Expose-Headers": "x-request-id,x-cache,server-timing",
     "Content-Type": "application/json",
     "X-Request-Id": requestId,
@@ -122,6 +193,21 @@ function json(response, status, body, headers = {}) {
   response.writeHead(status, {
     "Content-Length": Buffer.byteLength(payload),
     ...headers,
+  });
+  response.end(payload);
+}
+
+function fixtureOrigin() {
+  return `http://127.0.0.1:${corePort}`;
+}
+
+function svg(response, name) {
+  const hue = [...name].reduce((sum, character) => sum + character.charCodeAt(0), 0) % 360;
+  const payload = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="1200" viewBox="0 0 800 1200"><rect width="800" height="1200" fill="hsl(${hue} 45% 24%)"/><circle cx="400" cy="440" r="220" fill="hsl(${hue} 60% 45%)"/><text x="400" y="900" text-anchor="middle" fill="white" font-size="64" font-family="sans-serif">${name}</text></svg>`;
+  response.writeHead(200, {
+    "Cache-Control": "public, max-age=3600",
+    "Content-Length": Buffer.byteLength(payload),
+    "Content-Type": "image/svg+xml",
   });
   response.end(payload);
 }
@@ -156,6 +242,7 @@ const core = createServer(async (request, response) => {
     state.cacheStatus = "MISS";
     state.detailDelayMs = 0;
     state.detailStatus = 200;
+    user.allow_adult_content = false;
     return json(response, 200, { ok: true }, corsHeaders(requestId));
   }
   if (url.pathname === "/__fixture__/scenario" && request.method === "POST") {
@@ -164,6 +251,9 @@ const core = createServer(async (request, response) => {
   }
   if (url.pathname === "/__fixture__/requests") {
     return json(response, 200, state.requests, corsHeaders(requestId));
+  }
+  if (url.pathname.startsWith("/__fixture__/images/")) {
+    return svg(response, url.pathname.split("/").at(-1) ?? "fixture");
   }
 
   record("core", request, url, requestId);
@@ -207,6 +297,10 @@ const core = createServer(async (request, response) => {
     if (authorization === "Bearer expired-access") {
       return json(response, 401, { detail: "expired" }, headers);
     }
+    if (request.method === "PATCH") {
+      const body = await readJson(request);
+      user.allow_adult_content = body.allow_adult_content === true;
+    }
     return json(response, 200, user, headers);
   }
   if (url.pathname === "/api/auth/token/refresh/") {
@@ -217,7 +311,10 @@ const core = createServer(async (request, response) => {
       headers,
     );
   }
-  if (url.pathname === "/api/auth/logout/") {
+  if (
+    url.pathname === "/api/auth/logout/" ||
+    url.pathname === "/api/auth/logout-all/"
+  ) {
     return json(response, 200, { detail: "ok" }, headers);
   }
   if (url.pathname === "/api/content/lists/") {
@@ -310,7 +407,12 @@ const proxy = createServer((request, response) => {
     return json(response, 200, homepage, { ...headers, "X-Cache": current });
   }
   if (url.pathname === "/v1/proxy/search") {
-    return json(response, 200, search, { ...headers, "X-Cache": "BYPASS" });
+    const allowAdult = url.searchParams.get("adult") === "include";
+    return json(response, 200, allowAdult ? adultSearch : search, {
+      ...headers,
+      "X-Cache": "BYPASS",
+      "X-Content-Policy": allowAdult ? "adult-include" : "adult-exclude",
+    });
   }
   return json(response, 404, { error: "fixture route not found" }, headers);
 });

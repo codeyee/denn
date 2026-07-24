@@ -58,7 +58,7 @@ export function ListContentRenderer({
       <div className="flex flex-col items-center justify-center py-16 text-center bg-white/5 rounded-2xl">
         <Package className="w-16 h-16 text-gray-400 opacity-50 mb-4" />
         <p className="text-gray-400 text-lg">This list is empty</p>
-        <p className="text-gray-500 text-sm">Add items to get started</p>
+        <p className="text-gray-400 text-sm">Add items to get started</p>
       </div>
     );
   }

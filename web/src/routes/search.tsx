@@ -33,6 +33,8 @@ export const Route = createFileRoute("/search")({
             query: deps.q,
             limit: SEARCH_RESULT_LIMIT,
             country: context.country,
+            allowAdult:
+              context.session.user?.allow_adult_content ?? false,
           }),
         ),
     };

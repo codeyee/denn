@@ -3,18 +3,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/lib/api/api";
 import { useAuthStore } from "@/stores/auth-store";
 
-vi.mock("@/lib/env", () => ({
-  getApiUrl: () => "https://core.test/api",
-}));
-
 const jsonHeaders = { "Content-Type": "application/json" };
-const unauthorized = () =>
-  new Response(JSON.stringify({ detail: "expired" }), {
-    status: 401,
-    headers: jsonHeaders,
-  });
 
-describe("API session resilience", () => {
+describe("BFF API session behavior", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     useAuthStore.setState({
@@ -23,8 +14,6 @@ describe("API session resilience", () => {
         username: "alice",
         email: "alice@example.com",
       },
-      accessToken: "expired-access",
-      refreshToken: "valid-refresh",
       isAuthenticated: true,
       isLoading: false,
       error: null,
@@ -32,134 +21,66 @@ describe("API session resilience", () => {
     });
   });
 
-  it.each([429, 500])(
-    "keeps the known session when token refresh returns %s",
-    async (refreshStatus) => {
-      vi.stubGlobal(
-        "fetch",
-        vi
-          .fn<typeof fetch>()
-          .mockResolvedValueOnce(unauthorized())
-          .mockResolvedValueOnce(
-            new Response(JSON.stringify({ detail: "temporary outage" }), {
-              status: refreshStatus,
-              headers: jsonHeaders,
-            }),
-          ),
-      );
-
-      await expect(api.get("/content/1/", true)).rejects.toThrow(
-        "Token refresh failed",
-      );
-      expectKnownSession("unavailable");
-    },
-  );
-
-  it("keeps the known session when the backend is unreachable", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi
-        .fn<typeof fetch>()
-        .mockResolvedValueOnce(unauthorized())
-        .mockRejectedValueOnce(new TypeError("Failed to fetch")),
+  it("sends authenticated reads only to the same-origin core BFF", async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(JSON.stringify({ id: 1 }), {
+        status: 200,
+        headers: jsonHeaders,
+      }),
     );
+    vi.stubGlobal("fetch", fetchMock);
 
-    await expect(api.get("/content/1/", true)).rejects.toThrow();
-    expectKnownSession("unavailable");
+    await expect(api.get("/content/1/", true)).resolves.toEqual({ id: 1 });
+
+    const [url, init] = fetchMock.mock.calls[0] ?? [];
+    expect(url).toBe("/api/core/content/1/");
+    expect(new Headers(init?.headers).has("Authorization")).toBe(false);
   });
 
-  it("keeps the known session in a recoverable timeout state", async () => {
+  it("preserves the known user on an operational BFF failure", async () => {
     vi.stubGlobal(
       "fetch",
-      vi
-        .fn<typeof fetch>()
-        .mockResolvedValueOnce(unauthorized())
-        .mockRejectedValueOnce(new DOMException("timed out", "TimeoutError")),
+      vi.fn<typeof fetch>().mockResolvedValue(
+        new Response(JSON.stringify({ detail: "temporary outage" }), {
+          status: 502,
+          headers: jsonHeaders,
+        }),
+      ),
     );
 
-    await expect(api.get("/content/1/", true)).rejects.toThrow();
-    expectKnownSession("timeout");
+    await expect(api.get("/content/1/", true)).rejects.toThrow(
+      "temporary outage",
+    );
+    expect(useAuthStore.getState().isAuthenticated).toBe(true);
+    expect(useAuthStore.getState().user?.username).toBe("alice");
   });
 
-  it("clears an explicitly rejected refresh credential", async () => {
+  it("clears client identity only after the BFF confirms expiry", async () => {
     vi.stubGlobal(
       "fetch",
-      vi
-        .fn<typeof fetch>()
-        .mockResolvedValueOnce(unauthorized())
-        .mockResolvedValueOnce(unauthorized()),
+      vi.fn<typeof fetch>().mockResolvedValue(
+        new Response(JSON.stringify({ detail: "Session expired." }), {
+          status: 401,
+          headers: jsonHeaders,
+        }),
+      ),
     );
 
     await expect(api.get("/content/1/", true)).rejects.toThrow(
       "Session expired",
     );
-    const state = useAuthStore.getState();
-    expect(state.isAuthenticated).toBe(false);
-    expect(state.accessToken).toBeNull();
-    expect(state.refreshToken).toBeNull();
-    expect(state.sessionResolution).toBe("expired");
+    expect(useAuthStore.getState().isAuthenticated).toBe(false);
+    expect(useAuthStore.getState().sessionResolution).toBe("expired");
   });
 
-  it("deduplicates concurrent refreshes and recovers both requests", async () => {
-    let refreshCalls = 0;
-    const fetchMock = vi.fn<typeof fetch>(async (input, init) => {
-      const url = String(input);
-      if (url.endsWith("/auth/token/refresh/")) {
-        refreshCalls += 1;
-        await Promise.resolve();
-        return new Response(
-          JSON.stringify({
-            access: "fresh-access",
-            refresh: "fresh-refresh",
-          }),
-          { status: 200, headers: jsonHeaders },
-        );
-      }
-      const authorization = new Headers(init?.headers).get("Authorization");
-      if (authorization === "Bearer expired-access") return unauthorized();
-      return new Response(JSON.stringify({ id: 1 }), {
-        status: 200,
-        headers: jsonHeaders,
-      });
-    });
-    vi.stubGlobal("fetch", fetchMock);
-
-    await expect(
-      Promise.all([
-        api.get("/content/1/", true),
-        api.get("/content/2/", true),
-      ]),
-    ).resolves.toEqual([{ id: 1 }, { id: 1 }]);
-
-    expect(refreshCalls).toBe(1);
-    expect(useAuthStore.getState().accessToken).toBe("fresh-access");
-    expect(useAuthStore.getState().sessionResolution).toBe("authenticated");
-  });
-
-  it("recovers after a transient refresh failure", async () => {
+  it("adds a double-submit CSRF header to core mutations", async () => {
     const fetchMock = vi
       .fn<typeof fetch>()
-      .mockResolvedValueOnce(unauthorized())
       .mockResolvedValueOnce(
-        new Response(JSON.stringify({ detail: "temporary outage" }), {
-          status: 500,
+        new Response(JSON.stringify({ csrfToken: "a".repeat(64) }), {
+          status: 200,
           headers: jsonHeaders,
         }),
-      );
-    vi.stubGlobal("fetch", fetchMock);
-    await expect(api.get("/content/1/", true)).rejects.toThrow();
-    expectKnownSession("unavailable");
-
-    fetchMock
-      .mockResolvedValueOnce(unauthorized())
-      .mockResolvedValueOnce(
-        new Response(
-          JSON.stringify({
-            access: "fresh-access",
-            refresh: "fresh-refresh",
-          }),
-          { status: 200, headers: jsonHeaders },
-        ),
       )
       .mockResolvedValueOnce(
         new Response(JSON.stringify({ id: 1 }), {
@@ -167,18 +88,16 @@ describe("API session resilience", () => {
           headers: jsonHeaders,
         }),
       );
+    vi.stubGlobal("fetch", fetchMock);
 
-    await expect(api.get("/content/1/", true)).resolves.toEqual({ id: 1 });
-    expect(useAuthStore.getState().sessionResolution).toBe("authenticated");
+    await api.patch("/auth/user/", { first_name: "Alice" }, true);
+
+    const mutation = fetchMock.mock.calls.find(
+      ([url]) => url === "/api/core/auth/user/",
+    );
+    expect(mutation).toBeDefined();
+    expect(new Headers(mutation?.[1]?.headers).get("X-CSRF-Token")).toBe(
+      "a".repeat(64),
+    );
   });
 });
-
-function expectKnownSession(
-  resolution: "unavailable" | "timeout",
-) {
-  const state = useAuthStore.getState();
-  expect(state.isAuthenticated).toBe(true);
-  expect(state.accessToken).toBe("expired-access");
-  expect(state.refreshToken).toBe("valid-refresh");
-  expect(state.sessionResolution).toBe(resolution);
-}

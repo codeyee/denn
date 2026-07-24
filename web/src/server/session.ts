@@ -1,17 +1,19 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getCookie } from "@tanstack/react-start/server";
 
-import { AUTH_ACCESS_COOKIE, AUTH_REFRESH_COOKIE } from "@/lib/auth/constants";
 import { getApiUrl } from "@/lib/env";
-import type { Profile, TokenRefresh } from "@/lib/types";
+import type { Profile } from "@/lib/types";
+import {
+  clearAuthCookies,
+  getAccessToken,
+  getRefreshToken,
+  refreshAuthCookies,
+} from "@/server/auth-cookies";
 import { getLogicalRequestId } from "@/server/proxy";
 
 export interface SessionSnapshot {
   user: Profile | null;
-  accessToken: string | null;
-  refreshToken: string | null;
   isAuthenticated: boolean;
-  needsCookieSync: boolean;
   resolution:
     | "anonymous"
     | "authenticated"
@@ -22,10 +24,7 @@ export interface SessionSnapshot {
 
 const EMPTY_SESSION: SessionSnapshot = {
   user: null,
-  accessToken: null,
-  refreshToken: null,
   isAuthenticated: false,
-  needsCookieSync: false,
   resolution: "anonymous",
 };
 
@@ -50,83 +49,43 @@ async function fetchUserProfile(
   return (await response.json()) as Profile;
 }
 
-async function refreshTokens(
-  refreshToken: string,
-  requestId: string,
-): Promise<TokenRefresh | null> {
-  const response = await fetch(`${getApiUrl()}/auth/token/refresh/`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Request-Id": requestId,
-    },
-    body: JSON.stringify({ refresh: refreshToken }),
-    cache: "no-store",
-    signal: AbortSignal.timeout(3_000),
-  });
-
-  if (response.status === 401) return null;
-  if (!response.ok) {
-    throw new Error(`Failed to refresh auth token (${response.status})`);
-  }
-  return (await response.json()) as TokenRefresh;
-}
-
 async function resolveSession(): Promise<SessionSnapshot> {
   const requestId = getLogicalRequestId();
-  const accessToken = getCookie(AUTH_ACCESS_COOKIE) ?? null;
-  const refreshToken = getCookie(AUTH_REFRESH_COOKIE) ?? null;
+  const accessToken = getAccessToken();
+  const hasRefreshToken = Boolean(getRefreshToken());
 
-  if (!accessToken && !refreshToken) return EMPTY_SESSION;
+  if (!accessToken && !hasRefreshToken) return EMPTY_SESSION;
 
   if (accessToken) {
     const user = await fetchUserProfile(accessToken, requestId);
     if (user) {
       return {
         user,
-        accessToken,
-        refreshToken,
         isAuthenticated: true,
-        needsCookieSync: false,
         resolution: "authenticated",
       };
     }
   }
 
-  if (!refreshToken) {
-    return {
-      ...EMPTY_SESSION,
-      needsCookieSync: true,
-      resolution: "expired",
-    };
+  if (!hasRefreshToken) {
+    clearAuthCookies();
+    return { ...EMPTY_SESSION, resolution: "expired" };
   }
 
-  const refreshedTokens = await refreshTokens(refreshToken, requestId);
-  if (!refreshedTokens?.access) {
-    return {
-      ...EMPTY_SESSION,
-      needsCookieSync: true,
-      resolution: "expired",
-    };
+  const refreshedAccess = await refreshAuthCookies();
+  if (!refreshedAccess) {
+    return { ...EMPTY_SESSION, resolution: "expired" };
   }
 
-  const user = await fetchUserProfile(refreshedTokens.access, requestId);
+  const user = await fetchUserProfile(refreshedAccess, requestId);
   if (!user) {
-    return {
-      ...EMPTY_SESSION,
-      needsCookieSync: true,
-      resolution: "expired",
-    };
+    clearAuthCookies();
+    return { ...EMPTY_SESSION, resolution: "expired" };
   }
 
   return {
     user,
-    accessToken: refreshedTokens.access,
-    refreshToken: refreshedTokens.refresh ?? refreshToken,
     isAuthenticated: true,
-    needsCookieSync:
-      refreshedTokens.access !== accessToken ||
-      (refreshedTokens.refresh ?? refreshToken) !== refreshToken,
     resolution: "authenticated",
   };
 }
@@ -150,10 +109,10 @@ export const getSessionFn = createServerFn({ method: "GET" }).handler(
         }),
       );
       return session;
-    } catch (err) {
+    } catch (error) {
       const resolution =
-        err instanceof DOMException &&
-        (err.name === "TimeoutError" || err.name === "AbortError")
+        error instanceof DOMException &&
+        (error.name === "TimeoutError" || error.name === "AbortError")
           ? "timeout"
           : "unavailable";
       console.error(
@@ -166,15 +125,11 @@ export const getSessionFn = createServerFn({ method: "GET" }).handler(
           resolution,
           duration_ms:
             Math.round((performance.now() - started) * 100) / 100,
-          error: err instanceof Error ? err.message : String(err),
+          error:
+            error instanceof Error ? error.message : String(error),
         }),
       );
-      return {
-        ...EMPTY_SESSION,
-        accessToken: getCookie(AUTH_ACCESS_COOKIE) ?? null,
-        refreshToken: getCookie(AUTH_REFRESH_COOKIE) ?? null,
-        resolution,
-      };
+      return { ...EMPTY_SESSION, resolution };
     }
   },
 );

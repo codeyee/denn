@@ -1,3 +1,6 @@
+import os
+
+
 REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
     "DEFAULT_PARSER_CLASSES": ["rest_framework.parsers.JSONParser"],
@@ -32,8 +35,13 @@ REST_AUTH = {
     "USE_JWT": True,
     "JWT_AUTH_COOKIE": "auth-token",
     "JWT_AUTH_REFRESH_COOKIE": "refresh-token",
-    "JWT_AUTH_HTTPONLY": False,
+    "JWT_AUTH_HTTPONLY": True,
+    "JWT_AUTH_SECURE": os.getenv("AUTH_COOKIE_SECURE", "True") == "True",
+    "JWT_AUTH_SAMESITE": "Lax",
+    "JWT_AUTH_COOKIE_DOMAIN": os.getenv("AUTH_COOKIE_DOMAIN") or None,
+    "JWT_AUTH_REFRESH_COOKIE_PATH": "/",
     "USER_DETAILS_SERIALIZER": "authentication.serializers.ProfileSerializer",
+    "JWT_SERIALIZER": "authentication.serializers.SessionUserSerializer",
     "LOGIN_SERIALIZER": "authentication.serializers.EmailLoginSerializer",
     "SESSION_LOGIN": False,
 }

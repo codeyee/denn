@@ -1,15 +1,18 @@
 # 0002. Sesión web sobre cookies `HttpOnly`
 
-- Estado: Accepted
+- Estado: Implemented
 - Fecha: 2026-04-18
 
-## Contexto
+## Contexto histórico
 
-Hoy `web` guarda los JWT de usuario en tres lugares simultáneos:
+Antes de esta decisión, `web` guardaba los JWT de usuario en tres
+lugares simultáneos:
 
 1. Estado en memoria (Zustand) — [`web/src/stores/auth-store.ts`](../../web/src/stores/auth-store.ts).
 2. `localStorage`, vía el `partialize` del middleware `persist` de Zustand (claves `accessToken`, `refreshToken`, `user`, `isAuthenticated`).
-3. Cookies escritas con `js-cookie` desde [`web/src/lib/auth/session-client.ts`](../../web/src/lib/auth/session-client.ts). Las cookies **no** son `HttpOnly` (`Cookies.set` no soporta esa flag desde JavaScript).
+3. Cookies escritas con `js-cookie` desde el ya retirado
+   `web/src/lib/auth/session-client.ts`. Las cookies **no** eran
+   `HttpOnly` (`Cookies.set` no soporta esa flag desde JavaScript).
 
 El backend está alineado con esa elección:
 
@@ -26,7 +29,8 @@ REST_AUTH = {
 
 Consecuencia práctica: cualquier XSS en el frontend permite exfiltrar la sesión completa (access + refresh) en una sola línea de JavaScript. Esto rompe la propiedad básica de "los JWT no deben ser legibles por código no confiable".
 
-`resolveSession` ([`web/src/server/session.ts`](../../web/src/server/session.ts)) ya lee los tokens desde cookies en SSR y los re-hidrata vía `AuthSessionBootstrap` ([`web/src/components/routes/AuthSessionBootstrap.tsx`](../../web/src/components/routes/AuthSessionBootstrap.tsx)). El campo `needsCookieSync` de `SessionSnapshot` ya se consume para limpiar cookies + estado cuando el refresh falla, pero la migración a `HttpOnly` sigue pendiente.
+Ese estado se conserva aquí como motivación histórica; la migración
+descrita abajo está completada.
 
 ## Decisión
 
@@ -86,15 +90,37 @@ Migrar la sesión web a **cookies `HttpOnly` / `Secure` / `SameSite=Lax`** emiti
 - CSRF: cookie + header.
 - Eliminar `js-cookie` y `web/src/lib/auth/session-client.ts`.
 
+### Implementación completada
+
+- `web` emite las cookies de sesión; `core` también configura sus
+  respuestas de auth como `HttpOnly` para mantener una frontera segura.
+- Login, registro, refresh, logout y logout-all viven bajo
+  `web/src/routes/api/auth/`.
+- Todas las llamadas autenticadas del navegador pasan por
+  `/api/core/*`; el BFF añade `Authorization` server-side y reintenta una
+  vez tras refresh.
+- Las mutaciones requieren cookie/header CSRF coincidentes, origen
+  same-origin y `Sec-Fetch-Site` no cross-site.
+- Zustand y su persistencia contienen sólo identidad/estado UI. No hay
+  access/refresh ni dependencia `js-cookie`.
+- Refresh rota y blacklistea el token anterior. El BFF agrupa refreshes
+  concurrentes; logout-all blacklistea todos los refresh pendientes.
+- Despliegue y rollback:
+  [`../runbooks/auth-bff-rollout.md`](../runbooks/auth-bff-rollout.md).
+
 ### Operación
 
-- Ningún cambio en infra para fase 1.
-- Fase 2 requiere alinear dominios o tener `web` y `core` detrás del mismo apex (necesario para `SameSite=Lax` con cookies del dominio de `core`). Documentar antes de fase 2.
+- El navegador termina autenticación en el BFF de `web`; por ello las
+  cookies pueden permanecer host-only y `core` no necesita compartir
+  dominio con el browser.
+- Todo entorno HTTPS debe configurar `AUTH_COOKIE_SECURE` en `web` y
+  `core`; sólo el fixture HTTP local lo desactiva.
+- El orden exacto de despliegue y rollback vive en
+  [`../runbooks/auth-bff-rollout.md`](../runbooks/auth-bff-rollout.md).
 
 ### Documentación
 
-- README de `web` referencia este ADR (PR-6D).
-- `docs/contracts/internal-http.md` describe la auth actual y enlaza a este ADR para la dirección futura.
+- README y el contrato HTTP describen la frontera BFF implementada.
 - [`../architecture/auth-session-bootstrap.md`](../architecture/auth-session-bootstrap.md)
   documenta el estado real del bootstrap global y sus gaps todavía
   abiertos.
@@ -127,5 +153,5 @@ Tras la migración de `web` a TanStack Start:
 ## Referencias
 
 - Historia de implementación: [`../history/implementation-history.md`](../history/implementation-history.md).
-- Inventario de lecturas de token: [`web/src/stores/auth-store.ts`](../../web/src/stores/auth-store.ts), [`web/src/lib/auth/session-client.ts`](../../web/src/lib/auth/session-client.ts), [`web/src/lib/api/api.ts`](../../web/src/lib/api/api.ts), [`web/src/server/session.ts`](../../web/src/server/session.ts).
+- Frontera implementada: [`web/src/stores/auth-store.ts`](../../web/src/stores/auth-store.ts), [`web/src/lib/api/api.ts`](../../web/src/lib/api/api.ts), [`web/src/server/auth-cookies.ts`](../../web/src/server/auth-cookies.ts), [`web/src/server/session.ts`](../../web/src/server/session.ts).
 - Configuración backend actual: [`core/core/settings/drf.py`](../../core/core/settings/drf.py).

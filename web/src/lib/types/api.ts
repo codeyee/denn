@@ -30,6 +30,7 @@ export interface Profile {
     ratings?: string;
     lists_count?: number;
     ratings_count?: number;
+  allow_adult_content?: boolean;
 }
 
 export interface TokenRefresh {
@@ -654,6 +655,7 @@ export interface MultiSearchParams {
     q: string;
     types?: string;
     limit?: number;
+    adult?: "exclude" | "include";
 }
 
 export interface MultiSearchResponse {

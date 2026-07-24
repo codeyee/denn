@@ -63,16 +63,16 @@ function ListDetailRoute() {
 
   if (data.invalid) {
     return (
-      <div className="relative w-full min-h-screen bg-background-logged-in">
+      <main id="main-content" tabIndex={-1} className="relative min-h-screen w-full bg-background-logged-in">
         <div className="container mx-auto px-4 mt-8 py-20">
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center">
-              <p className="text-red-400 text-xl mb-4">Invalid list ID</p>
+              <h1 className="text-red-400 text-xl mb-4">Invalid list ID</h1>
               <p className="text-gray-400">Please provide a valid list ID.</p>
             </div>
           </div>
         </div>
-      </div>
+      </main>
     );
   }
 

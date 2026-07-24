@@ -11,16 +11,30 @@ import (
 )
 
 func (c *Client) SearchTVShows(ctx context.Context, query string, page int) (*clients.Response, error) {
+	return c.SearchTVShowsWithAdult(ctx, query, page, false)
+}
+
+func (c *Client) SearchTVShowsWithAdult(
+	ctx context.Context,
+	query string,
+	page int,
+	allowAdult bool,
+) (*clients.Response, error) {
+	includeAdult := strconv.FormatBool(allowAdult)
+	adultPolicy := "exclude"
+	if allowAdult {
+		adultPolicy = "include"
+	}
 	params := url.Values{
 		"query":         {query},
 		"page":          {strconv.Itoa(page)},
-		"include_adult": {"false"},
+		"include_adult": {includeAdult},
 	}
 
 	return c.CachedGet(ctx, "search/tv", "search_tv", params, map[string]string{
 		"query": servicecommon.NormalizeSearchCacheKey(query),
 		"page":  strconv.Itoa(page),
-		"adult": "exclude",
+		"adult": adultPolicy,
 	})
 }
 

@@ -11,8 +11,8 @@ const baseURL = "https://api.themoviedb.org/3"
 
 var cacheConfig = clients.CacheConfig{
 	KeyTemplates: map[string]string{
-		"search_movies":          "tmdb:search:movies:{query}:{page}",
-		"search_tv":              "tmdb:search:tv:{query}:{page}",
+		"search_movies":          "tmdb:search:movies:{query}:{page}:{adult}",
+		"search_tv":              "tmdb:search:tv:{query}:{page}:{adult}",
 		"details":                "tmdb:details:{id}:{append}",
 		"images_season":          "tmdb:img:season:{id}:{season}",
 		"watch_providers_season": "tmdb:wp:season:{id}:{season}",

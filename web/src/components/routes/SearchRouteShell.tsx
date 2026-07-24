@@ -28,6 +28,7 @@ export function SearchRouteShell({
   const hasFocusedRef = useRef(false);
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [debouncedQuery, setDebouncedQuery] = useState(initialQuery);
+  const allowAdult = session.user?.allow_adult_content ?? false;
 
   useEffect(() => {
     setSearchQuery(initialQuery);
@@ -82,6 +83,7 @@ export function SearchRouteShell({
       enabled: session.isAuthenticated,
       initialData:
         debouncedQuery === initialQuery ? initialResults : undefined,
+      allowAdult,
     },
   );
 
@@ -101,6 +103,7 @@ export function SearchRouteShell({
           error={error}
           hasResults={hasResults}
           mobileInputRef={mobileInputRef}
+          allowAdult={allowAdult}
         />
       ) : (
         <div className="flex items-center justify-center min-h-screen bg-background-logged-in">

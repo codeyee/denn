@@ -1,7 +1,7 @@
 
-import { motion, AnimatePresence } from "motion/react";
-import { useRef, useEffect, useState } from "react";
+import { motion } from "motion/react";
 import { Tv } from "lucide-react";
+import { ResponsiveMedia } from "@/components/common/media/ResponsiveMedia";
 import { TVEpisode } from "@/lib/types";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 
@@ -11,18 +11,6 @@ interface EpisodeCardProps {
 }
 
 export function EpisodeCard({ episode, className = "" }: EpisodeCardProps) {
-  const previousImageRef = useRef<string | undefined>(undefined);
-  const [isFirstImage, setIsFirstImage] = useState(true);
-
-  useEffect(() => {
-    if (previousImageRef.current !== episode.image_url) {
-      if (previousImageRef.current !== undefined) {
-        setIsFirstImage(false);
-      }
-      previousImageRef.current = episode.image_url || undefined;
-    }
-  }, [episode.image_url]);
-
   const title = episode.title || `Episode ${episode.episode_number}`;
   const imageUrl = episode.image_url || undefined;
   const releaseDate = formatReleaseDate(episode.release_date);
@@ -38,24 +26,20 @@ export function EpisodeCard({ episode, className = "" }: EpisodeCardProps) {
     >
       <div className="relative overflow-hidden rounded-2xl h-full bg-transparent backdrop-blur-lg p-0! border-none!">
         {imageUrl ? (
-          <AnimatePresence>
-            <motion.div
-              key={imageUrl}
-              className="absolute inset-0 bg-center bg-cover"
-              style={{ backgroundImage: `url(${imageUrl})` }}
-              aria-label={`${title} cover image`}
-              initial={isFirstImage ? { opacity: 1 } : { opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.5, ease: "easeInOut" }}
-            />
-          </AnimatePresence>
+          <ResponsiveMedia
+            src={imageUrl}
+            alt={`${title} still`}
+            width={640}
+            height={360}
+            sizes="(max-width: 767px) 88vw, 40vw"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
         ) : (
           <div
             className="absolute inset-0 flex items-center justify-center bg-empty-card"
-            aria-label="Empty episode"
           >
-            <Tv className="w-16 h-16 md:w-20 md:h-20 text-gray-400 opacity-50" />
+            <Tv aria-hidden="true" className="w-16 h-16 md:w-20 md:h-20 text-gray-300 opacity-60" />
+            <span className="sr-only">No artwork available for {title}</span>
           </div>
         )}
 
@@ -100,4 +84,3 @@ export function EpisodeCard({ episode, className = "" }: EpisodeCardProps) {
     </motion.div>
   );
 }
-

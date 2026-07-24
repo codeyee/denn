@@ -18,10 +18,7 @@ describe("auth redirect helpers", () => {
       requireAuthenticatedSession(
         {
           user: null,
-          accessToken: null,
-          refreshToken: null,
           isAuthenticated: false,
-          needsCookieSync: false,
           resolution: "anonymous",
         },
         "/content/99",
@@ -35,10 +32,7 @@ describe("auth redirect helpers", () => {
       requireAuthenticatedSession(
         {
           user: null,
-          accessToken: null,
-          refreshToken: null,
           isAuthenticated: false,
-          needsCookieSync: false,
           resolution: "unavailable",
         },
         "/content/99",
@@ -53,10 +47,7 @@ describe("auth redirect helpers", () => {
             username: "alice",
             email: "alice@example.com",
           },
-          accessToken: "token",
-          refreshToken: "refresh",
           isAuthenticated: true,
-          needsCookieSync: false,
           resolution: "authenticated",
         },
         "/content/99",
