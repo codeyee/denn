@@ -18,7 +18,7 @@ const user = {
 const now = "2026-07-23T12:00:00Z";
 const movie = {
   id: "101",
-  type: "MOVIE",
+  type: "movie",
   title: "Phase Zero Movie",
   original_title: "Phase Zero Movie",
   description:
