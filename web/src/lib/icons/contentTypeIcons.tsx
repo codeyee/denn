@@ -1,27 +1,34 @@
-import { Film, Tv, Gamepad2, Book, Music, LucideIcon } from "lucide-react";
+import {
+  Book,
+  CircleHelp,
+  Film,
+  Gamepad2,
+  Music,
+  Tv,
+  UserRound,
+  type LucideIcon,
+} from "lucide-react";
 import { ContentType } from "@/lib/types";
+import {
+  getContentTypeDisplayName,
+  normalizeContentType,
+} from "@/lib/utils/contentTypeUtils";
 
-export const CONTENT_TYPE_ICONS: Record<string, LucideIcon> = {
+export const CONTENT_TYPE_ICONS: Record<ContentType, LucideIcon> = {
   [ContentType.MOVIE]: Film,
   [ContentType.TV_SHOW]: Tv,
   [ContentType.SEASON]: Tv,
   [ContentType.GAME]: Gamepad2,
   [ContentType.BOOK]: Book,
   [ContentType.ALBUM]: Music,
+  [ContentType.PERSON]: UserRound,
 };
 
 export function getContentTypeIcon(contentType: ContentType | string): LucideIcon {
-  return CONTENT_TYPE_ICONS[contentType] || Film;
+  const normalizedType = normalizeContentType(contentType);
+  return normalizedType ? CONTENT_TYPE_ICONS[normalizedType] : CircleHelp;
 }
 
 export function getContentTypeLabel(contentType: ContentType | string): string {
-  const labels: Record<string, string> = {
-    [ContentType.MOVIE]: "Movie",
-    [ContentType.TV_SHOW]: "TV Show",
-    [ContentType.SEASON]: "Season",
-    [ContentType.GAME]: "Game",
-    [ContentType.BOOK]: "Book",
-    [ContentType.ALBUM]: "Album",
-  };
-  return labels[contentType] || String(contentType);
+  return getContentTypeDisplayName(contentType);
 }
