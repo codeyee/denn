@@ -7,10 +7,9 @@ import { formatAuthors } from "@/lib/utils/authorUtils";
 import { buildContentUrlById } from "@/lib/utils/navigationUtils";
 import { contentItemActions } from "@/lib/api";
 import { CONTENT_TYPE_ICONS } from "@/lib/icons/contentTypeIcons";
-import { Button } from "@/components/common/ui/Button";
-import { ListPlus, Star } from "lucide-react";
 import { Content } from "@/lib/types";
 import { ResponsiveMedia } from "@/components/common/media/ResponsiveMedia";
+import { ContentActions } from "./ContentActions";
 
 interface ContentBannerProps {
   item: Content;
@@ -75,7 +74,7 @@ export function ContentBanner({
   const [tvShowUrl, setTvShowUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!tvShowExternalId) return;
+    if (!isAuthenticated || !tvShowExternalId) return;
     let cancelled = false;
     (async () => {
       try {
@@ -93,14 +92,26 @@ export function ContentBanner({
     return () => {
       cancelled = true;
     };
-  }, [tvShowExternalId]);
+  }, [isAuthenticated, tvShowExternalId]);
 
   if (!backgroundUrl) {
     return (
-      <div className="relative w-full aspect-16/16 md:aspect-16/13 lg:aspect-16/10 xl:aspect-16/7 4xl:aspect-16/5 15xl:aspect-16/3 overflow-hidden mb-6 md:mb-10 rounded-none md:rounded-2xl bg-gray-800 flex items-center justify-center">
-        {Icon && (
-          <Icon className="w-16 h-16 md:w-24 md:h-24 text-gray-400 opacity-50" />
-        )}
+      <div className="relative mb-6 flex min-h-[28rem] w-full items-center justify-center overflow-hidden rounded-none bg-gray-800 px-4 md:mb-10 md:min-h-[32rem] md:rounded-2xl">
+        <div className="flex max-w-3xl flex-col items-center text-center">
+          {Icon && (
+            <Icon className="mb-4 h-16 w-16 text-gray-400 opacity-50 md:h-24 md:w-24" />
+          )}
+          <h1 className="text-3xl font-extrabold text-white md:text-5xl">
+            {displayTitle}
+          </h1>
+          <ContentActions
+            align="center"
+            isAuthenticated={isAuthenticated}
+            hasUserRating={hasUserRating}
+            onAddToList={onAddToList}
+            onRateContent={onRateContent}
+          />
+        </div>
       </div>
     );
   }
@@ -156,36 +167,12 @@ export function ContentBanner({
             </div>
           ) : null}
 
-          {/* Action Buttons */}
-          {isAuthenticated && (onAddToList || onRateContent) && (
-            <div className="mt-4 md:mt-6 flex gap-3">
-              {onAddToList && (
-                <Button
-                  onClick={onAddToList}
-                  className="flex items-center gap-2 cursor-pointer bg-white text-black hover:bg-white/90 font-semibold"
-                  size="lg"
-                >
-                  <ListPlus className="w-5 h-5" />
-                  Add to List
-                </Button>
-              )}
-              {onRateContent && (
-                <Button
-                  onClick={onRateContent}
-                  className={`flex items-center gap-2 cursor-pointer font-semibold ${
-                    hasUserRating
-                      ? ""
-                      : "bg-white text-black hover:bg-white/90"
-                  }`}
-                  size="lg"
-                  variant={hasUserRating ? "outline" : "default"}
-                >
-                  <Star className="w-5 h-5" />
-                  {hasUserRating ? "Edit Rating" : "Rate This"}
-                </Button>
-              )}
-            </div>
-          )}
+          <ContentActions
+            isAuthenticated={isAuthenticated}
+            hasUserRating={hasUserRating}
+            onAddToList={onAddToList}
+            onRateContent={onRateContent}
+          />
         </div>
       </div>
     </div>

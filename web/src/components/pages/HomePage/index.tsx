@@ -11,16 +11,23 @@ import type { HomepageResponse, PaginatedUserListList } from "@/lib/types";
 
 interface HomePageProps {
   country?: string | null;
+  isAuthenticated: boolean;
   initialSuggestions?: HomepageResponse;
   initialLists?: PaginatedUserListList;
 }
 
 export function HomePage({
   country,
+  isAuthenticated,
   initialSuggestions,
   initialLists,
 }: HomePageProps) {
-  const data = useHomeData({ country, initialSuggestions, initialLists });
+  const data = useHomeData({
+    country,
+    isAuthenticated,
+    initialSuggestions,
+    initialLists,
+  });
 
   const { featuredItems } = useFeaturedItems({
     movies: data.suggestions.movies,
@@ -35,7 +42,9 @@ export function HomePage({
       tabIndex={-1}
       className="relative w-full min-h-screen bg-background-logged-in"
     >
-      <h1 className="sr-only">Your Denn home</h1>
+      <h1 className="sr-only">
+        {isAuthenticated ? "Your Denn home" : "Explore the Denn catalog"}
+      </h1>
       <div className="pt-30 pb-20">
         <section className="-mt-30 mb-6 md:mb-10 relative z-0">
           {data.suggestionsError || featuredItems.length === 0
@@ -53,6 +62,7 @@ export function HomePage({
 
         <ContentCarousels
           suggestions={data.suggestions}
+          showPersonalLists={isAuthenticated}
           lists={data.lists}
           suggestionsError={data.suggestionsError}
           listsError={data.listsError}

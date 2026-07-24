@@ -16,12 +16,14 @@ today.
 ## Canonical Request Paths
 
 - Browser -> `web` BFF (`/api/core/*`) -> `core` for authenticated
-  domain data.
+  domain data and safe public content-detail reads.
 - Browser -> fixed `web` BFF auth routes (`/api/auth/*`) -> `core` for
   login, registration, refresh and logout.
 - Browser -> `web` BFF (`/api/proxy/*`) -> `proxy` for public metadata.
 - `web` route loaders and server-side fetch helpers -> `proxy` for
   server-side metadata reads.
+- `web` server -> `core` for trusted bulk resolution of stable Denn ids
+  in homepage/search payloads.
 - `core` -> `proxy` only for enrichment and refresh of persisted content
   data.
 
@@ -43,8 +45,10 @@ The hybrid topology is deliberate and documented in
 - A logical SSR navigation now keeps one bounded `X-Request-Id` across
   parallel `web` reads to `core` and `proxy`; responses expose bounded
   cache state and non-sensitive `Server-Timing`.
-- Discovery payloads are resolved to stable Denn ids in one authenticated
-  bulk request before cards render. Card hover/focus performs only a pure
+- Discovery payloads are resolved to stable Denn ids in one trusted
+  server-side bulk request before cards render. The resolver accepts an
+  authenticated user or `web` with the shared server-only key; browsers
+  cannot call it anonymously. Card hover/focus performs only a pure
   detail prefetch; it never creates content.
 - `proxy` remains stateless relative to PostgreSQL and user data.
 
@@ -53,6 +57,9 @@ The hybrid topology is deliberate and documented in
 - `web` runs on **TanStack Start** (Vite + Nitro). Routes live in
   `web/src/routes/` using TanStack Router file conventions
   (`__root.tsx`, `index.tsx`, `<segment>.tsx`, `$param.tsx`, `$.ts`).
+- `/`, `/search`, and `/content/<id>` are public catalog surfaces.
+  Authenticated Home adds personal lists to the same catalog. The
+  original landing is preserved at `/welcome`.
 - TanStack Query is mounted globally and owns frontend server state for
   Home, Search, Content Detail, List Detail, Add-to-List, ratings, and
   list mutations.
@@ -81,6 +88,10 @@ The hybrid topology is deliberate and documented in
 - Content cards and list item cards render semantic links with a known
   internal id. Hover/focus prefetch uses a pure `GET`, while click
   navigation exposes immediate pending feedback.
+- Guest Add-to-List and Rating actions redirect to Login with the
+  current route in `next`; registration preserves the same return path.
+- Content-detail query keys are viewer-scoped (`anonymous` or user id),
+  so public data cannot reuse authenticated rating state.
 - The critical login -> home -> search -> detail -> back flow is covered
   in desktop and mobile production-build smoke, including the former
   session-loss, logout-loop, hover-write, delayed-detail, and React 418
@@ -123,6 +134,8 @@ See [`data-fetching.md`](./data-fetching.md).
 - Protected routes redirect only for confirmed anonymous/expired
   sessions. Operational failures preserve known credentials, render a
   recoverable fallback, and never masquerade as logout.
+- Catalog routes remain readable for anonymous/expired sessions.
+  Account-owned routes and every personal mutation stay protected.
 - Content-detail client reads have one bounded attempt; timeout or
   upstream failure renders an explicit retry instead of leaving an
   unbounded skeleton or discarding the session.
@@ -140,6 +153,9 @@ See [`auth-session-bootstrap.md`](./auth-session-bootstrap.md).
   only when no usable local payload exists.
 - Content detail preloads the current user's rating and serializes it in
   the same response, avoiding a second browser waterfall.
+- Anonymous content detail uses the same local-first payload but always
+  serializes `current_user_rating: null` and remains subject to the
+  standard anonymous throttle.
 - Homepage and multi-search use scoped, policy-versioned cache keys.
   Homepage supports fresh/stale cache reads and single-flight refresh;
   provider calls have bounded retries, circuit breaking, and aggregate
@@ -163,3 +179,5 @@ direct search; both provider and aggregate caches isolate that policy.
 - Browser verification:
   [`../runbooks/browser-e2e-and-baseline.md`](../runbooks/browser-e2e-and-baseline.md)
 - Open work: [`../roadmap/open-plans.md`](../roadmap/open-plans.md)
+- Public catalog boundary:
+  [`../adr/0004-public-catalog-auth-boundary.md`](../adr/0004-public-catalog-auth-boundary.md)

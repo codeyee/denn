@@ -5,8 +5,9 @@ import process from "node:process";
 import { setTimeout as delay } from "node:timers/promises";
 import { URL } from "node:url";
 
-const corePort = 18000;
-const proxyPort = 18080;
+const corePort = Number.parseInt(process.env.E2E_FIXTURE_CORE_PORT ?? "18000", 10);
+const proxyPort = Number.parseInt(process.env.E2E_FIXTURE_PROXY_PORT ?? "18080", 10);
+const appPort = Number.parseInt(process.env.E2E_APP_PORT ?? "4173", 10);
 const user = {
   id: 1,
   username: "phase0-fixture",
@@ -97,6 +98,19 @@ const contentItem = {
   created_at: now,
   source_data: movie,
 };
+const noArtworkContentItem = {
+  ...contentItem,
+  id: 2,
+  external_id: "104",
+  source_data: {
+    ...movie,
+    id: "104",
+    title: "No Artwork Movie",
+    original_title: "No Artwork Movie",
+    image_url: null,
+    images: [],
+  },
+};
 const list = {
   id: 1,
   name: "Phase 0 Fixture List",
@@ -186,7 +200,7 @@ const state = {
 
 function corsHeaders(requestId) {
   return {
-    "Access-Control-Allow-Origin": "http://127.0.0.1:4173",
+    "Access-Control-Allow-Origin": `http://127.0.0.1:${appPort}`,
     "Access-Control-Allow-Credentials": "true",
     "Access-Control-Allow-Headers":
       "authorization,content-type,x-request-id,x-user-country",
@@ -371,10 +385,21 @@ const core = createServer(async (request, response) => {
     }
     return json(response, 200, contentItem, headers);
   }
+  if (url.pathname === "/api/content/2/") {
+    return json(response, 200, noArtworkContentItem, headers);
+  }
   if (
     url.pathname === "/api/content/resolve-ids/" &&
     request.method === "POST"
   ) {
+    const isTrustedCatalogService =
+      request.headers["x-api-key"] === "fixture-key" &&
+      request.headers["x-api-consumer"] === "web";
+    const isAuthenticated =
+      request.headers.authorization === "Bearer fixture-access";
+    if (!isTrustedCatalogService && !isAuthenticated) {
+      return json(response, 403, { detail: "fixture catalog access denied" }, headers);
+    }
     const body = await readJson(request);
     return json(
       response,

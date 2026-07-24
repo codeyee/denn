@@ -68,7 +68,7 @@ export async function forwardCoreRequest(
     normalizeRequestId(request.headers.get("x-request-id")) ??
     generateRequestId();
 
-  const isPublic = PUBLIC_CORE_PATHS.has(upstreamPath);
+  const isPublic = isPublicCoreRequest(request.method, upstreamPath);
   let access = getAccessToken();
   if (isPublic && !access) {
     const response = await callCore(
@@ -135,6 +135,16 @@ const PUBLIC_CORE_PATHS = new Set([
   "auth/password/reset/",
   "auth/password/reset/confirm/",
 ]);
+
+export function isPublicCoreRequest(method: string, path: string) {
+  if (PUBLIC_CORE_PATHS.has(path)) return true;
+
+  const normalizedMethod = method.toUpperCase();
+  return (
+    (normalizedMethod === "GET" || normalizedMethod === "HEAD") &&
+    /^content\/[1-9]\d*\/$/.test(path)
+  );
+}
 
 function expiredResponse(requestId: string) {
   return new Response(

@@ -2,7 +2,7 @@ from rest_framework import viewsets, status, filters, serializers as drf_seriali
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.generics import get_object_or_404
 from django.db.models import Prefetch, Q
 from django.shortcuts import redirect
@@ -11,7 +11,14 @@ from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiExam
 from drf_spectacular.types import OpenApiTypes
 from content.models import ContentItem, Rating
 from content.serializers import ContentItemSerializer
-from content.permissions import IsAdminOrReadOnly
+from content.permissions import (
+    IsAdminOrReadOnly,
+    IsAuthenticatedOrCatalogService,
+)
+from core.throttling import (
+    CatalogResolveRateThrottle,
+    CatalogResolveSustainedRateThrottle,
+)
 from rest_flex_fields.views import FlexFieldsMixin
 
 
@@ -344,19 +351,20 @@ class ContentItemViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
     }
 )
 class ContentItemDetailByIdView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def get(self, request, id):
-        item = get_object_or_404(
-            ContentItem.objects.prefetch_related(
+        queryset = ContentItem.objects.all()
+        if request.user and request.user.is_authenticated:
+            queryset = queryset.prefetch_related(
                 Prefetch(
                     'ratings',
                     queryset=Rating.objects.filter(user=request.user),
                     to_attr='current_user_ratings',
                 ),
-            ),
-            pk=id,
-        )
+            )
+
+        item = get_object_or_404(queryset, pk=id)
         from content.services.source_data_orchestrator import fetch_bulk_source_data
 
         source_data_cache = fetch_bulk_source_data(
@@ -388,7 +396,11 @@ class ContentItemDetailByIdView(APIView):
     responses={200: OpenApiTypes.OBJECT},
 )
 class ContentItemBulkResolveView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedOrCatalogService]
+    throttle_classes = [
+        CatalogResolveRateThrottle,
+        CatalogResolveSustainedRateThrottle,
+    ]
 
     def post(self, request):
         import logging

@@ -18,11 +18,12 @@ export function useContentDetailQuery(
   contentId: number,
   country?: string,
   initialData?: ContentItem,
+  viewerId?: number,
 ) {
   const enabled = Number.isFinite(contentId) && contentId > 0;
 
   return useQuery({
-    queryKey: queryKeys.contentDetail.byId(contentId, country),
+    queryKey: queryKeys.contentDetail.byId(contentId, country, viewerId),
     queryFn: () => contentItemActions.get(contentId, country),
     enabled,
     initialData,

@@ -1,7 +1,6 @@
 
 import { Navbar } from "@/components/layout/Navbar";
 import { HomePage } from "@/components/pages/HomePage";
-import { LandingPage } from "@/components/pages/LandingPage";
 import type { HomepageResponse, PaginatedUserListList } from "@/lib/types";
 import type { SessionSnapshot } from "@/server/session";
 
@@ -12,8 +11,6 @@ interface HomeRouteShellProps {
   initialLists?: PaginatedUserListList;
 }
 
-// AuthSessionBootstrap is mounted globally in app/layout.tsx; this shell only
-// needs the SSR session snapshot for initial-render branching.
 export function HomeRouteShell({
   session,
   country,
@@ -23,15 +20,12 @@ export function HomeRouteShell({
   return (
     <div className="relative w-full overflow-x-hidden">
       <Navbar />
-      {session.isAuthenticated ? (
-        <HomePage
-          country={country}
-          initialSuggestions={initialSuggestions}
-          initialLists={initialLists}
-        />
-      ) : (
-        <LandingPage />
-      )}
+      <HomePage
+        country={country}
+        isAuthenticated={session.isAuthenticated}
+        initialSuggestions={initialSuggestions}
+        initialLists={initialLists}
+      />
     </div>
   );
 }

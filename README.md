@@ -15,9 +15,9 @@ The project is built as a single monorepo with three cooperating services:
 At a product level, Denn currently supports:
 
 - Multi-source discovery across movies, TV shows, games, albums, and
-  books.
-- Search and detail views for external content, routed by internal
-  Denn content id.
+  books on a public homepage.
+- Public search and content-detail views routed by internal Denn content
+  id; no account is required to explore.
 - User authentication with protected routes.
 - Personal and shared lists.
 - List invitations and membership workflows.
@@ -28,17 +28,20 @@ At a product level, Denn currently supports:
   can be reconstructed from PostgreSQL instead of always hitting the
   upstream metadata layer.
 
-First-class personal tracking, public catalog surfaces, public profiles,
-and leaderboards are planned but not yet part of the shipped baseline.
+The original marketing landing remains available at `/welcome`.
+First-class personal tracking, richer public catalog aggregates and
+browse, public profiles, and leaderboards remain planned.
 
 ## Architecture
 
 The integration model is intentionally hybrid:
 
-- **Browser -> `web` BFF -> `core`** for authenticated domain data and
-  auth lifecycle calls.
+- **Browser -> `web` BFF -> `core`** for authenticated domain data,
+  auth lifecycle calls, and safe public content-detail reads.
 - **Browser -> `web` BFF -> `proxy`** for public metadata calls.
 - **`web` server loaders and server functions -> `proxy`** for SSR metadata reads.
+- **`web` server -> `core`** for trusted bulk resolution of stable
+  content ids in public discovery.
 - **`core` -> `proxy`** for enrichment and refresh of persisted content.
 
 In other words:
@@ -64,6 +67,7 @@ For most work, read in this order:
 6. [`.docs/adr/0001-external-metadata-integration.md`](./.docs/adr/0001-external-metadata-integration.md)
 7. [`.docs/adr/0002-web-auth-cookies.md`](./.docs/adr/0002-web-auth-cookies.md)
 8. [`.docs/adr/0003-migrate-web-from-nextjs-to-tanstack-start.md`](./.docs/adr/0003-migrate-web-from-nextjs-to-tanstack-start.md)
+9. [`.docs/adr/0004-public-catalog-auth-boundary.md`](./.docs/adr/0004-public-catalog-auth-boundary.md)
 
 Operational rule:
 
@@ -351,6 +355,8 @@ Start here when you need project context:
   web session / cookie direction
 - [`.docs/adr/0003-migrate-web-from-nextjs-to-tanstack-start.md`](./.docs/adr/0003-migrate-web-from-nextjs-to-tanstack-start.md) -
   frontend stack (TanStack Start)
+- [`.docs/adr/0004-public-catalog-auth-boundary.md`](./.docs/adr/0004-public-catalog-auth-boundary.md) -
+  public catalog and login-on-action boundary
 - [`.docs/contracts/internal-http.md`](./.docs/contracts/internal-http.md) -
   cross-service contract
 - [`.docs/observability.md`](./.docs/observability.md) - log schema,

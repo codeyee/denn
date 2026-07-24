@@ -6,6 +6,17 @@ import { homeListParams, prefetchHomeQueries } from "@/lib/api/queries/server";
 import type { HomepageResponse, PaginatedUserListList } from "@/lib/types";
 
 export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: "Explore movies, TV, games, music, and books | Denn" },
+      {
+        name: "description",
+        content:
+          "Explore Denn's public multi-media catalog without creating an account.",
+      },
+    ],
+    links: [{ rel: "canonical", href: "/" }],
+  }),
   loader: async ({ context }) => {
     await prefetchHomeQueries(
       context.queryClient,

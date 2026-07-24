@@ -7,6 +7,8 @@ import {
   getProxyBaseUrl,
   normalizeRequestId,
 } from "@/server/proxy";
+import { resolveCatalogContentIds } from "@/server/catalog";
+import type { HomepageResponse, MultiSearchResponse } from "@/lib/types";
 
 function jsonResponse(data: unknown, status: number, headers: HeadersInit = {}) {
   return new Response(JSON.stringify(data), {
@@ -57,6 +59,10 @@ function normalizeCacheStatus(value: string | null): string | null {
     : null;
 }
 
+export function isCatalogDiscoveryPath(path: string) {
+  return path === "homepage" || path === "search";
+}
+
 export const Route = createFileRoute("/api/proxy/$")({
   server: {
     handlers: {
@@ -84,12 +90,47 @@ export const Route = createFileRoute("/api/proxy/$")({
 
         try {
           const response = await fetch(url, { headers });
-          const data = await response.json();
+          const proxyData = (await response.json()) as
+            | HomepageResponse
+            | MultiSearchResponse;
           const durationMs =
             Math.round((performance.now() - started) * 100) / 100;
           const cacheStatus = normalizeCacheStatus(
             response.headers.get("x-cache"),
           );
+          let data = proxyData;
+          if (response.ok && isCatalogDiscoveryPath(splat)) {
+            try {
+              data = await resolveCatalogContentIds(
+                proxyData,
+                country,
+                requestId,
+              );
+            } catch (error) {
+              console.error(
+                JSON.stringify({
+                  ts: new Date().toISOString(),
+                  level: "error",
+                  msg: "catalog_identity_resolution_failed",
+                  service: "web",
+                  request_id: requestId,
+                  path: `/api/proxy/${splat}`,
+                  target_service: "core",
+                  error:
+                    error instanceof Error ? error.message : String(error),
+                }),
+              );
+              return jsonResponse(
+                {
+                  error: "CATALOG_ID_RESOLUTION_FAILED",
+                  message: "The catalog could not prepare stable content links.",
+                  request_id: requestId,
+                },
+                502,
+                { "X-Request-Id": requestId },
+              );
+            }
+          }
           const body = JSON.stringify(data);
 
           console.log(

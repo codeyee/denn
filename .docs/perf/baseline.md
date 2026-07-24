@@ -200,6 +200,28 @@ These remain fixture results rather than deployed measurements. The
 separate deployed after snapshot above closes the operational Phase 4
 gate without relabeling or combining the two data sources.
 
+## Public Catalog Foundation Local Snapshot
+
+Captured 2026-07-24 after making Home, Search and Content Detail
+available without login. The production-build fixture method is
+unchanged: five fresh anonymous contexts and one warm reload per
+context. Authenticated flows remain separate in the generated artifact;
+these values describe only the new public boundary.
+
+| Public flow | State | TTFB p50/p75/p95 | FCP p75 | LCP p50/p75/p95 | INP p75/p95 | CLS p75/p95 |
+|---|---|---|---:|---|---|---|
+| Home | cold | 16.8 / 17.1 / 17.2 | 44 | 44 / 44 / 44 | 16 / 16 | 0 / 0 |
+| Home | warm | 18.0 / 18.1 / 18.3 | 64 | 60 / 64 / 64 | 16 / 16 | 0 / 0 |
+| Search | cold | 16.1 / 16.4 / 18.0 | 40 | 40 / 40 / 40 | 0 / 0 | 0 / 0 |
+| Search | warm | 19.3 / 22.4 / 24.0 | 68 | 68 / 68 / 76 | 0 / 0 | 0 / 0 |
+| Detail | cold | 9.5 / 14.1 / 15.3 | 44 | 36 / 44 / 44 | 0 / 0 | 0 / 0 |
+| Detail | warm | 10.7 / 15.9 / 16.1 | 60 | 56 / 60 / 64 | 0 / 0 | 0 / 0 |
+
+All three public flows remain comfortably inside the existing browser
+and route thresholds. The matching browser tests also verify that
+client navigation never calls the internal Core URL and never carries
+`X-Api-Key`; stable-id resolution remains server-to-server.
+
 ## Backend Telemetry Contract
 
 With `PERF_LOGGING_ENABLED=true`, every critical `core` request emits:

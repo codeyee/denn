@@ -7,10 +7,15 @@ import {
 } from "@/server/request-security";
 import {
   buildProxyUrl,
+  isCatalogDiscoveryPath,
   isSafeProxyPath,
 } from "@/routes/api/proxy/$";
 import { isValidPayload } from "@/routes/api/perf/vitals";
-import { buildCoreUrl, isSafeCorePath } from "@/server/core-bff";
+import {
+  buildCoreUrl,
+  isPublicCoreRequest,
+  isSafeCorePath,
+} from "@/server/core-bff";
 
 describe("BFF request security", () => {
   it("keeps proxy requests under the configured base path", () => {
@@ -22,6 +27,12 @@ describe("BFF request security", () => {
     expect(isSafeProxyPath("movies\\..\\health")).toBe(false);
     expect(() => buildProxyUrl("http://proxy:8080/v1/proxy", "../health", ""))
       .toThrow("Unsafe proxy path");
+  });
+
+  it("decorates only public discovery responses with stable ids", () => {
+    expect(isCatalogDiscoveryPath("homepage")).toBe(true);
+    expect(isCatalogDiscoveryPath("search")).toBe(true);
+    expect(isCatalogDiscoveryPath("movies/550")).toBe(false);
   });
 
   it("keeps authenticated core requests under the configured API path", () => {
@@ -37,6 +48,14 @@ describe("BFF request security", () => {
     expect(() =>
       buildCoreUrl("http://core:8000/api", "../admin/", ""),
     ).toThrow("Unsafe core path");
+  });
+
+  it("opens only id-first content reads through the public core BFF", () => {
+    expect(isPublicCoreRequest("GET", "content/42/")).toBe(true);
+    expect(isPublicCoreRequest("HEAD", "content/42/")).toBe(true);
+    expect(isPublicCoreRequest("POST", "content/42/")).toBe(false);
+    expect(isPublicCoreRequest("GET", "content/resolve-ids/")).toBe(false);
+    expect(isPublicCoreRequest("GET", "content/lists/1/")).toBe(false);
   });
 
   it("accepts only bounded Web Vitals fields", () => {

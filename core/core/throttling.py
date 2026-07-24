@@ -1,4 +1,8 @@
-from rest_framework.throttling import UserRateThrottle, AnonRateThrottle
+from rest_framework.throttling import (
+    AnonRateThrottle,
+    SimpleRateThrottle,
+    UserRateThrottle,
+)
 
 
 class AuthRateThrottle(AnonRateThrottle):
@@ -19,3 +23,42 @@ class SustainedRateThrottle(UserRateThrottle):
 
 class BurstRateThrottle(UserRateThrottle):
     rate = '60/minute'
+
+
+class CatalogResolveRateThrottle(SimpleRateThrottle):
+    """Bound catalog identity writes without applying the anonymous daily cap."""
+
+    rate = '600/minute'
+
+    def get_cache_key(self, request, view):
+        return self.cache_format % {
+            'scope': 'catalog-resolve',
+            'ident': catalog_resolve_ident(request),
+        }
+
+
+class CatalogResolveSustainedRateThrottle(SimpleRateThrottle):
+    """Preserve the user daily cap while giving the shared web path headroom."""
+
+    rate = '1000/day'
+
+    def allow_request(self, request, view):
+        self.rate = (
+            '1000/day'
+            if request.user and request.user.is_authenticated
+            else '100000/day'
+        )
+        self.num_requests, self.duration = self.parse_rate(self.rate)
+        return super().allow_request(request, view)
+
+    def get_cache_key(self, request, view):
+        return self.cache_format % {
+            'scope': 'catalog-resolve-sustained',
+            'ident': catalog_resolve_ident(request),
+        }
+
+
+def catalog_resolve_ident(request):
+    if request.user and request.user.is_authenticated:
+        return f'user:{request.user.pk}'
+    return f'service:{request.headers.get("X-Api-Consumer", "unknown")}'

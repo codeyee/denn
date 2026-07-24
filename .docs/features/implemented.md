@@ -9,10 +9,14 @@ considered part of the project baseline.
   protected routes through a same-origin BFF. JWTs remain in
   `HttpOnly`/`Secure`/`SameSite=Lax` cookies, mutations require CSRF, and
   the browser stores identity only.
-- Homepage and multi-source discovery across movies, TV shows, games,
-  albums, and books.
-- Search flow with typed result transformation per media family.
-- Content detail pages routed by internal Denn content id.
+- Public homepage and multi-source discovery across movies, TV shows,
+  games, albums, and books; authentication adds personal lists.
+- Public search with typed result transformation per media family.
+- Public content detail pages routed by internal Denn content id, with
+  aggregate rating data but no anonymous personal state.
+- Preserved marketing landing at `/welcome`.
+- Login-on-action for Add-to-List and Rating with a return path shared
+  across login and registration.
 - User profile page.
 - Personal and shared lists with items, members, invitations, ratings,
   and list-item status workflows.
@@ -42,7 +46,10 @@ considered part of the project baseline.
   hooks/mutations, and server-side prefetch for the main frontend flows.
 - Hover prefetch for detail navigation from content cards and list item
   cards, using semantic links and pure reads after discovery resolves
-  stable ids in one bulk `core` request.
+  stable ids in one trusted server-to-`core` bulk request.
+- Viewer-scoped detail caches and server-only prefetch boundaries keep
+  anonymous data separate from current-user ratings and prevent client
+  navigation from calling internal service URLs.
 - Global session bootstrap with bounded deadlines, explicit
   anonymous/expired/operational-failure states, recoverable protected
   routes, and route-level redirects only for confirmed invalid sessions.
@@ -92,6 +99,8 @@ considered part of the project baseline.
 
 - `proxy` is the only owner of upstream provider credentials.
 - `PROXY_API_KEY` remains server-only.
+- Public discovery resolution uses `PROXY_API_KEY` only between `web`
+  and `core`; it is never attached to a browser request.
 - Content detail navigation should use the internal content id once it
   exists.
 - The cross-service error envelope and `X-Request-Id` flow are stable

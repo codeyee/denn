@@ -14,6 +14,17 @@ const searchSchema = z.object({
 });
 
 export const Route = createFileRoute("/search")({
+  head: () => ({
+    meta: [
+      { title: "Search the catalog | Denn" },
+      {
+        name: "description",
+        content:
+          "Search public catalog results across movies, TV shows, games, albums, and books.",
+      },
+    ],
+    links: [{ rel: "canonical", href: "/search" }],
+  }),
   validateSearch: searchSchema,
   loaderDeps: ({ search }) => ({ q: search.q?.trim() ?? "" }),
   loader: async ({ context, deps }) => {

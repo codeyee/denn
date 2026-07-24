@@ -1,6 +1,27 @@
 # Sprint 13
 # Public Catalog 1.0
 
+## Estado
+
+Parcialmente implementado el 2026-07-24.
+
+Fundación ya disponible:
+
+- Home, Search y Content Detail id-first funcionan sin login.
+- Home autenticado añade listas personales sin cambiar de producto.
+- La landing original vive en `/welcome`.
+- Add-to-List y Rating exigen login al actuar y conservan `next`.
+- Los ids de discovery se resuelven por una llamada confiable
+  server-to-server; el navegador no recibe claves ni URLs internas.
+- Metadata/canonical básica existe para Home, Search, Welcome y Detail.
+
+Pendiente para cerrar este sprint:
+
+- browse público por tipo;
+- reviews públicas sanitizadas, distribución de ratings y listas
+  públicas relacionadas;
+- sitemap, gallery lightbox y hardening/rebaseline de tráfico anónimo.
+
 ## Objetivo
 Abrir Denn al mundo como catálogo multi-media público. Este sprint quita
 el carácter de app cerrada detrás de login y crea la primera superficie
@@ -53,11 +74,11 @@ content pages públicas con capa social mínima.
 
 ## Contexto funcional y técnico
 
-### Estado actual
+### Estado de partida
 
-Hoy las rutas importantes están protegidas y el producto casi no tiene
-superficie pública más allá del landing. Eso mata SEO, compartibilidad y
-descubrimiento.
+Antes de la fundación del 2026-07-24 las rutas importantes estaban
+protegidas y el producto casi no tenía superficie pública más allá del
+landing. Ese bloqueo ya fue retirado para Home, Search y Content Detail.
 
 ### Modelo objetivo
 
@@ -146,19 +167,21 @@ por un hub dedicado.
 ## Checklist de implementación
 
 ### Lote 13A
-- Endpoints públicos listos.
-- Serializers anónimos seguros.
+- [x] Detalle id-first público con serializer anónimo seguro.
+- [x] Resolver bulk protegido para usuario o consumidor `web`.
+- [ ] Agregados/reviews/listas públicas consolidados.
 
 ### Lote 13B
-- Search sin login funciona.
-- Browse por tipo funciona.
-- Content page pública funciona.
-- Gallery lightbox funciona sin romper layout móvil.
+- [x] Search sin login funciona.
+- [ ] Browse por tipo funciona.
+- [x] Content page pública funciona.
+- [ ] Gallery lightbox funciona sin romper layout móvil.
 
 ### Lote 13C
-- Sitemap publicado.
-- Metadata correcta.
-- Cache básica validada.
+- [ ] Sitemap publicado.
+- [x] Metadata/canonical básica de rutas públicas.
+- [x] Baseline local de Home/Search/Detail anónimos registrado.
+- [ ] Cache/tráfico anónimo real rebaselined después del deploy.
 
 ## Checklist de validación
 - `make validate-core`

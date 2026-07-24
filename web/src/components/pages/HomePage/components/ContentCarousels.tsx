@@ -31,6 +31,7 @@ interface ContentCarouselsProps {
     listType?: ListType
   ) => Promise<unknown>;
   isCreatingList?: boolean;
+  showPersonalLists?: boolean;
 }
 
 interface CarouselSectionProps {
@@ -46,15 +47,18 @@ export function ContentCarousels({
   listsError,
   createList,
   isCreatingList = false,
+  showPersonalLists = false,
 }: ContentCarouselsProps) {
   return (
     <>
-      <ListsCarousel
-        lists={lists}
-        error={listsError}
-        createList={createList}
-        isLoading={isCreatingList}
-      />
+      {showPersonalLists && (
+        <ListsCarousel
+          lists={lists}
+          error={listsError}
+          createList={createList}
+          isLoading={isCreatingList}
+        />
+      )}
 
       {!suggestionsError && CONTENT_SECTIONS.map(({ key, title }) => (
         <CarouselSection

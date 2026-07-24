@@ -51,9 +51,7 @@ export function Navbar({ searchQuery, onSearchChange }: NavbarProps) {
             </NavigationMenuList>
           </NavigationMenu>
 
-          {/* Search Input - Only visible on desktop (md and above) when logged in */}
-          {isAuthenticated && (
-            <div className="flex-1 max-w-md mx-auto hidden lg:block font-sans">
+          <div className="flex-1 max-w-md mx-auto hidden lg:block font-sans">
               <div className="relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-300 pointer-events-none z-10" />
                 <label htmlFor="navbar-search" className="sr-only">
@@ -69,16 +67,13 @@ export function Navbar({ searchQuery, onSearchChange }: NavbarProps) {
                   className="w-full pl-12 pr-4 py-2 bg-white/10 backdrop-blur-lg border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white/40 transition-all"
                 />
               </div>
-            </div>
-          )}
+          </div>
 
           <div className="flex items-center gap-3">
-            {isAuthenticated && (
-              <MobileSearch
-                value={resolvedSearchQuery}
-                onChange={resolvedHandleSearchChange}
-              />
-            )}
+            <MobileSearch
+              value={resolvedSearchQuery}
+              onChange={resolvedHandleSearchChange}
+            />
 
             {isAuthenticated && user ? (
               <>
