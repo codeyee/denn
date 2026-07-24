@@ -20,10 +20,24 @@ const DISPLAY_NAME_MAP: Record<string, string> = {
   person:  "Person",
 };
 
-const VALID_CONTENT_TYPES = new Set(Object.keys(SOURCE_API_MAP));
+const CONTENT_TYPE_MAP: Record<string, ContentType> = {
+  movie: ContentType.MOVIE,
+  tv_show: ContentType.TV_SHOW,
+  season: ContentType.SEASON,
+  game: ContentType.GAME,
+  album: ContentType.ALBUM,
+  book: ContentType.BOOK,
+  person: ContentType.PERSON,
+};
 
 export function isValidContentType(type: string): type is ContentType {
-  return VALID_CONTENT_TYPES.has(type.toLowerCase());
+  return normalizeContentType(type) !== null;
+}
+
+export function normalizeContentType(
+  type: string | ContentType,
+): ContentType | null {
+  return CONTENT_TYPE_MAP[type.toLowerCase()] ?? null;
 }
 
 export function getSourceApi(type: string | ContentType): SourceApi {

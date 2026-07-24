@@ -6,18 +6,21 @@ import { AUTH_ACCESS_COOKIE } from "@/lib/auth/constants";
 import { getApiUrl, getProxyApiUrl } from "@/lib/env";
 import type { SessionSnapshot } from "@/server/session";
 import { buildProxyHeaders, getLogicalRequestId } from "@/server/proxy";
-import type {
-  ContentItem,
+import {
   ContentType,
-  HomepageResponse,
-  ListStatsResponse,
-  MultiSearchResponse,
-  PaginatedListItemList,
-  PaginatedUserListList,
-  SearchItem,
-  UserListDetail,
+  type ContentItem,
+  type HomepageResponse,
+  type ListStatsResponse,
+  type MultiSearchResponse,
+  type PaginatedListItemList,
+  type PaginatedUserListList,
+  type SearchItem,
+  type UserListDetail,
 } from "@/lib/types";
-import { getSourceApi } from "@/lib/utils/contentTypeUtils";
+import {
+  getSourceApi,
+  normalizeContentType,
+} from "@/lib/utils/contentTypeUtils";
 import type { ListItemQuery } from "@/lib/types/listView";
 import {
   HOME_LIST_FIELDS,
@@ -326,10 +329,15 @@ async function resolveServerContentIds<
   country: string | null,
   requestId: string,
 ): Promise<T> {
-  const unique = new Map<string, ResolvableServerContent>();
+  const unique = new Map<
+    string,
+    { item: ResolvableServerContent; contentType: ContentType }
+  >();
   for (const category of Object.values(response)) {
     for (const item of category.results) {
-      unique.set(`${item.type}:${item.id}`, item);
+      const contentType = normalizeContentType(item.type);
+      if (!contentType || contentType === ContentType.PERSON) continue;
+      unique.set(`${contentType}:${item.id}`, { item, contentType });
     }
   }
   const items = [...unique.values()];
@@ -343,10 +351,10 @@ async function resolveServerContentIds<
       method: "POST",
       headers: coreHeaders(accessToken, requestId),
       body: JSON.stringify({
-        items: items.map((item) => ({
-          source_api: getSourceApi(item.type),
+        items: items.map(({ item, contentType }) => ({
+          source_api: getSourceApi(contentType),
           external_id: String(item.id),
-          content_type: item.type,
+          content_type: contentType,
         })),
       }),
     },
@@ -372,10 +380,15 @@ async function resolveServerContentIds<
       key,
       {
         ...category,
-        results: category.results.map((item) => ({
-          ...item,
-          denn_id: ids.get(`${item.type}:${item.id}`),
-        })),
+        results: category.results.map((item) => {
+          const contentType = normalizeContentType(item.type);
+          return {
+            ...item,
+            denn_id: contentType
+              ? ids.get(`${contentType}:${item.id}`)
+              : undefined,
+          };
+        }),
       },
       ];
     }),
