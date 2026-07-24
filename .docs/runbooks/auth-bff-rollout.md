@@ -7,7 +7,10 @@ boundary from ADR 0002.
 
 `web`:
 
-- `API_URL`: internal `core` base ending in `/api`.
+- `API_URL`: internal `core` base ending in `/api`. Deployments that
+  still use the former `NEXT_PUBLIC_API_URL` name remain compatible
+  server-side during migration, but must move to `API_URL`; the legacy
+  value is never copied to `window.__ENV__`.
 - `AUTH_COOKIE_SECURE=true` in every HTTPS environment.
 - `AUTH_COOKIE_DOMAIN`: leave unset for host-only cookies unless the
   deployment has an explicitly reviewed shared-domain requirement.

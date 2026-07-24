@@ -6,9 +6,15 @@ declare global {
   }
 }
 
-export function getApiUrl(): string {
+interface ApiEnvironment {
+  API_URL?: string;
+  NEXT_PUBLIC_API_URL?: string;
+}
+
+export function getApiUrl(env: ApiEnvironment = process.env): string {
   return (
-    process.env.API_URL ||
+    env.API_URL ||
+    env.NEXT_PUBLIC_API_URL ||
     "http://localhost:8000/api"
   );
 }
