@@ -343,6 +343,19 @@ test("search result carousels accept horizontal trackpad gestures", async ({
     .toBeGreaterThan(0);
 });
 
+test("shared content carousels wrap from first to last and last to first", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+
+  await expectCircularNavigation(page, "Your Lists");
+  await expectCircularNavigation(page, "Popular Movies");
+
+  await page.goto("/search?q=phase");
+  await expectCircularNavigation(page, "Movies");
+});
+
 test("landscape and 200-percent-equivalent reflow remain usable", async ({
   page,
 }) => {
@@ -406,4 +419,30 @@ async function activeFeaturedTitle(page: Page) {
     .getByRole("region", { name: "Featured content" })
     .locator("h2")
     .innerText();
+}
+
+async function expectCircularNavigation(page: Page, title: string) {
+  const carousel = page
+    .locator('section[aria-roledescription="carousel"]')
+    .filter({ has: page.getByRole("heading", { name: title, exact: true }) });
+  const scroller = carousel.locator("[data-carousel-scroller]");
+  const previous = carousel.getByRole("button", { name: "Previous items" });
+  const next = carousel.getByRole("button", { name: "Next items" });
+
+  await expect(previous).toBeVisible();
+  await expect(next).toBeVisible();
+  await previous.click();
+  await expect
+    .poll(() =>
+      scroller.evaluate(
+        (node) => node.scrollWidth - node.clientWidth - node.scrollLeft,
+      ),
+    )
+    .toBeLessThanOrEqual(2);
+
+  await next.click();
+  await expect
+    .poll(() => scroller.evaluate((node) => node.scrollLeft))
+    .toBeLessThanOrEqual(2);
+  await expect(next).toBeFocused();
 }

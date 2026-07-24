@@ -108,6 +108,12 @@ const list = {
   created_at: now,
   updated_at: now,
 };
+const listTwo = {
+  ...list,
+  id: 2,
+  name: "Phase 0 Shared List",
+  list_type: "SHARED",
+};
 const proxyMetadata = { page: 1, total_results: 3, total_pages: 1 };
 const emptyProxyCategory = {
   metadata: { page: 1, total_results: 0, total_pages: 0 },
@@ -324,7 +330,7 @@ const core = createServer(async (request, response) => {
     return json(
       response,
       200,
-      { metadata: { ...pagination, count: 1 }, results: [list] },
+      { metadata: { ...pagination, count: 2 }, results: [list, listTwo] },
       headers,
     );
   }

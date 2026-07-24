@@ -22,16 +22,12 @@ export function useCarouselScroll({
   gap = 16,
 }: UseCarouselScrollOptions) {
   const [visibleItems, setVisibleItems] = useState(itemsPerView || 4);
-  const [canScrollPrevious, setCanScrollPrevious] = useState(false);
-  const [canScrollNext, setCanScrollNext] = useState(false);
+  const [hasOverflow, setHasOverflow] = useState(false);
 
   const updateScrollState = useCallback(() => {
     const container = containerRef.current;
     if (!container) return;
-    setCanScrollPrevious(container.scrollLeft > 2);
-    setCanScrollNext(
-      container.scrollLeft + container.clientWidth < container.scrollWidth - 2,
-    );
+    setHasOverflow(container.scrollWidth - container.clientWidth > 2);
   }, [containerRef]);
 
   useEffect(() => {
@@ -65,8 +61,26 @@ export function useCarouselScroll({
     (direction: -1 | 1) => {
       const container = containerRef.current;
       if (!container) return;
-      container.scrollBy({
-        left: direction * container.clientWidth * 0.85,
+      const maximumScroll = Math.max(
+        0,
+        container.scrollWidth - container.clientWidth,
+      );
+      const isAtStart = container.scrollLeft <= 2;
+      const isAtEnd = container.scrollLeft >= maximumScroll - 2;
+      const shouldWrap =
+        (direction === -1 && isAtStart) || (direction === 1 && isAtEnd);
+      const pageDistance = container.clientWidth * 0.85;
+      const target = shouldWrap
+        ? direction === -1
+          ? maximumScroll
+          : 0
+        : Math.min(
+            maximumScroll,
+            Math.max(0, container.scrollLeft + direction * pageDistance),
+          );
+
+      container.scrollTo({
+        left: target,
         behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
           ? "auto"
           : "smooth",
@@ -96,8 +110,7 @@ export function useCarouselScroll({
   );
 
   return {
-    canScrollNext,
-    canScrollPrevious,
+    hasOverflow,
     visibleItems,
     handleNext: () => scroll(1),
     handlePrevious: () => scroll(-1),
