@@ -229,7 +229,7 @@ func TestGetTrendingAlbums_Success(t *testing.T) {
 							"albumUri":        "spotify:album:abc123",
 							"albumName":       "Trending Album",
 							"displayImageUri": "https://img.jpg",
-							"releaseDate":     "2026-01-15",
+							"releaseDate":     "",
 							"artists":         []map[string]any{{"name": "Trending Artist", "spotifyUri": "spotify:artist:xyz"}},
 						},
 					},
@@ -238,7 +238,7 @@ func TestGetTrendingAlbums_Success(t *testing.T) {
 							"albumUri":        "spotify:album:def456",
 							"albumName":       "Another Album",
 							"displayImageUri": "https://img2.jpg",
-							"releaseDate":     "2026-02-01",
+							"releaseDate":     "",
 							"artists":         []map[string]any{{"name": "Another Artist"}},
 						},
 					},
@@ -277,11 +277,31 @@ func TestGetTrendingAlbums_EmptyChart(t *testing.T) {
 	mockBody, _ := json.Marshal(chartsResponse)
 	service := newChartsTestService(t, mockBody, http.StatusOK)
 
-	result, err := service.GetTrendingAlbums(context.Background(), 1, 20)
-	if err != nil {
-		t.Fatalf("GetTrendingAlbums failed: %v", err)
+	_, err := service.GetTrendingAlbums(context.Background(), 1, 20)
+	if err == nil {
+		t.Fatal("expected an incompatible empty chart to fail loudly")
 	}
-	if len(result.Results) != 0 {
-		t.Errorf("expected 0 results, got %d", len(result.Results))
+}
+
+func TestGetBulkAlbumsFiltersFutureReleaseAfterChartRanking(t *testing.T) {
+	albumResponse := map[string]any{
+		"id":            "future-album",
+		"name":          "Future Album",
+		"album_type":    "album",
+		"total_tracks":  10,
+		"release_date":  "2099-01-01",
+		"images":        []any{},
+		"artists":       []any{},
+		"external_urls": map[string]any{},
+	}
+	mockBody, _ := json.Marshal(albumResponse)
+	service := newAPITestService(t, mockBody, http.StatusOK)
+
+	results := service.GetBulkAlbums(context.Background(), []string{"future-album"})
+	if len(results) != 1 {
+		t.Fatalf("expected 1 result, got %d", len(results))
+	}
+	if results[0].Album != nil || results[0].Error == "" {
+		t.Fatalf("expected future album to be filtered, got %#v", results[0])
 	}
 }

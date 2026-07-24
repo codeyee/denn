@@ -315,7 +315,7 @@ func homepageCacheKey(page, limit int, country string) string {
 		country = "US"
 	}
 	return fmt.Sprintf(
-		"homepage:v2:adult-exclude:future-24h:p%d:l%d:c%s",
+		"homepage:v3:adult-exclude:future-24h:p%d:l%d:c%s",
 		page,
 		limit,
 		country,

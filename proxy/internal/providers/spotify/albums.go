@@ -77,24 +77,39 @@ func (c *Client) GetTrendingAlbums(ctx context.Context, limit, offset int) (*cli
 }
 
 func (c *Client) getChartAlbums(ctx context.Context) ([]chartAlbum, error) {
-	cached, err := c.cache.Get(ctx, ChartsKey)
-	if err == nil && cached != nil {
-		var albums []chartAlbum
-		if json.Unmarshal(cached, &albums) == nil {
-			return albums, nil
-		}
+	if albums, ok := c.getCachedChartAlbums(ctx, ChartsKey); ok {
+		return albums, nil
 	}
 
 	albums, err := c.fetchAndParseCharts(ctx)
 	if err != nil {
+		if stale, ok := c.getCachedChartAlbums(ctx, ChartsStaleKey); ok {
+			log.Printf("spotify charts: refresh failed, serving last known good chart: %v", err)
+			return stale, nil
+		}
 		return nil, err
 	}
 
 	if data, marshalErr := json.Marshal(albums); marshalErr == nil {
 		_ = c.cache.Set(ctx, ChartsKey, data, ChartsTTL)
+		_ = c.cache.Set(ctx, ChartsStaleKey, data, ChartsStaleTTL)
 	}
 
 	return albums, nil
+}
+
+func (c *Client) getCachedChartAlbums(ctx context.Context, key string) ([]chartAlbum, bool) {
+	cached, err := c.cache.Get(ctx, key)
+	if err != nil || cached == nil {
+		return nil, false
+	}
+
+	var albums []chartAlbum
+	if json.Unmarshal(cached, &albums) != nil || len(albums) == 0 {
+		return nil, false
+	}
+
+	return albums, true
 }
 
 // fetchAndParseCharts now goes through the shared BaseClient so transient
@@ -115,61 +130,61 @@ func (c *Client) fetchAndParseCharts(ctx context.Context) ([]chartAlbum, error) 
 		return nil, fmt.Errorf("decode charts response: %w", err)
 	}
 
-	return parseChartAlbums(chartsData), nil
+	return parseChartAlbums(chartsData)
 }
 
-func parseChartAlbums(data chartsResponse) []chartAlbum {
-	if len(data.ChartEntryViewResponses) < 2 {
-		log.Printf("Warning: charts response has fewer than 2 chart entries")
-		return nil
-	}
+func parseChartAlbums(data chartsResponse) ([]chartAlbum, error) {
+	albums := make([]chartAlbum, 0)
+	seen := make(map[string]struct{})
 
-	entries := data.ChartEntryViewResponses[1].Entries
-	albums := make([]chartAlbum, 0, len(entries))
-
-	for _, entry := range entries {
-		meta := entry.AlbumMetadata
-		if meta.AlbumURI == "" {
-			continue
-		}
-
-		parts := strings.Split(meta.AlbumURI, ":")
-		albumID := parts[len(parts)-1]
-		if albumID == "" {
-			continue
-		}
-
-		album := chartAlbum{
-			ID:          albumID,
-			Name:        meta.AlbumName,
-			AlbumType:   "album",
-			ReleaseDate: meta.ReleaseDate,
-			ExternalURLs: chartExternalURLs{
-				Spotify: fmt.Sprintf("https://open.spotify.com/album/%s", albumID),
-			},
-		}
-
-		if meta.DisplayImageURI != "" {
-			album.Images = []chartImage{
-				{URL: meta.DisplayImageURI, Height: 640, Width: 640},
-				{URL: meta.DisplayImageURI, Height: 300, Width: 300},
-				{URL: meta.DisplayImageURI, Height: 64, Width: 64},
-			}
-		}
-
-		for _, artist := range meta.Artists {
-			if artist.Name == "" {
+	for _, view := range data.ChartEntryViewResponses {
+		for _, entry := range view.Entries {
+			meta := entry.AlbumMetadata
+			albumID, ok := strings.CutPrefix(meta.AlbumURI, "spotify:album:")
+			if !ok || albumID == "" || meta.AlbumName == "" {
 				continue
 			}
-			album.Artists = append(album.Artists, chartArtist{
-				Name: artist.Name,
-			})
-		}
+			if _, duplicate := seen[albumID]; duplicate {
+				continue
+			}
+			seen[albumID] = struct{}{}
 
-		albums = append(albums, album)
+			album := chartAlbum{
+				ID:          albumID,
+				Name:        meta.AlbumName,
+				AlbumType:   "album",
+				ReleaseDate: meta.ReleaseDate,
+				ExternalURLs: chartExternalURLs{
+					Spotify: fmt.Sprintf("https://open.spotify.com/album/%s", albumID),
+				},
+			}
+
+			if meta.DisplayImageURI != "" {
+				album.Images = []chartImage{
+					{URL: meta.DisplayImageURI, Height: 640, Width: 640},
+					{URL: meta.DisplayImageURI, Height: 300, Width: 300},
+					{URL: meta.DisplayImageURI, Height: 64, Width: 64},
+				}
+			}
+
+			for _, artist := range meta.Artists {
+				if artist.Name == "" {
+					continue
+				}
+				album.Artists = append(album.Artists, chartArtist{
+					Name: artist.Name,
+				})
+			}
+
+			albums = append(albums, album)
+		}
 	}
 
-	return albums
+	if len(albums) == 0 {
+		return nil, fmt.Errorf("charts response contains no valid album entries")
+	}
+
+	return albums, nil
 }
 
 // --- Chart response types ---
@@ -187,10 +202,10 @@ type chartEntry struct {
 }
 
 type chartAlbumMetadata struct {
-	AlbumURI        string        `json:"albumUri"`
-	AlbumName       string        `json:"albumName"`
-	DisplayImageURI string        `json:"displayImageUri"`
-	ReleaseDate     string        `json:"releaseDate"`
+	AlbumURI        string           `json:"albumUri"`
+	AlbumName       string           `json:"albumName"`
+	DisplayImageURI string           `json:"displayImageUri"`
+	ReleaseDate     string           `json:"releaseDate"`
 	Artists         []chartRawArtist `json:"artists"`
 }
 
