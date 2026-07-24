@@ -72,6 +72,9 @@ The hybrid topology is deliberate and documented in
 - Public BFF inputs fail closed: proxy splats are confined to the configured
   proxy base path, and Web Vitals ingestion bounds request size, accepted
   fields, and per-instance log volume.
+- `GET /api/version` exposes only the full web `BUILD_SHA` with
+  `Cache-Control: no-store`. Cross-service deploys use it to prove the
+  compatible BFF is live before the core auth cutover.
 - The production-build Playwright harness uses non-personal deterministic
   fixtures. Desktop smoke is a PR gate; mobile smoke, known-regression
   characterization and cold/warm baselines are repeatable root commands.

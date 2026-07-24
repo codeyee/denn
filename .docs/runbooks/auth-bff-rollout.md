@@ -27,7 +27,11 @@ Local HTTP browser fixtures explicitly set both secure flags false.
    current.
 2. Deploy `web` first. Its BFF accepts both the prior JSON token response
    and the new core `Set-Cookie` response, so this step is backward
-   compatible.
+   compatible. For a push that changes both services,
+   `deploy-core.yml` waits until `GET /api/version` on the public web
+   target reports the matching full commit SHA before it calls the core
+   deploy webhook. Set the repository variable `WEB_PUBLIC_URL` when
+   the target differs from `https://denn.codeyee.dev`.
 3. Smoke login, hard refresh, one authenticated read, one CSRF-protected
    mutation, refresh, logout, and logout-all.
 4. Deploy `core` with HttpOnly cookies and identity-only login/register
@@ -41,6 +45,11 @@ Local HTTP browser fixtures explicitly set both secure flags false.
    - transient `core` failure preserves the known client identity.
 6. Monitor auth `401/403/429/5xx`, refresh failures, login latency, and
    redirect loops through at least one refresh lifetime boundary.
+
+If the web workflow or public version probe does not reach the matching
+SHA, the core image may be built and published but its deploy webhook
+must remain blocked. Diagnose web first; do not bypass this gate during
+the auth cutover.
 
 ## Rollback
 

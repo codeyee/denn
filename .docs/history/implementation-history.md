@@ -218,8 +218,8 @@ This document keeps the durable outcomes of completed implementation plans after
 
 - The three root gates passed together: frontend lint/production build,
   212 Django tests, and the full offline-safe Go suite.
-- The production-build browser matrix passed 14 desktop/mobile smoke,
-  10 applicable regression, and 24 accessibility/responsive scenarios;
+- The production-build browser matrix passed 16 desktop/mobile smoke,
+  10 applicable regression, and 25 accessibility/responsive scenarios;
   the artifact probe remained intentionally opt-in.
 - The BFF path proved exact `MISS`, `HIT`, and `STALE` response/timing
   states, and the critical route matrix remained free of React 418,
@@ -228,6 +228,10 @@ This document keeps the durable outcomes of completed implementation plans after
   evidence without replacing the older deployed before snapshot.
 - Slow or failed detail navigation now terminates in a bounded,
   retryable state instead of an indefinite skeleton.
+- The web image exposes its exact non-cacheable release SHA, and a
+  cross-service push blocks the core deploy webhook until that matching
+  BFF release is live. This makes the documented web-first auth cutover
+  enforceable instead of relying on workflow timing.
 - Staging, production smoke, and the observation window remain an
   operational release gate; local fixture evidence is explicitly not a
   substitute.

@@ -166,6 +166,33 @@ func TestSearchScopesAdultPolicyToDirectTMDBSearch(t *testing.T) {
 	}
 }
 
+func TestSearchAdultPolicyDoesNotInferClassificationForOtherProviders(t *testing.T) {
+	tmdb, games, spotify, books := defaultMocks()
+	r := setupRouter(tmdb, games, spotify, books)
+
+	response := doRequest(r, "/search?q=dune&adult=include")
+
+	if response.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", response.Code)
+	}
+	raw := decodeResponse(t, response)
+	cases := map[string]string{
+		"games":  "Test Game",
+		"albums": "Test Album",
+		"books":  "Test Book",
+	}
+	for bucket, expectedTitle := range cases {
+		result := decodeContentResult(t, raw[bucket])
+		if len(result.Results) != 1 || result.Results[0].Title != expectedTitle {
+			t.Fatalf(
+				"adult policy must preserve unclassified %s results, got %+v",
+				bucket,
+				result.Results,
+			)
+		}
+	}
+}
+
 func TestSearchRejectsUnknownAdultPolicy(t *testing.T) {
 	tmdb, games, spotify, books := defaultMocks()
 	r := setupRouter(tmdb, games, spotify, books)

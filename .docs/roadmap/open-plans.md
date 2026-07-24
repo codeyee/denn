@@ -67,8 +67,8 @@ inferred from free text.
 
 Phase 4 local evidence is recorded in
 [`../perf/baseline.md`](../perf/baseline.md): all three root validation
-commands, 14 desktop/mobile smoke scenarios, 10 applicable regression
-scenarios, 24 accessibility/responsive scenarios, and the 60-sample
+commands, 16 desktop/mobile smoke scenarios, 10 applicable regression
+scenarios, 25 accessibility/responsive scenarios, and the 60-sample
 cold/warm baseline pass. The fixture smoke proves exact
 `MISS`/`HIT`/`STALE` propagation. This evidence must still be repeated
 against the deployed validated SHA with a non-personal account; local

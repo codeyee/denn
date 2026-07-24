@@ -10,6 +10,7 @@ const fixtureUser = {
   email: "phase0@example.test",
   password: "fixture-password",
 };
+const fixtureBuildSha = "f".repeat(40);
 
 async function resetFixture(request: APIRequestContext) {
   await request.post(`${fixtureUrl}/__fixture__/reset`);
@@ -56,6 +57,19 @@ function captureUnexpectedConsole(page: Page) {
 
 test.beforeEach(async ({ request }) => {
   await resetFixture(request);
+});
+
+test("release probe exposes the exact non-cacheable web commit", async ({
+  request,
+}) => {
+  const response = await request.get("/api/version");
+
+  expect(response.status()).toBe(200);
+  expect(response.headers()["cache-control"]).toBe("no-store");
+  expect(await response.json()).toEqual({
+    service: "web",
+    sha: fixtureBuildSha,
+  });
 });
 
 test("login honors next and reaches id-first detail without hydration errors", async ({

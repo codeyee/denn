@@ -83,6 +83,8 @@ jobs:
         with:
           context: ./web
           file: ./web/Dockerfile
+          build-args: |
+            BUILD_SHA=${{ github.sha }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

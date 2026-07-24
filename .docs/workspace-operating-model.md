@@ -52,6 +52,10 @@ tooling.
 - Each deploy workflow validates its own app, builds from its own
   directory, publishes a dedicated GHCR image, and triggers a dedicated
   deploy webhook.
+- Cross-service auth cutovers preserve deploy order: when one push
+  changes both `web` and `core`, the core workflow waits for the public
+  web `/api/version` endpoint to report the matching `BUILD_SHA` before
+  invoking the core webhook. Core-only pushes remain independent.
 
 ## Image Publishing
 

@@ -174,6 +174,31 @@ test("mobile search opens, receives focus, closes and reaches results", async ({
   await expect(page.locator("#mobile-navbar-search")).toHaveCount(0);
 });
 
+test("mobile first viewport exposes featured content and the next section", async ({
+  page,
+}) => {
+  const viewport = { width: 390, height: 844 };
+  await page.setViewportSize(viewport);
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+
+  const featured = await page
+    .getByRole("region", { name: "Featured content" })
+    .boundingBox();
+  const nextSection = await page
+    .getByRole("heading", { name: "Your Lists" })
+    .boundingBox();
+  const description = page
+    .getByRole("region", { name: "Featured content" })
+    .locator("p");
+
+  expect(featured, "Featured content must be visible").not.toBeNull();
+  expect(featured?.y ?? viewport.height).toBeLessThan(viewport.height);
+  expect(nextSection, "The next content section must be rendered").not.toBeNull();
+  expect(nextSection?.y ?? viewport.height).toBeLessThan(viewport.height);
+  await expect(description).toHaveCSS("-webkit-line-clamp", "2");
+});
+
 test("primary mobile controls keep 44px targets", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");

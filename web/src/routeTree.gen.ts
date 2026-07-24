@@ -21,6 +21,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ContentIndexRouteImport } from './routes/content/index'
 import { Route as ListsIdRouteImport } from './routes/lists/$id'
 import { Route as ContentIdRouteImport } from './routes/content/$id'
+import { Route as ApiVersionRouteImport } from './routes/api/version'
 import { Route as ApiCardsRouteImport } from './routes/api/cards'
 import { Route as ApiProxySplatRouteImport } from './routes/api/proxy/$'
 import { Route as ApiPerfVitalsRouteImport } from './routes/api/perf/vitals'
@@ -92,6 +93,11 @@ const ContentIdRoute = ContentIdRouteImport.update({
   path: '/content/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiVersionRoute = ApiVersionRouteImport.update({
+  id: '/api/version',
+  path: '/api/version',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiCardsRoute = ApiCardsRouteImport.update({
   id: '/api/cards',
   path: '/api/cards',
@@ -154,6 +160,7 @@ export interface FileRoutesByFullPath {
   '/search': typeof SearchRoute
   '/terms': typeof TermsRoute
   '/api/cards': typeof ApiCardsRoute
+  '/api/version': typeof ApiVersionRoute
   '/content/$id': typeof ContentIdRoute
   '/lists/$id': typeof ListsIdRoute
   '/content/': typeof ContentIndexRoute
@@ -178,6 +185,7 @@ export interface FileRoutesByTo {
   '/search': typeof SearchRoute
   '/terms': typeof TermsRoute
   '/api/cards': typeof ApiCardsRoute
+  '/api/version': typeof ApiVersionRoute
   '/content/$id': typeof ContentIdRoute
   '/lists/$id': typeof ListsIdRoute
   '/content': typeof ContentIndexRoute
@@ -203,6 +211,7 @@ export interface FileRoutesById {
   '/search': typeof SearchRoute
   '/terms': typeof TermsRoute
   '/api/cards': typeof ApiCardsRoute
+  '/api/version': typeof ApiVersionRoute
   '/content/$id': typeof ContentIdRoute
   '/lists/$id': typeof ListsIdRoute
   '/content/': typeof ContentIndexRoute
@@ -229,6 +238,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/terms'
     | '/api/cards'
+    | '/api/version'
     | '/content/$id'
     | '/lists/$id'
     | '/content/'
@@ -253,6 +263,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/terms'
     | '/api/cards'
+    | '/api/version'
     | '/content/$id'
     | '/lists/$id'
     | '/content'
@@ -277,6 +288,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/terms'
     | '/api/cards'
+    | '/api/version'
     | '/content/$id'
     | '/lists/$id'
     | '/content/'
@@ -302,6 +314,7 @@ export interface RootRouteChildren {
   SearchRoute: typeof SearchRoute
   TermsRoute: typeof TermsRoute
   ApiCardsRoute: typeof ApiCardsRoute
+  ApiVersionRoute: typeof ApiVersionRoute
   ContentIdRoute: typeof ContentIdRoute
   ListsIdRoute: typeof ListsIdRoute
   ContentIndexRoute: typeof ContentIndexRoute
@@ -402,6 +415,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ContentIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/version': {
+      id: '/api/version'
+      path: '/api/version'
+      fullPath: '/api/version'
+      preLoaderRoute: typeof ApiVersionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/cards': {
       id: '/api/cards'
       path: '/api/cards'
@@ -486,6 +506,7 @@ const rootRouteChildren: RootRouteChildren = {
   SearchRoute: SearchRoute,
   TermsRoute: TermsRoute,
   ApiCardsRoute: ApiCardsRoute,
+  ApiVersionRoute: ApiVersionRoute,
   ContentIdRoute: ContentIdRoute,
   ListsIdRoute: ListsIdRoute,
   ContentIndexRoute: ContentIndexRoute,
