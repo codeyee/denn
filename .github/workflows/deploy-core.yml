@@ -105,7 +105,7 @@ jobs:
             )"
             deployed_sha="$(
               printf '%s' "$deployed_payload" |
-                sed -n 's/.*"sha":"\\([0-9a-f]\\{40\\}\\)".*/\\1/p'
+                sed -n 's/.*"sha":"\([0-9a-f]\{40\}\)".*/\1/p'
             )"
             if [ "$deployed_sha" = "$GITHUB_SHA" ]; then
               echo "Web release $GITHUB_SHA is live; core deployment may continue."
