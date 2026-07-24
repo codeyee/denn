@@ -151,7 +151,7 @@ export function DomeGallery({
           } as React.CSSProperties & Record<string, string | number>
         }
       >
-        <main
+        <div
           ref={mainRef}
           className="absolute inset-0 grid place-items-center overflow-hidden select-none bg-transparent"
           style={{
@@ -275,7 +275,7 @@ export function DomeGallery({
               }}
             />
           </div>
-        </main>
+        </div>
       </div>
     </>
   );

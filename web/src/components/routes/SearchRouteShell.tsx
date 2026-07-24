@@ -4,6 +4,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { SearchPage } from "@/components/pages/SearchPage";
 import { useSearchResults } from "@/components/pages/SearchPage/hooks/useSearchResults";
 import type { SessionSnapshot } from "@/server/session";
+import type { MultiSearchResponse } from "@/lib/types";
 
 // AuthSessionBootstrap is mounted globally in app/layout.tsx; this shell only
 // needs the SSR session snapshot for initial-render branching.
@@ -14,12 +15,14 @@ interface SearchRouteShellProps {
   session: SessionSnapshot;
   initialQuery: string;
   country?: string | null;
+  initialResults?: MultiSearchResponse;
 }
 
 export function SearchRouteShell({
   session,
   initialQuery,
   country,
+  initialResults,
 }: SearchRouteShellProps) {
   const mobileInputRef = useRef<HTMLInputElement>(null);
   const hasFocusedRef = useRef(false);
@@ -74,7 +77,12 @@ export function SearchRouteShell({
 
   const { results, isLoading, error, hasResults } = useSearchResults(
     debouncedQuery,
-    { country, enabled: session.isAuthenticated },
+    {
+      country,
+      enabled: session.isAuthenticated,
+      initialData:
+        debouncedQuery === initialQuery ? initialResults : undefined,
+    },
   );
 
   return (

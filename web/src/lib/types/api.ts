@@ -115,8 +115,9 @@ export interface ContentItem {
     content_type: ContentType;
     rating_count: number;
     average_rating: string | null;
+    current_user_rating: Rating | null;
     created_at: string;
-    source_data?: string;
+    source_data?: SourceData | string | null;
 }
 
 export enum ListType {
@@ -238,6 +239,7 @@ export interface Platform {
 
 export interface SearchItem {
     id: string;
+    denn_id?: number;
     type: ContentType;
     title: string;
     original_title?: string | null;
@@ -260,6 +262,7 @@ export interface GameImages {
 
 export interface MovieDetail {
     id: string;
+    denn_id?: number;
     type: "MOVIE";
     title: string;
     original_title: string;
@@ -277,6 +280,7 @@ export interface MovieDetail {
 
 export interface TVShowDetail {
     id: string;
+    denn_id?: number;
     type: "TV_SHOW";
     title: string;
     original_title: string;
@@ -306,6 +310,7 @@ export interface TVSeason {
 
 export interface TVSeasonDetail {
     id: string;
+    denn_id?: number;
     type: "SEASON";
     season_number: number;
     title: string;
@@ -379,6 +384,7 @@ export interface BulkSeasonItem {
 
 export interface AlbumDetail {
     id: string;
+    denn_id?: number;
     type: "ALBUM";
     title: string;
     authors: Author[] | null;
@@ -425,6 +431,7 @@ export interface GamePlayTime {
 
 export interface GameDetail {
     id: string;
+    denn_id?: number;
     type: "GAME";
     title: string;
     game_type: string | null;
@@ -453,6 +460,7 @@ export interface GamesSuggestionsResponse {
 
 export interface BookDetail {
     id: string;
+    denn_id?: number;
     type: "BOOK";
     title: string;
     authors: Author[] | null;
@@ -496,6 +504,7 @@ export interface ContentItemData {
     content_type: ContentType;
     rating_count: number;
     average_rating: number | null;
+    current_user_rating: Rating | null;
     created_at: string;
     source_data: SourceData;
 }

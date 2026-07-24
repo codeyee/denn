@@ -1,4 +1,9 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  redirect,
+  useRouter,
+  type ErrorComponentProps,
+} from "@tanstack/react-router";
 
 import { Navbar } from "@/components/layout/Navbar";
 import { ContentDetailPage } from "@/components/pages/ContentDetailPage";
@@ -6,6 +11,7 @@ import { ContentDetailSkeleton } from "@/components/pages/ContentDetailPage/Cont
 import { ProtectedRoute } from "@/components/common/providers/ProtectedRoute";
 import { prefetchContentDetailQueries } from "@/lib/api/queries/server";
 import { requireAuthenticatedSession } from "@/lib/auth/protected-route";
+import type { ContentItem } from "@/lib/types";
 
 export const Route = createFileRoute("/content/$id")({
   beforeLoad: ({ context, location }) => {
@@ -21,14 +27,18 @@ export const Route = createFileRoute("/content/$id")({
       throw redirect({ to: "/" });
     }
 
-    await prefetchContentDetailQueries(
+    const initialContentItem = await prefetchContentDetailQueries(
       context.queryClient,
       context.session,
       contentId,
       context.country,
     );
 
-    return { contentId, country: context.country };
+    return {
+      contentId,
+      country: context.country,
+      initialContentItem,
+    };
   },
   pendingComponent: () => (
     <div className="relative w-full overflow-x-hidden">
@@ -36,16 +46,49 @@ export const Route = createFileRoute("/content/$id")({
       <ContentDetailSkeleton />
     </div>
   ),
+  errorComponent: ContentDetailError,
   component: ContentDetailRoute,
 });
 
+function ContentDetailError({ error }: ErrorComponentProps) {
+  const router = useRouter();
+  return (
+    <main
+      id="main-content"
+      tabIndex={-1}
+      className="flex min-h-screen items-center justify-center bg-background-logged-in px-6"
+    >
+      <div className="max-w-md text-center">
+        <h1 className="text-2xl font-semibold">Could not open this content</h1>
+        <p className="mt-3 text-sm text-gray-300">
+          {error.message || "The detail request did not complete."}
+        </p>
+        <button
+          type="button"
+          className="mt-6 min-h-11 rounded-md bg-primary px-5 py-2 text-primary-foreground focus-visible:ring-4 focus-visible:ring-white/80"
+          onClick={() => {
+            void router.invalidate();
+          }}
+        >
+          Retry
+        </button>
+      </div>
+    </main>
+  );
+}
+
 function ContentDetailRoute() {
-  const { contentId, country } = Route.useLoaderData();
+  const { contentId, country, initialContentItem } =
+    Route.useLoaderData();
   return (
     <div className="relative w-full overflow-x-hidden">
       <Navbar />
       <ProtectedRoute>
-        <ContentDetailPage contentId={contentId} country={country} />
+        <ContentDetailPage
+          contentId={contentId}
+          country={country}
+          initialContentItem={initialContentItem as ContentItem | undefined}
+        />
       </ProtectedRoute>
     </div>
   );

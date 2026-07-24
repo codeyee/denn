@@ -1,12 +1,16 @@
 
-import { useMemo, useCallback } from "react";
+import {
+  useMemo,
+  useCallback,
+  useState,
+  type MouseEvent,
+} from "react";
+import { Link } from "@tanstack/react-router";
 import { Card } from "../Card";
 import { ListItem, UserListDetail } from "@/lib/types";
 import { getContentTypeIcon } from "@/lib/icons/contentTypeIcons";
-import { buildContentUrlById } from "@/lib/utils/navigationUtils";
 import { StatusBadge } from "@/components/common/ui/StatusBadge";
 import { RatingBadge } from "@/components/common/ui/RatingBadge";
-import { useSmartNavigation } from "@/hooks/useSmartNavigation";
 import { usePrefetchContentDetail } from "@/lib/api/queries/usePrefetchContentDetail";
 import { useHoverPrefetch } from "@/lib/perf/useHoverPrefetch";
 import { getListItemTitle, getListItemSubtitle } from "./utils";
@@ -37,6 +41,7 @@ export function ListItemCard({
   disableHover = false,
 }: ListItemCardProps) {
   const contentItem = item.content_item;
+  const [isNavigating, setIsNavigating] = useState(false);
   const sourceData = contentItem.source_data;
   const imageUrl = sourceData?.image_url;
 
@@ -53,12 +58,6 @@ export function ListItemCard({
     [item, list, currentUserId]
   );
 
-  const getNavigationUrl = useCallback(() => {
-    return buildContentUrlById(contentItem.id);
-  }, [contentItem.id]);
-
-  const navigation = useSmartNavigation(getNavigationUrl);
-
   // T8: warm the ContentDetail cache after 200ms of hover intent.
   // The ContentItem id is already known (no `getOrCreate` round-trip
   // needed), so we go straight to `prefetchQuery`.
@@ -67,29 +66,40 @@ export function ListItemCard({
     prefetchContentDetail(contentItem.id);
   }, [contentItem.id, prefetchContentDetail]);
   const hoverPrefetchHandlers = useHoverPrefetch(handlePrefetch);
-
-  const handleCardClick = useCallback(
-    (e: React.MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (target.closest("button")) {
+  const handleNavigation = useCallback(
+    (event: MouseEvent<HTMLAnchorElement>) => {
+      if (
+        event.button !== 0 ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey
+      ) {
         return;
       }
-      navigation.handleClick(e);
+      if (isNavigating) {
+        event.preventDefault();
+        return;
+      }
+      setIsNavigating(true);
     },
-    [navigation]
+    [isNavigating],
   );
 
   return (
     <div
-      onClick={handleCardClick}
-      className={`cursor-pointer relative group max-h-[400px] sm:max-h-none transition-all duration-200 ${className || ""
+      className={`relative group max-h-[400px] sm:max-h-none transition-all duration-200 ${className || ""
         }`}
-      role="button"
-      tabIndex={0}
-      onKeyDown={navigation.handleKeyDown}
-      aria-label={`View details for ${title}`}
       {...hoverPrefetchHandlers}
     >
+      <Link
+        to="/content/$id"
+        params={{ id: String(contentItem.id) }}
+        preload="intent"
+        onClick={handleNavigation}
+        className="absolute inset-0 z-10 rounded-xl outline-none focus-visible:ring-4 focus-visible:ring-white/80"
+        aria-label={`View details for ${title}`}
+      />
       <Card
         id={item.id}
         title={title}
@@ -100,15 +110,17 @@ export function ListItemCard({
         className="h-full"
         disableHover={disableHover}
         hoverContent={
-          <ListItemCardHover
-            item={item}
-            subtitle={subtitle}
-            list={list}
-            onToggleStatus={onToggleStatus}
-            onDelete={onDelete}
-            onRateClick={onRateClick}
-            showRatingInvitation={showRatingInvitation}
-          />
+          <div className="relative z-20">
+            <ListItemCardHover
+              item={item}
+              subtitle={subtitle}
+              list={list}
+              onToggleStatus={onToggleStatus}
+              onDelete={onDelete}
+              onRateClick={onRateClick}
+              showRatingInvitation={showRatingInvitation}
+            />
+          </div>
         }
       >
         {/* Badges - Positioned absolutely over the card image */}
@@ -155,6 +167,14 @@ export function ListItemCard({
           )}
         </Card.Footer>
       </Card>
+      {isNavigating && (
+        <div
+          className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center rounded-xl bg-black/55 text-sm font-medium text-white"
+          role="status"
+        >
+          Opening details…
+        </div>
+      )}
     </div>
   );
 }

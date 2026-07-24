@@ -66,12 +66,15 @@ test("login honors next and reaches id-first detail without hydration errors", a
 
   await page.getByLabel("Email").fill(fixtureUser.email);
   await page.getByLabel("Password").fill(fixtureUser.password);
+  const loginStartedAt = Date.now();
   await page.getByRole("button", { name: "Sign In" }).click();
 
   await expect(page).toHaveURL(/\/content\/1$/);
   await expect(
     page.getByText("Deterministic metadata for browser guardrails."),
   ).toBeVisible();
+  expect(Date.now() - loginStartedAt).toBeLessThan(1_500);
+  await expect(page.getByRole("link", { name: "Sign In" })).toHaveCount(0);
   expect(consoleErrors).toEqual([]);
 });
 
@@ -93,7 +96,7 @@ test("authenticated cold and warm navigation covers critical routes", async ({
   await expect(page.getByText("Phase Zero Movie").first()).toBeVisible();
 
   await page
-    .getByRole("button", { name: "View details for Phase Zero Movie" })
+    .getByRole("link", { name: "View details for Phase Zero Movie" })
     .click();
   await expect(page).toHaveURL(/\/content\/1$/);
   await expect(

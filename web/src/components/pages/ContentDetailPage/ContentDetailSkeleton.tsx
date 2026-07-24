@@ -19,7 +19,9 @@ function Pulse({ className }: { className: string }) {
 
 export function ContentDetailSkeleton() {
   return (
-    <div
+    <main
+      id="main-content"
+      tabIndex={-1}
       className="relative w-full min-h-screen bg-background-logged-in"
       role="status"
       aria-label="Loading content"
@@ -73,6 +75,6 @@ export function ContentDetailSkeleton() {
       </div>
 
       <span className="sr-only">Loading content details…</span>
-    </div>
+    </main>
   );
 }

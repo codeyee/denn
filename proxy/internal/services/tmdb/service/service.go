@@ -85,6 +85,9 @@ func (s *Service) SearchMovies(ctx context.Context, query string, page, limit in
 	items := make([]models.SearchItem, 0, len(data.Results))
 
 	for _, r := range data.Results {
+		if r.Adult {
+			continue
+		}
 		items = append(items, mapper.MapSearchItemMovie(r))
 	}
 	items = servicecommon.FilterEligibleSearchItems(items, time.Now())
@@ -111,6 +114,9 @@ func (s *Service) SearchTVShows(ctx context.Context, query string, page, limit i
 	items := make([]models.SearchItem, 0, len(data.Results))
 
 	for _, r := range data.Results {
+		if r.Adult {
+			continue
+		}
 		items = append(items, mapper.MapSearchItemTV(r))
 	}
 	items = servicecommon.FilterEligibleSearchItems(items, time.Now())
@@ -137,6 +143,9 @@ func (s *Service) GetPopularMovies(ctx context.Context, page, limit int) (Search
 	items := make([]models.SearchItem, 0, len(data.Results))
 
 	for _, r := range data.Results {
+		if r.Adult {
+			continue
+		}
 		items = append(items, mapper.MapSearchItemMovie(r))
 	}
 	items = servicecommon.FilterEligibleSearchItems(items, time.Now())
@@ -163,6 +172,9 @@ func (s *Service) GetPopularTVShows(ctx context.Context, page, limit int) (Searc
 	items := make([]models.SearchItem, 0, len(data.Results))
 
 	for _, r := range data.Results {
+		if r.Adult {
+			continue
+		}
 		items = append(items, mapper.MapSearchItemTV(r))
 	}
 	items = servicecommon.FilterEligibleSearchItems(items, time.Now())

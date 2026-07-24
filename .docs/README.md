@@ -175,6 +175,7 @@ Use the rest as specialized references:
 - [`architecture/client-rehydration.md`](./architecture/client-rehydration.md)
 - [`architecture/content-lifecycle.md`](./architecture/content-lifecycle.md)
 - [`architecture/content-rehydration-policy.md`](./architecture/content-rehydration-policy.md)
+- [`architecture/content-eligibility.md`](./architecture/content-eligibility.md)
 - [`roadmap/2026-04-19-social-multimedia-tracker-review.md`](./roadmap/2026-04-19-social-multimedia-tracker-review.md)
 - [`roadmap/2026-04-20-mvp-functional-design.md`](./roadmap/2026-04-20-mvp-functional-design.md)
 - [`roadmap/2026-04-20-post-foundation-mvp-feature-roadmap.md`](./roadmap/2026-04-20-post-foundation-mvp-feature-roadmap.md)
@@ -183,6 +184,7 @@ Use the rest as specialized references:
 - [`runbooks/rehydrate-content.md`](./runbooks/rehydrate-content.md)
 - [`runbooks/client-session-bootstrap-smoke.md`](./runbooks/client-session-bootstrap-smoke.md)
 - [`runbooks/browser-e2e-and-baseline.md`](./runbooks/browser-e2e-and-baseline.md)
+- [`runbooks/homepage-cache-warmup.md`](./runbooks/homepage-cache-warmup.md)
 - [`history/implementation-history.md`](./history/implementation-history.md)
 - [`definition-of-done.md`](./definition-of-done.md)
 

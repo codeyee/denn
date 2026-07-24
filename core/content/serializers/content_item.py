@@ -4,6 +4,7 @@ from core.serializers import BaseFlexSerializer
 
 class ContentItemSerializer(BaseFlexSerializer):
     source_data = serializers.SerializerMethodField()
+    current_user_rating = serializers.SerializerMethodField()
 
     class Meta:
         model = ContentItem
@@ -15,6 +16,7 @@ class ContentItemSerializer(BaseFlexSerializer):
             'content_type',
             'rating_count',
             'average_rating',
+            'current_user_rating',
             'created_at',
             'source_data',
         ]
@@ -23,9 +25,48 @@ class ContentItemSerializer(BaseFlexSerializer):
             'id',
             'rating_count',
             'average_rating',
+            'current_user_rating',
             'created_at',
             'source_data',
         ]
+
+    def get_current_user_rating(self, obj):
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            return None
+
+        prefetched_ratings = getattr(obj, 'current_user_ratings', None)
+        if prefetched_ratings is None:
+            return None
+        rating = prefetched_ratings[0] if prefetched_ratings else None
+        if rating is None:
+            return None
+
+        return {
+            'id': rating.id,
+            'user': {
+                'id': request.user.id,
+                'username': request.user.username,
+                'email': request.user.email,
+                'first_name': request.user.first_name,
+                'last_name': request.user.last_name,
+            },
+            'content_item': {
+                'id': obj.id,
+                'source_api': obj.source_api,
+                'external_id': obj.external_id,
+                'content_type': obj.content_type,
+                'rating_count': obj.rating_count,
+                'average_rating': obj.average_rating,
+                'created_at': obj.created_at,
+                'source_data': None,
+                'current_user_rating': None,
+            },
+            'score': rating.score,
+            'comment': rating.comment,
+            'created_at': rating.created_at,
+            'updated_at': rating.updated_at,
+        }
 
     def _should_include_source_data(self):
         if self.context.get('skip_source_data', False):
@@ -57,14 +98,9 @@ class ContentItemSerializer(BaseFlexSerializer):
                 return self._apply_source_fields(cached_data)
             return None
 
-        from content.utils import fetch_source_data
-
-        request = self.context.get('request')
-        country_code = request.query_params.get('country') if request else None
-        data = fetch_source_data(obj, country_code=country_code)
-        if not data:
-            return None
-        return self._apply_source_fields(data)
+        # Source data must be orchestrated by the view so a serializer can
+        # never introduce an unbounded provider call by accident.
+        return None
 
     def _apply_source_fields(self, data):
         request = self.context.get('request')

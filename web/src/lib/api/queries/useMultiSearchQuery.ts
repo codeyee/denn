@@ -8,11 +8,17 @@ interface UseMultiSearchQueryOptions {
   limit?: number;
   country?: string | null;
   enabled?: boolean;
+  initialData?: MultiSearchResponse;
 }
 
 export function useMultiSearchQuery(
   query: string,
-  { limit = 20, country, enabled = true }: UseMultiSearchQueryOptions = {},
+  {
+    limit = 20,
+    country,
+    enabled = true,
+    initialData,
+  }: UseMultiSearchQueryOptions = {},
 ) {
   const trimmedQuery = query.trim();
 
@@ -29,6 +35,7 @@ export function useMultiSearchQuery(
         country ?? undefined,
       ),
     enabled: enabled && trimmedQuery.length > 0,
+    initialData,
     placeholderData: keepPreviousData,
     staleTime: 30_000,
   });

@@ -3,15 +3,20 @@ package homepage
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
 	"github.com/codeyee/denn-proxy/internal/clients"
 	"github.com/codeyee/denn-proxy/internal/models"
+	"github.com/codeyee/denn-proxy/internal/testutil"
 
 	booksservice "github.com/codeyee/denn-proxy/internal/services/books/service"
 	spotifyservice "github.com/codeyee/denn-proxy/internal/services/spotify/service"
@@ -50,6 +55,16 @@ type mockGames struct {
 
 func (m *mockGames) GetTrendingGamesDetail(_ context.Context, _, _ int) ([]models.Game, error) {
 	return m.trendingDetail, m.trendingErr
+}
+
+type deadlineGames struct{}
+
+func (*deadlineGames) GetTrendingGamesDetail(
+	ctx context.Context,
+	_, _ int,
+) ([]models.Game, error) {
+	<-ctx.Done()
+	return nil, ctx.Err()
 }
 
 type mockSpotify struct {
@@ -119,6 +134,164 @@ func decodeContentResult(t *testing.T, data json.RawMessage) ContentResult {
 		t.Fatalf("Failed to decode content result: %v", err)
 	}
 	return cr
+}
+
+func TestHomepageCacheKeyScopesCountryAndPolicy(t *testing.T) {
+	co := homepageCacheKey(1, 10, "CO")
+	us := homepageCacheKey(1, 10, "US")
+	if co == us {
+		t.Fatal("country-specific homepage payloads must not share a cache key")
+	}
+	if co == homepageCacheKey(2, 10, "CO") {
+		t.Fatal("pages must not share a cache key")
+	}
+	if stale := homepageStaleCacheKey(1, 10, "CO"); stale == co {
+		t.Fatal("fresh and stale cache entries must use distinct keys")
+	}
+}
+
+func TestHomepageCachesAndServesAggregate(t *testing.T) {
+	video, games, spotify, books := defaultMocks()
+	cache := testutil.NewMemoryCache()
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	h := NewHandler(video, games, spotify, books, cache)
+	r.GET("/homepage", h.Homepage)
+
+	first := doRequest(r, "/homepage?limit=5")
+	second := doRequest(r, "/homepage?limit=5")
+
+	if first.Header().Get("X-Cache") != "MISS" {
+		t.Fatalf("expected MISS, got %q", first.Header().Get("X-Cache"))
+	}
+	if second.Header().Get("X-Cache") != "HIT" {
+		t.Fatalf("expected HIT, got %q", second.Header().Get("X-Cache"))
+	}
+	if first.Body.String() != second.Body.String() {
+		t.Fatal("cache changed the aggregate payload")
+	}
+}
+
+func TestHomepageServesStaleImmediately(t *testing.T) {
+	video, games, spotify, books := defaultMocks()
+	cache := testutil.NewMemoryCache()
+	stalePayload := []byte(`{"movies":{"metadata":null,"results":[],"error":null}}`)
+	if err := cache.Set(
+		context.Background(),
+		homepageStaleCacheKey(1, 5, "US"),
+		stalePayload,
+		HomepageStaleTTL,
+	); err != nil {
+		t.Fatal(err)
+	}
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	h := NewHandler(video, games, spotify, books, cache)
+	r.GET("/homepage", h.Homepage)
+
+	started := time.Now()
+	response := doRequest(r, "/homepage?limit=5")
+	if elapsed := time.Since(started); elapsed > 100*time.Millisecond {
+		t.Fatalf("stale response should be immediate, took %v", elapsed)
+	}
+	if response.Header().Get("X-Cache") != "STALE" {
+		t.Fatalf("expected STALE, got %q", response.Header().Get("X-Cache"))
+	}
+	if response.Body.String() != string(stalePayload) {
+		t.Fatal("did not serve the stale payload verbatim")
+	}
+}
+
+func TestHomepageCacheFailureFailsOpen(t *testing.T) {
+	video, games, spotify, books := defaultMocks()
+	cache := testutil.NewMemoryCache()
+	cache.Err = errors.New("redis down")
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	h := NewHandler(video, games, spotify, books, cache)
+	r.GET("/homepage", h.Homepage)
+
+	response := doRequest(r, "/homepage?limit=5")
+	if response.Code != http.StatusOK {
+		t.Fatalf("expected cache failure to fail open, got %d", response.Code)
+	}
+}
+
+type countingVideo struct {
+	delegate *mockVideo
+	calls    atomic.Int32
+}
+
+func (m *countingVideo) GetPopularMovies(ctx context.Context, page, limit int) (tmdbservice.SearchResult, error) {
+	m.calls.Add(1)
+	time.Sleep(50 * time.Millisecond)
+	return m.delegate.GetPopularMovies(ctx, page, limit)
+}
+
+func (m *countingVideo) GetPopularTVShows(ctx context.Context, page, limit int) (tmdbservice.SearchResult, error) {
+	m.calls.Add(1)
+	time.Sleep(50 * time.Millisecond)
+	return m.delegate.GetPopularTVShows(ctx, page, limit)
+}
+
+func (m *countingVideo) GetBulkMoviePreviews(ctx context.Context, ids []int, country string) []tmdbservice.BulkMovieResult {
+	return m.delegate.GetBulkMoviePreviews(ctx, ids, country)
+}
+
+func (m *countingVideo) GetBulkTVShowPreviews(ctx context.Context, ids []int, country string) []tmdbservice.BulkTVShowResult {
+	return m.delegate.GetBulkTVShowPreviews(ctx, ids, country)
+}
+
+func TestHomepageSingleflightCollapsesConcurrentMisses(t *testing.T) {
+	video, games, spotify, books := defaultMocks()
+	counted := &countingVideo{delegate: video}
+	h := NewHandler(counted, games, spotify, books, clients.NoOpCache{})
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	r.GET("/homepage", h.Homepage)
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+	responses := make([]*httptest.ResponseRecorder, 2)
+	for index := range responses {
+		go func(position int) {
+			defer wg.Done()
+			responses[position] = doRequest(r, "/homepage?limit=5")
+		}(index)
+	}
+	wg.Wait()
+
+	for _, response := range responses {
+		if response.Code != http.StatusOK {
+			t.Fatalf("expected 200, got %d", response.Code)
+		}
+	}
+	if got := counted.calls.Load(); got != 2 {
+		t.Fatalf("expected one movies and one TV computation, got %d provider calls", got)
+	}
+}
+
+func TestHomepageSlowBucketReturnsPartialResponseInsideBudget(t *testing.T) {
+	video, _, spotify, books := defaultMocks()
+	r := setupRouter(video, &deadlineGames{}, spotify, books)
+
+	started := time.Now()
+	response := doRequest(r, "/homepage?limit=5")
+	elapsed := time.Since(started)
+
+	if response.Code != http.StatusOK {
+		t.Fatalf("expected partial 200, got %d", response.Code)
+	}
+	if elapsed >= homepageTotalBudget {
+		t.Fatalf("slow bucket exceeded aggregate budget: %v", elapsed)
+	}
+	raw := decodeResponse(t, response)
+	if decodeContentResult(t, raw["movies"]).Error != nil {
+		t.Fatal("fast movie bucket should remain available")
+	}
+	if decodeContentResult(t, raw["games"]).Error == nil {
+		t.Fatal("slow games bucket should expose its timeout")
+	}
 }
 
 func defaultMocks() (*mockVideo, *mockGames, *mockSpotify, *mockBooks) {

@@ -43,4 +43,8 @@ var (
 	// of attempts. errors.Is(err, ErrUpstreamExhausted) is the right way to
 	// distinguish "we tried and gave up" from a single-shot failure.
 	ErrUpstreamExhausted = errors.New("upstream retries exhausted")
+
+	// ErrCircuitOpen — the provider recently exceeded the consecutive
+	// transient-failure threshold, so calls fail fast during cooldown.
+	ErrCircuitOpen = errors.New("provider circuit is open")
 )

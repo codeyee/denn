@@ -181,3 +181,34 @@ Reglas duras:
 - Antes de cambiar la forma del sobre de error.
 - Cuando se agregue una nueva env var compartida entre dos servicios.
 - Cuando se cambie el contrato de paginación de `proxy` o `core`.
+
+## 9. Resolución masiva de identidad de contenido
+
+`POST /api/content/resolve-ids/` es el contrato autenticado para que
+`web` convierta resultados de discovery en ids internos antes de
+renderizar enlaces.
+
+- Acepta como máximo 100 elementos únicos por
+  `(content_type, external_id, source)`.
+- Sólo acepta identidad. Ignora campos adicionales y nunca persiste
+  metadata de proveedor suministrada por el navegador.
+- La operación es idempotente, conserva el orden de entrada y devuelve
+  el id estable de `ContentItem` para cada triple.
+- Un detalle nuevo se materializa después por el camino confiable
+  `core` -> `proxy`; el endpoint bulk no duplica el fetch de discovery.
+- Hover, focus y navegación nunca deben llamar
+  `POST /api/content/get-or-create/`; esas interacciones son lecturas
+  puras contra el id ya resuelto.
+
+## 10. Presupuestos y caché de agregados de discovery
+
+- El cliente HTTP de proveedor en `proxy` usa timeout de 3 s, como
+  máximo dos reintentos acotados, backoff entre 100 y 500 ms, presupuesto
+  total de 2.5 s y circuit breaker por proveedor.
+- Multi-search tiene presupuesto agregado de 1.5 s y 900 ms por bucket.
+- Homepage tiene presupuesto agregado de 2.5 s y 1.1 s por bucket.
+- Las claves de caché de agregados incluyen todos los inputs que cambian
+  la respuesta (`query`, tipos, página, límite, país) y las versiones de
+  política `adult-exclude` y `future-24h`.
+- Un fallo de Redis degrada a ejecución sin caché; no abre el proxy ni
+  convierte un fallo de infraestructura de caché en un `5xx` obligatorio.

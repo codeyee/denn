@@ -33,7 +33,12 @@ export function SearchPage({
   const showInitialState = !searchQuery.trim() && !isLoading && !error;
 
   return (
-    <div className="relative w-full min-h-screen bg-background-logged-in">
+    <main
+      id="main-content"
+      tabIndex={-1}
+      className="relative w-full min-h-screen bg-background-logged-in"
+    >
+      <h1 className="sr-only">Search Denn</h1>
       {/* Mobile Search Input */}
       <SearchInput
         value={searchQuery}
@@ -85,6 +90,6 @@ export function SearchPage({
 
       {/* Bottom gradient */}
       <div className="pointer-events-none fixed left-0 right-0 bottom-0 h-16 bg-bottom-gradient z-10" />
-    </div>
+    </main>
   );
 }

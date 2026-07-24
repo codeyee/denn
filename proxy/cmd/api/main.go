@@ -95,7 +95,7 @@ func main() {
 	albumHandler := albums.NewHandler(spotifySvc)
 	bookHandler := books.NewHandler(booksSvc)
 
-	multiSearchHandler := multisearch.NewHandler(tmdbSvc, gamesSvc, spotifySvc, booksSvc)
+	multiSearchHandler := multisearch.NewHandler(tmdbSvc, gamesSvc, spotifySvc, booksSvc, cache)
 	homepageHandler := homepage.NewHandler(tmdbSvc, gamesSvc, spotifySvc, booksSvc, cache)
 
 	r := gin.New()

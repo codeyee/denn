@@ -41,8 +41,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
         { charSet: "utf-8" },
         {
           name: "viewport",
-          content:
-            "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no",
+          content: "width=device-width, initial-scale=1",
         },
         { name: "theme-color", content: "#0d030b" },
         { title: "Denn" },
@@ -85,6 +84,12 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body className="font-mono antialiased">
+        <a
+          href="#main-content"
+          className="fixed left-4 top-4 z-60 -translate-y-24 rounded-md bg-white px-4 py-3 font-sans font-semibold text-black transition-transform focus:translate-y-0"
+        >
+          Skip to main content
+        </a>
         {children}
         <Scripts />
       </body>

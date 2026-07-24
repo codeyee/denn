@@ -2,12 +2,19 @@ package multisearch
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
 	"net/http"
+	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/codeyee/denn-proxy/internal/clients"
 	"github.com/codeyee/denn-proxy/internal/handlers/common"
 	"github.com/codeyee/denn-proxy/internal/models"
 
@@ -39,14 +46,32 @@ type Handler struct {
 	gamesSvc   GamesService
 	spotifySvc SpotifyService
 	booksSvc   BooksService
+	cache      clients.Cache
 }
 
-func NewHandler(tmdb VideoService, games GamesService, spotify SpotifyService, books BooksService) *Handler {
+const (
+	searchCacheTTL      = time.Minute
+	searchTotalBudget   = 1500 * time.Millisecond
+	searchBucketTimeout = 900 * time.Millisecond
+)
+
+func NewHandler(
+	tmdb VideoService,
+	games GamesService,
+	spotify SpotifyService,
+	books BooksService,
+	caches ...clients.Cache,
+) *Handler {
+	var cache clients.Cache = clients.NoOpCache{}
+	if len(caches) > 0 && caches[0] != nil {
+		cache = caches[0]
+	}
 	return &Handler{
 		tmdbSvc:    tmdb,
 		gamesSvc:   games,
 		spotifySvc: spotify,
 		booksSvc:   books,
+		cache:      cache,
 	}
 }
 
@@ -103,8 +128,7 @@ type MultiSearchResponse struct {
 // @Security     BearerAuth
 // @Router       /search [get]
 func (h *Handler) Search(c *gin.Context) {
-	c.Header("X-Cache", "BYPASS")
-	query := c.Query("q")
+	query := strings.TrimSpace(c.Query("q"))
 	if query == "" {
 		common.RespondError(c, http.StatusBadRequest, common.CodeMissingParameter, "query parameter is required")
 		return
@@ -117,14 +141,54 @@ func (h *Handler) Search(c *gin.Context) {
 	}
 
 	page, limit := common.ParsePagination(c)
-	results := h.searchAll(c.Request.Context(), query, page, limit, types)
+	country := common.GetCountryFromHeader(c)
+	cacheKey := multiSearchCacheKey(query, page, limit, country, types)
+	if cached, cacheErr := h.cache.Get(c.Request.Context(), cacheKey); cacheErr == nil && len(cached) > 0 {
+		c.Header("X-Cache", "HIT")
+		c.Data(http.StatusOK, "application/json", cached)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), searchTotalBudget)
+	defer cancel()
+	results := h.searchAll(ctx, query, page, limit, types)
 
 	response := make(map[string]ContentResult, len(types))
 	for _, t := range types {
 		response[responseKey[t]] = results[t]
 	}
 
-	c.JSON(http.StatusOK, response)
+	payload, marshalErr := json.Marshal(response)
+	if marshalErr != nil {
+		c.Header("X-Cache", "BYPASS")
+		c.JSON(http.StatusOK, response)
+		return
+	}
+	_ = h.cache.Set(c.Request.Context(), cacheKey, payload, searchCacheTTL)
+	c.Header("X-Cache", "MISS")
+	c.Data(http.StatusOK, "application/json", payload)
+}
+
+func multiSearchCacheKey(
+	query string,
+	page, limit int,
+	country string,
+	types []contentType,
+) string {
+	sum := sha256.Sum256([]byte(strings.ToLower(strings.TrimSpace(query))))
+	typeNames := make([]string, 0, len(types))
+	for _, contentType := range types {
+		typeNames = append(typeNames, string(contentType))
+	}
+	sort.Strings(typeNames)
+	return fmt.Sprintf(
+		"search:v2:adult-exclude:future-24h:q%s:p%d:l%d:c%s:t%s",
+		hex.EncodeToString(sum[:8]),
+		page,
+		limit,
+		strings.ToUpper(country),
+		strings.Join(typeNames, ","),
+	)
 }
 
 func parseTypes(raw string) ([]contentType, error) {
@@ -177,7 +241,9 @@ func (h *Handler) searchAll(ctx context.Context, query string, page, limit int, 
 	for i, t := range types {
 		go func(idx int, ct contentType) {
 			defer wg.Done()
-			slots[idx] = h.searchOne(ctx, ct, query, page, limit)
+			bucketCtx, cancel := context.WithTimeout(ctx, searchBucketTimeout)
+			defer cancel()
+			slots[idx] = h.searchOne(bucketCtx, ct, query, page, limit)
 		}(i, t)
 	}
 

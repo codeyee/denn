@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 	"sync"
@@ -14,6 +13,7 @@ import (
 
 	"github.com/codeyee/denn-proxy/internal/clients"
 	"github.com/codeyee/denn-proxy/internal/handlers/common"
+	"github.com/codeyee/denn-proxy/internal/logging"
 	"github.com/codeyee/denn-proxy/internal/models"
 
 	booksservice "github.com/codeyee/denn-proxy/internal/services/books/service"
@@ -25,13 +25,15 @@ import (
 // few minutes of staleness across users is preferable to thundering five
 // upstreams every request. Keep it well under TMDB/IGDB list refresh cycles.
 const HomepageCacheTTL = 5 * time.Minute
+const HomepageStaleTTL = 30 * time.Minute
+const homepageTotalBudget = 2500 * time.Millisecond
 
 // bucketTimeout caps how long a single content bucket (movies, tv-shows,
 // games, albums, books) is allowed to block the aggregate response. Without
 // it, one slow upstream blocks all five; the homepage then waits up to
 // httpclient.maxBackoff*retries before giving up, locking handler goroutines
 // and starving the rate limiter.
-const bucketTimeout = 8 * time.Second
+const bucketTimeout = 1100 * time.Millisecond
 
 type VideoService interface {
 	GetPopularMovies(ctx context.Context, page, limit int) (tmdbservice.SearchResult, error)
@@ -69,6 +71,14 @@ type Handler struct {
 	spotifySvc SpotifyService
 	booksSvc   BooksService
 	cache      clients.Cache
+	flightMu   sync.Mutex
+	flights    map[string]*homepageFlight
+}
+
+type homepageFlight struct {
+	done    chan struct{}
+	payload []byte
+	err     error
 }
 
 // NewHandler wires the aggregate handler. The cache is required (pass
@@ -90,6 +100,7 @@ func NewHandler(
 		spotifySvc: spotify,
 		booksSvc:   books,
 		cache:      cache,
+		flights:    make(map[string]*homepageFlight),
 	}
 }
 
@@ -162,24 +173,131 @@ func (h *Handler) Homepage(c *gin.Context) {
 		c.Data(http.StatusOK, "application/json", cached)
 		return
 	}
-
-	trending := h.fetchTrending(ctx, page, limit)
-	results := h.enrichAll(ctx, trending, country)
-
-	payload, err := json.Marshal(results)
-	if err != nil {
-		// Marshal failures here are programmer errors; serve a fresh JSON
-		// rather than poison the cache.
-		c.JSON(http.StatusOK, results)
+	staleKey := homepageStaleCacheKey(page, limit, country)
+	if stale, err := h.cache.Get(ctx, staleKey); err == nil && len(stale) > 0 {
+		c.Header("X-Cache", "STALE")
+		c.Data(http.StatusOK, "application/json", stale)
+		go func() {
+			started := time.Now()
+			logging.L().Info(
+				"homepage_refresh",
+				"cache_key", cacheKey,
+				"state", "started",
+			)
+			refreshCtx, cancel := context.WithTimeout(context.Background(), homepageTotalBudget)
+			defer cancel()
+			_, refreshErr := h.singleflight(refreshCtx, cacheKey, func() ([]byte, error) {
+				return h.computeAndCache(refreshCtx, page, limit, country)
+			})
+			logging.L().Info(
+				"homepage_refresh",
+				"cache_key", cacheKey,
+				"state", "completed",
+				"success", refreshErr == nil,
+				"duration_ms", time.Since(started).Milliseconds(),
+			)
+		}()
 		return
 	}
 
-	// Best-effort write — a Redis outage must never fail the request.
-	if cerr := h.cache.Set(ctx, cacheKey, payload, HomepageCacheTTL); cerr != nil {
-		log.Printf("homepage: cache set failed for %s: %v", cacheKey, cerr)
+	computeCtx, cancel := context.WithTimeout(ctx, homepageTotalBudget)
+	defer cancel()
+	payload, err := h.singleflight(computeCtx, cacheKey, func() ([]byte, error) {
+		return h.computeAndCache(computeCtx, page, limit, country)
+	})
+	if err != nil {
+		c.Header("X-Cache", "MISS")
+		c.JSON(http.StatusOK, homepageTimeoutResponse(err))
+		return
 	}
 	c.Header("X-Cache", "MISS")
 	c.Data(http.StatusOK, "application/json", payload)
+}
+
+func (h *Handler) computeAndCache(
+	ctx context.Context,
+	page, limit int,
+	country string,
+) ([]byte, error) {
+	trending := h.fetchTrending(ctx, page, limit)
+	results := h.enrichAll(ctx, trending, country)
+	payload, err := json.Marshal(results)
+	if err != nil {
+		return nil, err
+	}
+
+	cacheCtx, cancel := context.WithTimeout(context.Background(), 250*time.Millisecond)
+	defer cancel()
+	cacheKey := homepageCacheKey(page, limit, country)
+	if cacheErr := h.cache.Set(cacheCtx, cacheKey, payload, HomepageCacheTTL); cacheErr != nil {
+		logging.L().Warn(
+			"homepage_cache_set_failed",
+			"cache_key", cacheKey,
+			"cache_tier", "fresh",
+			"error", cacheErr,
+		)
+	}
+	if cacheErr := h.cache.Set(
+		cacheCtx,
+		homepageStaleCacheKey(page, limit, country),
+		payload,
+		HomepageStaleTTL,
+	); cacheErr != nil {
+		logging.L().Warn(
+			"homepage_cache_set_failed",
+			"cache_key", cacheKey,
+			"cache_tier", "stale",
+			"error", cacheErr,
+		)
+	}
+	return payload, nil
+}
+
+func (h *Handler) singleflight(
+	ctx context.Context,
+	key string,
+	fn func() ([]byte, error),
+) ([]byte, error) {
+	h.flightMu.Lock()
+	if existing := h.flights[key]; existing != nil {
+		h.flightMu.Unlock()
+		select {
+		case <-existing.done:
+			return existing.payload, existing.err
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
+	}
+	call := &homepageFlight{done: make(chan struct{})}
+	h.flights[key] = call
+	h.flightMu.Unlock()
+
+	go func() {
+		call.payload, call.err = fn()
+		close(call.done)
+		h.flightMu.Lock()
+		delete(h.flights, key)
+		h.flightMu.Unlock()
+	}()
+
+	select {
+	case <-call.done:
+		return call.payload, call.err
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+}
+
+func homepageTimeoutResponse(err error) map[string]ContentResult {
+	message := "homepage aggregate budget exhausted"
+	if err != nil {
+		message = err.Error()
+	}
+	response := make(map[string]ContentResult, len(allKeys))
+	for _, key := range allKeys {
+		response[key] = errorResult(message)
+	}
+	return response
 }
 
 // bucketContext derives a per-bucket child context with a hard deadline so
@@ -196,7 +314,16 @@ func homepageCacheKey(page, limit int, country string) string {
 	if country == "" {
 		country = "US"
 	}
-	return fmt.Sprintf("homepage:agg:p%d:l%d:c%s", page, limit, country)
+	return fmt.Sprintf(
+		"homepage:v2:adult-exclude:future-24h:p%d:l%d:c%s",
+		page,
+		limit,
+		country,
+	)
+}
+
+func homepageStaleCacheKey(page, limit int, country string) string {
+	return homepageCacheKey(page, limit, country) + ":stale"
 }
 
 func (h *Handler) fetchTrending(ctx context.Context, page, limit int) map[string]trendingData {

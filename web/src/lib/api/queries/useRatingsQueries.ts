@@ -2,6 +2,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 import { ratingActions } from "@/lib/api";
 import { queryKeys } from "./keys";
+import type { Rating } from "@/lib/types";
 
 interface UseRatingsListQueryOptions {
   pageSize?: number;
@@ -29,7 +30,11 @@ export function useRatingsListQuery(
   });
 }
 
-export function useUserRatingQuery(contentItemId?: number, userId?: number) {
+export function useUserRatingQuery(
+  contentItemId?: number,
+  userId?: number,
+  initialData?: Rating | null,
+) {
   const hasParams =
     Number.isFinite(contentItemId) &&
     Number(contentItemId) > 0 &&
@@ -47,6 +52,7 @@ export function useUserRatingQuery(contentItemId?: number, userId?: number) {
       return response.results[0] ?? null;
     },
     enabled: hasParams,
+    initialData,
     staleTime: 30_000,
   });
 }

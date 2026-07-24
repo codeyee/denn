@@ -21,6 +21,7 @@ interface UseSearchResultsReturn {
 interface UseSearchResultsOptions {
     country?: string | null;
     enabled?: boolean;
+    initialData?: MultiSearchResponse;
 }
 
 function transformSearchResponse(response?: MultiSearchResponse): SearchResults {
@@ -37,13 +38,18 @@ function transformSearchResponse(response?: MultiSearchResponse): SearchResults 
 
 export function useSearchResults(
     query: string,
-    { country, enabled = true }: UseSearchResultsOptions = {},
+    {
+        country,
+        enabled = true,
+        initialData,
+    }: UseSearchResultsOptions = {},
 ): UseSearchResultsReturn {
     const trimmedQuery = query.trim();
     const searchQuery = useMultiSearchQuery(trimmedQuery, {
         limit: SEARCH_RESULT_LIMIT,
         country,
         enabled: enabled && trimmedQuery.length > 0,
+        initialData,
     });
 
     const results = useMemo(

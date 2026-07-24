@@ -7,10 +7,12 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
 	"github.com/codeyee/denn-proxy/internal/models"
+	"github.com/codeyee/denn-proxy/internal/testutil"
 
 	booksservice "github.com/codeyee/denn-proxy/internal/services/books/service"
 	gamesservice "github.com/codeyee/denn-proxy/internal/services/games/service"
@@ -40,6 +42,17 @@ type mockGames struct {
 
 func (m *mockGames) SearchGames(_ context.Context, _ string, _, _ int) (gamesservice.SearchResult, error) {
 	return m.result, m.err
+}
+
+type deadlineGames struct{}
+
+func (*deadlineGames) SearchGames(
+	ctx context.Context,
+	_ string,
+	_, _ int,
+) (gamesservice.SearchResult, error) {
+	<-ctx.Done()
+	return gamesservice.SearchResult{}, ctx.Err()
 }
 
 type mockSpotify struct {
@@ -100,6 +113,70 @@ func decodeErrorResponse(t *testing.T, w *httptest.ResponseRecorder) map[string]
 		t.Fatalf("Failed to decode error response: %v", err)
 	}
 	return resp
+}
+
+func TestMultiSearchCacheKeyScopesAllPayloadInputs(t *testing.T) {
+	base := multiSearchCacheKey(" Dune ", 1, 20, "CO", []contentType{typeMovies})
+	cases := []string{
+		multiSearchCacheKey("Foundation", 1, 20, "CO", []contentType{typeMovies}),
+		multiSearchCacheKey("Dune", 2, 20, "CO", []contentType{typeMovies}),
+		multiSearchCacheKey("Dune", 1, 10, "CO", []contentType{typeMovies}),
+		multiSearchCacheKey("Dune", 1, 20, "US", []contentType{typeMovies}),
+		multiSearchCacheKey("Dune", 1, 20, "CO", []contentType{typeBooks}),
+	}
+	for _, candidate := range cases {
+		if candidate == base {
+			t.Fatalf("cache key collision for distinct inputs: %s", candidate)
+		}
+	}
+	if normalized := multiSearchCacheKey("dune", 1, 20, "CO", []contentType{typeMovies}); normalized != base {
+		t.Fatalf("expected normalized query key, got %s and %s", base, normalized)
+	}
+}
+
+func TestMultiSearchCachesAggregateResponse(t *testing.T) {
+	tmdb, games, spotify, books := defaultMocks()
+	cache := testutil.NewMemoryCache()
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	h := NewHandler(tmdb, games, spotify, books, cache)
+	r.GET("/search", h.Search)
+
+	first := doRequest(r, "/search?q=dune&limit=5")
+	second := doRequest(r, "/search?q=dune&limit=5")
+
+	if first.Header().Get("X-Cache") != "MISS" {
+		t.Fatalf("expected first request MISS, got %q", first.Header().Get("X-Cache"))
+	}
+	if second.Header().Get("X-Cache") != "HIT" {
+		t.Fatalf("expected second request HIT, got %q", second.Header().Get("X-Cache"))
+	}
+	if first.Body.String() != second.Body.String() {
+		t.Fatal("cached response differs from original response")
+	}
+}
+
+func TestMultiSearchSlowBucketReturnsPartialResponseInsideBudget(t *testing.T) {
+	tmdb, _, spotify, books := defaultMocks()
+	r := setupRouter(tmdb, &deadlineGames{}, spotify, books)
+
+	started := time.Now()
+	response := doRequest(r, "/search?q=dune&limit=5")
+	elapsed := time.Since(started)
+
+	if response.Code != http.StatusOK {
+		t.Fatalf("expected partial 200, got %d", response.Code)
+	}
+	if elapsed >= searchTotalBudget {
+		t.Fatalf("slow bucket exceeded aggregate budget: %v", elapsed)
+	}
+	raw := decodeResponse(t, response)
+	if decodeContentResult(t, raw["movies"]).Error != nil {
+		t.Fatal("fast movie bucket should remain available")
+	}
+	if decodeContentResult(t, raw["games"]).Error == nil {
+		t.Fatal("slow games bucket should expose its timeout")
+	}
 }
 
 func defaultMocks() (*mockVideo, *mockGames, *mockSpotify, *mockBooks) {

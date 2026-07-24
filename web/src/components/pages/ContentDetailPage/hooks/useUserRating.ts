@@ -23,7 +23,11 @@ export function useUserRating({
   contentItem,
   user,
 }: UseUserRatingParams): UseUserRatingReturn {
-  const userRating = useUserRatingQuery(contentItem?.id, user?.id);
+  const userRating = useUserRatingQuery(
+    contentItem?.id,
+    user?.id,
+    contentItem?.current_user_rating,
+  );
   const upsertRating = useUpsertUserRatingMutation();
   const deleteRating = useDeleteRatingMutation();
 

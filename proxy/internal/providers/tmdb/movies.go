@@ -12,13 +12,15 @@ import (
 
 func (c *Client) SearchMovies(ctx context.Context, query string, page int) (*clients.Response, error) {
 	params := url.Values{
-		"query": {query},
-		"page":  {strconv.Itoa(page)},
+		"query":         {query},
+		"page":          {strconv.Itoa(page)},
+		"include_adult": {"false"},
 	}
 
 	return c.CachedGet(ctx, "search/movie", "search_movies", params, map[string]string{
 		"query": servicecommon.NormalizeSearchCacheKey(query),
 		"page":  strconv.Itoa(page),
+		"adult": "exclude",
 	})
 }
 

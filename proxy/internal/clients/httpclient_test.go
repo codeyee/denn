@@ -130,3 +130,32 @@ func TestRequest_TotalBudgetCutsLoopShort(t *testing.T) {
 		t.Errorf("expected timeout or exhausted classification, got %v", err)
 	}
 }
+
+func TestRequest_CircuitOpensAfterConsecutiveTransientFailures(t *testing.T) {
+	var calls int32
+	rt := testutil.RoundTripFunc(func(*http.Request) (*http.Response, error) {
+		atomic.AddInt32(&calls, 1)
+		return testutil.JSONResponse(
+			http.StatusInternalServerError,
+			map[string]string{"error": "boom"},
+		), nil
+	})
+	client := NewBaseClient(
+		"http://example.test",
+		WithAPIName("test-provider"),
+		WithHTTPClient(testutil.HTTPClient(rt)),
+		WithNoRetry(),
+	)
+
+	for range circuitThreshold {
+		if _, err := client.Get(context.Background(), "/x", nil); err == nil {
+			t.Fatal("expected transient provider failure")
+		}
+	}
+	if _, err := client.Get(context.Background(), "/x", nil); !errors.Is(err, ErrCircuitOpen) {
+		t.Fatalf("expected open circuit, got %v", err)
+	}
+	if got := atomic.LoadInt32(&calls); got != circuitThreshold {
+		t.Fatalf("open circuit should fail before transport, got %d calls", got)
+	}
+}

@@ -17,8 +17,9 @@ that still exist after ADR 0002 phase 1.
 - Protected routes also enforce SSR redirects at the route level via
   TanStack Router `beforeLoad`, so anonymous users do not depend only on
   a client-side redirect.
-- Session resolution distinguishes `anonymous` from `unavailable` so a
-  dead `core` dependency degrades to an unavailable state instead of
+- Session resolution distinguishes `pending`, `anonymous`,
+  `authenticated`, `expired`, `unavailable`, and `timeout`. A dead or
+  slow `core` dependency degrades to a recoverable state instead of
   looking identical to a logged-out user.
 
 Relevant code:
@@ -38,10 +39,14 @@ Relevant code:
 
 - A hard refresh on a protected route no longer depends on
   `localStorage` carrying the JWTs.
-- If refresh fails server-side, `needsCookieSync` causes the client to
-  clear stale cookies and session state.
-- The root route degrades to a logged-out shell when session resolution
-  fails instead of crashing the app boundary.
+- Only an explicit refresh rejection (`401`) produces `expired` and
+  `needsCookieSync`; timeouts, network failures, and upstream `5xx`
+  preserve the last known user and tokens.
+- Login and registration requests have bounded deadlines. Successful
+  auth invalidates router state before entering the destination route;
+  logout navigates home before invalidation to avoid redirect loops.
+- A protected route in `unavailable` or `timeout` state exposes a retry
+  action rather than clearing credentials.
 
 ## Current Gaps
 
@@ -49,8 +54,9 @@ Relevant code:
 - `ProtectedRoute` still keeps the client-side redirect as a fallback,
   so protected-route policy now exists in both route-level and client
   guard layers and must stay aligned.
-- Regression coverage is broader than before, but still focused on
-  unit/integration tests rather than full browser E2E.
+- Browser E2E covers hard refresh, delayed detail, transient auth
+  failures, logout, keyboard navigation, and the critical
+  login-to-detail flow.
 
 ## Rules For New Protected Routes
 
@@ -68,7 +74,5 @@ Relevant code:
 
 - Keep adding protected-route helpers instead of hand-writing auth logic
   in individual route files.
-- Expand regression tests for hard refresh, dead cookies, and
-  backend-down paths into higher-fidelity browser coverage when the
-  harness exists.
+- Keep the production-build session regression scenarios in the PR gate.
 - Migrate to `HttpOnly` auth cookies with a BFF-mediated auth flow.

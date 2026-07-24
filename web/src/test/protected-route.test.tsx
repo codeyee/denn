@@ -5,9 +5,11 @@ import { ProtectedRoute } from "@/components/common/providers/ProtectedRoute";
 import { useAuthStore } from "@/stores/auth-store";
 
 const navigateMock = vi.fn();
+const invalidateMock = vi.fn();
 
 vi.mock("@tanstack/react-router", () => ({
   useNavigate: () => navigateMock,
+  useRouter: () => ({ invalidate: invalidateMock }),
   useLocation: ({
     select,
   }: {
@@ -18,6 +20,7 @@ vi.mock("@tanstack/react-router", () => ({
 describe("ProtectedRoute", () => {
   beforeEach(() => {
     navigateMock.mockReset();
+    invalidateMock.mockReset();
     useAuthStore.setState({
       user: null,
       accessToken: null,

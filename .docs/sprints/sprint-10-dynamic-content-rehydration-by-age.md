@@ -52,13 +52,10 @@
   global del contenido. Eso deja un hueco: un item puede estar “fresh”
   para campos globales y aun así no tener plataformas frescas para el
   país solicitado.
-- Sigue existiendo al menos una fuga de contenido futuro en
-  `proxy /homepage`, ya reproducida visualmente en el bucket
-  `Popular Movies` con `Avatar Aang: The Last Airbender`
-  (`release_date=2026-10-09`) observada el `2026-05-02`. Eso confirma
-  que todavía hay un path donde la elegibilidad por fecha no se está
-  aplicando de forma efectiva o está siendo anulada por cache/datos ya
-  materializados.
+- La fuga de contenido futuro reproducida en `Popular Movies` quedó
+  cerrada en Fase 1: servicios de search/trending aplican la regla común
+  antes del agregado y las claves de homepage/search están versionadas
+  con `future-24h`.
 
 ## Pendiente
 
@@ -97,17 +94,17 @@
 
 ### 10H. Cierre real del filtro de futuros en homepage
 
-- [ ] Reproducir el caso con inspección directa de payloads de
+- [x] Reproducir el caso con inspección directa de payloads de
   `proxy /homepage` y distinguir si el leak viene del fetch trending,
   de la fase de enrichment, del cache agregado del homepage, o de un
   proceso/binario desalineado.
-- [ ] Añadir tests específicos del bucket `Popular Movies` para un item
+- [x] Añadir tests específicos del bucket `Popular Movies` para un item
   con `release_date` varios meses en el futuro y verificar que no
   aparezca en el payload final.
-- [ ] Revisar la semántica exacta del grace window (hoy 1 día en código)
+- [x] Revisar la semántica exacta del grace window (hoy 1 día en código)
   y dejarla documentada para evitar ambigüedad entre producto, docs y
   tests.
-- [ ] Confirmar que el mismo criterio se aplica de forma consistente en
+- [x] Confirmar que el mismo criterio se aplica de forma consistente en
   search, homepage, previews y cualquier superficie agregada derivada de
   esos endpoints.
 

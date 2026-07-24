@@ -40,6 +40,9 @@ The hybrid topology is deliberate and documented in
 - A logical SSR navigation now keeps one bounded `X-Request-Id` across
   parallel `web` reads to `core` and `proxy`; responses expose bounded
   cache state and non-sensitive `Server-Timing`.
+- Discovery payloads are resolved to stable Denn ids in one authenticated
+  bulk request before cards render. Card hover/focus performs only a pure
+  detail prefetch; it never creates content.
 - `proxy` remains stateless relative to PostgreSQL and user data.
 
 ## Current Frontend State
@@ -69,8 +72,13 @@ The hybrid topology is deliberate and documented in
 - The production-build Playwright harness uses non-personal deterministic
   fixtures. Desktop smoke is a PR gate; mobile smoke, known-regression
   characterization and cold/warm baselines are repeatable root commands.
-- Hover prefetch exists for content cards and list item cards via the
-  router's default `preload="intent"`.
+- Content cards and list item cards render semantic links with a known
+  internal id. Hover/focus prefetch uses a pure `GET`, while click
+  navigation exposes immediate pending feedback.
+- The critical login -> home -> search -> detail -> back flow is covered
+  in desktop and mobile production-build smoke, including the former
+  session-loss, logout-loop, hover-write, delayed-detail, and React 418
+  regressions.
 - Decision recorded in [ADR 0003](../adr/0003-migrate-web-from-nextjs-to-tanstack-start.md).
 
 See [`data-fetching.md`](./data-fetching.md).
@@ -85,9 +93,11 @@ See [`data-fetching.md`](./data-fetching.md).
   `AuthSessionBootstrap`.
 - `ProtectedRoute` blocks during the store bootstrap window with
   `isBootingSession`.
-- Protected routes also redirect server-side via route `beforeLoad`,
-  while preserving a client fallback for the bootstrap race and the
-  unavailable-backend path.
+- Session resolution distinguishes `pending`, `anonymous`,
+  `authenticated`, `expired`, `unavailable`, and `timeout`.
+- Protected routes redirect only for confirmed anonymous/expired
+  sessions. Operational failures preserve known credentials, render a
+  recoverable fallback, and never masquerade as logout.
 
 See [`auth-session-bootstrap.md`](./auth-session-bootstrap.md).
 
@@ -97,12 +107,21 @@ See [`auth-session-bootstrap.md`](./auth-session-bootstrap.md).
   OpenLibrary.
 - `core` persists `ContentItem` plus per-type detail tables.
 - The canonical read path for `source_data` is local-first:
-  fresh local detail -> stale local fallback with `is_stale=true` ->
-  proxy refresh when needed.
+  fresh local detail -> stale local response with `is_stale=true` plus a
+  bounded background single-flight refresh -> synchronous proxy fetch
+  only when no usable local payload exists.
+- Content detail preloads the current user's rating and serializes it in
+  the same response, avoiding a second browser waterfall.
+- Homepage and multi-search use scoped, policy-versioned cache keys.
+  Homepage supports fresh/stale cache reads and single-flight refresh;
+  provider calls have bounded retries, circuit breaking, and aggregate
+  deadlines.
 - Periodic refresh uses `CONTENT_REHYDRATION_POLICY`, including
   SQL-side `refresh_due_at` selection and age-band-aware logging.
 
 See [`content-lifecycle.md`](./content-lifecycle.md).
+Discovery filtering is defined in
+[`content-eligibility.md`](./content-eligibility.md).
 
 ## Canonical Supporting Docs
 

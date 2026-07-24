@@ -63,6 +63,34 @@ Values below are milliseconds except CLS.
 An INP value of `0` means no qualifying event-duration entry was emitted
 for that sample; it is not treated as proof of zero input latency.
 
+## Phase 1 Local After Snapshot
+
+Captured 2026-07-24 with the same production-build fixture method after
+the Phase 1 auth, navigation, local-first detail, and aggregate-cache
+changes. This is a local comparison point; it does not replace the
+deployed before snapshot above.
+
+| Flow | State | TTFB p50/p75/p95 | FCP p75 | LCP p50/p75/p95 | INP p75/p95 | CLS p75/p95 |
+|---|---|---|---:|---|---|---|
+| Login | cold | 6.8 / 10.2 / 15.4 | 32 | 472 / 476 / 480 | 0 / 0 | 0 / 0 |
+| Login | warm | 6.5 / 7.4 / 7.9 | 44 | 44 / 44 / 56 | 0 / 0 | 0 / 0 |
+| Home | cold | 15.9 / 17.7 / 30.8 | 44 | 44 / 44 / 56 | 0 / 0 | 0 / 0 |
+| Home | warm | 16.5 / 16.6 / 18.2 | 60 | 60 / 60 / 68 | 0 / 0 | 0 / 0 |
+| Search | cold | 13.9 / 14.0 / 18.3 | 40 | 36 / 40 / 40 | 0 / 0 | 0 / 0 |
+| Search | warm | 13.7 / 15.5 / 18.0 | 56 | 56 / 56 / 60 | 0 / 0 | 0 / 0 |
+| Detail | cold | 9.7 / 9.7 / 14.3 | 32 | 84 / 88 / 92 | 0 / 0 | 0 / 0 |
+| Detail | warm | 9.9 / 10.5 / 10.9 | 48 | 72 / 72 / 72 | 0 / 0 | 0 / 0 |
+| Lists | cold | 7.1 / 9.1 / 15.4 | 84 | 100 / 104 / 112 | 0 / 0 | 0.04 / 0.04 |
+| Lists | warm | 6.6 / 6.6 / 7.1 | 68 | 80 / 80 / 88 | 0 / 0 | 0.04 / 0.04 |
+| Profile | cold | 6.2 / 6.6 / 6.7 | 68 | 68 / 68 / 68 | 0 / 0 | 0 / 0 |
+| Profile | warm | 4.6 / 4.7 / 5.2 | 60 | 56 / 60 / 64 | 0 / 0 | 0 / 0 |
+
+The browser regression suite separately measures the first visible
+navigation feedback and requires it in less than 100 ms. The detail
+backend request prefetches identity, rating, and related detail rows in
+six queries, below the repository's `query_count <= 10` list-path
+ceiling, and performs no per-item provider waterfall.
+
 ## Backend Telemetry Contract
 
 With `PERF_LOGGING_ENABLED=true`, every critical `core` request emits:

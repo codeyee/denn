@@ -33,11 +33,12 @@ const movie = {
 };
 const contentItem = {
   id: 1,
-  source_api: "TMDB",
+  source_api: "tmdb",
   external_id: "101",
   content_type: "MOVIE",
   rating_count: 0,
   average_rating: null,
+  current_user_rating: null,
   created_at: now,
   source_data: movie,
 };
@@ -100,6 +101,8 @@ const state = {
   requests: [],
   coreMode: "normal",
   cacheStatus: "MISS",
+  detailDelayMs: 0,
+  detailStatus: 200,
 };
 
 function corsHeaders(requestId) {
@@ -151,6 +154,8 @@ const core = createServer(async (request, response) => {
     state.requests = [];
     state.coreMode = "normal";
     state.cacheStatus = "MISS";
+    state.detailDelayMs = 0;
+    state.detailStatus = 200;
     return json(response, 200, { ok: true }, corsHeaders(requestId));
   }
   if (url.pathname === "/__fixture__/scenario" && request.method === "POST") {
@@ -247,7 +252,37 @@ const core = createServer(async (request, response) => {
     return json(response, 200, { metadata: pagination, results: [] }, headers);
   }
   if (url.pathname === "/api/content/1/") {
+    if (state.detailDelayMs > 0) {
+      await delay(state.detailDelayMs);
+    }
+    if (state.detailStatus !== 200) {
+      return json(
+        response,
+        state.detailStatus,
+        { detail: "fixture detail failure" },
+        headers,
+      );
+    }
     return json(response, 200, contentItem, headers);
+  }
+  if (
+    url.pathname === "/api/content/resolve-ids/" &&
+    request.method === "POST"
+  ) {
+    const body = await readJson(request);
+    return json(
+      response,
+      200,
+      {
+        results: (body.items ?? []).map((item) => ({
+          id: 1,
+          source_api: item.source_api,
+          external_id: item.external_id,
+          content_type: item.content_type,
+        })),
+      },
+      headers,
+    );
   }
   if (
     url.pathname === "/api/content/items/get_or_create/" &&

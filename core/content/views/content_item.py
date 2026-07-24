@@ -4,12 +4,12 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.generics import get_object_or_404
-from django.db.models import Q
+from django.db.models import Prefetch, Q
 from django.shortcuts import redirect
 from django.urls import reverse
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiExample, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
-from content.models import ContentItem
+from content.models import ContentItem, Rating
 from content.serializers import ContentItemSerializer
 from content.permissions import IsAdminOrReadOnly
 from rest_flex_fields.views import FlexFieldsMixin
@@ -19,6 +19,47 @@ class ContentItemLookupSerializer(drf_serializers.Serializer):
     source_api = drf_serializers.ChoiceField(choices=ContentItem.SourceAPI.choices)
     external_id = drf_serializers.CharField(max_length=255)
     content_type = drf_serializers.ChoiceField(choices=ContentItem.ContentType.choices)
+
+
+class ContentItemBulkResolveInputSerializer(ContentItemLookupSerializer):
+    pass
+
+
+class ContentItemBulkResolveRequestSerializer(drf_serializers.Serializer):
+    items = ContentItemBulkResolveInputSerializer(many=True)
+
+    def validate_items(self, items):
+        if not items:
+            raise drf_serializers.ValidationError('At least one item is required.')
+        if len(items) > 100:
+            raise drf_serializers.ValidationError('Maximum 100 items allowed per request.')
+
+        seen = set()
+        expected_sources = {
+            ContentItem.ContentType.MOVIE: ContentItem.SourceAPI.TMDB,
+            ContentItem.ContentType.TV_SHOW: ContentItem.SourceAPI.TMDB,
+            ContentItem.ContentType.SEASON: ContentItem.SourceAPI.TMDB,
+            ContentItem.ContentType.GAME: ContentItem.SourceAPI.IGDB,
+            ContentItem.ContentType.ALBUM: ContentItem.SourceAPI.SPOTIFY,
+            ContentItem.ContentType.BOOK: ContentItem.SourceAPI.OPENLIBRARY,
+        }
+        for item in items:
+            key = (
+                item['source_api'],
+                item['external_id'],
+                item['content_type'],
+            )
+            if key in seen:
+                raise drf_serializers.ValidationError(
+                    'Duplicate source_api/external_id/content_type triples are not allowed.'
+                )
+            seen.add(key)
+            if expected_sources[item['content_type']] != item['source_api']:
+                raise drf_serializers.ValidationError(
+                    'source_api is not valid for content_type.'
+                )
+        return items
+
 
 @extend_schema_view(
     list=extend_schema(
@@ -306,12 +347,106 @@ class ContentItemDetailByIdView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, id):
-        item = get_object_or_404(ContentItem, pk=id)
+        item = get_object_or_404(
+            ContentItem.objects.prefetch_related(
+                Prefetch(
+                    'ratings',
+                    queryset=Rating.objects.filter(user=request.user),
+                    to_attr='current_user_ratings',
+                ),
+            ),
+            pk=id,
+        )
+        from content.services.source_data_orchestrator import fetch_bulk_source_data
+
+        source_data_cache = fetch_bulk_source_data(
+            [item],
+            country_code=request.query_params.get('country'),
+            stale_while_revalidate=True,
+        )
         serializer = ContentItemSerializer(
             item,
-            context={'request': request, 'include_source_data': True},
+            context={
+                'request': request,
+                'include_source_data': True,
+                'source_data_cache': source_data_cache,
+            },
         )
         return Response(serializer.data)
+
+
+@extend_schema(
+    tags=['Content Items'],
+    summary='Resolve external content identities in bulk',
+    description='''
+    Idempotently resolves up to 100 external content triples to canonical
+    Denn ids. This endpoint owns identity only; it never trusts
+    browser-supplied provider metadata. Missing detail is materialized later
+    through the canonical `core` -> `proxy` path.
+    ''',
+    request=ContentItemBulkResolveRequestSerializer,
+    responses={200: OpenApiTypes.OBJECT},
+)
+class ContentItemBulkResolveView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        import logging
+        import time
+
+        serializer = ContentItemBulkResolveRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        input_items = serializer.validated_data['items']
+        started = time.monotonic()
+
+        candidates = [
+            ContentItem(
+                source_api=item['source_api'],
+                external_id=item['external_id'],
+                content_type=item['content_type'],
+            )
+            for item in input_items
+        ]
+        ContentItem.objects.bulk_create(candidates, ignore_conflicts=True)
+
+        query = Q()
+        for item in input_items:
+            query |= Q(
+                source_api=item['source_api'],
+                external_id=item['external_id'],
+                content_type=item['content_type'],
+            )
+        resolved = ContentItem.objects.filter(query)
+        resolved_by_key = {
+            (item.source_api, item.external_id, item.content_type): item
+            for item in resolved
+        }
+
+        results = []
+        for input_item in input_items:
+            key = (
+                input_item['source_api'],
+                input_item['external_id'],
+                input_item['content_type'],
+            )
+            item = resolved_by_key[key]
+            results.append({
+                'id': item.id,
+                'source_api': item.source_api,
+                'external_id': item.external_id,
+                'content_type': item.content_type,
+            })
+
+        logging.getLogger(__name__).info(
+            'content_id_bulk_resolution',
+            extra={
+                'event': 'content_id_bulk_resolution',
+                'requested_count': len(input_items),
+                'resolved_count': len(results),
+                'duration_ms': int((time.monotonic() - started) * 1000),
+            },
+        )
+        return Response({'results': results})
 
 
 @extend_schema(

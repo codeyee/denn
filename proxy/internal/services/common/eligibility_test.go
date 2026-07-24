@@ -29,6 +29,49 @@ func TestIsGeneralReleaseEligible(t *testing.T) {
 	if IsGeneralReleaseEligible(stringPtr("2026-05-05"), now) {
 		t.Fatal("future dates outside the grace window must be filtered")
 	}
+	if IsGeneralReleaseEligible(stringPtr("not-a-date"), now) {
+		t.Fatal("malformed dates must fail closed")
+	}
+}
+
+func TestEligibilityFiltersEveryDiscoveryMediaFamily(t *testing.T) {
+	now := time.Date(2026, 5, 2, 0, 0, 0, 0, time.UTC)
+	released := stringPtr("2026-05-01")
+	future := stringPtr("2026-06-01")
+
+	cases := map[string]int{
+		"movies": len(FilterEligibleMovies([]models.Movie{
+			{ReleaseDate: released},
+			{ReleaseDate: future},
+			{ReleaseDate: nil},
+		}, now)),
+		"tv": len(FilterEligibleTVShows([]models.TVShow{
+			{ReleaseDate: released},
+			{ReleaseDate: future},
+			{ReleaseDate: nil},
+		}, now)),
+		"games": len(FilterEligibleSearchItems([]models.SearchItem{
+			{ReleaseDate: released},
+			{ReleaseDate: future},
+			{ReleaseDate: nil},
+		}, now)),
+		"albums": len(FilterEligibleAlbums([]models.Album{
+			{ReleaseDate: released},
+			{ReleaseDate: future},
+			{ReleaseDate: nil},
+		}, now)),
+		"books": len(FilterEligibleBooks([]models.Book{
+			{ReleaseDate: released},
+			{ReleaseDate: future},
+			{ReleaseDate: nil},
+		}, now)),
+	}
+
+	for family, eligible := range cases {
+		if eligible != 1 {
+			t.Errorf("%s: expected only the released item, got %d", family, eligible)
+		}
+	}
 }
 
 func TestIsValidSeasonContent(t *testing.T) {

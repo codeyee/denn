@@ -6,7 +6,8 @@ import { Footer } from "../../layout/Footer";
 
 export function LandingPage() {
   return (
-    <>
+    <main id="main-content" tabIndex={-1}>
+      <h1 className="sr-only">Welcome to Denn</h1>
       {/* Snap-scroll container */}
       <div className="snap-y snap-mandatory h-screen overflow-y-scroll overflow-x-hidden scroll-smooth relative" style={{ scrollbarGutter: 'stable', zIndex: 1 }}>
         {/* Hero Screen - First Screen */}
@@ -32,7 +33,6 @@ export function LandingPage() {
 
       {/* Bottom gradient */}
       <div className="pointer-events-none fixed left-0 right-0 bottom-0 h-16 bg-bottom-gradient z-10" />
-    </>
+    </main>
   );
 }
-

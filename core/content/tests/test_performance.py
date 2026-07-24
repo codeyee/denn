@@ -256,9 +256,10 @@ class APIPerformanceTests(APITestCase):
     def test_content_detail_endpoint_query_count(self):
         """Sprint 08 / T3: GET /api/content/<id>/ resolves a single item.
 
-        Should be a small constant: SELECT for the item + the auth/session
-        plumbing. include_source_data goes to the proxy (mocked away in
-        TESTING) so it does not show up as DB queries here.
+        The local-first contract uses a bounded six-query shape: identity,
+        current-user rating, detail relations, images, providers, and authors.
+        This remains below the repository's <=10 list/detail budget and avoids
+        a second ratings HTTP waterfall.
         """
         from django.db import connection
 
@@ -270,7 +271,7 @@ class APIPerformanceTests(APITestCase):
 
         connection.queries_log.clear()
         with override_settings(DEBUG=True):
-            with self.assertNumQueries(1):
+            with self.assertNumQueries(6):
                 response = self.client.get(f'/api/content/{content_item.id}/')
 
         self.assertEqual(response.status_code, 200)

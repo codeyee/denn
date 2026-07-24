@@ -39,12 +39,27 @@ considered part of the project baseline.
 - Global frontend query provider, query-key factory, extracted query
   hooks/mutations, and server-side prefetch for the main frontend flows.
 - Hover prefetch for detail navigation from content cards and list item
-  cards.
-- Global session bootstrap plus route-level protected redirects in
-  TanStack Router for authenticated pages.
+  cards, using semantic links and pure reads after discovery resolves
+  stable ids in one bulk `core` request.
+- Global session bootstrap with bounded deadlines, explicit
+  anonymous/expired/operational-failure states, recoverable protected
+  routes, and route-level redirects only for confirmed invalid sessions.
+- Local-first detail reads that serve stale data immediately while one
+  bounded background refresh runs, plus current-user rating data in the
+  initial detail response.
+- Homepage and search aggregate caches with country/query/policy-scoped
+  keys, stale-while-revalidate, single-flight homepage misses, bounded
+  provider retries, and circuit breakers.
+- General-discovery release eligibility with a 24-hour grace window and
+  TMDB adult exclusion before aggregate cache writes.
+- Accessibility foundation for the critical flow: zoomable viewport,
+  skip link, one main landmark, semantic card navigation, labeled
+  search controls, visible focus behavior, reduced-motion support, and
+  44px interactive targets.
 - Deterministic production-build Playwright fixtures, desktop/mobile
-  critical-flow smoke, expected-failure audit characterization, redacted
-  browser failure artifacts and a scheduled cold/warm baseline.
+  critical-flow smoke, promoted auth/navigation regression coverage,
+  sub-100ms navigation-feedback checks, redacted browser failure
+  artifacts and a scheduled cold/warm baseline.
 
 ## Current Compatibility Guarantees
 

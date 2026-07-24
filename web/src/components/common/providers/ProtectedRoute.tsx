@@ -1,7 +1,7 @@
 
 import { useAuth } from "@/hooks/useAuth";
 import { useAuthStore } from "@/stores/auth-store";
-import { useLocation, useNavigate } from "@tanstack/react-router";
+import { useLocation, useNavigate, useRouter } from "@tanstack/react-router";
 import { useEffect, useRef, type ReactNode } from "react";
 
 interface ProtectedRouteProps {
@@ -18,11 +18,13 @@ export function ProtectedRoute({
   const { isAuthenticated, isLoading, sessionResolution } = useAuth();
   const accessToken = useAuthStore((state) => state.accessToken);
   const navigate = useNavigate();
+  const router = useRouter();
   const location = useLocation({
     select: (loc) => ({ pathname: loc.pathname, searchStr: loc.searchStr }),
   });
   const bootStartedAtRef = useRef<number | null>(null);
   const bootWarnedRef = useRef(false);
+  const redirectStartedRef = useRef(false);
 
   // Hydration window: zustand-persist restored `isAuthenticated: true` from
   // localStorage, but <AuthSessionBootstrap /> in the root layout hasn't yet
@@ -30,17 +32,33 @@ export function ProtectedRoute({
   // children would mount, fire authed fetches with no Authorization header,
   // get 401s, fail the refresh path with "No refresh token available", and
   // bounce the user back to /login on every hard refresh.
-  const isBootingSession = isAuthenticated && !accessToken;
+  const isBootingSession =
+    isAuthenticated &&
+    !accessToken &&
+    sessionResolution === "pending";
+  const isDegradedSession =
+    !accessToken &&
+    (sessionResolution === "unavailable" ||
+      sessionResolution === "timeout");
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated && sessionResolution !== "unavailable") {
+    if (
+      !isLoading &&
+      !isAuthenticated &&
+      (sessionResolution === "anonymous" ||
+        sessionResolution === "expired")
+    ) {
+      if (redirectStartedRef.current) return;
+      redirectStartedRef.current = true;
       void navigate({
         to: "/login",
         search: {
           next: `${location.pathname}${location.searchStr || ""}`,
         },
       });
+      return;
     }
+    if (isAuthenticated) redirectStartedRef.current = false;
   }, [
     isAuthenticated,
     isLoading,
@@ -98,8 +116,7 @@ export function ProtectedRoute({
           duration_ms: 5000,
         }),
       );
-      useAuthStore.getState().clearSession();
-      void navigate({ to: "/login" });
+      useAuthStore.getState().setSessionResolution("timeout");
     }, 5000);
 
     return () => {
@@ -110,31 +127,49 @@ export function ProtectedRoute({
     isBootingSession,
     location.pathname,
     location.searchStr,
-    navigate,
     sessionResolution,
   ]);
 
   if (isLoading || isBootingSession) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-gray-100"></div>
+        <div
+          className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-gray-100"
+          role="status"
+          aria-label="Verifying session"
+        />
+      </div>
+    );
+  }
+
+  if (isDegradedSession) {
+    return (
+      <div className="flex min-h-screen items-center justify-center px-6">
+        <div className="max-w-md text-center">
+          <h1 className="text-xl font-semibold">
+            {sessionResolution === "timeout"
+              ? "Session check timed out"
+              : "Service unavailable"}
+          </h1>
+          <p className="mt-3 text-sm text-gray-400">
+            Your session was kept intact. Retry when the service is reachable.
+          </p>
+          <button
+            type="button"
+            className="mt-6 min-h-11 rounded-md bg-primary px-5 py-2 text-primary-foreground focus-visible:ring-4 focus-visible:ring-white/80"
+            onClick={() => {
+              useAuthStore.getState().setSessionResolution("pending");
+              void router.invalidate();
+            }}
+          >
+            Retry session check
+          </button>
+        </div>
       </div>
     );
   }
 
   if (!isAuthenticated) {
-    if (sessionResolution === "unavailable") {
-      return (
-        <div className="flex min-h-screen items-center justify-center px-6">
-          <div className="max-w-md text-center">
-            <h1 className="text-xl font-semibold">Service unavailable</h1>
-            <p className="mt-3 text-sm text-gray-400">
-              Denn could not verify your session right now. Retry in a moment.
-            </p>
-          </div>
-        </div>
-      );
-    }
     return null;
   }
 

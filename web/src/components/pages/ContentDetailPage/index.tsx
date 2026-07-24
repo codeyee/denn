@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useAuthStore } from "@/stores/auth-store";
-import { ContentType, TVShowDetail } from "@/lib/types";
+import { ContentItem, ContentType, TVShowDetail } from "@/lib/types";
 import { useContentData } from "./hooks/useContentData";
 import { useUserRating } from "./hooks/useUserRating";
 import { useContentModals } from "./hooks/useContentModals";
@@ -12,6 +12,7 @@ import { GallerySection } from "./components/GallerySection";
 import { SeasonsSection } from "./components/SeasonsSection";
 import { ApiAttribution } from "./components/ApiAttribution";
 import { RatingsSection } from "./components/RatingsSection";
+import { ContentDetailState } from "./components/ContentDetailState";
 import { RatingModal } from "@/components/common/modals/RatingModal";
 import { AddToListModal } from "@/components/common/modals/AddToListModal";
 import { Footer } from "../../layout/Footer";
@@ -19,14 +20,20 @@ import { Footer } from "../../layout/Footer";
 interface ContentDetailPageProps {
   contentId: number;
   country?: string | null;
+  initialContentItem?: ContentItem;
 }
 
-export function ContentDetailPage({ contentId, country }: ContentDetailPageProps) {
+export function ContentDetailPage({
+  contentId,
+  country,
+  initialContentItem,
+}: ContentDetailPageProps) {
   const { user } = useAuthStore();
 
   const { loading, error, contentItem, detailData, tvShowTitle } = useContentData({
     contentId,
     country: country ?? undefined,
+    initialData: initialContentItem,
   });
 
   const rating = useUserRating({
@@ -51,22 +58,13 @@ export function ContentDetailPage({ contentId, country }: ContentDetailPageProps
 
   if (error || !contentItem) {
     return (
-      <div className="relative w-full min-h-screen bg-background-logged-in">
-        <div className="container mx-auto px-4 mt-8 py-20">
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="text-center">
-              <p className="text-red-400 text-xl mb-4">Error loading content</p>
-              <p className="text-gray-400 mb-4">{error || "Content not found"}</p>
-              <button
-                onClick={() => window.history.back()}
-                className="text-white/80 hover:text-white underline"
-              >
-                Go back
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <ContentDetailState
+        title="Error loading content"
+        message={error || "Content not found"}
+        tone="error"
+        actionLabel="Go back"
+        onAction={() => window.history.back()}
+      />
     );
   }
 
@@ -83,29 +81,22 @@ export function ContentDetailPage({ contentId, country }: ContentDetailPageProps
 
   if (!displayItem) {
     return (
-      <div className="relative w-full min-h-screen bg-background-logged-in">
-        <div className="container mx-auto px-4 mt-8 py-20">
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="text-center">
-              <p className="text-yellow-400 text-xl mb-4">Details unavailable</p>
-              <p className="text-gray-400 mb-4">
-                We could not load the metadata for this item right now. Please try again in a moment.
-              </p>
-              <button
-                onClick={() => window.location.reload()}
-                className="text-white/80 hover:text-white underline"
-              >
-                Retry
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <ContentDetailState
+        title="Details unavailable"
+        message="We could not load the metadata for this item right now. Please try again in a moment."
+        tone="warning"
+        actionLabel="Retry"
+        onAction={() => window.location.reload()}
+      />
     );
   }
 
   return (
-    <div className="relative w-full min-h-screen bg-background-logged-in">
+    <main
+      id="main-content"
+      tabIndex={-1}
+      className="relative w-full min-h-screen bg-background-logged-in"
+    >
       <div className="pt-30 pb-20">
         <ContentHeader
           displayItem={displayItem}
@@ -196,6 +187,6 @@ export function ContentDetailPage({ contentId, country }: ContentDetailPageProps
       )}
 
       <div className="pointer-events-none fixed left-0 right-0 bottom-0 h-16 bg-bottom-gradient z-10" />
-    </div>
+    </main>
   );
 }

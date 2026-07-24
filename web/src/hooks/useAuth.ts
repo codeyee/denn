@@ -1,11 +1,12 @@
 import { useAuthStore } from "@/stores/auth-store";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useRouter } from "@tanstack/react-router";
 import { useCallback } from "react";
 
 import { normalizeInternalRedirectTarget } from "@/lib/auth/redirect";
 
 export function useAuth() {
   const navigate = useNavigate();
+  const router = useRouter();
   const {
     user,
     accessToken,
@@ -24,30 +25,33 @@ export function useAuth() {
     async (email: string, password: string, next?: string) => {
       try {
         await login(email, password);
-        void navigate({ to: normalizeInternalRedirectTarget(next) ?? "/" });
+        await router.invalidate();
+        await navigate({ to: normalizeInternalRedirectTarget(next) ?? "/" });
       } catch (error) {
         console.error("Login error:", error);
       }
     },
-    [login, navigate],
+    [login, navigate, router],
   );
 
   const handleRegister = useCallback(
     async (username: string, email: string, password: string) => {
       try {
         await register(username, email, password);
-        void navigate({ to: "/" });
+        await router.invalidate();
+        await navigate({ to: "/" });
       } catch (error) {
         console.error("Registration error:", error);
       }
     },
-    [register, navigate],
+    [register, navigate, router],
   );
 
   const handleLogout = useCallback(async () => {
     await logout();
-    void navigate({ to: "/" });
-  }, [logout, navigate]);
+    await navigate({ to: "/" });
+    await router.invalidate();
+  }, [logout, navigate, router]);
 
   return {
     user,

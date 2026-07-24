@@ -25,6 +25,7 @@ type TmdbSearchResponse struct {
 
 type TmdbSearchResult struct {
 	ID               int     `json:"id"`
+	Adult            bool    `json:"adult"`
 	Title            string  `json:"title"`
 	Name             string  `json:"name"`
 	OriginalTitle    string  `json:"original_title"`

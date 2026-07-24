@@ -138,6 +138,27 @@ This document keeps the durable outcomes of completed implementation plans after
   workflow regenerates the more expensive baseline and regression
   evidence.
 
+## Phase 1 Critical-Flow Stabilization
+
+- Auth bootstrap gained bounded states for anonymous, expired, timeout,
+  and unavailable dependencies. Only explicit invalid credentials clear
+  a session; transient failures preserve it and expose retry.
+- Discovery now resolves external triples to stable Denn ids in one
+  authenticated bulk operation. Semantic card links prefetch via pure
+  reads and show immediate click feedback.
+- Content detail became stale-while-revalidate with bounded
+  single-flight background refresh, and bundles the current user's rating
+  into its first response.
+- Homepage and multi-search gained complete cache-key scope, policy
+  versioning, deadlines, retry/circuit behavior, Redis fail-open, and
+  homepage fresh/stale single-flight caching.
+- General discovery applies a 24-hour release grace window across media
+  families; TMDB also excludes adult content both upstream and from raw
+  mapped results.
+- The critical browser path gained its accessibility foundation and the
+  former Phase 0 expected failures became passing desktop/mobile
+  regressions with a measured sub-100ms feedback gate.
+
 ## What This History Replaces
 
 The detailed execution plans were intentionally removed after their durable outcomes were extracted here and into the architecture, features, debt, and roadmap docs.

@@ -12,14 +12,20 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
+
+	"github.com/codeyee/denn-proxy/internal/logging"
 )
 
 const (
-	defaultTimeout        = 30 * time.Second
-	defaultMaxRetries     = 5
-	defaultInitialBackoff = 500 * time.Millisecond
-	defaultMaxBackoff     = 10 * time.Second
+	defaultTimeout        = 3 * time.Second
+	defaultMaxRetries     = 2
+	defaultInitialBackoff = 100 * time.Millisecond
+	defaultMaxBackoff     = 500 * time.Millisecond
+	defaultTotalBudget    = 2500 * time.Millisecond
+	circuitThreshold      = 3
+	circuitCooldown       = 30 * time.Second
 )
 
 type Response struct {
@@ -28,7 +34,7 @@ type Response struct {
 }
 
 // RetryConfig controls how Request handles transient upstream failures.
-// Zero values mean "retry once with no backoff" (i.e. effectively disabled);
+// Zero values mean one transport attempt with no retry or backoff;
 // callers should use the explicit constructors instead of building a zero
 // struct by hand.
 type RetryConfig struct {
@@ -45,6 +51,7 @@ func defaultRetryConfig() RetryConfig {
 		MaxRetries:     defaultMaxRetries,
 		InitialBackoff: defaultInitialBackoff,
 		MaxBackoff:     defaultMaxBackoff,
+		TotalBudget:    defaultTotalBudget,
 	}
 }
 
@@ -54,6 +61,9 @@ type BaseClient struct {
 	httpClient *http.Client
 	headersFn  func() map[string]string
 	retry      RetryConfig
+	circuitMu  sync.Mutex
+	failures   int
+	openUntil  time.Time
 }
 
 type ClientOption func(*BaseClient)
@@ -131,7 +141,32 @@ func (c *BaseClient) buildURL(endpoint string) string {
 	return c.baseURL + "/" + strings.TrimLeft(endpoint, "/")
 }
 
-func (c *BaseClient) Request(ctx context.Context, method, endpoint string, params url.Values, body any) (*Response, error) {
+func (c *BaseClient) Request(ctx context.Context, method, endpoint string, params url.Values, body any) (response *Response, requestErr error) {
+	started := time.Now()
+	attempts := 0
+	defer func() {
+		transientFailure := errors.Is(requestErr, ErrTimeout) ||
+			errors.Is(requestErr, ErrConnection) ||
+			errors.Is(requestErr, ErrServerError) ||
+			errors.Is(requestErr, ErrRateLimit) ||
+			errors.Is(requestErr, ErrUpstreamExhausted)
+		if requestErr == nil {
+			c.recordSuccess()
+		} else if transientFailure {
+			c.recordTransientFailure()
+		}
+		logging.L().Info(
+			"provider_request",
+			"provider", c.apiName,
+			"attempts", attempts,
+			"duration_ms", time.Since(started).Milliseconds(),
+			"timeout", errors.Is(requestErr, ErrTimeout),
+			"circuit_state", c.circuitState(),
+		)
+	}()
+	if err := c.circuitError(); err != nil {
+		return nil, err
+	}
 	reqURL := c.buildURL(endpoint)
 
 	if len(params) > 0 {
@@ -161,8 +196,8 @@ func (c *BaseClient) Request(ctx context.Context, method, endpoint string, param
 	}
 
 	// Optional total budget: cap cumulative time across all attempts. Zero
-	// means "rely on the parent context only", which is the production
-	// default for backwards compatibility.
+	// means "rely on the parent context only"; production constructors use
+	// the explicit bounded default above.
 	if c.retry.TotalBudget > 0 {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, c.retry.TotalBudget)
@@ -170,14 +205,15 @@ func (c *BaseClient) Request(ctx context.Context, method, endpoint string, param
 	}
 
 	var (
-		err             error
-		lastClassified  error // ErrRateLimit | ErrServerError | ErrConnection
-		lastRetryAfter  time.Duration
-		nextBackoff     = c.retry.InitialBackoff
-		maxBO           = c.retry.MaxBackoff
+		err            error
+		lastClassified error // ErrRateLimit | ErrServerError | ErrConnection
+		lastRetryAfter time.Duration
+		nextBackoff    = c.retry.InitialBackoff
+		maxBO          = c.retry.MaxBackoff
 	)
 
 	for attempt := 0; attempt <= c.retry.MaxRetries; attempt++ {
+		attempts = attempt + 1
 		if attempt > 0 {
 			// Prefer the upstream's Retry-After hint; otherwise full-jitter
 			// backoff (uniform[0, nextBackoff)) to break herd behavior during
@@ -278,6 +314,45 @@ func (c *BaseClient) Request(ctx context.Context, method, endpoint string, param
 	default:
 		return nil, fmt.Errorf("%w: %w", ErrUpstreamExhausted, ErrConnection)
 	}
+}
+
+func (c *BaseClient) circuitError() error {
+	c.circuitMu.Lock()
+	defer c.circuitMu.Unlock()
+	if c.openUntil.IsZero() {
+		return nil
+	}
+	if time.Now().After(c.openUntil) {
+		c.openUntil = time.Time{}
+		c.failures = 0
+		return nil
+	}
+	return ErrCircuitOpen
+}
+
+func (c *BaseClient) recordSuccess() {
+	c.circuitMu.Lock()
+	c.failures = 0
+	c.openUntil = time.Time{}
+	c.circuitMu.Unlock()
+}
+
+func (c *BaseClient) recordTransientFailure() {
+	c.circuitMu.Lock()
+	defer c.circuitMu.Unlock()
+	c.failures++
+	if c.failures >= circuitThreshold {
+		c.openUntil = time.Now().Add(circuitCooldown)
+	}
+}
+
+func (c *BaseClient) circuitState() string {
+	c.circuitMu.Lock()
+	defer c.circuitMu.Unlock()
+	if !c.openUntil.IsZero() && time.Now().Before(c.openUntil) {
+		return "open"
+	}
+	return "closed"
 }
 
 // classifyContextErr maps a context error onto our taxonomy. Both
