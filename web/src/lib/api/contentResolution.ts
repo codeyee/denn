@@ -1,10 +1,13 @@
 import { api } from "./api";
-import { getSourceApi } from "@/lib/utils/contentTypeUtils";
-import type {
+import {
+  getSourceApi,
+  normalizeContentType,
+} from "@/lib/utils/contentTypeUtils";
+import {
   ContentType,
-  HomepageResponse,
-  MultiSearchResponse,
-  SearchItem,
+  type HomepageResponse,
+  type MultiSearchResponse,
+  type SearchItem,
 } from "@/lib/types";
 
 type ResolvableContent = SearchItem;
@@ -20,32 +23,32 @@ interface BulkResolveResponse {
   results: ResolvedContentIdentity[];
 }
 
-const CONTENT_TYPES = new Set<ContentType>([
-  "MOVIE" as ContentType,
-  "TV_SHOW" as ContentType,
-  "SEASON" as ContentType,
-  "GAME" as ContentType,
-  "ALBUM" as ContentType,
-  "BOOK" as ContentType,
-]);
-
 export async function resolveContentIds<T extends HomepageResponse | MultiSearchResponse>(
   response: T,
   country?: string,
 ): Promise<T> {
-  const items = collectItems(response).filter((item) =>
-    CONTENT_TYPES.has(item.type as ContentType),
-  );
+  const items = collectItems(response)
+    .map((item) => ({
+      item,
+      contentType: normalizeContentType(item.type),
+    }))
+    .filter(
+      (
+        entry,
+      ): entry is { item: ResolvableContent; contentType: ContentType } =>
+        entry.contentType !== null &&
+        entry.contentType !== ContentType.PERSON,
+    );
   if (items.length === 0) return response;
 
   const query = country ? `?country=${encodeURIComponent(country)}` : "";
   const resolved = await api.post<BulkResolveResponse>(
     `/content/resolve-ids/${query}`,
     {
-      items: items.map((item) => ({
-        source_api: getSourceApi(item.type as ContentType),
+      items: items.map(({ item, contentType }) => ({
+        source_api: getSourceApi(contentType),
         external_id: String(item.id),
-        content_type: item.type as ContentType,
+        content_type: contentType,
       })),
     },
     true,
@@ -57,12 +60,16 @@ export async function resolveContentIds<T extends HomepageResponse | MultiSearch
     ]),
   );
 
-  return mapResponseItems(response, (item) => ({
-    ...item,
-    denn_id: ids.get(
-      identityKey(String(item.id), item.type as ContentType),
-    ),
-  }));
+  return mapResponseItems(response, (item) => {
+    const contentType = normalizeContentType(item.type);
+    return {
+      ...item,
+      denn_id:
+        contentType && contentType !== ContentType.PERSON
+          ? ids.get(identityKey(String(item.id), contentType))
+          : undefined,
+    };
+  });
 }
 
 function collectItems(
