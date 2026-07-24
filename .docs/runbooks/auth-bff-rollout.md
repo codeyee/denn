@@ -21,13 +21,17 @@ boundary from ADR 0002.
 - `AUTH_COOKIE_DOMAIN`: normally unset because browser auth terminates
   at `web`.
 - `SIMPLE_JWT` rotation and blacklist applications/migrations enabled.
+- The production image applies committed Django migrations before
+  starting Gunicorn. A migration failure must keep the new container
+  out of service instead of serving against a stale schema.
 
 Local HTTP browser fixtures explicitly set both secure flags false.
 
 ## Forward Rollout
 
-1. Back up the database and confirm token-blacklist migrations are
-   current.
+1. Back up the database and confirm authentication, preference, and
+   token-blacklist migrations are committed. The Core container applies
+   them during startup; verify the deployment reaches Gunicorn.
 2. Deploy `web` first. Its BFF accepts both the prior JSON token response
    and the new core `Set-Cookie` response, so this step is backward
    compatible. For a push that changes both services,

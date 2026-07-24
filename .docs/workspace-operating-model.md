@@ -52,6 +52,9 @@ tooling.
 - Each deploy workflow validates its own app, builds from its own
   directory, publishes a dedicated GHCR image, and triggers a dedicated
   deploy webhook.
+- The Core image runs `python manage.py migrate --noinput` before
+  Gunicorn. Schema failure therefore fails container startup instead of
+  letting application code serve against an older database shape.
 - Cross-service auth cutovers preserve deploy order: when one push
   changes both `web` and `core`, the core workflow waits for the public
   web `/api/version` endpoint to report the matching `BUILD_SHA` before
