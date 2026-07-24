@@ -63,5 +63,6 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD curl -f http://127.0.0.1:8000/api/ || exit 1
 
-# CMD to run Gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "core.wsgi:application"]
+# Apply committed schema changes before accepting traffic. The deployment
+# platform invokes the image directly, so migrations must travel with it.
+CMD ["/bin/sh", "/app/docker-entrypoint.sh"]
