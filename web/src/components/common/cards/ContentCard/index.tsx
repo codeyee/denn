@@ -16,6 +16,7 @@ import { AddToListModal } from "@/components/common/modals/AddToListModal";
 import { usePrefetchContentDetail } from "@/lib/api/queries/usePrefetchContentDetail";
 import { useHoverPrefetch } from "@/lib/perf/useHoverPrefetch";
 import { useContentCardModal } from "./hooks/useContentCardModal";
+import { useAuthRequiredAction } from "@/hooks/useAuthRequiredAction";
 import {
   getPosterImageUrl,
   getFooterInfo,
@@ -33,6 +34,7 @@ interface ContentCardProps {
 export function ContentCard({ item, className }: ContentCardProps) {
   const [isNavigating, setIsNavigating] = useState(false);
   const modal = useContentCardModal(item);
+  const requireAuth = useAuthRequiredAction();
 
   // Hover/focus/touch intent is read-only. Canonical ids were resolved once
   // when the enclosing homepage/search payload was loaded.
@@ -120,7 +122,11 @@ export function ContentCard({ item, className }: ContentCardProps) {
                 )}
 
                 <Button
-                  onClick={modal.openModal}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    requireAuth(modal.openModal);
+                  }}
                   variant="secondary"
                   size="sm"
                   className="relative z-30 w-full bg-white/10 hover:bg-white/20 text-white border-white/20"

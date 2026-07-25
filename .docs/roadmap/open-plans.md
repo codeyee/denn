@@ -118,6 +118,35 @@ Validation expectation:
 - Any touched request path must update or explicitly confirm
   `.docs/perf/baseline.md`.
 
+## Public Catalog Foundation
+
+- Status: partially implemented on 2026-07-24.
+- Decision:
+  [`../adr/0004-public-catalog-auth-boundary.md`](../adr/0004-public-catalog-auth-boundary.md).
+- Detailed remaining plan:
+  [`../sprints/sprint-13-public-catalog-1-0.md`](../sprints/sprint-13-public-catalog-1-0.md).
+
+Implemented foundation:
+
+- `/`, `/search`, and `/content/<id>` are usable without login.
+- Authenticated Home enriches the same catalog with personal lists.
+- The original landing remains available at `/welcome`.
+- Add-to-List and Rating require login on action and preserve `next`
+  through login/registration.
+- Stable discovery ids resolve through a trusted `web -> core` bulk
+  request; browsers receive neither the shared key nor an internal Core
+  URL.
+- Anonymous and authenticated detail caches are viewer-scoped.
+
+Still open in Sprint 13:
+
+- browse routes and taxonomy per media family;
+- sanitized public reviews, distribution aggregates, and public lists
+  containing an item;
+- sitemap, richer dynamic SEO, deployed anonymous-traffic rebaseline,
+  and gallery lightbox. A deterministic local Home/Search/Detail
+  baseline is already recorded.
+
 ## Product Gap Analysis Toward A Social Multi-Media Tracker
 
 - Status: planned
@@ -142,8 +171,8 @@ Product work to land:
 - Define public visibility for profiles, lists, and content pages.
 - Build real profile pages from existing backend profile data.
 - Separate ratings from tracking state and favorites cleanly.
-- Add public catalog, profile, list, and leaderboard surfaces in a
-  coherent rollout order.
+- Complete the public catalog's social aggregates and browse, then add
+  profile, list, and leaderboard surfaces in a coherent rollout order.
 - Keep follow relationships, feed, import/export, and richer stats as
   post-MVP product work.
 

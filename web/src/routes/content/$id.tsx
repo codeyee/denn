@@ -8,18 +8,26 @@ import {
 import { Navbar } from "@/components/layout/Navbar";
 import { ContentDetailPage } from "@/components/pages/ContentDetailPage";
 import { ContentDetailSkeleton } from "@/components/pages/ContentDetailPage/ContentDetailSkeleton";
-import { ProtectedRoute } from "@/components/common/providers/ProtectedRoute";
 import { prefetchContentDetailQueries } from "@/lib/api/queries/server";
-import { requireAuthenticatedSession } from "@/lib/auth/protected-route";
 import type { ContentItem } from "@/lib/types";
 
 export const Route = createFileRoute("/content/$id")({
-  beforeLoad: ({ context, location }) => {
-    requireAuthenticatedSession(
-      context.session,
-      location.pathname,
-      location.searchStr,
-    );
+  head: ({ loaderData }) => {
+    const title = contentTitle(loaderData?.initialContentItem);
+    return {
+      meta: [
+        { title: title ? `${title} | Denn` : "Content | Denn" },
+        {
+          name: "description",
+          content: title
+            ? `Explore details for ${title} in Denn's public catalog.`
+            : "Explore this title in Denn's public catalog.",
+        },
+      ],
+      links: loaderData?.contentId
+        ? [{ rel: "canonical", href: `/content/${loaderData.contentId}` }]
+        : [],
+    };
   },
   loader: async ({ context, params }) => {
     const contentId = Number.parseInt(params.id, 10);
@@ -37,6 +45,8 @@ export const Route = createFileRoute("/content/$id")({
     return {
       contentId,
       country: context.country,
+      isAuthenticated: context.session.isAuthenticated,
+      viewerId: context.session.user?.id,
       initialContentItem,
     };
   },
@@ -77,19 +87,54 @@ function ContentDetailError({ error }: ErrorComponentProps) {
   );
 }
 
+function contentTitle(item?: ContentItem) {
+  if (!item?.source_data) return null;
+
+  const sourceData =
+    typeof item.source_data === "string"
+      ? safeJsonObject(item.source_data)
+      : item.source_data;
+
+  if (
+    sourceData &&
+    "title" in sourceData &&
+    typeof sourceData.title === "string"
+  ) {
+    return sourceData.title;
+  }
+  return null;
+}
+
+function safeJsonObject(value: string): Record<string, unknown> | null {
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    return parsed && typeof parsed === "object"
+      ? (parsed as Record<string, unknown>)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 function ContentDetailRoute() {
-  const { contentId, country, initialContentItem } =
+  const {
+    contentId,
+    country,
+    isAuthenticated,
+    viewerId,
+    initialContentItem,
+  } =
     Route.useLoaderData();
   return (
     <div className="relative w-full overflow-x-hidden">
       <Navbar />
-      <ProtectedRoute>
-        <ContentDetailPage
-          contentId={contentId}
-          country={country}
-          initialContentItem={initialContentItem as ContentItem | undefined}
-        />
-      </ProtectedRoute>
+      <ContentDetailPage
+        contentId={contentId}
+        country={country}
+        isAuthenticated={isAuthenticated}
+        viewerId={viewerId}
+        initialContentItem={initialContentItem as ContentItem | undefined}
+      />
     </div>
   );
 }

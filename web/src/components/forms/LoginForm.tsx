@@ -94,6 +94,7 @@ export function LoginForm({ next }: LoginFormProps) {
         </span>
         <Link
           to="/register"
+          search={next ? { next } : {}}
           className="text-blue-600 dark:text-blue-400 hover:underline"
         >
           Sign up

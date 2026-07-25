@@ -1,6 +1,5 @@
 import { test, expect } from "./support/test";
-
-const fixtureUrl = "http://127.0.0.1:18000";
+import { fixtureUrl } from "./support/fixture";
 
 test.beforeEach(async ({ context, request }) => {
   await request.post(`${fixtureUrl}/__fixture__/reset`);
@@ -239,7 +238,7 @@ test("logout reaches the public home without a redirect loop @regression", async
     .click();
 
   await expect(page).toHaveURL(/\/$/);
-  await expect(page.getByRole("link", { name: "Sign In" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Login" })).toBeVisible();
 });
 
 test("a valid session reaches a recoverable timeout state @regression", async ({

@@ -33,7 +33,11 @@ const registerSchema = z
 
 type RegisterFormData = z.infer<typeof registerSchema>;
 
-export function RegisterForm() {
+interface RegisterFormProps {
+  next?: string | null;
+}
+
+export function RegisterForm({ next }: RegisterFormProps) {
   const { register: registerUser, isLoading, error, clearError } = useAuth();
 
   const {
@@ -54,7 +58,12 @@ export function RegisterForm() {
 
   const onSubmit = async (data: RegisterFormData) => {
     try {
-      await registerUser(data.username, data.email, data.password);
+      await registerUser(
+        data.username,
+        data.email,
+        data.password,
+        next ?? undefined,
+      );
       // Redirect is handled in useAuth hook
     } catch (err) {
       // Error is already set in the store
@@ -120,6 +129,7 @@ export function RegisterForm() {
         </span>
         <Link
           to="/login"
+          search={next ? { next } : {}}
           className="text-blue-600 dark:text-blue-400 hover:underline"
         >
           Sign in

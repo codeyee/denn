@@ -218,6 +218,21 @@ This document keeps the durable outcomes of completed implementation plans after
 
 - The three root gates passed together: frontend lint/production build,
   212 Django tests, and the full offline-safe Go suite.
+
+## Public Catalog Foundation
+
+- Home, Search and id-first Content Detail became public, while lists,
+  ratings, reviews and other personal mutations remain login-on-action.
+- The original landing moved intact to `/welcome`; authenticated Home
+  adds personal lists to the same catalog visitors see.
+- Discovery ids resolve in bulk through a trusted server-only
+  `web -> core` path. Browsers receive neither the shared API key nor an
+  internal Core URL.
+- Public and authenticated detail caches are viewer-scoped, and
+  anonymous detail never serializes current-user rating state.
+- Production-build browser coverage now includes desktop/mobile public
+  discovery, return-path auth, protected-route retention, no-artwork
+  detail, `/welcome`, and secret/internal-URL leakage checks.
 - The production-build browser matrix passed 16 desktop/mobile smoke,
   10 applicable regression, and 25 accessibility/responsive scenarios;
   the artifact probe remained intentionally opt-in.

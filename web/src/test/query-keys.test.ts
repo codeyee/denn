@@ -41,4 +41,19 @@ describe("queryKeys", () => {
       null,
     ]);
   });
+
+  it("separates anonymous and authenticated content detail caches", () => {
+    expect(queryKeys.contentDetail.byId(7, "CO")).toEqual([
+      "content-detail",
+      7,
+      "CO",
+      "anonymous",
+    ]);
+    expect(queryKeys.contentDetail.byId(7, "CO", 42)).toEqual([
+      "content-detail",
+      7,
+      "CO",
+      42,
+    ]);
+  });
 });

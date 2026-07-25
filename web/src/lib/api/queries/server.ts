@@ -5,22 +5,18 @@ import { getCookie } from "@tanstack/react-start/server";
 import { AUTH_ACCESS_COOKIE } from "@/lib/auth/constants";
 import { getApiUrl, getProxyApiUrl } from "@/lib/env";
 import type { SessionSnapshot } from "@/server/session";
+import { resolveCatalogContentIds } from "@/server/catalog";
+import { buildCatalogVisitorHeaders } from "@/server/catalog-visitor";
 import { buildProxyHeaders, getLogicalRequestId } from "@/server/proxy";
 import {
-  ContentType,
   type ContentItem,
   type HomepageResponse,
   type ListStatsResponse,
   type MultiSearchResponse,
   type PaginatedListItemList,
   type PaginatedUserListList,
-  type SearchItem,
   type UserListDetail,
 } from "@/lib/types";
-import {
-  getSourceApi,
-  normalizeContentType,
-} from "@/lib/utils/contentTypeUtils";
 import type { ListItemQuery } from "@/lib/types/listView";
 import {
   HOME_LIST_FIELDS,
@@ -46,137 +42,150 @@ export function getServerQueryClient() {
   });
 }
 
-export async function prefetchHomeQueries(
-  qc: QueryClient,
-  session: SessionSnapshot,
-  country: string | null,
-) {
-  const accessToken = getServerAccessToken(session);
-  if (!accessToken) return undefined;
+export const prefetchHomeQueries = createIsomorphicFn()
+  .server(async (
+    qc: QueryClient,
+    session: SessionSnapshot,
+    country: string | null,
+  ) => {
+    const accessToken = getServerAccessToken(session);
+    const listParams = homeListParams(country);
+    const requestId = getLogicalRequestId();
 
-  const listParams = homeListParams(country);
-  const requestId = getLogicalRequestId();
-
-  await Promise.allSettled([
-    qc.prefetchQuery({
-      queryKey: queryKeys.suggestions.byParams({
-        limit: SUGGESTIONS_PAGE_SIZE,
-        country,
+    const queries = [
+      qc.prefetchQuery({
+        queryKey: queryKeys.suggestions.byParams({
+          limit: SUGGESTIONS_PAGE_SIZE,
+          country,
+        }),
+        queryFn: () =>
+          fetchServerSuggestions(country, requestId),
       }),
-      queryFn: () =>
-        fetchServerSuggestions(accessToken, country, requestId),
-    }),
-    qc.prefetchQuery({
-      queryKey: queryKeys.lists.list(listParams),
-      queryFn: () =>
-        fetchServerUserLists(accessToken, listParams, requestId),
-    }),
-  ]);
-}
+    ];
 
-export async function prefetchSearchQuery(
-  qc: QueryClient,
-  session: SessionSnapshot,
-  query: string,
-  country: string | null,
-) {
-  const trimmedQuery = query.trim();
-  const accessToken = getServerAccessToken(session);
-  if (!accessToken || !trimmedQuery) return;
-  const requestId = getLogicalRequestId();
-  const allowAdult = session.user?.allow_adult_content ?? false;
+    if (accessToken) {
+      queries.push(qc.prefetchQuery({
+        queryKey: queryKeys.lists.list(listParams),
+        queryFn: () =>
+          fetchServerUserLists(accessToken, listParams, requestId),
+      }));
+    }
 
-  await qc.prefetchQuery({
-    queryKey: queryKeys.search.multi({
-      query: trimmedQuery,
-      limit: SEARCH_RESULT_LIMIT,
-      country,
-      allowAdult,
-    }),
-    queryFn: () =>
-      fetchServerSearch(
-        accessToken,
-        trimmedQuery,
+    await Promise.allSettled(queries);
+  })
+  .client(async () => undefined);
+
+export const prefetchSearchQuery = createIsomorphicFn()
+  .server(async (
+    qc: QueryClient,
+    session: SessionSnapshot,
+    query: string,
+    country: string | null,
+  ) => {
+    const trimmedQuery = query.trim();
+    if (!trimmedQuery) return;
+    const requestId = getLogicalRequestId();
+    const allowAdult = session.user?.allow_adult_content ?? false;
+
+    await qc.prefetchQuery({
+      queryKey: queryKeys.search.multi({
+        query: trimmedQuery,
+        limit: SEARCH_RESULT_LIMIT,
         country,
-        requestId,
         allowAdult,
-      ),
-  });
-}
-
-export async function prefetchContentDetailQueries(
-  qc: QueryClient,
-  session: SessionSnapshot,
-  contentId: number,
-  country: string | null,
-) {
-  const accessToken = getServerAccessToken(session);
-  if (!accessToken) return;
-  const requestId = getLogicalRequestId();
-
-  const contentItem = await qc.fetchQuery({
-    queryKey: queryKeys.contentDetail.byId(contentId, country ?? undefined),
-    queryFn: () =>
-      fetchServerContentDetail(
-        accessToken,
-        contentId,
-        country,
-        requestId,
-      ),
-    staleTime: 5 * 60_000,
-  });
-
-  if (session.user?.id) {
-    qc.setQueryData(
-      queryKeys.ratings.byUser(contentItem.id, session.user.id),
-      contentItem.current_user_rating,
-    );
-  }
-  return contentItem;
-}
-
-export async function prefetchListDetailQueries(
-  qc: QueryClient,
-  session: SessionSnapshot,
-  listId: number,
-  query: ListItemQuery,
-  country: string | null,
-) {
-  const accessToken = getServerAccessToken(session);
-  if (!accessToken) return;
-
-  const options = listItemsOptions(query, country);
-  const requestId = getLogicalRequestId();
-
-  await Promise.allSettled([
-    qc.prefetchQuery({
-      queryKey: queryKeys.lists.detail(listId, LIST_DETAIL_METADATA_PARAMS),
-      queryFn: () =>
-        fetchServerListMetadata(accessToken, listId, requestId),
-    }),
-    qc.prefetchQuery({
-      queryKey: queryKeys.lists.stats(listId),
-      queryFn: () =>
-        fetchServerListStats(accessToken, listId, requestId),
-    }),
-    qc.prefetchQuery({
-      queryKey: queryKeys.listItems.page(listId, {
-        page: query.page,
-        pageSize: query.pageSize,
-        options,
       }),
       queryFn: () =>
-        fetchServerListItems(
+        fetchServerSearch(
+          trimmedQuery,
+          country,
+          requestId,
+          allowAdult,
+        ),
+    });
+  })
+  .client(async () => undefined);
+
+export const prefetchContentDetailQueries = createIsomorphicFn()
+  .server(async (
+    qc: QueryClient,
+    session: SessionSnapshot,
+    contentId: number,
+    country: string | null,
+  ) => {
+    const accessToken = getServerAccessToken(session);
+    const requestId = getLogicalRequestId();
+    const viewerId = accessToken ? session.user?.id : undefined;
+
+    const contentItem = await qc.fetchQuery({
+      queryKey: queryKeys.contentDetail.byId(
+        contentId,
+        country ?? undefined,
+        viewerId,
+      ),
+      queryFn: () =>
+        fetchServerContentDetail(
           accessToken,
-          listId,
-          query.page,
-          query.pageSize,
-          options,
+          contentId,
+          country,
           requestId,
         ),
-    }),
-  ]);
-}
+      staleTime: 5 * 60_000,
+    });
+
+    if (viewerId) {
+      qc.setQueryData(
+        queryKeys.ratings.byUser(contentItem.id, viewerId),
+        contentItem.current_user_rating,
+      );
+    }
+    return contentItem;
+  })
+  .client(async () => undefined);
+
+export const prefetchListDetailQueries = createIsomorphicFn()
+  .server(async (
+    qc: QueryClient,
+    session: SessionSnapshot,
+    listId: number,
+    query: ListItemQuery,
+    country: string | null,
+  ) => {
+    const accessToken = getServerAccessToken(session);
+    if (!accessToken) return;
+
+    const options = listItemsOptions(query, country);
+    const requestId = getLogicalRequestId();
+
+    await Promise.allSettled([
+      qc.prefetchQuery({
+        queryKey: queryKeys.lists.detail(listId, LIST_DETAIL_METADATA_PARAMS),
+        queryFn: () =>
+          fetchServerListMetadata(accessToken, listId, requestId),
+      }),
+      qc.prefetchQuery({
+        queryKey: queryKeys.lists.stats(listId),
+        queryFn: () =>
+          fetchServerListStats(accessToken, listId, requestId),
+      }),
+      qc.prefetchQuery({
+        queryKey: queryKeys.listItems.page(listId, {
+          page: query.page,
+          pageSize: query.pageSize,
+          options,
+        }),
+        queryFn: () =>
+          fetchServerListItems(
+            accessToken,
+            listId,
+            query.page,
+            query.pageSize,
+            options,
+            requestId,
+          ),
+      }),
+    ]);
+  })
+  .client(async () => undefined);
 
 function getServerAccessToken(session: SessionSnapshot) {
   if (!session.isAuthenticated) return null;
@@ -255,16 +264,16 @@ async function fetchJson<T>(
   return JSON.parse(body) as T;
 }
 
-function coreHeaders(accessToken: string, requestId: string) {
-  return {
-    Authorization: `Bearer ${accessToken}`,
+function coreHeaders(accessToken: string | null, requestId: string) {
+  const headers: Record<string, string> = {
     "Content-Type": "application/json",
     "X-Request-Id": requestId,
   };
+  if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+  return headers;
 }
 
 async function fetchServerSuggestions(
-  accessToken: string,
   country: string | null,
   requestId: string,
 ) {
@@ -282,11 +291,10 @@ async function fetchServerSuggestions(
       route: "/v1/proxy/homepage",
     },
   );
-  return resolveServerContentIds(accessToken, response, country, requestId);
+  return resolveCatalogContentIds(response, country, requestId);
 }
 
 async function fetchServerSearch(
-  accessToken: string,
   query: string,
   country: string | null,
   requestId: string,
@@ -310,89 +318,7 @@ async function fetchServerSearch(
       route: "/v1/proxy/search",
     },
   );
-  return resolveServerContentIds(accessToken, response, country, requestId);
-}
-
-type ResolvableServerContent = SearchItem;
-
-interface BulkResolvedIdentity {
-  id: number;
-  external_id: string;
-  content_type: ContentType;
-}
-
-async function resolveServerContentIds<
-  T extends HomepageResponse | MultiSearchResponse,
->(
-  accessToken: string,
-  response: T,
-  country: string | null,
-  requestId: string,
-): Promise<T> {
-  const unique = new Map<
-    string,
-    { item: ResolvableServerContent; contentType: ContentType }
-  >();
-  for (const category of Object.values(response)) {
-    for (const item of category.results) {
-      const contentType = normalizeContentType(item.type);
-      if (!contentType || contentType === ContentType.PERSON) continue;
-      unique.set(`${contentType}:${item.id}`, { item, contentType });
-    }
-  }
-  const items = [...unique.values()];
-  if (items.length === 0) return response;
-
-  const params = new URLSearchParams();
-  if (country) params.set("country", country);
-  const resolved = await fetchJson<{ results: BulkResolvedIdentity[] }>(
-    `${getApiUrl()}/content/resolve-ids/${params.size ? `?${params}` : ""}`,
-    {
-      method: "POST",
-      headers: coreHeaders(accessToken, requestId),
-      body: JSON.stringify({
-        items: items.map(({ item, contentType }) => ({
-          source_api: getSourceApi(contentType),
-          external_id: String(item.id),
-          content_type: contentType,
-        })),
-      }),
-    },
-    {
-      requestId,
-      targetService: "core",
-      route: "/api/content/resolve-ids/",
-    },
-  );
-  const ids = new Map(
-    resolved.results.map((item) => [
-      `${item.content_type}:${item.external_id}`,
-      item.id,
-    ]),
-  );
-
-  return Object.fromEntries(
-    Object.entries(response).map(([key, rawCategory]) => {
-      const category = rawCategory as {
-        results: ResolvableServerContent[];
-      };
-      return [
-      key,
-      {
-        ...category,
-        results: category.results.map((item) => {
-          const contentType = normalizeContentType(item.type);
-          return {
-            ...item,
-            denn_id: contentType
-              ? ids.get(`${contentType}:${item.id}`)
-              : undefined,
-          };
-        }),
-      },
-      ];
-    }),
-  ) as unknown as T;
+  return resolveCatalogContentIds(response, country, requestId);
 }
 
 async function fetchServerUserLists(
@@ -416,17 +342,23 @@ async function fetchServerUserLists(
 }
 
 async function fetchServerContentDetail(
-  accessToken: string,
+  accessToken: string | null,
   contentId: number,
   country: string | null,
   requestId: string,
 ) {
   const params = new URLSearchParams();
   if (country) params.set("country", country);
+  const headers = accessToken
+    ? coreHeaders(accessToken, requestId)
+    : {
+        ...coreHeaders(null, requestId),
+        ...await buildCatalogVisitorHeaders(),
+      };
 
   return fetchJson<ContentItem>(
     `${getApiUrl()}/content/${contentId}/${params.toString() ? `?${params}` : ""}`,
-    { headers: coreHeaders(accessToken, requestId) },
+    { headers },
     {
       requestId,
       targetService: "core",

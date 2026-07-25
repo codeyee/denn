@@ -1,17 +1,11 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
-import { api } from "@/lib/api/api";
-import { resolveContentIds } from "@/lib/api/contentResolution";
+import {
+  applyResolvedContentIds,
+  collectContentIdentities,
+} from "@/lib/api/contentResolution";
 import { ContentType, type MultiSearchResponse } from "@/lib/types";
 import { normalizeContentType } from "@/lib/utils/contentTypeUtils";
-
-vi.mock("@/lib/api/api", () => ({
-  api: {
-    post: vi.fn(),
-  },
-}));
-
-const mockedPost = vi.mocked(api.post);
 
 describe("content type normalization", () => {
   it.each([
@@ -31,53 +25,46 @@ describe("content type normalization", () => {
 });
 
 describe("bulk content id resolution", () => {
-  beforeEach(() => {
-    mockedPost.mockReset();
-  });
-
-  it("sends canonical content types for lowercase proxy payloads", async () => {
-    mockedPost.mockResolvedValue({
-      results: [
-        {
-          id: 41,
-          source_api: "tmdb",
-          external_id: "438631",
-          content_type: ContentType.MOVIE,
-        },
-        {
-          id: 42,
-          source_api: "spotify",
-          external_id: "album-1",
-          content_type: ContentType.ALBUM,
-        },
-      ],
-    });
-
+  it("collects canonical identities from lowercase proxy payloads", () => {
     const response = proxyResponse([
       ["movies", "438631", "movie", "Dune"],
       ["albums", "album-1", "album", "Dune"],
     ]);
 
-    const resolved = await resolveContentIds(response);
-
-    expect(mockedPost).toHaveBeenCalledWith(
-      "/content/resolve-ids/",
+    expect(collectContentIdentities(response)).toEqual([
       {
-        items: [
-          {
-            source_api: "tmdb",
-            external_id: "438631",
-            content_type: ContentType.MOVIE,
-          },
-          {
-            source_api: "spotify",
-            external_id: "album-1",
-            content_type: ContentType.ALBUM,
-          },
-        ],
+        source_api: "tmdb",
+        external_id: "438631",
+        content_type: ContentType.MOVIE,
       },
-      true,
-    );
+      {
+        source_api: "spotify",
+        external_id: "album-1",
+        content_type: ContentType.ALBUM,
+      },
+    ]);
+  });
+
+  it("applies stable Denn ids without changing provider identities", () => {
+    const response = proxyResponse([
+      ["movies", "438631", "movie", "Dune"],
+      ["albums", "album-1", "album", "Dune"],
+    ]);
+    const resolved = applyResolvedContentIds(response, [
+      {
+        id: 41,
+        source_api: "tmdb",
+        external_id: "438631",
+        content_type: ContentType.MOVIE,
+      },
+      {
+        id: 42,
+        source_api: "spotify",
+        external_id: "album-1",
+        content_type: ContentType.ALBUM,
+      },
+    ]);
+
     expect(resolved.movies.results[0]?.denn_id).toBe(41);
     expect(resolved.albums.results[0]?.denn_id).toBe(42);
   });

@@ -63,8 +63,8 @@ export const queryKeys = {
   },
   contentDetail: {
     all: ["content-detail"] as const,
-    byId: (id: number, country?: string) =>
-      ["content-detail", id, country ?? null] as const,
+    byId: (id: number, country?: string, viewerId?: number) =>
+      ["content-detail", id, country ?? null, viewerId ?? "anonymous"] as const,
   },
   contentResolution: {
     byExternal: (

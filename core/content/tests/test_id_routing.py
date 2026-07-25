@@ -6,12 +6,16 @@ from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.db import close_old_connections
-from django.test import TransactionTestCase
+from django.test import TransactionTestCase, override_settings
 from django.urls import reverse
 from rest_framework import status
-from rest_framework.test import APITestCase
+from rest_framework.request import Request
+from rest_framework.test import APITestCase, APIRequestFactory
 
 from content.models import ContentItem, Rating
+from core.throttling import CatalogDetailRateThrottle
+
+
 class ContentItemDetailByIdViewTests(APITestCase):
     def setUp(self):
         self.user = get_user_model().objects.create_user(username='u', password='p')
@@ -58,6 +62,59 @@ class ContentItemDetailByIdViewTests(APITestCase):
         url = reverse('content:content-detail-by-id', kwargs={'id': 999_999})
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_anonymous_detail_is_public_without_personal_rating_data(self):
+        Rating.objects.create(
+            user=self.user,
+            content_item=self.item,
+            score='8.5',
+            comment='Private viewer state',
+        )
+        self.client.force_authenticate(user=None)
+        url = reverse('content:content-detail-by-id', kwargs={'id': self.item.pk})
+
+        with patch(
+            'content.services.source_data_orchestrator._proxy_fetch',
+            return_value={self.item.pk: {'title': 'Fight Club'}},
+        ):
+            response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIsNone(response.data['current_user_rating'])
+        self.assertNotContains(response, 'Private viewer state')
+
+
+class CatalogDetailThrottleTests(APITestCase):
+    def setUp(self):
+        self.factory = APIRequestFactory()
+
+    @override_settings(PROXY_API_KEY='catalog-service-key')
+    def test_trusted_web_visitors_do_not_share_a_throttle_bucket(self):
+        first = self._cache_key('a' * 64, api_key='catalog-service-key')
+        second = self._cache_key('b' * 64, api_key='catalog-service-key')
+
+        self.assertNotEqual(first, second)
+        self.assertIn(f'visitor:{"a" * 64}', first)
+        self.assertIn(f'visitor:{"b" * 64}', second)
+
+    @override_settings(PROXY_API_KEY='catalog-service-key')
+    def test_untrusted_visitor_header_falls_back_to_source_ip(self):
+        first = self._cache_key('a' * 64)
+        second = self._cache_key('b' * 64)
+
+        self.assertEqual(first, second)
+        self.assertIn('ip:203.0.113.10', first)
+
+    def _cache_key(self, visitor, api_key=''):
+        raw_request = self.factory.get(
+            '/api/content/1/',
+            HTTP_X_API_CONSUMER='web',
+            HTTP_X_API_KEY=api_key,
+            HTTP_X_CATALOG_VISITOR=visitor,
+            REMOTE_ADDR='203.0.113.10',
+        )
+        request = Request(raw_request, authenticators=[])
+        return CatalogDetailRateThrottle().get_cache_key(request, None)
 
 
 class ContentItemGetOrCreateAliasTests(APITestCase):
@@ -146,6 +203,42 @@ class ContentItemBulkResolveTests(APITestCase):
             format='json',
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_rejects_anonymous_browser_requests(self):
+        self.client.force_authenticate(user=None)
+        response = self.client.post(
+            self.url,
+            {
+                'items': [{
+                    'source_api': ContentItem.SourceAPI.TMDB,
+                    'external_id': '78',
+                    'content_type': ContentItem.ContentType.MOVIE,
+                }],
+            },
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    @override_settings(PROXY_API_KEY='catalog-service-key')
+    def test_accepts_trusted_web_catalog_service(self):
+        self.client.force_authenticate(user=None)
+        response = self.client.post(
+            self.url,
+            {
+                'items': [{
+                    'source_api': ContentItem.SourceAPI.TMDB,
+                    'external_id': '79',
+                    'content_type': ContentItem.ContentType.MOVIE,
+                }],
+            },
+            format='json',
+            HTTP_X_API_KEY='catalog-service-key',
+            HTTP_X_API_CONSUMER='web',
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['results'][0]['external_id'], '79')
 
 
 class ContentItemConcurrentIdentityTests(TransactionTestCase):

@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { test, expect, type Page } from "./support/test";
+import { fixtureUrl } from "./support/fixture";
 
-const fixtureUrl = "http://127.0.0.1:18000";
 const criticalRoutes = [
   "/",
   "/search?q=phase",
@@ -10,6 +10,7 @@ const criticalRoutes = [
   "/profile",
   "/login",
   "/register",
+  "/welcome",
   "/about",
   "/privacy",
   "/terms",
@@ -77,16 +78,20 @@ test("home mounts semantic responsive media without hidden hero slides", async (
       )
       .map((entry) => ({ name: entry.name, startTime: entry.startTime })),
   );
+  const activeHeroUrl = await hero.locator("img").getAttribute("src");
   const optimizedUrls = [
     ...new Set(
-      imageEntries
-        .filter(({ startTime }) => startTime < 1_000)
-        .map(({ name }) => name),
+      [
+        ...imageEntries
+          .filter(({ startTime }) => startTime < 1_000)
+          .map(({ name }) => name),
+        ...(activeHeroUrl ? [activeHeroUrl] : []),
+      ],
     ),
   ];
   const bannerUrls = [1, 2, 3].map(
     (index) =>
-      `http://127.0.0.1:18000/__fixture__/images/banner-${index}.svg`,
+      `${fixtureUrl}/__fixture__/images/banner-${index}.svg`,
   );
   const initialBannerUrls = optimizedUrls.filter((url) =>
     bannerUrls.includes(url),

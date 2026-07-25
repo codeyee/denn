@@ -1,4 +1,3 @@
-import { api } from "./api";
 import {
   getSourceApi,
   normalizeContentType,
@@ -12,22 +11,17 @@ import {
 
 type ResolvableContent = SearchItem;
 
-interface ResolvedContentIdentity {
+export interface ResolvedContentIdentity {
   id: number;
   source_api: string;
   external_id: string;
   content_type: ContentType;
 }
 
-interface BulkResolveResponse {
-  results: ResolvedContentIdentity[];
-}
-
-export async function resolveContentIds<T extends HomepageResponse | MultiSearchResponse>(
-  response: T,
-  country?: string,
-): Promise<T> {
-  const items = collectItems(response)
+export function collectContentIdentities(
+  response: HomepageResponse | MultiSearchResponse,
+) {
+  return collectItems(response)
     .map((item) => ({
       item,
       contentType: normalizeContentType(item.type),
@@ -38,23 +32,22 @@ export async function resolveContentIds<T extends HomepageResponse | MultiSearch
       ): entry is { item: ResolvableContent; contentType: ContentType } =>
         entry.contentType !== null &&
         entry.contentType !== ContentType.PERSON,
-    );
-  if (items.length === 0) return response;
+    )
+    .map(({ item, contentType }) => ({
+      source_api: getSourceApi(contentType),
+      external_id: String(item.id),
+      content_type: contentType,
+    }));
+}
 
-  const query = country ? `?country=${encodeURIComponent(country)}` : "";
-  const resolved = await api.post<BulkResolveResponse>(
-    `/content/resolve-ids/${query}`,
-    {
-      items: items.map(({ item, contentType }) => ({
-        source_api: getSourceApi(contentType),
-        external_id: String(item.id),
-        content_type: contentType,
-      })),
-    },
-    true,
-  );
+export function applyResolvedContentIds<
+  T extends HomepageResponse | MultiSearchResponse,
+>(
+  response: T,
+  resolved: ResolvedContentIdentity[],
+): T {
   const ids = new Map(
-    resolved.results.map((item) => [
+    resolved.map((item) => [
       identityKey(item.external_id, item.content_type),
       item.id,
     ]),
