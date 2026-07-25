@@ -5,8 +5,9 @@ import {
   NavigationMenuList,
 } from "@/components/common/ui/NavigationMenu";
 import { Button } from "@/components/common/ui/Button";
+import { UserAvatar } from "@/components/common/ui/UserAvatar";
 import { useAuth } from "@/hooks/useAuth";
-import { Settings, Search, User, LogOut, LogIn, UserPlus } from "lucide-react";
+import { Settings, Search, LogOut, LogIn, UserPlus } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -76,14 +77,20 @@ export function Navbar({ searchQuery, onSearchChange }: NavbarProps) {
             />
 
             {isAuthenticated && user ? (
-              <>
-                {/* Profile Link - Icon only in all views */}
-                <Button asChild variant="ghost" size="icon" className="cursor-pointer">
-                  <Link to="/profile" aria-label="Profile">
-                    <User className="h-5 w-5" />
-                  </Link>
-                </Button>
-              </>
+              <Button asChild variant="ghost" size="icon">
+                <Link
+                  to="/user/$username"
+                  params={{ username: user.username }}
+                  search={{ tab: "overview", page: 1 }}
+                  aria-label={`View @${user.username} profile`}
+                >
+                  <UserAvatar
+                    avatarUrl={user.avatar_url}
+                    username={user.username}
+                    className="h-9 w-9 border border-white/25 text-sm"
+                  />
+                </Link>
+              </Button>
             ) : (
               <>
                 {/* Login Link - Text on desktop, icon on mobile */}
@@ -122,6 +129,17 @@ export function Navbar({ searchQuery, onSearchChange }: NavbarProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                {isAuthenticated && user ? (
+                  <DropdownMenuItem>
+                    <Link
+                      to="/settings"
+                      className="flex min-h-11 w-full items-center gap-3"
+                    >
+                      <Settings aria-hidden="true" className="h-4 w-4" />
+                      <span>Account settings</span>
+                    </Link>
+                  </DropdownMenuItem>
+                ) : null}
                 <DropdownMenuItem onSelect={toggleAnimations}>
                   <div className="flex items-center gap-3">
                     <input

@@ -1,3 +1,5 @@
+import { useRef, useState } from "react";
+
 import { usePublicProfileOverviewQuery } from "@/lib/api/queries/usePublicProfileQueries";
 import type {
   ProfileSearchParams,
@@ -5,6 +7,7 @@ import type {
   PublicProfileTabData,
 } from "@/lib/types";
 import { useAuthStore } from "@/stores/auth-store";
+import { EditProfileModal } from "./EditProfileModal";
 import { ProfileBanner } from "./ProfileBanner";
 import { ProfileOverview } from "./ProfileOverview";
 import { ProfileTabContent } from "./ProfileTabContent";
@@ -23,6 +26,8 @@ export function PublicProfilePage({
   initialOverview,
   initialTabData,
 }: PublicProfilePageProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const editButtonRef = useRef<HTMLButtonElement>(null);
   const overviewQuery = usePublicProfileOverviewQuery(
     username,
     initialOverview,
@@ -39,6 +44,13 @@ export function PublicProfilePage({
   const overview = overviewQuery.data;
   const isOwner = viewer?.username === overview.profile.username;
 
+  function handleEditOpenChange(open: boolean) {
+    setIsEditing(open);
+    if (!open) {
+      window.requestAnimationFrame(() => editButtonRef.current?.focus());
+    }
+  }
+
   return (
     <main
       id="main-content"
@@ -46,7 +58,12 @@ export function PublicProfilePage({
       className="min-h-screen bg-background-logged-in pt-20"
     >
       <div className="mx-auto w-full max-w-[1800px] md:px-4 lg:px-8">
-        <ProfileBanner overview={overview} isOwner={isOwner} />
+        <ProfileBanner
+          overview={overview}
+          isOwner={isOwner}
+          editButtonRef={editButtonRef}
+          onEdit={() => setIsEditing(true)}
+        />
         <div className="px-4 md:px-8">
           <ProfileTabs username={username} search={search}>
             {search.tab === "overview" ? (
@@ -61,6 +78,13 @@ export function PublicProfilePage({
           </ProfileTabs>
         </div>
       </div>
+      {isOwner ? (
+        <EditProfileModal
+          isOpen={isEditing}
+          onOpenChange={handleEditOpenChange}
+          profile={overview.profile}
+        />
+      ) : null}
     </main>
   );
 }

@@ -1,19 +1,26 @@
-import { useEffect, useRef, useState } from "react";
-import { Link } from "@tanstack/react-router";
+import type { RefObject } from "react";
 import { CalendarDays, Heart, List, Star, Trophy } from "lucide-react";
 
 import { BannerShell } from "@/components/common/media/BannerShell";
 import { ResponsiveMedia } from "@/components/common/media/ResponsiveMedia";
 import { Button } from "@/components/common/ui/Button";
+import { UserAvatar } from "@/components/common/ui/UserAvatar";
 import type { PublicProfileOverview } from "@/lib/types";
 import { formatJoinedAt } from "./utils";
 
 interface ProfileBannerProps {
   overview: PublicProfileOverview;
   isOwner: boolean;
+  editButtonRef: RefObject<HTMLButtonElement | null>;
+  onEdit: () => void;
 }
 
-export function ProfileBanner({ overview, isOwner }: ProfileBannerProps) {
+export function ProfileBanner({
+  overview,
+  isOwner,
+  editButtonRef,
+  onEdit,
+}: ProfileBannerProps) {
   const { profile, counters, banner_media: media } = overview;
 
   return (
@@ -21,9 +28,11 @@ export function ProfileBanner({ overview, isOwner }: ProfileBannerProps) {
       <div className="w-full px-4 pb-12 md:px-12 md:pb-16">
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div className="flex min-w-0 items-end gap-4">
-            <ProfileAvatar
+            <UserAvatar
               avatarUrl={profile.avatar_url}
               username={profile.username}
+              alt={`${profile.username}'s avatar`}
+              className="h-20 w-20 border-2 border-white/80 text-2xl shadow-xl md:h-28 md:w-28 md:text-4xl"
             />
             <div className="min-w-0 pb-1">
               <h1 className="truncate text-3xl font-black tracking-tight text-white drop-shadow-text md:text-5xl">
@@ -41,8 +50,15 @@ export function ProfileBanner({ overview, isOwner }: ProfileBannerProps) {
             </div>
           </div>
           {isOwner ? (
-            <Button asChild variant="secondary" className="self-start bg-white text-black hover:bg-white/90 md:self-auto">
-              <Link to="/profile">Edit profile</Link>
+            <Button
+              ref={editButtonRef}
+              type="button"
+              variant="secondary"
+              className="self-start bg-white text-black hover:bg-white/90 md:self-auto"
+              aria-haspopup="dialog"
+              onClick={onEdit}
+            >
+              Edit profile
             </Button>
           ) : null}
         </div>
@@ -54,46 +70,6 @@ export function ProfileBanner({ overview, isOwner }: ProfileBannerProps) {
         </dl>
       </div>
     </BannerShell>
-  );
-}
-
-function ProfileAvatar({
-  avatarUrl,
-  username,
-}: {
-  avatarUrl: string;
-  username: string;
-}) {
-  const [failed, setFailed] = useState(false);
-  const imageRef = useRef<HTMLImageElement>(null);
-  useEffect(() => {
-    setFailed(false);
-    const image = imageRef.current;
-    if (avatarUrl && image?.complete && image.naturalWidth === 0) {
-      setFailed(true);
-    }
-  }, [avatarUrl]);
-  const initial = username.slice(0, 1).toUpperCase();
-
-  return (
-    <div className="grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-full border-2 border-white/80 bg-[#32163a] text-2xl font-black text-white shadow-xl md:h-28 md:w-28 md:text-4xl">
-      {avatarUrl && !failed ? (
-        <img
-          ref={imageRef}
-          src={avatarUrl}
-          alt={`${username}'s avatar`}
-          width={112}
-          height={112}
-          referrerPolicy="no-referrer"
-          className="h-full w-full object-cover"
-          onError={() => setFailed(true)}
-        />
-      ) : (
-        <span role="img" aria-label={`${username}'s avatar fallback`}>
-          {initial}
-        </span>
-      )}
-    </div>
   );
 }
 

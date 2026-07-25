@@ -84,8 +84,9 @@ export function normalizeMetricRoute(route?: string): string {
   const pathname = route.split("?")[0].replace(/\/+$/, "") || "/";
   if (/^\/content\/\d+$/.test(pathname)) return "/content/:id";
   if (/^\/lists\/\d+$/.test(pathname)) return "/lists/:id";
+  if (/^\/user\/[^/]+$/.test(pathname)) return "/user/:username";
   if (
-    ["/", "/login", "/register", "/search", "/profile", "/lists"].includes(
+    ["/", "/login", "/register", "/search", "/settings", "/lists"].includes(
       pathname,
     )
   ) {

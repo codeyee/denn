@@ -214,7 +214,14 @@ ran five fresh contexts and five same-context warm reloads per flow.
 | Private profile `/profile` | cold | 4.6 / 5.4 / 7.9 | 80 | 80 / 80 / 84 | 0 / 0 | 0 / 0 |
 | Private profile `/profile` | warm | 10.0 / 10.1 / 11.5 | 88 | 76 / 88 / 88 | 0 / 0 | 0 / 0 |
 
-Both profile surfaces pass the release gates by a wide margin in the
+The `/profile` rows are retained as historical evidence for the
+2026-07-24 snapshot. The current private surface is `/settings`, while
+public-profile editing is an in-page modal at `/user/<username>`. The
+repeatable browser baseline now measures `settings` instead of the
+removed private-profile route; its values must not be compared to the
+historical rows until a new snapshot is captured.
+
+Both measured profile surfaces passed the release gates by a wide margin in the
 deterministic fixture: p75 LCP below 2.5 seconds, INP below 200 ms, and
 CLS below 0.10. As elsewhere in this document, a zero INP means no
 qualifying event-duration entry was emitted.

@@ -195,7 +195,9 @@ test("base accessibility contract keeps zoom, landmarks and touch targets @regre
   await page.keyboard.press("Tab");
   await expect(page.getByRole("link", { name: "Skip to main content" })).toBeFocused();
 
-  const profileBox = await page.getByLabel("Profile").boundingBox();
+  const profileBox = await page
+    .getByRole("link", { name: "View @phase0-fixture profile" })
+    .boundingBox();
   expect(profileBox?.width).toBeGreaterThanOrEqual(44);
   expect(profileBox?.height).toBeGreaterThanOrEqual(44);
 });
@@ -205,16 +207,16 @@ test("a valid session survives a transient core 5xx @regression", async ({
   page,
   request,
 }) => {
-  await page.goto("/profile");
+  await page.goto("/settings");
   await expect(
-    page.getByRole("heading", { name: "Profile", exact: true }),
+    page.getByRole("heading", { name: "Account settings" }),
   ).toBeVisible();
   await request.post(`${fixtureUrl}/__fixture__/scenario`, {
     data: { coreMode: "unavailable" },
   });
   await page.reload();
 
-  await expect(page).toHaveURL(/\/profile$/);
+  await expect(page).toHaveURL(/\/settings$/);
   await expect(
     page.getByRole("heading", { name: "Service unavailable" }),
   ).toBeVisible();
@@ -227,16 +229,16 @@ test("a valid session survives a transient core 5xx @regression", async ({
   });
   await page.getByRole("button", { name: "Retry session check" }).click();
   await expect(
-    page.getByRole("heading", { name: "Profile", exact: true }),
+    page.getByRole("heading", { name: "Account settings" }),
   ).toBeVisible();
 });
 
 test("logout reaches the public home without a redirect loop @regression", async ({
   page,
 }) => {
-  await page.goto("/profile");
+  await page.goto("/settings");
   await expect(
-    page.getByRole("heading", { name: "Profile", exact: true }),
+    page.getByRole("heading", { name: "Account settings" }),
   ).toBeVisible();
   await page
     .locator("main")
@@ -254,9 +256,9 @@ test("a valid session reaches a recoverable timeout state @regression", async ({
   await request.post(`${fixtureUrl}/__fixture__/scenario`, {
     data: { coreMode: "slow" },
   });
-  await page.goto("/profile");
+  await page.goto("/settings");
 
-  await expect(page).toHaveURL(/\/profile$/);
+  await expect(page).toHaveURL(/\/settings$/);
   await expect(
     page.getByRole("heading", { name: "Session check timed out" }),
   ).toBeVisible();
@@ -285,9 +287,9 @@ test("critical SPA navigation has no React 418 hydration error @regression", asy
   ).toBeVisible();
   await page.goto("/lists/1");
   await expect(page.getByText("Phase 0 Fixture List").first()).toBeVisible();
-  await page.goto("/profile");
+  await page.goto("/settings");
   await expect(
-    page.getByRole("heading", { name: "Profile", exact: true }),
+    page.getByRole("heading", { name: "Account settings" }),
   ).toBeVisible();
   await page.waitForTimeout(100);
 

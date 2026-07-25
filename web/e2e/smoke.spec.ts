@@ -219,7 +219,7 @@ test("broken public avatar falls back to initials", async ({ page, request }) =>
   });
   await page.goto("/user/phase0-fixture");
   await expect(
-    page.getByRole("img", { name: "phase0-fixture's avatar fallback" }),
+    page.getByRole("img", { name: "phase0-fixture's avatar" }),
   ).toBeVisible();
 });
 
@@ -234,24 +234,30 @@ test("public profile renders empty and not-found states", async ({ page }) => {
   ).toBeVisible();
 });
 
-test("owner edits public bio and avatar from private profile settings", async ({
+test("owner edits public bio and avatar from the public profile modal", async ({
   context,
   page,
 }) => {
   await authenticate(context);
-  await page.goto("/profile");
+  await page.goto("/user/phase0-fixture");
 
-  await page.getByLabel("Bio").fill("Updated from the private settings page.");
+  await page.getByRole("button", { name: "Edit profile" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Edit public profile" }),
+  ).toBeVisible();
+  await page.getByLabel("Bio").fill("Updated from the public profile modal.");
   await page
     .getByLabel("Avatar URL")
     .fill("https://example.com/fixture-avatar.jpg");
-  await page.getByRole("button", { name: "Save public profile" }).click();
+  await page.getByRole("button", { name: "Save profile" }).click();
   await expect(page.getByText("Profile updated.")).toBeVisible();
-  await page.getByRole("link", { name: "View profile" }).click();
   await expect(
-    page.getByText("Updated from the private settings page."),
+    page.getByRole("heading", { name: "Edit public profile" }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByText("Updated from the public profile modal."),
   ).toBeVisible();
-  await expect(page.getByRole("link", { name: "Edit profile" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Edit profile" })).toBeVisible();
 });
 
 test("personal tracking completes, rates, reviews and handles favorite quota", async ({
@@ -295,7 +301,17 @@ test("authenticated cold and warm navigation covers critical routes", async ({
   await authenticate(context);
 
   await page.goto("/");
-  await expect(page.getByLabel("Profile")).toBeVisible();
+  const profileLink = page.getByRole("link", {
+    name: "View @phase0-fixture profile",
+  });
+  await expect(profileLink).toBeVisible();
+  await profileLink.click();
+  await expect(page).toHaveURL(/\/user\/phase0-fixture/);
+  await expect(
+    page.getByRole("heading", { name: "@phase0-fixture" }),
+  ).toBeVisible();
+
+  await page.goto("/");
   await expect(page.getByText("Phase Zero Movie").first()).toBeVisible();
   await expect(page.getByRole("link", { name: "Login" })).toHaveCount(0);
 
@@ -320,9 +336,9 @@ test("authenticated cold and warm navigation covers critical routes", async ({
   await page.goto("/lists/1");
   await expect(page.getByText("Phase 0 Fixture List").first()).toBeVisible();
 
-  await page.goto("/profile");
+  await page.goto("/settings");
   await expect(
-    page.getByRole("heading", { name: "Profile", exact: true }),
+    page.getByRole("heading", { name: "Account settings" }),
   ).toBeVisible();
   await expect(page.getByText("phase0@example.test")).toBeVisible();
 
@@ -342,7 +358,7 @@ test("adult search stays safe by default and changes only after explicit opt-in"
   ).toBeVisible();
   await expect(page.getByText("Explicit Opt-In Result")).toHaveCount(0);
 
-  await page.goto("/profile");
+  await page.goto("/settings");
   const preference = page.getByRole("checkbox", {
     name: "Allow adult content in direct search",
   });
@@ -364,7 +380,7 @@ test("logout everywhere clears the local session and reaches the blacklist endpo
   request,
 }) => {
   await authenticate(context);
-  await page.goto("/profile");
+  await page.goto("/settings");
 
   await page.getByRole("button", { name: "Logout everywhere" }).click();
 
@@ -418,9 +434,9 @@ test("expired access token refreshes once and preserves the protected route", as
   request,
 }) => {
   await authenticate(context, "expired-access");
-  await page.goto("/profile");
+  await page.goto("/settings");
   await expect(
-    page.getByRole("heading", { name: "Profile", exact: true }),
+    page.getByRole("heading", { name: "Account settings" }),
   ).toBeVisible();
 
   const recorded = await request.get(`${fixtureUrl}/__fixture__/requests`);

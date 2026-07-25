@@ -160,9 +160,13 @@ defined in
 - Content-detail client reads have one bounded attempt; timeout or
   upstream failure renders an explicit retry instead of leaving an
   unbounded skeleton or discarding the session.
-- `/profile` remains an authenticated settings surface. It edits the
-  public bio/avatar while keeping the username immutable and preserving
-  account preferences/actions.
+- The authenticated navbar renders the current avatar, with an initials
+  fallback, and links directly to `/user/<username>`.
+- Owners edit their public bio/avatar in an accessible modal on their
+  public profile. The optimistic profile mutation updates both the
+  profile query and session identity before revalidation.
+- `/settings` preserves private account preferences/actions. `/profile`
+  is no longer an application route.
 
 See [`auth-session-bootstrap.md`](./auth-session-bootstrap.md).
 

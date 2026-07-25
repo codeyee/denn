@@ -11,9 +11,9 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WelcomeRouteImport } from './routes/welcome'
 import { Route as TermsRouteImport } from './routes/terms'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as RegisterRouteImport } from './routes/register'
-import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ContactRouteImport } from './routes/contact'
@@ -45,6 +45,11 @@ const TermsRoute = TermsRouteImport.update({
   path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SearchRoute = SearchRouteImport.update({
   id: '/search',
   path: '/search',
@@ -53,11 +58,6 @@ const SearchRoute = SearchRouteImport.update({
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
   path: '/register',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProfileRoute = ProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PrivacyRoute = PrivacyRouteImport.update({
@@ -167,9 +167,9 @@ export interface FileRoutesByFullPath {
   '/contact': typeof ContactRoute
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
-  '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
   '/search': typeof SearchRoute
+  '/settings': typeof SettingsRoute
   '/terms': typeof TermsRoute
   '/welcome': typeof WelcomeRoute
   '/api/cards': typeof ApiCardsRoute
@@ -194,9 +194,9 @@ export interface FileRoutesByTo {
   '/contact': typeof ContactRoute
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
-  '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
   '/search': typeof SearchRoute
+  '/settings': typeof SettingsRoute
   '/terms': typeof TermsRoute
   '/welcome': typeof WelcomeRoute
   '/api/cards': typeof ApiCardsRoute
@@ -222,9 +222,9 @@ export interface FileRoutesById {
   '/contact': typeof ContactRoute
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
-  '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
   '/search': typeof SearchRoute
+  '/settings': typeof SettingsRoute
   '/terms': typeof TermsRoute
   '/welcome': typeof WelcomeRoute
   '/api/cards': typeof ApiCardsRoute
@@ -251,9 +251,9 @@ export interface FileRouteTypes {
     | '/contact'
     | '/login'
     | '/privacy'
-    | '/profile'
     | '/register'
     | '/search'
+    | '/settings'
     | '/terms'
     | '/welcome'
     | '/api/cards'
@@ -278,9 +278,9 @@ export interface FileRouteTypes {
     | '/contact'
     | '/login'
     | '/privacy'
-    | '/profile'
     | '/register'
     | '/search'
+    | '/settings'
     | '/terms'
     | '/welcome'
     | '/api/cards'
@@ -305,9 +305,9 @@ export interface FileRouteTypes {
     | '/contact'
     | '/login'
     | '/privacy'
-    | '/profile'
     | '/register'
     | '/search'
+    | '/settings'
     | '/terms'
     | '/welcome'
     | '/api/cards'
@@ -333,9 +333,9 @@ export interface RootRouteChildren {
   ContactRoute: typeof ContactRoute
   LoginRoute: typeof LoginRoute
   PrivacyRoute: typeof PrivacyRoute
-  ProfileRoute: typeof ProfileRoute
   RegisterRoute: typeof RegisterRoute
   SearchRoute: typeof SearchRoute
+  SettingsRoute: typeof SettingsRoute
   TermsRoute: typeof TermsRoute
   WelcomeRoute: typeof WelcomeRoute
   ApiCardsRoute: typeof ApiCardsRoute
@@ -371,6 +371,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/search': {
       id: '/search'
       path: '/search'
@@ -383,13 +390,6 @@ declare module '@tanstack/react-router' {
       path: '/register'
       fullPath: '/register'
       preLoaderRoute: typeof RegisterRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/profile': {
-      id: '/profile'
-      path: '/profile'
-      fullPath: '/profile'
-      preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/privacy': {
@@ -541,9 +541,9 @@ const rootRouteChildren: RootRouteChildren = {
   ContactRoute: ContactRoute,
   LoginRoute: LoginRoute,
   PrivacyRoute: PrivacyRoute,
-  ProfileRoute: ProfileRoute,
   RegisterRoute: RegisterRoute,
   SearchRoute: SearchRoute,
+  SettingsRoute: SettingsRoute,
   TermsRoute: TermsRoute,
   WelcomeRoute: WelcomeRoute,
   ApiCardsRoute: ApiCardsRoute,

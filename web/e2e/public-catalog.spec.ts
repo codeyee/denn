@@ -139,5 +139,10 @@ test("the original landing experience remains available publicly", async ({
 test("account-only routes remain protected", async ({ page }) => {
   await page.goto("/profile");
 
-  await expect(page).toHaveURL(/\/login\?next=%2Fprofile$/);
+  await expect(
+    page.getByRole("heading", { name: "Page not found" }),
+  ).toBeVisible();
+
+  await page.goto("/settings");
+  await expect(page).toHaveURL(/\/login\?next=%2Fsettings$/);
 });

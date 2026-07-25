@@ -17,10 +17,13 @@ considered part of the project baseline.
 - Preserved marketing landing at `/welcome`.
 - Login-on-action for Add-to-List and Rating with a return path shared
   across login and registration.
-- User profile page.
+- Avatar-based authenticated profile navigation.
 - Stable public identity at `/user/<username>` with editable bio/avatar,
   joined date, counters, favorites by media type, recent completions and
-  reviews, spoiler controls, and public-list modules.
+  reviews, spoiler controls, public-list modules, and an owner-only edit
+  modal that reflects saved changes immediately.
+- Private account preferences and session actions at `/settings`;
+  `/profile` is intentionally absent.
 - First-class personal tracking with backlog, in-progress, completed,
   on-hold, and dropped states, including rating activation semantics and
   completed-only favorites.
