@@ -125,6 +125,8 @@ class RatingViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = Rating.objects.select_related('user', 'content_item').order_by('-created_at')
+        if self.action == 'list':
+            queryset = queryset.filter(is_active=True)
 
         content_item_id = self.request.query_params.get('content_item_id')
         if content_item_id:
@@ -178,6 +180,7 @@ class RatingViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
         data = {
             'score': request.data.get('score', instance.score),
             'comment': request.data.get('comment', instance.comment),
+            'spoiler': request.data.get('spoiler', instance.spoiler),
             'source_api': instance.content_item.source_api,
             'external_id': instance.content_item.external_id,
             'content_type': instance.content_item.content_type,
@@ -185,9 +188,9 @@ class RatingViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
 
         serializer = self.get_serializer(instance, data=data, partial=partial)
         serializer.is_valid(raise_exception=True)
-        serializer.save(user=request.user)
+        rating = serializer.save(user=request.user)
 
-        return Response(RatingSerializer(instance).data)
+        return Response(RatingSerializer(rating).data)
 
     def list(self, request, *args, **kwargs):
 
@@ -218,4 +221,3 @@ class RatingViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
 
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
-

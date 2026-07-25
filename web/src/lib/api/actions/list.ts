@@ -8,6 +8,7 @@ import type {
     ListStatsResponse,
     BulkCheckItem,
     BulkCheckResponse,
+    PublicListDetail,
 } from "@/lib/types";
 
 export const listActions = {
@@ -35,6 +36,10 @@ export const listActions = {
             country: params?.country,
         });
         return api.get<UserListDetail>(`/content/lists/${id}/${query}`, true);
+    },
+
+    getPublic: (id: number): Promise<PublicListDetail> => {
+        return api.get<PublicListDetail>(`/content/lists/${id}/`);
     },
 
     create: (list: {

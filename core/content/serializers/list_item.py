@@ -124,7 +124,8 @@ class ListItemSerializer(BaseFlexSerializer):
         member_ids = self._get_member_ids(obj)
         member_ratings = Rating.objects.filter(
             content_item=obj.content_item,
-            user_id__in=member_ids
+            user_id__in=member_ids,
+            is_active=True,
         ).select_related('user')
 
         return MemberRatingSerializer(

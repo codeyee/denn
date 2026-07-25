@@ -3,6 +3,7 @@ from .content_item_browse_metadata import ContentItemBrowseMetadata
 from .user_list import UserList
 from .list_item import ListItem
 from .rating import Rating
+from .user_content_tracking import UserContentTracking
 from .list_invitation import ListInvitation
 
 from .detail import (
@@ -33,6 +34,7 @@ __all__ = [
     'UserList',
     'ListItem',
     'Rating',
+    'UserContentTracking',
     'ListInvitation',
     'MovieDetail',
     'TvShowDetail',

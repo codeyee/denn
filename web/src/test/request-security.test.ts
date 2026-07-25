@@ -10,7 +10,11 @@ import {
   isSafeProxyPath,
 } from "@/routes/api/proxy/$";
 import { isValidPayload } from "@/routes/api/perf/vitals";
-import { buildCoreUrl, isSafeCorePath } from "@/server/core-bff";
+import {
+  buildCoreUrl,
+  isPublicCoreRequest,
+  isSafeCorePath,
+} from "@/server/core-bff";
 
 describe("BFF request security", () => {
   it("keeps proxy requests under the configured base path", () => {
@@ -37,6 +41,21 @@ describe("BFF request security", () => {
     expect(() =>
       buildCoreUrl("http://core:8000/api", "../admin/", ""),
     ).toThrow("Unsafe core path");
+  });
+
+  it("allows only strict anonymous core read patterns", () => {
+    expect(isPublicCoreRequest("GET", "profiles/alice/")).toBe(true);
+    expect(
+      isPublicCoreRequest("HEAD", "profiles/alice/completed/"),
+    ).toBe(true);
+    expect(isPublicCoreRequest("GET", "content/42/")).toBe(true);
+    expect(isPublicCoreRequest("GET", "content/lists/7/")).toBe(true);
+    expect(isPublicCoreRequest("PATCH", "profiles/me/")).toBe(false);
+    expect(isPublicCoreRequest("GET", "profiles/me/")).toBe(false);
+    expect(isPublicCoreRequest("GET", "content/lists/7/items/")).toBe(false);
+    expect(isPublicCoreRequest("GET", "profiles/alice/../../admin/")).toBe(
+      false,
+    );
   });
 
   it("accepts only bounded Web Vitals fields", () => {

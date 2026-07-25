@@ -8,19 +8,10 @@ import {
 import { Navbar } from "@/components/layout/Navbar";
 import { ContentDetailPage } from "@/components/pages/ContentDetailPage";
 import { ContentDetailSkeleton } from "@/components/pages/ContentDetailPage/ContentDetailSkeleton";
-import { ProtectedRoute } from "@/components/common/providers/ProtectedRoute";
 import { prefetchContentDetailQueries } from "@/lib/api/queries/server";
-import { requireAuthenticatedSession } from "@/lib/auth/protected-route";
 import type { ContentItem } from "@/lib/types";
 
 export const Route = createFileRoute("/content/$id")({
-  beforeLoad: ({ context, location }) => {
-    requireAuthenticatedSession(
-      context.session,
-      location.pathname,
-      location.searchStr,
-    );
-  },
   loader: async ({ context, params }) => {
     const contentId = Number.parseInt(params.id, 10);
     if (!Number.isFinite(contentId) || contentId <= 0) {
@@ -83,13 +74,11 @@ function ContentDetailRoute() {
   return (
     <div className="relative w-full overflow-x-hidden">
       <Navbar />
-      <ProtectedRoute>
-        <ContentDetailPage
-          contentId={contentId}
-          country={country}
-          initialContentItem={initialContentItem as ContentItem | undefined}
-        />
-      </ProtectedRoute>
+      <ContentDetailPage
+        contentId={contentId}
+        country={country}
+        initialContentItem={initialContentItem as ContentItem | undefined}
+      />
     </div>
   );
 }

@@ -81,3 +81,21 @@ class ErrorCode:
         message='This item is already in the list',
         http_status=status.HTTP_400_BAD_REQUEST
     )
+
+    FAVORITE_LIMIT_REACHED = ErrorCodeData(
+        code='FAVORITE_LIMIT_REACHED',
+        message='You can only favorite five completed items of each content type',
+        http_status=status.HTTP_409_CONFLICT,
+    )
+
+    TRACKING_PARENT_MISSING = ErrorCodeData(
+        code='TRACKING_PARENT_MISSING',
+        message='The season is missing its local TV show relationship',
+        http_status=status.HTTP_409_CONFLICT,
+    )
+
+    TRACKING_NOT_COMPLETED = ErrorCodeData(
+        code='TRACKING_NOT_COMPLETED',
+        message='Only completed content can be marked as a favorite',
+        http_status=status.HTTP_409_CONFLICT,
+    )

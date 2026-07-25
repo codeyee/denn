@@ -8,6 +8,9 @@ const criticalRoutes = [
   "/content/1",
   "/lists/1",
   "/profile",
+  "/user/phase0-fixture",
+  "/user/empty-user",
+  "/lists/3",
   "/login",
   "/register",
   "/about",
@@ -251,6 +254,29 @@ test("primary mobile controls keep 44px targets", async ({ page }) => {
     const box = await control.boundingBox();
     expect(box, "Primary control must be visible").not.toBeNull();
     expect(box?.width ?? 0).toBeGreaterThanOrEqual(44);
+    expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
+  }
+});
+
+test("public profile tabs support keyboard navigation, reduced motion and 44px targets", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/user/phase0-fixture");
+
+  const tabs = page.getByRole("tab");
+  await expect(tabs).toHaveCount(4);
+  await tabs.first().focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(
+    page.getByRole("tab", { name: "Completed" }),
+  ).toHaveAttribute("aria-selected", "true");
+  await expect(page).toHaveURL(/tab=completed/);
+
+  for (const tab of await tabs.all()) {
+    const box = await tab.boundingBox();
+    expect(box, "Profile tab must be visible").not.toBeNull();
     expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
   }
 });

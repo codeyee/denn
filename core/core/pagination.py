@@ -92,6 +92,11 @@ class CustomPageNumberPagination(PageNumberPagination):
         }
 
 
+class PublicProfilePagination(CustomPageNumberPagination):
+    page_size = 24
+    max_page_size = 48
+
+
 def build_pagination_metadata(
     request,
     current_page: int,

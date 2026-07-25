@@ -236,3 +236,40 @@ renderizar enlaces.
   equivalente y confiable.
 - Un fallo de Redis degrada a ejecución sin caché; no abre el proxy ni
   convierte un fallo de infraestructura de caché en un `5xx` obligatorio.
+
+## 11. Perfil público, tracking y listas públicas
+
+Lecturas anónimas admitidas por el BFF de Core:
+
+- `GET|HEAD /api/profiles/<username>/`
+- `GET|HEAD /api/profiles/<username>/(completed|ratings|lists)/`
+- `GET|HEAD /api/content/<id>/`
+- `GET|HEAD /api/content/lists/<id>/`
+
+El predicado falla cerrado para cualquier otro método o patrón. Una
+cookie caducada puede provocar un intento de refresh, pero si no se
+restaura la sesión la lectura pública continúa anónima. Mutaciones y
+rutas Core no incluidas arriba requieren sesión.
+
+Writes autenticados:
+
+- `PATCH /api/profiles/me/`
+- `PUT|DELETE /api/content/tracking/<content_id>/`
+- `PATCH /api/content/tracking/<content_id>/favorite/`
+
+Los endpoints de pestaña de perfil usan `page_size=24` por defecto y
+máximo 48. El overview limita sus colecciones internas y nunca consulta
+proveedores. El throttle público es 120 solicitudes/minuto por IP.
+
+Errores de dominio adicionales:
+
+- `FAVORITE_LIMIT_REACHED` (`409`) cuando ya existen cinco favoritos
+  preservados del tipo canónico.
+- Los errores recuperables de temporada sin padre local indican que debe
+  ejecutarse el backfill; la escritura no llama a `proxy`.
+
+Las listas privadas y las inexistentes devuelven 404 al consumidor
+anónimo. El serializer público puede exponer usernames de owner y
+colaboradores, pero nunca emails ni membresías privadas. El detalle de
+contenido separa caché por `viewerId` o `anonymous` para que
+`current_user_rating` y tracking no crucen sesiones.

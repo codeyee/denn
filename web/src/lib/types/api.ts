@@ -30,7 +30,9 @@ export interface Profile {
     ratings?: string;
     lists_count?: number;
     ratings_count?: number;
-  allow_adult_content?: boolean;
+    allow_adult_content?: boolean;
+    bio?: string;
+    avatar_url?: string;
 }
 
 export interface TokenRefresh {
@@ -117,6 +119,7 @@ export interface ContentItem {
     rating_count: number;
     average_rating: string | null;
     current_user_rating: Rating | null;
+    current_user_tracking: UserContentTracking | null;
     created_at: string;
     source_data?: SourceData | string | null;
 }
@@ -124,6 +127,11 @@ export interface ContentItem {
 export enum ListType {
     PERSONAL = "PERSONAL",
     SHARED = "SHARED",
+}
+
+export enum ListVisibility {
+    PUBLIC = "PUBLIC",
+    PRIVATE = "PRIVATE",
 }
 
 export interface User {
@@ -139,6 +147,7 @@ export interface UserList {
     name: string;
     description: string | null;
     list_type: ListType;
+    visibility: ListVisibility;
     owner: User;
     members?: User[];
     item_count: string;
@@ -210,6 +219,8 @@ export interface Rating {
     content_item: ContentItem;
     score: string;
     comment: string | null;
+    spoiler: boolean;
+    is_active: boolean;
     created_at: string;
     updated_at: string;
 }
@@ -220,6 +231,25 @@ export interface RatingCreate {
     content_type: ContentType;
     score: string;
     comment?: string | null;
+    spoiler?: boolean;
+}
+
+export type TrackingStatus =
+    | "backlog"
+    | "in_progress"
+    | "completed"
+    | "on_hold"
+    | "dropped";
+
+export interface UserContentTracking {
+    content_id: number;
+    status: TrackingStatus;
+    last_completed_at: string | null;
+    is_favorite: boolean;
+    favorited_at: string | null;
+    created_at: string;
+    updated_at: string;
+    should_prompt_rating?: boolean;
 }
 
 export interface Author {
@@ -506,6 +536,7 @@ export interface ContentItemData {
     rating_count: number;
     average_rating: number | null;
     current_user_rating: Rating | null;
+    current_user_tracking: UserContentTracking | null;
     created_at: string;
     source_data: SourceData;
 }

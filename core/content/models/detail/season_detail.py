@@ -9,6 +9,13 @@ class SeasonDetail(models.Model):
         on_delete=models.CASCADE,
         related_name='season_detail',
     )
+    tv_show = models.ForeignKey(
+        ContentItem,
+        on_delete=models.SET_NULL,
+        related_name='season_children',
+        null=True,
+        blank=True,
+    )
 
     season_number = models.IntegerField(default=0)
     tv_show_name = models.CharField(max_length=500, blank=True)

@@ -4,6 +4,7 @@ import {
   useMemo,
   useState,
   type MouseEvent,
+  type ReactNode,
 } from "react";
 import { Link } from "@tanstack/react-router";
 import { Card } from "../Card";
@@ -28,9 +29,18 @@ import {
 interface ContentCardProps {
   item: Content;
   className?: string;
+  badgeSlot?: ReactNode;
+  footerSlot?: ReactNode;
+  showAddToList?: boolean;
 }
 
-export function ContentCard({ item, className }: ContentCardProps) {
+export function ContentCard({
+  item,
+  className,
+  badgeSlot,
+  footerSlot,
+  showAddToList = true,
+}: ContentCardProps) {
   const [isNavigating, setIsNavigating] = useState(false);
   const modal = useContentCardModal(item);
 
@@ -119,15 +129,17 @@ export function ContentCard({ item, className }: ContentCardProps) {
                   </p>
                 )}
 
-                <Button
-                  onClick={modal.openModal}
-                  variant="secondary"
-                  size="sm"
-                  className="relative z-30 w-full bg-white/10 hover:bg-white/20 text-white border-white/20"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add to List
-                </Button>
+                {showAddToList ? (
+                  <Button
+                    onClick={modal.openModal}
+                    variant="secondary"
+                    size="sm"
+                    className="relative z-30 w-full bg-white/10 hover:bg-white/20 text-white border-white/20"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add to List
+                  </Button>
+                ) : null}
               </div>
             </Card.HoverContent>
           }
@@ -149,6 +161,14 @@ export function ContentCard({ item, className }: ContentCardProps) {
             </div>
           </Card.Footer>
         </Card>
+        {badgeSlot ? (
+          <div className="pointer-events-none absolute right-3 top-3 z-30">
+            {badgeSlot}
+          </div>
+        ) : null}
+        {footerSlot ? (
+          <div className="mt-2 min-h-6 text-sm text-white/70">{footerSlot}</div>
+        ) : null}
         {isNavigating && (
           <div
             className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center rounded-xl bg-black/55 text-sm font-medium text-white"
@@ -159,11 +179,13 @@ export function ContentCard({ item, className }: ContentCardProps) {
         )}
       </div>
 
-      <AddToListModal
-        isOpen={modal.isOpen}
-        onOpenChange={modal.closeModal}
-        contentItem={modal.contentItem}
-      />
+      {showAddToList ? (
+        <AddToListModal
+          isOpen={modal.isOpen}
+          onOpenChange={modal.closeModal}
+          contentItem={modal.contentItem}
+        />
+      ) : null}
     </>
   );
 }

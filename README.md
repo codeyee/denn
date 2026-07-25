@@ -19,7 +19,12 @@ At a product level, Denn currently supports:
 - Search and detail views for external content, routed by internal
   Denn content id.
 - User authentication with protected routes.
+- First-class personal tracking with backlog, in-progress, completed,
+  on-hold, and dropped states.
+- Public user profiles with favorites, reviews, completions, and public
+  lists.
 - Personal and shared lists.
+- Anonymous reads for public content details and public lists.
 - List invitations and membership workflows.
 - List-item status workflows, ratings, and canonical list ordering.
 - Advanced list exploration with filters, grouping, range filters, and
@@ -28,8 +33,8 @@ At a product level, Denn currently supports:
   can be reconstructed from PostgreSQL instead of always hitting the
   upstream metadata layer.
 
-First-class personal tracking, public catalog surfaces, public profiles,
-and leaderboards are planned but not yet part of the shipped baseline.
+Public search/browse, richer public content aggregates, full Lists 2.0
+roles, and leaderboards remain planned.
 
 ## Architecture
 

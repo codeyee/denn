@@ -13,6 +13,7 @@ import { getRatingBadgeData, isPersonalList } from "../utils";
 import { Film } from "lucide-react";
 import { buildContentUrlById } from "@/lib/utils/navigationUtils";
 import { useNavigate } from "@tanstack/react-router";
+import { ListItemTrackingSection } from "./ListItemTrackingSection";
 
 interface ListItemRendererProps {
   item: ListItem;
@@ -148,6 +149,7 @@ export function ListItemRenderer({
                   ) : null}
                 </div>
               </div>
+              <ListItemTrackingSection item={item} onRate={onRate} />
               {!personal &&
               item.member_ratings &&
               Array.isArray(item.member_ratings) &&

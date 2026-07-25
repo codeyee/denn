@@ -41,4 +41,31 @@ describe("queryKeys", () => {
       null,
     ]);
   });
+
+  it("isolates content state by viewer and profile filters", () => {
+    expect(queryKeys.contentDetail.byId(42, "anonymous", "CO")).toEqual([
+      "content-detail",
+      "anonymous",
+      42,
+      "CO",
+    ]);
+    expect(queryKeys.contentDetail.byId(42, 7, "CO")).toEqual([
+      "content-detail",
+      7,
+      42,
+      "CO",
+    ]);
+    expect(
+      queryKeys.profiles.tab("alice", "ratings", {
+        tab: "ratings",
+        page: 2,
+        kind: "reviews",
+      }),
+    ).toEqual([
+      "profiles",
+      "alice",
+      "ratings",
+      { tab: "ratings", page: 2, kind: "reviews" },
+    ]);
+  });
 });

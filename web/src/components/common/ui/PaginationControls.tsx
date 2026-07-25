@@ -27,7 +27,7 @@ export function PaginationControls({
         onClick={() => onPageChange(1)}
         disabled={isFirstPage}
         className={cn(
-          "p-1.5 rounded transition-colors cursor-pointer",
+          "grid min-h-11 min-w-11 place-items-center rounded transition-colors cursor-pointer",
           isFirstPage
             ? "text-white/30 cursor-not-allowed"
             : "text-white/60 hover:text-white hover:bg-white/10"
@@ -41,7 +41,7 @@ export function PaginationControls({
         onClick={() => onPageChange(currentPage - 1)}
         disabled={isFirstPage}
         className={cn(
-          "p-1.5 rounded transition-colors cursor-pointer",
+          "grid min-h-11 min-w-11 place-items-center rounded transition-colors cursor-pointer",
           isFirstPage
             ? "text-white/30 cursor-not-allowed"
             : "text-white/60 hover:text-white hover:bg-white/10"
@@ -58,7 +58,7 @@ export function PaginationControls({
         onClick={() => onPageChange(currentPage + 1)}
         disabled={isLastPage}
         className={cn(
-          "p-1.5 rounded transition-colors cursor-pointer",
+          "grid min-h-11 min-w-11 place-items-center rounded transition-colors cursor-pointer",
           isLastPage
             ? "text-white/30 cursor-not-allowed"
             : "text-white/60 hover:text-white hover:bg-white/10"
@@ -72,7 +72,7 @@ export function PaginationControls({
         onClick={() => onPageChange(totalPages)}
         disabled={isLastPage}
         className={cn(
-          "p-1.5 rounded transition-colors cursor-pointer",
+          "grid min-h-11 min-w-11 place-items-center rounded transition-colors cursor-pointer",
           isLastPage
             ? "text-white/30 cursor-not-allowed"
             : "text-white/60 hover:text-white hover:bg-white/10"

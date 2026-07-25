@@ -207,7 +207,9 @@ test("a valid session survives a transient core 5xx @regression", async ({
   request,
 }) => {
   await page.goto("/profile");
-  await expect(page.getByRole("heading", { name: "Profile" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Profile", exact: true }),
+  ).toBeVisible();
   await request.post(`${fixtureUrl}/__fixture__/scenario`, {
     data: { coreMode: "unavailable" },
   });
@@ -225,14 +227,18 @@ test("a valid session survives a transient core 5xx @regression", async ({
     data: { coreMode: "normal" },
   });
   await page.getByRole("button", { name: "Retry session check" }).click();
-  await expect(page.getByRole("heading", { name: "Profile" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Profile", exact: true }),
+  ).toBeVisible();
 });
 
 test("logout reaches the public home without a redirect loop @regression", async ({
   page,
 }) => {
   await page.goto("/profile");
-  await expect(page.getByRole("heading", { name: "Profile" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Profile", exact: true }),
+  ).toBeVisible();
   await page
     .locator("main")
     .getByRole("button", { name: "Logout", exact: true })
@@ -281,7 +287,9 @@ test("critical SPA navigation has no React 418 hydration error @regression", asy
   await page.goto("/lists/1");
   await expect(page.getByText("Phase 0 Fixture List").first()).toBeVisible();
   await page.goto("/profile");
-  await expect(page.getByRole("heading", { name: "Profile" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Profile", exact: true }),
+  ).toBeVisible();
   await page.waitForTimeout(100);
 
   expect(hydrationErrors).toEqual([]);

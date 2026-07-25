@@ -26,7 +26,8 @@ const flows = {
   search: "/search?q=phase",
   detail: "/content/1",
   lists: "/lists/1",
-  profile: "/profile",
+  publicProfile: "/user/phase0-fixture",
+  privateProfile: "/profile",
 };
 
 async function installObservers(page: Page) {
@@ -160,7 +161,9 @@ test("records a repeatable cold/warm production-build baseline", async ({
         });
       }
       const context = await browser.newContext();
-      if (flow !== "login") await addAuthCookies(context);
+      if (flow !== "login" && flow !== "publicProfile") {
+        await addAuthCookies(context);
+      }
       const page = await context.newPage();
       await installObservers(page);
       cold.push(await capture(page, path));
@@ -189,4 +192,13 @@ test("records a repeatable cold/warm production-build baseline", async ({
   expect(baseline.home.warm.p75.lcp).toBeLessThan(2_500);
   expect(baseline.home.cold.p75.inp).toBeLessThan(200);
   expect(baseline.home.warm.p75.inp).toBeLessThan(200);
+
+  for (const flow of ["publicProfile", "privateProfile"] as const) {
+    expect(baseline[flow].cold.p75.lcp).toBeLessThan(2_500);
+    expect(baseline[flow].warm.p75.lcp).toBeLessThan(2_500);
+    expect(baseline[flow].cold.p75.inp).toBeLessThan(200);
+    expect(baseline[flow].warm.p75.inp).toBeLessThan(200);
+    expect(baseline[flow].cold.p75.cls).toBeLessThan(0.1);
+    expect(baseline[flow].warm.p75.cls).toBeLessThan(0.1);
+  }
 });

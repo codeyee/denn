@@ -1,4 +1,4 @@
-from rest_framework.throttling import UserRateThrottle, AnonRateThrottle
+from rest_framework.throttling import AnonRateThrottle, SimpleRateThrottle, UserRateThrottle
 
 
 class AuthRateThrottle(AnonRateThrottle):
@@ -19,3 +19,13 @@ class SustainedRateThrottle(UserRateThrottle):
 
 class BurstRateThrottle(UserRateThrottle):
     rate = '60/minute'
+
+
+class PublicProfileRateThrottle(SimpleRateThrottle):
+    scope = "public_profile"
+
+    def get_cache_key(self, request, view):
+        return self.cache_format % {
+            "scope": self.scope,
+            "ident": self.get_ident(request),
+        }

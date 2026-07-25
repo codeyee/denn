@@ -16,6 +16,12 @@ import { ContentDetailState } from "./components/ContentDetailState";
 import { RatingModal } from "@/components/common/modals/RatingModal";
 import { AddToListModal } from "@/components/common/modals/AddToListModal";
 import { Footer } from "../../layout/Footer";
+import {
+  useDeleteTrackingMutation,
+  useSetFavoriteMutation,
+  useSetTrackingStatusMutation,
+} from "@/lib/api/mutations";
+import type { TrackingStatus } from "@/lib/types";
 
 interface ContentDetailPageProps {
   contentId: number;
@@ -43,6 +49,13 @@ export function ContentDetailPage({
   });
 
   const modals = useContentModals();
+  const setTrackingStatus = useSetTrackingStatusMutation();
+  const setFavorite = useSetFavoriteMutation();
+  const deleteTracking = useDeleteTrackingMutation();
+  const isTrackingLoading =
+    setTrackingStatus.isPending ||
+    setFavorite.isPending ||
+    deleteTracking.isPending;
 
   const contentItemForModal = useMemo(() => {
     if (!contentItem) return { source_api: "", external_id: "", content_type: "" };
@@ -92,6 +105,16 @@ export function ContentDetailPage({
     );
   }
 
+  const handleTrackingStatusChange = async (status: TrackingStatus) => {
+    const tracking = await setTrackingStatus.mutateAsync({
+      contentId: contentItem.id,
+      status,
+    });
+    if (tracking.should_prompt_rating) {
+      modals.openRatingModal();
+    }
+  };
+
   return (
     <main
       id="main-content"
@@ -107,6 +130,22 @@ export function ContentDetailPage({
           isAuthenticated={!!user}
           onAddToList={modals.openAddToListModal}
           onRateContent={modals.openRatingModal}
+          tracking={contentItem.current_user_tracking ?? null}
+          isTrackingLoading={isTrackingLoading}
+          onTrackingStatusChange={(status) => {
+            void handleTrackingStatusChange(status);
+          }}
+          onFavoriteChange={(isFavorite) => {
+            void setFavorite.mutateAsync({
+              contentId: contentItem.id,
+              isFavorite,
+            });
+          }}
+          onDeleteTracking={() => {
+            if (window.confirm("Stop tracking this content?")) {
+              void deleteTracking.mutateAsync({ contentId: contentItem.id });
+            }
+          }}
         />
 
         <AboutSection

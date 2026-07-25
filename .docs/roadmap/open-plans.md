@@ -120,7 +120,8 @@ Validation expectation:
 
 ## Product Gap Analysis Toward A Social Multi-Media Tracker
 
-- Status: planned
+- Status: in progress; Personal Tracking 1.0 and Public Profiles 1.0
+  completed 2026-07-24.
 - Detailed review:
   [`./2026-04-19-social-multimedia-tracker-review.md`](./2026-04-19-social-multimedia-tracker-review.md)
 - Validated MVP functional design:
@@ -130,31 +131,33 @@ Validation expectation:
 
 Current reality:
 
-- Denn already works as a multi-media catalog plus ratings plus shared
-  list application.
-- It is still missing the first-class tracking model, public social
-  surface, and community loops required to feel like a Letterboxd- or
-  RYM-style social tracker.
+- Denn now has first-class personal tracking, active/inactive rating
+  semantics, completed-only favorites, public profiles, public lists,
+  and anonymous id-first content/list reads.
+- Lists 2.0 and Public Catalog 1.0 are partially implemented. Community
+  loops and leaderboards remain absent.
 
 Product work to land:
 
-- Introduce a dedicated tracking model separate from list membership.
-- Define public visibility for profiles, lists, and content pages.
-- Build real profile pages from existing backend profile data.
-- Separate ratings from tracking state and favorites cleanly.
-- Add public catalog, profile, list, and leaderboard surfaces in a
-  coherent rollout order.
+- Finish Lists 2.0 roles, owner membership, per-member state,
+  permissions, invitations, and Add-to-List semantics.
+- Finish anonymous search/browse, public content aggregates, gallery,
+  sitemap, metadata, cache, and traffic hardening from Public Catalog
+  1.0.
+- Add leaderboard surfaces in the existing rollout order.
 - Keep follow relationships, feed, import/export, and richer stats as
   post-MVP product work.
 
 Detailed sprint plans:
 
-- [`../sprints/sprint-11-personal-tracking-1-0.md`](../sprints/sprint-11-personal-tracking-1-0.md)
 - [`../sprints/sprint-12-lists-2-0.md`](../sprints/sprint-12-lists-2-0.md)
 - [`../sprints/sprint-13-public-catalog-1-0.md`](../sprints/sprint-13-public-catalog-1-0.md)
-- [`../sprints/sprint-14-public-profiles-1-0.md`](../sprints/sprint-14-public-profiles-1-0.md)
 - [`../sprints/sprint-15-leaderboards-1-0.md`](../sprints/sprint-15-leaderboards-1-0.md)
 - [`../sprints/sprint-16-public-safety-and-mvp-launch-hardening.md`](../sprints/sprint-16-public-safety-and-mvp-launch-hardening.md)
+
+Completed Sprint 11 and Sprint 14 outcomes are canonical in
+[`../architecture/public-profiles-and-tracking.md`](../architecture/public-profiles-and-tracking.md)
+and [`../history/implementation-history.md`](../history/implementation-history.md).
 
 ## Performance Baseline And Perceived Speed
 
@@ -168,7 +171,7 @@ Implemented baseline:
 - Query provider, base query hooks, hover prefetch, and optimistic
   mutations foundation.
 - p50/p75/p95 fixture measurements for login, home, search, detail,
-  lists and profile in cold/warm browser states.
+  lists, private profile, and public profile in cold/warm browser states.
 - Request correlation, bounded cache/data-source fields, alert
   thresholds, weekly/manual browser job and redacted Playwright
   artifacts.

@@ -16,9 +16,10 @@ const ratingSchema = z.object({
     .max(10, "Rating must be at most 10"),
   comment: z
     .string()
-    .max(1000, "Comment must be less than 1000 characters")
+    .max(2000, "Review must be 2,000 characters or fewer")
     .optional()
     .nullable(),
+  spoiler: z.boolean(),
 });
 
 type RatingFormData = z.infer<typeof ratingSchema>;
@@ -54,6 +55,7 @@ export function RatingModal({
     defaultValues: {
       score: existingRating ? parseFloat(existingRating.score) : 5.0,
       comment: existingRating?.comment || "",
+      spoiler: existingRating?.spoiler ?? false,
     },
   });
 
@@ -65,11 +67,13 @@ export function RatingModal({
       reset({
         score: parseFloat(existingRating.score),
         comment: existingRating.comment || "",
+        spoiler: existingRating.spoiler,
       });
     } else if (isOpen && !existingRating) {
       reset({
-        score: 0.0,
+        score: 5.0,
         comment: "",
+        spoiler: false,
       });
     }
   }, [isOpen, existingRating, reset]);
@@ -85,6 +89,7 @@ export function RatingModal({
       await onSubmitRating({
         score: data.score.toString(),
         comment: data.comment || null,
+        spoiler: Boolean(data.comment?.trim()) && data.spoiler,
         source_api: item.source_api as SourceApi,
         external_id: item.external_id as string,
         content_type: item.content_type as ContentType,
@@ -122,7 +127,7 @@ export function RatingModal({
           title={existingRating ? "Update Rating" : "Rate This Content"}
           description={
             existingRating
-              ? "Update your rating and comment"
+              ? "Update your rating and review"
               : "Share your thoughts on this content"
           }
         />
@@ -156,7 +161,7 @@ export function RatingModal({
               htmlFor="rating-comment"
               className="block text-sm font-medium"
             >
-              Comment (Optional)
+              Review (Optional)
             </label>
             <textarea
               id="rating-comment"
@@ -164,6 +169,7 @@ export function RatingModal({
               disabled={isLoading}
               className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary font-sans resize-none disabled:opacity-50 disabled:cursor-not-allowed bg-background"
               rows={4}
+              maxLength={2000}
               {...register("comment")}
             />
             {errors.comment && (
@@ -172,6 +178,16 @@ export function RatingModal({
               </p>
             )}
           </div>
+
+          <label className="flex min-h-11 items-center gap-3 rounded-md border border-white/15 px-3 text-sm">
+            <input
+              type="checkbox"
+              className="size-5 accent-white"
+              disabled={isLoading}
+              {...register("spoiler")}
+            />
+            Hide this review behind a spoiler warning
+          </label>
         </Modal.Content>
 
         <div className="flex justify-end gap-3 mt-6">
@@ -202,4 +218,3 @@ export function RatingModal({
     </Modal>
   );
 }
-

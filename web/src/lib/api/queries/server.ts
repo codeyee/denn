@@ -14,6 +14,14 @@ import {
   type MultiSearchResponse,
   type PaginatedListItemList,
   type PaginatedUserListList,
+  type PaginatedProfileResults,
+  type ProfileSearchParams,
+  type PublicCompletedItem,
+  type PublicListSummary,
+  type PublicListDetail,
+  type PublicProfileOverview,
+  type PublicProfileTabData,
+  type PublicRatingItem,
   type SearchItem,
   type UserListDetail,
 } from "@/lib/types";
@@ -33,6 +41,8 @@ import {
   SUGGESTIONS_PAGE_SIZE,
 } from "./constants";
 import { queryKeys } from "./keys";
+
+const CONTENT_DETAIL_REQUEST_TIMEOUT_MS = 5_000;
 
 export function getServerQueryClient() {
   return new QueryClient({
@@ -111,11 +121,15 @@ export async function prefetchContentDetailQueries(
   country: string | null,
 ) {
   const accessToken = getServerAccessToken(session);
-  if (!accessToken) return;
   const requestId = getLogicalRequestId();
+  const viewerId = session.user?.id ?? "anonymous";
 
   const contentItem = await qc.fetchQuery({
-    queryKey: queryKeys.contentDetail.byId(contentId, country ?? undefined),
+    queryKey: queryKeys.contentDetail.byId(
+      contentId,
+      viewerId,
+      country ?? undefined,
+    ),
     queryFn: () =>
       fetchServerContentDetail(
         accessToken,
@@ -123,6 +137,7 @@ export async function prefetchContentDetailQueries(
         country,
         requestId,
       ),
+    retry: false,
     staleTime: 5 * 60_000,
   });
 
@@ -133,6 +148,120 @@ export async function prefetchContentDetailQueries(
     );
   }
   return contentItem;
+}
+
+export async function prefetchPublicProfileQueries(
+  qc: QueryClient,
+  session: SessionSnapshot,
+  username: string,
+  search: ProfileSearchParams,
+) {
+  const accessToken = getServerAccessToken(session);
+  const requestId = getLogicalRequestId();
+  const encodedUsername = encodeURIComponent(username);
+
+  const overviewPromise = qc.ensureQueryData({
+    queryKey: queryKeys.profiles.overview(username),
+    queryFn: () =>
+      fetchServerCore<PublicProfileOverview>(
+        accessToken,
+        `/profiles/${encodedUsername}/`,
+        requestId,
+        "/api/profiles/:username/",
+      ),
+    staleTime: 60_000,
+  });
+  const activeTabPromise = ensureServerProfileTab(
+    qc,
+    accessToken,
+    username,
+    encodedUsername,
+    search,
+    requestId,
+  );
+
+  const [overview, activeTab] = await Promise.all([
+    overviewPromise,
+    activeTabPromise,
+  ]);
+  return { overview, activeTab };
+}
+
+async function ensureServerProfileTab(
+  qc: QueryClient,
+  accessToken: string | null,
+  username: string,
+  encodedUsername: string,
+  search: ProfileSearchParams,
+  requestId: string,
+): Promise<PublicProfileTabData | null> {
+  if (search.tab === "overview") return null;
+
+  const params = buildProfileSearchParams(search);
+  const query = params.size > 0 ? `?${params.toString()}` : "";
+  const path = `/profiles/${encodedUsername}/${search.tab}/${query}`;
+
+  if (search.tab === "completed") {
+    const data = await qc.ensureQueryData({
+      queryKey: queryKeys.profiles.tab(username, search.tab, search),
+      queryFn: () =>
+        fetchServerCore<PaginatedProfileResults<PublicCompletedItem>>(
+          accessToken,
+          path,
+          requestId,
+          "/api/profiles/:username/completed/",
+        ),
+      staleTime: 60_000,
+    });
+    return { tab: search.tab, data };
+  }
+  if (search.tab === "ratings") {
+    const data = await qc.ensureQueryData({
+      queryKey: queryKeys.profiles.tab(username, search.tab, search),
+      queryFn: () =>
+        fetchServerCore<PaginatedProfileResults<PublicRatingItem>>(
+          accessToken,
+          path,
+          requestId,
+          "/api/profiles/:username/ratings/",
+        ),
+      staleTime: 60_000,
+    });
+    return { tab: search.tab, data };
+  }
+
+  const data = await qc.ensureQueryData({
+    queryKey: queryKeys.profiles.tab(username, search.tab, search),
+    queryFn: () =>
+      fetchServerCore<PaginatedProfileResults<PublicListSummary>>(
+        accessToken,
+        path,
+        requestId,
+        "/api/profiles/:username/lists/",
+      ),
+    staleTime: 60_000,
+  });
+  return { tab: search.tab, data };
+}
+
+export async function prefetchPublicListQuery(
+  qc: QueryClient,
+  session: SessionSnapshot,
+  listId: number,
+) {
+  const accessToken = getServerAccessToken(session);
+  const requestId = getLogicalRequestId();
+  return qc.fetchQuery({
+    queryKey: queryKeys.lists.publicDetail(listId),
+    queryFn: () =>
+      fetchServerCore<PublicListDetail | UserListDetail>(
+        accessToken,
+        `/content/lists/${listId}/`,
+        requestId,
+        "/api/content/lists/:id/",
+      ),
+    staleTime: 30_000,
+  });
 }
 
 export async function prefetchListDetailQueries(
@@ -255,9 +384,9 @@ async function fetchJson<T>(
   return JSON.parse(body) as T;
 }
 
-function coreHeaders(accessToken: string, requestId: string) {
+function coreHeaders(accessToken: string | null, requestId: string) {
   return {
-    Authorization: `Bearer ${accessToken}`,
+    ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
     "Content-Type": "application/json",
     "X-Request-Id": requestId,
   };
@@ -346,7 +475,7 @@ async function resolveServerContentIds<
   const params = new URLSearchParams();
   if (country) params.set("country", country);
   const resolved = await fetchJson<{ results: BulkResolvedIdentity[] }>(
-    `${getApiUrl()}/content/resolve-ids/${params.size ? `?${params}` : ""}`,
+    coreRequestUrl(`/content/resolve-ids/${params.size ? `?${params}` : ""}`),
     {
       method: "POST",
       headers: coreHeaders(accessToken, requestId),
@@ -405,7 +534,7 @@ async function fetchServerUserLists(
     if (value !== undefined) searchParams.append(key, String(value));
   });
   return fetchJson<PaginatedUserListList>(
-    `${getApiUrl()}/content/lists/?${searchParams.toString()}`,
+    coreRequestUrl(`/content/lists/?${searchParams.toString()}`),
     { headers: coreHeaders(accessToken, requestId) },
     {
       requestId,
@@ -416,7 +545,7 @@ async function fetchServerUserLists(
 }
 
 async function fetchServerContentDetail(
-  accessToken: string,
+  accessToken: string | null,
   contentId: number,
   country: string | null,
   requestId: string,
@@ -425,12 +554,44 @@ async function fetchServerContentDetail(
   if (country) params.set("country", country);
 
   return fetchJson<ContentItem>(
-    `${getApiUrl()}/content/${contentId}/${params.toString() ? `?${params}` : ""}`,
-    { headers: coreHeaders(accessToken, requestId) },
+    coreRequestUrl(
+      `/content/${contentId}/${params.toString() ? `?${params}` : ""}`,
+    ),
+    {
+      headers: coreHeaders(accessToken, requestId),
+      signal: AbortSignal.timeout(CONTENT_DETAIL_REQUEST_TIMEOUT_MS),
+    },
     {
       requestId,
       targetService: "core",
       route: "/api/content/:id/",
+    },
+  );
+}
+
+function buildProfileSearchParams(search: ProfileSearchParams) {
+  const params = new URLSearchParams();
+  Object.entries(search).forEach(([key, value]) => {
+    if (key !== "tab" && value !== undefined && value !== "") {
+      params.set(key, String(value));
+    }
+  });
+  return params;
+}
+
+function fetchServerCore<T>(
+  accessToken: string | null,
+  path: string,
+  requestId: string,
+  route: string,
+) {
+  return fetchJson<T>(
+    coreRequestUrl(path),
+    { headers: coreHeaders(accessToken, requestId) },
+    {
+      requestId,
+      targetService: "core",
+      route,
     },
   );
 }
@@ -442,7 +603,7 @@ async function fetchServerListMetadata(
 ) {
   const params = new URLSearchParams(LIST_DETAIL_METADATA_PARAMS);
   return fetchJson<UserListDetail>(
-    `${getApiUrl()}/content/lists/${listId}/?${params.toString()}`,
+    coreRequestUrl(`/content/lists/${listId}/?${params.toString()}`),
     { headers: coreHeaders(accessToken, requestId) },
     {
       requestId,
@@ -458,7 +619,7 @@ async function fetchServerListStats(
   requestId: string,
 ) {
   return fetchJson<ListStatsResponse>(
-    `${getApiUrl()}/content/lists/${listId}/stats/`,
+    coreRequestUrl(`/content/lists/${listId}/stats/`),
     { headers: coreHeaders(accessToken, requestId) },
     {
       requestId,
@@ -508,7 +669,9 @@ async function fetchServerListItems(
   if (options.query.groupBy) params.set("group_by", options.query.groupBy);
 
   return fetchJson<PaginatedListItemList>(
-    `${getApiUrl()}/content/lists/${listId}/items/?${params.toString()}`,
+    coreRequestUrl(
+      `/content/lists/${listId}/items/?${params.toString()}`,
+    ),
     { headers: coreHeaders(accessToken, requestId) },
     {
       requestId,
@@ -516,4 +679,11 @@ async function fetchServerListItems(
       route: "/api/content/lists/:id/items/",
     },
   );
+}
+
+function coreRequestUrl(path: string) {
+  if (typeof window !== "undefined") {
+    return `/api/core${path}`;
+  }
+  return `${getApiUrl()}${path}`;
 }

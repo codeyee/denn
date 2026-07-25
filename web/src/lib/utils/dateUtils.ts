@@ -3,6 +3,7 @@ const DATE_FORMAT_OPTIONS: Intl.DateTimeFormatOptions = {
   year: "numeric",
   month: "short",
   day: "numeric",
+  timeZone: "UTC",
 };
 
 export function formatReleaseDate(dateString: string | null | undefined): string {

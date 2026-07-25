@@ -6,14 +6,25 @@ import {
   useToggleListItemStatusMutation,
   useUpdateListMutation,
 } from "@/lib/api/mutations";
-import { ListType, ItemStatus, User, RatingCreate } from "@/lib/types";
+import {
+  ListType,
+  ListVisibility,
+  ItemStatus,
+  User,
+  RatingCreate,
+} from "@/lib/types";
 import { ListItem, MemberRating } from "@/lib/types";
 
 interface UseListItemActionsOptions {
   listId: number;
   listItems: ListItem[];
   setListItems: React.Dispatch<React.SetStateAction<ListItem[]>>;
-  onListUpdated?: (name: string, description?: string, listType?: ListType) => void;
+  onListUpdated?: (
+    name: string,
+    description?: string,
+    listType?: ListType,
+    visibility?: ListVisibility,
+  ) => void;
   onItemDeleted?: (item: ListItem) => void;
   onItemStatusUpdated?: (
     itemId: number,
@@ -27,7 +38,12 @@ interface UseListItemActionsOptions {
 interface UseListItemActionsReturn {
   actionLoading: boolean;
   error: string | null;
-  handleUpdateList: (name: string, description?: string, listType?: ListType) => Promise<void>;
+  handleUpdateList: (
+    name: string,
+    description?: string,
+    listType?: ListType,
+    visibility?: ListVisibility,
+  ) => Promise<void>;
   handleDeleteList: () => Promise<void>;
   handleDeleteItem: (itemId: number) => Promise<void>;
   handleToggleItemStatus: (itemId: number, currentStatus: string) => Promise<void>;
@@ -193,7 +209,8 @@ export function useListItemActions({
   const handleUpdateList = async (
     name: string,
     description?: string,
-    listType?: ListType
+    listType?: ListType,
+    visibility?: ListVisibility,
   ) => {
     setActionLoading(true);
     try {
@@ -202,8 +219,9 @@ export function useListItemActions({
         name,
         description,
         listType,
+        visibility,
       });
-      onListUpdated?.(name, description, listType);
+      onListUpdated?.(name, description, listType, visibility);
     } finally {
       setActionLoading(false);
     }

@@ -5,6 +5,7 @@ from core.serializers import BaseFlexSerializer
 class ContentItemSerializer(BaseFlexSerializer):
     source_data = serializers.SerializerMethodField()
     current_user_rating = serializers.SerializerMethodField()
+    current_user_tracking = serializers.SerializerMethodField()
 
     class Meta:
         model = ContentItem
@@ -17,6 +18,7 @@ class ContentItemSerializer(BaseFlexSerializer):
             'rating_count',
             'average_rating',
             'current_user_rating',
+            'current_user_tracking',
             'created_at',
             'source_data',
         ]
@@ -26,6 +28,7 @@ class ContentItemSerializer(BaseFlexSerializer):
             'rating_count',
             'average_rating',
             'current_user_rating',
+            'current_user_tracking',
             'created_at',
             'source_data',
         ]
@@ -35,10 +38,16 @@ class ContentItemSerializer(BaseFlexSerializer):
         if not request or not request.user.is_authenticated:
             return None
 
+        rating = self.context.get('current_user_rating')
+        if rating is not None and rating.content_item_id != obj.id:
+            canonical_content_id = self.context.get('canonical_content_id')
+            if rating.content_item_id != canonical_content_id:
+                rating = None
         prefetched_ratings = getattr(obj, 'current_user_ratings', None)
+        if rating is None and prefetched_ratings is not None:
+            rating = prefetched_ratings[0] if prefetched_ratings else None
         if prefetched_ratings is None:
-            return None
-        rating = prefetched_ratings[0] if prefetched_ratings else None
+            prefetched_ratings = []
         if rating is None:
             return None
 
@@ -52,20 +61,43 @@ class ContentItemSerializer(BaseFlexSerializer):
                 'last_name': request.user.last_name,
             },
             'content_item': {
-                'id': obj.id,
-                'source_api': obj.source_api,
-                'external_id': obj.external_id,
-                'content_type': obj.content_type,
-                'rating_count': obj.rating_count,
-                'average_rating': obj.average_rating,
+                'id': rating.content_item.id,
+                'source_api': rating.content_item.source_api,
+                'external_id': rating.content_item.external_id,
+                'content_type': rating.content_item.content_type,
+                'rating_count': rating.content_item.rating_count,
+                'average_rating': rating.content_item.average_rating,
                 'created_at': obj.created_at,
                 'source_data': None,
                 'current_user_rating': None,
+                'current_user_tracking': None,
             },
             'score': rating.score,
             'comment': rating.comment,
+            'spoiler': rating.spoiler,
+            'is_active': rating.is_active,
             'created_at': rating.created_at,
             'updated_at': rating.updated_at,
+        }
+
+    def get_current_user_tracking(self, obj):
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            return None
+        tracking = self.context.get('current_user_tracking')
+        if tracking is None:
+            prefetched = getattr(obj, 'current_user_tracking_rows', None)
+            tracking = prefetched[0] if prefetched else None
+        if tracking is None:
+            return None
+        return {
+            'content_id': tracking.content_item_id,
+            'status': tracking.status,
+            'last_completed_at': tracking.last_completed_at,
+            'is_favorite': tracking.is_favorite,
+            'favorited_at': tracking.favorited_at,
+            'created_at': tracking.created_at,
+            'updated_at': tracking.updated_at,
         }
 
     def _should_include_source_data(self):

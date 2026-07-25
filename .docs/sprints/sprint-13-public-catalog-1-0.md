@@ -1,6 +1,17 @@
 # Sprint 13
 # Public Catalog 1.0
 
+## Estado parcial (2026-07-24)
+
+El detalle id-first de contenido y las páginas de listas públicas ya
+admiten lectura anónima a través del BFF estricto; las acciones
+personales siguen autenticadas. Esta base permite que las tarjetas de
+perfil naveguen sin terminar en login.
+
+Este sprint sigue abierto. Faltan búsqueda/browse anónimos, agregados
+sociales completos en la ficha pública, gallery lightbox, sitemap,
+metadata dinámica por contenido y el hardening de caché/tráfico público.
+
 ## Objetivo
 Abrir Denn al mundo como catálogo multi-media público. Este sprint quita
 el carácter de app cerrada detrás de login y crea la primera superficie

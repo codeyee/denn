@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
-from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.validators import MaxLengthValidator, MinValueValidator, MaxValueValidator
 from .content_item import ContentItem
 
 class Rating(models.Model):
@@ -31,7 +31,19 @@ class Rating(models.Model):
     comment = models.TextField(
         blank=True,
         null=True,
+        validators=[MaxLengthValidator(2000)],
         help_text='Optional comment'
+    )
+
+    is_active = models.BooleanField(
+        default=True,
+        db_index=True,
+        help_text='Whether the rating currently contributes to public aggregates'
+    )
+
+    spoiler = models.BooleanField(
+        default=False,
+        help_text='Whether the review text contains spoilers'
     )
 
     created_at = models.DateTimeField(
@@ -58,6 +70,7 @@ class Rating(models.Model):
         indexes = [
             models.Index(fields=['content_item', '-created_at']),
             models.Index(fields=['user']),
+            models.Index(fields=['content_item', 'is_active']),
         ]
 
     def __str__(self):

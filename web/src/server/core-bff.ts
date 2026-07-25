@@ -68,17 +68,16 @@ export async function forwardCoreRequest(
     normalizeRequestId(request.headers.get("x-request-id")) ??
     generateRequestId();
 
-  const isPublic = PUBLIC_CORE_PATHS.has(upstreamPath);
+  const isPublic = isPublicCoreRequest(request.method, upstreamPath);
   let access = getAccessToken();
-  if (isPublic && !access) {
-    const response = await callCore(
+  if (isPublic) {
+    return forwardPublicCoreRead({
       target,
       request,
       body,
-      null,
       requestId,
-    );
-    return copyCoreResponse(response, requestId);
+      access,
+    });
   }
   if (!access) access = await refreshAuthCookies();
   if (!access) return expiredResponse(requestId);
@@ -90,6 +89,44 @@ export async function forwardCoreRequest(
     response = await callCore(target, request, body, access, requestId);
   }
 
+  return copyCoreResponse(response, requestId);
+}
+
+async function forwardPublicCoreRead({
+  target,
+  request,
+  body,
+  requestId,
+  access,
+}: {
+  target: string;
+  request: Request;
+  body: ArrayBuffer | undefined;
+  requestId: string;
+  access: string | null;
+}) {
+  if (!access) {
+    try {
+      access = await refreshAuthCookies();
+    } catch {
+      access = null;
+    }
+  }
+
+  let response = await callCore(target, request, body, access, requestId);
+  if (response.status === 401 && access) {
+    try {
+      access = await refreshAuthCookies();
+    } catch {
+      access = null;
+    }
+    if (access) {
+      response = await callCore(target, request, body, access, requestId);
+    }
+  }
+  if (response.status === 401) {
+    response = await callCore(target, request, body, null, requestId);
+  }
   return copyCoreResponse(response, requestId);
 }
 
@@ -131,10 +168,23 @@ async function callCore(
   });
 }
 
-const PUBLIC_CORE_PATHS = new Set([
+const PUBLIC_AUTH_PATHS = new Set([
   "auth/password/reset/",
   "auth/password/reset/confirm/",
 ]);
+
+const PUBLIC_READ_PATTERNS = [
+  /^profiles\/(?!me(?:\/|$))[a-zA-Z0-9._-]+\/$/,
+  /^profiles\/(?!me(?:\/|$))[a-zA-Z0-9._-]+\/(?:completed|ratings|lists)\/$/,
+  /^content\/\d+\/$/,
+  /^content\/lists\/\d+\/$/,
+];
+
+export function isPublicCoreRequest(method: string, path: string) {
+  if (PUBLIC_AUTH_PATHS.has(path)) return true;
+  if (method !== "GET" && method !== "HEAD") return false;
+  return PUBLIC_READ_PATTERNS.some((pattern) => pattern.test(path));
+}
 
 function expiredResponse(requestId: string) {
   return new Response(
