@@ -34,3 +34,9 @@ export {
   useDeleteRatingMutation,
   useUpsertUserRatingMutation,
 } from "./useRatingMutations";
+export {
+  useDeleteTrackingMutation,
+  useSetFavoriteMutation,
+  useSetTrackingStatusMutation,
+} from "./useTrackingMutations";
+export { useUpdatePublicProfileMutation } from "./usePublicProfileMutation";

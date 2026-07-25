@@ -55,12 +55,22 @@ describe("BFF request security", () => {
     ).toThrow("Unsafe core path");
   });
 
-  it("opens only id-first content reads through the public core BFF", () => {
+  it("allows only strict anonymous core read patterns", () => {
+    expect(isPublicCoreRequest("GET", "profiles/alice/")).toBe(true);
+    expect(
+      isPublicCoreRequest("HEAD", "profiles/alice/completed/"),
+    ).toBe(true);
     expect(isPublicCoreRequest("GET", "content/42/")).toBe(true);
+    expect(isPublicCoreRequest("GET", "content/lists/7/")).toBe(true);
+    expect(isPublicCoreRequest("PATCH", "profiles/me/")).toBe(false);
+    expect(isPublicCoreRequest("GET", "profiles/me/")).toBe(false);
+    expect(isPublicCoreRequest("GET", "content/lists/7/items/")).toBe(false);
+    expect(isPublicCoreRequest("GET", "profiles/alice/../../admin/")).toBe(
+      false,
+    );
     expect(isPublicCoreRequest("HEAD", "content/42/")).toBe(true);
     expect(isPublicCoreRequest("POST", "content/42/")).toBe(false);
     expect(isPublicCoreRequest("GET", "content/resolve-ids/")).toBe(false);
-    expect(isPublicCoreRequest("GET", "content/lists/1/")).toBe(false);
     expect(isPublicContentDetailRequest("GET", "content/42/")).toBe(true);
     expect(isPublicContentDetailRequest("POST", "content/42/")).toBe(false);
   });

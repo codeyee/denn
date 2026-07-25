@@ -1,4 +1,5 @@
 import {
+  ClientOnly,
   HeadContent,
   Outlet,
   Scripts,
@@ -119,9 +120,11 @@ function RootComponent() {
               <WebVitalsReporter />
               <RouteFocusManager />
               <Outlet />
-              {import.meta.env.DEV ? (
-                <TanStackRouterDevtools position="bottom-right" />
-              ) : null}
+              <ClientOnly>
+                {import.meta.env.DEV ? (
+                  <TanStackRouterDevtools position="bottom-right" />
+                ) : null}
+              </ClientOnly>
             </ToastProvider>
           </QueryProvider>
         </StoreProvider>

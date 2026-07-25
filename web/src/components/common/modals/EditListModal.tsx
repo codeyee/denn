@@ -6,7 +6,7 @@ import * as z from "zod";
 import { Modal } from "@/components/common/modals/Modal";
 import { Button } from "@/components/common/ui/Button";
 import { Input } from "@/components/common/ui/Input";
-import { ListType } from "@/lib/types";
+import { ListType, ListVisibility } from "@/lib/types";
 
 // Define validation schema
 const editListSchema = z.object({
@@ -21,6 +21,7 @@ const editListSchema = z.object({
     .max(500, "Description must be less than 500 characters")
     .optional(),
   listType: z.nativeEnum(ListType),
+  visibility: z.nativeEnum(ListVisibility),
 });
 
 type EditListFormData = z.infer<typeof editListSchema>;
@@ -31,13 +32,15 @@ interface EditListModalProps {
   onUpdateList: (
     name: string,
     description?: string,
-    listType?: ListType
+    listType?: ListType,
+    visibility?: ListVisibility,
   ) => Promise<void>;
   isLoading?: boolean;
   initialData?: {
     name: string;
     description?: string;
     listType: ListType;
+    visibility: ListVisibility;
   };
 }
 
@@ -61,6 +64,7 @@ export function EditListModal({
       name: initialData?.name || "",
       description: initialData?.description || "",
       listType: initialData?.listType || ListType.PERSONAL,
+      visibility: initialData?.visibility || ListVisibility.PRIVATE,
     },
   });
 
@@ -71,6 +75,7 @@ export function EditListModal({
         name: initialData.name,
         description: initialData.description || "",
         listType: initialData.listType,
+        visibility: initialData.visibility,
       });
     } else if (!isOpen) {
       reset();
@@ -82,7 +87,8 @@ export function EditListModal({
       await onUpdateList(
         data.name,
         data.description || undefined,
-        data.listType
+        data.listType,
+        data.visibility,
       );
 
       // Close modal on success
@@ -129,6 +135,27 @@ export function EditListModal({
             required
             {...register("name")}
           />
+
+          <div className="space-y-2">
+            <label
+              htmlFor="list-visibility"
+              className="block text-sm font-medium"
+            >
+              Visibility
+            </label>
+            <select
+              id="list-visibility"
+              disabled={isLoading}
+              className="min-h-11 w-full rounded-md border bg-background px-4 py-2 font-sans outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+              {...register("visibility")}
+            >
+              <option value={ListVisibility.PRIVATE}>Private</option>
+              <option value={ListVisibility.PUBLIC}>Public</option>
+            </select>
+            <p className="text-xs text-white/50">
+              Public lists are visible to anyone with the link.
+            </p>
+          </div>
 
           <div className="space-y-2">
             <label

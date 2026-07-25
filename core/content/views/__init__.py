@@ -10,6 +10,7 @@ from .content_item import (
     ContentItemGetOrCreateView,
     LegacyContentRedirectView,
 )
+from .tracking import UserContentFavoriteView, UserContentTrackingView
 
 __all__ = [
     'UserListViewSet',
@@ -22,4 +23,6 @@ __all__ = [
     'ContentItemDetailByIdView',
     'ContentItemGetOrCreateView',
     'LegacyContentRedirectView',
+    'UserContentFavoriteView',
+    'UserContentTrackingView',
 ]

@@ -2,6 +2,10 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from rest_framework_simplejwt.tokens import RefreshToken
+import re
+
+
+USERNAME_PATTERN = re.compile(r"^[a-z0-9._-]+$")
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(
@@ -46,7 +50,12 @@ class RegisterSerializer(serializers.ModelSerializer):
         return value
 
     def validate_username(self, value):
-        if User.objects.filter(username=value).exists():
+        value = value.strip().lower()
+        if not USERNAME_PATTERN.fullmatch(value):
+            raise serializers.ValidationError(
+                "Use only lowercase letters, numbers, dots, underscores, or hyphens."
+            )
+        if User.objects.filter(username__iexact=value).exists():
             raise serializers.ValidationError("Username is already in use.")
         return value
 
@@ -77,4 +86,3 @@ class RegisterSerializer(serializers.ModelSerializer):
         user.refresh = str(refresh)
 
         return user
-

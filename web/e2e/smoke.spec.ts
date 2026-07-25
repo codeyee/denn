@@ -48,10 +48,10 @@ function captureUnexpectedConsole(page: Page) {
       message.type() === "error" ||
       /React error #418|hydration (failed|mismatch)|uncaught/i.test(text)
     ) {
-      errors.push(text);
+      errors.push(`${page.url()}: ${text}`);
     }
   });
-  page.on("pageerror", (error) => errors.push(error.message));
+  page.on("pageerror", (error) => errors.push(`${page.url()}: ${error.message}`));
   return errors;
 }
 
@@ -97,6 +97,7 @@ test("a personal action honors next and returns to public id-first detail", asyn
   const loginResponse = await loginResponsePromise;
 
   await expect(page).toHaveURL(/\/content\/1$/);
+  await page.goto("/content/1");
   await expect(
     page.getByText("Deterministic metadata for browser guardrails."),
   ).toBeVisible();
@@ -124,6 +125,167 @@ test("a personal action honors next and returns to public id-first detail", asyn
     }),
   );
   expect(consoleErrors).toEqual([]);
+});
+
+test("public profile, tabs, spoiler and public navigation work anonymously", async ({
+  page,
+  request,
+}) => {
+  const consoleErrors = captureUnexpectedConsole(page);
+  await page.goto("/user/phase0-fixture");
+  await expect(
+    page.getByRole("heading", { name: "@phase0-fixture" }),
+  ).toBeVisible();
+  await expect(page.getByText("Stories across every medium.")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Edit profile" })).toHaveCount(0);
+  const recordedProfileReads = await request.get(
+    `${fixtureUrl}/__fixture__/requests`,
+  );
+  const profileReads = (await recordedProfileReads.json()) as Array<{
+    service: string;
+    path: string;
+  }>;
+  expect(
+    profileReads.some(({ path }) => path === "/api/profiles/phase0-fixture/"),
+  ).toBe(true);
+  expect(profileReads.some(({ service }) => service === "proxy")).toBe(false);
+
+  await page.getByRole("tab", { name: "Ratings & Reviews" }).click();
+  await expect(page).toHaveURL(/tab=ratings/);
+  await expect(
+    page.getByText("A deterministic review with a fixture spoiler."),
+  ).toHaveCount(0);
+  await page.getByRole("button", { name: "Reveal spoiler review" }).click();
+  await expect(
+    page.getByText("A deterministic review with a fixture spoiler."),
+  ).toBeVisible();
+
+  await page.getByRole("tab", { name: "Overview" }).click();
+  await page.getByRole("link", { name: "Open list Public Fixture Picks" }).click();
+  await expect(page).toHaveURL(/\/lists\/3$/);
+  await expect(
+    page.getByRole("heading", { name: "Public Fixture Picks" }),
+  ).toBeVisible();
+
+  await page.getByRole("link", { name: "View details for Phase Zero Movie" }).click();
+  await expect(page).toHaveURL(/\/content\/1$/);
+  await expect(page.getByText("Track this content")).toHaveCount(0);
+  const privateList = await request.get("/api/core/content/lists/4/");
+  expect(privateList.status()).toBe(404);
+  expect(consoleErrors).toEqual([]);
+});
+
+test("profile filters, sorting, pagination and shareable URLs stay canonical", async ({
+  page,
+}) => {
+  await page.goto(
+    "/user/phase0-fixture?tab=ratings&page=2&kind=reviews&favorite=true&minScore=7&maxScore=10&sort=-score",
+  );
+  await expect(
+    page.getByRole("heading", { name: "Ratings & Reviews", level: 2 }),
+  ).toBeVisible();
+  await expect(page.getByText("2/2")).toBeVisible();
+  await page.getByLabel("Rating kind").selectOption("ratings_only");
+  await expect(page).toHaveURL(/kind=ratings_only/);
+  await expect(page).toHaveURL(/page=1/);
+  await page
+    .getByRole("form", { name: "Filter profile activity" })
+    .getByLabel("Favorite")
+    .selectOption("false");
+  await expect(page).toHaveURL(/favorite=false/);
+  await page.getByLabel("Sort order").selectOption("oldest");
+  await expect(page).toHaveURL(/sort=oldest/);
+  await page.getByRole("button", { name: "Go to next page" }).click();
+  await expect(page).toHaveURL(/page=2/);
+
+  await page.getByRole("tab", { name: "Completed" }).click();
+  await page.getByLabel("Search completed").fill("phase movie");
+  await page.getByRole("button", { name: "Search", exact: true }).click();
+  await expect(page).toHaveURL(/q=phase(\+|%20)movie/);
+  await page.getByLabel("Content type").selectOption("MOVIE");
+  await expect(page).toHaveURL(/type=MOVIE/);
+  await page.getByLabel("Sort order").selectOption("title");
+  await expect(page).toHaveURL(/sort=title/);
+
+  await page.getByRole("tab", { name: "Lists" }).click();
+  await page.getByLabel("List role").selectOption("member");
+  await expect(page).toHaveURL(/role=member/);
+  await expect(page).toHaveURL(/page=1/);
+});
+
+test("broken public avatar falls back to initials", async ({ page, request }) => {
+  await request.post(`${fixtureUrl}/__fixture__/scenario`, {
+    data: { brokenAvatar: true },
+  });
+  await page.goto("/user/phase0-fixture");
+  await expect(
+    page.getByRole("img", { name: "phase0-fixture's avatar fallback" }),
+  ).toBeVisible();
+});
+
+test("public profile renders empty and not-found states", async ({ page }) => {
+  await page.goto("/user/empty-user");
+  await expect(page.getByRole("heading", { name: "@empty-user" })).toBeVisible();
+  await expect(page.getByText("No public favorites yet.")).toBeVisible();
+
+  await page.goto("/user/missing-user");
+  await expect(
+    page.getByRole("heading", { name: "This user does not exist." }),
+  ).toBeVisible();
+});
+
+test("owner edits public bio and avatar from private profile settings", async ({
+  context,
+  page,
+}) => {
+  await authenticate(context);
+  await page.goto("/profile");
+
+  await page.getByLabel("Bio").fill("Updated from the private settings page.");
+  await page
+    .getByLabel("Avatar URL")
+    .fill("https://example.com/fixture-avatar.jpg");
+  await page.getByRole("button", { name: "Save public profile" }).click();
+  await expect(page.getByText("Profile updated.")).toBeVisible();
+  await page.getByRole("link", { name: "View profile" }).click();
+  await expect(
+    page.getByText("Updated from the private settings page."),
+  ).toBeVisible();
+  await expect(page.getByRole("link", { name: "Edit profile" })).toBeVisible();
+});
+
+test("personal tracking completes, rates, reviews and handles favorite quota", async ({
+  context,
+  page,
+  request,
+}) => {
+  await authenticate(context);
+  await page.goto("/content/1");
+  await page.getByLabel("Tracking status").selectOption("completed");
+  await expect(
+    page.getByRole("heading", { name: "Rate This Content" }),
+  ).toBeVisible();
+  await page.getByRole("slider", { name: "Rating" }).fill("8.5");
+  await page.getByLabel("Review (Optional)").fill("A tracked fixture review.");
+  await page
+    .getByLabel("Hide this review behind a spoiler warning")
+    .check();
+  await page.getByRole("button", { name: "Submit Rating" }).click();
+  await expect(
+    page.getByRole("button", { name: "Edit Rating", exact: true }),
+  ).toBeVisible();
+
+  await request.post(`${fixtureUrl}/__fixture__/scenario`, {
+    data: { favoriteLimit: true },
+  });
+  await page.getByRole("button", { name: "Add favorite" }).click();
+  await expect(page.getByText(/Favorite limit reached/)).toBeVisible();
+
+  await request.post(`${fixtureUrl}/__fixture__/scenario`, {
+    data: { favoriteLimit: false },
+  });
+  await page.getByRole("button", { name: "Add favorite" }).click();
+  await expect(page.getByRole("button", { name: "Favorite" })).toBeVisible();
 });
 
 test("authenticated cold and warm navigation covers critical routes", async ({
@@ -159,7 +321,9 @@ test("authenticated cold and warm navigation covers critical routes", async ({
   await expect(page.getByText("Phase 0 Fixture List").first()).toBeVisible();
 
   await page.goto("/profile");
-  await expect(page.getByRole("heading", { name: "Profile" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Profile", exact: true }),
+  ).toBeVisible();
   await expect(page.getByText("phase0@example.test")).toBeVisible();
 
   await page.keyboard.press("Tab");
@@ -255,7 +419,9 @@ test("expired access token refreshes once and preserves the protected route", as
 }) => {
   await authenticate(context, "expired-access");
   await page.goto("/profile");
-  await expect(page.getByRole("heading", { name: "Profile" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Profile", exact: true }),
+  ).toBeVisible();
 
   const recorded = await request.get(`${fixtureUrl}/__fixture__/requests`);
   const requests = (await recorded.json()) as Array<{

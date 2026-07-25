@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { ClientOnly } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
 interface QueryProviderProps {
@@ -37,9 +38,14 @@ export function QueryProvider({ client, children }: QueryProviderProps) {
   return (
     <QueryClientProvider client={client}>
       {children}
-      {import.meta.env.DEV ? (
-        <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-left" />
-      ) : null}
+      <ClientOnly>
+        {import.meta.env.DEV ? (
+          <ReactQueryDevtools
+            initialIsOpen={false}
+            buttonPosition="bottom-left"
+          />
+        ) : null}
+      </ClientOnly>
     </QueryClientProvider>
   );
 }

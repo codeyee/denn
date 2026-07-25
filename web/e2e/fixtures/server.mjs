@@ -15,6 +15,8 @@ const user = {
   first_name: "Phase",
   last_name: "Zero",
   allow_adult_content: false,
+  bio: "Stories across every medium.",
+  avatar_url: "",
 };
 const now = "2026-07-23T12:00:00Z";
 const movie = {
@@ -95,6 +97,7 @@ const contentItem = {
   rating_count: 0,
   average_rating: null,
   current_user_rating: null,
+  current_user_tracking: null,
   created_at: now,
   source_data: movie,
 };
@@ -116,6 +119,7 @@ const list = {
   name: "Phase 0 Fixture List",
   description: "Stable list data for browser smoke tests.",
   list_type: "PERSONAL",
+  visibility: "PRIVATE",
   owner: user,
   members: [],
   item_count: "0",
@@ -189,6 +193,81 @@ const pagination = {
   next: null,
   previous: null,
 };
+const profilePagination = {
+  count: 1,
+  page_size: 24,
+  current_page: 1,
+  total_pages: 1,
+  next: null,
+  previous: null,
+};
+
+function profilePageMetadata(url) {
+  const currentPage = Math.min(
+    2,
+    Math.max(1, Number(url.searchParams.get("page") ?? 1)),
+  );
+  return {
+    ...profilePagination,
+    count: 48,
+    current_page: currentPage,
+    total_pages: 2,
+    next: currentPage === 1 ? "?page=2" : null,
+    previous: currentPage === 2 ? "?page=1" : null,
+  };
+}
+const localContent = {
+  id: 1,
+  type: "MOVIE",
+  title: "Phase Zero Movie",
+  subtitle: null,
+  date: "2024-01-01",
+  poster: `${fixtureOrigin()}/__fixture__/images/poster-1.svg`,
+  backdrop: `${fixtureOrigin()}/__fixture__/images/banner-1.svg`,
+};
+const publicProfile = {
+  username: user.username,
+  bio: user.bio,
+  avatar_url: user.avatar_url,
+  joined_at: "2025-01-15T12:00:00Z",
+};
+const publicRating = {
+  id: 1,
+  content: localContent,
+  score: "9.0",
+  review: "A deterministic review with a fixture spoiler.",
+  spoiler: true,
+  is_favorite: true,
+  created_at: now,
+  updated_at: now,
+};
+const publicListSummary = {
+  id: 3,
+  name: "Public Fixture Picks",
+  description: "A public list that is safe for anonymous readers.",
+  list_type: "PERSONAL",
+  visibility: "PUBLIC",
+  role: "owner",
+  owner: { username: user.username },
+  collaborators: [],
+  item_count: 1,
+  member_count: 1,
+  created_at: now,
+  updated_at: now,
+};
+const publicList = {
+  ...publicListSummary,
+  items: [
+    {
+      id: 1,
+      list_order: 1,
+      status: "COMPLETED",
+      added_at: now,
+      completed_at: now,
+      content: localContent,
+    },
+  ],
+};
 
 const state = {
   requests: [],
@@ -196,6 +275,10 @@ const state = {
   cacheStatus: "MISS",
   detailDelayMs: 0,
   detailStatus: 200,
+  tracking: null,
+  rating: null,
+  favoriteLimit: false,
+  brokenAvatar: false,
 };
 
 function corsHeaders(requestId) {
@@ -280,6 +363,14 @@ const core = createServer(async (request, response) => {
     state.detailDelayMs = 0;
     state.detailStatus = 200;
     user.allow_adult_content = false;
+    user.bio = "Stories across every medium.";
+    user.avatar_url = "";
+    publicProfile.bio = user.bio;
+    publicProfile.avatar_url = user.avatar_url;
+    state.tracking = null;
+    state.rating = null;
+    state.favoriteLimit = false;
+    state.brokenAvatar = false;
     return json(response, 200, { ok: true }, corsHeaders(requestId));
   }
   if (url.pathname === "/__fixture__/scenario" && request.method === "POST") {
@@ -290,6 +381,14 @@ const core = createServer(async (request, response) => {
     return json(response, 200, state.requests, corsHeaders(requestId));
   }
   if (url.pathname.startsWith("/__fixture__/images/")) {
+    if (url.pathname.endsWith("/missing-avatar.svg")) {
+      return json(
+        response,
+        404,
+        { detail: "missing fixture avatar" },
+        corsHeaders(requestId),
+      );
+    }
     return svg(response, url.pathname.split("/").at(-1) ?? "fixture");
   }
 
@@ -340,6 +439,18 @@ const core = createServer(async (request, response) => {
     }
     return json(response, 200, user, headers);
   }
+  if (url.pathname === "/api/profiles/me/" && request.method === "PATCH") {
+    const body = await readJson(request);
+    if (typeof body.bio === "string") {
+      user.bio = body.bio;
+      publicProfile.bio = body.bio;
+    }
+    if (typeof body.avatar_url === "string") {
+      user.avatar_url = body.avatar_url;
+      publicProfile.avatar_url = body.avatar_url;
+    }
+    return json(response, 200, publicProfile, headers);
+  }
   if (url.pathname === "/api/auth/token/refresh/") {
     return json(
       response,
@@ -354,6 +465,128 @@ const core = createServer(async (request, response) => {
   ) {
     return json(response, 200, { detail: "ok" }, headers);
   }
+  const profileMatch = /^\/api\/profiles\/([^/]+)\/(?:(completed|ratings|lists)\/)?$/.exec(
+    url.pathname,
+  );
+  if (profileMatch && request.method === "GET") {
+    const username = decodeURIComponent(profileMatch[1]);
+    const tab = profileMatch[2];
+    if (username === "missing-user") {
+      return json(response, 404, { detail: "Not found" }, headers);
+    }
+    if (username === "empty-user") {
+      if (tab) {
+        return json(
+          response,
+          200,
+          { metadata: { ...profilePagination, count: 0 }, results: [] },
+          headers,
+        );
+      }
+      return json(
+        response,
+        200,
+        {
+          profile: {
+            username: "empty-user",
+            bio: "",
+            avatar_url: "",
+            joined_at: now,
+          },
+          counters: {
+            completed: 0,
+            ratings: 0,
+            reviews: 0,
+            public_lists: 0,
+            completed_by_type: {},
+          },
+          favorites: {},
+          recent_reviews: [],
+          recent_completed: [],
+          public_lists: [],
+          banner_media: [],
+        },
+        headers,
+      );
+    }
+    if (username !== user.username) {
+      return json(response, 404, { detail: "Not found" }, headers);
+    }
+    if (tab === "completed") {
+      return json(
+        response,
+        200,
+        {
+          metadata: profilePageMetadata(url),
+          results: [
+            {
+              content: localContent,
+              completed_at: now,
+              is_favorite: true,
+              score: "9.0",
+            },
+          ],
+        },
+        headers,
+      );
+    }
+    if (tab === "ratings") {
+      return json(
+        response,
+        200,
+        { metadata: profilePageMetadata(url), results: [publicRating] },
+        headers,
+      );
+    }
+    if (tab === "lists") {
+      return json(
+        response,
+        200,
+        { metadata: profilePageMetadata(url), results: [publicListSummary] },
+        headers,
+      );
+    }
+    return json(
+      response,
+      200,
+      {
+        profile: {
+          ...publicProfile,
+          avatar_url: state.brokenAvatar
+            ? `${fixtureOrigin()}/__fixture__/images/missing-avatar.svg`
+            : publicProfile.avatar_url,
+        },
+        counters: {
+          completed: 1,
+          ratings: 1,
+          reviews: 1,
+          public_lists: 1,
+          completed_by_type: { MOVIE: 1 },
+        },
+        favorites: {
+          MOVIE: [{ content: localContent, favorited_at: now, score: "9.0" }],
+        },
+        recent_reviews: [publicRating],
+        recent_completed: [
+          {
+            content: localContent,
+            completed_at: now,
+            is_favorite: true,
+            score: "9.0",
+          },
+        ],
+        public_lists: [publicListSummary],
+        banner_media: [
+          {
+            content_id: 1,
+            type: "MOVIE",
+            image_url: localContent.backdrop,
+          },
+        ],
+      },
+      headers,
+    );
+  }
   if (url.pathname === "/api/content/lists/") {
     return json(
       response,
@@ -364,6 +597,12 @@ const core = createServer(async (request, response) => {
   }
   if (url.pathname === "/api/content/lists/1/") {
     return json(response, 200, list, headers);
+  }
+  if (url.pathname === "/api/content/lists/3/") {
+    return json(response, 200, publicList, headers);
+  }
+  if (url.pathname === "/api/content/lists/4/") {
+    return json(response, 404, { detail: "Not found" }, headers);
   }
   if (url.pathname === "/api/content/lists/1/stats/") {
     return json(
@@ -382,8 +621,96 @@ const core = createServer(async (request, response) => {
   if (url.pathname === "/api/content/lists/1/items/") {
     return json(response, 200, { metadata: pagination, results: [] }, headers);
   }
+  if (
+    url.pathname === "/api/content/ratings/" &&
+    request.method === "POST"
+  ) {
+    const body = await readJson(request);
+    state.rating = {
+      id: 7,
+      user,
+      content_item: contentItem,
+      score: String(body.score),
+      comment: body.comment ?? "",
+      spoiler: body.spoiler === true,
+      is_active: true,
+      created_at: now,
+      updated_at: now,
+    };
+    state.tracking = {
+      content_id: 1,
+      status: "completed",
+      last_completed_at: now,
+      is_favorite: false,
+      favorited_at: null,
+      created_at: now,
+      updated_at: now,
+    };
+    return json(response, 201, state.rating, headers);
+  }
   if (url.pathname === "/api/content/ratings/") {
-    return json(response, 200, { metadata: pagination, results: [] }, headers);
+    return json(
+      response,
+      200,
+      {
+        metadata: {
+          ...pagination,
+          count: state.rating && state.rating.is_active ? 1 : 0,
+        },
+        results:
+          state.rating && state.rating.is_active ? [state.rating] : [],
+      },
+      headers,
+    );
+  }
+  if (
+    url.pathname === "/api/content/tracking/1/" &&
+    request.method === "PUT"
+  ) {
+    const body = await readJson(request);
+    const shouldPromptRating =
+      body.status === "completed" && state.rating === null;
+    state.tracking = {
+      content_id: 1,
+      status: body.status,
+      last_completed_at: body.status === "completed" ? now : null,
+      is_favorite: state.tracking?.is_favorite ?? false,
+      favorited_at: state.tracking?.favorited_at ?? null,
+      created_at: now,
+      updated_at: now,
+      should_prompt_rating: shouldPromptRating,
+    };
+    return json(response, 200, state.tracking, headers);
+  }
+  if (
+    url.pathname === "/api/content/tracking/1/" &&
+    request.method === "DELETE"
+  ) {
+    state.tracking = null;
+    if (state.rating) state.rating.is_active = false;
+    response.writeHead(204, headers);
+    return response.end();
+  }
+  if (
+    url.pathname === "/api/content/tracking/1/favorite/" &&
+    request.method === "PATCH"
+  ) {
+    if (state.favoriteLimit) {
+      return json(
+        response,
+        409,
+        { error: "FAVORITE_LIMIT_REACHED", message: "Favorite limit reached" },
+        headers,
+      );
+    }
+    const body = await readJson(request);
+    state.tracking = {
+      ...state.tracking,
+      is_favorite: body.is_favorite === true,
+      favorited_at: body.is_favorite === true ? now : null,
+      updated_at: now,
+    };
+    return json(response, 200, state.tracking, headers);
   }
   if (url.pathname === "/api/content/1/") {
     if (!canReadCatalogDetail(request)) {
@@ -400,7 +727,17 @@ const core = createServer(async (request, response) => {
         headers,
       );
     }
-    return json(response, 200, contentItem, headers);
+    const authenticated = Boolean(request.headers.authorization);
+    return json(
+      response,
+      200,
+      {
+        ...contentItem,
+        current_user_rating: authenticated ? state.rating : null,
+        current_user_tracking: authenticated ? state.tracking : null,
+      },
+      headers,
+    );
   }
   if (url.pathname === "/api/content/2/") {
     if (!canReadCatalogDetail(request)) {

@@ -8,6 +8,8 @@ import {
   MemberRating,
   Rating,
   RatingCreate,
+  ListType,
+  ListVisibility,
   User,
   UserListDetail,
 } from "@/lib/types";
@@ -25,7 +27,12 @@ interface ListModalsProps {
   onCloseDeleteListDialog: () => void;
   onCloseDeleteItemDialog: () => void;
   onCloseRatingModal: () => void;
-  onUpdateList: (name: string, description?: string) => Promise<void>;
+  onUpdateList: (
+    name: string,
+    description?: string,
+    listType?: ListType,
+    visibility?: ListVisibility,
+  ) => Promise<void>;
   onDeleteList: () => Promise<void>;
   onDeleteItem: (itemId: number) => Promise<void>;
   onSubmitRating: (item: ListItem, data: RatingCreate) => Promise<void>;
@@ -63,6 +70,8 @@ export function ListModals({
       content_item: ratingModalItem.content_item as unknown as ContentItem,
       score: String(memberRating.score),
       comment: null,
+      spoiler: false,
+      is_active: true,
       created_at: "",
       updated_at: "",
     };
@@ -86,6 +95,7 @@ export function ListModals({
                 name: list.name,
                 description: list.description || "",
                 listType: list.list_type,
+                visibility: list.visibility,
               }
             : undefined
         }

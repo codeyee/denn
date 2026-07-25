@@ -6,6 +6,10 @@ class UserList(models.Model):
         PERSONAL = 'PERSONAL', 'Personal'
         SHARED = 'SHARED', 'Shared'
 
+    class Visibility(models.TextChoices):
+        PUBLIC = 'PUBLIC', 'Public'
+        PRIVATE = 'PRIVATE', 'Private'
+
     owner = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -31,6 +35,14 @@ class UserList(models.Model):
         help_text='List type'
     )
 
+    visibility = models.CharField(
+        max_length=10,
+        choices=Visibility.choices,
+        default=Visibility.PRIVATE,
+        db_index=True,
+        help_text='Whether the list is publicly readable'
+    )
+
     members = models.ManyToManyField(
         User,
         related_name='member_lists',
@@ -53,6 +65,7 @@ class UserList(models.Model):
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['owner', 'list_type']),
+            models.Index(fields=['owner', 'visibility']),
             models.Index(fields=['-created_at']),
         ]
 
@@ -66,4 +79,3 @@ class UserList(models.Model):
 
         if is_new and is_shared:
             self.members.add(self.owner)
-

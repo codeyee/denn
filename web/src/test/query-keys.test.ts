@@ -42,18 +42,30 @@ describe("queryKeys", () => {
     ]);
   });
 
-  it("separates anonymous and authenticated content detail caches", () => {
-    expect(queryKeys.contentDetail.byId(7, "CO")).toEqual([
+  it("isolates content state by viewer and profile filters", () => {
+    expect(queryKeys.contentDetail.byId(42, "anonymous", "CO")).toEqual([
       "content-detail",
-      7,
-      "CO",
       "anonymous",
+      42,
+      "CO",
     ]);
-    expect(queryKeys.contentDetail.byId(7, "CO", 42)).toEqual([
+    expect(queryKeys.contentDetail.byId(42, 7, "CO")).toEqual([
       "content-detail",
       7,
-      "CO",
       42,
+      "CO",
+    ]);
+    expect(
+      queryKeys.profiles.tab("alice", "ratings", {
+        tab: "ratings",
+        page: 2,
+        kind: "reviews",
+      }),
+    ).toEqual([
+      "profiles",
+      "alice",
+      "ratings",
+      { tab: "ratings", page: 2, kind: "reviews" },
     ]);
   });
 });

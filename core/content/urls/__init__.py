@@ -5,6 +5,8 @@ from content.views import (
     ContentItemBulkResolveView,
     ContentItemGetOrCreateView,
     LegacyContentRedirectView,
+    UserContentFavoriteView,
+    UserContentTrackingView,
 )
 
 app_name = 'content'
@@ -17,6 +19,16 @@ urlpatterns = [
 
     path('get-or-create/', ContentItemGetOrCreateView.as_view(), name='content-get-or-create'),
     path('resolve-ids/', ContentItemBulkResolveView.as_view(), name='content-resolve-ids'),
+    path(
+        'tracking/<int:content_id>/',
+        UserContentTrackingView.as_view(),
+        name='content-tracking',
+    ),
+    path(
+        'tracking/<int:content_id>/favorite/',
+        UserContentFavoriteView.as_view(),
+        name='content-tracking-favorite',
+    ),
     path('<int:id>/', ContentItemDetailByIdView.as_view(), name='content-detail-by-id'),
     path('', LegacyContentRedirectView.as_view(), name='content-legacy-redirect'),
 ]

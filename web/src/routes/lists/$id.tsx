@@ -3,8 +3,12 @@ import { z } from "zod";
 
 import { ListDetailPage } from "@/components/pages/ListDetailPage";
 import { ProtectedRoute } from "@/components/common/providers/ProtectedRoute";
-import { prefetchListDetailQueries } from "@/lib/api/queries/server";
-import { requireAuthenticatedSession } from "@/lib/auth/protected-route";
+import { PublicListPage } from "@/components/pages/PublicListPage";
+import {
+  prefetchListDetailQueries,
+  prefetchPublicListQuery,
+} from "@/lib/api/queries/server";
+import type { PublicListDetail } from "@/lib/types";
 import {
   DEFAULT_LIST_ITEM_QUERY,
   type FilterField,
@@ -31,13 +35,6 @@ type ListSearch = z.infer<typeof listSearchSchema>;
 
 export const Route = createFileRoute("/lists/$id")({
   validateSearch: listSearchSchema,
-  beforeLoad: ({ context, location }) => {
-    requireAuthenticatedSession(
-      context.session,
-      location.pathname,
-      location.searchStr,
-    );
-  },
   loaderDeps: ({ search }) => ({ query: parseListQuery(search) }),
   loader: async ({ context, params, deps }) => {
     const listId = Number.parseInt(params.id, 10);
@@ -45,15 +42,28 @@ export const Route = createFileRoute("/lists/$id")({
       return { invalid: true as const };
     }
 
-    await prefetchListDetailQueries(
+    const list = await prefetchPublicListQuery(
       context.queryClient,
       context.session,
       listId,
-      deps.query,
-      context.country,
     );
+    const isPublicReadOnly = "collaborators" in list;
+    if (!isPublicReadOnly) {
+      await prefetchListDetailQueries(
+        context.queryClient,
+        context.session,
+        listId,
+        deps.query,
+        context.country,
+      );
+    }
 
-    return { invalid: false as const, listId, country: context.country };
+    return {
+      invalid: false as const,
+      listId,
+      country: context.country,
+      publicList: isPublicReadOnly ? list : null,
+    };
   },
   component: ListDetailRoute,
 });
@@ -74,6 +84,10 @@ function ListDetailRoute() {
         </div>
       </main>
     );
+  }
+
+  if (data.publicList) {
+    return <PublicListPage list={data.publicList as PublicListDetail} />;
   }
 
   return (

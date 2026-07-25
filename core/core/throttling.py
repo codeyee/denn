@@ -27,6 +27,16 @@ class BurstRateThrottle(UserRateThrottle):
     rate = '60/minute'
 
 
+class PublicProfileRateThrottle(SimpleRateThrottle):
+    scope = "public_profile"
+
+    def get_cache_key(self, request, view):
+        return self.cache_format % {
+            "scope": self.scope,
+            "ident": self.get_ident(request),
+        }
+
+
 class CatalogDetailRateThrottle(SimpleRateThrottle):
     """Apply the public detail quota per signed visitor, not per web host."""
 

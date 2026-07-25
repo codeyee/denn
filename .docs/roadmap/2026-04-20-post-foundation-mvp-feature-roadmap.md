@@ -481,11 +481,12 @@ above:
 
 ## Recommended Next Documentation Step
 
-Detailed sprint plans now live here:
+Sprint 11 and Sprint 14 are complete; their durable behavior lives in
+[`../architecture/public-profiles-and-tracking.md`](../architecture/public-profiles-and-tracking.md)
+and [`../history/implementation-history.md`](../history/implementation-history.md).
+Active detailed plans:
 
-1. [`Sprint 11 - Personal Tracking 1.0`](../sprints/sprint-11-personal-tracking-1-0.md)
-2. [`Sprint 12 - Lists 2.0`](../sprints/sprint-12-lists-2-0.md)
-3. [`Sprint 13 - Public Catalog 1.0`](../sprints/sprint-13-public-catalog-1-0.md)
-4. [`Sprint 14 - Public Profiles 1.0`](../sprints/sprint-14-public-profiles-1-0.md)
-5. [`Sprint 15 - Leaderboards 1.0`](../sprints/sprint-15-leaderboards-1-0.md)
-6. [`Sprint 16 - Public Safety And MVP Launch Hardening`](../sprints/sprint-16-public-safety-and-mvp-launch-hardening.md)
+1. [`Sprint 12 - Lists 2.0`](../sprints/sprint-12-lists-2-0.md)
+2. [`Sprint 13 - Public Catalog 1.0`](../sprints/sprint-13-public-catalog-1-0.md)
+3. [`Sprint 15 - Leaderboards 1.0`](../sprints/sprint-15-leaderboards-1-0.md)
+4. [`Sprint 16 - Public Safety And MVP Launch Hardening`](../sprints/sprint-16-public-safety-and-mvp-launch-hardening.md)

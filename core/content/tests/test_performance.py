@@ -243,7 +243,7 @@ class APIPerformanceTests(APITestCase):
 
         connection.queries_log.clear()
         with override_settings(DEBUG=True):
-            with self.assertNumQueries(10):
+            with self.assertNumQueries(9):
                 response = self.client.get(
                     f'/api/content/lists/{self.user_list.id}/items/'
                 )
@@ -256,8 +256,9 @@ class APIPerformanceTests(APITestCase):
     def test_content_detail_endpoint_query_count(self):
         """Sprint 08 / T3: GET /api/content/<id>/ resolves a single item.
 
-        The local-first contract uses a bounded six-query shape: identity,
-        current-user rating, detail relations, images, providers, and authors.
+        The local-first contract uses a bounded seven-query shape: identity,
+        current-user rating, personal tracking, detail relations, images,
+        providers, and authors.
         This remains below the repository's <=10 list/detail budget and avoids
         a second ratings HTTP waterfall.
         """
@@ -271,7 +272,7 @@ class APIPerformanceTests(APITestCase):
 
         connection.queries_log.clear()
         with override_settings(DEBUG=True):
-            with self.assertNumQueries(6):
+            with self.assertNumQueries(7):
                 response = self.client.get(f'/api/content/{content_item.id}/')
 
         self.assertEqual(response.status_code, 200)

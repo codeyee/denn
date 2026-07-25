@@ -4,6 +4,7 @@ import {
   ListItem,
   ListStatsResponse,
   ListType,
+  ListVisibility,
   PaginationMetadata,
   UserListDetail,
 } from "@/lib/types";
@@ -34,7 +35,12 @@ interface UseDataStrategyReturn {
   setCachedItems: React.Dispatch<React.SetStateAction<ListItem[]>>;
   ensureFullItems: () => Promise<ListItem[]>;
   refetchCurrentPage: () => Promise<void>;
-  onListUpdated: (name: string, description?: string, listType?: ListType) => void;
+  onListUpdated: (
+    name: string,
+    description?: string,
+    listType?: ListType,
+    visibility?: ListVisibility,
+  ) => void;
   onItemDeleted: (item: ListItem) => void;
   onItemStatusUpdated: (
     itemId: number,
@@ -83,7 +89,12 @@ export function useDataStrategy({
   );
 
   const onListUpdated = useCallback(
-    (name: string, description?: string, listType?: ListType) => {
+    (
+      name: string,
+      description?: string,
+      listType?: ListType,
+      visibility?: ListVisibility,
+    ) => {
       setList((prev) =>
         prev
           ? {
@@ -91,6 +102,7 @@ export function useDataStrategy({
               name,
               description: description ?? null,
               list_type: listType ?? prev.list_type,
+              visibility: visibility ?? prev.visibility,
             }
           : prev,
       );

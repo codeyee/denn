@@ -4,13 +4,14 @@ import { useNavigate } from "@tanstack/react-router";
 import { useToast } from "@/components/common/Toast";
 import { listActions, listItemActions } from "@/lib/api";
 import { queryKeys } from "@/lib/api/queries/keys";
-import { ListType, type UserList } from "@/lib/types";
+import { ListType, ListVisibility, type UserList } from "@/lib/types";
 import type { SortClause } from "@/lib/types/listView";
 
 interface SaveListVariables {
   name: string;
   description?: string;
   listType?: ListType;
+  visibility?: ListVisibility;
 }
 
 interface UpdateListVariables extends SaveListVariables {
@@ -52,11 +53,12 @@ export function useUpdateListMutation() {
   const { showToast } = useToast();
 
   return useMutation<UserList, Error, UpdateListVariables>({
-    mutationFn: ({ listId, name, description, listType }) =>
+    mutationFn: ({ listId, name, description, listType, visibility }) =>
       listActions.patch(listId, {
         name,
         description: description || null,
-        list_type: listType ?? ListType.PERSONAL,
+        ...(listType ? { list_type: listType } : {}),
+        ...(visibility ? { visibility } : {}),
       }),
     onError: (error) => {
       showToast(error.message || "No se pudo actualizar la lista", "error");

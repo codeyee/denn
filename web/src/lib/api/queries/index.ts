@@ -22,3 +22,6 @@ export {
 } from "./useRatingsQueries";
 export { useBulkListMembershipQuery } from "./useBulkListMembershipQuery";
 export { useContentItemResolutionQuery } from "./useContentItemResolutionQuery";
+export {
+  usePublicProfileOverviewQuery,
+} from "./usePublicProfileQueries";

@@ -145,18 +145,22 @@ async function requestRotatedTokens(
     signal: AbortSignal.timeout(3_000),
   });
 
-  if (response.status === 400 || response.status === 401) return null;
+  if (response.status === 401) return null;
   if (!response.ok) {
     throw new Error(`Failed to refresh auth token (${response.status})`);
   }
 
   const tokens = (await response.json()) as TokenRefresh;
-  if (!tokens.access) return null;
+  if (!tokens.access) {
+    throw new Error("Refresh response did not include an access token");
+  }
   const rotatedRefresh =
     extractUpstreamCookie(response, AUTH_REFRESH_COOKIE) ??
     tokens.refresh ??
     null;
-  if (!rotatedRefresh) return null;
+  if (!rotatedRefresh) {
+    throw new Error("Refresh response did not include a refresh token");
+  }
   return {
     access: tokens.access,
     refresh: rotatedRefresh,

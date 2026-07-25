@@ -8,6 +8,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { requireAuthenticatedSession } from "@/lib/auth/protected-route";
 import { AdultContentPreference } from "@/components/pages/ProfilePage/AdultContentPreference";
+import { PublicProfileSettings } from "@/components/pages/ProfilePage/PublicProfileSettings";
 
 export const Route = createFileRoute("/profile")({
   beforeLoad: ({ context, location }) => {
@@ -28,15 +29,20 @@ function ProfileRoute() {
       <div className="min-h-screen flex flex-col bg-background-logged-in">
         <Navbar />
         <main id="main-content" tabIndex={-1} className="flex-1 p-4 pt-24 sm:p-8 sm:pt-24">
-          <Card className="max-w-2xl mx-auto p-8">
+          <Card className="max-w-3xl mx-auto p-6 sm:p-8">
             <h1 className="text-3xl font-bold mb-6">Profile</h1>
 
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Username</p>
-                <p className="text-lg font-semibold">{user?.username}</p>
-              </div>
+            {user ? (
+              <PublicProfileSettings
+                username={user.username}
+                bio={user.bio ?? ""}
+                avatarUrl={user.avatar_url ?? ""}
+              />
+            ) : null}
 
+            <section className="mt-8 border-t border-gray-200 pt-6 dark:border-gray-700">
+              <h2 className="text-xl font-bold">Account</h2>
+              <div className="mt-4 space-y-4">
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Email</p>
                 <p className="text-lg font-semibold">{user?.email}</p>
@@ -46,7 +52,8 @@ function ProfileRoute() {
                 <p className="text-sm text-gray-600 dark:text-gray-400">User ID</p>
                 <p className="text-lg font-mono">{user?.id}</p>
               </div>
-            </div>
+              </div>
+            </section>
 
             <AdultContentPreference
               enabled={user?.allow_adult_content ?? false}

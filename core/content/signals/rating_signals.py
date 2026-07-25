@@ -28,7 +28,10 @@ def update_content_item_ratings_on_save(sender, instance, created, **kwargs):
         ContentItem.objects.filter(pk=instance.content_item_id).update(
             rating_count=Coalesce(
                 Subquery(
-                    Rating.objects.filter(content_item=OuterRef('pk'))
+                    Rating.objects.filter(
+                        content_item=OuterRef('pk'),
+                        is_active=True,
+                    )
                     .values('content_item')
                     .annotate(count=Count('id'))
                     .values('count')[:1]
@@ -36,7 +39,10 @@ def update_content_item_ratings_on_save(sender, instance, created, **kwargs):
                 Value(0)  # Default to 0 if no ratings exist
             ),
             average_rating=Subquery(
-                Rating.objects.filter(content_item=OuterRef('pk'))
+                Rating.objects.filter(
+                    content_item=OuterRef('pk'),
+                    is_active=True,
+                )
                 .values('content_item')
                 .annotate(avg=Avg('score'))
                 .values('avg')[:1]
@@ -64,7 +70,10 @@ def update_content_item_ratings_on_delete(sender, instance, **kwargs):
         ContentItem.objects.filter(pk=instance.content_item_id).update(
             rating_count=Coalesce(
                 Subquery(
-                    Rating.objects.filter(content_item=OuterRef('pk'))
+                    Rating.objects.filter(
+                        content_item=OuterRef('pk'),
+                        is_active=True,
+                    )
                     .values('content_item')
                     .annotate(count=Count('id'))
                     .values('count')[:1]
@@ -72,7 +81,10 @@ def update_content_item_ratings_on_delete(sender, instance, **kwargs):
                 Value(0)  # Default to 0 if no ratings exist
             ),
             average_rating=Subquery(
-                Rating.objects.filter(content_item=OuterRef('pk'))
+                Rating.objects.filter(
+                    content_item=OuterRef('pk'),
+                    is_active=True,
+                )
                 .values('content_item')
                 .annotate(avg=Avg('score'))
                 .values('avg')[:1]

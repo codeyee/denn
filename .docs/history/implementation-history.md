@@ -267,6 +267,52 @@ This document keeps the durable outcomes of completed implementation plans after
   and the final preference was restored to safe default with temporary
   credentials removed from browser storage.
 
+## Personal Tracking 1.0
+
+- `UserContentTracking` became the canonical per-user/per-content state
+  with backlog, in-progress, completed, on-hold, and dropped states.
+- Transactional transitions now coordinate rating activation,
+  completion prompts, deletion, favorites, and season-to-TV
+  canonicalization without synchronous provider calls.
+- Ratings preserve score/review history outside completed while public
+  aggregates count active rows only. Reviews gained spoiler state and a
+  2,000-character cap.
+- Favorites moved out of score semantics, became completed-only, and
+  gained a concurrency-safe five-per-canonical-type quota.
+- Content detail and list-item UI gained shared tracking/rating controls
+  backed by optimistic, reversible TanStack Query mutations.
+- An additive, idempotent dry-run/apply command backfills profiles,
+  season parents, rating completions, and personal-list completions while
+  reporting legacy anomalies and omitting shared-list attribution.
+
+## Public Profiles 1.0
+
+- Every user gained a separate public profile with plain-text bio and an
+  optional HTTPS avatar while the existing username remained stable.
+- New usernames are lowercase, constrained, and checked for
+  case-insensitive collisions; legacy usernames are reported instead of
+  renamed.
+- Anonymous overview, Completed, Ratings & Reviews, and Lists APIs use
+  public-only serializers, stable pagination/filtering, local metadata,
+  a 120/minute IP throttle, bounded query counts, and zero provider
+  waterfalls.
+- `/user/$username` shipped with SSR, validated shareable filters,
+  canonical metadata, a responsive plum banner/collage, semantic tabs,
+  favorites, spoiler-safe reviews, public lists, completion activity,
+  and explicit empty/error/404 states.
+- `/profile` remained private settings and gained read-only username,
+  bio/avatar editing, preview, optimistic rollback, and query
+  invalidation.
+- List visibility became independent from collaboration type. Public
+  lists and content detail became anonymous reads; private lists return
+  404 without leaking existence or private membership data.
+- The Core BFF replaced its public-route allowlist with a strict
+  GET/HEAD predicate, stale public reads degrade anonymously, and
+  viewer-scoped keys prevent personal detail data from crossing caches.
+- Router/Query devtools and explicit loader initial data were bounded to
+  client-safe hydration, closing the production React 418 regression on
+  public profiles.
+
 ## What This History Replaces
 
 The detailed execution plans were intentionally removed after their durable outcomes were extracted here and into the architecture, features, debt, and roadmap docs.

@@ -11,7 +11,9 @@ interface ApiEnvironment {
   NEXT_PUBLIC_API_URL?: string;
 }
 
-export function getApiUrl(env: ApiEnvironment = process.env): string {
+export function getApiUrl(
+  env: ApiEnvironment = process.env as ApiEnvironment,
+): string {
   return (
     env.API_URL ||
     env.NEXT_PUBLIC_API_URL ||
