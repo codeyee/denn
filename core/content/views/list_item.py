@@ -16,6 +16,9 @@ from content.services import (
     parse_list_item_query,
     QueryParseError,
 )
+from content.services.tracking_service import (
+    annotate_list_items_with_canonical_tracking,
+)
 
 from rest_flex_fields.views import FlexFieldsMixin
 
@@ -218,6 +221,7 @@ class ListItemViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
         ).select_related(
             'content_item',
             'content_item__browse_meta',
+            'content_item__season_detail__tv_show',
             'added_by',
             'user_list',
         ).prefetch_related(
@@ -244,6 +248,7 @@ class ListItemViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
             ),
         )
 
+        qs = annotate_list_items_with_canonical_tracking(qs, self.request.user)
         qs = annotate_items_with_ratings(qs, member_ids)
 
         return qs.order_by('list_order', '-added_at')

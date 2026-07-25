@@ -357,6 +357,66 @@ class PublicProfileTrackingBackfillTests(TestCase):
         self.assertEqual(second["tracking_seeded_from_personal_lists"], 0)
         self.assertEqual(UserContentTracking.objects.count(), 2)
 
+    def test_backfill_rehomes_season_rating_to_canonical_tv_show(self):
+        tv_show = ContentItem.objects.create(
+            source_api=ContentItem.SourceAPI.TMDB,
+            external_id="1396",
+            content_type=ContentItem.ContentType.TV_SHOW,
+        )
+        season = ContentItem.objects.create(
+            source_api=ContentItem.SourceAPI.TMDB,
+            external_id="1396:1",
+            content_type=ContentItem.ContentType.SEASON,
+        )
+        SeasonDetail.objects.create(
+            content_item=season,
+            tv_show=tv_show,
+            season_number=1,
+        )
+        legacy_rating = Rating.objects.create(
+            user=self.user,
+            content_item=season,
+            score="8.5",
+            comment="Legacy season review",
+        )
+
+        output = StringIO()
+        call_command(
+            "backfill_public_profiles_tracking",
+            "--apply",
+            stdout=output,
+        )
+
+        report = json.loads(output.getvalue())
+        legacy_rating.refresh_from_db()
+        season.refresh_from_db()
+        self.assertEqual(report["season_ratings_rehomed"], 1)
+        self.assertEqual(legacy_rating.content_item, tv_show)
+        self.assertEqual(season.rating_count, 0)
+
+        transition_tracking(
+            user=self.user,
+            content_item=season,
+            status=UserContentTracking.Status.DROPPED,
+        )
+        legacy_rating.refresh_from_db()
+        self.assertFalse(legacy_rating.is_active)
+
+        updated = save_rating(
+            user=self.user,
+            content_item=season,
+            score="9.0",
+            comment="Updated",
+        )
+        self.assertEqual(updated.id, legacy_rating.id)
+        self.assertEqual(
+            Rating.objects.filter(user=self.user, content_item=tv_show).count(),
+            1,
+        )
+        self.assertFalse(
+            Rating.objects.filter(user=self.user, content_item=season).exists()
+        )
+
 
 class TrackingApiTests(APITestCase):
     def setUp(self):
@@ -433,3 +493,28 @@ class TrackingApiTests(APITestCase):
                 content_item=self.movie,
             ).exists()
         )
+
+    def test_inactive_rating_detail_is_private_to_its_owner(self):
+        other_user = User.objects.create_user(
+            username="rating-reader",
+            password="secret",
+        )
+        rating = Rating.objects.create(
+            user=self.user,
+            content_item=self.movie,
+            score="7.5",
+            comment="Preserved private review",
+            is_active=False,
+        )
+        url = reverse(
+            "content:ratings:rating-detail",
+            kwargs={"pk": rating.id},
+        )
+
+        self.client.force_authenticate(other_user)
+        self.assertEqual(self.client.get(url).status_code, 404)
+
+        self.client.force_authenticate(self.user)
+        owner_response = self.client.get(url)
+        self.assertEqual(owner_response.status_code, 200)
+        self.assertEqual(owner_response.data["id"], rating.id)

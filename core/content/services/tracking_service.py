@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 from django.contrib.auth.models import User
 from django.db import transaction
+from django.db.models import OuterRef, Subquery
 from django.utils import timezone
 
 from content.models import ContentItem, Rating, UserContentTracking
@@ -16,6 +17,34 @@ FAVORITE_LIMIT_PER_TYPE = 5
 class TrackingTransition:
     tracking: UserContentTracking
     should_prompt_rating: bool
+
+
+def annotate_list_items_with_canonical_tracking(queryset, user):
+    tracking = UserContentTracking.objects.filter(
+        user=user,
+        content_item_id=OuterRef("content_item__season_detail__tv_show_id"),
+    )
+    return queryset.annotate(
+        canonical_tracking_content_id=Subquery(
+            tracking.values("content_item_id")[:1]
+        ),
+        canonical_tracking_status=Subquery(tracking.values("status")[:1]),
+        canonical_tracking_last_completed_at=Subquery(
+            tracking.values("last_completed_at")[:1]
+        ),
+        canonical_tracking_is_favorite=Subquery(
+            tracking.values("is_favorite")[:1]
+        ),
+        canonical_tracking_favorited_at=Subquery(
+            tracking.values("favorited_at")[:1]
+        ),
+        canonical_tracking_created_at=Subquery(
+            tracking.values("created_at")[:1]
+        ),
+        canonical_tracking_updated_at=Subquery(
+            tracking.values("updated_at")[:1]
+        ),
+    )
 
 
 def canonicalize_tracking_content(content_item: ContentItem) -> ContentItem:

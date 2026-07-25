@@ -5,7 +5,7 @@ from collections import defaultdict
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
-from django.db.models import Count
+from django.db.models import Avg, Count
 
 from authentication.models import UserPublicProfile
 from content.models import (
@@ -44,10 +44,19 @@ class Command(BaseCommand):
         report["profiles_created"] = self._backfill_profiles(apply=apply)
         report["season_parents_linked"] = self._backfill_season_parents(apply=apply)
 
-        ratings_seeded, rating_parent_gaps = self._seed_from_ratings(apply=apply)
+        (
+            ratings_seeded,
+            rating_parent_gaps,
+            season_ratings_rehomed,
+            season_rating_conflicts_deactivated,
+        ) = self._seed_from_ratings(apply=apply)
         lists_seeded, list_parent_gaps = self._seed_from_personal_lists(apply=apply)
         report["tracking_seeded_from_ratings"] = ratings_seeded
         report["tracking_seeded_from_personal_lists"] = lists_seeded
+        report["season_ratings_rehomed"] = season_ratings_rehomed
+        report["season_rating_conflicts_deactivated"] = (
+            season_rating_conflicts_deactivated
+        )
         report["seasons_without_parent"] = sorted(
             set(rating_parent_gaps + list_parent_gaps + self._season_parent_gaps())
         )
@@ -130,6 +139,8 @@ class Command(BaseCommand):
     def _seed_from_ratings(self, *, apply):
         seeded = 0
         parent_gaps = []
+        rehomed = 0
+        conflicts_deactivated = 0
         for rating in Rating.objects.select_related(
             "user",
             "content_item",
@@ -139,6 +150,23 @@ class Command(BaseCommand):
             if canonical is None:
                 parent_gaps.append(rating.content_item_id)
                 continue
+            if rating.content_item_id != canonical.id:
+                existing_canonical_rating = Rating.objects.filter(
+                    user=rating.user,
+                    content_item=canonical,
+                ).exclude(pk=rating.pk).first()
+                if existing_canonical_rating is None:
+                    rehomed += 1
+                    if apply:
+                        previous_content_id = rating.content_item_id
+                        rating.content_item = canonical
+                        rating.save(update_fields=["content_item", "updated_at"])
+                        self._refresh_rating_aggregate(previous_content_id)
+                elif rating.is_active:
+                    conflicts_deactivated += 1
+                    if apply:
+                        rating.is_active = False
+                        rating.save(update_fields=["is_active", "updated_at"])
             if self._ensure_completed_tracking(
                 user=rating.user,
                 content_item=canonical,
@@ -146,7 +174,7 @@ class Command(BaseCommand):
                 apply=apply,
             ):
                 seeded += 1
-        return seeded, parent_gaps
+        return seeded, parent_gaps, rehomed, conflicts_deactivated
 
     def _seed_from_personal_lists(self, *, apply):
         earliest = defaultdict(lambda: None)
@@ -226,6 +254,16 @@ class Command(BaseCommand):
             return content_item.season_detail.tv_show
         except Exception:
             return None
+
+    def _refresh_rating_aggregate(self, content_item_id):
+        aggregate = Rating.objects.filter(
+            content_item_id=content_item_id,
+            is_active=True,
+        ).aggregate(
+            rating_count=Count("id"),
+            average_rating=Avg("score"),
+        )
+        ContentItem.objects.filter(pk=content_item_id).update(**aggregate)
 
     def _season_parent_gaps(self):
         return list(

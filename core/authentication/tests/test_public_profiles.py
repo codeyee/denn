@@ -16,6 +16,7 @@ from content.models import (
     ListItem,
     MovieDetail,
     Rating,
+    SeasonDetail,
     UserContentTracking,
     UserList,
 )
@@ -146,6 +147,21 @@ class PublicProfileApiTests(APITestCase):
         self.assertEqual(overview.data["counters"]["reviews"], 0)
         self.assertEqual(ratings.data["results"], [])
 
+    def test_rating_score_filters_reject_invalid_values(self):
+        url = reverse(
+            "profiles:ratings",
+            kwargs={"username": self.user.username},
+        )
+
+        for params in (
+            {"minScore": "not-a-number"},
+            {"maxScore": "10.5"},
+            {"minScore": "9.0", "maxScore": "8.0"},
+        ):
+            with self.subTest(params=params):
+                response = self.client.get(url, params)
+                self.assertEqual(response.status_code, 400)
+
     def test_public_profile_edit_validates_https_and_bio_length(self):
         self.client.force_authenticate(self.user)
         invalid_url = self.client.patch(
@@ -238,6 +254,51 @@ class PublicProfileApiTests(APITestCase):
             "current_user_tracking"
         ]
         self.assertEqual(tracking["status"], UserContentTracking.Status.COMPLETED)
+
+    def test_season_list_item_uses_canonical_tv_show_tracking(self):
+        tv_show = ContentItem.objects.create(
+            source_api=ContentItem.SourceAPI.TMDB,
+            external_id="1396",
+            content_type=ContentItem.ContentType.TV_SHOW,
+        )
+        season = ContentItem.objects.create(
+            source_api=ContentItem.SourceAPI.TMDB,
+            external_id="1396:1",
+            content_type=ContentItem.ContentType.SEASON,
+        )
+        SeasonDetail.objects.create(
+            content_item=season,
+            tv_show=tv_show,
+            season_number=1,
+        )
+        UserContentTracking.objects.create(
+            user=self.user,
+            content_item=tv_show,
+            status=UserContentTracking.Status.IN_PROGRESS,
+        )
+        ListItem.objects.create(
+            user_list=self.public_list,
+            content_item=season,
+            added_by=self.user,
+        )
+
+        self.client.force_authenticate(self.user)
+        response = self.client.get(
+            reverse(
+                "content:lists:items-list",
+                kwargs={"list_pk": self.public_list.id},
+            )
+        )
+
+        self.assertEqual(response.status_code, 200)
+        tracking = response.data["results"][0]["content_item"][
+            "current_user_tracking"
+        ]
+        self.assertEqual(tracking["content_id"], tv_show.id)
+        self.assertEqual(
+            tracking["status"],
+            UserContentTracking.Status.IN_PROGRESS,
+        )
 
     def test_content_detail_is_anonymous_and_never_exposes_user_state(self):
         with patch(

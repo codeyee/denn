@@ -1,7 +1,7 @@
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from django.db.models import Avg, Count
+from django.db.models import Avg, Count, Q
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiExample, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 from content.models import Rating, ContentItem
@@ -127,6 +127,10 @@ class RatingViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
         queryset = Rating.objects.select_related('user', 'content_item').order_by('-created_at')
         if self.action == 'list':
             queryset = queryset.filter(is_active=True)
+        elif self.action == 'retrieve':
+            queryset = queryset.filter(
+                Q(is_active=True) | Q(user=self.request.user)
+            )
 
         content_item_id = self.request.query_params.get('content_item_id')
         if content_item_id:

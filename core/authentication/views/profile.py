@@ -1,4 +1,5 @@
 from collections import defaultdict
+from decimal import Decimal, InvalidOperation
 
 from django.contrib.auth.models import User
 from django.db.models import Count, Exists, OuterRef, Prefetch, Q, Subquery, Value
@@ -6,6 +7,7 @@ from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import generics
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
@@ -331,10 +333,16 @@ class PublicProfileRatingsView(PublicProfileBaseView):
         favorite = request.query_params.get("favorite")
         if favorite in {"true", "false"}:
             queryset = queryset.filter(is_favorite=favorite == "true")
-        if request.query_params.get("minScore"):
-            queryset = queryset.filter(score__gte=request.query_params["minScore"])
-        if request.query_params.get("maxScore"):
-            queryset = queryset.filter(score__lte=request.query_params["maxScore"])
+        min_score = _parse_score_filter(request, "minScore")
+        max_score = _parse_score_filter(request, "maxScore")
+        if min_score is not None and max_score is not None and min_score > max_score:
+            raise ValidationError({
+                "maxScore": ["Must be greater than or equal to minScore."]
+            })
+        if min_score is not None:
+            queryset = queryset.filter(score__gte=min_score)
+        if max_score is not None:
+            queryset = queryset.filter(score__lte=max_score)
 
         ordering = {
             "oldest": ("created_at", "id"),
@@ -358,6 +366,19 @@ class PublicProfileRatingsView(PublicProfileBaseView):
             for rating in page
         ]
         return self.get_paginated_response(data)
+
+
+def _parse_score_filter(request, name):
+    raw_value = request.query_params.get(name)
+    if raw_value in {None, ""}:
+        return None
+    try:
+        score = Decimal(raw_value)
+    except (InvalidOperation, TypeError, ValueError):
+        raise ValidationError({name: ["Must be a number from 0.5 to 10.0."]})
+    if score < Decimal("0.5") or score > Decimal("10.0"):
+        raise ValidationError({name: ["Must be between 0.5 and 10.0."]})
+    return score
 
 
 class PublicProfileListsView(PublicProfileBaseView):

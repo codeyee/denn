@@ -1,3 +1,5 @@
+from types import SimpleNamespace
+
 from rest_framework import serializers
 from content.models import ListItem, ContentItem, Rating
 from .content_item import ContentItemSerializer
@@ -66,7 +68,26 @@ class ListItemSerializer(BaseFlexSerializer):
         }
 
     def get_content_item(self, obj):
-        kwargs = {'context': self.context}
+        context = self.context
+        canonical_tracking_status = getattr(
+            obj,
+            "canonical_tracking_status",
+            None,
+        )
+        if canonical_tracking_status is not None:
+            context = {
+                **self.context,
+                "current_user_tracking": SimpleNamespace(
+                    content_item_id=obj.canonical_tracking_content_id,
+                    status=canonical_tracking_status,
+                    last_completed_at=obj.canonical_tracking_last_completed_at,
+                    is_favorite=obj.canonical_tracking_is_favorite,
+                    favorited_at=obj.canonical_tracking_favorited_at,
+                    created_at=obj.canonical_tracking_created_at,
+                    updated_at=obj.canonical_tracking_updated_at,
+                ),
+            }
+        kwargs = {'context': context}
         request = self.context.get('request')
 
         if request:
