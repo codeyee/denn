@@ -130,7 +130,8 @@ Implemented foundation:
 
 - `/`, `/search`, and `/content/<id>` are usable without login.
 - Authenticated Home enriches the same catalog with personal lists.
-- The original landing remains available at `/welcome`.
+- `/` is the single public entry point. The retired marketing landing's
+  cover-gallery identity now belongs to login and registration.
 - Add-to-List and Rating require login on action and preserve `next`
   through login/registration.
 - Stable discovery ids resolve through a trusted `web -> core` bulk

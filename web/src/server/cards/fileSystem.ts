@@ -26,17 +26,6 @@ export function getCardFiles() {
   });
 }
 
-export function getCategoryFromFileName(fileName: string) {
-  if (!fileName) {
-    return null;
-  }
-
-  const normalized = fileName.toLowerCase();
-  const [category] = normalized.split("_");
-
-  return category?.trim() ? category.trim() : null;
-}
-
 export function createImagePayload(file: string): BackgroundCardImage {
   return {
     src: `/images/cards/${file}`,

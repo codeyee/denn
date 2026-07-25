@@ -98,8 +98,11 @@ test("personal catalog actions preserve the anonymous visitor's return path", as
   await page.getByRole("button", { name: /Add to List/i }).click();
 
   await expect(page).toHaveURL(/\/login\?next=%2Fcontent%2F1$/);
-  await expect(page.getByRole("heading", { name: "Sign In" })).toBeVisible();
-  await expect(page.getByRole("link", { name: /Sign up/i })).toHaveAttribute(
+  await expect(
+    page.getByRole("heading", { name: "Sign in to Denn" }),
+  ).toBeVisible();
+  await expect(page.locator("header")).toHaveCount(0);
+  await expect(page.getByRole("link", { name: /Create one/i })).toHaveAttribute(
     "href",
     "/register?next=%2Fcontent%2F1",
   );
@@ -117,18 +120,12 @@ test("content without artwork keeps its title and personal actions usable", asyn
   await expect(page.getByRole("button", { name: /Rate This/i })).toBeVisible();
 });
 
-test("the original landing experience remains available publicly", async ({
-  page,
-}) => {
-  await page.goto("/welcome");
+test("the retired welcome route uses the standard not-found experience", async ({ page }) => {
+  const response = await page.goto("/welcome");
 
-  await expect(
-    page.getByRole("heading", { name: /Welcome to Denn/i }),
-  ).toBeVisible();
-  await page
-    .getByRole("link", { name: "Explore the catalog" })
-    .first()
-    .click();
+  expect(response?.status()).toBe(404);
+  await expect(page.getByRole("heading", { name: "Page not found" })).toBeVisible();
+  await page.getByRole("link", { name: "Return home" }).click();
 
   await expect(page).toHaveURL(/\/$/);
   await expect(

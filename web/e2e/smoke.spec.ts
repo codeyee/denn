@@ -72,6 +72,21 @@ test("release probe exposes the exact non-cacheable web commit", async ({
   });
 });
 
+test("authenticated visitors cannot reopen login or registration", async ({
+  context,
+  page,
+}) => {
+  await authenticate(context);
+
+  for (const route of ["/login", "/register"]) {
+    await page.goto(route);
+    await expect(page).toHaveURL(/\/$/);
+    await expect(
+      page.getByRole("heading", { name: "Your Denn home" }),
+    ).toBeVisible();
+  }
+});
+
 test("a personal action honors next and returns to public id-first detail", async ({
   page,
 }) => {
@@ -86,7 +101,9 @@ test("a personal action honors next and returns to public id-first detail", asyn
   await expect(page).toHaveURL(/\/login\?next=%2Fcontent%2F1/);
 
   await page.getByLabel("Email").fill(fixtureUser.email);
-  await page.getByLabel("Password").fill(fixtureUser.password);
+  await page
+    .getByLabel("Password", { exact: true })
+    .fill(fixtureUser.password);
   const loginStartedAt = Date.now();
   const loginResponsePromise = page.waitForResponse(
     (response) =>

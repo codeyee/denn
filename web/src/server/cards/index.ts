@@ -1,3 +1,2 @@
-export { getBackgroundCardImages, getImagesByCategory } from "./backgroundCards";
-export { getRandomContentTypeBackgrounds } from "./contentTypeBackgrounds";
-export type { BackgroundCardImage, ContentTypeBackground, Provider } from "./types";
+export { getBackgroundCardImages } from "./backgroundCards";
+export type { BackgroundCardImage } from "./types";

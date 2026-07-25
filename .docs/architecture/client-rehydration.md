@@ -60,6 +60,8 @@ Additional flags:
 ## Login Redirect Policy
 
 - Protected-route redirects include a `next` search param.
+- Login and registration redirect confirmed authenticated sessions to
+  `/` from route `beforeLoad`, before either form renders.
 - `next` must be sanitized as an internal path only.
 - Absolute URLs, protocol-relative URLs, and non-rooted paths are
   rejected.

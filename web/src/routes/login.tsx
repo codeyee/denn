@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 
+import { AuthShell } from "@/components/auth/AuthShell";
 import { LoginForm } from "@/components/forms/LoginForm";
-import { Navbar } from "@/components/layout/Navbar";
-import { Footer } from "@/components/layout/Footer";
 import { normalizeInternalRedirectTarget } from "@/lib/auth/redirect";
+import { redirectAuthenticatedSession } from "@/lib/auth/protected-route";
 
 const loginSearchSchema = z.object({
   next: z.string().optional(),
@@ -12,6 +12,19 @@ const loginSearchSchema = z.object({
 
 export const Route = createFileRoute("/login")({
   validateSearch: loginSearchSchema,
+  beforeLoad: ({ context }) => {
+    redirectAuthenticatedSession(context.session);
+  },
+  head: () => ({
+    meta: [
+      { title: "Sign in | Denn" },
+      {
+        name: "description",
+        content: "Sign in to continue tracking movies, TV, games, books, and music on Denn.",
+      },
+    ],
+    links: [{ rel: "canonical", href: "/login" }],
+  }),
   component: LoginRoute,
 });
 
@@ -20,14 +33,8 @@ function LoginRoute() {
   const next = normalizeInternalRedirectTarget(search.next);
 
   return (
-    <div className="min-h-screen flex flex-col bg-background-logged-in">
-      <Navbar />
-      <main id="main-content" tabIndex={-1} className="flex flex-1 items-center justify-center p-4 pt-20">
-        <LoginForm next={next} />
-      </main>
-      <Footer />
-
-      <div className="pointer-events-none fixed left-0 right-0 bottom-0 h-16 bg-bottom-gradient z-10" />
-    </div>
+    <AuthShell mode="login">
+      <LoginForm next={next} />
+    </AuthShell>
   );
 }

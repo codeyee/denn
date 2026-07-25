@@ -1,4 +1,4 @@
-import { createImagePayload, getCardFiles, getCategoryFromFileName } from "./fileSystem";
+import { createImagePayload, getCardFiles } from "./fileSystem";
 import type { BackgroundCardImage } from "./types";
 
 function shuffleArray<T>(array: T[]): T[] {
@@ -17,24 +17,4 @@ export function getBackgroundCardImages(): BackgroundCardImage[] {
   const files = getCardFiles();
   const images = files.map((file) => createImagePayload(file));
   return shuffleArray(images);
-}
-
-export function getImagesByCategory() {
-  const files = getCardFiles();
-
-  return files.reduce<Record<string, BackgroundCardImage[]>>((acc, file) => {
-    const category = getCategoryFromFileName(file);
-
-    if (!category) {
-      return acc;
-    }
-
-    if (!acc[category]) {
-      acc[category] = [];
-    }
-
-    acc[category].push(createImagePayload(file));
-
-    return acc;
-  }, {});
 }

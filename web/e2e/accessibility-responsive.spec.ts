@@ -13,7 +13,7 @@ const criticalRoutes = [
   "/lists/3",
   "/login",
   "/register",
-  "/welcome",
+  "/not-a-real-route",
   "/about",
   "/privacy",
   "/terms",
@@ -44,8 +44,12 @@ test.beforeEach(async ({ context, request }) => {
 
 for (const route of criticalRoutes) {
   test(`${route} has one main, one h1 and no serious axe violations`, async ({
+    context,
     page,
   }) => {
+    if (route === "/login" || route === "/register") {
+      await context.clearCookies();
+    }
     await page.goto(route);
     await page.waitForLoadState("networkidle");
     await expect(page.locator("main")).toHaveCount(1);
@@ -260,6 +264,60 @@ test("primary mobile controls keep 44px targets", async ({ page }) => {
     expect(box, "Primary control must be visible").not.toBeNull();
     expect(box?.width ?? 0).toBeGreaterThanOrEqual(44);
     expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
+  }
+});
+
+test("authentication stays centered and viewport-bound without navigation or scrolling", async ({
+  context,
+  page,
+}) => {
+  await context.clearCookies();
+  const cases = [
+    { route: "/login", viewport: { width: 360, height: 640 } },
+    { route: "/register", viewport: { width: 360, height: 640 } },
+    { route: "/login", viewport: { width: 1440, height: 900 } },
+    { route: "/register", viewport: { width: 1440, height: 900 } },
+  ];
+
+  for (const { route, viewport } of cases) {
+    await page.setViewportSize(viewport);
+    await page.goto(route);
+    await page.waitForLoadState("networkidle");
+
+    await expect(page.locator("header, footer, nav")).toHaveCount(0);
+    await expect(page.locator("canvas")).toHaveCount(1);
+    await expect(page.locator("h1 + p")).toHaveCSS("text-align", "center");
+
+    const layout = await page.evaluate(() => {
+      const panel = document.querySelector("main > section");
+      const panelRect = panel?.getBoundingClientRect();
+
+      return {
+        documentHeight: document.documentElement.scrollHeight,
+        viewportHeight: window.innerHeight,
+        panelTop: panelRect?.top ?? 0,
+        panelBottom: panelRect ? window.innerHeight - panelRect.bottom : 0,
+      };
+    });
+
+    expect(layout.documentHeight).toBeLessThanOrEqual(layout.viewportHeight);
+    expect(Math.abs(layout.panelTop - layout.panelBottom)).toBeLessThanOrEqual(
+      1,
+    );
+    expect(layout.panelTop).toBeGreaterThanOrEqual(0);
+    expect(layout.panelBottom).toBeGreaterThanOrEqual(0);
+  }
+});
+
+test("authenticated visitors are redirected away from authentication routes", async ({
+  page,
+}) => {
+  for (const route of ["/login", "/register"]) {
+    await page.goto(route);
+    await expect(page).toHaveURL(/\/$/);
+    await expect(
+      page.getByRole("heading", { name: "Your Denn home" }),
+    ).toBeVisible();
   }
 });
 

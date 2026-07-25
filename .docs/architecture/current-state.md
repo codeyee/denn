@@ -68,8 +68,9 @@ The hybrid topology is deliberate and documented in
   `web/src/routes/` using TanStack Router file conventions
   (`__root.tsx`, `index.tsx`, `<segment>.tsx`, `$param.tsx`, `$.ts`).
 - `/`, `/search`, and `/content/<id>` are public catalog surfaces.
-  Authenticated Home adds personal lists to the same catalog. The
-  original landing is preserved at `/welcome`.
+  Authenticated Home adds personal lists to the same catalog. `/welcome`
+  is retired; its cover-gallery visual language is reused by the
+  dedicated login and registration shell.
 - TanStack Query is mounted globally and owns frontend server state for
   Home, Search, Content Detail, List Detail, Add-to-List, ratings,
   tracking, public profiles, and list mutations.

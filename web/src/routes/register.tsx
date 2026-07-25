@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 
+import { AuthShell } from "@/components/auth/AuthShell";
 import { RegisterForm } from "@/components/forms/RegisterForm";
-import { Navbar } from "@/components/layout/Navbar";
-import { Footer } from "@/components/layout/Footer";
 import { normalizeInternalRedirectTarget } from "@/lib/auth/redirect";
+import { redirectAuthenticatedSession } from "@/lib/auth/protected-route";
 
 const registerSearchSchema = z.object({
   next: z.string().optional(),
@@ -12,6 +12,19 @@ const registerSearchSchema = z.object({
 
 export const Route = createFileRoute("/register")({
   validateSearch: registerSearchSchema,
+  beforeLoad: ({ context }) => {
+    redirectAuthenticatedSession(context.session);
+  },
+  head: () => ({
+    meta: [
+      { title: "Create an account | Denn" },
+      {
+        name: "description",
+        content: "Create a Denn account and organize everything you watch, play, read, and hear.",
+      },
+    ],
+    links: [{ rel: "canonical", href: "/register" }],
+  }),
   component: RegisterRoute,
 });
 
@@ -20,14 +33,8 @@ function RegisterRoute() {
   const next = normalizeInternalRedirectTarget(search.next);
 
   return (
-    <div className="min-h-screen flex flex-col bg-background-logged-in">
-      <Navbar />
-      <main id="main-content" tabIndex={-1} className="flex flex-1 items-center justify-center px-4 pt-20">
-        <RegisterForm next={next} />
-      </main>
-      <Footer />
-
-      <div className="pointer-events-none fixed left-0 right-0 bottom-0 h-16 bg-bottom-gradient z-10" />
-    </div>
+    <AuthShell mode="register">
+      <RegisterForm next={next} />
+    </AuthShell>
   );
 }

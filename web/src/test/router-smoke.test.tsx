@@ -16,5 +16,6 @@ describe("TanStack router boot", () => {
     expect(paths).toContain("/content/$id");
     expect(paths).toContain("/lists/$id");
     expect(paths).toContain("/user/$username");
+    expect(paths).not.toContain("/welcome");
   });
 });

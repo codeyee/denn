@@ -33,7 +33,9 @@ At a product level, Denn currently supports:
   can be reconstructed from PostgreSQL instead of always hitting the
   upstream metadata layer.
 
-The original marketing landing remains available at `/welcome`.
+The former marketing landing's cover-gallery identity now frames the
+login and registration surfaces; `/welcome` has been retired so the
+public catalog at `/` remains Denn's single entry point.
 Public browse/taxonomy, richer public content aggregates, full Lists 2.0
 roles, and leaderboards remain planned.
 
