@@ -23,13 +23,3 @@ export function formatCardAlt(fileName: string) {
 
   return `${category} background card ${identifier}`.trim();
 }
-
-export function createAltFromRelativePath(relativePath: string) {
-  const fileName = path.basename(relativePath);
-
-  if (!fileName) {
-    return "Background card";
-  }
-
-  return formatCardAlt(fileName);
-}

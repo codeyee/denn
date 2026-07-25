@@ -3,7 +3,10 @@ import { describe, expect, it } from "vitest";
 import {
   normalizeInternalRedirectTarget,
 } from "@/lib/auth/redirect";
-import { requireAuthenticatedSession } from "@/lib/auth/protected-route";
+import {
+  redirectAuthenticatedSession,
+  requireAuthenticatedSession,
+} from "@/lib/auth/protected-route";
 
 describe("auth redirect helpers", () => {
   it("accepts only internal next targets", () => {
@@ -52,6 +55,28 @@ describe("auth redirect helpers", () => {
         },
         "/content/99",
       ),
+    ).not.toThrow();
+  });
+
+  it("redirects authenticated sessions away from auth entry routes", () => {
+    expect(() =>
+      redirectAuthenticatedSession({
+        user: {
+          id: 1,
+          username: "alice",
+          email: "alice@example.com",
+        },
+        isAuthenticated: true,
+        resolution: "authenticated",
+      }),
+    ).toThrow();
+
+    expect(() =>
+      redirectAuthenticatedSession({
+        user: null,
+        isAuthenticated: false,
+        resolution: "anonymous",
+      }),
     ).not.toThrow();
   });
 });

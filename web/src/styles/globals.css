@@ -215,6 +215,70 @@
   }
 }
 
+@layer components {
+  .auth-dome-stage {
+    --circumference: calc(var(--radius) * 3.14);
+    --rotation-y-step: calc((360deg / var(--segments-x)) / 2);
+    --rotation-x-step: calc((360deg / var(--segments-y)) / 2);
+    --item-width: calc(var(--circumference) / var(--segments-x));
+    --item-height: calc(var(--circumference) / var(--segments-y));
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    perspective: calc(var(--radius) * 2);
+    perspective-origin: 50% 50%;
+  }
+
+  .auth-dome-stage .sphere {
+    position: absolute;
+    transform: translateZ(calc(var(--radius) * -1));
+    transform-style: preserve-3d;
+    will-change: transform;
+  }
+
+  .auth-dome-item {
+    position: absolute;
+    inset: -999px;
+    width: calc(var(--item-width) * var(--item-size-x));
+    height: calc(var(--item-height) * var(--item-size-y));
+    margin: auto;
+    transform:
+      rotateY(
+        calc(
+          var(--rotation-y-step) *
+            (var(--offset-x) + ((var(--item-size-x) - 1) / 2))
+        )
+      )
+      rotateX(
+        calc(
+          var(--rotation-x-step) *
+            (var(--offset-y) - ((var(--item-size-y) - 1) / 2))
+        )
+      )
+      translateZ(var(--radius));
+    transform-origin: 50% 50%;
+    transform-style: preserve-3d;
+    backface-visibility: hidden;
+  }
+
+  .auth-dome-image {
+    position: absolute;
+    inset: 12px;
+    overflow: hidden;
+    border-radius: var(--tile-radius);
+    background: black;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+
+  @media (max-width: 768px) {
+    .auth-dome-image {
+      inset: 6px;
+    }
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

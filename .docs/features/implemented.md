@@ -14,7 +14,10 @@ considered part of the project baseline.
 - Public search with typed result transformation per media family.
 - Public content detail pages routed by internal Denn content id, with
   aggregate rating data but no anonymous personal state.
-- Preserved marketing landing at `/welcome`.
+- Shared responsive login and registration shell using Denn's
+  cover-gallery identity; the retired `/welcome` path resolves through
+  the standard not-found experience. Confirmed authenticated sessions
+  are redirected away from `/login` and `/register` to Home.
 - Login-on-action for Add-to-List and Rating with a return path shared
   across login and registration.
 - Avatar-based authenticated profile navigation.

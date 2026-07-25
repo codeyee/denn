@@ -1,14 +1,14 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { Link } from "@tanstack/react-router";
+import { AlertCircle, LoaderCircle } from "lucide-react";
+
 import { Button } from "@/components/common/ui/Button";
-import { Card } from "@/components/common/ui/Card";
-import { Input } from "@/components/common/ui/Input";
+import { AuthField } from "@/components/forms/AuthField";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect } from "react";
-import { Link } from "@tanstack/react-router";
 
-// Define validation schema
 const registerSchema = z
   .object({
     username: z
@@ -50,7 +50,6 @@ export function RegisterForm({ next }: RegisterFormProps) {
   });
 
   useEffect(() => {
-    // Clear any previous errors when component mounts
     return () => {
       clearError();
     };
@@ -64,77 +63,96 @@ export function RegisterForm({ next }: RegisterFormProps) {
         data.password,
         next ?? undefined,
       );
-      // Redirect is handled in useAuth hook
-    } catch (err) {
-      // Error is already set in the store
-      console.error("Registration failed:", err);
+    } catch {
+      // The auth store exposes the actionable error above the form.
     }
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto p-8">
-      <h1 className="text-2xl font-bold text-center mb-6">Create Account</h1>
-      
+    <div>
+      <h1 className="text-balance text-center font-mono text-2xl font-bold tracking-[-0.025em] sm:text-3xl">
+        Create your account
+      </h1>
+      <p className="mt-1 text-center text-sm leading-5 text-white/65">
+        Start tracking what you love in a few seconds.
+      </p>
+
       {error && (
-        <div role="alert" className="mb-4 rounded border border-red-400 bg-red-100 p-3 text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300">
-          {error}
+        <div
+          role="alert"
+          className="mt-3 flex gap-3 rounded-lg bg-red-500/12 p-2.5 text-sm leading-5 text-red-200 ring-1 ring-inset ring-red-400/35"
+        >
+          <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+          <span>{error}</span>
         </div>
       )}
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        <Input
-          label="Username"
-          type="text"
-          placeholder="Enter your username"
-          error={errors.username?.message}
-          {...register("username")}
-        />
+      <form
+        noValidate
+        aria-busy={isLoading}
+        onSubmit={handleSubmit(onSubmit)}
+        className="mt-5 lg:mt-7"
+      >
+        <div className="space-y-3 lg:space-y-4">
+          <AuthField
+            label="Username"
+            type="text"
+            autoComplete="username"
+            placeholder="Choose a username"
+            error={errors.username?.message}
+            {...register("username")}
+          />
 
-        <Input
-          label="Email"
-          type="email"
-          placeholder="Enter your email"
-          error={errors.email?.message}
-          {...register("email")}
-        />
+          <AuthField
+            label="Email"
+            type="email"
+            autoComplete="email"
+            inputMode="email"
+            placeholder="you@example.com"
+            error={errors.email?.message}
+            {...register("email")}
+          />
 
-        <Input
-          label="Password"
-          type="password"
-          placeholder="Enter your password"
-          error={errors.password?.message}
-          {...register("password")}
-        />
+          <AuthField
+            label="Password"
+            type="password"
+            autoComplete="new-password"
+            placeholder="Create a password"
+            description="Use at least 8 characters."
+            error={errors.password?.message}
+            {...register("password")}
+          />
 
-        <Input
-          label="Confirm Password"
-          type="password"
-          placeholder="Confirm your password"
-          error={errors.confirmPassword?.message}
-          {...register("confirmPassword")}
-        />
+          <AuthField
+            label="Confirm Password"
+            type="password"
+            autoComplete="new-password"
+            placeholder="Repeat your password"
+            error={errors.confirmPassword?.message}
+            {...register("confirmPassword")}
+          />
+        </div>
 
-        <Button 
-          type="submit" 
-          className="w-full cursor-pointer mt-4"
+        <Button
+          type="submit"
+          className="mt-5 w-full rounded-lg lg:mt-7"
           disabled={isLoading}
         >
-          {isLoading ? "Registering..." : "Register"}
+          {isLoading && <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />}
+          {isLoading ? "Creating account…" : "Create Account"}
         </Button>
       </form>
 
-      <div className="mt-4 text-center text-sm font-sans">
-        <span className="text-gray-600 dark:text-gray-400">
-          Already have an account?{" "}
-        </span>
+      <p className="mt-5 text-center text-sm text-white/65 lg:mt-7">
+        Already have an account?{" "}
         <Link
           to="/login"
           search={next ? { next } : {}}
-          className="text-blue-600 dark:text-blue-400 hover:underline"
+          className="font-medium text-white underline decoration-white/35 underline-offset-4 hover:decoration-white focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
         >
           Sign in
         </Link>
-      </div>
-    </Card>
+      </p>
+    </div>
   );
 }

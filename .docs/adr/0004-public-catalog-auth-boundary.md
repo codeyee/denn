@@ -2,6 +2,7 @@
 
 - Estado: Accepted
 - Fecha: 2026-07-24
+- Enmienda: 2026-07-25
 
 ## Contexto
 
@@ -23,8 +24,9 @@ escritura.
 1. `/`, `/search` y `/content/<id>` son superficies públicas. Home usa
    la misma experiencia de catálogo para visitantes y usuarios; una
    sesión autenticada añade las secciones personales.
-2. La landing original se conserva en `/welcome`. Sus CTAs permiten
-   entrar al catálogo o crear una cuenta sin duplicar una segunda Home.
+2. `/` es la única entrada pública. La antigua landing deja de existir
+   como ruta independiente y su galería de portadas se conserva como
+   fondo decorativo del shell compartido por login y registro.
 3. Añadir a lista, puntuar, reseñar y cualquier otra mutación personal
    siguen requiriendo autenticación. Al activarlas de forma anónima,
    `web` navega a `/login?next=<ruta actual>` y preserva ese destino
@@ -92,8 +94,9 @@ id-first ya adoptada.
 - La lectura pública de detalle aumenta el tráfico anónimo de `core`;
   conserva la cuota histórica por visitante sin compartirla entre toda
   la instancia `web` y mantiene la política local-first existente.
-- La landing sigue disponible y enlazable, pero deja de ser la Home
-  canónica.
+- Login y registro conservan la identidad visual de la antigua landing
+  sin mantener una segunda entrada pública ni añadir controles
+  interactivos detrás de los formularios.
 
 ## Fuera de esta decisión
 
@@ -108,8 +111,9 @@ relacionadas, distribución de ratings, sitemap y gallery lightbox.
 - Tests Django de detalle anónimo, rechazo del resolver desde navegador
   y aceptación del consumidor `web`.
 - Playwright desktop/móvil para Home, Search, Content Detail, retorno de
-  login, `/welcome`, rutas protegidas y ausencia de API keys o URLs
-  internas de `core` en requests del navegador.
+  login, auth responsive, retiro de `/welcome`, rutas protegidas y
+  ausencia de API keys o URLs internas de `core` en requests del
+  navegador.
 - Build de producción y medición anónima de Home, Search y Detail.
 
 ## Referencias

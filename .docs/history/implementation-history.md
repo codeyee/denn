@@ -313,6 +313,20 @@ This document keeps the durable outcomes of completed implementation plans after
   client-safe hydration, closing the production React 418 regression on
   public profiles.
 
+## Authentication Surface Consolidation
+
+- `/welcome` was retired after the public catalog became Denn's
+  canonical entry point.
+- The landing's rotating cover-gallery language moved into a shared,
+  non-interactive login/registration backdrop with reduced-motion and
+  animation-preference support.
+- Login and registration gained one responsive shell, consistent field
+  states, password visibility controls, explicit autocomplete metadata,
+  route metadata, and preserved `next` navigation.
+- Browser coverage now treats `/welcome` as a standard not-found path
+  and keeps login/registration in the accessibility and responsive
+  matrix.
+
 ## What This History Replaces
 
 The detailed execution plans were intentionally removed after their durable outcomes were extracted here and into the architecture, features, debt, and roadmap docs.

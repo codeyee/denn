@@ -256,6 +256,28 @@ and route thresholds. The matching browser tests also verify that
 client navigation never calls the internal Core URL and never carries
 `X-Api-Key`; stable-id resolution remains server-to-server.
 
+## Authentication Surface Consolidation Local Snapshot
+
+Captured 2026-07-25 from the production Nitro bundle after retiring
+`/welcome` and moving its cover-gallery language into login and
+registration. The standard fixture method remained unchanged: five
+fresh anonymous contexts and one same-context warm reload per sample.
+
+| Flow | State | TTFB p50/p75/p95 | FCP p75 | LCP p50/p75/p95 | INP p75/p95 | CLS p75/p95 |
+|---|---|---|---:|---|---|---|
+| Login | cold | 13.4 / 13.9 / 481.7 | 56 | 756 / 792 / 1,668 | 176 / 192 | 0.07 / 0.07 |
+| Login | warm | 33.6 / 46.3 / 65.1 | 252 | 428 / 476 / 732 | 184 / 224 | 0.07 / 0.07 |
+
+The decorative gallery adds one same-origin, filesystem-backed
+`/api/cards` manifest and static card media; it adds no Core or Proxy
+request. The TV-noise layer keeps its original opacity and refresh rate
+while rendering at its declared 250-pixel pattern resolution. Login
+remains within the shared p75 release gates: LCP 792 ms cold / 476 ms
+warm, INP 176 / 184 ms, and CLS 0.07. Browser inspection also confirmed
+that the gallery is absent from the accessibility tree, does not accept
+pointer or keyboard interaction, respects reduced motion, and produces
+no console warnings.
+
 ## Backend Telemetry Contract
 
 With `PERF_LOGGING_ENABLED=true`, every critical `core` request emits:

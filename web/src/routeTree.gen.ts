@@ -9,7 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as WelcomeRouteImport } from './routes/welcome'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SearchRouteImport } from './routes/search'
@@ -35,11 +34,6 @@ import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
 import { Route as ApiAuthLoginRouteImport } from './routes/api/auth/login'
 import { Route as ApiAuthCsrfRouteImport } from './routes/api/auth/csrf'
 
-const WelcomeRoute = WelcomeRouteImport.update({
-  id: '/welcome',
-  path: '/welcome',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
@@ -171,7 +165,6 @@ export interface FileRoutesByFullPath {
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/terms': typeof TermsRoute
-  '/welcome': typeof WelcomeRoute
   '/api/cards': typeof ApiCardsRoute
   '/api/version': typeof ApiVersionRoute
   '/content/$id': typeof ContentIdRoute
@@ -198,7 +191,6 @@ export interface FileRoutesByTo {
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/terms': typeof TermsRoute
-  '/welcome': typeof WelcomeRoute
   '/api/cards': typeof ApiCardsRoute
   '/api/version': typeof ApiVersionRoute
   '/content/$id': typeof ContentIdRoute
@@ -226,7 +218,6 @@ export interface FileRoutesById {
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/terms': typeof TermsRoute
-  '/welcome': typeof WelcomeRoute
   '/api/cards': typeof ApiCardsRoute
   '/api/version': typeof ApiVersionRoute
   '/content/$id': typeof ContentIdRoute
@@ -255,7 +246,6 @@ export interface FileRouteTypes {
     | '/search'
     | '/settings'
     | '/terms'
-    | '/welcome'
     | '/api/cards'
     | '/api/version'
     | '/content/$id'
@@ -282,7 +272,6 @@ export interface FileRouteTypes {
     | '/search'
     | '/settings'
     | '/terms'
-    | '/welcome'
     | '/api/cards'
     | '/api/version'
     | '/content/$id'
@@ -309,7 +298,6 @@ export interface FileRouteTypes {
     | '/search'
     | '/settings'
     | '/terms'
-    | '/welcome'
     | '/api/cards'
     | '/api/version'
     | '/content/$id'
@@ -337,7 +325,6 @@ export interface RootRouteChildren {
   SearchRoute: typeof SearchRoute
   SettingsRoute: typeof SettingsRoute
   TermsRoute: typeof TermsRoute
-  WelcomeRoute: typeof WelcomeRoute
   ApiCardsRoute: typeof ApiCardsRoute
   ApiVersionRoute: typeof ApiVersionRoute
   ContentIdRoute: typeof ContentIdRoute
@@ -357,13 +344,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/welcome': {
-      id: '/welcome'
-      path: '/welcome'
-      fullPath: '/welcome'
-      preLoaderRoute: typeof WelcomeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/terms': {
       id: '/terms'
       path: '/terms'
@@ -545,7 +525,6 @@ const rootRouteChildren: RootRouteChildren = {
   SearchRoute: SearchRoute,
   SettingsRoute: SettingsRoute,
   TermsRoute: TermsRoute,
-  WelcomeRoute: WelcomeRoute,
   ApiCardsRoute: ApiCardsRoute,
   ApiVersionRoute: ApiVersionRoute,
   ContentIdRoute: ContentIdRoute,

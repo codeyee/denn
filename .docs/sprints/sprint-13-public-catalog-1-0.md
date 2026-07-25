@@ -9,11 +9,13 @@ Fundación ya disponible:
 - Las páginas de listas públicas admiten lectura anónima a través del
   BFF estricto y las tarjetas de perfil navegan sin terminar en login.
 - Home autenticado añade listas personales sin cambiar de producto.
-- La landing original vive en `/welcome`.
+- `/` es la única entrada pública; la identidad visual de la antigua
+  landing se reutiliza en login y registro.
 - Add-to-List y Rating exigen login al actuar y conservan `next`.
 - Los ids de discovery se resuelven por una llamada confiable
   server-to-server; el navegador no recibe claves ni URLs internas.
-- Metadata/canonical básica existe para Home, Search, Welcome y Detail.
+- Metadata/canonical básica existe para Home, Search, Login, Register y
+  Detail.
 
 Pendiente para cerrar este sprint:
 

@@ -25,8 +25,8 @@ export function Footer() {
       <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-gray-400">
         <p>&copy; 2026 Denn. All rights reserved.</p>
         <nav aria-label="Legal and project information" className="flex flex-wrap justify-center gap-x-6 gap-y-2">
-          <Link to="/welcome" className="inline-flex min-h-11 items-center hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
-            Welcome
+          <Link to="/" className="inline-flex min-h-11 items-center hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
+            Explore
           </Link>
           <Link to="/about" className="inline-flex min-h-11 items-center hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
             About

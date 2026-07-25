@@ -23,3 +23,9 @@ export function requireAuthenticatedSession(
     });
   }
 }
+
+export function redirectAuthenticatedSession(session: SessionSnapshot) {
+  if (session.isAuthenticated) {
+    throw redirect({ to: "/" });
+  }
+}
