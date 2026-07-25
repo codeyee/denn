@@ -6,6 +6,7 @@ import { AUTH_ACCESS_COOKIE } from "@/lib/auth/constants";
 import { getApiUrl, getProxyApiUrl } from "@/lib/env";
 import type { SessionSnapshot } from "@/server/session";
 import { resolveCatalogContentIds } from "@/server/catalog";
+import { buildCatalogVisitorHeaders } from "@/server/catalog-visitor";
 import { buildProxyHeaders, getLogicalRequestId } from "@/server/proxy";
 import {
   type ContentItem,
@@ -348,10 +349,16 @@ async function fetchServerContentDetail(
 ) {
   const params = new URLSearchParams();
   if (country) params.set("country", country);
+  const headers = accessToken
+    ? coreHeaders(accessToken, requestId)
+    : {
+        ...coreHeaders(null, requestId),
+        ...await buildCatalogVisitorHeaders(),
+      };
 
   return fetchJson<ContentItem>(
     `${getApiUrl()}/content/${contentId}/${params.toString() ? `?${params}` : ""}`,
-    { headers: coreHeaders(accessToken, requestId) },
+    { headers },
     {
       requestId,
       targetService: "core",

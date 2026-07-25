@@ -154,8 +154,10 @@ See [`auth-session-bootstrap.md`](./auth-session-bootstrap.md).
 - Content detail preloads the current user's rating and serializes it in
   the same response, avoiding a second browser waterfall.
 - Anonymous content detail uses the same local-first payload but always
-  serializes `current_user_rating: null` and remains subject to the
-  standard anonymous throttle.
+  serializes `current_user_rating: null`. A signed, opaque visitor
+  fingerprint keeps the historical anonymous quota isolated per browser
+  instead of grouping all traffic under the Web service IP; untrusted
+  direct traffic falls back to an IP bucket.
 - Homepage and multi-search use scoped, policy-versioned cache keys.
   Homepage supports fresh/stale cache reads and single-flight refresh;
   provider calls have bounded retries, circuit breaking, and aggregate

@@ -70,6 +70,23 @@ test("anonymous visitors can explore the catalog and stable content detail", asy
       entry.path === "/api/content/resolve-ids/",
   );
   expect(catalogResolution?.consumer).toBe("web");
+  const publicDetailRequests = requests.filter(
+    (entry) =>
+      entry.service === "core" &&
+      entry.method === "GET" &&
+      entry.path === "/api/content/1/",
+  );
+  expect(publicDetailRequests.length).toBeGreaterThan(0);
+  expect(
+    publicDetailRequests.every(
+      (entry) =>
+        entry.consumer === "web" &&
+        /^[0-9a-f]{64}$/.test(entry.catalog_visitor ?? ""),
+    ),
+  ).toBe(true);
+  expect(
+    new Set(publicDetailRequests.map((entry) => entry.catalog_visitor)).size,
+  ).toBe(1);
   expect(directCoreRequests).toEqual([]);
   expect(browserRequestsWithApiKey).toEqual([]);
 });

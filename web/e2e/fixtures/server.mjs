@@ -249,7 +249,21 @@ function record(service, request, url, requestId) {
     path: url.pathname,
     request_id: requestId,
     consumer: request.headers["x-api-consumer"] ?? null,
+    catalog_visitor: request.headers["x-catalog-visitor"] ?? null,
   });
+}
+
+function isTrustedCatalogService(request) {
+  return (
+    request.headers["x-api-key"] === "fixture-key" &&
+    request.headers["x-api-consumer"] === "web"
+  );
+}
+
+function canReadCatalogDetail(request) {
+  if (request.headers.authorization === "Bearer fixture-access") return true;
+  const visitor = request.headers["x-catalog-visitor"] ?? "";
+  return isTrustedCatalogService(request) && /^[0-9a-f]{64}$/.test(visitor);
 }
 
 const core = createServer(async (request, response) => {
@@ -372,6 +386,9 @@ const core = createServer(async (request, response) => {
     return json(response, 200, { metadata: pagination, results: [] }, headers);
   }
   if (url.pathname === "/api/content/1/") {
+    if (!canReadCatalogDetail(request)) {
+      return json(response, 403, { detail: "fixture catalog visitor required" }, headers);
+    }
     if (state.detailDelayMs > 0) {
       await delay(state.detailDelayMs);
     }
@@ -386,18 +403,18 @@ const core = createServer(async (request, response) => {
     return json(response, 200, contentItem, headers);
   }
   if (url.pathname === "/api/content/2/") {
+    if (!canReadCatalogDetail(request)) {
+      return json(response, 403, { detail: "fixture catalog visitor required" }, headers);
+    }
     return json(response, 200, noArtworkContentItem, headers);
   }
   if (
     url.pathname === "/api/content/resolve-ids/" &&
     request.method === "POST"
   ) {
-    const isTrustedCatalogService =
-      request.headers["x-api-key"] === "fixture-key" &&
-      request.headers["x-api-consumer"] === "web";
     const isAuthenticated =
       request.headers.authorization === "Bearer fixture-access";
-    if (!isTrustedCatalogService && !isAuthenticated) {
+    if (!isTrustedCatalogService(request) && !isAuthenticated) {
       return json(response, 403, { detail: "fixture catalog access denied" }, headers);
     }
     const body = await readJson(request);

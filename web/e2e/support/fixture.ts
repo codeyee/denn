@@ -10,6 +10,7 @@ export interface FixtureRequest {
   path: string;
   request_id: string;
   consumer: string | null;
+  catalog_visitor: string | null;
 }
 
 export async function resetFixture(request: APIRequestContext) {

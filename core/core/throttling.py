@@ -4,6 +4,8 @@ from rest_framework.throttling import (
     UserRateThrottle,
 )
 
+from core.catalog_service import get_trusted_catalog_visitor
+
 
 class AuthRateThrottle(AnonRateThrottle):
     scope = 'auth'
@@ -23,6 +25,37 @@ class SustainedRateThrottle(UserRateThrottle):
 
 class BurstRateThrottle(UserRateThrottle):
     rate = '60/minute'
+
+
+class CatalogDetailRateThrottle(SimpleRateThrottle):
+    """Apply the public detail quota per signed visitor, not per web host."""
+
+    rate = '100/day'
+
+    def allow_request(self, request, view):
+        self.rate = (
+            '1000/day'
+            if request.user and request.user.is_authenticated
+            else '100/day'
+        )
+        self.num_requests, self.duration = self.parse_rate(self.rate)
+        return super().allow_request(request, view)
+
+    def get_cache_key(self, request, view):
+        if request.user and request.user.is_authenticated:
+            ident = f'user:{request.user.pk}'
+        else:
+            visitor = get_trusted_catalog_visitor(request)
+            ident = (
+                f'visitor:{visitor}'
+                if visitor
+                else f'ip:{self.get_ident(request)}'
+            )
+
+        return self.cache_format % {
+            'scope': 'catalog-detail',
+            'ident': ident,
+        }
 
 
 class CatalogResolveRateThrottle(SimpleRateThrottle):

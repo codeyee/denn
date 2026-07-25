@@ -13,9 +13,14 @@ import {
 import { isValidPayload } from "@/routes/api/perf/vitals";
 import {
   buildCoreUrl,
+  isPublicContentDetailRequest,
   isPublicCoreRequest,
   isSafeCorePath,
 } from "@/server/core-bff";
+import {
+  createCatalogVisitorCookieValue,
+  readCatalogVisitorId,
+} from "@/server/catalog-visitor";
 
 describe("BFF request security", () => {
   it("keeps proxy requests under the configured base path", () => {
@@ -56,6 +61,27 @@ describe("BFF request security", () => {
     expect(isPublicCoreRequest("POST", "content/42/")).toBe(false);
     expect(isPublicCoreRequest("GET", "content/resolve-ids/")).toBe(false);
     expect(isPublicCoreRequest("GET", "content/lists/1/")).toBe(false);
+    expect(isPublicContentDetailRequest("GET", "content/42/")).toBe(true);
+    expect(isPublicContentDetailRequest("POST", "content/42/")).toBe(false);
+  });
+
+  it("accepts only server-signed catalog visitor cookies", async () => {
+    const visitorId = "a".repeat(32);
+    const signed = await createCatalogVisitorCookieValue(
+      visitorId,
+      "fixture-key",
+    );
+
+    expect(await readCatalogVisitorId(signed, "fixture-key")).toBe(visitorId);
+    expect(
+      await readCatalogVisitorId(
+        `${visitorId}.${"b".repeat(64)}`,
+        "fixture-key",
+      ),
+    ).toBeNull();
+    expect(
+      await readCatalogVisitorId(signed, "different-key"),
+    ).toBeNull();
   });
 
   it("accepts only bounded Web Vitals fields", () => {

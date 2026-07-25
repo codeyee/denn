@@ -16,6 +16,7 @@ from content.permissions import (
     IsAuthenticatedOrCatalogService,
 )
 from core.throttling import (
+    CatalogDetailRateThrottle,
     CatalogResolveRateThrottle,
     CatalogResolveSustainedRateThrottle,
 )
@@ -352,6 +353,7 @@ class ContentItemViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
 )
 class ContentItemDetailByIdView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [CatalogDetailRateThrottle]
 
     def get(self, request, id):
         queryset = ContentItem.objects.all()

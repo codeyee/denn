@@ -7,6 +7,7 @@ import {
   generateRequestId,
   normalizeRequestId,
 } from "@/server/proxy";
+import { buildCatalogVisitorHeaders } from "@/server/catalog-visitor";
 
 export function buildCoreUrl(
   baseUrl: string,
@@ -71,12 +72,19 @@ export async function forwardCoreRequest(
   const isPublic = isPublicCoreRequest(request.method, upstreamPath);
   let access = getAccessToken();
   if (isPublic && !access) {
+    const catalogVisitorHeaders = isPublicContentDetailRequest(
+      request.method,
+      upstreamPath,
+    )
+      ? await buildCatalogVisitorHeaders()
+      : undefined;
     const response = await callCore(
       target,
       request,
       body,
       null,
       requestId,
+      catalogVisitorHeaders,
     );
     return copyCoreResponse(response, requestId);
   }
@@ -112,11 +120,13 @@ async function callCore(
   body: ArrayBuffer | undefined,
   access: string | null,
   requestId: string,
+  additionalHeaders: Record<string, string> = {},
 ) {
   const headers: Record<string, string> = {
     "Content-Type":
       request.headers.get("content-type") ?? "application/json",
     "X-Request-Id": requestId,
+    ...additionalHeaders,
   };
   if (access) headers.Authorization = `Bearer ${access}`;
   const country = request.headers.get("x-user-country");
@@ -139,6 +149,10 @@ const PUBLIC_CORE_PATHS = new Set([
 export function isPublicCoreRequest(method: string, path: string) {
   if (PUBLIC_CORE_PATHS.has(path)) return true;
 
+  return isPublicContentDetailRequest(method, path);
+}
+
+export function isPublicContentDetailRequest(method: string, path: string) {
   const normalizedMethod = method.toUpperCase();
   return (
     (normalizedMethod === "GET" || normalizedMethod === "HEAD") &&

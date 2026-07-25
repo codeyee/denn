@@ -38,8 +38,12 @@ escritura.
    compartida y `X-Api-Consumer: web`. `core` acepta ese consumidor
    confiable o un usuario autenticado, compara la clave en tiempo
    constante y aplica un throttle específico.
-6. `GET /api/content/<id>/` permite lectura anónima bajo los throttles
-   estándar. El serializer devuelve metadata y agregados públicos, pero
+6. `GET /api/content/<id>/` permite lectura anónima. Para evitar que la
+   IP de `web` concentre la cuota de todos los visitantes, el BFF crea
+   una cookie opaca `HttpOnly` firmada y envía su fingerprint HMAC sólo
+   dentro del request autenticado server-to-server. `core` aplica el
+   límite por fingerprint validado o por IP para tráfico directo. El
+   serializer devuelve metadata y agregados públicos, pero
    `current_user_rating` siempre es `null` si no hay usuario.
 7. Las claves de TanStack Query de detalle incluyen el viewer
    (`anonymous` o id de usuario) para que una respuesta anónima nunca
@@ -86,7 +90,8 @@ id-first ya adoptada.
   request id, se limita a 100 identidades por payload y se aplica
   throttle.
 - La lectura pública de detalle aumenta el tráfico anónimo de `core`;
-  conserva el throttle anónimo y la política local-first existente.
+  conserva la cuota histórica por visitante sin compartirla entre toda
+  la instancia `web` y mantiene la política local-first existente.
 - La landing sigue disponible y enlazable, pero deja de ser la Home
   canónica.
 
