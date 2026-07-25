@@ -10,7 +10,6 @@ from content.models import (
     UserList,
     ListItem,
     Rating,
-    ContentItem,
     UserContentTracking,
 )
 from content.serializers import (

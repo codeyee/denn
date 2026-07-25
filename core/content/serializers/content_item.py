@@ -46,8 +46,6 @@ class ContentItemSerializer(BaseFlexSerializer):
         prefetched_ratings = getattr(obj, 'current_user_ratings', None)
         if rating is None and prefetched_ratings is not None:
             rating = prefetched_ratings[0] if prefetched_ratings else None
-        if prefetched_ratings is None:
-            prefetched_ratings = []
         if rating is None:
             return None
 
