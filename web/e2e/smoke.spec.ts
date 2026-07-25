@@ -4,8 +4,8 @@ import type {
   BrowserContext,
   Page,
 } from "@playwright/test";
+import { fixtureUrl } from "./support/fixture";
 
-const fixtureUrl = "http://127.0.0.1:18000";
 const fixtureUser = {
   email: "phase0@example.test",
   password: "fixture-password",
@@ -72,13 +72,18 @@ test("release probe exposes the exact non-cacheable web commit", async ({
   });
 });
 
-test("login honors next and public detail stays id-first without hydration errors", async ({
+test("a personal action honors next and returns to public id-first detail", async ({
   page,
 }) => {
   const consoleErrors = captureUnexpectedConsole(page);
 
-  await page.goto("/profile");
-  await expect(page).toHaveURL(/\/login\?next=%2Fprofile/);
+  await page.goto("/content/1");
+  await expect(page).toHaveURL(/\/content\/1$/);
+  await expect(
+    page.getByText("Deterministic metadata for browser guardrails."),
+  ).toBeVisible();
+  await page.getByRole("button", { name: /Add to List/i }).click();
+  await expect(page).toHaveURL(/\/login\?next=%2Fcontent%2F1/);
 
   await page.getByLabel("Email").fill(fixtureUser.email);
   await page.getByLabel("Password").fill(fixtureUser.password);
@@ -91,13 +96,13 @@ test("login honors next and public detail stays id-first without hydration error
   await page.getByRole("button", { name: "Sign In" }).click();
   const loginResponse = await loginResponsePromise;
 
-  await expect(page).toHaveURL(/\/profile$/);
+  await expect(page).toHaveURL(/\/content\/1$/);
   await page.goto("/content/1");
   await expect(
     page.getByText("Deterministic metadata for browser guardrails."),
   ).toBeVisible();
   expect(Date.now() - loginStartedAt).toBeLessThan(1_500);
-  await expect(page.getByRole("link", { name: "Sign In" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Login" })).toHaveCount(0);
   const loginPayload = (await loginResponse.json()) as Record<string, unknown>;
   expect(loginPayload).not.toHaveProperty("access");
   expect(loginPayload).not.toHaveProperty("refresh");
@@ -292,7 +297,7 @@ test("authenticated cold and warm navigation covers critical routes", async ({
   await page.goto("/");
   await expect(page.getByLabel("Profile")).toBeVisible();
   await expect(page.getByText("Phase Zero Movie").first()).toBeVisible();
-  await expect(page.getByRole("link", { name: "Sign In" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Login" })).toHaveCount(0);
 
   await page.goto("/search?q=phase");
   await expect(
@@ -364,7 +369,7 @@ test("logout everywhere clears the local session and reaches the blacklist endpo
   await page.getByRole("button", { name: "Logout everywhere" }).click();
 
   await expect(page).toHaveURL(/\/$/);
-  await expect(page.getByRole("link", { name: "Sign In" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Login" })).toBeVisible();
   const authCookieNames = (await context.cookies()).map(({ name }) => name);
   expect(authCookieNames).not.toContain("auth-token");
   expect(authCookieNames).not.toContain("refresh-token");

@@ -118,6 +118,35 @@ Validation expectation:
 - Any touched request path must update or explicitly confirm
   `.docs/perf/baseline.md`.
 
+## Public Catalog Foundation
+
+- Status: partially implemented on 2026-07-24.
+- Decision:
+  [`../adr/0004-public-catalog-auth-boundary.md`](../adr/0004-public-catalog-auth-boundary.md).
+- Detailed remaining plan:
+  [`../sprints/sprint-13-public-catalog-1-0.md`](../sprints/sprint-13-public-catalog-1-0.md).
+
+Implemented foundation:
+
+- `/`, `/search`, and `/content/<id>` are usable without login.
+- Authenticated Home enriches the same catalog with personal lists.
+- The original landing remains available at `/welcome`.
+- Add-to-List and Rating require login on action and preserve `next`
+  through login/registration.
+- Stable discovery ids resolve through a trusted `web -> core` bulk
+  request; browsers receive neither the shared key nor an internal Core
+  URL.
+- Anonymous and authenticated detail caches are viewer-scoped.
+
+Still open in Sprint 13:
+
+- browse routes and taxonomy per media family;
+- sanitized public reviews, distribution aggregates, and public lists
+  containing an item;
+- sitemap, richer dynamic SEO, deployed anonymous-traffic rebaseline,
+  and gallery lightbox. A deterministic local Home/Search/Detail
+  baseline is already recorded.
+
 ## Product Gap Analysis Toward A Social Multi-Media Tracker
 
 - Status: in progress; Personal Tracking 1.0 and Public Profiles 1.0
@@ -141,7 +170,7 @@ Product work to land:
 
 - Finish Lists 2.0 roles, owner membership, per-member state,
   permissions, invitations, and Add-to-List semantics.
-- Finish anonymous search/browse, public content aggregates, gallery,
+- Finish public browse/taxonomy, public content aggregates, gallery,
   sitemap, metadata, cache, and traffic hardening from Public Catalog
   1.0.
 - Add leaderboard surfaces in the existing rollout order.

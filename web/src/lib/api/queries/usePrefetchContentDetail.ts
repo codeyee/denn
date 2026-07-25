@@ -19,7 +19,11 @@ import { useAuthStore } from "@/stores/auth-store";
  */
 export function usePrefetchContentDetail() {
   const qc = useQueryClient();
-  const viewerId = useAuthStore((state) => state.user?.id ?? "anonymous");
+  const viewerId = useAuthStore((state) =>
+    state.sessionResolution === "authenticated" && state.user?.id
+      ? state.user.id
+      : "anonymous",
+  );
 
   return useCallback(
     (id: number, country?: string) => {

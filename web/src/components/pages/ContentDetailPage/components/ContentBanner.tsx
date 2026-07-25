@@ -7,11 +7,10 @@ import { formatAuthors } from "@/lib/utils/authorUtils";
 import { buildContentUrlById } from "@/lib/utils/navigationUtils";
 import { contentItemActions } from "@/lib/api";
 import { CONTENT_TYPE_ICONS } from "@/lib/icons/contentTypeIcons";
-import { Button } from "@/components/common/ui/Button";
-import { ListPlus, Star } from "lucide-react";
 import { Content } from "@/lib/types";
 import { ResponsiveMedia } from "@/components/common/media/ResponsiveMedia";
 import { BannerShell } from "@/components/common/media/BannerShell";
+import { ContentActions } from "./ContentActions";
 
 interface ContentBannerProps {
   item: Content;
@@ -76,7 +75,7 @@ export function ContentBanner({
   const [tvShowUrl, setTvShowUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!tvShowExternalId) return;
+    if (!isAuthenticated || !tvShowExternalId) return;
     let cancelled = false;
     (async () => {
       try {
@@ -94,7 +93,7 @@ export function ContentBanner({
     return () => {
       cancelled = true;
     };
-  }, [tvShowExternalId]);
+  }, [isAuthenticated, tvShowExternalId]);
 
   return (
     <BannerShell
@@ -143,36 +142,12 @@ export function ContentBanner({
             </div>
           ) : null}
 
-          {/* Action Buttons */}
-          {isAuthenticated && (onAddToList || onRateContent) && (
-            <div className="mt-4 md:mt-6 flex gap-3">
-              {onAddToList && (
-                <Button
-                  onClick={onAddToList}
-                  className="flex items-center gap-2 cursor-pointer bg-white text-black hover:bg-white/90 font-semibold"
-                  size="lg"
-                >
-                  <ListPlus className="w-5 h-5" />
-                  Add to List
-                </Button>
-              )}
-              {onRateContent && (
-                <Button
-                  onClick={onRateContent}
-                  className={`flex items-center gap-2 cursor-pointer font-semibold ${
-                    hasUserRating
-                      ? ""
-                      : "bg-white text-black hover:bg-white/90"
-                  }`}
-                  size="lg"
-                  variant={hasUserRating ? "outline" : "default"}
-                >
-                  <Star className="w-5 h-5" />
-                  {hasUserRating ? "Edit Rating" : "Rate This"}
-                </Button>
-              )}
-            </div>
-          )}
+          <ContentActions
+            isAuthenticated={isAuthenticated}
+            hasUserRating={hasUserRating}
+            onAddToList={onAddToList}
+            onRateContent={onRateContent}
+          />
       </div>
     </BannerShell>
   );

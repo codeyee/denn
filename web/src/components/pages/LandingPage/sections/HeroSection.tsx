@@ -72,21 +72,22 @@ export function HeroSection() {
             </div>
 
             <div className={`flex flex-wrap gap-3 md:gap-4 justify-center items-center pt-3 md:pt-4 transition-opacity duration-400 ${introDone ? "opacity-100" : "opacity-0"}`}>
-              <Link to="/login">
+              <Link to="/">
                 <Button
                   size="lg"
                   className="bg-white text-black hover:bg-gray-200 text-base md:text-lg px-6 md:px-8 cursor-pointer shadow-lg shadow-black/30 hover:shadow-xl py-6"
                 >
-                  Sign In
+                  Explore the catalog
+                  <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
               <Link to="/register">
                 <Button
                   size="lg"
-                  className="bg-linear-to-r from-rose-500 via-red-500 to-orange-500 text-white hover:opacity-90 text-base md:text-lg px-8 md:px-10 cursor-pointer shadow-lg shadow-black/30 hover:shadow-xl py-6"
+                  variant="outline"
+                  className="border-white/70 bg-black/30 text-white hover:bg-white/10 text-base md:text-lg px-8 md:px-10 cursor-pointer py-6"
                 >
-                  Get Started
-                  <ArrowRight className="ml-2 h-5 w-5" />
+                  Create an account
                 </Button>
               </Link>
             </div>

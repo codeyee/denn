@@ -80,7 +80,7 @@ export function SearchRouteShell({
     debouncedQuery,
     {
       country,
-      enabled: session.isAuthenticated,
+      enabled: true,
       initialData:
         debouncedQuery === initialQuery ? initialResults : undefined,
       allowAdult,
@@ -93,23 +93,18 @@ export function SearchRouteShell({
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
       />
-      {session.isAuthenticated ? (
-        <SearchPage
-          searchQuery={searchQuery}
-          onSearchQueryChange={setSearchQuery}
-          debouncedQuery={debouncedQuery}
-          results={results}
-          isLoading={isLoading}
-          error={error}
-          hasResults={hasResults}
-          mobileInputRef={mobileInputRef}
-          allowAdult={allowAdult}
-        />
-      ) : (
-        <div className="flex items-center justify-center min-h-screen bg-background-logged-in">
-          <p className="text-white text-xl">Please log in to search</p>
-        </div>
-      )}
+      <SearchPage
+        searchQuery={searchQuery}
+        onSearchQueryChange={setSearchQuery}
+        debouncedQuery={debouncedQuery}
+        results={results}
+        isLoading={isLoading}
+        error={error}
+        hasResults={hasResults}
+        mobileInputRef={mobileInputRef}
+        allowAdult={allowAdult}
+        isAuthenticated={session.isAuthenticated}
+      />
     </div>
   );
 }

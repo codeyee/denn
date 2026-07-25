@@ -14,12 +14,14 @@ import type { HomepageResponse, ListType, PaginatedUserListList } from "@/lib/ty
 
 interface UseHomeDataOptions {
     country?: string | null;
+    isAuthenticated?: boolean;
     initialSuggestions?: HomepageResponse;
     initialLists?: PaginatedUserListList;
 }
 
 export function useHomeData({
     country,
+    isAuthenticated = false,
     initialSuggestions,
     initialLists,
 }: UseHomeDataOptions = {}) {
@@ -34,6 +36,7 @@ export function useHomeData({
         source_fields: HOME_LIST_SOURCE_FIELDS,
         country: country ?? undefined,
     }, {
+        enabled: isAuthenticated,
         initialData: initialLists,
     });
     const createListMutation = useCreateListMutation();
@@ -77,7 +80,7 @@ export function useHomeData({
         suggestionsLoading: suggestionsQuery.isLoading,
         suggestionsError,
         lists,
-        listsLoading: listsQuery.isLoading,
+        listsLoading: isAuthenticated && listsQuery.isLoading,
         listsError,
         createList,
         isCreatingList: createListMutation.isPending,

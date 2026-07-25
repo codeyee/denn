@@ -5,8 +5,9 @@ import process from "node:process";
 import { setTimeout as delay } from "node:timers/promises";
 import { URL } from "node:url";
 
-const corePort = 18000;
-const proxyPort = 18080;
+const corePort = Number.parseInt(process.env.E2E_FIXTURE_CORE_PORT ?? "18000", 10);
+const proxyPort = Number.parseInt(process.env.E2E_FIXTURE_PROXY_PORT ?? "18080", 10);
+const appPort = Number.parseInt(process.env.E2E_APP_PORT ?? "4173", 10);
 const user = {
   id: 1,
   username: "phase0-fixture",
@@ -99,6 +100,19 @@ const contentItem = {
   current_user_tracking: null,
   created_at: now,
   source_data: movie,
+};
+const noArtworkContentItem = {
+  ...contentItem,
+  id: 2,
+  external_id: "104",
+  source_data: {
+    ...movie,
+    id: "104",
+    title: "No Artwork Movie",
+    original_title: "No Artwork Movie",
+    image_url: null,
+    images: [],
+  },
 };
 const list = {
   id: 1,
@@ -269,7 +283,7 @@ const state = {
 
 function corsHeaders(requestId) {
   return {
-    "Access-Control-Allow-Origin": "http://127.0.0.1:4173",
+    "Access-Control-Allow-Origin": `http://127.0.0.1:${appPort}`,
     "Access-Control-Allow-Credentials": "true",
     "Access-Control-Allow-Headers":
       "authorization,content-type,x-request-id,x-user-country",
@@ -318,7 +332,21 @@ function record(service, request, url, requestId) {
     path: url.pathname,
     request_id: requestId,
     consumer: request.headers["x-api-consumer"] ?? null,
+    catalog_visitor: request.headers["x-catalog-visitor"] ?? null,
   });
+}
+
+function isTrustedCatalogService(request) {
+  return (
+    request.headers["x-api-key"] === "fixture-key" &&
+    request.headers["x-api-consumer"] === "web"
+  );
+}
+
+function canReadCatalogDetail(request) {
+  if (request.headers.authorization === "Bearer fixture-access") return true;
+  const visitor = request.headers["x-catalog-visitor"] ?? "";
+  return isTrustedCatalogService(request) && /^[0-9a-f]{64}$/.test(visitor);
 }
 
 const core = createServer(async (request, response) => {
@@ -685,6 +713,9 @@ const core = createServer(async (request, response) => {
     return json(response, 200, state.tracking, headers);
   }
   if (url.pathname === "/api/content/1/") {
+    if (!canReadCatalogDetail(request)) {
+      return json(response, 403, { detail: "fixture catalog visitor required" }, headers);
+    }
     if (state.detailDelayMs > 0) {
       await delay(state.detailDelayMs);
     }
@@ -708,10 +739,21 @@ const core = createServer(async (request, response) => {
       headers,
     );
   }
+  if (url.pathname === "/api/content/2/") {
+    if (!canReadCatalogDetail(request)) {
+      return json(response, 403, { detail: "fixture catalog visitor required" }, headers);
+    }
+    return json(response, 200, noArtworkContentItem, headers);
+  }
   if (
     url.pathname === "/api/content/resolve-ids/" &&
     request.method === "POST"
   ) {
+    const isAuthenticated =
+      request.headers.authorization === "Bearer fixture-access";
+    if (!isTrustedCatalogService(request) && !isAuthenticated) {
+      return json(response, 403, { detail: "fixture catalog access denied" }, headers);
+    }
     const body = await readJson(request);
     return json(
       response,

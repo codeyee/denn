@@ -6,9 +6,7 @@ import { getSourceApi } from "@/lib/utils/contentTypeUtils";
 export function useContentCardModal(item: Content) {
   const [isOpen, setIsOpen] = useState(false);
 
-  const openModal = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const openModal = useCallback(() => {
     setIsOpen(true);
   }, []);
 

@@ -4,8 +4,6 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Noise } from "@/components/common/Noise";
 import { ResponsiveMedia } from "@/components/common/media/ResponsiveMedia";
 import { Content } from "@/lib/types";
-import { ContentType } from "@/lib/types";
-import { contentItemActions } from "@/lib/api";
 import { navigateToContentById } from "@/lib/utils/navigationUtils";
 import { useSettings } from "@/hooks/useSettings";
 import { useBannerAutoRotation } from "./hooks/useBannerAutoRotation";
@@ -26,7 +24,9 @@ export function FeaturedBanner({ items, autoRotateMs = 5000 }: FeaturedBannerPro
   const autoplayAvailable = settings.animationsEnabled && !shouldReduceMotion;
 
   const validItems = useMemo(
-    () => items.filter((i) => Boolean(getBestImageUrl(i))),
+    () => items.filter((item) =>
+      Boolean(item.denn_id && getBestImageUrl(item)),
+    ),
     [items]
   );
 
@@ -37,19 +37,8 @@ export function FeaturedBanner({ items, autoRotateMs = 5000 }: FeaturedBannerPro
     interactionPaused,
   });
 
-  const handleViewDetails = async (item: Content) => {
-    const contentType = item.type as ContentType;
-    const externalId = String(item.id);
-    try {
-      if (item.denn_id) {
-        navigateToContentById(navigate, item.denn_id);
-        return;
-      }
-      const resolved = await contentItemActions.getOrCreate(externalId, contentType);
-      navigateToContentById(navigate, resolved.id);
-    } catch (error) {
-      console.error("Failed to resolve content for navigation:", error);
-    }
+  const handleViewDetails = (item: Content) => {
+    if (item.denn_id) navigateToContentById(navigate, item.denn_id);
   };
 
   if (validItems.length === 0) return null;

@@ -21,9 +21,10 @@ Start here, then read in this order:
 5. [`adr/0001-external-metadata-integration.md`](./adr/0001-external-metadata-integration.md)
 6. [`adr/0002-web-auth-cookies.md`](./adr/0002-web-auth-cookies.md)
 7. [`adr/0003-migrate-web-from-nextjs-to-tanstack-start.md`](./adr/0003-migrate-web-from-nextjs-to-tanstack-start.md)
-8. [`contracts/internal-http.md`](./contracts/internal-http.md)
-9. [`observability.md`](./observability.md)
-10. [`workspace-operating-model.md`](./workspace-operating-model.md)
+8. [`adr/0004-public-catalog-auth-boundary.md`](./adr/0004-public-catalog-auth-boundary.md)
+9. [`contracts/internal-http.md`](./contracts/internal-http.md)
+10. [`observability.md`](./observability.md)
+11. [`workspace-operating-model.md`](./workspace-operating-model.md)
 
 ## Practical Usage Flow
 

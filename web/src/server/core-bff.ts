@@ -7,6 +7,7 @@ import {
   generateRequestId,
   normalizeRequestId,
 } from "@/server/proxy";
+import { buildCatalogVisitorHeaders } from "@/server/catalog-visitor";
 
 export function buildCoreUrl(
   baseUrl: string,
@@ -68,15 +69,25 @@ export async function forwardCoreRequest(
     normalizeRequestId(request.headers.get("x-request-id")) ??
     generateRequestId();
 
-  const isPublic = isPublicCoreRequest(request.method, upstreamPath);
   let access = getAccessToken();
-  if (isPublic) {
+  if (PUBLIC_AUTH_PATHS.has(upstreamPath)) {
+    const response = await callCore(
+      target,
+      request,
+      body,
+      null,
+      requestId,
+    );
+    return copyCoreResponse(response, requestId);
+  }
+  if (isPublicCoreRequest(request.method, upstreamPath)) {
     return forwardPublicCoreRead({
       target,
       request,
       body,
       requestId,
       access,
+      upstreamPath,
     });
   }
   if (!access) access = await refreshAuthCookies();
@@ -98,12 +109,14 @@ async function forwardPublicCoreRead({
   body,
   requestId,
   access,
+  upstreamPath,
 }: {
   target: string;
   request: Request;
   body: ArrayBuffer | undefined;
   requestId: string;
   access: string | null;
+  upstreamPath: string;
 }) {
   if (!access) {
     try {
@@ -113,7 +126,14 @@ async function forwardPublicCoreRead({
     }
   }
 
-  let response = await callCore(target, request, body, access, requestId);
+  let response = await callPublicCore(
+    target,
+    request,
+    body,
+    access,
+    requestId,
+    upstreamPath,
+  );
   if (response.status === 401 && access) {
     try {
       access = await refreshAuthCookies();
@@ -121,13 +141,49 @@ async function forwardPublicCoreRead({
       access = null;
     }
     if (access) {
-      response = await callCore(target, request, body, access, requestId);
+      response = await callPublicCore(
+        target,
+        request,
+        body,
+        access,
+        requestId,
+        upstreamPath,
+      );
     }
   }
   if (response.status === 401) {
-    response = await callCore(target, request, body, null, requestId);
+    response = await callPublicCore(
+      target,
+      request,
+      body,
+      null,
+      requestId,
+      upstreamPath,
+    );
   }
   return copyCoreResponse(response, requestId);
+}
+
+async function callPublicCore(
+  target: string,
+  request: Request,
+  body: ArrayBuffer | undefined,
+  access: string | null,
+  requestId: string,
+  upstreamPath: string,
+) {
+  const additionalHeaders =
+    !access && isPublicContentDetailRequest(request.method, upstreamPath)
+      ? await buildCatalogVisitorHeaders()
+      : {};
+  return callCore(
+    target,
+    request,
+    body,
+    access,
+    requestId,
+    additionalHeaders,
+  );
 }
 
 async function copyCoreResponse(response: Response, requestId: string) {
@@ -149,11 +205,13 @@ async function callCore(
   body: ArrayBuffer | undefined,
   access: string | null,
   requestId: string,
+  additionalHeaders: Record<string, string> = {},
 ) {
   const headers: Record<string, string> = {
     "Content-Type":
       request.headers.get("content-type") ?? "application/json",
     "X-Request-Id": requestId,
+    ...additionalHeaders,
   };
   if (access) headers.Authorization = `Bearer ${access}`;
   const country = request.headers.get("x-user-country");
@@ -176,14 +234,23 @@ const PUBLIC_AUTH_PATHS = new Set([
 const PUBLIC_READ_PATTERNS = [
   /^profiles\/(?!me(?:\/|$))[a-zA-Z0-9._-]+\/$/,
   /^profiles\/(?!me(?:\/|$))[a-zA-Z0-9._-]+\/(?:completed|ratings|lists)\/$/,
-  /^content\/\d+\/$/,
-  /^content\/lists\/\d+\/$/,
+  /^content\/[1-9]\d*\/$/,
+  /^content\/lists\/[1-9]\d*\/$/,
 ];
 
 export function isPublicCoreRequest(method: string, path: string) {
   if (PUBLIC_AUTH_PATHS.has(path)) return true;
-  if (method !== "GET" && method !== "HEAD") return false;
+  const normalizedMethod = method.toUpperCase();
+  if (normalizedMethod !== "GET" && normalizedMethod !== "HEAD") return false;
   return PUBLIC_READ_PATTERNS.some((pattern) => pattern.test(path));
+}
+
+export function isPublicContentDetailRequest(method: string, path: string) {
+  const normalizedMethod = method.toUpperCase();
+  return (
+    (normalizedMethod === "GET" || normalizedMethod === "HEAD") &&
+    /^content\/[1-9]\d*\/$/.test(path)
+  );
 }
 
 function expiredResponse(requestId: string) {

@@ -5,9 +5,10 @@ import { getCookie } from "@tanstack/react-start/server";
 import { AUTH_ACCESS_COOKIE } from "@/lib/auth/constants";
 import { getApiUrl, getProxyApiUrl } from "@/lib/env";
 import type { SessionSnapshot } from "@/server/session";
+import { resolveCatalogContentIds } from "@/server/catalog";
+import { buildCatalogVisitorHeaders } from "@/server/catalog-visitor";
 import { buildProxyHeaders, getLogicalRequestId } from "@/server/proxy";
 import {
-  ContentType,
   type ContentItem,
   type HomepageResponse,
   type ListStatsResponse,
@@ -22,13 +23,8 @@ import {
   type PublicProfileOverview,
   type PublicProfileTabData,
   type PublicRatingItem,
-  type SearchItem,
   type UserListDetail,
 } from "@/lib/types";
-import {
-  getSourceApi,
-  normalizeContentType,
-} from "@/lib/utils/contentTypeUtils";
 import type { ListItemQuery } from "@/lib/types/listView";
 import {
   HOME_LIST_FIELDS,
@@ -56,99 +52,109 @@ export function getServerQueryClient() {
   });
 }
 
-export async function prefetchHomeQueries(
-  qc: QueryClient,
-  session: SessionSnapshot,
-  country: string | null,
-) {
-  const accessToken = getServerAccessToken(session);
-  if (!accessToken) return undefined;
+export const prefetchHomeQueries = createIsomorphicFn()
+  .server(async (
+    qc: QueryClient,
+    session: SessionSnapshot,
+    country: string | null,
+  ) => {
+    const accessToken = getServerAccessToken(session);
+    const listParams = homeListParams(country);
+    const requestId = getLogicalRequestId();
 
-  const listParams = homeListParams(country);
-  const requestId = getLogicalRequestId();
+    const queries = [
+      qc.prefetchQuery({
+        queryKey: queryKeys.suggestions.byParams({
+          limit: SUGGESTIONS_PAGE_SIZE,
+          country,
+        }),
+        queryFn: () =>
+          fetchServerSuggestions(country, requestId),
+      }),
+    ];
 
-  await Promise.allSettled([
-    qc.prefetchQuery({
-      queryKey: queryKeys.suggestions.byParams({
-        limit: SUGGESTIONS_PAGE_SIZE,
+    if (accessToken) {
+      queries.push(qc.prefetchQuery({
+        queryKey: queryKeys.lists.list(listParams),
+        queryFn: () =>
+          fetchServerUserLists(accessToken, listParams, requestId),
+      }));
+    }
+
+    await Promise.allSettled(queries);
+  })
+  .client(async () => undefined);
+
+export const prefetchSearchQuery = createIsomorphicFn()
+  .server(async (
+    qc: QueryClient,
+    session: SessionSnapshot,
+    query: string,
+    country: string | null,
+  ) => {
+    const trimmedQuery = query.trim();
+    if (!trimmedQuery) return;
+    const requestId = getLogicalRequestId();
+    const allowAdult = session.user?.allow_adult_content ?? false;
+
+    await qc.prefetchQuery({
+      queryKey: queryKeys.search.multi({
+        query: trimmedQuery,
+        limit: SEARCH_RESULT_LIMIT,
         country,
+        allowAdult,
       }),
       queryFn: () =>
-        fetchServerSuggestions(accessToken, country, requestId),
-    }),
-    qc.prefetchQuery({
-      queryKey: queryKeys.lists.list(listParams),
-      queryFn: () =>
-        fetchServerUserLists(accessToken, listParams, requestId),
-    }),
-  ]);
-}
+        fetchServerSearch(
+          trimmedQuery,
+          country,
+          requestId,
+          allowAdult,
+        ),
+    });
+  })
+  .client(async () => undefined);
 
-export async function prefetchSearchQuery(
-  qc: QueryClient,
-  session: SessionSnapshot,
-  query: string,
-  country: string | null,
-) {
-  const trimmedQuery = query.trim();
-  const accessToken = getServerAccessToken(session);
-  if (!accessToken || !trimmedQuery) return;
-  const requestId = getLogicalRequestId();
-  const allowAdult = session.user?.allow_adult_content ?? false;
+export const prefetchContentDetailQueries = createIsomorphicFn()
+  .server(async (
+    qc: QueryClient,
+    session: SessionSnapshot,
+    contentId: number,
+    country: string | null,
+  ) => {
+    const accessToken = getServerAccessToken(session);
+    const requestId = getLogicalRequestId();
+    const viewerId =
+      accessToken && session.user?.id
+        ? session.user.id
+        : "anonymous";
 
-  await qc.prefetchQuery({
-    queryKey: queryKeys.search.multi({
-      query: trimmedQuery,
-      limit: SEARCH_RESULT_LIMIT,
-      country,
-      allowAdult,
-    }),
-    queryFn: () =>
-      fetchServerSearch(
-        accessToken,
-        trimmedQuery,
-        country,
-        requestId,
-        allowAdult,
-      ),
-  });
-}
-
-export async function prefetchContentDetailQueries(
-  qc: QueryClient,
-  session: SessionSnapshot,
-  contentId: number,
-  country: string | null,
-) {
-  const accessToken = getServerAccessToken(session);
-  const requestId = getLogicalRequestId();
-  const viewerId = session.user?.id ?? "anonymous";
-
-  const contentItem = await qc.fetchQuery({
-    queryKey: queryKeys.contentDetail.byId(
-      contentId,
-      viewerId,
-      country ?? undefined,
-    ),
-    queryFn: () =>
-      fetchServerContentDetail(
-        accessToken,
+    const contentItem = await qc.fetchQuery({
+      queryKey: queryKeys.contentDetail.byId(
         contentId,
-        country,
-        requestId,
+        viewerId,
+        country ?? undefined,
       ),
-    retry: false,
-    staleTime: 5 * 60_000,
-  });
+      queryFn: () =>
+        fetchServerContentDetail(
+          accessToken,
+          contentId,
+          country,
+          requestId,
+        ),
+      retry: false,
+      staleTime: 5 * 60_000,
+    });
 
-  if (session.user?.id) {
-    qc.setQueryData(
-      queryKeys.ratings.byUser(contentItem.id, session.user.id),
-      contentItem.current_user_rating,
-    );
-  }
-  return contentItem;
-}
+    if (viewerId !== "anonymous") {
+      qc.setQueryData(
+        queryKeys.ratings.byUser(contentItem.id, viewerId),
+        contentItem.current_user_rating,
+      );
+    }
+    return contentItem;
+  })
+  .client(async () => undefined);
 
 export async function prefetchPublicProfileQueries(
   qc: QueryClient,
@@ -264,48 +270,50 @@ export async function prefetchPublicListQuery(
   });
 }
 
-export async function prefetchListDetailQueries(
-  qc: QueryClient,
-  session: SessionSnapshot,
-  listId: number,
-  query: ListItemQuery,
-  country: string | null,
-) {
-  const accessToken = getServerAccessToken(session);
-  if (!accessToken) return;
+export const prefetchListDetailQueries = createIsomorphicFn()
+  .server(async (
+    qc: QueryClient,
+    session: SessionSnapshot,
+    listId: number,
+    query: ListItemQuery,
+    country: string | null,
+  ) => {
+    const accessToken = getServerAccessToken(session);
+    if (!accessToken) return;
 
-  const options = listItemsOptions(query, country);
-  const requestId = getLogicalRequestId();
+    const options = listItemsOptions(query, country);
+    const requestId = getLogicalRequestId();
 
-  await Promise.allSettled([
-    qc.prefetchQuery({
-      queryKey: queryKeys.lists.detail(listId, LIST_DETAIL_METADATA_PARAMS),
-      queryFn: () =>
-        fetchServerListMetadata(accessToken, listId, requestId),
-    }),
-    qc.prefetchQuery({
-      queryKey: queryKeys.lists.stats(listId),
-      queryFn: () =>
-        fetchServerListStats(accessToken, listId, requestId),
-    }),
-    qc.prefetchQuery({
-      queryKey: queryKeys.listItems.page(listId, {
-        page: query.page,
-        pageSize: query.pageSize,
-        options,
+    await Promise.allSettled([
+      qc.prefetchQuery({
+        queryKey: queryKeys.lists.detail(listId, LIST_DETAIL_METADATA_PARAMS),
+        queryFn: () =>
+          fetchServerListMetadata(accessToken, listId, requestId),
       }),
-      queryFn: () =>
-        fetchServerListItems(
-          accessToken,
-          listId,
-          query.page,
-          query.pageSize,
+      qc.prefetchQuery({
+        queryKey: queryKeys.lists.stats(listId),
+        queryFn: () =>
+          fetchServerListStats(accessToken, listId, requestId),
+      }),
+      qc.prefetchQuery({
+        queryKey: queryKeys.listItems.page(listId, {
+          page: query.page,
+          pageSize: query.pageSize,
           options,
-          requestId,
-        ),
-    }),
-  ]);
-}
+        }),
+        queryFn: () =>
+          fetchServerListItems(
+            accessToken,
+            listId,
+            query.page,
+            query.pageSize,
+            options,
+            requestId,
+          ),
+      }),
+    ]);
+  })
+  .client(async () => undefined);
 
 function getServerAccessToken(session: SessionSnapshot) {
   if (!session.isAuthenticated) return null;
@@ -385,15 +393,15 @@ async function fetchJson<T>(
 }
 
 function coreHeaders(accessToken: string | null, requestId: string) {
-  return {
-    ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+  const headers: Record<string, string> = {
     "Content-Type": "application/json",
     "X-Request-Id": requestId,
   };
+  if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+  return headers;
 }
 
 async function fetchServerSuggestions(
-  accessToken: string,
   country: string | null,
   requestId: string,
 ) {
@@ -411,11 +419,10 @@ async function fetchServerSuggestions(
       route: "/v1/proxy/homepage",
     },
   );
-  return resolveServerContentIds(accessToken, response, country, requestId);
+  return resolveCatalogContentIds(response, country, requestId);
 }
 
 async function fetchServerSearch(
-  accessToken: string,
   query: string,
   country: string | null,
   requestId: string,
@@ -439,89 +446,7 @@ async function fetchServerSearch(
       route: "/v1/proxy/search",
     },
   );
-  return resolveServerContentIds(accessToken, response, country, requestId);
-}
-
-type ResolvableServerContent = SearchItem;
-
-interface BulkResolvedIdentity {
-  id: number;
-  external_id: string;
-  content_type: ContentType;
-}
-
-async function resolveServerContentIds<
-  T extends HomepageResponse | MultiSearchResponse,
->(
-  accessToken: string,
-  response: T,
-  country: string | null,
-  requestId: string,
-): Promise<T> {
-  const unique = new Map<
-    string,
-    { item: ResolvableServerContent; contentType: ContentType }
-  >();
-  for (const category of Object.values(response)) {
-    for (const item of category.results) {
-      const contentType = normalizeContentType(item.type);
-      if (!contentType || contentType === ContentType.PERSON) continue;
-      unique.set(`${contentType}:${item.id}`, { item, contentType });
-    }
-  }
-  const items = [...unique.values()];
-  if (items.length === 0) return response;
-
-  const params = new URLSearchParams();
-  if (country) params.set("country", country);
-  const resolved = await fetchJson<{ results: BulkResolvedIdentity[] }>(
-    coreRequestUrl(`/content/resolve-ids/${params.size ? `?${params}` : ""}`),
-    {
-      method: "POST",
-      headers: coreHeaders(accessToken, requestId),
-      body: JSON.stringify({
-        items: items.map(({ item, contentType }) => ({
-          source_api: getSourceApi(contentType),
-          external_id: String(item.id),
-          content_type: contentType,
-        })),
-      }),
-    },
-    {
-      requestId,
-      targetService: "core",
-      route: "/api/content/resolve-ids/",
-    },
-  );
-  const ids = new Map(
-    resolved.results.map((item) => [
-      `${item.content_type}:${item.external_id}`,
-      item.id,
-    ]),
-  );
-
-  return Object.fromEntries(
-    Object.entries(response).map(([key, rawCategory]) => {
-      const category = rawCategory as {
-        results: ResolvableServerContent[];
-      };
-      return [
-      key,
-      {
-        ...category,
-        results: category.results.map((item) => {
-          const contentType = normalizeContentType(item.type);
-          return {
-            ...item,
-            denn_id: contentType
-              ? ids.get(`${contentType}:${item.id}`)
-              : undefined,
-          };
-        }),
-      },
-      ];
-    }),
-  ) as unknown as T;
+  return resolveCatalogContentIds(response, country, requestId);
 }
 
 async function fetchServerUserLists(
@@ -552,13 +477,17 @@ async function fetchServerContentDetail(
 ) {
   const params = new URLSearchParams();
   if (country) params.set("country", country);
+  const headers = accessToken
+    ? coreHeaders(accessToken, requestId)
+    : {
+        ...coreHeaders(null, requestId),
+        ...await buildCatalogVisitorHeaders(),
+      };
 
   return fetchJson<ContentItem>(
-    coreRequestUrl(
-      `/content/${contentId}/${params.toString() ? `?${params}` : ""}`,
-    ),
+    `${getApiUrl()}/content/${contentId}/${params.toString() ? `?${params}` : ""}`,
     {
-      headers: coreHeaders(accessToken, requestId),
+      headers,
       signal: AbortSignal.timeout(CONTENT_DETAIL_REQUEST_TIMEOUT_MS),
     },
     {

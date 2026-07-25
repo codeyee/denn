@@ -3,6 +3,7 @@ import { dirname, resolve } from "node:path";
 import type { BrowserContext, Page } from "@playwright/test";
 
 import { test, expect } from "./support/test";
+import { fixtureUrl } from "./support/fixture";
 
 interface Sample {
   ttfb: number;
@@ -19,15 +20,17 @@ interface Summary {
   p95: Sample;
 }
 
-const fixtureUrl = "http://127.0.0.1:18000";
 const flows = {
-  login: "/login",
-  home: "/",
-  search: "/search?q=phase",
-  detail: "/content/1",
-  lists: "/lists/1",
-  publicProfile: "/user/phase0-fixture",
-  privateProfile: "/profile",
+  login: { path: "/login", authenticated: false },
+  publicHome: { path: "/", authenticated: false },
+  publicSearch: { path: "/search?q=phase", authenticated: false },
+  publicDetail: { path: "/content/1", authenticated: false },
+  publicProfile: { path: "/user/phase0-fixture", authenticated: false },
+  home: { path: "/", authenticated: true },
+  search: { path: "/search?q=phase", authenticated: true },
+  detail: { path: "/content/1", authenticated: true },
+  lists: { path: "/lists/1", authenticated: true },
+  privateProfile: { path: "/profile", authenticated: true },
 };
 
 async function installObservers(page: Page) {
@@ -150,20 +153,18 @@ test("records a repeatable cold/warm production-build baseline", async ({
     { cold: Summary; warm: Summary }
   > = {};
 
-  for (const [flow, path] of Object.entries(flows)) {
+  for (const [flow, { path, authenticated }] of Object.entries(flows)) {
     const cold: Sample[] = [];
     const warm: Sample[] = [];
 
     for (let iteration = 0; iteration < 5; iteration += 1) {
-      if (flow === "home") {
+      if (flow === "home" || flow === "publicHome") {
         await request.post(`${fixtureUrl}/__fixture__/scenario`, {
           data: { cacheStatus: "MISS" },
         });
       }
       const context = await browser.newContext();
-      if (flow !== "login" && flow !== "publicProfile") {
-        await addAuthCookies(context);
-      }
+      if (authenticated) await addAuthCookies(context);
       const page = await context.newPage();
       await installObservers(page);
       cold.push(await capture(page, path));
@@ -201,4 +202,8 @@ test("records a repeatable cold/warm production-build baseline", async ({
     expect(baseline[flow].cold.p75.cls).toBeLessThan(0.1);
     expect(baseline[flow].warm.p75.cls).toBeLessThan(0.1);
   }
+  expect(baseline.publicHome.cold.p75.lcp).toBeLessThan(2_500);
+  expect(baseline.publicHome.warm.p75.lcp).toBeLessThan(2_500);
+  expect(baseline.publicHome.cold.p75.cls).toBeLessThan(0.1);
+  expect(baseline.publicHome.warm.p75.cls).toBeLessThan(0.1);
 });

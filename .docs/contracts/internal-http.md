@@ -12,6 +12,7 @@ web (browser)   → web BFF (/api/proxy/*)  → proxy (/v1/proxy/*)
 web (browser)   → web BFF (/api/core/*)   → core (/api/*)
 web (browser)   → web BFF (/api/auth/*)   → core auth (/api/auth/*)
 web (server)    → proxy   (/v1/proxy/*)
+web (server)    → core    (/api/content/resolve-ids/)
 core            → proxy   (/v1/proxy/*)   [enriquecimiento de ContentItem]
 ```
 
@@ -25,8 +26,9 @@ core            → proxy   (/v1/proxy/*)   [enriquecimiento de ContentItem]
 |-------------------|--------------------|--------------|----------------|-------|
 | `Authorization: Bearer <jwt>` | `web` server-only | `core` | Requerido en endpoints autenticados de `core` | El BFF/SSR lo obtiene de cookies `HttpOnly`; nunca lo construuye JavaScript del navegador. |
 | `X-CSRF-Token` | navegador | `web` BFF | Requerido en POST/PUT/PATCH/DELETE | Debe coincidir con la cookie no-HttpOnly `csrf-token`; además se validan origen y `Sec-Fetch-Site`. |
-| `X-Api-Key`       | `web` (server-only), `core` | `proxy` | Requerido en `/v1/proxy/*` excepto `/health` | API key compartida del proxy. **Nunca viaja al navegador.** |
-| `X-Api-Consumer`  | `web` (server-only), `core` | `proxy` | Requerido por convención interna | Valor acotado `web` o `core`; permite separar latencia/cache sin identidad de usuario. |
+| `X-Api-Key`       | `web` (server-only), `core` | `proxy`; `core` en contratos confiables de catálogo | Requerido en `/v1/proxy/*` excepto `/health`; autentica `web` ante el resolver bulk y la identidad opaca de visitante del detalle público | API key compartida del proxy. **Nunca viaja al navegador.** |
+| `X-Api-Consumer`  | `web` (server-only), `core` | `proxy`; `core` en contratos confiables de catálogo | Requerido por convención interna | Valor acotado `web` o `core`; permite separar tráfico interno sin identidad de usuario. Los contratos de catálogo sólo aceptan el consumidor `web`. |
+| `X-Catalog-Visitor` | `web` (server-only) | `core` | Requerido para detalle público servido por `web` sin JWT | Fingerprint HMAC opaco de 64 caracteres derivado de una cookie `HttpOnly` firmada. Sólo se acepta junto con la credencial confiable de `web`; nunca contiene ni expone la IP. |
 | `Authorization: Bearer <api-key>` | (alternativa a `X-Api-Key`) | `proxy` | Opcional | Soportado por el proxy; preferir `X-Api-Key` para no confundir con el JWT de usuario. |
 | `X-User-Country`  | `web`, `core`      | `proxy` | Opcional | ISO-3166 alpha-2. Por defecto `US` en `proxy`. |
 | `X-Request-Id`    | cualquiera         | todos   | Opcional (entrada) / generado por middleware si falta | Ver §5. |
@@ -55,6 +57,15 @@ configure explícitamente otro alcance.
 
 La cookie `csrf-token` sí es legible por el navegador y sólo se usa para
 doble envío. No es una credencial de sesión.
+
+Las lecturas públicas `GET /api/core/content/<id>/` se reenvían sin JWT
+si no existe sesión. El BFF asigna una cookie opaca `HttpOnly` firmada y
+envía su fingerprint como `X-Catalog-Visitor` dentro del request
+autenticado `web -> core`; el navegador no controla ni observa esos
+headers internos. Cualquier mutación de listas, ratings o contenido
+sigue el camino autenticado. Homepage/search resuelven ids estables
+server-side; ni `X-Api-Key` ni la URL interna de `core` aparecen en
+requests del navegador.
 
 ## 3. Sobre canónico de errores
 
@@ -201,12 +212,18 @@ Reglas duras:
 
 ## 9. Resolución masiva de identidad de contenido
 
-`POST /api/content/resolve-ids/` es el contrato autenticado para que
-`web` convierta resultados de discovery en ids internos antes de
-renderizar enlaces.
+`POST /api/content/resolve-ids/` es el contrato confiable para que `web`
+convierta resultados de discovery en ids internos antes de renderizar
+enlaces.
 
 - Acepta como máximo 100 elementos únicos por
   `(content_type, external_id, source)`.
+- Autoriza un JWT de usuario válido o la combinación server-only
+  `X-Api-Key: <PROXY_API_KEY>` + `X-Api-Consumer: web`.
+- Un navegador anónimo sin esa credencial recibe `401`; el BFF público
+  no reenvía este `POST`.
+- Aplica límites burst y sustained específicos al usuario o consumidor
+  de servicio; los usuarios conservan el máximo histórico de 1,000/día.
 - Sólo acepta identidad. Ignora campos adicionales y nunca persiste
   metadata de proveedor suministrada por el navegador.
 - La operación es idempotente, conserva el orden de entrada y devuelve
@@ -216,6 +233,25 @@ renderizar enlaces.
 - Hover, focus y navegación nunca deben llamar
   `POST /api/content/get-or-create/`; esas interacciones son lecturas
   puras contra el id ya resuelto.
+
+## 9.1 Detalle público id-first
+
+`GET /api/content/<id>/` permite lectura anónima y autenticada.
+
+- Conserva el camino local-first y la hidratación confiable
+  `core -> proxy`.
+- Una respuesta anónima incluye metadata y agregados, pero
+  `current_user_rating` es siempre `null`.
+- Una respuesta autenticada puede incluir sólo el rating del usuario
+  actual.
+- Usuarios autenticados conservan su bucket de 1,000 lecturas/día.
+- Visitantes servidos por `web` conservan el límite anónimo de 100/día,
+  pero cada cookie firmada usa un bucket separado. Core sólo confía en
+  el fingerprint si también valida `X-Api-Key` y
+  `X-Api-Consumer: web`.
+- Tráfico anónimo que llega directamente a `core` ignora cualquier
+  `X-Catalog-Visitor` no autenticado y usa el bucket por IP.
+- No abre endpoints de listas, ratings o búsqueda de usuarios.
 
 ## 10. Presupuestos y caché de agregados de discovery
 

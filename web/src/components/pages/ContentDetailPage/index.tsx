@@ -22,30 +22,38 @@ import {
   useSetTrackingStatusMutation,
 } from "@/lib/api/mutations";
 import type { TrackingStatus } from "@/lib/types";
+import { useAuthRequiredAction } from "@/hooks/useAuthRequiredAction";
 
 interface ContentDetailPageProps {
   contentId: number;
   country?: string | null;
   initialContentItem?: ContentItem;
+  isAuthenticated: boolean;
+  viewerId?: number;
 }
 
 export function ContentDetailPage({
   contentId,
   country,
   initialContentItem,
+  isAuthenticated,
+  viewerId,
 }: ContentDetailPageProps) {
   const { user } = useAuthStore();
+  const activeUser = isAuthenticated ? user : null;
+  const requireAuth = useAuthRequiredAction(isAuthenticated);
 
   const { loading, error, contentItem, detailData, tvShowTitle, retry } =
     useContentData({
       contentId,
       country: country ?? undefined,
       initialData: initialContentItem,
+      viewerId,
     });
 
   const rating = useUserRating({
     contentItem,
-    user
+    user: activeUser,
   });
 
   const modals = useContentModals();
@@ -127,9 +135,9 @@ export function ContentDetailPage({
           contentItem={contentItem}
           tvShowTitle={tvShowTitle || undefined}
           userRating={rating.userRating}
-          isAuthenticated={!!user}
-          onAddToList={modals.openAddToListModal}
-          onRateContent={modals.openRatingModal}
+          isAuthenticated={isAuthenticated}
+          onAddToList={() => requireAuth(modals.openAddToListModal)}
+          onRateContent={() => requireAuth(modals.openRatingModal)}
           tracking={contentItem.current_user_tracking ?? null}
           isTrackingLoading={isTrackingLoading}
           onTrackingStatusChange={(status) => {
@@ -152,20 +160,20 @@ export function ContentDetailPage({
           detailData={detailData}
           contentItem={contentItem}
           userRating={rating.userRating}
-          user={user}
+          user={activeUser}
           isRatingLoading={rating.isRatingLoading}
           onEditRating={modals.openRatingModal}
           onDeleteRating={rating.handleDeleteRating}
         />
 
-        {contentItem.content_type !== ContentType.SEASON && (
+        {activeUser && contentItem.content_type !== ContentType.SEASON && (
           <RatingsSection
             contentItem={contentItem}
             userRating={rating.userRating}
             onEditRating={modals.openRatingModal}
             onDeleteRating={rating.handleDeleteRating}
             isRatingLoading={rating.isRatingLoading}
-            user={user}
+            user={activeUser}
           />
         )}
 
@@ -189,7 +197,7 @@ export function ContentDetailPage({
         <Footer />
       </div>
 
-      {user && (
+      {activeUser && (
         <RatingModal
           isOpen={modals.isRatingModalOpen}
           onOpenChange={modals.setIsRatingModalOpen}
@@ -200,7 +208,7 @@ export function ContentDetailPage({
         />
       )}
 
-      {user && contentItem && (
+      {activeUser && contentItem && (
         <AddToListModal
           isOpen={modals.isAddToListModalOpen}
           onOpenChange={modals.setIsAddToListModalOpen}

@@ -34,11 +34,18 @@ export function useAuth() {
   );
 
   const handleRegister = useCallback(
-    async (username: string, email: string, password: string) => {
+    async (
+      username: string,
+      email: string,
+      password: string,
+      next?: string,
+    ) => {
       try {
         await register(username, email, password);
         await router.invalidate();
-        await navigate({ to: "/" });
+        await navigate({
+          to: normalizeInternalRedirectTarget(next) ?? "/",
+        });
       } catch (error) {
         console.error("Registration error:", error);
       }

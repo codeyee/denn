@@ -6,6 +6,10 @@
   [`../architecture/current-state.md`](../architecture/current-state.md),
   [`../technical-debt.md`](../technical-debt.md) y
   [`../history/implementation-history.md`](../history/implementation-history.md)
+- Refinado el 2026-07-24 por
+  [`0004-public-catalog-auth-boundary.md`](./0004-public-catalog-auth-boundary.md):
+  discovery público sigue en `web -> proxy`, mientras el detalle
+  id-first persistido se lee públicamente por `web BFF -> core`.
 
 ## Contexto
 
@@ -37,12 +41,17 @@ El problema a resolver era estructural: la topología nunca fue una decisión, f
 
 **Se formaliza el modelo híbrido con contratos explícitos**, así:
 
-1. `web → proxy` es la ruta canónica para **toda metadata externa lectura-pública** (búsqueda, homepage, detalle).
+1. `web → proxy` es la ruta canónica para **discovery de metadata
+   externa lectura-pública** (búsqueda y homepage).
    - Desde el navegador: siempre vía la ruta BFF [`/api/proxy/*`](../../web/src/routes/api/proxy/$.ts) (la API key del proxy nunca se expone al cliente).
    - Desde server loaders / server functions: directo a `proxy`, con la API key inyectada server-side.
 2. `core → proxy` se mantiene **sólo para enriquecimiento de entidades persistidas** (poblar `ContentItem.source_data`, `browse_metadata`). No para servir respuestas de búsqueda al frontend.
 3. `web → core` se reserva para **dominio del usuario**: auth, lists, items, ratings, invitations.
 4. `core` **no expone** rutas de metadata externa al frontend (no `/api/proxy/...` en Django). Si el frontend necesita datos enriquecidos por dominio (e.g. una list-item con su `source_data`), `core` los compone server-side.
+
+El refinamiento de ADR 0004 hace público el detalle id-first persistido
+de `core`; no convierte a Django en gateway genérico ni permite
+búsquedas de proveedor a través de `core`.
 
 Las dos flechas con `proxy` (`web → proxy` y `core → proxy`) son legítimas y distintas: una es para servir, la otra para persistir. Ambas comparten el mismo contrato HTTP y la misma API key, pero con responsabilidades separadas.
 

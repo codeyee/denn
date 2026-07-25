@@ -3,7 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import { contentItemActions } from "@/lib/api";
 import { queryKeys } from "./keys";
 import type { ContentItem } from "@/lib/types";
-import { useAuthStore } from "@/stores/auth-store";
 
 /**
  * Fetch a single ContentItem (by internal id) with its `source_data`
@@ -19,12 +18,13 @@ export function useContentDetailQuery(
   contentId: number,
   country?: string,
   initialData?: ContentItem,
+  viewerId?: number,
 ) {
   const enabled = Number.isFinite(contentId) && contentId > 0;
-  const viewerId = useAuthStore((state) => state.user?.id ?? "anonymous");
+  const cacheViewerId = viewerId ?? "anonymous";
 
   return useQuery({
-    queryKey: queryKeys.contentDetail.byId(contentId, viewerId, country),
+    queryKey: queryKeys.contentDetail.byId(contentId, cacheViewerId, country),
     queryFn: () => contentItemActions.get(contentId, country),
     enabled,
     initialData,

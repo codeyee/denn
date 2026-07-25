@@ -4,14 +4,22 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.generics import get_object_or_404
-from django.db.models import Prefetch, Q
+from django.db.models import Q
 from django.shortcuts import redirect
 from django.urls import reverse
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiExample, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 from content.models import ContentItem, Rating, UserContentTracking
 from content.serializers import ContentItemSerializer
-from content.permissions import IsAdminOrReadOnly
+from content.permissions import (
+    IsAdminOrReadOnly,
+    IsAuthenticatedOrCatalogService,
+)
+from core.throttling import (
+    CatalogDetailRateThrottle,
+    CatalogResolveRateThrottle,
+    CatalogResolveSustainedRateThrottle,
+)
 from rest_flex_fields.views import FlexFieldsMixin
 
 
@@ -345,6 +353,7 @@ class ContentItemViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
 )
 class ContentItemDetailByIdView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [CatalogDetailRateThrottle]
 
     def get(self, request, id):
         item = get_object_or_404(
@@ -404,7 +413,11 @@ class ContentItemDetailByIdView(APIView):
     responses={200: OpenApiTypes.OBJECT},
 )
 class ContentItemBulkResolveView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedOrCatalogService]
+    throttle_classes = [
+        CatalogResolveRateThrottle,
+        CatalogResolveSustainedRateThrottle,
+    ]
 
     def post(self, request):
         import logging
