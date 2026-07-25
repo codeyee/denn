@@ -2,7 +2,9 @@
 backups/
 .workspace/
 .codex
+.playwright-cli/
 /.pnpm-store/
+web/.pnpm-store/
 
 # Agent/editor scaffolding that should not live inside services
 **/.agent/
@@ -125,6 +127,7 @@ web/out/
 web/build/
 web/.vercel/
 web/.env*
+!web/.env.example
 web/*.tsbuildinfo
 web/npm-debug.log*
 web/yarn-debug.log*

@@ -3,7 +3,8 @@
 .gitignore
 
 # Environment files (secrets injected at runtime)
-.env
+.env*
+!.env.example
 
 # IDE & editor
 .vscode

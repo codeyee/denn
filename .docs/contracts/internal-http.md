@@ -174,7 +174,7 @@ same-origin.
 | `DEBUG`                  | core      | server-only   | |
 | `ALLOWED_HOSTS`          | core      | server-only   | |
 | `DATABASE_URL`           | core      | server-only   | Cae a SQLite si falta. |
-| `REDIS_URL`              | core, proxy | server-only | El launcher inyecta uno temporal en local. |
+| `REDIS_URL`              | core, proxy | server-only | Compose inyecta `redis://redis:6379/1` en local. |
 | `CORS_ALLOWED_ORIGINS`   | core      | server-only   | |
 | `CSRF_TRUSTED_ORIGINS`   | core      | server-only   | |
 | `AUTH_COOKIE_SECURE`     | core, web | server-only   | `True`/`true` en HTTPS; sólo fixtures HTTP lo desactivan. |

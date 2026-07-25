@@ -70,15 +70,29 @@ Tags are per app and include `latest` plus a short SHA tag.
 
 ## Local Development
 
-- Use the root commands when working on the full stack together:
-  - `make check`
-  - `make up`
-  - `make status`
-  - `make logs`
-  - `make down`
-- The root launcher starts:
-  - a temporary Redis container with no persistent volume
-  - `proxy` with `go run ./cmd/api`
-  - `core` with `./.venv/bin/python manage.py runserver`
-  - `web` with `pnpm run dev`
-- `core` and `proxy` receive `REDIS_URL` from the root launcher, so local cache lives only while the stack is up.
+- `compose.local.yml` is the canonical full-stack runtime for local
+  development. It runs PostgreSQL 18, Redis, `proxy`, `core`, and `web`.
+- All published ports bind to `127.0.0.1`; service-to-service traffic
+  stays on the Compose network.
+- PostgreSQL uses the external `denn-pg-data` volume. `make down`
+  preserves it.
+- `web`, `core`, and `proxy` source trees are bind-mounted. Vite and
+  Django reload automatically; `make restart-proxy` restarts Go.
+- Root commands are the stable human/agent contract:
+  - `make check` / `make setup-local`
+  - `make up` / `make down`
+  - `make status` / `make logs` / `make doctor`
+  - `make smoke-local` / `make browser-local`
+  - `make restart-web` / `make restart-core` / `make restart-proxy`
+- Local env files remain outside Git. `make env-store` keeps one private
+  copy outside the repository and `make env-link` links new worktrees to
+  it.
+- `make browser-local` uses the real local stack and may exercise
+  provider APIs. `make e2e-web` remains deterministic, non-personal,
+  offline-safe fixture coverage for CI.
+- Agents should call the root commands directly. A Denn-specific MCP
+  wrapper is intentionally absent because it would duplicate this
+  contract and widen secret handling without adding capability.
+
+The complete procedure is
+[`runbooks/local-development.md`](./runbooks/local-development.md).

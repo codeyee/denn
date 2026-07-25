@@ -22,7 +22,8 @@ pip-delete-this-directory.txt
 
 # Project specific
 db.sqlite3
-.env
+.env*
+!.env.example
 .DS_Store
 tmp/
 coverage/

@@ -35,6 +35,10 @@ considered part of the project baseline.
   timing without user identifiers.
 - Deterministic root validation workflow via `make validate-web`,
   `make validate-core`, and `make validate-proxy`.
+- Reproducible loopback-only local Compose stack for PostgreSQL, Redis,
+  `proxy`, `core`, and `web`, with persistent snapshot data, local env
+  guardrails, service restarts, HTTP/DB smoke, real-stack Playwright,
+  and private env reuse across worktrees.
 - Local-first content detail persistence in `core` with per-type detail
   tables and proxy-shaped payload reconstruction.
 - Periodic rehydration command for persisted content details.

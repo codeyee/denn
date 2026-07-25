@@ -11,6 +11,7 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:e2e": "pnpm run build && playwright test --project=smoke-desktop --project=smoke-mobile",
+    "test:e2e:local": "playwright test --config playwright.local.config.ts",
     "test:e2e:regressions": "pnpm run build && playwright test --project=known-regressions",
     "test:e2e:performance": "pnpm run build && playwright test --project=performance",
     "test:e2e:artifact-check": "pnpm run build && E2E_VERIFY_FAILURE_ARTIFACTS=1 playwright test --project=known-regressions --grep @artifact-check"

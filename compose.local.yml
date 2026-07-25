@@ -1,0 +1,185 @@
+name: denn-local
+
+services:
+  postgres:
+    image: postgres:18
+    container_name: denn-pg
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${LOCAL_DB_NAME:?run make setup-local}
+      POSTGRES_PASSWORD: ${LOCAL_DB_PASSWORD:?run make setup-local}
+      POSTGRES_USER: ${LOCAL_DB_USER:?run make setup-local}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - denn-pg-data:/var/lib/postgresql
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${LOCAL_DB_USER} -d ${LOCAL_DB_NAME}",
+        ]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    container_name: denn-local-redis
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6390:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+
+  proxy:
+    build:
+      context: ./proxy
+      dockerfile: ../.docker/local/proxy.Dockerfile
+    container_name: denn-local-proxy
+    restart: unless-stopped
+    env_file:
+      - ./proxy/.env
+    environment:
+      CORS_ALLOW_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
+      GIN_MODE: release
+      PORT: "8080"
+      REDIS_URL: redis://redis:6379/1
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - ./proxy:/app
+      - proxy-go-build:/root/.cache/go-build
+      - proxy-go-mod:/go/pkg/mod
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://127.0.0.1:8080/v1/proxy/health",
+        ]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
+
+  core:
+    build:
+      context: ./core
+      dockerfile: ../.docker/local/core.Dockerfile
+    container_name: denn-local-core
+    restart: unless-stopped
+    env_file:
+      - ./core/.env
+    environment:
+      ALLOWED_HOSTS: localhost,127.0.0.1,core
+      AUTH_COOKIE_SECURE: "False"
+      DATABASE_URL: postgresql://${LOCAL_DB_USER}:${LOCAL_DB_PASSWORD}@postgres:5432/${LOCAL_DB_NAME}
+      DEBUG: "True"
+      PROXY_API_BASE_URL: http://proxy:8080/v1/proxy
+      REDIS_URL: redis://redis:6379/1
+    command:
+      - /bin/sh
+      - -c
+      - python manage.py migrate --noinput && exec python manage.py runserver 0.0.0.0:8000
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ./core:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      proxy:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "curl",
+          "--fail",
+          "--silent",
+          "http://127.0.0.1:8000/api/",
+        ]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
+
+  web:
+    build:
+      context: ./web
+      dockerfile: ../.docker/local/web.Dockerfile
+    container_name: denn-local-web
+    restart: unless-stopped
+    env_file:
+      - ./web/.env
+    environment:
+      __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS: web
+      API_URL: http://core:8000/api
+      AUTH_COOKIE_SECURE: "false"
+      HOST: 0.0.0.0
+      NODE_ENV: development
+      PORT: "3000"
+      PROXY_API_URL: http://proxy:8080/v1/proxy
+    command: ["pnpm", "run", "dev", "--host", "0.0.0.0"]
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - ./web:/app
+      - web-node-modules:/app/node_modules
+    depends_on:
+      core:
+        condition: service_healthy
+      proxy:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://127.0.0.1:3000/",
+        ]
+      interval: 3s
+      timeout: 5s
+      retries: 40
+      start_period: 15s
+
+  browser:
+    build:
+      context: ./web
+      dockerfile: ../.docker/local/browser.Dockerfile
+    profiles: ["tools"]
+    working_dir: /app
+    environment:
+      CI: "true"
+      LOCAL_WEB_URL: http://web:3000
+      PLAYWRIGHT_HTML_OPEN: never
+    ipc: host
+    volumes:
+      - ./web/test-results:/app/test-results
+    depends_on:
+      web:
+        condition: service_healthy
+
+volumes:
+  denn-pg-data:
+    external: true
+    name: denn-pg-data
+  proxy-go-build:
+  proxy-go-mod:
+  web-node-modules:
+    name: ${WEB_DEPS_VOLUME:?run make setup-local}

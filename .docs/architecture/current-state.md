@@ -85,6 +85,10 @@ The hybrid topology is deliberate and documented in
 - The production-build Playwright harness uses non-personal deterministic
   fixtures. Desktop smoke is a PR gate; mobile smoke, known-regression
   characterization and cold/warm baselines are repeatable root commands.
+- The separate local Playwright smoke targets a loopback-only Compose
+  stack backed by persistent PostgreSQL snapshot data. It is development
+  evidence and never replaces deterministic CI or deployed release
+  evidence.
 - Content cards and list item cards render semantic links with a known
   internal id. Hover/focus prefetch uses a pure `GET`, while click
   navigation exposes immediate pending feedback.
