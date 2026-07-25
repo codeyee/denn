@@ -265,35 +265,61 @@ The canonical contract is documented in [`.docs/contracts/internal-http.md`](./.
 
 ## Local Development
 
-Use the root workflow first:
+The full development stack runs in Docker Compose and publishes only to
+loopback:
 
 ```bash
 make check
+make setup-local
 make up
+make smoke-local
+```
+
+Open `http://127.0.0.1:3000`. PostgreSQL 18, Redis, `proxy`, `core`, and
+`web` are all local. Source is bind-mounted; Vite and Django reload
+automatically, while Go changes use `make restart-proxy`.
+
+Useful daily commands:
+
+```bash
 make status
 make logs
 make doctor
+make restart-web
+make restart-core
+make restart-proxy
+make browser-local
 make down
 ```
 
-For isolated service work:
+Create local-only `web/.env`, `core/.env`, and `proxy/.env` files from
+their examples. `make check` rejects production service/database URLs,
+secure-cookie production settings, mismatched internal keys, and public
+secret prefixes. It never prints secret values.
+
+To share those private files across Git worktrees without putting them
+in Git:
 
 ```bash
-# core (Django, port 8000)
-cd core && python3 -m venv .venv && source .venv/bin/activate \
-  && pip install -r requirements.txt \
-  && cp .env.example .env \
-  && ./.venv/bin/python manage.py migrate \
-  && ./.venv/bin/python manage.py runserver
+# Once, from the configured worktree
+make env-store
 
-# proxy (Go, port 8080)
-cd proxy && cp .env.example .env && make run
-
-# web (TanStack Start / Vite, port 3000)
-cd web && cp .env.example .env && pnpm install && pnpm run dev
+# In every additional worktree
+make env-link
 ```
 
-The canonical env-var ownership matrix lives in [`.docs/contracts/internal-http.md`](./.docs/contracts/internal-http.md). The most important rule is still: `PROXY_API_KEY` must remain server-only.
+The default private store is `~/.config/denn/local`; override it with
+`DENN_LOCAL_ENV_DIR`. The canonical env-var ownership matrix lives in
+[`.docs/contracts/internal-http.md`](./.docs/contracts/internal-http.md).
+`PROXY_API_KEY` remains server-only.
+
+`make browser-local` targets the running stack and real local snapshot.
+It is deliberately separate from `make e2e-web`, whose deterministic,
+non-personal fixtures remain the CI gate.
+
+See [the local development runbook](./.docs/runbooks/local-development.md)
+for snapshot backup/restore, agent usage, security boundaries, and
+recovery.
 
 ## Validation
 

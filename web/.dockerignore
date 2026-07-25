@@ -1,6 +1,14 @@
 Dockerfile
 .dockerignore
 node_modules
+.pnpm-store
+coverage
+dist
+test-results
+.nitro
+.output
+.tanstack
+.vinxi
 npm-debug.log
 README.md
 .next
@@ -13,11 +21,8 @@ README.md
 .DS_Store
 
 # Environment variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env*
+!.env.example
 
 # Editor/IDE files
 .claude

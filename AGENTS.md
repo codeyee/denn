@@ -72,9 +72,14 @@ Practical lookup flow:
 
 Use root `make` targets unless you are debugging a service in isolation.
 
-- `make check`: verify local prerequisites.
-- `make up` / `make down`: start or stop the full stack (`web`, `core`, `proxy`, Redis).
+- `make check`: verify Docker and reject non-local or inconsistent env configuration.
+- `make setup-local`: prepare the Compose images and persistent PostgreSQL volume.
+- `make up` / `make down`: start or stop PostgreSQL, Redis, `proxy`, `core`, and `web`; `down` preserves database data.
 - `make status` / `make logs` / `make doctor`: inspect the local workspace.
+- `make smoke-local`: exercise local HTTP, proxy auth, migrations, restored data, and loopback bindings.
+- `make browser-local`: run Playwright against the real local stack.
+- `make restart-web` / `make restart-core` / `make restart-proxy`: restart one service.
+- `make env-store` / `make env-link`: reuse private env files across worktrees without committing them.
 - `make test`: run the default backend suite (`proxy` + `core`).
 - `make validate-web`: run frontend lint + Vite production build.
 - `make validate-core`: run Django tests.
@@ -86,6 +91,28 @@ Notes:
 - `make validate-web` wraps the minimum CI gate for `web`. It runs ESLint and `vite build`; the build emits a Nitro bundle to `web/.output/`.
 - `make validate-core` depends on a working test database and valid env configuration.
 - `make validate-proxy` must stay deterministic and offline-safe by default.
+
+### Local Agent Workflow
+
+For application changes, use this sequence unless the task needs an isolated
+test:
+
+1. Run `make check`, then `make up`.
+2. Make the change. Vite and Django reload bind-mounted source automatically.
+3. Run `make restart-proxy` after Go changes.
+4. Use only `http://127.0.0.1:3000`, `:8000`, and `:8080` for browser or
+   `curl` verification.
+5. Run `make smoke-local`; run `make browser-local` for browser-visible or
+   cross-service behavior.
+
+In a new worktree, run `make env-link` before `make check`. The canonical
+procedure, including snapshot restore and failure recovery, is
+`.docs/runbooks/local-development.md`.
+
+Do not add a repository MCP server merely to wrap these commands. Make,
+Compose, curl, and Playwright are the local automation contract for agents.
+If an MCP integration is later proposed, it must add a capability that these
+commands cannot provide and must not receive production credentials.
 
 ## Cross-Service Invariants
 

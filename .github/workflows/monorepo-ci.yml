@@ -33,9 +33,12 @@ jobs:
             proxy:
               - 'proxy/**'
             workspace:
+              - '.docker/**'
               - '.github/workflows/**'
               - '.docs/**'
               - '.scripts/**'
+              - 'AGENTS.md'
+              - 'compose.local.yml'
               - 'Makefile'
               - 'README.md'
               - 'CONTRIBUTING.md'
@@ -156,9 +159,14 @@ jobs:
       - name: Validate workspace files
         run: |
           test -f README.md
+          test -f AGENTS.md
           test -f Makefile
+          test -f compose.local.yml
           test -f .docs/workspace-operating-model.md
+          test -f .docs/runbooks/local-development.md
           test -f .scripts/workspace.sh
+          test -f web/.env.example
+          bash -n .scripts/workspace.sh
 
   ci-summary:
     needs:
