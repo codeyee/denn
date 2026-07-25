@@ -100,7 +100,7 @@ Expected:
 
 ### 8. Logout from a protected route
 
-1. Log in and open `/profile`.
+1. Log in and open `/settings`.
 2. Use the visible Logout control.
 
 Expected:

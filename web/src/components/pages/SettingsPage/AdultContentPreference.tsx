@@ -50,7 +50,7 @@ export function AdultContentPreference({
 
   return (
     <section
-      className="mt-8 border-t border-gray-200 pt-6 dark:border-gray-700"
+      className="mt-8 border-t border-gray-700 pt-6"
       aria-labelledby="adult-content-heading"
     >
       <div className="flex items-start justify-between gap-6">
@@ -58,7 +58,7 @@ export function AdultContentPreference({
           <h2 id="adult-content-heading" className="text-lg font-semibold">
             Adult content in search
           </h2>
-          <p className="mt-1 max-w-xl text-sm text-gray-600 dark:text-gray-300">
+          <p className="mt-1 max-w-xl text-sm text-gray-300">
             Automatic recommendations always exclude adult content. Opting in
             only affects deliberate searches and only where the provider
             exposes a reliable classification.

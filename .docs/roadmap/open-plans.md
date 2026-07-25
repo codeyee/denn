@@ -200,7 +200,8 @@ Implemented baseline:
 - Query provider, base query hooks, hover prefetch, and optimistic
   mutations foundation.
 - p50/p75/p95 fixture measurements for login, home, search, detail,
-  lists, private profile, and public profile in cold/warm browser states.
+  lists, account settings, and public profile in cold/warm browser
+  states.
 - Request correlation, bounded cache/data-source fields, alert
   thresholds, weekly/manual browser job and redacted Playwright
   artifacts.

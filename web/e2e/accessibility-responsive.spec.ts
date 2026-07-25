@@ -7,7 +7,7 @@ const criticalRoutes = [
   "/search?q=phase",
   "/content/1",
   "/lists/1",
-  "/profile",
+  "/settings",
   "/user/phase0-fixture",
   "/user/empty-user",
   "/lists/3",
@@ -284,6 +284,35 @@ test("public profile tabs support keyboard navigation, reduced motion and 44px t
     expect(box, "Profile tab must be visible").not.toBeNull();
     expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
   }
+});
+
+test("owner profile editor keeps focus inside the dialog and returns it on close", async ({
+  page,
+}) => {
+  await page.goto("/user/phase0-fixture");
+  const editButton = page.getByRole("button", { name: "Edit profile" });
+
+  await editButton.click();
+  const dialog = page.getByRole("dialog", { name: "Edit public profile" });
+  await expect(dialog).toBeVisible();
+  await expect
+    .poll(() =>
+      dialog.evaluate((element) => element.contains(document.activeElement)),
+    )
+    .toBe(true);
+
+  const results = await new AxeBuilder({ page })
+    .include('[role="dialog"]')
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+    .analyze();
+  const blocking = results.violations.filter(
+    ({ impact }) => impact === "critical" || impact === "serious",
+  );
+  expect(blocking, JSON.stringify(blocking, null, 2)).toEqual([]);
+
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await expect(editButton).toBeFocused();
 });
 
 test("desktop featured controls stay clear of the title", async ({ page }) => {

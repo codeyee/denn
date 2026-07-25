@@ -163,9 +163,12 @@ The approved visual direction stays inside the existing Denn system:
 - keyboard tabs, visible focus, 44px targets, stable geometry, reduced
   motion, and lazy non-banner media.
 
-`/profile` remains the private settings route. It exposes a read-only
-username plus bio/avatar editing while preserving the existing account
-and preference controls.
+For an authenticated user, the navbar avatar links directly to
+`/user/<username>`. Owners see their immutable username and edit their
+bio/avatar in a modal on that public page; a successful mutation updates
+the visible profile and navbar identity before revalidation.
+Private account preferences and session actions live at `/settings`.
+`/profile` is not an application route.
 
 ## Conservative Backfill
 

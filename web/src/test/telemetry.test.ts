@@ -38,7 +38,10 @@ describe("web vital ingestion", () => {
     expect(normalizeMetricRoute("/lists/99?sort=-added_at")).toBe(
       "/lists/:id",
     );
-    expect(normalizeMetricRoute("/user/user@example.com")).toBe("/other");
+    expect(normalizeMetricRoute("/user/user@example.com")).toBe(
+      "/user/:username",
+    );
+    expect(normalizeMetricRoute("/settings")).toBe("/settings");
   });
 
   it("rejects uncontrolled telemetry dimensions", () => {
