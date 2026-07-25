@@ -38,6 +38,16 @@ The hybrid topology is deliberate and documented in
   bridge toward the id-first route.
 - `core` stores per-type local detail rows and reconstructs proxy-shaped
   payloads from them for local-first reads.
+- `UserContentTracking` is the personal-state source of truth; list-item
+  status is no longer treated as personal tracking.
+- Public identities live at `/user/<username>` and compose only
+  persisted Core metadata. Public profiles, public content detail, and
+  public lists are anonymous reads; private lists are indistinguishable
+  from missing lists to outsiders.
+- Ratings outside `completed` are preserved but inactive, and all
+  public/global aggregates exclude inactive ratings.
+- List visibility (`PUBLIC`/`PRIVATE`) is independent of collaboration
+  type (`PERSONAL`/`SHARED`).
 - `browse_metadata` exists as a derived read model for list exploration
   and sorting.
 - The canonical cross-service error envelope and `X-Request-Id`
@@ -61,8 +71,8 @@ The hybrid topology is deliberate and documented in
   Authenticated Home adds personal lists to the same catalog. The
   original landing is preserved at `/welcome`.
 - TanStack Query is mounted globally and owns frontend server state for
-  Home, Search, Content Detail, List Detail, Add-to-List, ratings, and
-  list mutations.
+  Home, Search, Content Detail, List Detail, Add-to-List, ratings,
+  tracking, public profiles, and list mutations.
 - SSR prefetch happens inside `loader` functions that call
   `context.queryClient.ensureQueryData(...)`. The router rehydrates the
   cache on the client; routes do not wrap with `<HydrationBoundary>`.
@@ -79,6 +89,10 @@ The hybrid topology is deliberate and documented in
 - Public BFF inputs fail closed: proxy splats are confined to the configured
   proxy base path, and Web Vitals ingestion bounds request size, accepted
   fields, and per-instance log volume.
+- The Core BFF admits anonymous `GET`/`HEAD` only for strict profile,
+  content-detail, and list-detail patterns. Public reads degrade to
+  anonymous after an unsuccessful stale-cookie refresh; all mutations
+  remain authenticated.
 - `GET /api/version` exposes only the full web `BUILD_SHA` with
   `Cache-Control: no-store`. Cross-service deploys use it to prove the
   compatible BFF is live before the core auth cutover.
@@ -114,6 +128,9 @@ The hybrid topology is deliberate and documented in
 - Decision recorded in [ADR 0003](../adr/0003-migrate-web-from-nextjs-to-tanstack-start.md).
 
 See [`data-fetching.md`](./data-fetching.md).
+Personal tracking, public identity, public-list reads, and profile UI are
+defined in
+[`public-profiles-and-tracking.md`](./public-profiles-and-tracking.md).
 
 ## Current Auth State
 
@@ -139,6 +156,9 @@ See [`data-fetching.md`](./data-fetching.md).
 - Content-detail client reads have one bounded attempt; timeout or
   upstream failure renders an explicit retry instead of leaving an
   unbounded skeleton or discarding the session.
+- `/profile` remains an authenticated settings surface. It edits the
+  public bio/avatar while keeping the username immutable and preserving
+  account preferences/actions.
 
 See [`auth-session-bootstrap.md`](./auth-session-bootstrap.md).
 
@@ -171,6 +191,26 @@ Discovery filtering is defined in
 Automatic discovery always applies the safe policy. Authenticated users
 may opt into reliably classified adult results only for deliberate
 direct search; both provider and aggregate caches isolate that policy.
+
+## Current Personal Tracking And Public Surface
+
+- One tracking row exists per user and canonical content item, with
+  backlog, in-progress, completed, on-hold, and dropped states.
+- Rating writes auto-complete. Leaving completed inactivates the
+  preserved rating/review; returning reactivates it.
+- Favorites are completed-only, separate from score, and capped at five
+  preserved favorites per canonical content type.
+- Seasons canonicalize to a locally persisted parent TV show before a
+  tracking write; the write path never synchronously calls `proxy`.
+- Public profile overview and tab endpoints use local content summaries,
+  stable pagination, bounded filters, a public-IP throttle, query-count
+  budgets, and zero provider calls.
+- The public-profile loader fetches overview and the active tab in
+  parallel and serializes initial query data so SSR and the first client
+  render stay identical.
+- The additive rollout uses the idempotent
+  `backfill_public_profiles_tracking` command. See
+  [`../runbooks/public-profile-tracking-backfill.md`](../runbooks/public-profile-tracking-backfill.md).
 
 ## Canonical Supporting Docs
 

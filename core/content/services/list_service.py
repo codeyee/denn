@@ -50,11 +50,14 @@ def build_ratings_queryset(*, list_pk=None):
     """Build the Rating queryset for prefetching member ratings."""
     if list_pk:
         return Rating.objects.filter(
+            is_active=True,
             user_id__in=Subquery(
                 UserList.objects.filter(pk=list_pk).values('members__id')
             )
         ).select_related('user').order_by('-created_at')
-    return Rating.objects.select_related('user').order_by('-created_at')
+    return Rating.objects.filter(is_active=True).select_related(
+        'user'
+    ).order_by('-created_at')
 
 
 def get_list_stats(user_list):

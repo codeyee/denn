@@ -9,8 +9,11 @@ import {
   BookDetail,
   ContentItem,
   ContentType,
-  Rating
+  Rating,
+  UserContentTracking,
+  TrackingStatus,
 } from "@/lib/types";
+import { ContentTrackingControls } from "./ContentTrackingControls";
 
 interface ContentHeaderProps {
   displayItem: MovieDetail | TVShowDetail | TVSeasonDetail | AlbumDetail | GameDetail | BookDetail;
@@ -20,6 +23,11 @@ interface ContentHeaderProps {
   isAuthenticated: boolean;
   onAddToList: () => void;
   onRateContent: () => void;
+  tracking: UserContentTracking | null;
+  isTrackingLoading: boolean;
+  onTrackingStatusChange: (status: TrackingStatus) => void;
+  onFavoriteChange: (isFavorite: boolean) => void;
+  onDeleteTracking: () => void;
 }
 
 export function ContentHeader({
@@ -29,7 +37,12 @@ export function ContentHeader({
   userRating,
   isAuthenticated,
   onAddToList,
-  onRateContent
+  onRateContent,
+  tracking,
+  isTrackingLoading,
+  onTrackingStatusChange,
+  onFavoriteChange,
+  onDeleteTracking,
 }: ContentHeaderProps) {
   return (
     <>
@@ -47,7 +60,7 @@ export function ContentHeader({
       </section>
 
       <section className="mb-10">
-        <div className="container mx-auto px-4 mt-8">
+        <div className="container mx-auto mt-8 space-y-6 px-4">
           {contentItem.average_rating && (contentItem.rating_count ?? 0) > 0 ? (
             <div className="flex gap-2 flex-wrap flex-col">
               <div className="flex items-center gap-2">
@@ -65,6 +78,15 @@ export function ContentHeader({
               </div>
             </div>
           ) : null}
+          {isAuthenticated && (
+            <ContentTrackingControls
+              tracking={tracking}
+              disabled={isTrackingLoading}
+              onStatusChange={onTrackingStatusChange}
+              onFavoriteChange={onFavoriteChange}
+              onRemove={onDeleteTracking}
+            />
+          )}
         </div>
       </section>
     </>

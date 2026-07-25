@@ -2,19 +2,29 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny
 from django.db.models import Q, Prefetch, Count, Subquery, Avg
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiExample, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
-from content.models import UserList, ListItem, Rating, ContentItem
+from content.models import (
+    UserList,
+    ListItem,
+    Rating,
+    UserContentTracking,
+)
 from content.serializers import (
     UserListSerializer,
     UserListDetailSerializer,
     BulkCheckRequestSerializer,
     BulkCheckResponseSerializer,
+    PublicUserListDetailSerializer,
 )
 from content.permissions import IsOwnerOrReadOnly
 from content.services.list_service import get_list_stats
 from content.services.bulk_check_service import check_items_in_lists, ensure_content_items
+from content.services.tracking_service import (
+    annotate_list_items_with_canonical_tracking,
+)
 
 from rest_flex_fields.views import FlexFieldsMixin
 
@@ -120,6 +130,10 @@ class UserListViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+        if not user.is_authenticated:
+            return UserList.objects.filter(
+                visibility=UserList.Visibility.PUBLIC
+            ).select_related("owner").prefetch_related("members")
         item_filters = self._parse_item_filters()
         user_list_id = self.kwargs.get('pk')
 
@@ -131,21 +145,56 @@ class UserListViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
                 UserList.objects.filter(pk=user_list_id).values('owner_id')[:1]
             )
             ratings_qs = Rating.objects.filter(
-                Q(user_id__in=member_ids_sq) | Q(user_id=owner_id_sq)
+                Q(user_id__in=member_ids_sq) | Q(user_id=owner_id_sq),
+                is_active=True,
             ).select_related('user').order_by('-created_at')
         else:
-            ratings_qs = Rating.objects.select_related('user').order_by('-created_at')
+            ratings_qs = Rating.objects.filter(is_active=True).select_related(
+                'user'
+            ).order_by('-created_at')
 
-        items_qs = ListItem.objects.filter(**item_filters).select_related(
-            'content_item',
-            'added_by',
-        ).prefetch_related(
+        items_prefetches = [
             Prefetch(
                 'content_item__ratings',
                 queryset=ratings_qs,
                 to_attr='member_ratings_prefetched',
-            )
-        ).order_by('list_order', '-added_at')
+            ),
+        ]
+        items_size = self.request.query_params.get('items_size', '0')
+        try:
+            include_personal_state = user_list_id is not None or int(items_size) > 0
+        except (TypeError, ValueError):
+            include_personal_state = user_list_id is not None
+
+        if include_personal_state:
+            items_prefetches.extend([
+                Prefetch(
+                    "content_item__ratings",
+                    queryset=Rating.objects.filter(
+                        user=user,
+                        is_active=True,
+                    ).select_related("content_item"),
+                    to_attr="current_user_ratings",
+                ),
+                Prefetch(
+                    "content_item__user_tracking",
+                    queryset=UserContentTracking.objects.filter(user=user),
+                    to_attr="current_user_tracking_rows",
+                ),
+            ])
+
+        items_qs = ListItem.objects.filter(**item_filters).select_related(
+            'content_item',
+            'content_item__season_detail__tv_show',
+            'added_by',
+        ).prefetch_related(*items_prefetches)
+        items_qs = annotate_list_items_with_canonical_tracking(
+            items_qs,
+            user,
+        ).order_by(
+            'list_order',
+            '-added_at',
+        )
 
         return UserList.objects.filter(
             Q(owner=user) | Q(members=user)
@@ -196,9 +245,61 @@ class UserListViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
         return Response(serializer.data)
 
     def get_permissions(self):
-        if self.action in ['update', 'partial_update', 'destroy', 'retrieve']:
+        if self.action == 'retrieve':
+            return [AllowAny()]
+        if self.action in ['update', 'partial_update', 'destroy']:
             return [IsAuthenticated(), IsOwnerOrReadOnly()]
         return [IsAuthenticated()]
+
+    def retrieve(self, request, *args, **kwargs):
+        public_list = self._public_list_for_retrieve(kwargs.get("pk"))
+        if public_list is not None and not self._can_manage_list(
+            public_list,
+            request.user,
+        ):
+            return Response(PublicUserListDetailSerializer(public_list).data)
+        if not request.user.is_authenticated:
+            from django.http import Http404
+            raise Http404
+        return super().retrieve(request, *args, **kwargs)
+
+    @staticmethod
+    def _can_manage_list(user_list, user):
+        if not user.is_authenticated:
+            return False
+        return (
+            user_list.owner_id == user.id
+            or user_list.members.filter(id=user.id).exists()
+        )
+
+    def _public_list_for_retrieve(self, pk):
+        content_related = [
+            "content_item__browse_meta",
+            "content_item__movie_detail",
+            "content_item__tv_show_detail",
+            "content_item__season_detail",
+            "content_item__game_detail",
+            "content_item__album_detail",
+            "content_item__book_detail",
+        ]
+        return (
+            UserList.objects.filter(
+                pk=pk,
+                visibility=UserList.Visibility.PUBLIC,
+            )
+            .select_related("owner")
+            .prefetch_related(
+                "members",
+                Prefetch(
+                    "items",
+                    queryset=ListItem.objects.select_related(
+                        "content_item",
+                        *content_related,
+                    ).order_by("list_order", "-added_at"),
+                ),
+            )
+            .first()
+        )
 
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)

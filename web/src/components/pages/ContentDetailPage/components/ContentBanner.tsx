@@ -9,6 +9,7 @@ import { contentItemActions } from "@/lib/api";
 import { CONTENT_TYPE_ICONS } from "@/lib/icons/contentTypeIcons";
 import { Content } from "@/lib/types";
 import { ResponsiveMedia } from "@/components/common/media/ResponsiveMedia";
+import { BannerShell } from "@/components/common/media/BannerShell";
 import { ContentActions } from "./ContentActions";
 
 interface ContentBannerProps {
@@ -94,54 +95,28 @@ export function ContentBanner({
     };
   }, [isAuthenticated, tvShowExternalId]);
 
-  if (!backgroundUrl) {
-    return (
-      <div className="relative mb-6 flex min-h-[28rem] w-full items-center justify-center overflow-hidden rounded-none bg-gray-800 px-4 md:mb-10 md:min-h-[32rem] md:rounded-2xl">
-        <div className="flex max-w-3xl flex-col items-center text-center">
-          {Icon && (
-            <Icon className="mb-4 h-16 w-16 text-gray-400 opacity-50 md:h-24 md:w-24" />
-          )}
-          <h1 className="text-3xl font-extrabold text-white md:text-5xl">
-            {displayTitle}
-          </h1>
-          <ContentActions
-            align="center"
-            isAuthenticated={isAuthenticated}
-            hasUserRating={hasUserRating}
-            onAddToList={onAddToList}
-            onRateContent={onRateContent}
-          />
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="relative w-full aspect-16/16 md:aspect-16/13 lg:aspect-16/10 xl:aspect-16/7 4xl:aspect-16/5 15xl:aspect-16/3 overflow-hidden mb-6 md:mb-10 rounded-none md:rounded-2xl">
-      <ResponsiveMedia
-        src={backgroundUrl}
-        alt={`${displayTitle} artwork`}
-        width={1600}
-        height={900}
-        sizes="100vw"
-        priority
-        className="absolute inset-0 h-full w-full object-cover"
-      />
-
-      {/* Overlay gradients */}
-      <div className="absolute inset-0 bg-black/35" />
-      <div className="absolute inset-x-0 bottom-0 h-1/2 bg-linear-to-t from-black/90 via-black/50 to-transparent" />
-      <div
-        className="absolute inset-x-0 bottom-0 h-28 md:h-36"
-        style={{
-          background:
-            "linear-gradient(to bottom, rgba(0,0,0,0) 0%, var(--color-background-logged-in) 100%)",
-        }}
-      />
-
-      {/* Content */}
-      <div className="relative z-30 h-full flex items-end">
-        <div className="w-full px-4 md:px-12 pb-16 md:pb-20">
+    <BannerShell
+      media={
+        backgroundUrl ? (
+          <ResponsiveMedia
+            src={backgroundUrl}
+            alt={`${displayTitle} artwork`}
+            width={1600}
+            height={900}
+            sizes="100vw"
+            priority
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        ) : undefined
+      }
+      fallback={
+        Icon ? (
+          <Icon className="h-16 w-16 text-gray-400 opacity-50 md:h-24 md:w-24" />
+        ) : null
+      }
+    >
+      <div className="w-full px-4 pb-16 md:px-12 md:pb-20">
           <div className="flex items-center gap-3 mb-1 md:mb-2">
             {Icon && <Icon className="w-6 h-6 md:w-8 md:h-8 text-white/90" />}
             <h1 className="text-white font-extrabold text-2xl sm:text-3xl md:text-5xl drop-shadow-text line-clamp-3">
@@ -173,8 +148,7 @@ export function ContentBanner({
             onAddToList={onAddToList}
             onRateContent={onRateContent}
           />
-        </div>
       </div>
-    </div>
+    </BannerShell>
   );
 }

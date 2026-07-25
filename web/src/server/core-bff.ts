@@ -69,24 +69,26 @@ export async function forwardCoreRequest(
     normalizeRequestId(request.headers.get("x-request-id")) ??
     generateRequestId();
 
-  const isPublic = isPublicCoreRequest(request.method, upstreamPath);
   let access = getAccessToken();
-  if (isPublic && !access) {
-    const catalogVisitorHeaders = isPublicContentDetailRequest(
-      request.method,
-      upstreamPath,
-    )
-      ? await buildCatalogVisitorHeaders()
-      : undefined;
+  if (PUBLIC_AUTH_PATHS.has(upstreamPath)) {
     const response = await callCore(
       target,
       request,
       body,
       null,
       requestId,
-      catalogVisitorHeaders,
     );
     return copyCoreResponse(response, requestId);
+  }
+  if (isPublicCoreRequest(request.method, upstreamPath)) {
+    return forwardPublicCoreRead({
+      target,
+      request,
+      body,
+      requestId,
+      access,
+      upstreamPath,
+    });
   }
   if (!access) access = await refreshAuthCookies();
   if (!access) return expiredResponse(requestId);
@@ -99,6 +101,89 @@ export async function forwardCoreRequest(
   }
 
   return copyCoreResponse(response, requestId);
+}
+
+async function forwardPublicCoreRead({
+  target,
+  request,
+  body,
+  requestId,
+  access,
+  upstreamPath,
+}: {
+  target: string;
+  request: Request;
+  body: ArrayBuffer | undefined;
+  requestId: string;
+  access: string | null;
+  upstreamPath: string;
+}) {
+  if (!access) {
+    try {
+      access = await refreshAuthCookies();
+    } catch {
+      access = null;
+    }
+  }
+
+  let response = await callPublicCore(
+    target,
+    request,
+    body,
+    access,
+    requestId,
+    upstreamPath,
+  );
+  if (response.status === 401 && access) {
+    try {
+      access = await refreshAuthCookies();
+    } catch {
+      access = null;
+    }
+    if (access) {
+      response = await callPublicCore(
+        target,
+        request,
+        body,
+        access,
+        requestId,
+        upstreamPath,
+      );
+    }
+  }
+  if (response.status === 401) {
+    response = await callPublicCore(
+      target,
+      request,
+      body,
+      null,
+      requestId,
+      upstreamPath,
+    );
+  }
+  return copyCoreResponse(response, requestId);
+}
+
+async function callPublicCore(
+  target: string,
+  request: Request,
+  body: ArrayBuffer | undefined,
+  access: string | null,
+  requestId: string,
+  upstreamPath: string,
+) {
+  const additionalHeaders =
+    !access && isPublicContentDetailRequest(request.method, upstreamPath)
+      ? await buildCatalogVisitorHeaders()
+      : {};
+  return callCore(
+    target,
+    request,
+    body,
+    access,
+    requestId,
+    additionalHeaders,
+  );
 }
 
 async function copyCoreResponse(response: Response, requestId: string) {
@@ -141,15 +226,23 @@ async function callCore(
   });
 }
 
-const PUBLIC_CORE_PATHS = new Set([
+const PUBLIC_AUTH_PATHS = new Set([
   "auth/password/reset/",
   "auth/password/reset/confirm/",
 ]);
 
-export function isPublicCoreRequest(method: string, path: string) {
-  if (PUBLIC_CORE_PATHS.has(path)) return true;
+const PUBLIC_READ_PATTERNS = [
+  /^profiles\/(?!me(?:\/|$))[a-zA-Z0-9._-]+\/$/,
+  /^profiles\/(?!me(?:\/|$))[a-zA-Z0-9._-]+\/(?:completed|ratings|lists)\/$/,
+  /^content\/[1-9]\d*\/$/,
+  /^content\/lists\/[1-9]\d*\/$/,
+];
 
-  return isPublicContentDetailRequest(method, path);
+export function isPublicCoreRequest(method: string, path: string) {
+  if (PUBLIC_AUTH_PATHS.has(path)) return true;
+  const normalizedMethod = method.toUpperCase();
+  if (normalizedMethod !== "GET" && normalizedMethod !== "HEAD") return false;
+  return PUBLIC_READ_PATTERNS.some((pattern) => pattern.test(path));
 }
 
 export function isPublicContentDetailRequest(method: string, path: string) {

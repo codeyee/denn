@@ -21,9 +21,10 @@ export function useContentDetailQuery(
   viewerId?: number,
 ) {
   const enabled = Number.isFinite(contentId) && contentId > 0;
+  const cacheViewerId = viewerId ?? "anonymous";
 
   return useQuery({
-    queryKey: queryKeys.contentDetail.byId(contentId, country, viewerId),
+    queryKey: queryKeys.contentDetail.byId(contentId, cacheViewerId, country),
     queryFn: () => contentItemActions.get(contentId, country),
     enabled,
     initialData,

@@ -20,6 +20,7 @@ import { Route as ContactRouteImport } from './routes/contact'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ContentIndexRouteImport } from './routes/content/index'
+import { Route as UserUsernameRouteImport } from './routes/user/$username'
 import { Route as ListsIdRouteImport } from './routes/lists/$id'
 import { Route as ContentIdRouteImport } from './routes/content/$id'
 import { Route as ApiVersionRouteImport } from './routes/api/version'
@@ -87,6 +88,11 @@ const IndexRoute = IndexRouteImport.update({
 const ContentIndexRoute = ContentIndexRouteImport.update({
   id: '/content/',
   path: '/content/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UserUsernameRoute = UserUsernameRouteImport.update({
+  id: '/user/$username',
+  path: '/user/$username',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ListsIdRoute = ListsIdRouteImport.update({
@@ -170,6 +176,7 @@ export interface FileRoutesByFullPath {
   '/api/version': typeof ApiVersionRoute
   '/content/$id': typeof ContentIdRoute
   '/lists/$id': typeof ListsIdRoute
+  '/user/$username': typeof UserUsernameRoute
   '/content/': typeof ContentIndexRoute
   '/api/auth/csrf': typeof ApiAuthCsrfRoute
   '/api/auth/login': typeof ApiAuthLoginRoute
@@ -196,6 +203,7 @@ export interface FileRoutesByTo {
   '/api/version': typeof ApiVersionRoute
   '/content/$id': typeof ContentIdRoute
   '/lists/$id': typeof ListsIdRoute
+  '/user/$username': typeof UserUsernameRoute
   '/content': typeof ContentIndexRoute
   '/api/auth/csrf': typeof ApiAuthCsrfRoute
   '/api/auth/login': typeof ApiAuthLoginRoute
@@ -223,6 +231,7 @@ export interface FileRoutesById {
   '/api/version': typeof ApiVersionRoute
   '/content/$id': typeof ContentIdRoute
   '/lists/$id': typeof ListsIdRoute
+  '/user/$username': typeof UserUsernameRoute
   '/content/': typeof ContentIndexRoute
   '/api/auth/csrf': typeof ApiAuthCsrfRoute
   '/api/auth/login': typeof ApiAuthLoginRoute
@@ -251,6 +260,7 @@ export interface FileRouteTypes {
     | '/api/version'
     | '/content/$id'
     | '/lists/$id'
+    | '/user/$username'
     | '/content/'
     | '/api/auth/csrf'
     | '/api/auth/login'
@@ -277,6 +287,7 @@ export interface FileRouteTypes {
     | '/api/version'
     | '/content/$id'
     | '/lists/$id'
+    | '/user/$username'
     | '/content'
     | '/api/auth/csrf'
     | '/api/auth/login'
@@ -303,6 +314,7 @@ export interface FileRouteTypes {
     | '/api/version'
     | '/content/$id'
     | '/lists/$id'
+    | '/user/$username'
     | '/content/'
     | '/api/auth/csrf'
     | '/api/auth/login'
@@ -330,6 +342,7 @@ export interface RootRouteChildren {
   ApiVersionRoute: typeof ApiVersionRoute
   ContentIdRoute: typeof ContentIdRoute
   ListsIdRoute: typeof ListsIdRoute
+  UserUsernameRoute: typeof UserUsernameRoute
   ContentIndexRoute: typeof ContentIndexRoute
   ApiAuthCsrfRoute: typeof ApiAuthCsrfRoute
   ApiAuthLoginRoute: typeof ApiAuthLoginRoute
@@ -419,6 +432,13 @@ declare module '@tanstack/react-router' {
       path: '/content'
       fullPath: '/content/'
       preLoaderRoute: typeof ContentIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/user/$username': {
+      id: '/user/$username'
+      path: '/user/$username'
+      fullPath: '/user/$username'
+      preLoaderRoute: typeof UserUsernameRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/lists/$id': {
@@ -530,6 +550,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiVersionRoute: ApiVersionRoute,
   ContentIdRoute: ContentIdRoute,
   ListsIdRoute: ListsIdRoute,
+  UserUsernameRoute: UserUsernameRoute,
   ContentIndexRoute: ContentIndexRoute,
   ApiAuthCsrfRoute: ApiAuthCsrfRoute,
   ApiAuthLoginRoute: ApiAuthLoginRoute,

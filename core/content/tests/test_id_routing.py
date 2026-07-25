@@ -2,10 +2,11 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
+from time import sleep
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
-from django.db import close_old_connections
+from django.db import OperationalError, close_old_connections, connection
 from django.test import TransactionTestCase, override_settings
 from django.urls import reverse
 from rest_framework import status
@@ -248,19 +249,30 @@ class ContentItemConcurrentIdentityTests(TransactionTestCase):
         def resolve_candidate():
             close_old_connections()
             try:
-                ContentItem.objects.bulk_create(
-                    [ContentItem(
-                        source_api=ContentItem.SourceAPI.TMDB,
-                        external_id='concurrent-1',
-                        content_type=ContentItem.ContentType.MOVIE,
-                    )],
-                    ignore_conflicts=True,
-                )
-                return ContentItem.objects.get(
-                    source_api=ContentItem.SourceAPI.TMDB,
-                    external_id='concurrent-1',
-                    content_type=ContentItem.ContentType.MOVIE,
-                ).id
+                for attempt in range(5):
+                    try:
+                        ContentItem.objects.bulk_create(
+                            [ContentItem(
+                                source_api=ContentItem.SourceAPI.TMDB,
+                                external_id='concurrent-1',
+                                content_type=ContentItem.ContentType.MOVIE,
+                            )],
+                            ignore_conflicts=True,
+                        )
+                        return ContentItem.objects.get(
+                            source_api=ContentItem.SourceAPI.TMDB,
+                            external_id='concurrent-1',
+                            content_type=ContentItem.ContentType.MOVIE,
+                        ).id
+                    except OperationalError as exc:
+                        is_transient_sqlite_lock = (
+                            connection.vendor == 'sqlite'
+                            and 'locked' in str(exc).lower()
+                        )
+                        if not is_transient_sqlite_lock or attempt == 4:
+                            raise
+                        close_old_connections()
+                        sleep(0.05 * (attempt + 1))
             finally:
                 close_old_connections()
 

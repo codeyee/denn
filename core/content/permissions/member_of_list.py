@@ -6,16 +6,21 @@ class IsMemberOfList(permissions.BasePermission):
 
         if not list_pk: return False
 
+        from django.db.models import Q
         from content.models import UserList
-        try:
-            user_list = UserList.objects.get(pk=list_pk)
-
-            if hasattr(user_list, 'owner') and user_list.owner == request.user:
-                return True
-
-            return user_list.members.filter(id=request.user.id).exists()
-        except UserList.DoesNotExist:
+        user_list = (
+            UserList.objects.select_related('owner')
+            .filter(
+                Q(pk=list_pk, owner=request.user)
+                | Q(pk=list_pk, members=request.user),
+            )
+            .distinct()
+            .first()
+        )
+        if user_list is None:
             return False
+        view._authorized_user_list = user_list
+        return True
 
     def has_object_permission(self, request, view, obj):
         if hasattr(obj, 'members'):

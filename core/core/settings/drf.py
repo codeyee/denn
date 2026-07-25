@@ -27,6 +27,7 @@ REST_FRAMEWORK = {
         "auth": "5/minute",      # Auth endpoints: 5 requests/minute
         "password_reset": "3/hour",  # Password reset: 3 requests/hour
         "bulk": "10/minute",     # Bulk operations: 10 requests/minute
+        "public_profile": "120/minute",
     },
 }
 

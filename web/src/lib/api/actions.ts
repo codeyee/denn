@@ -11,6 +11,8 @@ export { gameActions } from "./actions/game";
 export { bookActions } from "./actions/book";
 export { homepageActions } from "./actions/homepage";
 export { searchActions } from "./actions/search";
+export { profileActions } from "./actions/profile";
+export { trackingActions } from "./actions/tracking";
 
 import { authActions } from "./actions/auth";
 import { contentItemActions } from "./actions/contentItem";
@@ -25,6 +27,8 @@ import { gameActions } from "./actions/game";
 import { bookActions } from "./actions/book";
 import { homepageActions } from "./actions/homepage";
 import { searchActions } from "./actions/search";
+import { profileActions } from "./actions/profile";
+import { trackingActions } from "./actions/tracking";
 
 export const apiActions = {
     auth: authActions,
@@ -40,6 +44,8 @@ export const apiActions = {
     book: bookActions,
     homepage: homepageActions,
     search: searchActions,
+    profile: profileActions,
+    tracking: trackingActions,
 };
 
 export default apiActions;

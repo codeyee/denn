@@ -25,11 +25,12 @@ const flows = {
   publicHome: { path: "/", authenticated: false },
   publicSearch: { path: "/search?q=phase", authenticated: false },
   publicDetail: { path: "/content/1", authenticated: false },
+  publicProfile: { path: "/user/phase0-fixture", authenticated: false },
   home: { path: "/", authenticated: true },
   search: { path: "/search?q=phase", authenticated: true },
   detail: { path: "/content/1", authenticated: true },
   lists: { path: "/lists/1", authenticated: true },
-  profile: { path: "/profile", authenticated: true },
+  privateProfile: { path: "/profile", authenticated: true },
 };
 
 async function installObservers(page: Page) {
@@ -192,6 +193,15 @@ test("records a repeatable cold/warm production-build baseline", async ({
   expect(baseline.home.warm.p75.lcp).toBeLessThan(2_500);
   expect(baseline.home.cold.p75.inp).toBeLessThan(200);
   expect(baseline.home.warm.p75.inp).toBeLessThan(200);
+
+  for (const flow of ["publicProfile", "privateProfile"] as const) {
+    expect(baseline[flow].cold.p75.lcp).toBeLessThan(2_500);
+    expect(baseline[flow].warm.p75.lcp).toBeLessThan(2_500);
+    expect(baseline[flow].cold.p75.inp).toBeLessThan(200);
+    expect(baseline[flow].warm.p75.inp).toBeLessThan(200);
+    expect(baseline[flow].cold.p75.cls).toBeLessThan(0.1);
+    expect(baseline[flow].warm.p75.cls).toBeLessThan(0.1);
+  }
   expect(baseline.publicHome.cold.p75.lcp).toBeLessThan(2_500);
   expect(baseline.publicHome.warm.p75.lcp).toBeLessThan(2_500);
   expect(baseline.publicHome.cold.p75.cls).toBeLessThan(0.1);

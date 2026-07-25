@@ -5,7 +5,7 @@ from django.db import transaction
 from django.db.models import F, Prefetch, Subquery
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiExample, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
-from content.models import ListItem, UserList, Rating
+from content.models import ListItem, UserList, Rating, UserContentTracking
 from content.serializers import ListItemSerializer, ListItemCreateSerializer
 from content.permissions import IsMemberOfList
 from content.services.source_data_orchestrator import fetch_bulk_source_data
@@ -15,6 +15,9 @@ from content.services import (
     build_group_metadata,
     parse_list_item_query,
     QueryParseError,
+)
+from content.services.tracking_service import (
+    annotate_list_items_with_canonical_tracking,
 )
 
 from rest_flex_fields.views import FlexFieldsMixin
@@ -207,7 +210,8 @@ class ListItemViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
         )
 
         ratings_qs = Rating.objects.filter(
-            Q(user_id__in=member_ids_subquery) | Q(user_id=owner_id_subquery)
+            Q(user_id__in=member_ids_subquery) | Q(user_id=owner_id_subquery),
+            is_active=True,
         ).select_related('user').order_by('-created_at')
 
         member_ids = self._get_member_ids_for_list(list_id)
@@ -217,6 +221,7 @@ class ListItemViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
         ).select_related(
             'content_item',
             'content_item__browse_meta',
+            'content_item__season_detail__tv_show',
             'added_by',
             'user_list',
         ).prefetch_related(
@@ -226,8 +231,24 @@ class ListItemViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
                 queryset=ratings_qs,
                 to_attr='member_ratings_prefetched',
             ),
+            Prefetch(
+                "content_item__ratings",
+                queryset=Rating.objects.filter(
+                    user=self.request.user,
+                    is_active=True,
+                ).select_related("content_item"),
+                to_attr="current_user_ratings",
+            ),
+            Prefetch(
+                "content_item__user_tracking",
+                queryset=UserContentTracking.objects.filter(
+                    user=self.request.user,
+                ),
+                to_attr="current_user_tracking_rows",
+            ),
         )
 
+        qs = annotate_list_items_with_canonical_tracking(qs, self.request.user)
         qs = annotate_items_with_ratings(qs, member_ids)
 
         return qs.order_by('list_order', '-added_at')
@@ -237,9 +258,13 @@ class ListItemViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
         return ListItemSerializer
 
     def get_list(self):
+        authorized_list = getattr(self, '_authorized_user_list', None)
+        if authorized_list is not None:
+            return authorized_list
+
         list_id = self.kwargs.get('list_pk')
         try:
-            user_list = UserList.objects.get(pk=list_id)
+            user_list = UserList.objects.select_related('owner').get(pk=list_id)
 
             # Check if user is the owner or a member
             if user_list.owner == self.request.user:

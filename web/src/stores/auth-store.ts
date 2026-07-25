@@ -10,6 +10,8 @@ export interface User {
   first_name?: string;
   last_name?: string;
   allow_adult_content?: boolean;
+  bio?: string;
+  avatar_url?: string;
 }
 
 interface AuthState {

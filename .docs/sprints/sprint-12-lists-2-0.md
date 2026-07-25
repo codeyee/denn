@@ -1,6 +1,20 @@
 # Sprint 12
 # Lists 2.0
 
+## Estado parcial (2026-07-24)
+
+Ya aterrizaron visibilidad `PUBLIC | PRIVATE` independiente de
+`PERSONAL | SHARED`, cambio de visibilidad sólo por owner, serializer
+público sin email, lectura anónima de listas públicas, 404 indistinguible
+para listas privadas y el módulo de listas owner/member del perfil
+público.
+
+Este sprint sigue abierto. Aún faltan owner persistido como miembro,
+roles `owner/editor/viewer`, estado por miembro, la matriz completa de
+permisos/invitaciones, Add-to-List checkbox-first y el selector aleatorio
+de pendientes. No reinterpretar la visibilidad ya implementada como
+cierre de Lists 2.0.
+
 ## Objetivo
 Separar de forma definitiva lo que una lista "es" de cómo una obra se
 trackea personalmente. Este sprint convierte el sistema de listas en una

@@ -1,13 +1,13 @@
 # Sprint 13
 # Public Catalog 1.0
 
-## Estado
-
-Parcialmente implementado el 2026-07-24.
+## Estado parcial (2026-07-24)
 
 Fundación ya disponible:
 
 - Home, Search y Content Detail id-first funcionan sin login.
+- Las páginas de listas públicas admiten lectura anónima a través del
+  BFF estricto y las tarjetas de perfil navegan sin terminar en login.
 - Home autenticado añade listas personales sin cambiar de producto.
 - La landing original vive en `/welcome`.
 - Add-to-List y Rating exigen login al actuar y conservan `next`.

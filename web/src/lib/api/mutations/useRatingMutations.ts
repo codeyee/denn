@@ -28,6 +28,7 @@ export function useUpsertUserRatingMutation() {
         return ratingActions.patch(currentRating.id, {
           score: data.score,
           comment: data.comment,
+          spoiler: data.spoiler,
         });
       }
 
@@ -37,10 +38,19 @@ export function useUpsertUserRatingMutation() {
         content_type: contentItem.content_type,
         score: data.score,
         comment: data.comment,
+        spoiler: data.spoiler,
       });
     },
     onError: (error) => {
       showToast(error.message || "No se pudo guardar la calificacion", "error");
+    },
+    onSuccess: (rating, vars) => {
+      if (vars.userId) {
+        qc.setQueryData(
+          queryKeys.ratings.byUser(vars.contentItem.id, vars.userId),
+          rating,
+        );
+      }
     },
     onSettled: (_data, _error, vars) => {
       invalidateRatingResources(qc, vars.contentItem.id, vars.userId);
@@ -70,6 +80,7 @@ function invalidateRatingResources(
 ) {
   qc.invalidateQueries({ queryKey: queryKeys.ratings.all });
   qc.invalidateQueries({ queryKey: queryKeys.contentDetail.all });
+  qc.invalidateQueries({ queryKey: queryKeys.profiles.all });
   if (userId) {
     qc.invalidateQueries({
       queryKey: queryKeys.ratings.byUser(contentItemId, userId),

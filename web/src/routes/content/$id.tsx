@@ -128,11 +128,11 @@ function ContentDetailRoute() {
   return (
     <div className="relative w-full overflow-x-hidden">
       <Navbar />
-      <ContentDetailPage
-        contentId={contentId}
-        country={country}
-        isAuthenticated={isAuthenticated}
-        viewerId={viewerId}
+        <ContentDetailPage
+          contentId={contentId}
+          country={country}
+          isAuthenticated={isAuthenticated}
+          viewerId={viewerId}
         initialContentItem={initialContentItem as ContentItem | undefined}
       />
     </div>

@@ -18,12 +18,24 @@ considered part of the project baseline.
 - Login-on-action for Add-to-List and Rating with a return path shared
   across login and registration.
 - User profile page.
+- Stable public identity at `/user/<username>` with editable bio/avatar,
+  joined date, counters, favorites by media type, recent completions and
+  reviews, spoiler controls, and public-list modules.
+- First-class personal tracking with backlog, in-progress, completed,
+  on-hold, and dropped states, including rating activation semantics and
+  completed-only favorites.
+- Filterable, sortable, paginated public Completed, Ratings & Reviews,
+  and Lists tabs.
+- Anonymous content-detail and public-list reads, with private lists
+  returning 404 to outsiders.
 - Personal and shared lists with items, members, invitations, ratings,
   and list-item status workflows.
 - List exploration with backend query model for filters, range filters,
   multi-field sort, grouping, and stable pagination.
 - Canonical list ordering plus "apply current sort as list order".
 - Add-to-list, reorder, toggle-status, and rating workflows.
+- Optimistic, reversible tracking, favorite, rating, and public-profile
+  mutations.
 
 ## Platform Foundations
 
@@ -44,6 +56,9 @@ considered part of the project baseline.
   canonical ordering.
 - Global frontend query provider, query-key factory, extracted query
   hooks/mutations, and server-side prefetch for the main frontend flows.
+- Viewer-scoped content keys plus username/tab/filter-scoped public
+  profile keys, with explicit SSR initial data that avoids first-render
+  hydration drift.
 - Hover prefetch for detail navigation from content cards and list item
   cards, using semantic links and pure reads after discovery resolves
   stable ids in one trusted server-to-`core` bulk request.
@@ -94,6 +109,9 @@ considered part of the project baseline.
   exposure, ordered cross-service deployment, Core migrations before
   Gunicorn, dedicated-account headed-browser smoke, exact cache timing,
   and deployed cold/warm Home percentiles.
+- Conservative, idempotent public-profile/tracking backfill with dry-run
+  reporting for username anomalies, duplicates, season-parent gaps,
+  missing metadata, and intentionally omitted shared-list completions.
 
 ## Current Compatibility Guarantees
 

@@ -39,6 +39,7 @@ def upsert(
         declared_count = len(raw_episodes)
 
     defaults = {
+        'tv_show': _resolve_local_tv_show(content_item),
         'season_number': payload.get('season_number') or 0,
         'tv_show_name': payload.get('tv_show_name') or '',
         'title': payload.get('title') or '',
@@ -83,3 +84,14 @@ def upsert(
 
         replace_images(content_item, payload)
         replace_streaming_platforms(content_item, payload, request_country=request_country)
+
+
+def _resolve_local_tv_show(content_item: ContentItem) -> Optional[ContentItem]:
+    tv_show_external_id, separator, _season_number = content_item.external_id.partition(':')
+    if not separator or not tv_show_external_id:
+        return None
+    return ContentItem.objects.filter(
+        source_api=content_item.source_api,
+        external_id=tv_show_external_id,
+        content_type=ContentItem.ContentType.TV_SHOW,
+    ).first()

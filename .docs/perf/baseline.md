@@ -1,7 +1,8 @@
 # Performance Baseline
 
 This document is the source of truth for performance measurement on the
-critical login, home, search, detail, lists, and profile flows.
+critical login, home, search, detail, lists, private-profile, and
+public-profile flows.
 
 It keeps two kinds of evidence separate:
 
@@ -199,6 +200,32 @@ hover-write, unnamed-control, and transient-logout regressions.
 These remain fixture results rather than deployed measurements. The
 separate deployed after snapshot above closes the operational Phase 4
 gate without relabeling or combining the two data sources.
+
+## Personal Tracking And Public Profile Local Snapshot
+
+Captured 2026-07-24 from the production Nitro bundle after Personal
+Tracking 1.0 and Public Profiles 1.0. The existing performance target
+ran five fresh contexts and five same-context warm reloads per flow.
+
+| Flow | State | TTFB p50/p75/p95 | FCP p75 | LCP p50/p75/p95 | INP p75/p95 | CLS p75/p95 |
+|---|---|---|---:|---|---|---|
+| Public profile `/user/phase0-fixture` | cold | 14.0 / 15.3 / 18.2 | 44 | 44 / 44 / 48 | 0 / 0 | 0 / 0 |
+| Public profile `/user/phase0-fixture` | warm | 24.4 / 27.2 / 32.9 | 80 | 80 / 80 / 88 | 0 / 0 | 0 / 0 |
+| Private profile `/profile` | cold | 4.6 / 5.4 / 7.9 | 80 | 80 / 80 / 84 | 0 / 0 | 0 / 0 |
+| Private profile `/profile` | warm | 10.0 / 10.1 / 11.5 | 88 | 76 / 88 / 88 | 0 / 0 | 0 / 0 |
+
+Both profile surfaces pass the release gates by a wide margin in the
+deterministic fixture: p75 LCP below 2.5 seconds, INP below 200 ms, and
+CLS below 0.10. As elsewhere in this document, a zero INP means no
+qualifying event-duration entry was emitted.
+
+A separate in-process Core check used a migrated temporary SQLite
+database, one completed/rated/favorite item, one public list, five
+warmups, and 100 successful anonymous overview reads. It recorded
+2.73 ms p50, 3.01 ms p95, and 12.85 ms max. This is a local application
+floor, not a network or production latency claim. The contract tests
+independently enforce `query_count <= 10` for overview and every public
+tab and assert zero calls to `proxy`.
 
 ## Public Catalog Foundation Local Snapshot
 

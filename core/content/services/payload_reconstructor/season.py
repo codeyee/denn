@@ -30,6 +30,8 @@ def from_local(content_item: ContentItem, *, request_country: Optional[str] = No
         payload['title'] = detail.title
     if detail.tv_show_name:
         payload['tv_show_name'] = detail.tv_show_name
+    if detail.tv_show_id:
+        payload['tv_show_id'] = detail.tv_show_id
     if detail.description:
         payload['description'] = detail.description
     if detail.image_url:

@@ -27,5 +27,6 @@ urlpatterns = [
 
     # API Endpoints
     path("api/auth/", include('authentication.urls', namespace='authentication')),
+    path("api/profiles/", include('authentication.profile_urls', namespace='profiles')),
     path("api/content/", include('content.urls', namespace='content')),
 ]

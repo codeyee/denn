@@ -18,6 +18,7 @@ class UserListSerializer(BaseFlexSerializer):
             'name',
             'description',
             'list_type',
+            'visibility',
             'owner',
             'member_count',
             'item_count',
@@ -76,6 +77,7 @@ class UserListDetailSerializer(BaseFlexSerializer):
             'name',
             'description',
             'list_type',
+            'visibility',
             'owner',
             'members',
             'member_count',
@@ -95,20 +97,9 @@ class UserListDetailSerializer(BaseFlexSerializer):
 
     def get_members(self, obj):
         """Return all members including the owner with is_owner flag"""
-        # Get all existing members
-        members_qs = obj.members.all()
-
-        # Check if owner is already in members
-        member_ids = list(members_qs.values_list('id', flat=True))
-
-        # If owner is not in members, add them
-        if obj.owner.id not in member_ids:
-            # Combine owner with existing members
-            from django.contrib.auth.models import User
-            members_list = list(members_qs)
-            members_list.insert(0, obj.owner)  # Add owner at the beginning
-        else:
-            members_list = list(members_qs)
+        members_list = list(obj.members.all())
+        if obj.owner_id not in {member.id for member in members_list}:
+            members_list.insert(0, obj.owner)
 
         # Serialize with context containing the user_list for is_owner calculation
         return MemberSerializer(
@@ -151,7 +142,9 @@ class UserListDetailSerializer(BaseFlexSerializer):
         from .list_item import ListItemSerializer
         from content.services.source_data_orchestrator import fetch_bulk_source_data
 
-        items = obj.items.all().order_by('list_order', '-added_at')
+        # The view prefetches this relation in display order. Reordering here
+        # would discard that cache and repeat every nested prefetch.
+        items = obj.items.all()
 
         items_size = self.context.get('items_size')
         if items_size is not None:

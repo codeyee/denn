@@ -14,6 +14,7 @@
 
 import type { ListItemQuery } from "@/lib/types/listView";
 import type { BulkCheckItem } from "@/lib/types";
+import type { ProfileSearchParams, ProfileTab } from "@/lib/types";
 
 interface ListItemsParams {
   page?: number;
@@ -46,6 +47,7 @@ export const queryKeys = {
   },
   lists: {
     all: ["lists"] as const,
+    publicDetail: (id: number) => ["lists", "public-detail", id] as const,
     list: (params?: Record<string, unknown>) =>
       ["lists", "list", params ?? null] as const,
     detail: (id: number, params?: Record<string, unknown>) =>
@@ -63,8 +65,12 @@ export const queryKeys = {
   },
   contentDetail: {
     all: ["content-detail"] as const,
-    byId: (id: number, country?: string, viewerId?: number) =>
-      ["content-detail", id, country ?? null, viewerId ?? "anonymous"] as const,
+    byId: (
+      id: number,
+      viewerId: number | "anonymous",
+      country?: string,
+    ) =>
+      ["content-detail", viewerId, id, country ?? null] as const,
   },
   contentResolution: {
     byExternal: (
@@ -79,5 +85,15 @@ export const queryKeys = {
       ["ratings", "list", contentItemId, page, pageSize] as const,
     byUser: (contentItemId: number, userId: number) =>
       ["ratings", "user", contentItemId, userId] as const,
+  },
+  profiles: {
+    all: ["profiles"] as const,
+    overview: (username: string) =>
+      ["profiles", username, "overview"] as const,
+    tab: (
+      username: string,
+      tab: Exclude<ProfileTab, "overview">,
+      params: Partial<ProfileSearchParams>,
+    ) => ["profiles", username, tab, params] as const,
   },
 } as const;

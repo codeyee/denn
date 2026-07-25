@@ -3,6 +3,7 @@ from content.models import Rating, ContentItem
 from .content_item import ContentItemSerializer
 from .user import UserSerializer
 from core.serializers import BaseFlexSerializer
+from content.services.tracking_service import save_rating
 
 class RatingSerializer(BaseFlexSerializer):
     content_item = ContentItemSerializer(read_only=True)
@@ -17,6 +18,8 @@ class RatingSerializer(BaseFlexSerializer):
             'content_item',
             'score',
             'comment',
+            'spoiler',
+            'is_active',
             'created_at',
             'updated_at',
         ]
@@ -65,6 +68,8 @@ class RatingCreateSerializer(serializers.ModelSerializer):
             'user',
             'score',
             'comment',
+            'spoiler',
+            'is_active',
             'created_at',
             'updated_at',
         ]
@@ -74,7 +79,8 @@ class RatingCreateSerializer(serializers.ModelSerializer):
             'content_item',
             'user',
             'created_at',
-            'updated_at'
+            'updated_at',
+            'is_active',
         ]
 
     def validate_score(self, value):
@@ -113,21 +119,26 @@ class RatingCreateSerializer(serializers.ModelSerializer):
         external_id = validated_data.pop('external_id')
         content_type = validated_data.pop('content_type')
 
-        content_item, created = ContentItem.objects.get_or_create(
+        content_item, _created = ContentItem.objects.get_or_create(
             source_api=source_api,
             external_id=external_id,
             content_type=content_type,
             defaults={}
         )
 
-        rating, created = Rating.objects.update_or_create(
+        return save_rating(
             user=validated_data['user'],
             content_item=content_item,
-            defaults={
-                'score': validated_data['score'],
-                'comment': validated_data.get('comment', '')
-            }
+            score=validated_data['score'],
+            comment=validated_data.get('comment', ''),
+            spoiler=validated_data.get('spoiler', False),
         )
 
-        return rating
-
+    def update(self, instance, validated_data):
+        return save_rating(
+            user=validated_data['user'],
+            content_item=instance.content_item,
+            score=validated_data.get('score', instance.score),
+            comment=validated_data.get('comment', instance.comment or ''),
+            spoiler=validated_data.get('spoiler', instance.spoiler),
+        )
