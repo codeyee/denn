@@ -12,23 +12,6 @@ import { prefetchContentDetailQueries } from "@/lib/api/queries/server";
 import type { ContentItem } from "@/lib/types";
 
 export const Route = createFileRoute("/content/$id")({
-  head: ({ loaderData }) => {
-    const title = contentTitle(loaderData?.initialContentItem);
-    return {
-      meta: [
-        { title: title ? `${title} | Denn` : "Content | Denn" },
-        {
-          name: "description",
-          content: title
-            ? `Explore details for ${title} in Denn's public catalog.`
-            : "Explore this title in Denn's public catalog.",
-        },
-      ],
-      links: loaderData?.contentId
-        ? [{ rel: "canonical", href: `/content/${loaderData.contentId}` }]
-        : [],
-    };
-  },
   loader: async ({ context, params }) => {
     const contentId = Number.parseInt(params.id, 10);
     if (!Number.isFinite(contentId) || contentId <= 0) {
@@ -48,6 +31,23 @@ export const Route = createFileRoute("/content/$id")({
       isAuthenticated: context.session.isAuthenticated,
       viewerId: context.session.user?.id,
       initialContentItem,
+    };
+  },
+  head: ({ loaderData }) => {
+    const title = contentTitle(loaderData?.initialContentItem);
+    return {
+      meta: [
+        { title: title ? `${title} | Denn` : "Content | Denn" },
+        {
+          name: "description",
+          content: title
+            ? `Explore details for ${title} in Denn's public catalog.`
+            : "Explore this title in Denn's public catalog.",
+        },
+      ],
+      links: loaderData?.contentId
+        ? [{ rel: "canonical", href: `/content/${loaderData.contentId}` }]
+        : [],
     };
   },
   pendingComponent: () => (
@@ -123,17 +123,16 @@ function ContentDetailRoute() {
     isAuthenticated,
     viewerId,
     initialContentItem,
-  } =
-    Route.useLoaderData();
+  } = Route.useLoaderData();
   return (
     <div className="relative w-full overflow-x-hidden">
       <Navbar />
-        <ContentDetailPage
-          contentId={contentId}
-          country={country}
-          isAuthenticated={isAuthenticated}
-          viewerId={viewerId}
-        initialContentItem={initialContentItem as ContentItem | undefined}
+      <ContentDetailPage
+        contentId={contentId}
+        country={country}
+        isAuthenticated={isAuthenticated}
+        viewerId={viewerId}
+        initialContentItem={initialContentItem}
       />
     </div>
   );

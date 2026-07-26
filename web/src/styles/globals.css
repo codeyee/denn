@@ -17,6 +17,12 @@
 
 :root {
   --font-azeret-mono: "Azeret Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --layout-content-max: 112rem;
+  --layout-banner-max: 128rem;
+  --layout-gutter: 1rem;
+  --layout-banner-height: calc(clamp(21rem, 90vw, 27rem) + 7rem);
+  --layout-banner-side-fade: clamp(5rem, 8vw, 10rem);
+  --z-card-popover: 200;
 }
 
 @custom-variant dark (&:is(.dark *));
@@ -170,6 +176,19 @@
   --drop-shadow-text: 0_4px_16px_rgba(0, 0, 0, 0.6);
 }
 
+@media (min-width: 48rem) {
+  :root {
+    --layout-gutter: 2rem;
+    --layout-banner-height: calc(clamp(30rem, 49vw, 35rem) + 7rem);
+  }
+}
+
+@media (min-width: 64rem) {
+  :root {
+    --layout-gutter: 3rem;
+  }
+}
+
 @layer utilities {
   .bg-navbar-gradient {
     background: linear-gradient(to bottom,
@@ -216,71 +235,140 @@
 }
 
 @layer components {
-  .auth-dome-stage {
-    --dome-radius: max(600px, min(84vw, 135vh));
-    --circumference: calc(var(--dome-radius) * 3.14);
-    --rotation-y-step: calc((360deg / var(--segments-x)) / 2);
-    --rotation-x-step: calc((360deg / var(--segments-y)) / 2);
-    --item-width: calc(var(--circumference) / var(--segments-x));
-    --item-height: calc(var(--circumference) / var(--segments-y));
+  .layout-content,
+  .layout-wide-grid {
+    width: calc(100% - (2 * var(--layout-gutter)));
+    margin-inline: auto;
+  }
+
+  .layout-carousel {
+    width: calc(100dvw - (2 * var(--layout-gutter)));
+    margin-inline: calc(50% - 50dvw + var(--layout-gutter));
+  }
+
+  .layout-content,
+  .layout-banner-content {
+    max-width: var(--layout-content-max);
+  }
+
+  .layout-banner {
+    isolation: isolate;
+    width: 100%;
+    max-width: var(--layout-banner-max);
+    margin-inline: auto;
+  }
+
+  .layout-banner-content {
+    width: calc(100% - (2 * var(--layout-gutter)));
+    margin-inline: auto;
+  }
+
+  .layout-banner::after {
     position: absolute;
+    z-index: 25;
     inset: 0;
-    display: grid;
-    place-items: center;
-    perspective: calc(var(--dome-radius) * 2);
-    perspective-origin: 50% 50%;
+    background:
+      linear-gradient(
+        to right,
+        var(--color-background-logged-in) 0,
+        transparent var(--layout-banner-side-fade)
+      ),
+      linear-gradient(
+        to left,
+        var(--color-background-logged-in) 0,
+        transparent var(--layout-banner-side-fade)
+      );
+    content: "";
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 200ms ease-out;
   }
 
-  .auth-dome-stage .sphere {
+  .auth-mosaic-grid {
+    --auth-mosaic-gap: clamp(0.5rem, 0.8vw, 0.75rem);
+    --auth-mosaic-tile-width: clamp(7.5rem, 12vw, 11rem);
     position: absolute;
-    transform: translateZ(calc(var(--dome-radius) * -1)) rotateX(-2deg)
-      rotateY(-12deg);
-    transform-style: preserve-3d;
+    top: 50%;
+    left: 0;
+    display: flex;
+    width: 100%;
+    transform: translateY(-50%);
+    flex-direction: column;
+    gap: var(--auth-mosaic-gap);
   }
 
-  .auth-dome-item {
-    position: absolute;
-    inset: -999px;
-    width: calc(var(--item-width) * var(--item-size-x));
-    height: calc(var(--item-height) * var(--item-size-y));
-    margin: auto;
-    transform:
-      rotateY(
-        calc(
-          var(--rotation-y-step) *
-            (var(--offset-x) + ((var(--item-size-x) - 1) / 2))
-        )
-      )
-      rotateX(
-        calc(
-          var(--rotation-x-step) *
-            (var(--offset-y) - ((var(--item-size-y) - 1) / 2))
-        )
-      )
-      translateZ(var(--dome-radius));
-    transform-origin: 50% 50%;
-    transform-style: preserve-3d;
-    backface-visibility: hidden;
-  }
-
-  .auth-dome-image {
-    position: absolute;
-    inset: 12px;
+  .auth-mosaic-row {
+    width: 100%;
     overflow: hidden;
-    border-radius: var(--tile-radius);
-    background: black;
-    transform: translateZ(0);
-    backface-visibility: hidden;
   }
 
-  @media (max-width: 768px) {
-    .auth-dome-image {
-      inset: 6px;
+  .auth-mosaic-track {
+    display: flex;
+    width: max-content;
+    will-change: transform;
+    animation: auth-mosaic-scroll var(--auth-mosaic-duration) linear infinite;
+    animation-delay: var(--auth-mosaic-delay);
+  }
+
+  .auth-mosaic-row:nth-child(even) .auth-mosaic-track {
+    animation-name: auth-mosaic-scroll-reverse;
+    transform: translateX(-50%);
+  }
+
+  .auth-mosaic-set {
+    display: flex;
+    flex: none;
+    gap: var(--auth-mosaic-gap);
+    padding-right: var(--auth-mosaic-gap);
+  }
+
+  .auth-mosaic-tile {
+    width: var(--auth-mosaic-tile-width);
+    flex: none;
+    aspect-ratio: 2 / 3;
+    overflow: hidden;
+    border-radius: var(--auth-mosaic-radius);
+    background: black;
+  }
+
+  [data-animations="disabled"] .auth-mosaic-track {
+    animation: none;
+    will-change: auto;
+  }
+
+  @keyframes auth-mosaic-scroll {
+    from {
+      transform: translateX(0);
+    }
+
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  @keyframes auth-mosaic-scroll-reverse {
+    from {
+      transform: translateX(-50%);
+    }
+
+    to {
+      transform: translateX(0);
     }
   }
 }
 
+@media (min-width: 128rem) {
+  .layout-banner::after {
+    opacity: 1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .auth-mosaic-track {
+    animation: none !important;
+    will-change: auto;
+  }
+
   *,
   *::before,
   *::after {

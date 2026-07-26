@@ -6,7 +6,7 @@ interface ApiAttributionProps {
 
 export function ApiAttribution({ contentItem }: ApiAttributionProps) {
   return (
-    <div className="mt-8 w-full px-4 font-sans md:px-8 lg:px-12">
+    <div className="layout-content mt-8 font-sans">
       <div className="text-center text-sm text-gray-300">
         {contentItem.source_api === SourceApi.TMDB && (
           <div className="flex flex-row justify-center gap-2">

@@ -30,6 +30,7 @@ import {
 interface ContentCardProps {
   item: Content;
   className?: string;
+  leadingBadgeSlot?: ReactNode;
   badgeSlot?: ReactNode;
   metadataSlot?: ReactNode;
   footerSlot?: ReactNode;
@@ -39,6 +40,7 @@ interface ContentCardProps {
 export function ContentCard({
   item,
   className,
+  leadingBadgeSlot,
   badgeSlot,
   metadataSlot,
   footerSlot,
@@ -173,6 +175,11 @@ export function ContentCard({
             )}
           </Card.Footer>
         </Card>
+        {leadingBadgeSlot ? (
+          <div className="pointer-events-none absolute left-3 top-3 z-30">
+            {leadingBadgeSlot}
+          </div>
+        ) : null}
         {badgeSlot ? (
           <div className="pointer-events-none absolute right-3 top-3 z-30">
             {badgeSlot}

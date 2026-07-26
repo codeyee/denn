@@ -89,6 +89,35 @@ class CatalogDetailThrottleTests(APITestCase):
     def setUp(self):
         self.factory = APIRequestFactory()
 
+    def test_anonymous_catalog_detail_quota_is_60_per_minute(self):
+        raw_request = self.factory.get(
+            '/api/content/1/',
+            HTTP_X_CATALOG_VISITOR='c' * 64,
+            REMOTE_ADDR='203.0.113.10',
+        )
+        request = Request(raw_request, authenticators=[])
+        throttle = CatalogDetailRateThrottle()
+
+        self.assertTrue(throttle.allow_request(request, None))
+        self.assertEqual(throttle.num_requests, 60)
+        self.assertEqual(throttle.duration, 60)
+
+    def test_authenticated_catalog_detail_quota_is_120_per_minute(self):
+        user = get_user_model().objects.create_user(username='throttled-user')
+        raw_request = self.factory.get(
+            '/api/content/1/',
+            HTTP_X_CATALOG_VISITOR='d' * 64,
+            REMOTE_ADDR='203.0.113.10',
+        )
+        raw_request.user = user
+        request = Request(raw_request, authenticators=[])
+        request.user = user
+        throttle = CatalogDetailRateThrottle()
+
+        self.assertTrue(throttle.allow_request(request, None))
+        self.assertEqual(throttle.num_requests, 120)
+        self.assertEqual(throttle.duration, 60)
+
     @override_settings(PROXY_API_KEY='catalog-service-key')
     def test_trusted_web_visitors_do_not_share_a_throttle_bucket(self):
         first = self._cache_key('a' * 64, api_key='catalog-service-key')
@@ -177,7 +206,32 @@ class ContentItemBulkResolveTests(APITestCase):
             hasattr(ContentItem.objects.get(external_id='77'), 'movie_detail'),
         )
 
-    def test_rejects_more_than_one_hundred_items(self):
+    def test_accepts_homepage_identity_batch_for_thirty_items_per_type(self):
+        request_data = {
+            'items': [
+                {
+                    'source_api': source_api,
+                    'external_id': f'{content_type.lower()}-{index}',
+                    'content_type': content_type,
+                }
+                for source_api, content_type in [
+                    (ContentItem.SourceAPI.TMDB, ContentItem.ContentType.MOVIE),
+                    (ContentItem.SourceAPI.TMDB, ContentItem.ContentType.TV_SHOW),
+                    (ContentItem.SourceAPI.IGDB, ContentItem.ContentType.GAME),
+                    (ContentItem.SourceAPI.SPOTIFY, ContentItem.ContentType.ALBUM),
+                    (
+                        ContentItem.SourceAPI.OPENLIBRARY,
+                        ContentItem.ContentType.BOOK,
+                    ),
+                ]
+                for index in range(30)
+            ],
+        }
+        response = self.client.post(self.url, request_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), 150)
+
+    def test_rejects_more_than_two_hundred_items(self):
         request_data = {
             'items': [
                 {
@@ -185,7 +239,7 @@ class ContentItemBulkResolveTests(APITestCase):
                     'external_id': str(index),
                     'content_type': ContentItem.ContentType.MOVIE,
                 }
-                for index in range(101)
+                for index in range(201)
             ],
         }
         response = self.client.post(self.url, request_data, format='json')

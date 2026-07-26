@@ -2,7 +2,7 @@ import { COMPACT_BANNER_SIZE } from "@/components/common/media/BannerShell";
 
 export function FeaturedBannerPlaceholder() {
   return (
-    <div className={`relative mb-6 w-full overflow-hidden rounded-none md:mb-10 md:rounded-2xl ${COMPACT_BANNER_SIZE}`}>
+    <div className={`layout-banner relative mb-6 overflow-hidden rounded-none md:mb-10 md:rounded-2xl ${COMPACT_BANNER_SIZE}`}>
       {/* Empty card background to mirror PlaceholderCard */}
       <div className="absolute inset-0 bg-empty-card" />
 
@@ -34,7 +34,7 @@ export function FeaturedBannerPlaceholder() {
 
       {/* Content placeholders */}
       <div className="relative z-30 h-full flex items-end">
-        <div className="w-full px-4 pb-14 md:px-12 md:pb-16">
+        <div className="layout-banner-content pb-14 md:pb-16">
           <div className="flex items-center gap-3 mb-1 md:mb-2">
             <div className="w-6 h-6 md:w-8 md:h-8 bg-white/25 rounded" />
             <div className="h-6 md:h-8 bg-white/25 rounded flex-1 max-w-[70%]" />

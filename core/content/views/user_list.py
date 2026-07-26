@@ -7,6 +7,8 @@ from django.db.models import Q, Prefetch, Count, Subquery, Avg
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiExample, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 from content.models import (
+    ContentItemAuthor,
+    Image,
     UserList,
     ListItem,
     Rating,
@@ -295,7 +297,20 @@ class UserListViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
                     queryset=ListItem.objects.select_related(
                         "content_item",
                         *content_related,
-                    ).order_by("list_order", "-added_at"),
+                    )
+                    .prefetch_related(
+                        Prefetch(
+                            "content_item__images",
+                            queryset=Image.objects.order_by("position", "id"),
+                        ),
+                        Prefetch(
+                            "content_item__content_authors",
+                            queryset=ContentItemAuthor.objects.select_related(
+                                "author"
+                            ).order_by("position", "id"),
+                        ),
+                    )
+                    .order_by("list_order", "-added_at"),
                 ),
             )
             .first()

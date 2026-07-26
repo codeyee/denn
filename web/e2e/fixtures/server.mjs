@@ -89,6 +89,17 @@ const movieThree = {
     },
   ],
 };
+const book = {
+  id: "301",
+  type: "book",
+  title: "Phase Zero Book",
+  description: "A deterministic OpenLibrary homepage result.",
+  image_url: `${fixtureOrigin()}/__fixture__/images/poster-3.svg`,
+  release_date: "2023-03-01",
+  authors: [{ name: "Fixture Author", type: "PERSON" }],
+  images: [],
+  pages: 320,
+};
 const contentItem = {
   id: 1,
   source_api: "tmdb",
@@ -147,7 +158,11 @@ const homepage = {
   "tv-shows": emptyProxyCategory,
   games: emptyProxyCategory,
   albums: emptyProxyCategory,
-  books: emptyProxyCategory,
+  books: {
+    metadata: { page: 1, total_results: 1, total_pages: 1 },
+    results: [book],
+    error: "",
+  },
 };
 const search = {
   movies: {
@@ -224,6 +239,24 @@ const localContent = {
   date: "2024-01-01",
   poster: `${fixtureOrigin()}/__fixture__/images/poster-1.svg`,
   backdrop: `${fixtureOrigin()}/__fixture__/images/banner-1.svg`,
+};
+const localGame = {
+  ...localContent,
+  id: 2,
+  type: "GAME",
+  title: "Phase Zero Game",
+  date: "2025-02-01",
+  poster: `${fixtureOrigin()}/__fixture__/images/poster-2.svg`,
+  backdrop: null,
+};
+const localBook = {
+  ...localContent,
+  id: 3,
+  type: "BOOK",
+  title: "Phase Zero Book",
+  date: "2023-03-01",
+  poster: `${fixtureOrigin()}/__fixture__/images/poster-3.svg`,
+  backdrop: null,
 };
 const publicProfile = {
   username: user.username,
@@ -330,6 +363,7 @@ function record(service, request, url, requestId) {
     service,
     method: request.method,
     path: url.pathname,
+    query: url.search,
     request_id: requestId,
     consumer: request.headers["x-api-consumer"] ?? null,
     catalog_visitor: request.headers["x-catalog-visitor"] ?? null,
@@ -564,7 +598,27 @@ const core = createServer(async (request, response) => {
           completed_by_type: { MOVIE: 1 },
         },
         favorites: {
-          MOVIE: [{ content: localContent, favorited_at: now, score: "9.0" }],
+          MOVIE: [
+            {
+              content: localContent,
+              favorited_at: "2026-07-22T12:00:00Z",
+              score: "9.0",
+            },
+          ],
+          GAME: [
+            {
+              content: localGame,
+              favorited_at: "2026-07-23T12:00:00Z",
+              score: "9.5",
+            },
+          ],
+          BOOK: [
+            {
+              content: localBook,
+              favorited_at: "2026-07-24T12:00:00Z",
+              score: null,
+            },
+          ],
         },
         recent_reviews: [publicRating],
         recent_completed: [

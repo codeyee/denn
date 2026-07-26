@@ -34,6 +34,8 @@ export function RatingBadge({
 
   return (
     <div
+      role="img"
+      aria-label={`${config.label}: ${rating.toFixed(1)} out of 10`}
       className={cn(
         "rounded-full text-xs font-semibold border inline-flex items-center gap-1",
         size === "compact" ? "px-2 py-1" : "px-3 py-1.5",

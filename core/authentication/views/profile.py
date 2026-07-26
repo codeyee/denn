@@ -2,7 +2,16 @@ from collections import defaultdict
 from decimal import Decimal, InvalidOperation
 
 from django.contrib.auth.models import User
-from django.db.models import Count, Exists, OuterRef, Prefetch, Q, Subquery, Value
+from django.db.models import (
+    Count,
+    Exists,
+    IntegerField,
+    OuterRef,
+    Prefetch,
+    Q,
+    Subquery,
+    Value,
+)
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import OpenApiParameter, extend_schema
@@ -20,7 +29,14 @@ from authentication.serializers import (
     PublicRatingItemSerializer,
     UserPublicProfileEditSerializer,
 )
-from content.models import ContentItem, Rating, UserContentTracking, UserList
+from content.models import (
+    ContentItem,
+    ContentItemAuthor,
+    Image,
+    Rating,
+    UserContentTracking,
+    UserList,
+)
 from content.serializers import LocalContentSummarySerializer
 from core.pagination import PublicProfilePagination
 from core.throttling import PublicProfileRateThrottle
@@ -35,6 +51,22 @@ CONTENT_RELATED_FIELDS = (
     "album_detail",
     "book_detail",
 )
+
+
+def _content_prefetches(prefix=""):
+    return (
+        Prefetch(
+            f"{prefix}images",
+            queryset=Image.objects.order_by("position", "id"),
+        ),
+        Prefetch(
+            f"{prefix}content_authors",
+            queryset=ContentItemAuthor.objects.select_related("author").order_by(
+                "position",
+                "id",
+            ),
+        ),
+    )
 
 
 def _profile_filter_parameters(*extra):
@@ -60,6 +92,43 @@ class PublicProfileBaseView(generics.GenericAPIView):
 
 
 class PublicProfileOverviewView(PublicProfileBaseView):
+    def get_profile_user(self):
+        public_list_count = (
+            UserList.objects.filter(
+                Q(owner_id=OuterRef("pk")) | Q(members__id=OuterRef("pk")),
+                visibility=UserList.Visibility.PUBLIC,
+            )
+            .order_by()
+            .values("visibility")
+            .annotate(total=Count("id", distinct=True))
+            .values("total")[:1]
+        )
+        return get_object_or_404(
+            User.objects.select_related("public_profile").annotate(
+                active_rating_count=Count(
+                    "ratings",
+                    filter=Q(ratings__is_active=True),
+                    distinct=True,
+                ),
+                active_review_count=Count(
+                    "ratings",
+                    filter=(
+                        Q(
+                            ratings__is_active=True,
+                            ratings__comment__isnull=False,
+                        )
+                        & ~Q(ratings__comment="")
+                    ),
+                    distinct=True,
+                ),
+                public_list_count=Coalesce(
+                    Subquery(public_list_count, output_field=IntegerField()),
+                    Value(0),
+                ),
+            ),
+            username=self.kwargs["username"],
+        )
+
     @extend_schema(
         tags=["Public Profiles"],
         summary="Get a public profile overview",
@@ -81,17 +150,6 @@ class PublicProfileOverviewView(PublicProfileBaseView):
             for row in completed_by_type_rows
         }
         completed_count = sum(completed_by_type.values())
-
-        rating_counts = Rating.objects.filter(
-            user=user,
-            is_active=True,
-        ).aggregate(
-            ratings=Count("id"),
-            reviews=Count(
-                "id",
-                filter=Q(comment__isnull=False) & ~Q(comment=""),
-            ),
-        )
 
         active_score = Rating.objects.filter(
             user=user,
@@ -147,7 +205,6 @@ class PublicProfileOverviewView(PublicProfileBaseView):
         )
 
         public_lists = _public_lists_queryset(user)
-        public_list_count = public_lists.count()
         list_rows = list(
             public_lists.select_related("owner")
             .prefetch_related(
@@ -206,9 +263,9 @@ class PublicProfileOverviewView(PublicProfileBaseView):
             "profile": PublicProfileIdentitySerializer(profile).data,
             "counters": {
                 "completed": completed_count,
-                "ratings": rating_counts["ratings"],
-                "reviews": rating_counts["reviews"],
-                "public_lists": public_list_count,
+                "ratings": user.active_rating_count,
+                "reviews": user.active_review_count,
+                "public_lists": user.public_list_count,
                 "completed_by_type": completed_by_type,
             },
             "favorites": dict(favorites),
@@ -250,6 +307,7 @@ class PublicProfileCompletedView(PublicProfileBaseView):
             .select_related("content_item", *[
                 f"content_item__{field}" for field in CONTENT_RELATED_FIELDS
             ])
+            .prefetch_related(*_content_prefetches("content_item__"))
             .annotate(
                 score=Subquery(active_score),
                 content_title=Coalesce(
@@ -315,6 +373,7 @@ class PublicProfileRatingsView(PublicProfileBaseView):
             .select_related("content_item", *[
                 f"content_item__{field}" for field in CONTENT_RELATED_FIELDS
             ])
+            .prefetch_related(*_content_prefetches("content_item__"))
             .annotate(
                 is_favorite=Exists(favorite_tracking),
                 content_title=Coalesce(
@@ -479,7 +538,7 @@ def _content_map(content_ids):
         return {}
     queryset = ContentItem.objects.filter(id__in=content_ids).select_related(
         *CONTENT_RELATED_FIELDS
-    )
+    ).prefetch_related(*_content_prefetches())
     return {content.id: content for content in queryset}
 
 
@@ -560,7 +619,7 @@ def _select_banner_media(favorite_rows, content_map):
         if content is None:
             continue
         summary = _serialize_content(content)
-        image_url = summary["backdrop"] or summary["poster"]
+        image_url = summary["backdrop"]
         if image_url:
             media.append(
                 {

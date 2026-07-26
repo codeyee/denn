@@ -119,7 +119,7 @@ export function ContentBanner({
         ) : null
       }
     >
-      <div className="w-full px-4 pb-10 md:px-12 md:pb-12">
+      <div className="layout-banner-content pb-10 md:pb-12">
           <div className="flex items-center gap-3 mb-1 md:mb-2">
             {Icon && <Icon className="h-6 w-6 text-white/90 md:h-7 md:w-7" />}
             <h1 className="line-clamp-2 text-balance text-2xl font-extrabold text-white drop-shadow-text sm:text-3xl md:text-4xl">

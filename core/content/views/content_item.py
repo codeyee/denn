@@ -23,6 +23,9 @@ from core.throttling import (
 from rest_flex_fields.views import FlexFieldsMixin
 
 
+MAX_CATALOG_RESOLVE_ITEMS = 200
+
+
 class ContentItemLookupSerializer(drf_serializers.Serializer):
     source_api = drf_serializers.ChoiceField(choices=ContentItem.SourceAPI.choices)
     external_id = drf_serializers.CharField(max_length=255)
@@ -39,8 +42,10 @@ class ContentItemBulkResolveRequestSerializer(drf_serializers.Serializer):
     def validate_items(self, items):
         if not items:
             raise drf_serializers.ValidationError('At least one item is required.')
-        if len(items) > 100:
-            raise drf_serializers.ValidationError('Maximum 100 items allowed per request.')
+        if len(items) > MAX_CATALOG_RESOLVE_ITEMS:
+            raise drf_serializers.ValidationError(
+                f'Maximum {MAX_CATALOG_RESOLVE_ITEMS} items allowed per request.'
+            )
 
         seen = set()
         expected_sources = {
@@ -404,7 +409,7 @@ class ContentItemDetailByIdView(APIView):
     tags=['Content Items'],
     summary='Resolve external content identities in bulk',
     description='''
-    Idempotently resolves up to 100 external content triples to canonical
+    Idempotently resolves up to 200 external content triples to canonical
     Denn ids. This endpoint owns identity only; it never trusts
     browser-supplied provider metadata. Missing detail is materialized later
     through the canonical `core` -> `proxy` path.

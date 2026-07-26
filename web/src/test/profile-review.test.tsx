@@ -33,8 +33,9 @@ describe("public profile reviews", () => {
             title: "The Reveal",
             subtitle: null,
             date: "2026-01-01",
-            poster: null,
-            backdrop: null,
+            poster: "https://example.com/the-reveal-cover.jpg",
+            backdrop: "https://example.com/the-reveal-gallery.jpg",
+            authors: null,
           },
           score: "8.5",
           review: "The final scene changes everything.",
@@ -53,6 +54,20 @@ describe("public profile reviews", () => {
       screen.queryByRole("button", { name: /spoiler/i }),
     ).not.toBeInTheDocument();
     expect(screen.getByLabelText("Movie")).toBeInTheDocument();
+    for (const artwork of screen.getAllByAltText("The Reveal artwork")) {
+      expect(artwork).toHaveAttribute(
+        "src",
+        "https://example.com/the-reveal-cover.jpg",
+      );
+      expect(artwork).not.toHaveAttribute(
+        "src",
+        "https://example.com/the-reveal-gallery.jpg",
+      );
+    }
+    expect(
+      screen.getByLabelText("My Rating: 8.5 out of 10"),
+    ).toBeInTheDocument();
+    expect(screen.queryByLabelText("8.5 out of 10")).not.toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "Open The Reveal" }),
     ).toHaveClass("block");
@@ -88,6 +103,7 @@ describe("public profile reviews", () => {
             date: "2026-01-01",
             poster: null,
             backdrop: null,
+            authors: null,
           },
           score: "9.0",
           review: "A long review that needs more room than the card provides.",
@@ -102,6 +118,16 @@ describe("public profile reviews", () => {
     await waitFor(() => {
       expect(screen.getByText("View more")).toBeInTheDocument();
     });
+    expect(screen.getByText("View more")).toHaveClass(
+      "absolute",
+      "bottom-0",
+      "right-0",
+    );
+    expect(
+      screen.getByText(
+        "A long review that needs more room than the card provides.",
+      ),
+    ).toHaveClass("pr-24", "whitespace-normal");
     expect(screen.getByLabelText("Game")).toBeInTheDocument();
 
     if (scrollHeight) {

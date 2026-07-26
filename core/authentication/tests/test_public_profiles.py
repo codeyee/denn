@@ -11,8 +11,12 @@ from rest_framework.serializers import ValidationError
 
 from authentication.serializers import RegisterSerializer
 from content.models import (
+    Author,
     ContentItem,
+    ContentItemAuthor,
     ContentItemBrowseMetadata,
+    GameDetail,
+    Image,
     ListItem,
     MovieDetail,
     Rating,
@@ -47,6 +51,19 @@ class PublicProfileApiTests(APITestCase):
             title="Fight Club",
             image_url="https://images.example/fight-club.jpg",
             release_date="1999-10-15",
+        )
+        director = Author.objects.create(name="David Fincher")
+        ContentItemAuthor.objects.create(
+            content_item=self.movie,
+            author=director,
+            role="director",
+            position=0,
+        )
+        Image.objects.create(
+            content_item=self.movie,
+            type=Image.Type.GALLERY,
+            size=Image.Size.ORIGINAL,
+            image_url="https://images.example/fight-club-backdrop.jpg",
         )
         UserContentTracking.objects.create(
             user=self.user,
@@ -93,6 +110,64 @@ class PublicProfileApiTests(APITestCase):
         self.assertEqual(
             response.data["favorites"]["MOVIE"][0]["content"]["title"],
             "Fight Club",
+        )
+        movie = response.data["favorites"]["MOVIE"][0]["content"]
+        self.assertEqual(
+            movie["authors"],
+            [{"name": "David Fincher", "type": "director"}],
+        )
+        self.assertEqual(
+            movie["backdrop"],
+            "https://images.example/fight-club-backdrop.jpg",
+        )
+        self.assertEqual(
+            response.data["banner_media"][0]["image_url"],
+            "https://images.example/fight-club-backdrop.jpg",
+        )
+
+    def test_game_favorites_include_developer_attribution(self):
+        game = ContentItem.objects.create(
+            source_api=ContentItem.SourceAPI.IGDB,
+            external_id="1942",
+            content_type=ContentItem.ContentType.GAME,
+        )
+        ContentItemBrowseMetadata.objects.create(
+            content_item=game,
+            display_title="The Witcher 3",
+        )
+        GameDetail.objects.create(
+            content_item=game,
+            title="The Witcher 3",
+            image_url="https://images.example/witcher-cover.jpg",
+        )
+        developer = Author.objects.create(name="CD Projekt Red")
+        ContentItemAuthor.objects.create(
+            content_item=game,
+            author=developer,
+            role="developer",
+            position=0,
+        )
+        UserContentTracking.objects.create(
+            user=self.user,
+            content_item=game,
+            status=UserContentTracking.Status.COMPLETED,
+            last_completed_at=self.user.date_joined,
+            is_favorite=True,
+            favorited_at=self.user.date_joined,
+        )
+
+        response = self.client.get(
+            reverse(
+                "profiles:overview",
+                kwargs={"username": self.user.username},
+            )
+        )
+
+        self.assertEqual(response.status_code, 200)
+        game_content = response.data["favorites"]["GAME"][0]["content"]
+        self.assertEqual(
+            game_content["authors"],
+            [{"name": "CD Projekt Red", "type": "developer"}],
         )
 
     def test_public_lists_endpoint_excludes_private_lists_and_email(self):

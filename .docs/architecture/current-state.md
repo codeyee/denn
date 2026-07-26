@@ -107,6 +107,19 @@ The hybrid topology is deliberate and documented in
 - Content cards and list item cards render semantic links with a known
   internal id. Hover/focus prefetch uses a pure `GET`, while click
   navigation exposes immediate pending feedback.
+- Desktop fine-pointer previews use one shared capability observer and
+  register scroll, resize, keyboard, and resize-observer work only for
+  the active card. The fixed portal preserves the measured card width,
+  stays inside the viewport, and recalculates on resize. The first wheel
+  or application scroll dismisses it instead of creating an internal
+  scroll surface, so page and carousel scrolling remain native; focus,
+  Escape, touch, and reduced motion keep their fallbacks.
+- Category headings on Home and Search use the same content-type
+  metadata as cards and filters. Homepage discovery requests up to 30
+  movies, TV shows, games, albums, and books per carousel.
+- Public-profile favorites render as one score-descending collection.
+  Accessible media buttons apply an immediate multi-select union; no
+  active media filter means all favorites.
 - Guest Add-to-List and Rating actions redirect to Login with the
   current route in `next`; registration preserves the same return path.
 - Content-detail query keys are viewer-scoped (`anonymous` or user id),

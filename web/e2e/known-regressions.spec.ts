@@ -103,6 +103,36 @@ test("hover preview keeps the add-to-list action interactive @regression", async
   await expect(page).toHaveURL(/\/search\?q=phase$/);
 });
 
+test("hover preview closes on scroll and stays aligned through resize @regression", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 1_000 });
+  await page.goto("/");
+  const carousel = page
+    .locator('section[aria-roledescription="carousel"]')
+    .filter({ has: page.getByRole("heading", { name: "Popular Movies" }) });
+  const cardLink = carousel
+    .getByRole("link", { name: "View details for Phase Zero Movie" })
+    .first();
+  await cardLink.scrollIntoViewIfNeeded();
+  await cardLink.hover();
+
+  const preview = page.locator("[data-card-hover-popover]");
+  await expect(preview).toBeVisible();
+  await expectPreviewAligned(page, cardLink, preview);
+
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await expectPreviewAligned(page, cardLink, preview);
+
+  await expect(preview).toHaveCSS("overflow-y", "hidden");
+  const initialScrollY = await page.evaluate(() => window.scrollY);
+  await page.mouse.wheel(0, 120);
+  await expect(preview).toBeHidden();
+  await expect
+    .poll(() => page.evaluate(() => window.scrollY))
+    .toBeGreaterThan(initialScrollY);
+});
+
 for (const detailDelayMs of [500, 2_000, 6_500]) {
   test(`content navigation exposes feedback within 100ms with ${detailDelayMs}ms latency @regression`, async ({
     page,
@@ -329,4 +359,39 @@ async function measureNavigationFeedback(page: import("@playwright/test").Page) 
           (element as HTMLElement).click();
         }),
     );
+}
+
+async function expectPreviewAligned(
+  page: import("@playwright/test").Page,
+  card: import("@playwright/test").Locator,
+  preview: import("@playwright/test").Locator,
+) {
+  await expect
+    .poll(async () => {
+      const [cardBox, previewBox, viewport] = await Promise.all([
+        card.boundingBox(),
+        preview.boundingBox(),
+        page.evaluate(() => ({
+          width: window.innerWidth,
+          height: window.innerHeight,
+        })),
+      ]);
+      if (!cardBox || !previewBox) return null;
+      return {
+        alignedLeft: Math.abs(cardBox.x - previewBox.x) <= 1,
+        alignedWidth: Math.abs(cardBox.width - previewBox.width) <= 1,
+        withinHorizontalViewport:
+          previewBox.x >= 16 &&
+          previewBox.x + previewBox.width <= viewport.width - 16,
+        withinVerticalViewport:
+          previewBox.y >= 16 &&
+          previewBox.y + previewBox.height <= viewport.height - 16,
+      };
+    })
+    .toEqual({
+      alignedLeft: true,
+      alignedWidth: true,
+      withinHorizontalViewport: true,
+      withinVerticalViewport: true,
+    });
 }

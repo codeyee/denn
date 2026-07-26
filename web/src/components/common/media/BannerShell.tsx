@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/utils/tailwindUtils";
 
 export const COMPACT_BANNER_SIZE =
-  "h-[clamp(21rem,90vw,27rem)] md:h-[clamp(30rem,49vw,35rem)]";
+  "h-[var(--layout-banner-height)]";
 export const BANNER_MEDIA_POSITION = "object-[center_35%]";
 
 interface BannerShellProps {
@@ -23,7 +23,7 @@ export function BannerShell({
     <section
       data-banner-shell
       className={cn(
-        "relative mb-6 w-full overflow-hidden rounded-none bg-[#160b19] md:mb-10 md:rounded-2xl",
+        "layout-banner relative mb-6 overflow-hidden rounded-none bg-[#160b19] md:mb-10 md:rounded-2xl",
         COMPACT_BANNER_SIZE,
         className,
       )}

@@ -13,6 +13,12 @@ import {
   getContentTypeIcon,
   getContentTypeLabel,
 } from "@/lib/icons/contentTypeIcons";
+import {
+  CONTENT_TYPE_DEFINITIONS,
+  DISCOVERY_CONTENT_TYPES,
+  getContentTypePluralLabel,
+} from "@/lib/contentTypes";
+import { SUGGESTIONS_PAGE_SIZE } from "@/lib/api/queries";
 import { ContentType } from "@/lib/types";
 
 describe("content type icons", () => {
@@ -37,5 +43,18 @@ describe("content type icons", () => {
   it("uses a neutral icon for an unknown type", () => {
     expect(getContentTypeIcon("podcast")).toBe(CircleHelp);
     expect(getContentTypeLabel("podcast")).toBe("podcast");
+  });
+
+  it("uses one ordered discovery definition for headings and filters", () => {
+    expect(
+      DISCOVERY_CONTENT_TYPES.map(
+        (type) => CONTENT_TYPE_DEFINITIONS[type].pluralLabel,
+      ),
+    ).toEqual(["Movies", "TV Shows", "Games", "Music", "Books"]);
+    expect(getContentTypePluralLabel(ContentType.ALBUM)).toBe("Music");
+  });
+
+  it("requests thirty homepage items for every discovery bucket", () => {
+    expect(SUGGESTIONS_PAGE_SIZE).toBe(30);
   });
 });

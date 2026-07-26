@@ -1,11 +1,11 @@
-import { useMemo, useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 
 import { VerticalList } from "@/components/common/lists/VerticalList";
 import { Button } from "@/components/common/ui/Button";
-import type { ContentType, PublicProfileOverview } from "@/lib/types";
-import { getContentTypeDisplayName } from "@/lib/utils/contentTypeUtils";
-import { CompletedGrid, FavoriteGrid, PublicListGrid } from "./ProfileCollections";
+import type { PublicProfileOverview } from "@/lib/types";
+import { CompletedGrid, PublicListGrid } from "./ProfileCollections";
+import { ProfileFavorites } from "./ProfileFavorites";
 import { ReviewRow } from "./ReviewRow";
 
 interface ProfileOverviewProps {
@@ -17,48 +17,9 @@ export function ProfileOverview({
   username,
   overview,
 }: ProfileOverviewProps) {
-  const favoriteTypes = useMemo(
-    () =>
-      Object.entries(overview.favorites)
-        .filter(([, items]) => Boolean(items?.length))
-        .map(([type]) => type as ContentType),
-    [overview.favorites],
-  );
-  const [selectedType, setSelectedType] = useState<ContentType | undefined>(
-    favoriteTypes[0],
-  );
-  const visibleFavorites = selectedType
-    ? (overview.favorites[selectedType] ?? [])
-    : [];
-
   return (
     <div className="space-y-14 py-8 md:py-12">
-      <ProfileSection
-        title="Favorites"
-        action={
-          favoriteTypes.length > 1 ? (
-            <div className="flex flex-wrap gap-2" aria-label="Favorite content type">
-              {favoriteTypes.map((type) => (
-                <button
-                  key={type}
-                  type="button"
-                  aria-pressed={selectedType === type}
-                  onClick={() => setSelectedType(type)}
-                  className="min-h-11 rounded-full border border-white/15 px-4 text-sm text-white/70 outline-none hover:bg-white/10 focus-visible:ring-4 focus-visible:ring-white/70 aria-pressed:bg-white aria-pressed:text-black"
-                >
-                  {getContentTypeDisplayName(type)}
-                </button>
-              ))}
-            </div>
-          ) : null
-        }
-      >
-        {visibleFavorites.length > 0 ? (
-          <FavoriteGrid items={visibleFavorites} />
-        ) : (
-          <ProfileEmpty message="No public favorites yet." />
-        )}
-      </ProfileSection>
+      <ProfileFavorites favorites={overview.favorites} />
 
       <ProfileSection
         title="Recent reviews"

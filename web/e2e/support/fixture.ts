@@ -8,6 +8,7 @@ export interface FixtureRequest {
   service: "core" | "proxy";
   method: string;
   path: string;
+  query: string;
   request_id: string;
   consumer: string | null;
   catalog_visitor: string | null;

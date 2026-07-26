@@ -191,6 +191,62 @@ test("public profile, tabs, reviews and public navigation work anonymously", asy
   expect(consoleErrors).toEqual([]);
 });
 
+test("profile favorites combine score order with multi-select type filters", async ({
+  page,
+}) => {
+  await page.goto("/user/phase0-fixture");
+  const favorites = page.getByRole("region", { name: "Favorites" });
+  const filterNames = ["Movies", "TV Shows", "Games", "Music", "Books"];
+
+  for (const name of filterNames) {
+    const filter = favorites.getByRole("button", { name });
+    await expect(filter).toHaveAttribute("aria-pressed", "false");
+    await expect(filter.locator("svg")).toHaveCount(1);
+  }
+
+  await expect
+    .poll(() =>
+      favorites
+        .getByRole("link")
+        .evaluateAll((links) =>
+          links.map((link) => link.getAttribute("aria-label")),
+        ),
+    )
+    .toEqual([
+      "View details for Phase Zero Game",
+      "View details for Phase Zero Movie",
+      "View details for Phase Zero Book",
+    ]);
+
+  await favorites.getByRole("button", { name: "Movies" }).click();
+  await expect(
+    favorites.getByRole("link", {
+      name: "View details for Phase Zero Movie",
+    }),
+  ).toBeVisible();
+  await expect(
+    favorites.getByRole("link", {
+      name: "View details for Phase Zero Game",
+    }),
+  ).toHaveCount(0);
+
+  await favorites.getByRole("button", { name: "Games" }).click();
+  await expect(
+    favorites.getByRole("link", {
+      name: "View details for Phase Zero Game",
+    }),
+  ).toBeVisible();
+  await expect(
+    favorites.getByRole("link", {
+      name: "View details for Phase Zero Book",
+    }),
+  ).toHaveCount(0);
+
+  await favorites.getByRole("button", { name: "Movies" }).click();
+  await favorites.getByRole("button", { name: "Games" }).click();
+  await expect(favorites.getByRole("link")).toHaveCount(3);
+});
+
 test("profile filters, sorting, pagination and shareable URLs stay canonical", async ({
   page,
 }) => {

@@ -18,7 +18,7 @@ export function TVShowDetailContent({
   const platformsByAction = tvShow.platforms || {};
 
   return (
-    <div className="mt-8 w-full px-4 md:px-8 lg:px-12">
+    <div className="layout-content mt-8">
       <h2 className="text-2xl font-bold text-white mb-6">About</h2>
 
       {/* 2-column layout */}

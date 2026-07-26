@@ -5,6 +5,16 @@ import {
   type RefObject,
   type WheelEvent,
 } from "react";
+import {
+  animateCarouselWrap,
+  cancelCarouselWrapAnimation,
+} from "../animations";
+import {
+  getCarouselPageDistance,
+  getCarouselScrollDestination,
+  getCarouselScrollState,
+  type CarouselScrollState,
+} from "../utils";
 
 interface UseCarouselScrollOptions {
   containerRef: RefObject<HTMLDivElement | null>;
@@ -12,6 +22,27 @@ interface UseCarouselScrollOptions {
   itemsPerView?: number;
   targetCardWidth?: number;
   gap?: number;
+}
+
+export function calculateVisibleCarouselItems({
+  availableWidth,
+  targetCardWidth,
+  gap,
+  itemsPerView,
+}: {
+  availableWidth: number;
+  targetCardWidth: number;
+  gap: number;
+  itemsPerView?: number;
+}) {
+  if (itemsPerView !== undefined) {
+    return availableWidth < 768 ? Math.min(2, itemsPerView) : itemsPerView;
+  }
+
+  const calculatedItems = Math.floor(
+    (availableWidth + gap) / (targetCardWidth + gap),
+  );
+  return Math.max(2, calculatedItems);
 }
 
 export function useCarouselScroll({
@@ -22,39 +53,91 @@ export function useCarouselScroll({
   gap = 16,
 }: UseCarouselScrollOptions) {
   const [visibleItems, setVisibleItems] = useState(itemsPerView || 4);
-  const [hasOverflow, setHasOverflow] = useState(false);
+  const [scrollState, setScrollState] = useState<CarouselScrollState>({
+    hasOverflow: false,
+    isAtStart: true,
+    isAtEnd: true,
+  });
 
   const updateScrollState = useCallback(() => {
     const container = containerRef.current;
     if (!container) return;
-    setHasOverflow(container.scrollWidth - container.clientWidth > 2);
+    const nextState = getCarouselScrollState({
+      scrollLeft: container.scrollLeft,
+      scrollWidth: container.scrollWidth,
+      clientWidth: container.clientWidth,
+    });
+    setScrollState((currentState) =>
+      currentState.hasOverflow === nextState.hasOverflow &&
+      currentState.isAtStart === nextState.isAtStart &&
+      currentState.isAtEnd === nextState.isAtEnd
+        ? currentState
+        : nextState,
+    );
   }, [containerRef]);
 
   useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    let animationFrame = 0;
+
+    const scheduleScrollStateUpdate = () => {
+      cancelAnimationFrame(animationFrame);
+      animationFrame = requestAnimationFrame(updateScrollState);
+    };
+
     const calculate = () => {
-      const width = window.innerWidth;
-      if (itemsPerView !== undefined) {
-        setVisibleItems(
-          width < 768 ? Math.min(2, itemsPerView) : itemsPerView,
-        );
-      } else {
-        const horizontalPadding = width < 768 ? 32 : 96;
-        const availableWidth = width - horizontalPadding;
-        const calculatedItems = Math.floor(
-          (availableWidth + gap) / (targetCardWidth + gap),
-        );
-        setVisibleItems(Math.max(2, Math.min(calculatedItems, 10)));
-      }
-      requestAnimationFrame(updateScrollState);
+      const containerWidth = container.clientWidth || window.innerWidth;
+      const styles = window.getComputedStyle(container);
+      const horizontalPadding =
+        Number.parseFloat(styles.paddingLeft) +
+        Number.parseFloat(styles.paddingRight);
+      const availableWidth = Math.max(0, containerWidth - horizontalPadding);
+      setVisibleItems(
+        calculateVisibleCarouselItems({
+          availableWidth,
+          targetCardWidth,
+          gap,
+          itemsPerView,
+        }),
+      );
+      scheduleScrollStateUpdate();
     };
 
     calculate();
+    const resizeObserver =
+      typeof ResizeObserver === "undefined"
+        ? null
+        : new ResizeObserver(calculate);
+    resizeObserver?.observe(container);
+    const mutationObserver =
+      typeof MutationObserver === "undefined"
+        ? null
+        : new MutationObserver(scheduleScrollStateUpdate);
+    mutationObserver?.observe(container, { childList: true, subtree: true });
+    container.addEventListener("load", scheduleScrollStateUpdate, true);
     window.addEventListener("resize", calculate);
-    return () => window.removeEventListener("resize", calculate);
-  }, [gap, itemsPerView, targetCardWidth, updateScrollState]);
+
+    return () => {
+      cancelAnimationFrame(animationFrame);
+      cancelCarouselWrapAnimation(container);
+      resizeObserver?.disconnect();
+      mutationObserver?.disconnect();
+      container.removeEventListener("load", scheduleScrollStateUpdate, true);
+      window.removeEventListener("resize", calculate);
+    };
+  }, [
+    containerRef,
+    gap,
+    itemsPerView,
+    targetCardWidth,
+    totalItems,
+    updateScrollState,
+  ]);
 
   useEffect(() => {
-    requestAnimationFrame(updateScrollState);
+    const animationFrame = requestAnimationFrame(updateScrollState);
+    return () => cancelAnimationFrame(animationFrame);
   }, [totalItems, updateScrollState, visibleItems]);
 
   const scroll = useCallback(
@@ -65,34 +148,50 @@ export function useCarouselScroll({
         0,
         container.scrollWidth - container.clientWidth,
       );
-      const isAtStart = container.scrollLeft <= 2;
-      const isAtEnd = container.scrollLeft >= maximumScroll - 2;
-      const shouldWrap =
-        (direction === -1 && isAtStart) || (direction === 1 && isAtEnd);
-      const pageDistance = container.clientWidth * 0.85;
-      const target = shouldWrap
-        ? direction === -1
-          ? maximumScroll
-          : 0
-        : Math.min(
-            maximumScroll,
-            Math.max(0, container.scrollLeft + direction * pageDistance),
-          );
+      const firstItem = container.querySelector<HTMLElement>('[role="group"]');
+      const computedGap = Number.parseFloat(
+        window.getComputedStyle(container).columnGap,
+      );
+      const pageDistance = getCarouselPageDistance({
+        clientWidth: container.clientWidth,
+        itemWidth: firstItem?.getBoundingClientRect().width ?? 0,
+        gap: Number.isFinite(computedGap) ? computedGap : gap,
+      });
+      const destination = getCarouselScrollDestination({
+        scrollLeft: container.scrollLeft,
+        maximumScroll,
+        direction,
+        pageDistance,
+      });
+      const prefersReducedMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+      ).matches;
+
+      cancelCarouselWrapAnimation(container);
+      if (destination.isWrapping && !prefersReducedMotion) {
+        void animateCarouselWrap({
+          container,
+          target: destination.target,
+          direction,
+          onPositionChange: updateScrollState,
+        });
+        return;
+      }
 
       container.scrollTo({
-        left: target,
-        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
-          ? "auto"
-          : "smooth",
+        left: destination.target,
+        behavior: prefersReducedMotion ? "auto" : "smooth",
       });
+      requestAnimationFrame(updateScrollState);
     },
-    [containerRef],
+    [containerRef, gap, updateScrollState],
   );
 
   const handleWheel = useCallback(
     (event: WheelEvent<HTMLDivElement>) => {
       const container = containerRef.current;
       if (!container) return;
+      cancelCarouselWrapAnimation(container);
 
       const horizontalDelta =
         event.deltaX || (event.shiftKey ? event.deltaY : 0);
@@ -106,12 +205,13 @@ export function useCarouselScroll({
 
       event.preventDefault();
       container.scrollLeft += horizontalDelta;
+      requestAnimationFrame(updateScrollState);
     },
-    [containerRef],
+    [containerRef, updateScrollState],
   );
 
   return {
-    hasOverflow,
+    ...scrollState,
     visibleItems,
     handleNext: () => scroll(1),
     handlePrevious: () => scroll(-1),

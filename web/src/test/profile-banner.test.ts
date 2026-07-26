@@ -15,6 +15,7 @@ const overview = {
           date: null,
           poster: "https://example.com/first-poster.jpg",
           backdrop: "https://example.com/first-backdrop.jpg",
+          authors: null,
         },
         favorited_at: null,
         score: "8.0",
@@ -30,6 +31,7 @@ const overview = {
           date: null,
           poster: "https://example.com/second-poster.jpg",
           backdrop: null,
+          authors: null,
         },
         favorited_at: null,
         score: null,
@@ -40,21 +42,20 @@ const overview = {
 } as unknown as PublicProfileOverview;
 
 describe("profile banner selection", () => {
-  it("selects one image from every favorite type", () => {
+  it("selects panoramic art and never falls back to a portrait cover", () => {
     expect(pickRandomFavoriteBanner(overview, () => 0)).toMatchObject({
       content_id: 1,
       image_url: "https://example.com/first-backdrop.jpg",
     });
     expect(pickRandomFavoriteBanner(overview, () => 0.99)).toMatchObject({
-      content_id: 2,
-      image_url: "https://example.com/second-poster.jpg",
+      content_id: 1,
+      image_url: "https://example.com/first-backdrop.jpg",
     });
   });
 
-  it("falls back to the profile banner payload when favorites have no artwork", () => {
+  it("prefers the bounded banner payload produced by Core", () => {
     const fallback = {
       ...overview,
-      favorites: {},
       banner_media: [
         {
           content_id: 3,

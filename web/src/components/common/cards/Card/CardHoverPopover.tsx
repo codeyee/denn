@@ -1,8 +1,10 @@
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import type { LucideIcon } from "lucide-react";
+import type { FocusEvent, RefObject } from "react";
 import { createPortal } from "react-dom";
 
 import { CardMedia } from "./CardMedia";
+import type { CardHoverPosition } from "./cardHoverPosition";
 
 interface CardHoverPopoverProps {
   activeImageIndex: number;
@@ -14,10 +16,14 @@ interface CardHoverPopoverProps {
   icon: LucideIcon;
   isEmpty: boolean;
   isOpen: boolean;
+  onFocus: () => void;
+  onBlur: (event: FocusEvent<HTMLElement>) => void;
   onMouseEnter: () => void;
   onMouseLeave: () => void;
+  onWheel: () => void;
   overlay?: React.ReactNode;
-  position: { top: number; left: number; width: number };
+  popoverRef: RefObject<HTMLDivElement | null>;
+  position: CardHoverPosition;
   title: string;
 }
 
@@ -31,31 +37,54 @@ export function CardHoverPopover({
   icon: Icon,
   isEmpty,
   isOpen,
+  onFocus,
+  onBlur,
   onMouseEnter,
   onMouseLeave,
+  onWheel,
   overlay,
+  popoverRef,
   position,
   title,
 }: CardHoverPopoverProps) {
+  const prefersReducedMotion = useReducedMotion();
   if (typeof document === "undefined") return null;
 
   return createPortal(
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          initial={{ opacity: 0, scale: 0.96 }}
+          ref={popoverRef}
+          initial={
+            prefersReducedMotion
+              ? { opacity: 0 }
+              : { opacity: 0, scale: 0.96 }
+          }
           animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.96 }}
-          transition={{ duration: 0.18, ease: "easeOut" }}
+          exit={
+            prefersReducedMotion
+              ? { opacity: 0 }
+              : { opacity: 0, scale: 0.96 }
+          }
+          transition={{
+            duration: prefersReducedMotion ? 0 : 0.18,
+            ease: "easeOut",
+          }}
+          role="group"
+          aria-label={`${title} quick actions`}
+          data-card-hover-popover
+          onFocusCapture={onFocus}
+          onBlurCapture={onBlur}
           onMouseEnter={onMouseEnter}
           onMouseLeave={onMouseLeave}
+          onWheel={onWheel}
           className="fixed overflow-hidden rounded-2xl bg-neutral-900 shadow-lg"
           style={{
             top: position.top,
             left: position.left,
             width: position.width,
-            zIndex: 200,
-            maxWidth: 400,
+            maxHeight: position.maxHeight,
+            zIndex: "var(--z-card-popover)",
           }}
         >
           <div className="relative aspect-5/8 w-full">

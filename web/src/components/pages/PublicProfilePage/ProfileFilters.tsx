@@ -3,22 +3,17 @@ import { Search, X } from "lucide-react";
 
 import { Button } from "@/components/common/ui/Button";
 import { Input } from "@/components/common/ui/Input";
-import { ContentType, type ProfileSearchParams } from "@/lib/types";
-import { getContentTypeDisplayName } from "@/lib/utils/contentTypeUtils";
+import {
+  CONTENT_TYPE_DEFINITIONS,
+  DISCOVERY_CONTENT_TYPES,
+} from "@/lib/contentTypes";
+import type { ProfileSearchParams } from "@/lib/types";
 import { FilterSelect, ProfileRatingFilters } from "./ProfileRatingFilters";
 
 interface ProfileFiltersProps {
   search: ProfileSearchParams;
   onChange: (updates: Partial<ProfileSearchParams>) => void;
 }
-
-const CONTENT_TYPES = [
-  ContentType.MOVIE,
-  ContentType.TV_SHOW,
-  ContentType.GAME,
-  ContentType.ALBUM,
-  ContentType.BOOK,
-] as const;
 
 export function ProfileFilters({ search, onChange }: ProfileFiltersProps) {
   const [query, setQuery] = useState(search.q ?? "");
@@ -59,9 +54,9 @@ export function ProfileFilters({ search, onChange }: ProfileFiltersProps) {
             }
           >
             <option value="">All types</option>
-            {CONTENT_TYPES.map((type) => (
+            {DISCOVERY_CONTENT_TYPES.map((type) => (
               <option key={type} value={type}>
-                {getContentTypeDisplayName(type)}
+                {CONTENT_TYPE_DEFINITIONS[type].pluralLabel}
               </option>
             ))}
           </FilterSelect>

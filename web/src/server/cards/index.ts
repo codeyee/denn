@@ -1,2 +1,5 @@
-export { getBackgroundCardImages } from "./backgroundCards";
+export {
+  BACKGROUND_CARD_LIMIT,
+  getBackgroundCardImages,
+} from "./backgroundCards";
 export type { BackgroundCardImage } from "./types";

@@ -28,7 +28,7 @@ export function GallerySection({ detailData, contentItem }: GallerySectionProps)
   if (galleryImages.length === 0) return null;
 
   return (
-    <div className="mt-8 w-full px-4 md:px-8 lg:px-12">
+    <div className="layout-content mt-8">
       <h2 className="text-2xl font-bold text-white mb-6">Gallery</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
         {galleryImages.map((image, index) => (

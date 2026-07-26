@@ -34,6 +34,11 @@ test("anonymous visitors can explore the catalog and stable content detail", asy
   await expect(
     page.getByRole("heading", { name: "Explore the Denn catalog" }),
   ).toBeVisible();
+  const booksHeading = page.getByRole("heading", {
+    name: "Popular Books",
+  });
+  await expect(booksHeading).toBeVisible();
+  await expect(booksHeading.locator("svg")).toHaveCount(1);
   await expect(page.getByText("Your Lists")).toHaveCount(0);
   if ((page.viewportSize()?.width ?? 1280) < 1024) {
     await expect(
@@ -46,9 +51,11 @@ test("anonymous visitors can explore the catalog and stable content detail", asy
   }
 
   await page.goto("/search?q=phase");
-  await expect(
-    page.getByRole("heading", { name: "Movies" }),
-  ).toBeVisible();
+  for (const title of ["Movies", "TV Shows", "Games", "Music", "Books"]) {
+    const heading = page.getByRole("heading", { name: title });
+    await expect(heading).toBeVisible();
+    await expect(heading.locator("svg")).toHaveCount(1);
+  }
   await expect(page.getByText("Phase Zero Movie").first()).toBeVisible();
 
   await page
@@ -63,6 +70,15 @@ test("anonymous visitors can explore the catalog and stable content detail", asy
   await expect(page.getByRole("button", { name: /Rate This/i })).toBeVisible();
 
   const requests = await fetchFixtureRequests(request);
+  const homepageRequest = requests.find(
+    (entry) =>
+      entry.service === "proxy" &&
+      entry.method === "GET" &&
+      entry.path === "/v1/proxy/homepage",
+  );
+  expect(new URLSearchParams(homepageRequest?.query ?? "").get("limit")).toBe(
+    "30",
+  );
   const catalogResolution = requests.find(
     (entry) =>
       entry.service === "core" &&

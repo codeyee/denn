@@ -75,7 +75,7 @@ export function FeaturedBanner({ items, autoRotateMs = 5000 }: FeaturedBannerPro
       onTouchEnd={gestures.handleTouchEnd}
       onTouchCancel={gestures.handleTouchCancel}
       onWheel={gestures.handleWheel}
-      className={`group relative mb-6 w-full touch-pan-y overflow-hidden md:mb-10 md:rounded-2xl ${COMPACT_BANNER_SIZE}`}
+      className={`layout-banner group relative mb-6 touch-pan-y overflow-hidden md:mb-10 md:rounded-2xl ${COMPACT_BANNER_SIZE}`}
     >
       <div id="featured-slide" role="tabpanel" className="absolute inset-0">
         <AnimatePresence mode="wait">

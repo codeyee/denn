@@ -22,9 +22,10 @@ considered part of the project baseline.
   across login and registration.
 - Avatar-based authenticated profile navigation.
 - Stable public identity at `/user/<username>` with editable bio/avatar,
-  joined date, counters, favorites by media type, recent completions and
-  reviews, spoiler controls, public-list modules, and an owner-only edit
-  modal that reflects saved changes immediately.
+  joined date, counters, score-sorted combined favorites with
+  multi-select media filters, recent completions and reviews, author
+  attribution, panoramic favorite artwork, public-list modules, and an
+  owner-only edit modal that reflects saved changes immediately.
 - Private account preferences and session actions at `/settings`;
   `/profile` is intentionally absent.
 - First-class personal tracking with backlog, in-progress, completed,
@@ -104,6 +105,13 @@ considered part of the project baseline.
 - Responsive mobile search, touch/keyboard horizontal carousels, and
   verified 320–1440px plus landscape reflow without horizontal
   overflow.
+- Homepage discovery renders up to 30 items in each movie, TV, game,
+  music, and book carousel. Shared content metadata supplies the icon
+  and label used by category headings, filters, and cards.
+- Desktop card previews retain the anchor card's width, follow
+  viewport resize, remain viewport-bound, and dismiss on the first page
+  or carousel scroll without trapping the wheel. Fast click, keyboard,
+  Escape, and touch navigation remain available.
 - Real About, Privacy, Terms, and Contact routes with route metadata,
   canonical links, hard-refresh support, an operational contact
   channel, and a coherent application 404.

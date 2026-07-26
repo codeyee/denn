@@ -3,7 +3,7 @@ from typing import Optional
 
 from rest_framework import serializers
 
-from content.models import ContentItem
+from content.models import ContentItem, Image
 
 
 logger = logging.getLogger(__name__)
@@ -17,6 +17,7 @@ class LocalContentSummarySerializer(serializers.Serializer):
     date = serializers.SerializerMethodField()
     poster = serializers.SerializerMethodField()
     backdrop = serializers.SerializerMethodField()
+    authors = serializers.SerializerMethodField()
 
     def get_title(self, obj) -> str:
         browse_meta = self._related(obj, "browse_meta")
@@ -59,12 +60,36 @@ class LocalContentSummarySerializer(serializers.Serializer):
         return value.isoformat() if value else None
 
     def get_poster(self, obj) -> Optional[str]:
+        poster = next(
+            (
+                image.image_url
+                for image in self._prefetched(obj, "images")
+                if image.type == Image.Type.POSTER
+            ),
+            None,
+        )
         detail = self._detail(obj)
-        return getattr(detail, "image_url", "") or None
+        return poster or getattr(detail, "image_url", "") or None
 
     def get_backdrop(self, obj) -> Optional[str]:
-        detail = self._detail(obj)
-        return getattr(detail, "image_url", "") or None
+        return next(
+            (
+                image.image_url
+                for image in self._prefetched(obj, "images")
+                if image.type == Image.Type.GALLERY
+            ),
+            None,
+        )
+
+    def get_authors(self, obj) -> Optional[list[dict[str, str]]]:
+        authors = [
+            {
+                "name": content_author.author.name,
+                "type": content_author.role,
+            }
+            for content_author in self._prefetched(obj, "content_authors")
+        ]
+        return authors or None
 
     def _detail(self, obj):
         related_name = {
@@ -83,3 +108,7 @@ class LocalContentSummarySerializer(serializers.Serializer):
             return getattr(obj, related_name)
         except Exception:
             return None
+
+    @staticmethod
+    def _prefetched(obj, related_name):
+        return obj._prefetched_objects_cache.get(related_name, ())

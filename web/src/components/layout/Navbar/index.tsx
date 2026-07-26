@@ -36,7 +36,7 @@ export function Navbar({ searchQuery, onSearchChange }: NavbarProps) {
     <header className="fixed top-0 left-0 right-0 z-50">
       <div className="relative w-full">
         <div className="pointer-events-none absolute inset-0 bg-navbar-gradient" style={{ zIndex: 1 }} />
-        <div className="relative z-10 mx-auto w-full max-w-screen-2xl px-3 py-4 sm:px-6 md:py-8">
+        <div className="layout-content relative z-10 py-4 md:py-8">
           <div className="flex justify-between items-center w-full gap-4">
           <NavigationMenu>
             <NavigationMenuList>
@@ -44,7 +44,7 @@ export function Navbar({ searchQuery, onSearchChange }: NavbarProps) {
                 <Button
                   asChild
                   variant="link"
-                  className="cursor-pointer px-0 text-2xl font-bold font-mono hover:no-underline"
+                  className="cursor-pointer items-end gap-3 px-0 text-2xl font-bold font-mono leading-none hover:no-underline"
                 >
                   <Link to="/" aria-label="Denn home">
                     <img
@@ -52,9 +52,9 @@ export function Navbar({ searchQuery, onSearchChange }: NavbarProps) {
                       alt=""
                       width={32}
                       height={32}
-                      className="h-7 w-7 object-contain md:h-8 md:w-8"
+                      className="h-7 w-7 self-end object-contain md:h-8 md:w-8"
                     />
-                    <span>Denn</span>
+                    <span className="leading-none">Denn</span>
                   </Link>
                 </Button>
               </NavigationMenuItem>

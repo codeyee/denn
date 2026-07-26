@@ -1,10 +1,12 @@
 import { Children, useId, useRef } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, type LucideIcon } from "lucide-react";
 import { useCarouselScroll } from "./hooks/useCarouselScroll";
+import { SectionTitle } from "../SectionTitle";
 
 interface CarouselProps {
   children: React.ReactNode;
   title?: string;
+  titleIcon?: LucideIcon;
   className?: string;
   itemsPerView?: number;
   gap?: number;
@@ -15,6 +17,7 @@ interface CarouselProps {
 export function Carousel({
   children,
   title,
+  titleIcon,
   className = "",
   itemsPerView,
   gap = 16,
@@ -23,6 +26,7 @@ export function Carousel({
 }: CarouselProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
+  const scrollerId = useId();
   const items = Children.toArray(children);
   const scroll = useCarouselScroll({
     containerRef,
@@ -32,42 +36,51 @@ export function Carousel({
     gap,
   });
   const showNavigation = !disableNavigation && scroll.hasOverflow;
+  const showPreviousFade = showNavigation && !scroll.isAtStart;
+  const showNextFade = showNavigation && !scroll.isAtEnd;
 
   return (
     <section
       aria-roledescription="carousel"
       aria-labelledby={title ? titleId : undefined}
       aria-label={title ? undefined : "Content carousel"}
-      className={`group relative ${className}`}
+      className={`layout-carousel group relative ${className}`}
     >
       {title && (
-        <h2
+        <SectionTitle
           id={titleId}
-          className="pl-4 text-2xl font-bold text-white md:pl-12 md:text-3xl"
-        >
-          {title}
-        </h2>
+          icon={titleIcon}
+          title={title}
+        />
       )}
 
       <div className="relative">
+        {showPreviousFade && <CarouselEdgeFade direction="previous" />}
+        {showNextFade && <CarouselEdgeFade direction="next" />}
         {showNavigation && (
           <CarouselButton
             direction="previous"
             onClick={scroll.handlePrevious}
+            scrollerId={scrollerId}
           />
         )}
         {showNavigation && (
-          <CarouselButton direction="next" onClick={scroll.handleNext} />
+          <CarouselButton
+            direction="next"
+            onClick={scroll.handleNext}
+            scrollerId={scrollerId}
+          />
         )}
 
         <div
+          id={scrollerId}
           ref={containerRef}
           onScroll={scroll.updateScrollState}
           onWheel={scroll.handleWheel}
           tabIndex={0}
           aria-label={title ? `${title} items` : "Carousel items"}
           data-carousel-scroller
-          className="flex snap-x snap-proximity gap-4 overflow-x-auto overscroll-x-contain px-4 py-4 [scroll-padding-inline:1rem] [scrollbar-width:none] [touch-action:pan-x_pan-y] [-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden md:px-12 md:[scroll-padding-inline:3rem]"
+          className="flex snap-x snap-proximity gap-4 overflow-x-auto overscroll-x-contain py-4 [scroll-padding-inline:0] [scrollbar-width:none] [touch-action:pan-x_pan-y] [-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden"
           style={{ scrollbarWidth: "none" }}
         >
           {items.map((child, index) => (
@@ -92,24 +105,52 @@ export function Carousel({
   );
 }
 
-interface CarouselButtonProps {
+interface CarouselDirectionProps {
   direction: "previous" | "next";
-  onClick: () => void;
 }
 
-function CarouselButton({ direction, onClick }: CarouselButtonProps) {
+interface CarouselButtonProps extends CarouselDirectionProps {
+  onClick: () => void;
+  scrollerId: string;
+}
+
+function CarouselEdgeFade({ direction }: CarouselDirectionProps) {
+  const isPrevious = direction === "previous";
+
+  return (
+    <div
+      data-carousel-edge={direction}
+      className={`pointer-events-none absolute inset-y-4 z-30 w-16 md:w-24 ${
+        isPrevious
+          ? "left-0 bg-linear-to-r from-background-logged-in via-background-logged-in/80 to-transparent"
+          : "right-0 bg-linear-to-l from-background-logged-in via-background-logged-in/80 to-transparent"
+      }`}
+    />
+  );
+}
+
+function CarouselButton({
+  direction,
+  onClick,
+  scrollerId,
+}: CarouselButtonProps) {
   const isPrevious = direction === "previous";
   const Icon = isPrevious ? ChevronLeft : ChevronRight;
+
   return (
     <button
       type="button"
       onClick={onClick}
-      aria-label={`${isPrevious ? "Previous" : "Next"} items`}
-      className={`absolute top-1/2 z-40 flex size-12 -translate-y-1/2 items-center justify-center bg-black/80 text-white opacity-100 transition-opacity hover:bg-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 ${
-        isPrevious ? "left-0 rounded-r-lg" : "right-0 rounded-l-lg"
+      aria-controls={scrollerId}
+      aria-label={isPrevious ? "View previous content" : "View next content"}
+      data-carousel-control={direction}
+      className={`absolute top-1/2 z-40 flex size-11 -translate-y-1/2 touch-manipulation items-center justify-center rounded-full bg-black/80 text-white opacity-80 transition-[opacity,transform,background-color] duration-200 hover:scale-105 hover:bg-black hover:opacity-100 focus-visible:scale-105 focus-visible:bg-black focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white motion-reduce:transition-none motion-reduce:hover:scale-100 motion-reduce:focus-visible:scale-100 md:size-12 ${
+        isPrevious
+          ? "left-[max(0px,env(safe-area-inset-left))]"
+          : "right-[max(0px,env(safe-area-inset-right))]"
       }`}
     >
-      <Icon aria-hidden="true" className="size-7" />
+      <Icon aria-hidden="true" className="size-6 md:size-7" />
     </button>
   );
 }

@@ -1,8 +1,9 @@
-import { Heart } from "lucide-react";
+import { Star } from "lucide-react";
 
 import { ContentCard } from "@/components/common/cards/ContentCard";
 import { ListCard } from "@/components/common/cards/ListCard";
 import { RatingBadge } from "@/components/common/ui/RatingBadge";
+import { formatAuthors } from "@/lib/utils/authorUtils";
 import type {
   PublicCompletedItem,
   PublicFavorite,
@@ -12,6 +13,8 @@ import { formatProfileDate, profileContentCardItem, profileListCardItem } from "
 
 const PROFILE_CONTENT_GRID_CLASS =
   "grid grid-cols-2 gap-x-3 gap-y-7 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6";
+const PROFILE_RATING_BADGE_CLASS =
+  "border-amber-300/70 bg-[#180d12]/95 text-amber-100";
 
 export function CompletedGrid({
   items,
@@ -25,19 +28,21 @@ export function CompletedGrid({
           key={item.content.id}
           item={profileContentCardItem(item.content)}
           showAddToList={false}
-          badgeSlot={
-            item.score || item.is_favorite ? (
-              <div className="flex items-center gap-2">
-                {item.is_favorite ? <FavoriteBadge /> : null}
-                {item.score ? (
-                  <RatingBadge rating={Number(item.score)} variant="user" />
-                ) : null}
-              </div>
+          leadingBadgeSlot={
+            item.score ? (
+              <RatingBadge
+                rating={Number(item.score)}
+                variant="user"
+                className={PROFILE_RATING_BADGE_CLASS}
+              />
             ) : null
+          }
+          badgeSlot={
+            item.is_favorite ? <FavoriteBadge /> : null
           }
           metadataSlot={
             <ProfileCardMetadata
-              subtitle={item.content.subtitle}
+              attribution={getContentAttribution(item.content)}
               date={`Completed ${formatProfileDate(item.completed_at)}`}
             />
           }
@@ -55,14 +60,16 @@ export function FavoriteGrid({ items }: { items: PublicFavorite[] }) {
           key={item.content.id}
           item={profileContentCardItem(item.content)}
           showAddToList={false}
-          badgeSlot={
-            <div className="flex items-center gap-2">
-              <FavoriteBadge />
-              {item.score ? (
-                <RatingBadge rating={Number(item.score)} variant="user" />
-              ) : null}
-            </div>
+          leadingBadgeSlot={
+            item.score ? (
+              <RatingBadge
+                rating={Number(item.score)}
+                variant="user"
+                className={PROFILE_RATING_BADGE_CLASS}
+              />
+            ) : null
           }
+          badgeSlot={<FavoriteBadge />}
         />
       ))}
     </div>
@@ -71,25 +78,31 @@ export function FavoriteGrid({ items }: { items: PublicFavorite[] }) {
 
 function FavoriteBadge() {
   return (
-    <span className="grid h-8 w-8 place-items-center rounded-full bg-black/70 text-rose-400">
-      <Heart aria-label="Favorite" className="h-4 w-4 fill-current" />
+    <span className="grid h-8 w-8 place-items-center rounded-full bg-[#180d12]/95 text-amber-200">
+      <Star aria-label="Favorite" className="h-4 w-4 fill-current" />
     </span>
   );
 }
 
 function ProfileCardMetadata({
-  subtitle,
+  attribution,
   date,
 }: {
-  subtitle: string | null;
+  attribution: string;
   date: string;
 }) {
   return (
     <div className="flex min-w-0 flex-col gap-1.5">
-      {subtitle ? <div className="line-clamp-2">{subtitle}</div> : null}
+      {attribution ? <div className="line-clamp-2">{attribution}</div> : null}
       <div>{date}</div>
     </div>
   );
+}
+
+function getContentAttribution(
+  content: PublicCompletedItem["content"],
+): string {
+  return formatAuthors(content.authors, 2) || content.subtitle || "";
 }
 
 export function PublicListGrid({ lists }: { lists: PublicListSummary[] }) {

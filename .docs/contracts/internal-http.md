@@ -216,7 +216,7 @@ Reglas duras:
 convierta resultados de discovery en ids internos antes de renderizar
 enlaces.
 
-- Acepta como máximo 100 elementos únicos por
+- Acepta como máximo 200 elementos únicos por
   `(content_type, external_id, source)`.
 - Autoriza un JWT de usuario válido o la combinación server-only
   `X-Api-Key: <PROXY_API_KEY>` + `X-Api-Consumer: web`.
@@ -286,6 +286,10 @@ El predicado falla cerrado para cualquier otro método o patrón. Una
 cookie caducada puede provocar un intento de refresh, pero si no se
 restaura la sesión la lectura pública continúa anónima. Mutaciones y
 rutas Core no incluidas arriba requieren sesión.
+
+El detalle público aplica un throttle de 60 solicitudes por minuto por
+visitante anónimo firmado y de 120 solicitudes por minuto por usuario
+autenticado.
 
 Writes autenticados:
 

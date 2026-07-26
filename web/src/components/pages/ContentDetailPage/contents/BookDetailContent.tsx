@@ -11,7 +11,7 @@ export function BookDetailContent({ book }: BookDetailContentProps) {
   const releaseDate = formatReleaseDate(book.release_date);
   return (
     <>
-      <div className="mt-8 w-full px-4 md:px-8 lg:px-12">
+      <div className="layout-content mt-8">
         <div className="mb-10">
           <h2 className="text-2xl font-bold text-white mb-6">About</h2>
           {book.description && (

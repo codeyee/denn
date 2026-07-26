@@ -304,12 +304,11 @@ combined with the production-build percentiles above.
 | Animated canvases | 1 | 0 |
 | Cold-load CLS | 0.19926 | 0.00037 |
 
-The current backdrop keeps the curved cover-gallery composition but
-uses 12 segments, limits source variety to 24 images, and renders 60
-static tiles. It no longer runs a permanent animation frame loop,
-regenerates TV-noise pixels, applies a viewport-sized blur, or promotes
-the sphere with `will-change`. The gallery remains decorative,
-non-interactive, and absent from the accessibility tree.
+At that snapshot, the backdrop kept the curved cover-gallery composition
+with 12 segments, limited source variety to 24 images, and rendered 60
+static tiles. It no longer ran a permanent animation frame loop,
+regenerated TV-noise pixels, applied a viewport-sized blur, or promoted
+the sphere with `will-change`.
 
 The homepage featured banner now follows the same rule: it keeps its
 single active responsive image, content gradients, and bounded
@@ -319,6 +318,84 @@ one active banner image, and 79.675 ms of main-thread task time including
 one scheduled carousel rotation. No comparable pre-change runtime
 sample was retained, so this is a regression point rather than a
 before/after claim.
+
+## Authentication Mosaic Asset Optimization Local After Snapshot
+
+Captured 2026-07-26 from the production Nitro bundle after replacing the
+static dome with the flat moving mosaic and optimizing its dedicated
+cover assets. The asset gate now enforces 150 WebP files, a maximum
+384 × 576 size, 2:3 composition, per-file and total byte budgets, and
+balanced media categories.
+
+Five fresh anonymous desktop contexts produced:
+
+| Flow | State | TTFB p50/p75/p95 | FCP p75 | LCP p50/p75/p95 | CLS p75/p95 |
+|---|---|---|---:|---|---|
+| Login | cold | 5.9 / 6.4 / 7.9 | 64 | 140 / 152 / 152 | 0.00023 / 0.00023 |
+
+A representative fresh-context comparison and one same-context reload
+isolated the asset and cache changes:
+
+| Login asset signal | Before | After |
+|---|---:|---:|
+| Source card directory | 11,643,029 bytes | 3,539,278 bytes |
+| Cold card transfer | 1,874,883 bytes | 599,902 bytes |
+| Cold total route transfer | 3,112,181 bytes | 1,828,779 bytes |
+| Card manifest body | 10,263 bytes / 150 entries | 1,643 bytes / 24 entries |
+| Warm card transfer | 1,363,743 bytes | 0 bytes |
+| Warm manifest transfer | 10,563 bytes | 0 bytes |
+
+The manifest is private-cached for one hour and keeps one randomized
+24-card selection stable during that window. Card files use a seven-day
+public cache with stale-while-revalidate. The mosaic still renders five
+CSS-transform tracks, performs no steady-state layout, respects reduced
+motion, and stays outside the accessibility tree.
+
+The equivalent 390 × 844, DPR 2, emulated-3G sample improved the final
+card response from 16,650 ms to 9,398 ms and LCP from 9,368 ms to
+7,244 ms; FCP remained 1,452 ms. The remaining slow-network LCP is a
+decorative mosaic image rather than the login form. It remains explicit
+performance debt for a future adaptive-loading policy; fast-network LCP
+stays comfortably below the 2.5-second release threshold.
+
+## Discovery Density And Card Preview Local Snapshot
+
+Captured 2026-07-26 from the production Nitro fixture after increasing
+homepage discovery to at most 30 items for each of the five supported
+media categories, adding the Books carousel to the shared section
+configuration, and making card previews anchor-aware. Five fresh
+contexts and five same-context reloads were used for each flow.
+
+| Flow | State | TTFB p50/p75/p95 | FCP p75 | LCP p50/p75/p95 | INP p75/p95 | CLS p75/p95 |
+|---|---|---|---:|---|---|---|
+| Public Home | cold | 17.1 / 21.9 / 48.6 | 52 | 52 / 52 / 88 | 0 / 0 | 0 / 0 |
+| Public Home | warm | 24.9 / 31.5 / 33.4 | 84 | 80 / 84 / 84 | 0 / 16 | 0 / 0 |
+| Authenticated Home | cold | 18.9 / 18.9 / 23.1 | 56 | 56 / 56 / 64 | 0 / 0 | 0 / 0 |
+| Authenticated Home | warm | 26.3 / 29.0 / 35.9 | 84 | 80 / 84 / 84 | 0 / 0 | 0 / 0 |
+| Public Profile | cold | 18.2 / 18.7 / 31.7 | 60 | 56 / 60 / 72 | 0 / 0 | 0 / 0 |
+| Public Profile | warm | 31.2 / 31.8 / 32.1 | 88 | 88 / 88 / 92 | 0 / 0 | 0 / 0 |
+
+All measured p75 values remain inside the shared release thresholds.
+The denser Home keeps one aggregate Proxy request and one bulk Core
+identity-resolution request rather than issuing per-card calls. The
+Core bulk cap is 200, which covers the worst-case 150 homepage
+identities in one request.
+
+Card capability observation is shared across all cards. The scroll
+dismissal listener, resize work, Escape handling, animation-frame
+positioning, and `ResizeObserver` subscriptions exist only while one
+preview is active, so the larger DOM does not add one set of global
+listeners per card. The preview has no internal scroll surface and does
+not retain wheel input. Images remain lazy except for the active
+featured asset.
+
+A separate live-stack smoke rendered 19 movie, 20 TV, 30 game, and
+30 album items and resolved all 99 identities in one Core request.
+OpenLibrary timed out at its bounded provider timeout and the Books
+category degraded to empty; deterministic browser coverage verifies
+that the real OpenLibrary-shaped category renders when results exist.
+The live observation is operational evidence, not combined with the
+fixture percentiles above.
 
 ## Backend Telemetry Contract
 

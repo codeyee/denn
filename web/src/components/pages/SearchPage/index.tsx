@@ -4,6 +4,7 @@ import { SearchInput } from "./components/SearchInput";
 import { SearchResultsSection } from "./components/SearchResultsSection";
 import { EmptyState } from "../../common/state/EmptyState";
 import { LoadingCarousel } from "../../common/state/LoadingCarousel";
+import { ContentType } from "@/lib/types";
 import type { SearchResults } from "./types";
 
 interface SearchPageProps {
@@ -76,22 +77,37 @@ export function SearchPage({
         {/* Loading State with Placeholders */}
         {showLoading && (
           <>
-            <LoadingCarousel title="Movies" />
-            <LoadingCarousel title="TV Shows" />
-            <LoadingCarousel title="Games" />
-            <LoadingCarousel title="Music" />
-            <LoadingCarousel title="Books" />
+            <LoadingCarousel contentType={ContentType.MOVIE} />
+            <LoadingCarousel contentType={ContentType.TV_SHOW} />
+            <LoadingCarousel contentType={ContentType.GAME} />
+            <LoadingCarousel contentType={ContentType.ALBUM} />
+            <LoadingCarousel contentType={ContentType.BOOK} />
           </>
         )}
 
         {/* Results Section */}
         {showResults && (
           <>
-            <SearchResultsSection title="Movies" items={results.movies} />
-            <SearchResultsSection title="TV Shows" items={results.tvShows} />
-            <SearchResultsSection title="Games" items={results.games} />
-            <SearchResultsSection title="Music" items={results.music} />
-            <SearchResultsSection title="Books" items={results.books} />
+            <SearchResultsSection
+              contentType={ContentType.MOVIE}
+              items={results.movies}
+            />
+            <SearchResultsSection
+              contentType={ContentType.TV_SHOW}
+              items={results.tvShows}
+            />
+            <SearchResultsSection
+              contentType={ContentType.GAME}
+              items={results.games}
+            />
+            <SearchResultsSection
+              contentType={ContentType.ALBUM}
+              items={results.music}
+            />
+            <SearchResultsSection
+              contentType={ContentType.BOOK}
+              items={results.books}
+            />
 
             {/* No Results State */}
             {!hasResults && <EmptyState type="no-results" query={debouncedQuery} />}

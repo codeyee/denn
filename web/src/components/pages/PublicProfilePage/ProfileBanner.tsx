@@ -51,7 +51,7 @@ export function ProfileBanner({
         ) : undefined
       }
     >
-      <div className="w-full px-4 pb-6 md:px-12 md:pb-8">
+      <div className="layout-banner-content pb-6 md:pb-8">
         <div className="flex items-end justify-between gap-3">
           <div className="flex min-w-0 flex-1 items-end gap-3 md:gap-4">
             <UserAvatar

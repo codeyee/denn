@@ -41,7 +41,7 @@ export function RatingsSection({
 
   if (ratingsQuery.isLoading && page === 1) {
     return (
-      <div className="mt-8 w-full px-4 md:px-8 lg:px-12">
+      <div className="layout-content mt-8">
         <div className="flex items-center justify-center min-h-[200px]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4" />
@@ -53,7 +53,7 @@ export function RatingsSection({
   }
 
   return (
-    <div className="mt-8 w-full px-4 md:px-8 lg:px-12">
+    <div className="layout-content mt-8">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-white">Ratings</h2>
       </div>

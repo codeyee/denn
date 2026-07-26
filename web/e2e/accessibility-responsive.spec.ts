@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
-import { test, expect, type Page } from "./support/test";
+import type { Locator, Page } from "@playwright/test";
+import { test, expect } from "./support/test";
 import { fixtureUrl } from "./support/fixture";
 
 const criticalRoutes = [
@@ -278,7 +279,8 @@ test("authentication stays centered and viewport-bound without navigation or scr
     await page.waitForLoadState("networkidle");
 
     await expect(page.locator("header, footer, nav")).toHaveCount(0);
-    await expect(page.locator("canvas")).toHaveCount(1);
+    await expect(page.locator(".auth-mosaic-grid")).toHaveCount(1);
+    await expect(page.locator(".auth-mosaic-tile").first()).toBeVisible();
     await expect(page.locator("h1 + p")).toHaveCSS("text-align", "center");
 
     const layout = await page.evaluate(() => {
@@ -402,7 +404,7 @@ test("desktop featured controls stay clear of the title", async ({ page }) => {
   expect(rectanglesOverlap(nextBox, titleBox)).toBe(false);
 });
 
-test("content carousel accepts horizontal gestures without losing keyboard focus", async ({
+test("content carousel accepts horizontal gestures and keyboard navigation", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
@@ -423,12 +425,16 @@ test("content carousel accepts horizontal gestures without losing keyboard focus
     .toBeGreaterThan(0);
 
   await scroller.evaluate((node) => node.scrollTo({ left: 0 }));
-  const next = carousel.getByRole("button", { name: "Next items" });
+  const next = carousel.getByRole("button", { name: "View next content" });
   await next.focus();
+  await expect(next).toBeFocused();
   await next.press("Enter");
   await expect
     .poll(() => scroller.evaluate((node) => node.scrollLeft))
     .toBeGreaterThan(0);
+  await expect(
+    carousel.getByRole("button", { name: "View previous content" }),
+  ).toBeVisible();
   await expect(next).toBeFocused();
 });
 
@@ -442,22 +448,77 @@ test("home, detail and profile banners keep a balanced height and upper focal po
     const banner = page.locator("[data-banner-shell]").first();
     await expect(banner).toBeVisible();
     const box = await banner.boundingBox();
-    expect(box?.height ?? 0).toBeGreaterThanOrEqual(548);
-    expect(box?.height ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(561);
+    expect(box?.height ?? 0).toBeGreaterThanOrEqual(671);
+    expect(box?.height ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(673);
+    await expectBannerContentAlignment(page, banner);
     await expect(banner.locator("img").first()).toHaveCSS(
       "object-position",
       "50% 35%",
     );
   }
 
-  await page.setViewportSize({ width: 2000, height: 1200 });
-  await page.goto("/content/1");
-  const detailBanner = page.locator("[data-banner-shell]").first();
-  const detailBox = await detailBanner.boundingBox();
-  expect(detailBox?.width ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(1800);
+  for (const width of [1800, 2000]) {
+    await page.setViewportSize({ width, height: 1400 });
+    await page.goto("/content/1");
+    const detailBanner = page.locator("[data-banner-shell]").first();
+    const detailBox = await detailBanner.boundingBox();
+    const detailContentBox = await detailBanner
+      .locator(".layout-banner-content")
+      .boundingBox();
+    expect(detailBox?.x ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(1);
+    expect(detailBox?.width ?? 0).toBeGreaterThanOrEqual(width - 1);
+    expect(
+      (detailContentBox?.x ?? 0) - (detailBox?.x ?? 0),
+    ).toBeGreaterThanOrEqual(47);
+    await expectBannerContentAlignment(page, detailBanner);
+    await expectBannerSideFade(detailBanner, "0");
+  }
+
+  for (const width of [2200, 2560, 5000]) {
+    await page.setViewportSize({ width, height: 1400 });
+    await page.goto("/content/1");
+    const detailBanner = page.locator("[data-banner-shell]").first();
+    const detailBox = await detailBanner.boundingBox();
+    expect(detailBox?.width ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(
+      2048,
+    );
+    expect(
+      Math.abs(
+        (detailBox?.x ?? 0) -
+          (width - (detailBox?.width ?? width)) / 2,
+      ),
+    ).toBeLessThanOrEqual(1);
+    await expectBannerContentAlignment(page, detailBanner);
+    await expectBannerSideFade(detailBanner, "1");
+  }
 });
 
-test("desktop card previews preserve horizontal trackpad scrolling", async ({
+test("home carousel uses the wide container and keeps card width bounded at 5000px", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 5000, height: 1400 });
+  await page.goto("/");
+  const carousel = page
+    .locator('section[aria-roledescription="carousel"]')
+    .filter({ has: page.getByRole("heading", { name: "Popular Movies" }) });
+  const scroller = carousel.locator("[data-carousel-scroller]");
+  const firstSlide = scroller.locator('[role="group"]').first();
+
+  await expect
+    .poll(async () => (await firstSlide.boundingBox())?.width ?? 0)
+    .toBeLessThanOrEqual(270);
+
+  const carouselBox = await carousel.boundingBox();
+  expect(carouselBox?.width ?? 0).toBeGreaterThanOrEqual(4900);
+  const overflow = await page.evaluate(
+    () =>
+      document.documentElement.scrollWidth -
+      document.documentElement.clientWidth,
+  );
+  expect(overflow).toBeLessThanOrEqual(1);
+});
+
+test("desktop card previews release horizontal trackpad scrolling", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1024, height: 900 });
@@ -472,10 +533,11 @@ test("desktop card previews preserve horizontal trackpad scrolling", async ({
     if (firstSlide) node.appendChild(firstSlide.cloneNode(true));
   });
   await scroller.locator('[role="group"]').first().hover();
-  const preview = page.locator("body > div.fixed.overflow-hidden").last();
+  const preview = page.locator("[data-card-hover-popover]").last();
   await expect(preview).toBeVisible();
 
   await preview.dispatchEvent("wheel", { deltaX: 220, deltaY: 0 });
+  await expect(preview).toBeHidden();
   await expect
     .poll(() => scroller.evaluate((node) => node.scrollLeft))
     .toBeGreaterThan(0);
@@ -498,17 +560,30 @@ test("search result carousels accept horizontal trackpad gestures", async ({
     .toBeGreaterThan(0);
 });
 
-test("shared content carousels wrap from first to last and last to first", async ({
+test("shared content carousels keep circular controls while fades follow real boundaries", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
 
-  await expectCircularNavigation(page, "Your Lists");
   await expectCircularNavigation(page, "Popular Movies");
 
   await page.goto("/search?q=phase");
   await expectCircularNavigation(page, "Movies");
+
+  await page.setViewportSize({ width: 5000, height: 1400 });
+  await page.goto("/");
+  const carousel = page
+    .locator('section[aria-roledescription="carousel"]')
+    .filter({ has: page.getByRole("heading", { name: "Popular Movies" }) });
+  const scroller = carousel.locator("[data-carousel-scroller]");
+  await ensureCarouselItemCount(scroller, 24);
+  const next = carousel.getByRole("button", { name: "View next content" });
+  await expect(next).toBeVisible();
+  const nextBox = await next.boundingBox();
+  expect(
+    5000 - ((nextBox?.x ?? 0) + (nextBox?.width ?? 0)),
+  ).toBeLessThanOrEqual(49);
 });
 
 test("landscape and 200-percent-equivalent reflow remain usable", async ({
@@ -589,17 +664,78 @@ function rectanglesOverlap(
   );
 }
 
+async function expectBannerContentAlignment(
+  page: Page,
+  banner: Locator,
+) {
+  const navbarContent = page.locator("header .layout-content");
+  const bannerContent = banner.locator(".layout-banner-content");
+  const [navbarBox, contentBox] = await Promise.all([
+    navbarContent.boundingBox(),
+    bannerContent.boundingBox(),
+  ]);
+
+  expect(navbarBox, "Navbar content must be visible").not.toBeNull();
+  expect(contentBox, "Banner content must be visible").not.toBeNull();
+  expect(
+    Math.abs((navbarBox?.x ?? 0) - (contentBox?.x ?? 0)),
+  ).toBeLessThanOrEqual(1);
+  expect(
+    Math.abs((navbarBox?.width ?? 0) - (contentBox?.width ?? 0)),
+  ).toBeLessThanOrEqual(1);
+}
+
+async function expectBannerSideFade(banner: Locator, opacity: string) {
+  await expect
+    .poll(() =>
+      banner.evaluate(
+        (node) => getComputedStyle(node, "::after").opacity,
+      ),
+    )
+    .toBe(opacity);
+  const backgroundImage = await banner.evaluate(
+    (node) => getComputedStyle(node, "::after").backgroundImage,
+  );
+  expect(backgroundImage).toContain("linear-gradient");
+  expect(backgroundImage).not.toBe("none");
+}
+
 async function expectCircularNavigation(page: Page, title: string) {
   const carousel = page
     .locator('section[aria-roledescription="carousel"]')
     .filter({ has: page.getByRole("heading", { name: title, exact: true }) });
   const scroller = carousel.locator("[data-carousel-scroller]");
-  const previous = carousel.getByRole("button", { name: "Previous items" });
-  const next = carousel.getByRole("button", { name: "Next items" });
+  await ensureCarouselItemCount(scroller, 8);
+  await scroller.evaluate((node) => node.scrollTo({ left: 0 }));
+
+  const previous = carousel.getByRole("button", {
+    name: "View previous content",
+  });
+  const next = carousel.getByRole("button", { name: "View next content" });
+  const previousEdge = carousel.locator('[data-carousel-edge="previous"]');
+  const nextEdge = carousel.locator('[data-carousel-edge="next"]');
 
   await expect(previous).toBeVisible();
   await expect(next).toBeVisible();
+  await expect(previous).toHaveCSS("opacity", "0.8");
+  await expect(next).toHaveCSS("opacity", "0.8");
+  await expect(previousEdge).toHaveCount(0);
+  await expect(nextEdge).toBeVisible();
+  await expect(nextEdge).toHaveCSS("pointer-events", "none");
+  const [previousBox, nextBox] = await Promise.all([
+    previous.boundingBox(),
+    next.boundingBox(),
+  ]);
+  expect(previousBox?.x ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(17);
+  expect(
+    390 - ((nextBox?.x ?? 0) + (nextBox?.width ?? 0)),
+  ).toBeLessThanOrEqual(17);
+
   await previous.click();
+  await expect(scroller).toHaveAttribute(
+    "data-carousel-wrap-phase",
+    /outgoing|incoming/,
+  );
   await expect
     .poll(() =>
       scroller.evaluate(
@@ -607,10 +743,50 @@ async function expectCircularNavigation(page: Page, title: string) {
       ),
     )
     .toBeLessThanOrEqual(2);
+  await expect(scroller).not.toHaveAttribute("data-carousel-wrap-phase");
+  await expect(previous).toBeVisible();
+  await expect(next).toBeVisible();
+  await expect(previousEdge).toBeVisible();
+  await expect(previousEdge).toHaveCSS("pointer-events", "none");
+  await expect(nextEdge).toHaveCount(0);
+
+  await next.click();
+  await expect(scroller).toHaveAttribute(
+    "data-carousel-wrap-phase",
+    /outgoing|incoming/,
+  );
+  await expect
+    .poll(() => scroller.evaluate((node) => node.scrollLeft))
+    .toBeLessThanOrEqual(2);
+  await expect(scroller).not.toHaveAttribute("data-carousel-wrap-phase");
+  await expect(previous).toBeVisible();
+  await expect(next).toBeVisible();
+  await expect(next).toBeFocused();
+  await expect(previousEdge).toHaveCount(0);
+  await expect(nextEdge).toBeVisible();
 
   await next.click();
   await expect
     .poll(() => scroller.evaluate((node) => node.scrollLeft))
-    .toBeLessThanOrEqual(2);
-  await expect(next).toBeFocused();
+    .toBeGreaterThan(2);
+  await expect(previousEdge).toBeVisible();
+  await expect(nextEdge).toBeVisible();
+
+  await scroller.evaluate((node) => {
+    const items = Array.from(node.querySelectorAll('[role="group"]'));
+    items.slice(1).forEach((item) => item.remove());
+  });
+  await expect(previous).toHaveCount(0);
+  await expect(next).toHaveCount(0);
+  await expect(carousel.locator("[data-carousel-edge]")).toHaveCount(0);
+}
+
+async function ensureCarouselItemCount(scroller: Locator, count: number) {
+  await scroller.evaluate((node, targetCount) => {
+    const firstItem = node.querySelector('[role="group"]');
+    if (!firstItem) return;
+    while (node.querySelectorAll('[role="group"]').length < targetCount) {
+      node.appendChild(firstItem.cloneNode(true));
+    }
+  }, count);
 }

@@ -1,6 +1,8 @@
 import { createImagePayload, getCardFiles } from "./fileSystem";
 import type { BackgroundCardImage } from "./types";
 
+export const BACKGROUND_CARD_LIMIT = 24;
+
 function shuffleArray<T>(array: T[]): T[] {
   const shuffled = [...array];
 
@@ -12,9 +14,10 @@ function shuffleArray<T>(array: T[]): T[] {
   return shuffled;
 }
 
-
-export function getBackgroundCardImages(): BackgroundCardImage[] {
+export function getBackgroundCardImages(
+  limit = BACKGROUND_CARD_LIMIT,
+): BackgroundCardImage[] {
   const files = getCardFiles();
   const images = files.map((file) => createImagePayload(file));
-  return shuffleArray(images);
+  return shuffleArray(images).slice(0, limit);
 }

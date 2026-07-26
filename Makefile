@@ -85,9 +85,12 @@ tail-postgres: ; @$(SCRIPT) logs postgres
 
 test: test-proxy test-core
 
-validate-web: lint-web build-web
+validate-web: check-auth-cards lint-web build-web
 validate-core: test-core
 validate-proxy: test-proxy
+
+check-auth-cards:
+	cd web && node scripts/optimize-auth-cards.mjs --check
 
 lint-web:
 	cd web && node node_modules/eslint/bin/eslint.js .

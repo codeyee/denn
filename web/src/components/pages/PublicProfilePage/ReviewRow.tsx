@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { Heart } from "lucide-react";
+import { Star } from "lucide-react";
 
 import { MediaListItem } from "@/components/common/lists/MediaListItem";
 import { RatingBadge } from "@/components/common/ui/RatingBadge";
-import { StarRating } from "@/components/common/ui/StarRating";
 import {
   getContentTypeIcon,
   getContentTypeLabel,
@@ -20,7 +19,7 @@ export function ReviewRow({ rating }: ReviewRowProps) {
   const score = Number(rating.score);
   const ContentIcon = getContentTypeIcon(rating.content.type);
   const contentTypeLabel = getContentTypeLabel(rating.content.type);
-  const artwork = rating.content.backdrop ?? rating.content.poster;
+  const artwork = rating.content.poster;
 
   return (
     <article>
@@ -46,23 +45,20 @@ export function ReviewRow({ rating }: ReviewRowProps) {
           variant="review"
           className="h-64 md:h-56"
           trailingContent={
-            <div className="flex items-center gap-2">
-              {rating.is_favorite ? (
-                <Heart
-                  aria-label="Favorite"
-                  className="h-4 w-4 fill-rose-400 text-rose-400"
-                />
-              ) : null}
-              <RatingBadge rating={score} variant="user" />
-            </div>
+            rating.is_favorite ? (
+              <Star
+                aria-label="Favorite"
+                className="h-4 w-4 fill-amber-200 text-amber-200"
+              />
+            ) : null
           }
         >
-          <div
-            role="img"
-            className="mt-2"
-            aria-label={`${score} out of 10`}
-          >
-            <StarRating value={score / 2} readonly size={16} />
+          <div className="mt-3">
+            <RatingBadge
+              rating={score}
+              variant="user"
+              className="border-amber-300/70 bg-[#180d12]/95 text-amber-100"
+            />
           </div>
           {rating.review ? (
             <ClampedReviewText review={rating.review} />
@@ -95,15 +91,17 @@ function ClampedReviewText({ review }: { review: string }) {
   }, [review]);
 
   return (
-    <div className="mt-3">
+    <div className="relative mt-3 max-w-[75ch]">
       <p
         ref={paragraphRef}
-        className="line-clamp-3 max-w-[75ch] whitespace-pre-wrap text-sm leading-6 text-white/80"
+        className={`line-clamp-3 whitespace-normal text-sm leading-6 text-white/80 ${
+          isTruncated ? "pr-24" : ""
+        }`}
       >
         {review}
       </p>
       {isTruncated ? (
-        <span className="mt-1.5 inline-flex text-sm font-semibold text-white underline decoration-white/40 underline-offset-4">
+        <span className="absolute bottom-0 right-0 inline-flex bg-linear-to-r from-transparent via-[#180d12]/95 to-[#180d12]/95 pl-3 text-sm font-semibold leading-6 text-white underline decoration-white/40 underline-offset-4">
           View more
         </span>
       ) : null}

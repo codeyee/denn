@@ -25,7 +25,8 @@ tooling.
 
 - `web`
   - `pnpm install --frozen-lockfile`
-  - `make validate-web` (ESLint + `vite build`; artefacto Nitro en `web/.output/`)
+  - `make validate-web` (presupuesto de imágenes de autenticación + ESLint +
+    `vite build`; artefacto Nitro en `web/.output/`)
   - `make e2e-web` (production-build Playwright smoke; desktop + móvil)
 - `core`
   - `make validate-core`

@@ -4,6 +4,10 @@ import { ArrowDown, ArrowUp, Filter, Layers, Plus, Trash2, Wand2, X } from "luci
 import { Button } from "@/components/common/ui/Button";
 import { Select } from "@/components/common/ui/Select";
 import {
+  CONTENT_TYPE_DEFINITIONS,
+  FILTERABLE_CONTENT_TYPES,
+} from "@/lib/contentTypes";
+import {
   FilterField,
   GroupByField,
   ListItemQuery,
@@ -48,14 +52,10 @@ const STATUS_OPTIONS = [
   { value: "COMPLETED", label: "Completed" },
 ];
 
-const CONTENT_TYPE_OPTIONS = [
-  { value: "MOVIE", label: "Movies" },
-  { value: "TV_SHOW", label: "TV shows" },
-  { value: "SEASON", label: "Seasons" },
-  { value: "ALBUM", label: "Albums" },
-  { value: "GAME", label: "Games" },
-  { value: "BOOK", label: "Books" },
-];
+const CONTENT_TYPE_OPTIONS = FILTERABLE_CONTENT_TYPES.map((type) => ({
+  value: type,
+  label: CONTENT_TYPE_DEFINITIONS[type].pluralLabel,
+}));
 
 const GROUP_BY_OPTIONS: Array<{ value: GroupByField | ""; label: string }> = [
   { value: "", label: "No grouping" },

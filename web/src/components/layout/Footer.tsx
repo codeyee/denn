@@ -15,7 +15,7 @@ export function Footer() {
   const shouldReduceMotion = useReducedMotion();
   return (
     <motion.footer
-      className="w-full max-w-screen-2xl mx-auto px-8 pb-8 pt-10"
+      className="layout-content pb-8 pt-10"
       initial={shouldReduceMotion ? false : "hidden"}
       whileInView="visible"
       viewport={{ once: true }}

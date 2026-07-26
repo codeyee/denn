@@ -19,6 +19,7 @@ export function profileContentCardItem(item: LocalContentSummary): Content {
     release_date: item.date,
     images: [],
   };
+  const authors = item.authors ?? null;
 
   switch (item.type) {
     case ContentType.TV_SHOW:
@@ -32,7 +33,7 @@ export function profileContentCardItem(item: LocalContentSummary): Content {
         status: null,
         number_of_seasons: null,
         number_of_episodes: null,
-        authors: null,
+        authors,
         platforms: null,
         seasons: [],
       };
@@ -53,7 +54,7 @@ export function profileContentCardItem(item: LocalContentSummary): Content {
         type: "GAME",
         game_type: null,
         description: null,
-        authors: null,
+        authors,
         platforms: null,
         genres: [],
         themes: [],
@@ -65,9 +66,11 @@ export function profileContentCardItem(item: LocalContentSummary): Content {
       return {
         ...base,
         type: "ALBUM",
-        authors: item.subtitle
-          ? [{ name: item.subtitle, type: AuthorType.PERSON }]
-          : null,
+        authors:
+          authors ??
+          (item.subtitle
+            ? [{ name: item.subtitle, type: AuthorType.PERSON }]
+            : null),
         total_tracks: 0,
         album_type: "",
         external_url: "",
@@ -78,9 +81,11 @@ export function profileContentCardItem(item: LocalContentSummary): Content {
       return {
         ...base,
         type: "BOOK",
-        authors: item.subtitle
-          ? [{ name: item.subtitle, type: AuthorType.PERSON }]
-          : null,
+        authors:
+          authors ??
+          (item.subtitle
+            ? [{ name: item.subtitle, type: AuthorType.PERSON }]
+            : null),
         pages: null,
         description: null,
       };
@@ -95,7 +100,7 @@ export function profileContentCardItem(item: LocalContentSummary): Content {
         imdb_id: null,
         duration_minutes: null,
         status: null,
-        authors: null,
+        authors,
         platforms: null,
       };
   }
@@ -118,7 +123,7 @@ export function pickRandomFavoriteBanner(
   const favoriteMedia = Object.values(overview.favorites)
     .flatMap((items) => items ?? [])
     .flatMap(({ content }) => {
-      const imageUrl = content.backdrop ?? content.poster;
+      const imageUrl = content.backdrop;
       return imageUrl
         ? [{
             content_id: content.id,
@@ -136,9 +141,9 @@ export function pickRandomFavoriteBanner(
     ).values(),
   );
   const candidates =
-    uniqueFavoriteMedia.length > 0
-      ? uniqueFavoriteMedia
-      : overview.banner_media;
+    overview.banner_media.length > 0
+      ? overview.banner_media
+      : uniqueFavoriteMedia;
 
   if (candidates.length === 0) return undefined;
 

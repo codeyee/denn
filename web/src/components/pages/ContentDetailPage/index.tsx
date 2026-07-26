@@ -130,7 +130,7 @@ export function ContentDetailPage({
       className="relative w-full min-h-screen bg-background-logged-in"
     >
       <div className="pt-30 pb-20">
-        <div className="mx-auto w-full max-w-[1800px]">
+        <div>
           <ContentHeader
             displayItem={displayItem}
             contentItem={contentItem}

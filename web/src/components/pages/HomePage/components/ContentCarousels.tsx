@@ -3,16 +3,22 @@ import { ListCard } from "@/components/common/cards/ListCard";
 import { CreateListCard } from "@/components/common/cards/CreateListCard";
 import { Carousel } from "@/components/common/ui/Carousel";
 import { ErrorState } from "@/components/common/state/ErrorState";
-import { Content } from "@/lib/types";
-import { ListType, UserList } from "@/lib/types";
+import {
+  CONTENT_TYPE_DEFINITIONS,
+  type DiscoveryContentType,
+} from "@/lib/contentTypes";
+import { Content, ContentType, ListType, UserList } from "@/lib/types";
 
 const CONTENT_SECTIONS = [
-  { key: 'movies', title: 'Popular Movies' },
-  { key: 'tvShows', title: 'Popular TV Shows' },
-  { key: 'games', title: 'Popular Games' },
-  { key: 'music', title: 'Popular Music' },
-  { key: 'books', title: 'Popular Books' },
-];
+  { key: "movies", type: ContentType.MOVIE },
+  { key: "tvShows", type: ContentType.TV_SHOW },
+  { key: "games", type: ContentType.GAME },
+  { key: "music", type: ContentType.ALBUM },
+  { key: "books", type: ContentType.BOOK },
+] as const satisfies ReadonlyArray<{
+  key: keyof ContentCarouselsProps["suggestions"];
+  type: DiscoveryContentType;
+}>;
 
 interface ContentCarouselsProps {
   suggestions: {
@@ -35,7 +41,7 @@ interface ContentCarouselsProps {
 }
 
 interface CarouselSectionProps {
-  title: string;
+  type: DiscoveryContentType;
   items: Content[];
   keyPrefix: string;
 }
@@ -60,11 +66,11 @@ export function ContentCarousels({
         />
       )}
 
-      {!suggestionsError && CONTENT_SECTIONS.map(({ key, title }) => (
+      {!suggestionsError && CONTENT_SECTIONS.map(({ key, type }) => (
         <CarouselSection
           key={key}
-          title={title}
-          items={suggestions[key as keyof typeof suggestions]}
+          type={type}
+          items={suggestions[key]}
           keyPrefix={key}
         />
       ))}
@@ -73,7 +79,7 @@ export function ContentCarousels({
 }
 
 function CarouselSection({
-  title,
+  type,
   items,
   keyPrefix,
 }: CarouselSectionProps) {
@@ -81,16 +87,18 @@ function CarouselSection({
     return null;
   }
 
+  const definition = CONTENT_TYPE_DEFINITIONS[type];
+
   return (
-    <section className="mb-4 md:mb-8">
-      <Carousel
-        title={title}
-      >
-        {items.map((item) => (
-          <ContentCard key={`${keyPrefix}-${item.id}`} item={item} />
-        ))}
-      </Carousel>
-    </section>
+    <Carousel
+      title={definition.sectionTitle ?? definition.pluralLabel}
+      titleIcon={definition.icon}
+      className="mb-4 md:mb-8"
+    >
+      {items.map((item) => (
+        <ContentCard key={`${keyPrefix}-${item.id}`} item={item} />
+      ))}
+    </Carousel>
   );
 }
 
@@ -127,17 +135,15 @@ function ListsCarousel({
   };
 
   return (
-    <section className="mb-4 md:mb-8">
-      <Carousel title="Your Lists">
-        {[
-          ...lists.map((list) => <ListCard key={`list-${list.id}`} list={list} />),
-          <CreateListCard
-            key="create-list"
-            onCreateList={handleCreateList}
-            isLoading={isLoading}
-          />,
-        ]}
-      </Carousel>
-    </section>
+    <Carousel title="Your Lists" className="mb-4 md:mb-8">
+      {[
+        ...lists.map((list) => <ListCard key={`list-${list.id}`} list={list} />),
+        <CreateListCard
+          key="create-list"
+          onCreateList={handleCreateList}
+          isLoading={isLoading}
+        />,
+      ]}
+    </Carousel>
   );
 }

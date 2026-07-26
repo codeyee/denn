@@ -30,7 +30,7 @@ export function BannerContent({ item, onViewDetails }: BannerContentProps) {
 
   return (
     <div className="relative z-30 flex h-full items-end">
-      <div className="w-full px-4 pb-16 md:px-12 md:pb-18">
+      <div className="layout-banner-content pb-16 md:pb-18">
         <div className="mb-1 flex items-center gap-3 md:mb-2">
           <span
             role="img"

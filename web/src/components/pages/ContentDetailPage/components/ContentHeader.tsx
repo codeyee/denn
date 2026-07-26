@@ -60,7 +60,7 @@ export function ContentHeader({
       </section>
 
       <section className="mb-10">
-        <div className="mt-8 w-full space-y-6 px-4 md:px-8 lg:px-12">
+        <div className="layout-content mt-8 space-y-6">
           {contentItem.average_rating && (contentItem.rating_count ?? 0) > 0 ? (
             <div className="flex gap-2 flex-wrap flex-col">
               <div className="flex items-center gap-2">

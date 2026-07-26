@@ -9,7 +9,7 @@ refreshed inside the system today.
 - `core` owns the `ContentItem` identity.
 - The ingest endpoint in current code is
   `POST /api/content/get-or-create/`.
-- Discovery surfaces resolve up to 100 unique external triples with
+- Discovery surfaces resolve up to 200 unique external triples with
   `POST /api/content/resolve-ids/`; the response preserves input order
   and returns the stable internal id for every resolved item.
 - Bulk identity resolution does not accept provider metadata as a

@@ -1,20 +1,11 @@
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import type { LucideIcon } from "lucide-react";
-import { Book, Film, Gamepad2, Music, Tv } from "lucide-react";
 
+import { getContentTypeIcon } from "@/lib/contentTypes";
 import { ContentType } from "@/lib/types";
 import { CardHoverPopover } from "./CardHoverPopover";
 import { CardMedia } from "./CardMedia";
 import { useCardHover } from "./hooks/useCardHover";
-
-const ICON_MAP = {
-  [ContentType.MOVIE.toLowerCase()]: Film,
-  [ContentType.TV_SHOW.toLowerCase()]: Tv,
-  [ContentType.SEASON.toLowerCase()]: Tv,
-  [ContentType.GAME.toLowerCase()]: Gamepad2,
-  [ContentType.BOOK.toLowerCase()]: Book,
-  [ContentType.ALBUM.toLowerCase()]: Music,
-} as const;
 
 interface CardProps {
   id: string | number;
@@ -80,7 +71,8 @@ function Card({
   onHoverChange,
   disableHover = false,
 }: CardProps) {
-  const Icon = icon || (type ? ICON_MAP[type.toLowerCase()] || Film : Film);
+  const prefersReducedMotion = useReducedMotion();
+  const Icon = icon || getContentTypeIcon(type ?? "");
   const EmptyIcon = emptyIcon || Icon;
   const alt = backgroundImageAlt || `${title} artwork`;
   const hover = useCardHover({
@@ -97,9 +89,21 @@ function Card({
         className={`w-full ${className} ${disableHover ? "pointer-events-none" : ""}`}
         style={noAspectRatio ? undefined : { aspectRatio: "5 / 8" }}
         exit={{ opacity: 0 }}
-        transition={{ duration: 0.2, ease: "easeOut" }}
-        onMouseEnter={disableHover ? undefined : hover.handleMouseEnter}
+        transition={{
+          duration: prefersReducedMotion ? 0 : 0.2,
+          ease: "easeOut",
+        }}
+        onMouseEnter={disableHover ? undefined : hover.handleCardMouseEnter}
         onMouseLeave={disableHover ? undefined : hover.handleMouseLeave}
+        onPointerDownCapture={
+          disableHover ? undefined : hover.handleCardPointerDown
+        }
+        onPointerUpCapture={disableHover ? undefined : hover.handleCardPointerUp}
+        onPointerCancelCapture={
+          disableHover ? undefined : hover.handleCardPointerUp
+        }
+        onFocusCapture={disableHover ? undefined : hover.handleFocus}
+        onBlurCapture={disableHover ? undefined : hover.handleBlur}
       >
         <div className="relative h-full overflow-hidden rounded-2xl">
           <CardMedia
@@ -146,9 +150,13 @@ function Card({
           icon={Icon}
           isEmpty={isEmpty}
           isOpen={hover.isHovered && hover.shouldShowHoverContent}
-          onMouseEnter={hover.handleMouseEnter}
+          onFocus={hover.handleFocus}
+          onBlur={hover.handleBlur}
+          onMouseEnter={hover.handlePopoverMouseEnter}
           onMouseLeave={hover.handleMouseLeave}
+          onWheel={hover.handleWheel}
           overlay={hoverOverlay}
+          popoverRef={hover.popoverRef}
           position={hover.popoverPosition}
           title={title}
         >

@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 
-import { DomeGallery } from "./DomeGallery";
+import { useSettings } from "@/hooks/useSettings";
+
+import { MosaicGallery } from "./MosaicGallery";
 
 type BackgroundCardImage = {
   src: string;
@@ -8,7 +10,8 @@ type BackgroundCardImage = {
 };
 
 const AUTH_BACKDROP_IMAGE_LIMIT = 24;
-const AUTH_DOME_SEGMENTS = 12;
+const AUTH_MOSAIC_ROWS = 5;
+const AUTH_MOSAIC_ITEMS_PER_ROW = 16;
 
 const isBackgroundCardImage = (value: unknown): value is BackgroundCardImage => {
   if (!value || typeof value !== "object") {
@@ -21,6 +24,7 @@ const isBackgroundCardImage = (value: unknown): value is BackgroundCardImage => 
 
 export function AuthBackdrop() {
   const [images, setImages] = useState<BackgroundCardImage[]>([]);
+  const { settings } = useSettings();
 
   useEffect(() => {
     const controller = new AbortController();
@@ -54,23 +58,24 @@ export function AuthBackdrop() {
   return (
     <div
       aria-hidden="true"
+      data-animations={settings.animationsEnabled ? "enabled" : "disabled"}
       className="pointer-events-none fixed inset-0 overflow-hidden bg-[var(--color-hero-gradient)]"
     >
-      <div className="absolute -left-[20vw] inset-y-0 h-full w-[140vw]">
+      <div className="absolute inset-0 opacity-75">
         {images.length > 0 && (
-          <DomeGallery
+          <MosaicGallery
             images={images}
-            overlayBlurColor="var(--color-overlay-blur)"
-            segments={AUTH_DOME_SEGMENTS}
-            imageBorderRadius="20px"
+            rows={AUTH_MOSAIC_ROWS}
+            itemsPerRow={AUTH_MOSAIC_ITEMS_PER_ROW}
+            imageBorderRadius="12px"
           />
         )}
       </div>
       <div
         className="absolute inset-0 z-10"
         style={{
-          backgroundColor: "var(--color-hero-gradient)",
-          opacity: 0.7,
+          background:
+            "radial-gradient(circle at center, var(--color-hero-gradient-75) 0%, var(--color-hero-gradient-60) 48%, var(--color-hero-gradient-75) 100%)",
         }}
       />
       <div

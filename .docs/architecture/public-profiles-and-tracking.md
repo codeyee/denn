@@ -123,6 +123,17 @@ reviews, six recent completions, four public lists, and five banner
 images. Public page and overview query paths are protected by
 `query_count <= 10` tests and assert zero provider calls.
 
+The frontend combines the bounded favorite groups into one collection,
+sorts scored items from highest to lowest with favorite date and title
+as stable tie-breakers, and exposes multi-select type filters. With no
+active type filters, every favorite is visible in the same grid.
+
+Local content summaries include ordered authors and distinguish poster
+art from gallery art. Profile cards show at most the first two authors
+and collapse the remainder into the shared `& N more` treatment. Banner
+candidates use gallery art only; a profile with no panoramic favorite
+art keeps the plum fallback instead of stretching a portrait cover.
+
 ## Browser And BFF Behavior
 
 The same-origin Core BFF uses a strict public-read predicate:
@@ -154,7 +165,7 @@ Overview, Completed, Ratings & Reviews, and Lists.
 The approved visual direction stays inside the existing Denn system:
 
 - black/plum surfaces and the extracted `BannerShell`;
-- responsive favorite artwork collage with a plum fallback;
+- responsive panoramic favorite artwork with a plum fallback;
 - the existing content/list cards, vertical lists, rating badge, and
   star control extended through composition;
 - direct external avatar loading with `no-referrer` and an initials

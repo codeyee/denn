@@ -7,6 +7,8 @@
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
+    "cards:check": "node scripts/optimize-auth-cards.mjs --check",
+    "cards:optimize": "node scripts/optimize-auth-cards.mjs --write",
     "start": "node .output/server/index.mjs",
     "lint": "eslint .",
     "test": "vitest run",

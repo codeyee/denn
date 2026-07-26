@@ -1,4 +1,4 @@
-export const SUGGESTIONS_PAGE_SIZE = 20;
+export const SUGGESTIONS_PAGE_SIZE = 30;
 export const HOME_LIST_ITEMS_SIZE = 8;
 export const HOME_LIST_IMAGES_SIZE = 4;
 export const SEARCH_RESULT_LIMIT = 20;

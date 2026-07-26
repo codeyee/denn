@@ -72,7 +72,7 @@ export function PublicProfilePage({
             onEdit={() => setIsEditing(true)}
           />
         </section>
-        <div className="mx-auto w-full max-w-[1800px] px-4 md:px-8 lg:px-12">
+        <div className="layout-content">
           <ProfileTabs username={username} search={search}>
             {search.tab === "overview" ? (
               <ProfileOverview username={username} overview={overview} />
@@ -105,8 +105,8 @@ export function PublicProfileSkeleton() {
       className="min-h-screen animate-pulse bg-background-logged-in motion-reduce:animate-none"
     >
       <div className="pb-20 pt-30">
-        <div className={`-mt-30 bg-white/[0.07] md:rounded-2xl ${COMPACT_BANNER_SIZE}`} />
-        <div className="mx-auto max-w-[1800px] px-4 md:px-8 lg:px-12">
+        <div className={`layout-banner -mt-30 bg-white/[0.07] md:rounded-2xl ${COMPACT_BANNER_SIZE}`} />
+        <div className="layout-content">
           <div className="mt-6 h-12 rounded-xl bg-list-item-background" />
           <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
             {Array.from({ length: 5 }).map((_, index) => (

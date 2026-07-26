@@ -1,4 +1,5 @@
 import type {
+  Author,
   ContentType,
   ListType,
   ListVisibility,
@@ -15,6 +16,7 @@ export interface LocalContentSummary {
   date: string | null;
   poster: string | null;
   backdrop: string | null;
+  authors: Author[] | null;
 }
 
 export interface PublicProfileIdentity {
