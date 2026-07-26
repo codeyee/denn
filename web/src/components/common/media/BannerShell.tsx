@@ -2,6 +2,10 @@ import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils/tailwindUtils";
 
+export const COMPACT_BANNER_SIZE =
+  "h-[clamp(21rem,90vw,27rem)] md:h-[clamp(30rem,49vw,35rem)]";
+export const BANNER_MEDIA_POSITION = "object-[center_35%]";
+
 interface BannerShellProps {
   children: ReactNode;
   media?: ReactNode;
@@ -17,8 +21,10 @@ export function BannerShell({
 }: BannerShellProps) {
   return (
     <section
+      data-banner-shell
       className={cn(
-        "relative mb-6 aspect-16/16 w-full overflow-hidden rounded-none bg-[#160b19] md:mb-10 md:aspect-16/13 md:rounded-2xl lg:aspect-16/10 xl:aspect-16/7 4xl:aspect-16/5 15xl:aspect-16/3",
+        "relative mb-6 w-full overflow-hidden rounded-none bg-[#160b19] md:mb-10 md:rounded-2xl",
+        COMPACT_BANNER_SIZE,
         className,
       )}
     >
@@ -30,7 +36,7 @@ export function BannerShell({
       <div className="absolute inset-0 bg-black/35" />
       <div className="absolute inset-x-0 bottom-0 h-2/3 bg-linear-to-t from-black/95 via-black/55 to-transparent" />
       <div
-        className="absolute inset-x-0 bottom-0 h-28 md:h-36"
+        className="absolute inset-x-0 bottom-0 h-20 md:h-24"
         style={{
           background:
             "linear-gradient(to bottom, rgba(0,0,0,0) 0%, var(--color-background-logged-in) 100%)",

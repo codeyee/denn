@@ -1,18 +1,5 @@
-/**
- * Sprint 08 / T5 — Content Detail page skeleton.
- *
- * Dimensions mirror the real `ContentDetailPage` layout so swapping
- * one for the other does not shift the document (CLS budget = 0):
- *
- *   - Banner: `min-h-[70vh]` matching `ContentBanner`.
- *   - Rating strip: ~80 px tall.
- *   - About section: 3 lines × line-height 1.6 + heading.
- *   - Action row: matches the icon button strip on the real page.
- *
- * Renderable as a React Server Component (no hooks, no client APIs)
- * so it can be used both as a Suspense fallback and as the App
- * Router's `loading.tsx`.
- */
+import { COMPACT_BANNER_SIZE } from "@/components/common/media/BannerShell";
+
 function Pulse({ className }: { className: string }) {
   return <div className={`animate-pulse rounded bg-white/10 ${className}`} />;
 }
@@ -26,12 +13,12 @@ export function ContentDetailSkeleton() {
       role="status"
       aria-label="Loading content"
     >
-      <div className="pt-30 pb-20">
+      <div className="mx-auto max-w-[1800px] pb-20 pt-30">
         <section className="-mt-30 mb-6 md:mb-10 relative z-0">
-          <div className="relative w-full min-h-[70vh] bg-white/5 overflow-hidden">
+          <div className={`relative w-full overflow-hidden bg-white/5 md:rounded-2xl ${COMPACT_BANNER_SIZE}`}>
             <div className="absolute inset-0 animate-pulse bg-linear-to-b from-white/5 via-white/10 to-white/5" />
-            <div className="absolute bottom-10 left-0 right-0">
-              <div className="container mx-auto px-4 space-y-4">
+            <div className="absolute inset-x-0 bottom-8 md:bottom-10">
+              <div className="space-y-4 px-4 md:px-8 lg:px-12">
                 <Pulse className="h-4 w-24" />
                 <Pulse className="h-12 w-3/4 max-w-2xl" />
                 <Pulse className="h-4 w-1/2 max-w-md" />
@@ -45,14 +32,14 @@ export function ContentDetailSkeleton() {
         </section>
 
         <section className="mb-10">
-          <div className="container mx-auto px-4 mt-8 space-y-3">
+          <div className="mt-8 w-full space-y-3 px-4 md:px-8 lg:px-12">
             <Pulse className="h-9 w-32" />
             <Pulse className="h-4 w-24" />
           </div>
         </section>
 
         <section className="mb-10">
-          <div className="container mx-auto px-4 space-y-4">
+          <div className="w-full space-y-4 px-4 md:px-8 lg:px-12">
             <Pulse className="h-7 w-40" />
             <div className="space-y-3">
               <Pulse className="h-4 w-full" />
@@ -63,7 +50,7 @@ export function ContentDetailSkeleton() {
         </section>
 
         <section className="mb-10">
-          <div className="container mx-auto px-4 space-y-4">
+          <div className="w-full space-y-4 px-4 md:px-8 lg:px-12">
             <Pulse className="h-7 w-32" />
             <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
               {Array.from({ length: 6 }).map((_, i) => (

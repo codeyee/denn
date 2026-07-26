@@ -38,7 +38,7 @@ export function AboutSection({
 }: AboutSectionProps) {
   if (!detailData) {
     return (
-      <div className="container mx-auto px-4 mt-8">
+      <div className="mt-8 w-full px-4 md:px-8 lg:px-12">
         <div className="mb-10">
           <h2 className="text-2xl font-bold text-white mb-6">Content Details</h2>
           <p className="text-gray-400">Detailed information not available.</p>
@@ -75,7 +75,7 @@ export function AboutSection({
     const album = detailData as AlbumDetail;
     const releaseDate = formatReleaseDate(album.release_date);
     return (
-      <div className="container mx-auto px-4 mt-8">
+      <div className="mt-8 w-full px-4 md:px-8 lg:px-12">
         <div className="mb-10">
           <h2 className="text-2xl font-bold text-white mb-6">About</h2>
           <div className="mt-6 space-y-2">
@@ -138,7 +138,7 @@ export function AboutSection({
   }
 
   return (
-    <div className="container mx-auto px-4 mt-8">
+    <div className="mt-8 w-full px-4 md:px-8 lg:px-12">
       <div className="mb-10">
         <h2 className="text-2xl font-bold text-white mb-6">Content Details</h2>
         <p className="text-gray-400">Content type not supported.</p>

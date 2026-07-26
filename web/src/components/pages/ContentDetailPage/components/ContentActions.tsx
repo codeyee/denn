@@ -22,7 +22,7 @@ export function ContentActions({
   return (
     <div className={align === "center" ? "text-center" : undefined}>
       <div
-        className={`mt-4 flex flex-wrap gap-3 md:mt-6 ${
+        className={`mt-3 flex flex-wrap gap-2 md:mt-4 md:gap-3 ${
           align === "center" ? "justify-center" : ""
         }`}
       >
@@ -30,7 +30,6 @@ export function ContentActions({
           <Button
             onClick={onAddToList}
             className="flex cursor-pointer items-center gap-2 bg-white font-semibold text-black hover:bg-white/90"
-            size="lg"
           >
             <ListPlus className="h-5 w-5" />
             Add to List
@@ -42,7 +41,6 @@ export function ContentActions({
             className={`flex cursor-pointer items-center gap-2 font-semibold ${
               hasUserRating ? "" : "bg-white text-black hover:bg-white/90"
             }`}
-            size="lg"
             variant={hasUserRating ? "outline" : "default"}
           >
             <Star className="h-5 w-5" />
@@ -51,7 +49,7 @@ export function ContentActions({
         )}
       </div>
       {!isAuthenticated && (
-        <p className="mt-3 max-w-xl text-sm text-white/80 font-sans">
+        <p className="mt-2 line-clamp-1 max-w-xl font-sans text-xs text-white/80 md:text-sm">
           Explore freely. Sign in only when you want to save, rate, or
           review something.
         </p>

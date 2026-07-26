@@ -79,6 +79,27 @@ describe("Carousel", () => {
       ).not.toBeInTheDocument();
     });
   });
+
+  it("keeps the scrollbar hidden and handles horizontal trackpad gestures", () => {
+    render(
+      <Carousel title="Albums">
+        <div>Album one</div>
+        <div>Album two</div>
+        <div>Album three</div>
+      </Carousel>,
+    );
+
+    const scroller = screen.getByLabelText("Albums items");
+    setScrollerGeometry(scroller, { clientWidth: 100, scrollWidth: 300 });
+
+    expect(scroller).toHaveClass("[scrollbar-width:none]");
+
+    fireEvent.wheel(scroller, { deltaX: 48, deltaY: 2 });
+    expect(scroller.scrollLeft).toBe(48);
+
+    fireEvent.wheel(scroller, { deltaX: 2, deltaY: 48 });
+    expect(scroller.scrollLeft).toBe(48);
+  });
 });
 
 function setScrollerGeometry(

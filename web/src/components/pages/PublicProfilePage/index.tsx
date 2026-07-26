@@ -8,6 +8,7 @@ import type {
   PublicProfileTabData,
 } from "@/lib/types";
 import { useAuthStore } from "@/stores/auth-store";
+import { COMPACT_BANNER_SIZE } from "@/components/common/media/BannerShell";
 import { EditProfileModal } from "./EditProfileModal";
 import { ProfileBanner } from "./ProfileBanner";
 import { ProfileOverview } from "./ProfileOverview";
@@ -104,7 +105,7 @@ export function PublicProfileSkeleton() {
       className="min-h-screen animate-pulse bg-background-logged-in motion-reduce:animate-none"
     >
       <div className="pb-20 pt-30">
-        <div className="-mt-30 aspect-16/16 bg-white/[0.07] md:aspect-16/13 md:rounded-2xl lg:aspect-16/10 xl:aspect-16/7" />
+        <div className={`-mt-30 bg-white/[0.07] md:rounded-2xl ${COMPACT_BANNER_SIZE}`} />
         <div className="mx-auto max-w-[1800px] px-4 md:px-8 lg:px-12">
           <div className="mt-6 h-12 rounded-xl bg-list-item-background" />
           <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">

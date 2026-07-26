@@ -130,69 +130,71 @@ export function ContentDetailPage({
       className="relative w-full min-h-screen bg-background-logged-in"
     >
       <div className="pt-30 pb-20">
-        <ContentHeader
-          displayItem={displayItem}
-          contentItem={contentItem}
-          tvShowTitle={tvShowTitle || undefined}
-          userRating={rating.userRating}
-          isAuthenticated={isAuthenticated}
-          onAddToList={() => requireAuth(modals.openAddToListModal)}
-          onRateContent={() => requireAuth(modals.openRatingModal)}
-          tracking={contentItem.current_user_tracking ?? null}
-          isTrackingLoading={isTrackingLoading}
-          onTrackingStatusChange={(status) => {
-            void handleTrackingStatusChange(status);
-          }}
-          onFavoriteChange={(isFavorite) => {
-            void setFavorite.mutateAsync({
-              contentId: contentItem.id,
-              isFavorite,
-            });
-          }}
-          onDeleteTracking={() => {
-            if (window.confirm("Stop tracking this content?")) {
-              void deleteTracking.mutateAsync({ contentId: contentItem.id });
-            }
-          }}
-        />
+        <div className="mx-auto w-full max-w-[1800px]">
+          <ContentHeader
+            displayItem={displayItem}
+            contentItem={contentItem}
+            tvShowTitle={tvShowTitle || undefined}
+            userRating={rating.userRating}
+            isAuthenticated={isAuthenticated}
+            onAddToList={() => requireAuth(modals.openAddToListModal)}
+            onRateContent={() => requireAuth(modals.openRatingModal)}
+            tracking={contentItem.current_user_tracking ?? null}
+            isTrackingLoading={isTrackingLoading}
+            onTrackingStatusChange={(status) => {
+              void handleTrackingStatusChange(status);
+            }}
+            onFavoriteChange={(isFavorite) => {
+              void setFavorite.mutateAsync({
+                contentId: contentItem.id,
+                isFavorite,
+              });
+            }}
+            onDeleteTracking={() => {
+              if (window.confirm("Stop tracking this content?")) {
+                void deleteTracking.mutateAsync({ contentId: contentItem.id });
+              }
+            }}
+          />
 
-        <AboutSection
-          detailData={detailData}
-          contentItem={contentItem}
-          userRating={rating.userRating}
-          user={activeUser}
-          isRatingLoading={rating.isRatingLoading}
-          onEditRating={modals.openRatingModal}
-          onDeleteRating={rating.handleDeleteRating}
-        />
-
-        {activeUser && contentItem.content_type !== ContentType.SEASON && (
-          <RatingsSection
+          <AboutSection
+            detailData={detailData}
             contentItem={contentItem}
             userRating={rating.userRating}
+            user={activeUser}
+            isRatingLoading={rating.isRatingLoading}
             onEditRating={modals.openRatingModal}
             onDeleteRating={rating.handleDeleteRating}
-            isRatingLoading={rating.isRatingLoading}
-            user={activeUser}
           />
-        )}
 
-        <TracksSection
-          detailData={detailData}
-          contentItem={contentItem}
-        />
+          {activeUser && contentItem.content_type !== ContentType.SEASON && (
+            <RatingsSection
+              contentItem={contentItem}
+              userRating={rating.userRating}
+              onEditRating={modals.openRatingModal}
+              onDeleteRating={rating.handleDeleteRating}
+              isRatingLoading={rating.isRatingLoading}
+              user={activeUser}
+            />
+          )}
 
-        <SeasonsSection
-          detailData={detailData}
-          contentItem={contentItem}
-        />
+          <TracksSection
+            detailData={detailData}
+            contentItem={contentItem}
+          />
 
-        <GallerySection
-          detailData={detailData}
-          contentItem={contentItem}
-        />
+          <SeasonsSection
+            detailData={detailData}
+            contentItem={contentItem}
+          />
 
-        <ApiAttribution contentItem={contentItem} />
+          <GallerySection
+            detailData={detailData}
+            contentItem={contentItem}
+          />
+
+          <ApiAttribution contentItem={contentItem} />
+        </div>
 
         <Footer />
       </div>

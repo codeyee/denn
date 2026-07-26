@@ -114,7 +114,7 @@ function DropdownMenuContent({
   return (
     <div
       className={cn(
-        "min-w-56 overflow-hidden rounded-md border bg-popover p-2 text-popover-foreground shadow-lg",
+        "min-w-56 overflow-hidden rounded-md border border-white/10 bg-[#1d131c] p-2 text-white shadow-md",
         className
       )}
       {...props}
@@ -148,7 +148,7 @@ function DropdownMenuItem({
   return (
     <div
       className={cn(
-        "relative flex cursor-pointer select-none items-center rounded-sm p-2 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50",
+        "relative flex cursor-pointer select-none items-center rounded-sm p-2 text-sm outline-none transition-colors hover:bg-white/10 focus:bg-white/10 focus:text-white data-disabled:pointer-events-none data-disabled:opacity-50",
         className
       )}
       onClick={handleClick}
@@ -165,4 +165,3 @@ export {
   DropdownMenuContent,
   DropdownMenuItem,
 }
-

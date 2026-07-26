@@ -30,7 +30,7 @@ export function BannerContent({ item, onViewDetails }: BannerContentProps) {
 
   return (
     <div className="relative z-30 flex h-full items-end">
-      <div className="w-full px-4 pb-20 md:px-12 md:pb-24">
+      <div className="w-full px-4 pb-16 md:px-12 md:pb-18">
         <div className="mb-1 flex items-center gap-3 md:mb-2">
           <span
             role="img"
@@ -40,7 +40,7 @@ export function BannerContent({ item, onViewDetails }: BannerContentProps) {
           >
             <Icon aria-hidden="true" className="size-6 md:size-8" />
           </span>
-          <h2 className="line-clamp-2 text-2xl font-extrabold text-white drop-shadow-text text-balance sm:text-3xl md:text-5xl">
+          <h2 className="line-clamp-2 text-2xl font-extrabold text-white drop-shadow-text text-balance sm:text-3xl md:text-4xl">
             {item.title}
           </h2>
         </div>
@@ -65,13 +65,7 @@ export function BannerContent({ item, onViewDetails }: BannerContentProps) {
           )}
         </div>
 
-        {"description" in item && item.description && (
-          <p className="mt-2 line-clamp-2 max-h-10 max-w-3xl overflow-hidden text-pretty text-xs text-white/90 [overflow-wrap:anywhere] md:mt-3 md:max-h-[4.5rem] md:line-clamp-3 md:text-base">
-            {item.description}
-          </p>
-        )}
-
-        <div className="mt-3 md:mt-5 flex items-center gap-3">
+        <div className="mt-3 flex items-center gap-3 md:mt-4">
           <Button
             onClick={() => onViewDetails(item)}
             className="bg-white text-black hover:bg-white/90 cursor-pointer text-xs md:text-sm"

@@ -21,7 +21,7 @@ export function ContentDetailState({
       tabIndex={-1}
       className="relative w-full min-h-screen bg-background-logged-in"
     >
-      <div className="container mx-auto px-4 mt-8 py-20">
+      <div className="mx-auto mt-8 w-full max-w-[1800px] px-4 py-20 md:px-8 lg:px-12">
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
             <h1 className={`${titleColor} text-xl mb-4`}>{title}</h1>

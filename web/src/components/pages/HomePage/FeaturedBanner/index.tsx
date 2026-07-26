@@ -1,14 +1,18 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import {
+  BANNER_MEDIA_POSITION,
+  COMPACT_BANNER_SIZE,
+} from "@/components/common/media/BannerShell";
 import { ResponsiveMedia } from "@/components/common/media/ResponsiveMedia";
 import { Content } from "@/lib/types";
 import { navigateToContentById } from "@/lib/utils/navigationUtils";
-import { useSettings } from "@/hooks/useSettings";
 import { useBannerAutoRotation } from "./hooks/useBannerAutoRotation";
+import { useBannerGestures } from "./hooks/useBannerGestures";
 import { getBestImageUrl } from "./utils";
 import { BannerContent } from "./components/BannerContent";
-import { BannerDots } from "./components/BannerDots";
+import { BannerControls } from "./components/BannerControls";
 
 interface FeaturedBannerProps {
   items: Content[];
@@ -18,9 +22,9 @@ interface FeaturedBannerProps {
 export function FeaturedBanner({ items, autoRotateMs = 5000 }: FeaturedBannerProps) {
   const navigate = useNavigate();
   const shouldReduceMotion = useReducedMotion();
-  const { settings } = useSettings();
   const [interactionPaused, setInteractionPaused] = useState(false);
-  const autoplayAvailable = settings.animationsEnabled && !shouldReduceMotion;
+  const [userPaused, setUserPaused] = useState(false);
+  const autoplayAvailable = !shouldReduceMotion && !userPaused;
 
   const validItems = useMemo(
     () => items.filter((item) =>
@@ -36,6 +40,21 @@ export function FeaturedBanner({ items, autoRotateMs = 5000 }: FeaturedBannerPro
     interactionPaused,
   });
 
+  const showPrevious = useCallback(() => {
+    setIndex((currentIndex) =>
+      (currentIndex - 1 + validItems.length) % validItems.length
+    );
+  }, [setIndex, validItems.length]);
+
+  const showNext = useCallback(() => {
+    setIndex((currentIndex) => (currentIndex + 1) % validItems.length);
+  }, [setIndex, validItems.length]);
+
+  const gestures = useBannerGestures({
+    onPrevious: showPrevious,
+    onNext: showNext,
+  });
+
   const handleViewDetails = (item: Content) => {
     if (item.denn_id) navigateToContentById(navigate, item.denn_id);
   };
@@ -47,17 +66,16 @@ export function FeaturedBanner({ items, autoRotateMs = 5000 }: FeaturedBannerPro
 
   return (
     <section
+      data-banner-shell
       aria-roledescription="carousel"
       aria-label="Featured content"
       onMouseEnter={() => setInteractionPaused(true)}
       onMouseLeave={() => setInteractionPaused(false)}
-      onFocusCapture={() => setInteractionPaused(true)}
-      onBlurCapture={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget)) {
-          setInteractionPaused(false);
-        }
-      }}
-      className="group relative mb-6 aspect-[4/5] w-full overflow-hidden md:mb-10 md:aspect-[16/11] md:rounded-2xl lg:aspect-[16/9] xl:aspect-[16/7]"
+      onTouchStart={gestures.handleTouchStart}
+      onTouchEnd={gestures.handleTouchEnd}
+      onTouchCancel={gestures.handleTouchCancel}
+      onWheel={gestures.handleWheel}
+      className={`group relative mb-6 w-full touch-pan-y overflow-hidden md:mb-10 md:rounded-2xl ${COMPACT_BANNER_SIZE}`}
     >
       <div id="featured-slide" role="tabpanel" className="absolute inset-0">
         <AnimatePresence mode="wait">
@@ -77,7 +95,7 @@ export function FeaturedBanner({ items, autoRotateMs = 5000 }: FeaturedBannerPro
                 height={900}
                 sizes="100vw"
                 priority
-                className="h-full w-full object-cover"
+                className={`h-full w-full object-cover ${BANNER_MEDIA_POSITION}`}
               />
             )}
           </motion.div>
@@ -87,7 +105,7 @@ export function FeaturedBanner({ items, autoRotateMs = 5000 }: FeaturedBannerPro
       <div className="absolute inset-0 bg-black/35 z-20" />
       <div className="absolute inset-x-0 bottom-0 h-1/2 bg-linear-to-t from-black/90 via-black/50 to-transparent z-20" />
       <div
-        className="absolute inset-x-0 bottom-0 h-28 md:h-36 z-20"
+        className="absolute inset-x-0 bottom-0 z-20 h-20 md:h-24"
         style={{
           background:
             "linear-gradient(to bottom, rgba(0,0,0,0) 0%, var(--color-background-logged-in) 100%)",
@@ -96,18 +114,14 @@ export function FeaturedBanner({ items, autoRotateMs = 5000 }: FeaturedBannerPro
 
       <BannerContent item={current} onViewDetails={handleViewDetails} />
 
-      <BannerDots
+      <BannerControls
         itemCount={validItems.length}
         currentIndex={index}
-        onIndexChange={setIndex}
-        onPrevious={() =>
-          setIndex((currentIndex) =>
-            (currentIndex - 1 + validItems.length) % validItems.length
-          )
-        }
-        onNext={() =>
-          setIndex((currentIndex) => (currentIndex + 1) % validItems.length)
-        }
+        onPrevious={showPrevious}
+        onNext={showNext}
+        isPaused={userPaused || Boolean(shouldReduceMotion)}
+        canToggleAutoplay={!shouldReduceMotion}
+        onPauseToggle={() => setUserPaused((paused) => !paused)}
       />
     </section>
   );

@@ -92,13 +92,14 @@ export function useCarouselScroll({
   const handleWheel = useCallback(
     (event: WheelEvent<HTMLDivElement>) => {
       const container = containerRef.current;
-      if (!container || container.contains(event.target as Node)) return;
+      if (!container) return;
 
       const horizontalDelta =
         event.deltaX || (event.shiftKey ? event.deltaY : 0);
       if (
         horizontalDelta === 0 ||
-        Math.abs(horizontalDelta) <= Math.abs(event.deltaY)
+        (!event.shiftKey &&
+          Math.abs(horizontalDelta) <= Math.abs(event.deltaY))
       ) {
         return;
       }

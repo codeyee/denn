@@ -27,7 +27,7 @@ export function useBannerAutoRotation({
     }, autoRotateMs);
 
     return () => window.clearInterval(interval);
-  }, [autoRotateMs, isPaused, itemCount]);
+  }, [autoRotateMs, index, isPaused, itemCount]);
 
   return {
     index,

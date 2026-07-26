@@ -317,8 +317,11 @@ test("authenticated cold and warm navigation covers critical routes", async ({
   await authenticate(context);
 
   await page.goto("/");
+  await page.getByRole("button", {
+    name: "Open @phase0-fixture menu",
+  }).click();
   const profileLink = page.getByRole("link", {
-    name: "View @phase0-fixture profile",
+    name: "View profile",
   });
   await expect(profileLink).toBeVisible();
   await profileLink.click();

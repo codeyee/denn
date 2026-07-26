@@ -7,14 +7,13 @@ import {
 import { Button } from "@/components/common/ui/Button";
 import { UserAvatar } from "@/components/common/ui/UserAvatar";
 import { useAuth } from "@/hooks/useAuth";
-import { Settings, Search, LogOut, LogIn, UserPlus } from "lucide-react";
+import { Search, LogOut, LogIn, User, UserPlus } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/common/ui/Dropdown";
-import { useSettings } from "@/hooks/useSettings";
 import { useNavbarSearch } from "./hooks/useNavbarSearch";
 import { MobileSearch } from "./MobileSearch";
 
@@ -25,7 +24,6 @@ interface NavbarProps {
 
 export function Navbar({ searchQuery, onSearchChange }: NavbarProps) {
   const { user, isAuthenticated, logout } = useAuth();
-  const { settings, toggleAnimations } = useSettings();
   const {
     searchQuery: internalSearchQuery,
     searchInputRef,
@@ -43,9 +41,20 @@ export function Navbar({ searchQuery, onSearchChange }: NavbarProps) {
           <NavigationMenu>
             <NavigationMenuList>
               <NavigationMenuItem>
-                <Button asChild variant="link" className="cursor-pointer text-2xl font-bold font-mono">
-                  <Link to="/">
-                    Denn
+                <Button
+                  asChild
+                  variant="link"
+                  className="cursor-pointer px-0 text-2xl font-bold font-mono hover:no-underline"
+                >
+                  <Link to="/" aria-label="Denn home">
+                    <img
+                      src="/logo.png"
+                      alt=""
+                      width={32}
+                      height={32}
+                      className="h-7 w-7 object-contain md:h-8 md:w-8"
+                    />
+                    <span>Denn</span>
                   </Link>
                 </Button>
               </NavigationMenuItem>
@@ -77,20 +86,42 @@ export function Navbar({ searchQuery, onSearchChange }: NavbarProps) {
             />
 
             {isAuthenticated && user ? (
-              <Button asChild variant="ghost" size="icon">
-                <Link
-                  to="/user/$username"
-                  params={{ username: user.username }}
-                  search={{ tab: "overview", page: 1 }}
-                  aria-label={`View @${user.username} profile`}
-                >
-                  <UserAvatar
-                    avatarUrl={user.avatar_url}
-                    username={user.username}
-                    className="h-9 w-9 border border-white/25 text-sm"
-                  />
-                </Link>
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label={`Open @${user.username} menu`}
+                    aria-haspopup="menu"
+                  >
+                    <UserAvatar
+                      avatarUrl={user.avatar_url}
+                      username={user.username}
+                      className="h-9 w-9 border border-white/25 text-sm"
+                    />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" data-user-menu>
+                  <DropdownMenuItem>
+                    <Link
+                      to="/user/$username"
+                      params={{ username: user.username }}
+                      search={{ tab: "overview", page: 1 }}
+                      className="flex min-h-11 w-full items-center gap-3"
+                    >
+                      <User aria-hidden="true" className="h-4 w-4" />
+                      <span>View profile</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={logout}
+                    className="min-h-11 gap-3"
+                  >
+                    <LogOut aria-hidden="true" className="h-4 w-4" />
+                    <span>Log out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             ) : (
               <>
                 {/* Login Link - Text on desktop, icon on mobile */}
@@ -116,58 +147,6 @@ export function Navbar({ searchQuery, onSearchChange }: NavbarProps) {
               </>
             )}
 
-            {/* Settings Button */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="cursor-pointer"
-                  aria-label="Settings"
-                >
-                  <Settings className="h-5 w-5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {isAuthenticated && user ? (
-                  <DropdownMenuItem>
-                    <Link
-                      to="/settings"
-                      className="flex min-h-11 w-full items-center gap-3"
-                    >
-                      <Settings aria-hidden="true" className="h-4 w-4" />
-                      <span>Account settings</span>
-                    </Link>
-                  </DropdownMenuItem>
-                ) : null}
-                <DropdownMenuItem onSelect={toggleAnimations}>
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="checkbox"
-                      checked={settings.animationsEnabled}
-                      onChange={() => {}}
-                      aria-label="Enable animations"
-                      tabIndex={-1}
-                      className="cursor-pointer"
-                    />
-                    <span>Enable Animations</span>
-                  </div>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            {/* Logout Button - Icon only in all views, placed last */}
-            {isAuthenticated && user && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="cursor-pointer"
-                onClick={logout}
-                aria-label="Logout"
-              >
-                <LogOut className="h-5 w-5" />
-              </Button>
-            )}
           </div>
           </div>
         </div>

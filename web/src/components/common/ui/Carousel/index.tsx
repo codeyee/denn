@@ -67,8 +67,8 @@ export function Carousel({
           tabIndex={0}
           aria-label={title ? `${title} items` : "Carousel items"}
           data-carousel-scroller
-          className="flex snap-x snap-proximity touch-pan-x touch-pan-y gap-4 overflow-x-auto overscroll-x-contain px-4 py-4 [scroll-padding-inline:1rem] [-webkit-overflow-scrolling:touch] md:px-12 md:[scroll-padding-inline:3rem]"
-          style={{ scrollbarWidth: "thin" }}
+          className="flex snap-x snap-proximity gap-4 overflow-x-auto overscroll-x-contain px-4 py-4 [scroll-padding-inline:1rem] [scrollbar-width:none] [touch-action:pan-x_pan-y] [-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden md:px-12 md:[scroll-padding-inline:3rem]"
+          style={{ scrollbarWidth: "none" }}
         >
           {items.map((child, index) => (
             <div

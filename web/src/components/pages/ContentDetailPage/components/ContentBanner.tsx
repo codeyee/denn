@@ -9,7 +9,10 @@ import { contentItemActions } from "@/lib/api";
 import { CONTENT_TYPE_ICONS } from "@/lib/icons/contentTypeIcons";
 import { Content } from "@/lib/types";
 import { ResponsiveMedia } from "@/components/common/media/ResponsiveMedia";
-import { BannerShell } from "@/components/common/media/BannerShell";
+import {
+  BANNER_MEDIA_POSITION,
+  BannerShell,
+} from "@/components/common/media/BannerShell";
 import { ContentActions } from "./ContentActions";
 
 interface ContentBannerProps {
@@ -106,7 +109,7 @@ export function ContentBanner({
             height={900}
             sizes="100vw"
             priority
-            className="absolute inset-0 h-full w-full object-cover"
+            className={`absolute inset-0 h-full w-full object-cover ${BANNER_MEDIA_POSITION}`}
           />
         ) : undefined
       }
@@ -116,16 +119,16 @@ export function ContentBanner({
         ) : null
       }
     >
-      <div className="w-full px-4 pb-16 md:px-12 md:pb-20">
+      <div className="w-full px-4 pb-10 md:px-12 md:pb-12">
           <div className="flex items-center gap-3 mb-1 md:mb-2">
-            {Icon && <Icon className="w-6 h-6 md:w-8 md:h-8 text-white/90" />}
-            <h1 className="text-white font-extrabold text-2xl sm:text-3xl md:text-5xl drop-shadow-text line-clamp-3">
+            {Icon && <Icon className="h-6 w-6 text-white/90 md:h-7 md:w-7" />}
+            <h1 className="line-clamp-2 text-balance text-2xl font-extrabold text-white drop-shadow-text sm:text-3xl md:text-4xl">
               {displayTitle}
             </h1>
           </div>
           {/* Subtitle: TV show name (seasons), Authors (albums/books), Original title (movies/TV) */}
           {isSeason && tvShowName ? (
-            <div className="mt-2 md:mt-3 text-white/85 text-sm md:text-base opacity-90 font-sans">
+            <div className="mt-1 font-sans text-sm text-white/85 opacity-90 md:mt-2 md:text-base">
               {tvShowUrl ? (
                 <Link to={tvShowUrl} className="hover:text-white hover:underline transition-colors">
                   {tvShowName}
@@ -133,11 +136,11 @@ export function ContentBanner({
               ) : tvShowName}
             </div>
           ) : (isAlbum || isBook) && authors ? (
-            <div className="mt-2 md:mt-3 text-white/85 text-sm md:text-base opacity-90 font-sans">
+            <div className="mt-1 font-sans text-sm text-white/85 opacity-90 md:mt-2 md:text-base">
               {authors}
             </div>
           ) : originalTitle && !originalTitleIsSame ? (
-            <div className="mt-2 md:mt-3 text-white/85 text-sm md:text-base opacity-90 font-sans">
+            <div className="mt-1 font-sans text-sm text-white/85 opacity-90 md:mt-2 md:text-base">
               {originalTitle}
             </div>
           ) : null}

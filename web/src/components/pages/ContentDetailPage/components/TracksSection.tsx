@@ -24,7 +24,7 @@ export function TracksSection({ detailData, contentItem }: TracksSectionProps) {
   if (!album.tracks || album.tracks.length === 0) return null;
 
   return (
-    <div className="container mx-auto px-4 mt-8">
+    <div className="mt-8 w-full px-4 md:px-8 lg:px-12">
       <h2 className="text-2xl font-bold text-white mb-6">Tracks</h2>
       <VerticalList spacing="md">
         {album.tracks.map((track) => (

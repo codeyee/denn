@@ -196,7 +196,7 @@ test("base accessibility contract keeps zoom, landmarks and touch targets @regre
   await expect(page.getByRole("link", { name: "Skip to main content" })).toBeFocused();
 
   const profileBox = await page
-    .getByRole("link", { name: "View @phase0-fixture profile" })
+    .getByRole("button", { name: "Open @phase0-fixture menu" })
     .boundingBox();
   expect(profileBox?.width).toBeGreaterThanOrEqual(44);
   expect(profileBox?.height).toBeGreaterThanOrEqual(44);

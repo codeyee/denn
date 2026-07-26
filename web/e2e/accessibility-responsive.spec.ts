@@ -142,7 +142,7 @@ test("home mounts semantic responsive media without hidden hero slides", async (
   );
 });
 
-test("featured carousel navigates in both directions, uses one tab stop and respects reduced motion", async ({
+test("featured carousel navigates, pauses and respects reduced motion", async ({
   page,
 }) => {
   await page.goto("/");
@@ -156,14 +156,21 @@ test("featured carousel navigates in both directions, uses one tab stop and resp
     .click();
   expect(await activeFeaturedTitle(page)).toBe(initialTitle);
 
-  const tabs = page.getByRole("tab");
-  await expect(tabs).toHaveCount(3);
-  expect(await tabs.evaluateAll((elements) =>
-    elements.filter((element) => element.getAttribute("tabindex") === "0").length,
-  )).toBe(1);
-  await page.getByRole("tab", { selected: true }).focus();
+  const next = page.getByRole("button", {
+    name: "Show next featured item",
+  });
+  await next.focus();
   await page.keyboard.press("ArrowRight");
-  await expect(tabs.nth(1)).toHaveAttribute("aria-selected", "true");
+  expect(await activeFeaturedTitle(page)).not.toBe(initialTitle);
+
+  const pause = page.getByRole("button", { name: "Pause featured content" });
+  await pause.click();
+  const pausedTitle = await activeFeaturedTitle(page);
+  await page.waitForTimeout(5_250);
+  expect(await activeFeaturedTitle(page)).toBe(pausedTitle);
+  await page
+    .getByRole("button", { name: "Resume featured content" })
+    .click();
 
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.reload();
@@ -198,35 +205,25 @@ test("mobile first viewport exposes featured content and the next section", asyn
   await page.goto("/");
   await page.waitForLoadState("networkidle");
 
-  const featured = await page
-    .getByRole("region", { name: "Featured content" })
-    .boundingBox();
+  const featuredRegion = page.getByRole("region", {
+    name: "Featured content",
+  });
+  const featured = await featuredRegion.boundingBox();
   const nextSection = await page
     .getByRole("heading", { name: "Your Lists" })
     .boundingBox();
-  const description = page
-    .getByRole("region", { name: "Featured content" })
-    .locator("p");
-  const featuredTitle = page
-    .getByRole("region", { name: "Featured content" })
-    .getByRole("heading", { level: 2 });
+  const featuredTitle = featuredRegion.getByRole("heading", { level: 2 });
   await expect(
-    page
-      .getByRole("region", { name: "Featured content" })
-      .getByRole("img", { name: "Content type: Movie" }),
+    featuredRegion.getByRole("img", { name: "Content type: Movie" }),
   ).toBeVisible();
 
   expect(featured, "Featured content must be visible").not.toBeNull();
   expect(featured?.y ?? viewport.height).toBeLessThan(viewport.height);
   expect(nextSection, "The next content section must be rendered").not.toBeNull();
   expect(nextSection?.y ?? viewport.height).toBeLessThan(viewport.height);
-  await expect(description).toHaveCSS("-webkit-line-clamp", "2");
-  const descriptionBox = await description.boundingBox();
-  expect(descriptionBox, "Featured description must be visible").not.toBeNull();
-  expect(descriptionBox?.y ?? 0).toBeGreaterThanOrEqual(featured?.y ?? 0);
-  expect(
-    (descriptionBox?.y ?? 0) + (descriptionBox?.height ?? 0),
-  ).toBeLessThanOrEqual((featured?.y ?? 0) + (featured?.height ?? 0));
+  await expect(
+    featuredRegion.getByText("Deterministic metadata for browser guardrails."),
+  ).toHaveCount(0);
   const titleBox = await featuredTitle.boundingBox();
   const previousBox = await page
     .getByRole("button", { name: "Show previous featured item" })
@@ -234,12 +231,8 @@ test("mobile first viewport exposes featured content and the next section", asyn
   const nextBox = await page
     .getByRole("button", { name: "Show next featured item" })
     .boundingBox();
-  expect((previousBox?.y ?? 0) + (previousBox?.height ?? 0)).toBeLessThanOrEqual(
-    titleBox?.y ?? 0,
-  );
-  expect((nextBox?.y ?? 0) + (nextBox?.height ?? 0)).toBeLessThanOrEqual(
-    titleBox?.y ?? 0,
-  );
+  expect(rectanglesOverlap(previousBox, titleBox)).toBe(false);
+  expect(rectanglesOverlap(nextBox, titleBox)).toBe(false);
   await expect(
     page
       .getByRole("region", { name: "Popular Movies" })
@@ -321,6 +314,24 @@ test("authenticated visitors are redirected away from authentication routes", as
   }
 });
 
+test("navbar shows the Denn logo and a solid focused user menu", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(
+    page.getByRole("link", { name: "Denn home" }).locator("img"),
+  ).toBeVisible();
+
+  await page
+    .getByRole("button", { name: "Open @phase0-fixture menu" })
+    .click();
+  const userMenu = page.locator("[data-user-menu]");
+  await expect(userMenu).toBeVisible();
+  await expect(userMenu).toHaveCSS("background-color", "rgb(29, 19, 28)");
+  await expect(userMenu.getByText("Account settings")).toHaveCount(0);
+  await expect(userMenu.getByText("Enable Animations")).toHaveCount(0);
+});
+
 test("public profile tabs support keyboard navigation, reduced motion and 44px targets", async ({
   page,
 }) => {
@@ -387,12 +398,8 @@ test("desktop featured controls stay clear of the title", async ({ page }) => {
     .getByRole("button", { name: "Show next featured item" })
     .boundingBox();
 
-  expect((previousBox?.y ?? 0) + (previousBox?.height ?? 0)).toBeLessThanOrEqual(
-    titleBox?.y ?? 0,
-  );
-  expect((nextBox?.y ?? 0) + (nextBox?.height ?? 0)).toBeLessThanOrEqual(
-    titleBox?.y ?? 0,
-  );
+  expect(rectanglesOverlap(previousBox, titleBox)).toBe(false);
+  expect(rectanglesOverlap(nextBox, titleBox)).toBe(false);
 });
 
 test("content carousel accepts horizontal gestures without losing keyboard focus", async ({
@@ -404,6 +411,11 @@ test("content carousel accepts horizontal gestures without losing keyboard focus
     .locator('section[aria-roledescription="carousel"]')
     .filter({ has: page.getByRole("heading", { name: "Popular Movies" }) });
   const scroller = carousel.locator("[data-carousel-scroller]");
+  await expect
+    .poll(() =>
+      scroller.evaluate((node) => getComputedStyle(node).scrollbarWidth),
+    )
+    .toBe("none");
   await scroller.hover();
   await page.mouse.wheel(220, 0);
   await expect
@@ -418,6 +430,31 @@ test("content carousel accepts horizontal gestures without losing keyboard focus
     .poll(() => scroller.evaluate((node) => node.scrollLeft))
     .toBeGreaterThan(0);
   await expect(next).toBeFocused();
+});
+
+test("home, detail and profile banners keep a balanced height and upper focal point", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+
+  for (const route of ["/", "/content/1", "/user/phase0-fixture"]) {
+    await page.goto(route);
+    const banner = page.locator("[data-banner-shell]").first();
+    await expect(banner).toBeVisible();
+    const box = await banner.boundingBox();
+    expect(box?.height ?? 0).toBeGreaterThanOrEqual(548);
+    expect(box?.height ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(561);
+    await expect(banner.locator("img").first()).toHaveCSS(
+      "object-position",
+      "50% 35%",
+    );
+  }
+
+  await page.setViewportSize({ width: 2000, height: 1200 });
+  await page.goto("/content/1");
+  const detailBanner = page.locator("[data-banner-shell]").first();
+  const detailBox = await detailBanner.boundingBox();
+  expect(detailBox?.width ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(1800);
 });
 
 test("desktop card previews preserve horizontal trackpad scrolling", async ({
@@ -537,6 +574,19 @@ async function activeFeaturedTitle(page: Page) {
     .getByRole("region", { name: "Featured content" })
     .locator("h2")
     .innerText();
+}
+
+function rectanglesOverlap(
+  first: { x: number; y: number; width: number; height: number } | null,
+  second: { x: number; y: number; width: number; height: number } | null,
+) {
+  if (!first || !second) return true;
+  return !(
+    first.x + first.width <= second.x ||
+    second.x + second.width <= first.x ||
+    first.y + first.height <= second.y ||
+    second.y + second.height <= first.y
+  );
 }
 
 async function expectCircularNavigation(page: Page, title: string) {
