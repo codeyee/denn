@@ -1,6 +1,7 @@
 import {
   AUTH_ACCESS_COOKIE,
   AUTH_REFRESH_COOKIE,
+  AUTH_UPSTREAM_TIMEOUT_MS,
 } from "@/lib/auth/constants";
 import { getApiUrl } from "@/lib/env";
 import type { Profile } from "@/lib/types";
@@ -79,7 +80,7 @@ export async function createAuthenticatedSession(
       },
       body: JSON.stringify(body),
       cache: "no-store",
-      signal: AbortSignal.timeout(5_000),
+      signal: AbortSignal.timeout(AUTH_UPSTREAM_TIMEOUT_MS),
     });
   } catch (error) {
     console.error(

@@ -144,7 +144,7 @@ test("a personal action honors next and returns to public id-first detail", asyn
   expect(consoleErrors).toEqual([]);
 });
 
-test("public profile, tabs, spoiler and public navigation work anonymously", async ({
+test("public profile, tabs, reviews and public navigation work anonymously", async ({
   page,
   request,
 }) => {
@@ -171,11 +171,10 @@ test("public profile, tabs, spoiler and public navigation work anonymously", asy
   await expect(page).toHaveURL(/tab=ratings/);
   await expect(
     page.getByText("A deterministic review with a fixture spoiler."),
-  ).toHaveCount(0);
-  await page.getByRole("button", { name: "Reveal spoiler review" }).click();
-  await expect(
-    page.getByText("A deterministic review with a fixture spoiler."),
   ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: /spoiler/i }),
+  ).toHaveCount(0);
 
   await page.getByRole("tab", { name: "Overview" }).click();
   await page.getByRole("link", { name: "Open list Public Fixture Picks" }).click();

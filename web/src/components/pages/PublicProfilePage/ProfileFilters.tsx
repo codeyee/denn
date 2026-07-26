@@ -32,7 +32,7 @@ export function ProfileFilters({ search, onChange }: ProfileFiltersProps) {
   return (
     <form
       onSubmit={submit}
-      className="mb-7 rounded-2xl border border-white/10 bg-white/5 p-4"
+      className="mb-7 rounded-xl bg-list-item-background p-4"
       aria-label="Filter profile activity"
     >
       <div className="grid gap-3 md:grid-cols-[minmax(14rem,1fr)_repeat(2,minmax(10rem,auto))]">

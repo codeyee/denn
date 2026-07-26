@@ -268,15 +268,57 @@ fresh anonymous contexts and one same-context warm reload per sample.
 | Login | cold | 13.4 / 13.9 / 481.7 | 56 | 756 / 792 / 1,668 | 176 / 192 | 0.07 / 0.07 |
 | Login | warm | 33.6 / 46.3 / 65.1 | 252 | 428 / 476 / 732 | 184 / 224 | 0.07 / 0.07 |
 
-The decorative gallery adds one same-origin, filesystem-backed
-`/api/cards` manifest and static card media; it adds no Core or Proxy
-request. The TV-noise layer keeps its original opacity and refresh rate
-while rendering at its declared 250-pixel pattern resolution. Login
-remains within the shared p75 release gates: LCP 792 ms cold / 476 ms
-warm, INP 176 / 184 ms, and CLS 0.07. Browser inspection also confirmed
-that the gallery is absent from the accessibility tree, does not accept
-pointer or keyboard interaction, respects reduced motion, and produces
-no console warnings.
+At this snapshot, the decorative gallery added one same-origin,
+filesystem-backed `/api/cards` manifest and static card media; it added
+no Core or Proxy request. The TV-noise layer still used its original
+opacity and refresh rate. Login remained within the shared p75 release
+gates: LCP 792 ms cold / 476 ms warm, INP 176 / 184 ms, and CLS 0.07.
+
+## Authentication Backdrop Optimization Local After Snapshot
+
+Captured 2026-07-25 from the production Nitro bundle after replacing
+the animated authentication backdrop with a stable, static dome. The
+standard fixture method used five fresh anonymous contexts and one
+same-context warm reload per sample.
+
+| Flow | State | TTFB p50/p75/p95 | FCP p75 | LCP p50/p75/p95 | INP p75/p95 | CLS p75/p95 |
+|---|---|---|---:|---|---|---|
+| Login | cold | 3.9 / 4.1 / 11.8 | 28 | 96 / 108 / 136 | 0 / 0 | 0 / 0 |
+| Login | warm | 7.7 / 10.1 / 10.6 | 64 | 100 / 104 / 108 | 24 / 24 | 0 / 0 |
+
+The production-build comparison improved login p75 LCP from 792 to
+108 ms cold and from 476 to 104 ms warm. INP moved from 176/184 ms to
+0/24 ms, and CLS moved from 0.07 to 0 in both states.
+
+A separate fresh-headless-Chrome sample against the local Vite stack
+isolated five seconds of steady-state runtime work. These
+development-mode values explain the CPU improvement; they are not
+combined with the production-build percentiles above.
+
+| Steady-state login signal | Before | After |
+|---|---:|---:|
+| Main-thread task duration over 5 s | 1,241.389 ms | 0.122 ms |
+| Style recalculations over 5 s | 599 | 0 |
+| DOM elements | 1,548 | 1,200 |
+| Gallery image elements | 175 | 60 |
+| Animated canvases | 1 | 0 |
+| Cold-load CLS | 0.19926 | 0.00037 |
+
+The current backdrop keeps the curved cover-gallery composition but
+uses 12 segments, limits source variety to 24 images, and renders 60
+static tiles. It no longer runs a permanent animation frame loop,
+regenerates TV-noise pixels, applies a viewport-sized blur, or promotes
+the sphere with `will-change`. The gallery remains decorative,
+non-interactive, and absent from the accessibility tree.
+
+The homepage featured banner now follows the same rule: it keeps its
+single active responsive image, content gradients, and bounded
+crossfade, but no longer mounts the continuously refreshed TV-noise
+canvas. A five-second local steady-state check recorded zero canvases,
+one active banner image, and 79.675 ms of main-thread task time including
+one scheduled carousel rotation. No comparable pre-change runtime
+sample was retained, so this is a regression point rather than a
+before/after claim.
 
 ## Backend Telemetry Contract
 

@@ -5,11 +5,12 @@ import { BannerShell } from "@/components/common/media/BannerShell";
 import { ResponsiveMedia } from "@/components/common/media/ResponsiveMedia";
 import { Button } from "@/components/common/ui/Button";
 import { UserAvatar } from "@/components/common/ui/UserAvatar";
-import type { PublicProfileOverview } from "@/lib/types";
+import type { ProfileBannerMedia, PublicProfileOverview } from "@/lib/types";
 import { formatJoinedAt } from "./utils";
 
 interface ProfileBannerProps {
   overview: PublicProfileOverview;
+  bannerMedia?: ProfileBannerMedia;
   isOwner: boolean;
   editButtonRef: RefObject<HTMLButtonElement | null>;
   onEdit: () => void;
@@ -17,14 +18,29 @@ interface ProfileBannerProps {
 
 export function ProfileBanner({
   overview,
+  bannerMedia,
   isOwner,
   editButtonRef,
   onEdit,
 }: ProfileBannerProps) {
-  const { profile, counters, banner_media: media } = overview;
+  const { profile, counters } = overview;
 
   return (
-    <BannerShell media={media.length > 0 ? <BannerCollage media={media} /> : undefined}>
+    <BannerShell
+      media={
+        bannerMedia ? (
+          <ResponsiveMedia
+            src={bannerMedia.image_url}
+            alt=""
+            width={1600}
+            height={900}
+            sizes="100vw"
+            priority
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        ) : undefined
+      }
+    >
       <div className="w-full px-4 pb-12 md:px-12 md:pb-16">
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div className="flex min-w-0 items-end gap-4">
@@ -73,38 +89,6 @@ export function ProfileBanner({
   );
 }
 
-function BannerCollage({
-  media,
-}: {
-  media: PublicProfileOverview["banner_media"];
-}) {
-  const gridClass =
-    media.length === 1
-      ? "grid-cols-1"
-      : media.length === 2
-        ? "grid-cols-2"
-        : "grid-cols-2 md:grid-cols-3";
-
-  return (
-    <div className={`absolute inset-0 grid ${gridClass}`}>
-      {media.map((item, index) => (
-        <ResponsiveMedia
-          key={item.content_id}
-          src={item.image_url}
-          alt=""
-          width={900}
-          height={700}
-          sizes={media.length === 1 ? "100vw" : "(min-width: 768px) 34vw, 50vw"}
-          priority={index === 0}
-          className={`h-full min-h-0 w-full object-cover ${
-            media.length === 3 && index === 0 ? "row-span-2" : ""
-          }`}
-        />
-      ))}
-    </div>
-  );
-}
-
 function ProfileStat({
   icon: Icon,
   label,
@@ -118,7 +102,7 @@ function ProfileStat({
     <div className="grid min-h-14 grid-cols-[auto_1fr] items-center gap-x-3 rounded-xl border border-white/10 bg-black/35 px-3 py-2 backdrop-blur-sm">
       <Icon
         aria-hidden="true"
-        className="row-span-2 h-4 w-4 text-fuchsia-200"
+        className="row-span-2 h-4 w-4 text-white/75"
       />
       <dt className="self-end text-xs text-white/60">{label}</dt>
       <dd className="self-start text-lg font-bold text-white">{value}</dd>

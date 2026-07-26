@@ -151,10 +151,10 @@ services:
           "--quiet",
           "--tries=1",
           "--spider",
-          "http://127.0.0.1:3000/",
+          "http://127.0.0.1:3000/api/health",
         ]
-      interval: 3s
-      timeout: 5s
+      interval: 5s
+      timeout: 3s
       retries: 40
       start_period: 15s
 

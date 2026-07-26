@@ -1,8 +1,4 @@
-import { useEffect, useRef, useState } from "react";
-import { useReducedMotion } from "motion/react";
-
-import { Noise } from "@/components/common/Noise";
-import { useSettings } from "@/hooks/useSettings";
+import { useEffect, useState } from "react";
 
 import { DomeGallery } from "./DomeGallery";
 
@@ -10,6 +6,9 @@ type BackgroundCardImage = {
   src: string;
   alt: string;
 };
+
+const AUTH_BACKDROP_IMAGE_LIMIT = 24;
+const AUTH_DOME_SEGMENTS = 12;
 
 const isBackgroundCardImage = (value: unknown): value is BackgroundCardImage => {
   if (!value || typeof value !== "object") {
@@ -21,14 +20,7 @@ const isBackgroundCardImage = (value: unknown): value is BackgroundCardImage => 
 };
 
 export function AuthBackdrop() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const animationFrameRef = useRef<number | null>(null);
-  const lastTimeRef = useRef(0);
-  const rotationYRef = useRef(0);
   const [images, setImages] = useState<BackgroundCardImage[]>([]);
-  const shouldReduceMotion = useReducedMotion();
-  const { settings } = useSettings();
-  const shouldAnimate = settings.animationsEnabled && !shouldReduceMotion;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -42,7 +34,11 @@ export function AuthBackdrop() {
 
         const payload: unknown = await response.json();
         if (Array.isArray(payload)) {
-          setImages(payload.filter(isBackgroundCardImage));
+          setImages(
+            payload
+              .filter(isBackgroundCardImage)
+              .slice(0, AUTH_BACKDROP_IMAGE_LIMIT),
+          );
         }
       } catch (error) {
         if (!(error instanceof DOMException && error.name === "AbortError")) {
@@ -55,53 +51,17 @@ export function AuthBackdrop() {
     return () => controller.abort();
   }, []);
 
-  useEffect(() => {
-    if (!shouldAnimate || images.length === 0) {
-      return;
-    }
-
-    lastTimeRef.current = performance.now();
-
-    const animate = (now: number) => {
-      const elapsedSeconds = (now - lastTimeRef.current) / 1000;
-      lastTimeRef.current = now;
-      rotationYRef.current = (rotationYRef.current + elapsedSeconds * 2) % 360;
-
-      const sphere = containerRef.current?.querySelector<HTMLElement>(".sphere");
-      if (sphere) {
-        sphere.style.transform = `translateZ(calc(var(--radius) * -1)) rotateX(0deg) rotateY(${rotationYRef.current}deg)`;
-      }
-
-      animationFrameRef.current = requestAnimationFrame(animate);
-    };
-
-    animationFrameRef.current = requestAnimationFrame(animate);
-    return () => {
-      if (animationFrameRef.current !== null) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, [images.length, shouldAnimate]);
-
   return (
     <div
       aria-hidden="true"
       className="pointer-events-none fixed inset-0 overflow-hidden bg-[var(--color-hero-gradient)]"
     >
-      <div
-        ref={containerRef}
-        className="absolute -left-[20vw] inset-y-0 h-full w-[140vw]"
-      >
+      <div className="absolute -left-[20vw] inset-y-0 h-full w-[140vw]">
         {images.length > 0 && (
           <DomeGallery
             images={images}
-            fit={0.6}
-            fitBasis="auto"
-            minRadius={600}
-            maxRadius={Number.POSITIVE_INFINITY}
-            padFactor={0.25}
             overlayBlurColor="var(--color-overlay-blur)"
-            segments={35}
+            segments={AUTH_DOME_SEGMENTS}
             imageBorderRadius="20px"
           />
         )}
@@ -113,11 +73,6 @@ export function AuthBackdrop() {
           opacity: 0.7,
         }}
       />
-      {shouldAnimate ? (
-        <div className="absolute inset-0 z-20">
-          <Noise patternAlpha={18} patternRefreshInterval={2} />
-        </div>
-      ) : null}
       <div
         className="absolute inset-x-0 top-0 z-20 h-80"
         style={{

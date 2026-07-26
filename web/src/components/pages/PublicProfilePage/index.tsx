@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 
 import { usePublicProfileOverviewQuery } from "@/lib/api/queries/usePublicProfileQueries";
 import type {
+  ProfileBannerMedia,
   ProfileSearchParams,
   PublicProfileOverview,
   PublicProfileTabData,
@@ -18,6 +19,7 @@ interface PublicProfilePageProps {
   search: ProfileSearchParams;
   initialOverview: PublicProfileOverview;
   initialTabData: PublicProfileTabData | null;
+  initialBannerMedia?: ProfileBannerMedia;
 }
 
 export function PublicProfilePage({
@@ -25,8 +27,10 @@ export function PublicProfilePage({
   search,
   initialOverview,
   initialTabData,
+  initialBannerMedia,
 }: PublicProfilePageProps) {
   const [isEditing, setIsEditing] = useState(false);
+  const [bannerMedia] = useState(initialBannerMedia);
   const editButtonRef = useRef<HTMLButtonElement>(null);
   const overviewQuery = usePublicProfileOverviewQuery(
     username,
@@ -55,16 +59,19 @@ export function PublicProfilePage({
     <main
       id="main-content"
       tabIndex={-1}
-      className="min-h-screen bg-background-logged-in pt-20"
+      className="relative min-h-screen w-full bg-background-logged-in"
     >
-      <div className="mx-auto w-full max-w-[1800px] md:px-4 lg:px-8">
-        <ProfileBanner
-          overview={overview}
-          isOwner={isOwner}
-          editButtonRef={editButtonRef}
-          onEdit={() => setIsEditing(true)}
-        />
-        <div className="px-4 md:px-8">
+      <div className="pb-20 pt-30">
+        <section className="relative z-0 -mt-30">
+          <ProfileBanner
+            overview={overview}
+            bannerMedia={bannerMedia}
+            isOwner={isOwner}
+            editButtonRef={editButtonRef}
+            onEdit={() => setIsEditing(true)}
+          />
+        </section>
+        <div className="mx-auto w-full max-w-[1800px] px-4 md:px-8 lg:px-12">
           <ProfileTabs username={username} search={search}>
             {search.tab === "overview" ? (
               <ProfileOverview username={username} overview={overview} />
@@ -94,15 +101,17 @@ export function PublicProfileSkeleton() {
     <main
       id="main-content"
       tabIndex={-1}
-      className="min-h-screen animate-pulse bg-background-logged-in px-4 pt-20 motion-reduce:animate-none"
+      className="min-h-screen animate-pulse bg-background-logged-in motion-reduce:animate-none"
     >
-      <div className="mx-auto max-w-[1800px]">
-        <div className="aspect-16/13 rounded-2xl bg-white/[0.07] lg:aspect-16/7" />
-        <div className="mt-6 h-12 rounded-xl bg-white/[0.07]" />
-        <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-          {Array.from({ length: 5 }).map((_, index) => (
-            <div key={index} className="aspect-5/8 rounded-2xl bg-white/[0.07]" />
-          ))}
+      <div className="pb-20 pt-30">
+        <div className="-mt-30 aspect-16/16 bg-white/[0.07] md:aspect-16/13 md:rounded-2xl lg:aspect-16/10 xl:aspect-16/7" />
+        <div className="mx-auto max-w-[1800px] px-4 md:px-8 lg:px-12">
+          <div className="mt-6 h-12 rounded-xl bg-list-item-background" />
+          <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+            {Array.from({ length: 5 }).map((_, index) => (
+              <div key={index} className="aspect-5/8 rounded-2xl bg-list-item-background" />
+            ))}
+          </div>
         </div>
       </div>
     </main>

@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { Noise } from "@/components/common/Noise";
 import { ResponsiveMedia } from "@/components/common/media/ResponsiveMedia";
 import { Content } from "@/lib/types";
 import { navigateToContentById } from "@/lib/utils/navigationUtils";
@@ -83,10 +82,6 @@ export function FeaturedBanner({ items, autoRotateMs = 5000 }: FeaturedBannerPro
             )}
           </motion.div>
         </AnimatePresence>
-      </div>
-
-      <div className="absolute inset-0 pointer-events-none z-10">
-        <Noise patternAlpha={15} patternRefreshInterval={2} />
       </div>
 
       <div className="absolute inset-0 bg-black/35 z-20" />

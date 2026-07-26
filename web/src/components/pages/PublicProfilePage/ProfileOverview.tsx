@@ -156,7 +156,7 @@ function SectionLink({
 
 function ProfileEmpty({ message }: { message: string }) {
   return (
-    <div className="grid min-h-40 place-items-center rounded-2xl border border-dashed border-white/15 bg-white/[0.03] px-6 text-center text-white/50">
+    <div className="grid min-h-40 place-items-center rounded-xl border border-dashed border-white/15 bg-list-item-background px-6 text-center text-white/60">
       {message}
     </div>
   );

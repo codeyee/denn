@@ -31,6 +31,7 @@ interface ContentCardProps {
   item: Content;
   className?: string;
   badgeSlot?: ReactNode;
+  metadataSlot?: ReactNode;
   footerSlot?: ReactNode;
   showAddToList?: boolean;
 }
@@ -39,6 +40,7 @@ export function ContentCard({
   item,
   className,
   badgeSlot,
+  metadataSlot,
   footerSlot,
   showAddToList = true,
 }: ContentCardProps) {
@@ -157,14 +159,18 @@ export function ContentCard({
             />
           )}
           <Card.Footer>
-            <div className="flex flex-col gap-1.5">
-              {originalTitle && !originalTitleIsSameAsTitle && (
-                <div>{originalTitle}</div>
-              )}
-              {authors && <div>{authors}</div>}
-              {releaseDate && <div>{releaseDate}</div>}
-              {footerInfo && <div>{footerInfo}</div>}
-            </div>
+            {metadataSlot !== undefined ? (
+              metadataSlot
+            ) : (
+              <div className="flex flex-col gap-1.5">
+                {originalTitle && !originalTitleIsSameAsTitle && (
+                  <div>{originalTitle}</div>
+                )}
+                {authors && <div>{authors}</div>}
+                {releaseDate && <div>{releaseDate}</div>}
+                {footerInfo && <div>{footerInfo}</div>}
+              </div>
+            )}
           </Card.Footer>
         </Card>
         {badgeSlot ? (

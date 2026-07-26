@@ -217,7 +217,8 @@
 
 @layer components {
   .auth-dome-stage {
-    --circumference: calc(var(--radius) * 3.14);
+    --dome-radius: max(600px, min(84vw, 135vh));
+    --circumference: calc(var(--dome-radius) * 3.14);
     --rotation-y-step: calc((360deg / var(--segments-x)) / 2);
     --rotation-x-step: calc((360deg / var(--segments-y)) / 2);
     --item-width: calc(var(--circumference) / var(--segments-x));
@@ -226,15 +227,15 @@
     inset: 0;
     display: grid;
     place-items: center;
-    perspective: calc(var(--radius) * 2);
+    perspective: calc(var(--dome-radius) * 2);
     perspective-origin: 50% 50%;
   }
 
   .auth-dome-stage .sphere {
     position: absolute;
-    transform: translateZ(calc(var(--radius) * -1));
+    transform: translateZ(calc(var(--dome-radius) * -1)) rotateX(-2deg)
+      rotateY(-12deg);
     transform-style: preserve-3d;
-    will-change: transform;
   }
 
   .auth-dome-item {
@@ -256,7 +257,7 @@
             (var(--offset-y) - ((var(--item-size-y) - 1) / 2))
         )
       )
-      translateZ(var(--radius));
+      translateZ(var(--dome-radius));
     transform-origin: 50% 50%;
     transform-style: preserve-3d;
     backface-visibility: hidden;

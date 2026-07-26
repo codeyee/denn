@@ -24,6 +24,13 @@ test("the public app uses the local BFF without exposing internal credentials", 
     }
   });
 
+  const healthResponse = await page.request.get("/api/health");
+  expect(healthResponse.status()).toBe(200);
+  expect(await healthResponse.json()).toEqual({
+    service: "web",
+    status: "ok",
+  });
+
   const response = await page.goto("/");
 
   expect(response?.status()).toBe(200);
@@ -33,6 +40,7 @@ test("the public app uses the local BFF without exposing internal credentials", 
   await expect(
     page.getByPlaceholder("Search for movies, TV shows, games...").first(),
   ).toBeVisible();
+  await expect(page.locator("canvas")).toHaveCount(0);
 
   const versionResponse = await page.request.get("/api/version");
   expect(versionResponse.status()).toBe(200);

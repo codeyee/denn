@@ -1,4 +1,8 @@
-import { CSRF_HEADER } from "@/lib/auth/constants";
+import {
+  AUTH_CLIENT_TIMEOUT_MS,
+  AUTH_TIMEOUT_MESSAGE,
+  CSRF_HEADER,
+} from "@/lib/auth/constants";
 
 let csrfToken: string | null = null;
 
@@ -6,18 +10,25 @@ export async function authMutation<T>(
   path: string,
   body?: unknown,
 ): Promise<T> {
-  const token = await ensureCsrfToken();
-  const response = await fetch(path, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      [CSRF_HEADER]: token,
-    },
-    body: body === undefined ? undefined : JSON.stringify(body),
-    credentials: "same-origin",
-    signal: AbortSignal.timeout(5_000),
-  });
-  return parseAuthResponse<T>(response);
+  try {
+    const token = await ensureCsrfToken();
+    const response = await fetch(path, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        [CSRF_HEADER]: token,
+      },
+      body: body === undefined ? undefined : JSON.stringify(body),
+      credentials: "same-origin",
+      signal: AbortSignal.timeout(AUTH_CLIENT_TIMEOUT_MS),
+    });
+    return parseAuthResponse<T>(response);
+  } catch (error) {
+    if (isTimeoutError(error)) {
+      throw new Error(AUTH_TIMEOUT_MESSAGE);
+    }
+    throw error;
+  }
 }
 
 export async function getCsrfHeader() {
@@ -51,4 +62,17 @@ async function parseAuthResponse<T>(response: Response): Promise<T> {
     throw new Error(message);
   }
   return payload as T;
+}
+
+function isTimeoutError(error: unknown) {
+  if (typeof error !== "object" || error === null) {
+    return false;
+  }
+
+  const errorLike = error as { message?: unknown; name?: unknown };
+
+  return (
+    errorLike.name === "TimeoutError" ||
+    errorLike.message === "signal timed out"
+  );
 }

@@ -168,6 +168,9 @@ Use both modes for different evidence:
 
 - `make smoke-local` checks the real local stack, shared proxy auth,
   migrations, restored content, and loopback port bindings.
+- The `web` container healthcheck targets `/api/health`, a no-store
+  readiness response that does not render the homepage or call `core`
+  and `proxy`.
 - `make browser-local` runs Chromium against the real local stack and
   stores local-only artifacts under
   `web/test-results/local-artifacts/`. Its image is built from the web

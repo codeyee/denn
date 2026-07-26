@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useAuthStore } from "@/stores/auth-store";
+import { AUTH_TIMEOUT_MESSAGE } from "@/lib/auth/constants";
 
 const jsonHeaders = { "Content-Type": "application/json" };
 
@@ -68,5 +69,23 @@ describe("auth store transitions", () => {
 
     expect(useAuthStore.getState().isAuthenticated).toBe(false);
     expect(useAuthStore.getState().sessionResolution).toBe("anonymous");
+  });
+
+  it("shows an actionable message when an auth request times out", async () => {
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockRejectedValue(
+        new DOMException("signal timed out", "TimeoutError"),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      useAuthStore
+        .getState()
+        .login("alice@example.com", "secret"),
+    ).rejects.toThrow(AUTH_TIMEOUT_MESSAGE);
+
+    expect(useAuthStore.getState().error).toBe(AUTH_TIMEOUT_MESSAGE);
+    expect(useAuthStore.getState().isLoading).toBe(false);
   });
 });

@@ -4,7 +4,9 @@ import {
   ListType,
   type Content,
   type LocalContentSummary,
+  type ProfileBannerMedia,
   type PublicListSummary,
+  type PublicProfileOverview,
 } from "@/lib/types";
 import type { ListCardData } from "@/components/common/cards/ListCard";
 
@@ -107,6 +109,44 @@ export function profileListCardItem(list: PublicListSummary): ListCardData {
     visibility: list.visibility,
     item_count: list.item_count,
   };
+}
+
+export function pickRandomFavoriteBanner(
+  overview: PublicProfileOverview,
+  random: () => number = Math.random,
+): ProfileBannerMedia | undefined {
+  const favoriteMedia = Object.values(overview.favorites)
+    .flatMap((items) => items ?? [])
+    .flatMap(({ content }) => {
+      const imageUrl = content.backdrop ?? content.poster;
+      return imageUrl
+        ? [{
+            content_id: content.id,
+            type: content.type,
+            image_url: imageUrl,
+          }]
+        : [];
+    });
+  const uniqueFavoriteMedia = Array.from(
+    new Map(
+      favoriteMedia.map((item) => [
+        `${item.content_id}:${item.image_url}`,
+        item,
+      ]),
+    ).values(),
+  );
+  const candidates =
+    uniqueFavoriteMedia.length > 0
+      ? uniqueFavoriteMedia
+      : overview.banner_media;
+
+  if (candidates.length === 0) return undefined;
+
+  const index = Math.min(
+    Math.floor(random() * candidates.length),
+    candidates.length - 1,
+  );
+  return candidates[index];
 }
 
 export function formatJoinedAt(value: string) {

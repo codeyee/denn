@@ -11,6 +11,7 @@ import {
   PublicProfilePage,
   PublicProfileSkeleton,
 } from "@/components/pages/PublicProfilePage";
+import { pickRandomFavoriteBanner } from "@/components/pages/PublicProfilePage/utils";
 import { prefetchPublicProfileQueries } from "@/lib/api/queries/server";
 import { publicProfileSearchSchema } from "@/lib/profileSearch";
 
@@ -28,6 +29,7 @@ export const Route = createFileRoute("/user/$username")({
       username: params.username,
       search: deps.search,
       initialData,
+      bannerMedia: pickRandomFavoriteBanner(initialData.overview),
     };
   },
   head: ({ params }) => ({
@@ -51,7 +53,7 @@ export const Route = createFileRoute("/user/$username")({
 });
 
 function PublicProfileRoute() {
-  const { username, search, initialData } = Route.useLoaderData();
+  const { username, search, initialData, bannerMedia } = Route.useLoaderData();
   return (
     <div className="relative min-h-screen bg-background-logged-in">
       <Navbar />
@@ -60,6 +62,7 @@ function PublicProfileRoute() {
         search={search}
         initialOverview={initialData.overview}
         initialTabData={initialData.activeTab}
+        initialBannerMedia={bannerMedia}
       />
       <Footer />
     </div>

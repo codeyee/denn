@@ -43,7 +43,7 @@ export function ProfileTabs({
             <Tabs.Trigger
               key={tab.value}
               value={tab.value}
-              className="min-h-11 rounded-t-lg border-b-2 border-transparent px-4 py-3 text-sm font-semibold text-white/60 outline-none transition-colors hover:text-white focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white/70 data-[state=active]:border-fuchsia-300 data-[state=active]:text-white motion-reduce:transition-none"
+              className="min-h-11 rounded-t-lg border-b-2 border-transparent px-4 py-3 text-sm font-semibold text-white/60 outline-none transition-colors hover:text-white focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-white/70 data-[state=active]:border-white data-[state=active]:text-white motion-reduce:transition-none"
             >
               {tab.label}
             </Tabs.Trigger>

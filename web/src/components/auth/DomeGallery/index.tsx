@@ -1,6 +1,5 @@
-import { useMemo, useRef } from "react";
+import { useMemo } from "react";
 
-import { useDomeResize } from "./useDomeResize";
 import { buildDomeItems } from "./utils";
 
 export type DomeImage = {
@@ -9,46 +8,25 @@ export type DomeImage = {
 };
 
 type DomeGalleryProps = {
-  fit?: number;
-  fitBasis?: "auto" | "min" | "max" | "width" | "height";
   imageBorderRadius?: string;
   images: DomeImage[];
-  maxRadius?: number;
-  minRadius?: number;
   overlayBlurColor?: string;
-  padFactor?: number;
   segments?: number;
 };
 
 export function DomeGallery({
-  fit = 0.5,
-  fitBasis = "auto",
   imageBorderRadius = "12px",
   images,
-  maxRadius = Number.POSITIVE_INFINITY,
-  minRadius = 600,
   overlayBlurColor = "var(--color-overlay-blur)",
-  padFactor = 0.25,
   segments = 20,
 }: DomeGalleryProps) {
-  const rootRef = useRef<HTMLDivElement>(null);
   const items = useMemo(
     () => buildDomeItems(images, segments),
     [images, segments],
   );
 
-  useDomeResize({
-    fit,
-    fitBasis,
-    maxRadius,
-    minRadius,
-    padFactor,
-    rootRef,
-  });
-
   return (
     <div
-      ref={rootRef}
       aria-hidden="true"
       className="relative size-full"
       style={
@@ -82,6 +60,7 @@ export function DomeGallery({
                     alt=""
                     loading="lazy"
                     decoding="async"
+                    fetchPriority="low"
                     className="absolute inset-0 size-full object-cover"
                   />
                 </div>
@@ -95,13 +74,6 @@ export function DomeGallery({
           style={{
             backgroundImage:
               "radial-gradient(var(--color-radial-gradient-start) 65%, var(--overlay-blur-color) 100%)",
-          }}
-        />
-        <div
-          className="pointer-events-none absolute inset-0 z-10 backdrop-blur-[3px]"
-          style={{
-            maskImage:
-              "radial-gradient(var(--color-radial-gradient-start) 70%, var(--overlay-blur-color) 90%)",
           }}
         />
         <div
