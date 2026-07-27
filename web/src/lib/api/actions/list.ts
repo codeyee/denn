@@ -9,6 +9,7 @@ import type {
     BulkCheckItem,
     BulkCheckResponse,
     PublicListDetail,
+    ListItem,
 } from "@/lib/types";
 
 export const listActions = {
@@ -64,5 +65,13 @@ export const listActions = {
 
     getStats: (id: number): Promise<ListStatsResponse> => {
         return api.get<ListStatsResponse>(`/content/lists/${id}/stats/`, true);
+    },
+
+    pickRandom: (id: number): Promise<{ result: ListItem | null }> => {
+        return api.post<{ result: ListItem | null }>(
+            `/content/lists/${id}/random/`,
+            undefined,
+            true,
+        );
     },
 };

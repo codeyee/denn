@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useState, useEffect, useMemo, type ReactNode } from "react";
 import { useReducedMotion } from "motion/react";
-import { Globe2, List as ListIcon, Package, Lock, Users } from "lucide-react";
+import { Globe2, List as ListIcon, Package, Lock, Users, Zap } from "lucide-react";
 
 import { Card } from "./Card";
 import { ListType, type ListItem, type SourceData } from "@/lib/types";
@@ -45,9 +45,11 @@ export function ListCard({
   const itemInfo = `${itemCount} ${parseInt(itemCount) === 1 ? "item" : "items"}`;
 
   const isShared = list.list_type === ListType.SHARED;
+  const isDynamic = list.list_type === ListType.DYNAMIC;
   const isPublic = list.visibility === "PUBLIC";
-  const ListTypeIcon = isShared ? Users : isPublic ? Globe2 : Lock;
-  const listTypeLabel = isShared ? "Shared" : isPublic ? "Public" : "Personal";
+  const ListTypeIcon = isShared ? Users : isDynamic ? Zap : isPublic ? Globe2 : Lock;
+  const CardIcon = isDynamic ? Zap : ListIcon;
+  const listTypeLabel = isShared ? "Shared" : isDynamic ? "Dynamic" : isPublic ? "Public" : "Personal";
 
   const footerInfo = isShared ? memberInfo + " • " + itemInfo : itemInfo;
 
@@ -99,7 +101,7 @@ export function ListCard({
         <Card
           id={id}
           title={title}
-          icon={ListIcon}
+          icon={CardIcon}
           backgroundImages={backgroundImages}
           activeImageIndex={currentImageIndex}
           backgroundImageAlt={`${title} list background`}

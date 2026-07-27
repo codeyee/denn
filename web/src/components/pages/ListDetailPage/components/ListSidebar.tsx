@@ -15,6 +15,7 @@ import { UserListDetail, ListType } from "@/lib/types";
 import { Button } from "@/components/common/ui/Button";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { formatUserDisplayNameWithUsername } from "@/lib/utils/userUtils";
+import { DynamicListRandomPick } from "./DynamicListRandomPick";
 
 interface ListSidebarProps {
   list: UserListDetail;
@@ -54,12 +55,12 @@ export function ListSidebar({
   onSaveReorder,
 }: ListSidebarProps) {
   const isShared = list.list_type === ListType.SHARED;
+  const isDynamic = list.list_type === ListType.DYNAMIC;
   const memberCount = (list.members?.length || 0).toString();
   const reorderBlocked = Boolean(reorderDisabledReason);
 
   return (
     <div className="w-full md:w-80 lg:w-96 shrink-0 space-y-6 order-1 md:order-2 md:sticky md:top-24 md:self-start md:max-h-[calc(100vh-8rem)] md:overflow-y-auto">
-      {/* List Actions Card */}
       <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
         <h3 className="text-xl font-bold text-white mb-4">List Actions</h3>
         <div className="space-y-3">
@@ -80,23 +81,31 @@ export function ListSidebar({
                   {reorderDisabledReason}
                 </p>
               )}
-              <Button
-                onClick={onEditList}
-                className="w-full flex items-center justify-center gap-2 cursor-pointer bg-white text-black hover:bg-white/90 font-semibold"
-                size="lg"
-              >
-                <Edit className="w-5 h-5" />
-                Edit List
-              </Button>
-              <Button
-                onClick={onDeleteList}
-                variant="destructive"
-                className="w-full flex items-center justify-center gap-2 cursor-pointer font-semibold"
-                size="lg"
-              >
-                <Trash2 className="w-5 h-5" />
-                Delete List
-              </Button>
+              {!isDynamic ? (
+                <>
+                  <Button
+                    onClick={onEditList}
+                    className="w-full flex items-center justify-center gap-2 cursor-pointer bg-white text-black hover:bg-white/90 font-semibold"
+                    size="lg"
+                  >
+                    <Edit className="w-5 h-5" />
+                    Edit List
+                  </Button>
+                  <Button
+                    onClick={onDeleteList}
+                    variant="destructive"
+                    className="w-full flex items-center justify-center gap-2 cursor-pointer font-semibold"
+                    size="lg"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                    Delete List
+                  </Button>
+                </>
+              ) : (
+                <p className="text-xs text-white/55">
+                  Progress updates the items automatically. Your order stays personal.
+                </p>
+              )}
             </>
           ) : (
             <>
@@ -123,6 +132,8 @@ export function ListSidebar({
           )}
         </div>
       </div>
+
+      <DynamicListRandomPick list={list} />
 
       {/* List Stats Card */}
       <div className="bg-white/5 rounded-2xl p-6 border border-white/10">

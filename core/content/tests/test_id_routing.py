@@ -118,6 +118,18 @@ class CatalogDetailThrottleTests(APITestCase):
         self.assertEqual(throttle.num_requests, 120)
         self.assertEqual(throttle.duration, 60)
 
+    @override_settings(DISABLE_RATE_LIMITS=True)
+    def test_local_rate_limit_bypass_allows_catalog_detail_requests(self):
+        raw_request = self.factory.get(
+            '/api/content/1/',
+            HTTP_X_CATALOG_VISITOR='e' * 64,
+            REMOTE_ADDR='203.0.113.10',
+        )
+        request = Request(raw_request, authenticators=[])
+        throttle = CatalogDetailRateThrottle()
+
+        self.assertTrue(throttle.allow_request(request, None))
+
     @override_settings(PROXY_API_KEY='catalog-service-key')
     def test_trusted_web_visitors_do_not_share_a_throttle_bucket(self):
         first = self._cache_key('a' * 64, api_key='catalog-service-key')

@@ -40,6 +40,12 @@ The hybrid topology is deliberate and documented in
   payloads from them for local-first reads.
 - `UserContentTracking` is the personal-state source of truth; list-item
   status is no longer treated as personal tracking.
+- Dynamic Collections are system-managed `UserList` rows whose `ListItem`
+  membership is materialized from `UserContentTracking`. They share the normal
+  list cards, `/lists/<id>` route, pagination, and local content summaries.
+  Their membership cannot be manually edited or deleted, while each user can
+  reorder the current items. Users can hide the feature globally or hide an
+  individual status/type list without deleting progress or manual lists.
 - Public identities live at `/user/<username>` and compose only
   persisted Core metadata. Public profiles, public content detail, and
   public lists are anonymous reads; private lists are indistinguishable

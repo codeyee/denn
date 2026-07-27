@@ -20,6 +20,7 @@ interface ExploreToolbarProps {
   query: ListItemQuery;
   totalItemCount: number;
   showListContext: boolean;
+  showTrackingStatus?: boolean;
   isReorderMode: boolean;
   canApplySort: boolean;
   applySortHint?: string;
@@ -45,12 +46,21 @@ const SORT_FIELD_OPTIONS: Array<{ value: SortField; label: string }> = [
   { value: "album_title", label: "Album title" },
   { value: "release_date", label: "Release date" },
   { value: "context_status", label: "List status" },
+  { value: "tracking_status", label: "Progress status" },
   { value: "content_type", label: "Content type" },
 ];
 
 const STATUS_OPTIONS = [
   { value: "PENDING", label: "Pending" },
   { value: "COMPLETED", label: "Completed" },
+];
+
+const TRACKING_STATUS_OPTIONS = [
+  { value: "backlog", label: "Backlog" },
+  { value: "in_progress", label: "In progress" },
+  { value: "on_hold", label: "On hold" },
+  { value: "dropped", label: "Dropped" },
+  { value: "completed", label: "Completed" },
 ];
 
 const CONTENT_TYPE_OPTIONS = FILTERABLE_CONTENT_TYPES.map((type) => ({
@@ -61,6 +71,7 @@ const CONTENT_TYPE_OPTIONS = FILTERABLE_CONTENT_TYPES.map((type) => ({
 const GROUP_BY_OPTIONS: Array<{ value: GroupByField | ""; label: string }> = [
   { value: "", label: "No grouping" },
   { value: "context_status", label: "List status" },
+  { value: "tracking_status", label: "Progress status" },
   { value: "content_type", label: "Content type" },
   { value: "source_api", label: "Source" },
   { value: "added_by", label: "Added by" },
@@ -80,6 +91,7 @@ export function ExploreToolbar({
   query,
   totalItemCount,
   showListContext,
+  showTrackingStatus = false,
   isReorderMode,
   canApplySort,
   applySortHint,
@@ -92,16 +104,24 @@ export function ExploreToolbar({
   onApplySortAsListOrder,
 }: ExploreToolbarProps) {
   if (isReorderMode) return null;
-  const sortFieldOptions = showListContext
-    ? SORT_FIELD_OPTIONS
-    : SORT_FIELD_OPTIONS.filter(
-        (option) =>
-          option.value !== "context_status" &&
-          option.value !== "context_completed_at",
-      );
-  const groupByOptions = showListContext
-    ? GROUP_BY_OPTIONS
-    : GROUP_BY_OPTIONS.filter((option) => option.value !== "context_status");
+  const sortFieldOptions = SORT_FIELD_OPTIONS.filter((option) => {
+    if (option.value === "context_status" || option.value === "context_completed_at") {
+      return showListContext;
+    }
+    return option.value !== "tracking_status" || showTrackingStatus;
+  });
+  const groupByOptions = GROUP_BY_OPTIONS.filter((option) => {
+    if (option.value === "context_status") return showListContext;
+    return option.value !== "tracking_status" || showTrackingStatus;
+  });
+  const statusField: FilterField | null = showListContext
+    ? "context_status"
+    : showTrackingStatus
+      ? "tracking_status"
+      : null;
+  const statusOptions = showListContext
+    ? STATUS_OPTIONS
+    : TRACKING_STATUS_OPTIONS;
 
   const handleAddSort = () => {
     const used = new Set(query.sort.map((c) => c.field));
@@ -167,23 +187,23 @@ export function ExploreToolbar({
 
       <div
         className={`grid grid-cols-1 gap-4 ${
-          showListContext ? "md:grid-cols-3" : "md:grid-cols-2"
+          statusField ? "md:grid-cols-3" : "md:grid-cols-2"
         }`}
       >
-        {showListContext ? <div className="space-y-2">
+        {statusField ? <div className="space-y-2">
           <label className="text-xs uppercase tracking-wide text-white/50">
-            Status
+            {showTrackingStatus ? "Progress status" : "List status"}
           </label>
           <Select
             aria-label="Status filter"
-            value={singleFilterValue(query.filters, "context_status")}
+            value={singleFilterValue(query.filters, statusField)}
             onChange={(e) =>
-              onSetFilter("context_status", e.target.value || null)
+              onSetFilter(statusField, e.target.value || null)
             }
             className="w-full px-3 py-2 text-sm rounded-md bg-white/5 hover:bg-white/10 text-white border border-white/10"
           >
             <option value="">All</option>
-            {STATUS_OPTIONS.map((opt) => (
+            {statusOptions.map((opt) => (
               <option key={opt.value} value={opt.value}>
                 {opt.label}
               </option>

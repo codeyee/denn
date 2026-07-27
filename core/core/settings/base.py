@@ -12,6 +12,11 @@ load_dotenv(os.path.join(BASE_DIR, ".env"))
 SECRET_KEY = os.getenv("SECRET_KEY")
 DEBUG = os.getenv("DEBUG", "False") == "True"
 TESTING = "test" in sys.argv
+DISABLE_RATE_LIMITS = (
+    not TESTING
+    and os.getenv("DISABLE_RATE_LIMITS", "false").strip().lower()
+    in {"1", "true", "yes", "on"}
+)
 
 # Allowed hosts configuration
 allowed_hosts_env = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1")

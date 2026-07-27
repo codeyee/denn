@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import {
   createFixedWindowRateLimiter,
+  isRateLimitingDisabled,
   readLimitedJson,
   RequestBodyTooLargeError,
 } from "@/server/request-security";
@@ -99,7 +100,7 @@ export const Route = createFileRoute("/api/perf/vitals")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        if (!vitalsRateLimiter.consume()) {
+        if (!isRateLimitingDisabled() && !vitalsRateLimiter.consume()) {
           return jsonResponse({ ok: false, error: "rate_limited" }, 429);
         }
 

@@ -28,6 +28,8 @@ function resolveGroupKey(item: ListItem, groupBy: GroupByField): string {
   switch (groupBy) {
     case "context_status":
       return item.context_status ?? "";
+    case "tracking_status":
+      return item.content_item.current_user_tracking?.status ?? "";
     case "content_type":
       return item.content_item.content_type;
     case "source_api":

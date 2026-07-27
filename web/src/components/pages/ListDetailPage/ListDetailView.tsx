@@ -52,6 +52,7 @@ export function ListDetailView({ controller }: { controller: Controller }) {
                 query={query}
                 totalItemCount={data.totalItemCount}
                 showListContext={data.list.list_type === ListType.SHARED}
+                showTrackingStatus={data.list.list_type === ListType.DYNAMIC}
                 isReorderMode={reordering.isReorderMode}
                 canApplySort={canApplySort}
                 applySortHint={

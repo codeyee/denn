@@ -319,6 +319,19 @@ one scheduled carousel rotation. No comparable pre-change runtime
 sample was retained, so this is a regression point rather than a
 before/after claim.
 
+## Dynamic Collections Performance Contract
+
+Dynamic collections are authenticated Core reads over persisted
+`UserContentTracking`; they must not invoke `proxy`. Metadata counts are
+aggregated in one grouped tracking query, and collection pages fetch local
+content summaries with bounded pagination. The random picker uses a count and
+an indexed ordered offset instead of `ORDER BY RANDOM()`.
+
+No browser percentile is recorded yet because the deterministic fixture does
+not currently seed these user-owned collection routes. Before production
+measurement, extend that fixture and capture cold/warm `/collections/backlog`
+results under the same LCP, INP, and CLS gates used for Lists.
+
 ## Authentication Mosaic Asset Optimization Local After Snapshot
 
 Captured 2026-07-26 from the production Nitro bundle after replacing the
@@ -427,6 +440,15 @@ exists for the route/window.
 | Any critical route | 5xx > 1% | 5 min |
 | Proxy cache | cache errors > 0 or sustained HIT ratio < 80% after warm-up | 5 min; inspect Redis and cache keys |
 | Web Vitals | LCP > 2,500 ms, INP > 200 ms, or CLS > 0.10 at p75 | rolling release window |
+
+## Dynamic System Lists
+
+The first authenticated lists read lazily materializes the ten system-managed
+lists in bulk. The steady-state list endpoint remains bounded at eight queries:
+the existing list read, one system-list existence check, and the two user
+preference reads that control system-list visibility. Synchronization uses one
+tracking read, one existing-items read, and bulk writes only when a tracking
+mutation changes membership.
 
 ## Repeat Procedure
 

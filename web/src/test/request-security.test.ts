@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   createFixedWindowRateLimiter,
+  isRateLimitingDisabled,
   readLimitedJson,
   RequestBodyTooLargeError,
 } from "@/server/request-security";
@@ -131,5 +132,12 @@ describe("BFF request security", () => {
     expect(limiter.consume()).toBe(false);
     now = 1_000;
     expect(limiter.consume()).toBe(true);
+  });
+
+  it("recognizes the local rate-limit bypass flag", () => {
+    expect(isRateLimitingDisabled({ DISABLE_RATE_LIMITS: "true" })).toBe(true);
+    expect(isRateLimitingDisabled({ DISABLE_RATE_LIMITS: "false" })).toBe(
+      false,
+    );
   });
 });

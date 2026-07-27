@@ -1,5 +1,13 @@
 const DEFAULT_JSON_BODY_LIMIT = 2_048;
 
+export function isRateLimitingDisabled(
+  env: Record<string, string | undefined> = process.env,
+): boolean {
+  return new Set(["1", "true", "yes", "on"]).has(
+    env.DISABLE_RATE_LIMITS?.trim().toLowerCase() ?? "",
+  );
+}
+
 export class RequestBodyTooLargeError extends Error {}
 
 export async function readLimitedJson(

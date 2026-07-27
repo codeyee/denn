@@ -7,7 +7,7 @@ import {
 import { Button } from "@/components/common/ui/Button";
 import { UserAvatar } from "@/components/common/ui/UserAvatar";
 import { useAuth } from "@/hooks/useAuth";
-import { Search, LogOut, LogIn, User, UserPlus } from "lucide-react";
+import { Search, Settings, LogOut, LogIn, User, UserPlus } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -111,6 +111,15 @@ export function Navbar({ searchQuery, onSearchChange }: NavbarProps) {
                     >
                       <User aria-hidden="true" className="h-4 w-4" />
                       <span>View profile</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <Link
+                      to="/settings"
+                      className="flex min-h-11 w-full items-center gap-3"
+                    >
+                      <Settings aria-hidden="true" className="h-4 w-4" />
+                      <span>Settings</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem

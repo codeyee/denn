@@ -104,7 +104,7 @@ class PublicProfileOverviewView(PublicProfileBaseView):
             UserList.objects.filter(
                 Q(owner_id=OuterRef("pk")) | Q(members__id=OuterRef("pk")),
                 visibility=UserList.Visibility.PUBLIC,
-            )
+            ).exclude(list_type=UserList.ListType.DYNAMIC)
             .order_by()
             .values("visibility")
             .annotate(total=Count("id", distinct=True))
@@ -751,7 +751,7 @@ def _public_lists_queryset(user):
         UserList.objects.filter(
             Q(owner=user) | Q(members=user),
             visibility=UserList.Visibility.PUBLIC,
-        )
+        ).exclude(list_type=UserList.ListType.DYNAMIC)
         .order_by()
         .values("id")
         .distinct()

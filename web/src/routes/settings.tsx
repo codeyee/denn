@@ -6,6 +6,7 @@ import { Card } from "@/components/common/ui/Card";
 import { Footer } from "@/components/layout/Footer";
 import { Navbar } from "@/components/layout/Navbar";
 import { AdultContentPreference } from "@/components/pages/SettingsPage/AdultContentPreference";
+import { DynamicCollectionsPreference } from "@/components/pages/SettingsPage/DynamicCollectionsPreference";
 import { useAuth } from "@/hooks/useAuth";
 import { requireAuthenticatedSession } from "@/lib/auth/protected-route";
 
@@ -54,6 +55,7 @@ function SettingsRoute() {
             <AdultContentPreference
               enabled={user?.allow_adult_content ?? false}
             />
+            <DynamicCollectionsPreference />
 
             <div className="mt-8 flex flex-wrap gap-3 border-t border-gray-700 pt-6">
               <Button onClick={logout} variant="destructive">

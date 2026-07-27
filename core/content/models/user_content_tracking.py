@@ -62,6 +62,10 @@ class UserContentTracking(models.Model):
                 fields=["user", "is_favorite"],
                 name="tracking_user_favorite_idx",
             ),
+            models.Index(
+                fields=["user", "status", "-updated_at"],
+                name="track_user_state_active_idx",
+            ),
         ]
 
     def __str__(self):

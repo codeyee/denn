@@ -86,6 +86,7 @@ export type SortField =
   | 'added_at'
   | 'context_completed_at'
   | 'context_status'
+  | 'tracking_status'
   | 'content_type'
   | 'list_rating'
   | 'display_title'
@@ -95,6 +96,7 @@ export type SortField =
 
 export type FilterField =
   | 'context_status'
+  | 'tracking_status'
   | 'content_type'
   | 'source_api'
   | 'added_by';
@@ -111,6 +113,7 @@ export type RangeFilterField =
 
 export type GroupByField =
   | 'context_status'
+  | 'tracking_status'
   | 'content_type'
   | 'source_api'
   | 'added_by'

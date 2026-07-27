@@ -10,6 +10,7 @@ class UserPreferences(models.Model):
         related_name="preferences",
     )
     allow_adult_content = models.BooleanField(default=False)
+    dynamic_collections_enabled = models.BooleanField(default=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

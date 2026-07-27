@@ -122,6 +122,12 @@ Los dos backends tienen formas distintas porque sus semánticas son distintas. A
 }
 ```
 
+Authenticated system lists use the standard Core list endpoints at
+`/api/content/lists/<id>/` and `/api/content/lists/<id>/items/`. Dynamic
+collection metadata/settings remain Core-only helpers for visibility and the
+legacy `/collections/<key>` redirect resolves to that canonical list route;
+they do not call `proxy` or expose provider credentials.
+
 ### 4.2 `proxy` (Go)
 
 - Query: `?page=N&limit=M` (cap 50).
@@ -172,6 +178,7 @@ same-origin.
 |--------------------------|-----------|---------------|-------|
 | `SECRET_KEY`             | core      | server-only   | Django. |
 | `DEBUG`                  | core      | server-only   | |
+| `DISABLE_RATE_LIMITS`    | core, web | server-only   | Sólo `true` en Compose local; por defecto `false`. |
 | `ALLOWED_HOSTS`          | core      | server-only   | |
 | `DATABASE_URL`           | core      | server-only   | Cae a SQLite si falta. |
 | `REDIS_URL`              | core, proxy | server-only | Compose inyecta `redis://redis:6379/1` en local. |
@@ -188,7 +195,7 @@ same-origin.
 | `BUILD_SHA`              | web       | server-only   | SHA completo inyectado en la imagen; `/api/version` lo expone sin caché para coordinar releases. |
 | `PORT`                   | proxy     | server-only   | |
 | `CORS_ALLOW_ORIGINS`     | proxy     | server-only   | |
-| `RATE_LIMIT_PER_MINUTE`  | proxy     | server-only   | |
+| `RATE_LIMIT_PER_MINUTE`  | proxy     | server-only   | `0` sólo en Compose local; por defecto `300`. |
 | `API_KEY`                | proxy     | server-only   | Misma cadena que `core:PROXY_API_KEY` y `web:PROXY_API_KEY`. |
 | `TMDB_API_KEY`           | proxy     | server-only   | Sólo en proxy. |
 | `IGDB_CLIENT_ID`         | proxy     | server-only   | |
@@ -292,9 +299,10 @@ rutas Core no incluidas arriba requieren sesión. Las lecturas públicas
 de ratings serializan sólo `id` y `username` del autor; email, nombre y
 apellido no forman parte del contrato público.
 
-El detalle público aplica un throttle de 60 solicitudes por minuto por
-visitante anónimo firmado y de 120 solicitudes por minuto por usuario
-autenticado.
+En entornos con throttling, el detalle público aplica 60 solicitudes por
+minuto por visitante anónimo firmado y 120 solicitudes por minuto por usuario
+autenticado. Compose local desactiva este throttle para permitir pruebas
+paralelas.
 
 Writes autenticados:
 
@@ -304,7 +312,8 @@ Writes autenticados:
 
 Los endpoints de pestaña de perfil usan `page_size=24` por defecto y
 máximo 48. El overview limita sus colecciones internas y nunca consulta
-proveedores. El throttle público es 120 solicitudes/minuto por IP.
+proveedores. El throttle público es 120 solicitudes/minuto por IP en entornos
+con throttling.
 `progress` acepta filtros acumulables `type` y `status` separados por comas.
 El orden usa `sort=updated|completed|title|score` y `order=asc|desc`; ambos
 son independientes de la presentación `view`, que sólo vive en la URL web.

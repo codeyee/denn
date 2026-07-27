@@ -25,6 +25,7 @@ from django.db.models import QuerySet
 # field -> ORM lookup (filter side)
 ALLOWED_FILTERS: Dict[str, str] = {
     'context_status': 'context_status',
+    'tracking_status': 'personal_tracking_status',
     'content_type': 'content_item__content_type',
     'source_api': 'content_item__source_api',
     'added_by': 'added_by_id',
@@ -49,6 +50,7 @@ ALLOWED_SORTS: Dict[str, str] = {
     'added_at': 'added_at',
     'context_completed_at': 'context_completed_at',
     'context_status': 'context_status',
+    'tracking_status': 'personal_tracking_status',
     'content_type': 'content_item__content_type',
     'list_rating': 'member_rating_avg_annotated',
     'display_title': 'content_item__browse_meta__display_title',
@@ -60,6 +62,7 @@ ALLOWED_SORTS: Dict[str, str] = {
 # field -> grouping config (orm field, label_resolver_name)
 ALLOWED_GROUPS: Dict[str, str] = {
     'context_status': 'context_status',
+    'tracking_status': 'personal_tracking_status',
     'content_type': 'content_item__content_type',
     'source_api': 'content_item__source_api',
     'added_by': 'added_by_id',
@@ -199,6 +202,13 @@ GROUP_LABELS: Dict[str, Dict[str, str]] = {
         'PENDING': 'Pending',
         'COMPLETED': 'Completed',
     },
+    'tracking_status': {
+        'backlog': 'Backlog',
+        'in_progress': 'In progress',
+        'on_hold': 'On hold',
+        'dropped': 'Dropped',
+        'completed': 'Completed',
+    },
     'content_type': {
         'MOVIE': 'Movies',
         'TV_SHOW': 'TV Shows',
@@ -219,6 +229,8 @@ GROUP_LABELS: Dict[str, Dict[str, str]] = {
 def _resolve_group_key(item, group_by: str) -> Optional[str]:
     if group_by == 'context_status':
         return item.context_status
+    if group_by == 'tracking_status':
+        return getattr(item, 'personal_tracking_status', None)
     if group_by == 'content_type':
         return item.content_item.content_type
     if group_by == 'source_api':

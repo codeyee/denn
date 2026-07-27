@@ -42,6 +42,9 @@ def ensure_tracking(
         content_item=content_item,
         defaults={"status": status},
     )
+    from content.services.dynamic_collections import sync_dynamic_collections
+
+    sync_dynamic_collections(user)
     return tracking
 
 
@@ -155,6 +158,9 @@ def transition_tracking(
         tracking.favorited_at = None
 
     tracking.save()
+    from content.services.dynamic_collections import sync_dynamic_collections
+
+    sync_dynamic_collections(user)
     return TrackingTransition(
         tracking=tracking,
         should_prompt_rating=should_prompt_rating,
@@ -197,6 +203,9 @@ def save_rating(
             "is_active": True,
         },
     )
+    from content.services.dynamic_collections import sync_dynamic_collections
+
+    sync_dynamic_collections(user)
     return rating
 
 
@@ -286,6 +295,9 @@ def delete_tracking(
         rating.is_active = False
         rating.save(update_fields=["is_active", "updated_at"])
     tracking.delete()
+    from content.services.dynamic_collections import sync_dynamic_collections
+
+    sync_dynamic_collections(user)
     return True
 
 

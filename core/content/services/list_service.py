@@ -65,7 +65,10 @@ def get_list_stats(user_list):
     from django.db.models import Count, Q as _Q
 
     items_qs = user_list.items.all()
-    if user_list.list_type == UserList.ListType.PERSONAL:
+    if user_list.list_type in (
+        UserList.ListType.PERSONAL,
+        UserList.ListType.DYNAMIC,
+    ):
         from content.models import UserContentTracking
 
         tracked_ids = items_qs.values_list("content_item_id", flat=True)

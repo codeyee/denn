@@ -1,5 +1,5 @@
 import { Star, ExternalLink, Circle, CheckCircle, Trash2 } from "lucide-react";
-import { ListItem, MemberRating, UserListDetail } from "@/lib/types";
+import { ListItem, ListType, MemberRating, UserListDetail } from "@/lib/types";
 import { Author, ItemStatus } from "@/lib/types";
 import { ReorderableListItem } from "../../../common/lists/ReorderableListItem";
 import { ExpandableListItem } from "../../../common/lists/ExpandableListItem";
@@ -61,6 +61,7 @@ export function ListItemRenderer({
   // Get rating badge data
   const ratingData = getRatingBadgeData(item, list, currentUserId);
   const personal = isPersonalList(list);
+  const systemManaged = list.list_type === ListType.DYNAMIC;
 
   const handleViewContent = () => {
     void navigate({ to: buildContentUrlById(contentItem.id) });
@@ -247,14 +248,16 @@ export function ListItemRenderer({
                     <Star className="w-4 h-4" />
                   </Button>
                 ) : null}
-                <Button
-                  size="sm"
-                  onClick={() => onDelete(item.id)}
-                  className="cursor-pointer bg-red-600/20 hover:bg-red-600/40 text-red-400 hover:text-red-300 border border-red-600/30 transition-colors"
-                  title="Remove item from list"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
+                {!systemManaged ? (
+                  <Button
+                    size="sm"
+                    onClick={() => onDelete(item.id)}
+                    className="cursor-pointer bg-red-600/20 hover:bg-red-600/40 text-red-400 hover:text-red-300 border border-red-600/30 transition-colors"
+                    title="Remove item from list"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                ) : null}
               </div>
             </div>
           }

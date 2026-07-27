@@ -1,4 +1,4 @@
-import { Users, Lock } from "lucide-react";
+import { Users, Lock, Zap } from "lucide-react";
 import { UserListDetail, ListType } from "@/lib/types";
 
 interface ListHeaderProps {
@@ -7,8 +7,9 @@ interface ListHeaderProps {
 
 export function ListHeader({ list }: ListHeaderProps) {
   const isShared = list.list_type === ListType.SHARED;
-  const ListTypeIcon = isShared ? Users : Lock;
-  const listTypeLabel = isShared ? "Shared List" : "Personal List";
+  const isDynamic = list.list_type === ListType.DYNAMIC;
+  const ListTypeIcon = isShared ? Users : isDynamic ? Zap : Lock;
+  const listTypeLabel = isShared ? "Shared List" : isDynamic ? "Dynamic List" : "Personal List";
 
   return (
     <div className="mb-8">

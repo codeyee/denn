@@ -16,6 +16,7 @@ __all__ = [
     "SECRET_KEY",
     "DEBUG",
     "TESTING",
+    "DISABLE_RATE_LIMITS",
     "ALLOWED_HOSTS",
     "INSTALLED_APPS",
     "MIDDLEWARE",

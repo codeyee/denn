@@ -32,6 +32,7 @@ import {
 
 const ALLOWED_FILTERS: ReadonlySet<string> = new Set<FilterField>([
   "context_status",
+  "tracking_status",
   "content_type",
   "source_api",
   "added_by",
@@ -53,6 +54,7 @@ const ALLOWED_SORTS: ReadonlySet<string> = new Set<SortField>([
   "added_at",
   "context_completed_at",
   "context_status",
+  "tracking_status",
   "content_type",
   "list_rating",
   "display_title",
@@ -63,6 +65,7 @@ const ALLOWED_SORTS: ReadonlySet<string> = new Set<SortField>([
 
 const ALLOWED_GROUPS: ReadonlySet<string> = new Set<GroupByField>([
   "context_status",
+  "tracking_status",
   "content_type",
   "source_api",
   "added_by",

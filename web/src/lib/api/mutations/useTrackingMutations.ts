@@ -198,4 +198,5 @@ function invalidateTrackingResources(
   void queryClient.invalidateQueries({ queryKey: queryKeys.ratings.all });
   void queryClient.invalidateQueries({ queryKey: ["list-items"] });
   void queryClient.invalidateQueries({ queryKey: queryKeys.lists.all });
+  void queryClient.invalidateQueries({ queryKey: queryKeys.dynamicCollections.all });
 }

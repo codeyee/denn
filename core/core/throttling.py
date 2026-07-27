@@ -1,3 +1,4 @@
+from django.conf import settings
 from rest_framework.throttling import (
     AnonRateThrottle,
     SimpleRateThrottle,
@@ -7,27 +8,34 @@ from rest_framework.throttling import (
 from core.catalog_service import get_trusted_catalog_visitor
 
 
-class AuthRateThrottle(AnonRateThrottle):
+class LocalRateThrottleMixin:
+    def allow_request(self, request, view):
+        if settings.DISABLE_RATE_LIMITS:
+            return True
+        return super().allow_request(request, view)
+
+
+class AuthRateThrottle(LocalRateThrottleMixin, AnonRateThrottle):
     scope = 'auth'
 
 
-class PasswordResetRateThrottle(AnonRateThrottle):
+class PasswordResetRateThrottle(LocalRateThrottleMixin, AnonRateThrottle):
     scope = 'password_reset'
 
 
-class BulkOperationThrottle(UserRateThrottle):
+class BulkOperationThrottle(LocalRateThrottleMixin, UserRateThrottle):
     scope = 'bulk'
 
 
-class SustainedRateThrottle(UserRateThrottle):
+class SustainedRateThrottle(LocalRateThrottleMixin, UserRateThrottle):
     scope = 'user'
 
 
-class BurstRateThrottle(UserRateThrottle):
+class BurstRateThrottle(LocalRateThrottleMixin, UserRateThrottle):
     rate = '60/minute'
 
 
-class PublicProfileRateThrottle(SimpleRateThrottle):
+class PublicProfileRateThrottle(LocalRateThrottleMixin, SimpleRateThrottle):
     scope = "public_profile"
 
     def get_cache_key(self, request, view):
@@ -37,12 +45,14 @@ class PublicProfileRateThrottle(SimpleRateThrottle):
         }
 
 
-class CatalogDetailRateThrottle(SimpleRateThrottle):
+class CatalogDetailRateThrottle(LocalRateThrottleMixin, SimpleRateThrottle):
     """Apply the public detail quota per signed visitor, not per web host."""
 
     rate = '60/minute'
 
     def allow_request(self, request, view):
+        if settings.DISABLE_RATE_LIMITS:
+            return True
         self.rate = (
             '120/minute'
             if request.user and request.user.is_authenticated
@@ -68,7 +78,7 @@ class CatalogDetailRateThrottle(SimpleRateThrottle):
         }
 
 
-class CatalogResolveRateThrottle(SimpleRateThrottle):
+class CatalogResolveRateThrottle(LocalRateThrottleMixin, SimpleRateThrottle):
     """Bound catalog identity writes without applying the anonymous daily cap."""
 
     rate = '600/minute'
@@ -80,12 +90,17 @@ class CatalogResolveRateThrottle(SimpleRateThrottle):
         }
 
 
-class CatalogResolveSustainedRateThrottle(SimpleRateThrottle):
+class CatalogResolveSustainedRateThrottle(
+    LocalRateThrottleMixin,
+    SimpleRateThrottle,
+):
     """Preserve the user daily cap while giving the shared web path headroom."""
 
     rate = '1000/day'
 
     def allow_request(self, request, view):
+        if settings.DISABLE_RATE_LIMITS:
+            return True
         self.rate = (
             '1000/day'
             if request.user and request.user.is_authenticated

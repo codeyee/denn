@@ -70,6 +70,7 @@ export function HomePage({
           isCreatingList={data.isCreatingList}
         />
 
+
         {data.isAllEmpty && <EmptyState />}
 
         <Footer />

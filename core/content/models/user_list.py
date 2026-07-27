@@ -5,6 +5,7 @@ class UserList(models.Model):
     class ListType(models.TextChoices):
         PERSONAL = 'PERSONAL', 'Personal'
         SHARED = 'SHARED', 'Shared'
+        DYNAMIC = 'DYNAMIC', 'Dynamic'
 
     class Visibility(models.TextChoices):
         PUBLIC = 'PUBLIC', 'Public'
@@ -33,6 +34,13 @@ class UserList(models.Model):
         choices=ListType.choices,
         default=ListType.PERSONAL,
         help_text='List type'
+    )
+
+    dynamic_key = models.CharField(
+        max_length=32,
+        blank=True,
+        null=True,
+        help_text='System-managed key for a dynamically populated list',
     )
 
     visibility = models.CharField(
@@ -65,8 +73,18 @@ class UserList(models.Model):
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['owner', 'list_type']),
+            models.Index(
+                fields=['owner', 'dynamic_key'],
+                name='userlist_owner_dyn_key_idx',
+            ),
             models.Index(fields=['owner', 'visibility']),
             models.Index(fields=['-created_at']),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['owner', 'dynamic_key'],
+                name='unique_dynamic_list_key_per_owner',
+            ),
         ]
 
     def __str__(self):

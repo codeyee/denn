@@ -64,6 +64,11 @@ export const queryKeys = {
     full: (listId: number, params?: ListItemsParams["options"]) =>
       ["list-items", listId, "full", params ?? null] as const,
   },
+  dynamicCollections: {
+    all: ["dynamic-collections"] as const,
+    items: (key: string, params?: Record<string, unknown>) =>
+      ["dynamic-collections", "items", key, params ?? null] as const,
+  },
   contentDetail: {
     all: ["content-detail"] as const,
     byId: (

@@ -1,7 +1,7 @@
 import { Button } from "@/components/common/ui/Button";
 import { StatusBadge } from "@/components/common/ui/StatusBadge";
 import { Circle, CheckCircle, Trash2, Star } from "lucide-react";
-import { ListItem, UserListDetail } from "@/lib/types";
+import { ListItem, ListType, UserListDetail } from "@/lib/types";
 import { ItemStatus } from "@/lib/types";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { formatUserDisplayName } from "@/lib/utils/userUtils";
@@ -29,6 +29,7 @@ export function ListItemCardHover({
   showRatingInvitation = false,
 }: ListItemCardHoverProps) {
   const personal = isPersonalList(list);
+  const systemManaged = list.list_type === ListType.DYNAMIC;
   return (
     <Card.HoverContent>
       <div className="space-y-4 text-white">
@@ -146,7 +147,7 @@ export function ListItemCardHover({
             )}
           </Button>
           ) : null}
-          <Button
+          {!systemManaged && <Button
             size="sm"
             onClick={(e) => {
               e.stopPropagation();
@@ -156,7 +157,7 @@ export function ListItemCardHover({
             title="Remove item from list"
           >
             <Trash2 className="w-4 h-4" />
-          </Button>
+          </Button>}
         </div>
       </div>
     </Card.HoverContent>

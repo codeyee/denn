@@ -67,8 +67,9 @@ from rest_flex_fields.views import FlexFieldsMixin
             OpenApiParameter('expand', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Comma-separated list of relationships to expand (e.g., "content_item,added_by")'),
             OpenApiParameter('source_fields', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Comma-separated list of fields to include from external API source_data. Supports dot notation (e.g., "title,cover.url,genres.name")'),
             OpenApiParameter('sort', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Comma-separated sort fields with optional `-` for desc (e.g., "artist,-release_date,list_order"). Whitelisted fields only.'),
-            OpenApiParameter('group_by', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Single field to group the page by (e.g., "context_status", "content_type", "artist"). Pagination remains global.'),
+            OpenApiParameter('group_by', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Single field to group the page by (e.g., "context_status", "tracking_status", "content_type", "artist"). Pagination remains global.'),
             OpenApiParameter('filter[context_status]', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Filter by shared-list context status. CSV supported (e.g., "PENDING,COMPLETED").'),
+            OpenApiParameter('filter[tracking_status]', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Filter by the authenticated user progress status. CSV supported (e.g., "backlog,completed").'),
             OpenApiParameter('filter[content_type]', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Filter by content type. CSV supported.'),
             OpenApiParameter('filter[source_api]', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Filter by source API. CSV supported.'),
             OpenApiParameter('filter[added_by]', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Filter by user id who added the item. CSV supported.'),
@@ -290,6 +291,15 @@ class ListItemViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
             return True
         return False
 
+    @staticmethod
+    def _read_only_dynamic_list(user_list):
+        if user_list.list_type != UserList.ListType.DYNAMIC:
+            return None
+        return Response(
+            {"detail": "System-managed list items cannot be added, edited, or removed."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
     def list(self, request, *args, **kwargs):
         user_list = self.get_list()
         if not user_list:
@@ -341,6 +351,10 @@ class ListItemViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND
             )
 
+        read_only_response = self._read_only_dynamic_list(user_list)
+        if read_only_response:
+            return read_only_response
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -363,6 +377,10 @@ class ListItemViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND
             )
 
+        read_only_response = self._read_only_dynamic_list(user_list)
+        if read_only_response:
+            return read_only_response
+
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
@@ -379,6 +397,10 @@ class ListItemViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
                 {'detail': 'Lista no encontrada o no tienes acceso a ella.'},
                 status=status.HTTP_404_NOT_FOUND
             )
+
+        read_only_response = self._read_only_dynamic_list(user_list)
+        if read_only_response:
+            return read_only_response
 
         instance = self.get_object()
         instance.delete()

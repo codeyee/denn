@@ -13,6 +13,7 @@ export { homepageActions } from "./actions/homepage";
 export { searchActions } from "./actions/search";
 export { profileActions } from "./actions/profile";
 export { trackingActions } from "./actions/tracking";
+export { dynamicCollectionActions } from "./actions/dynamicCollections";
 
 import { authActions } from "./actions/auth";
 import { contentItemActions } from "./actions/contentItem";
@@ -29,6 +30,7 @@ import { homepageActions } from "./actions/homepage";
 import { searchActions } from "./actions/search";
 import { profileActions } from "./actions/profile";
 import { trackingActions } from "./actions/tracking";
+import { dynamicCollectionActions } from "./actions/dynamicCollections";
 
 export const apiActions = {
     auth: authActions,
@@ -46,6 +48,7 @@ export const apiActions = {
     search: searchActions,
     profile: profileActions,
     tracking: trackingActions,
+    dynamicCollections: dynamicCollectionActions,
 };
 
 export default apiActions;

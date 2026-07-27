@@ -23,5 +23,9 @@ export {
 export { useBulkListMembershipQuery } from "./useBulkListMembershipQuery";
 export { useContentItemResolutionQuery } from "./useContentItemResolutionQuery";
 export {
+  useDynamicCollectionItemsQuery,
+  useDynamicCollectionsQuery,
+} from "./useDynamicCollectionsQuery";
+export {
   usePublicProfileOverviewQuery,
 } from "./usePublicProfileQueries";

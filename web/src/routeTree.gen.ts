@@ -22,6 +22,7 @@ import { Route as ContentIndexRouteImport } from './routes/content/index'
 import { Route as UserUsernameRouteImport } from './routes/user/$username'
 import { Route as ListsIdRouteImport } from './routes/lists/$id'
 import { Route as ContentIdRouteImport } from './routes/content/$id'
+import { Route as CollectionsKeyRouteImport } from './routes/collections/$key'
 import { Route as ApiVersionRouteImport } from './routes/api/version'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as ApiCardsRouteImport } from './routes/api/cards'
@@ -100,6 +101,11 @@ const ContentIdRoute = ContentIdRouteImport.update({
   path: '/content/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CollectionsKeyRoute = CollectionsKeyRouteImport.update({
+  id: '/collections/$key',
+  path: '/collections/$key',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiVersionRoute = ApiVersionRouteImport.update({
   id: '/api/version',
   path: '/api/version',
@@ -174,6 +180,7 @@ export interface FileRoutesByFullPath {
   '/api/cards': typeof ApiCardsRoute
   '/api/health': typeof ApiHealthRoute
   '/api/version': typeof ApiVersionRoute
+  '/collections/$key': typeof CollectionsKeyRoute
   '/content/$id': typeof ContentIdRoute
   '/lists/$id': typeof ListsIdRoute
   '/user/$username': typeof UserUsernameRoute
@@ -201,6 +208,7 @@ export interface FileRoutesByTo {
   '/api/cards': typeof ApiCardsRoute
   '/api/health': typeof ApiHealthRoute
   '/api/version': typeof ApiVersionRoute
+  '/collections/$key': typeof CollectionsKeyRoute
   '/content/$id': typeof ContentIdRoute
   '/lists/$id': typeof ListsIdRoute
   '/user/$username': typeof UserUsernameRoute
@@ -229,6 +237,7 @@ export interface FileRoutesById {
   '/api/cards': typeof ApiCardsRoute
   '/api/health': typeof ApiHealthRoute
   '/api/version': typeof ApiVersionRoute
+  '/collections/$key': typeof CollectionsKeyRoute
   '/content/$id': typeof ContentIdRoute
   '/lists/$id': typeof ListsIdRoute
   '/user/$username': typeof UserUsernameRoute
@@ -258,6 +267,7 @@ export interface FileRouteTypes {
     | '/api/cards'
     | '/api/health'
     | '/api/version'
+    | '/collections/$key'
     | '/content/$id'
     | '/lists/$id'
     | '/user/$username'
@@ -285,6 +295,7 @@ export interface FileRouteTypes {
     | '/api/cards'
     | '/api/health'
     | '/api/version'
+    | '/collections/$key'
     | '/content/$id'
     | '/lists/$id'
     | '/user/$username'
@@ -312,6 +323,7 @@ export interface FileRouteTypes {
     | '/api/cards'
     | '/api/health'
     | '/api/version'
+    | '/collections/$key'
     | '/content/$id'
     | '/lists/$id'
     | '/user/$username'
@@ -340,6 +352,7 @@ export interface RootRouteChildren {
   ApiCardsRoute: typeof ApiCardsRoute
   ApiHealthRoute: typeof ApiHealthRoute
   ApiVersionRoute: typeof ApiVersionRoute
+  CollectionsKeyRoute: typeof CollectionsKeyRoute
   ContentIdRoute: typeof ContentIdRoute
   ListsIdRoute: typeof ListsIdRoute
   UserUsernameRoute: typeof UserUsernameRoute
@@ -448,6 +461,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ContentIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/collections/$key': {
+      id: '/collections/$key'
+      path: '/collections/$key'
+      fullPath: '/collections/$key'
+      preLoaderRoute: typeof CollectionsKeyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/version': {
       id: '/api/version'
       path: '/api/version'
@@ -548,6 +568,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiCardsRoute: ApiCardsRoute,
   ApiHealthRoute: ApiHealthRoute,
   ApiVersionRoute: ApiVersionRoute,
+  CollectionsKeyRoute: CollectionsKeyRoute,
   ContentIdRoute: ContentIdRoute,
   ListsIdRoute: ListsIdRoute,
   UserUsernameRoute: UserUsernameRoute,

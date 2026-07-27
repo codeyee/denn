@@ -3,11 +3,15 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.permissions import AllowAny
+from rest_framework.exceptions import ValidationError
+from secrets import randbelow
 from django.db.models import Q, Prefetch, Count, Subquery, Avg
+from django.http import Http404
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiExample, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 from content.models import (
     ContentItemAuthor,
+    ContentItemBrowseMetadata,
     Image,
     UserList,
     ListItem,
@@ -17,6 +21,7 @@ from content.models import (
 from content.serializers import (
     UserListSerializer,
     UserListDetailSerializer,
+    ListItemSerializer,
     BulkCheckRequestSerializer,
     BulkCheckResponseSerializer,
     PublicUserListDetailSerializer,
@@ -27,6 +32,12 @@ from content.services.bulk_check_service import check_items_in_lists, ensure_con
 from content.services.tracking_service import (
     annotate_list_items_with_personal_tracking,
 )
+from content.services.dynamic_collections import (
+    collection_settings,
+    get_definition,
+    sync_dynamic_collections,
+)
+from content.services.payload_reconstructor import from_local as source_data_from_local
 
 from rest_flex_fields.views import FlexFieldsMixin
 
@@ -135,6 +146,8 @@ class UserListViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
         if not user.is_authenticated:
             return UserList.objects.filter(
                 visibility=UserList.Visibility.PUBLIC
+            ).exclude(
+                list_type=UserList.ListType.DYNAMIC,
             ).select_related("owner").prefetch_related("members")
         item_filters = self._parse_item_filters()
         user_list_id = self.kwargs.get('pk')
@@ -198,7 +211,7 @@ class UserListViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
             '-added_at',
         )
 
-        return UserList.objects.filter(
+        queryset = UserList.objects.filter(
             Q(owner=user) | Q(members=user)
         ).distinct().select_related(
             'owner'
@@ -208,6 +221,18 @@ class UserListViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
         ).annotate(
             item_count_annotated=Count('items', distinct=True),
             member_count_annotated=Count('members', distinct=True),
+        )
+        return queryset
+
+    @staticmethod
+    def _filter_visible_dynamic_lists(queryset, user):
+        globally_enabled, enabled_by_key = collection_settings(user)
+        if not globally_enabled:
+            return queryset.exclude(list_type=UserList.ListType.DYNAMIC)
+        visible_keys = [key for key, enabled in enabled_by_key.items() if enabled]
+        return queryset.exclude(
+            Q(list_type=UserList.ListType.DYNAMIC)
+            & ~Q(dynamic_key__in=visible_keys)
         )
 
     def get_serializer_class(self):
@@ -238,7 +263,15 @@ class UserListViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
         return context
 
     def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
+        if not UserList.objects.filter(
+            owner=request.user,
+            list_type=UserList.ListType.DYNAMIC,
+        ).exists():
+            sync_dynamic_collections(request.user)
+        queryset = self._filter_visible_dynamic_lists(
+            self.filter_queryset(self.get_queryset()),
+            request.user,
+        )
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
@@ -265,6 +298,15 @@ class UserListViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
             raise Http404
         return super().retrieve(request, *args, **kwargs)
 
+    def get_object(self):
+        obj = super().get_object()
+        if obj.list_type != UserList.ListType.DYNAMIC:
+            return obj
+        globally_enabled, enabled_by_key = collection_settings(self.request.user)
+        if not globally_enabled or not enabled_by_key.get(obj.dynamic_key, False):
+            raise Http404
+        return obj
+
     @staticmethod
     def _can_manage_list(user_list, user):
         if not user.is_authenticated:
@@ -288,7 +330,7 @@ class UserListViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
             UserList.objects.filter(
                 pk=pk,
                 visibility=UserList.Visibility.PUBLIC,
-            )
+            ).exclude(list_type=UserList.ListType.DYNAMIC)
             .select_related("owner")
             .prefetch_related(
                 "members",
@@ -318,6 +360,68 @@ class UserListViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
+
+    def perform_update(self, serializer):
+        if serializer.instance.list_type == UserList.ListType.DYNAMIC:
+            raise ValidationError("System-managed lists cannot be edited.")
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        if instance.list_type == UserList.ListType.DYNAMIC:
+            raise ValidationError("System-managed lists cannot be deleted.")
+        instance.delete()
+
+    @action(detail=True, methods=['post'], url_path='random')
+    def random_item(self, request, pk=None):
+        user_list = self.get_object()
+        if user_list.list_type != UserList.ListType.DYNAMIC:
+            return Response(
+                {'detail': 'Random selection is only available for dynamic lists.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        definition = get_definition(user_list.dynamic_key or '')
+        if definition is None or not definition.random_enabled:
+            return Response(
+                {'detail': 'Random selection is unavailable for this list.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        queryset = ListItem.objects.filter(user_list=user_list).select_related(
+            'content_item',
+            'added_by',
+        )
+        if definition.group == 'type':
+            queryset = queryset.filter(
+                content_item__user_tracking__user=request.user,
+                content_item__user_tracking__status=UserContentTracking.Status.BACKLOG,
+            )
+        count = queryset.count()
+        if count == 0:
+            return Response({'result': None})
+        item = queryset.order_by('id')[randbelow(count)]
+        source_data = source_data_from_local(item.content_item)
+        if source_data is None:
+            display_title = (
+                ContentItemBrowseMetadata.objects.filter(
+                    content_item_id=item.content_item_id,
+                )
+                .values_list('display_title', flat=True)
+                .first()
+            )
+            if display_title:
+                source_data = {'title': display_title}
+        return Response({
+            'result': ListItemSerializer(
+                item,
+                context={
+                    'request': request,
+                    'source_data_cache': (
+                        {item.content_item_id: source_data}
+                        if source_data is not None
+                        else {}
+                    ),
+                },
+            ).data,
+        })
 
     # ── Stats ────────────────────────────────────────────────────────
     @extend_schema(

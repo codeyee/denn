@@ -47,6 +47,7 @@ services:
       CORS_ALLOW_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
       GIN_MODE: release
       PORT: "8080"
+      RATE_LIMIT_PER_MINUTE: "0"
       REDIS_URL: redis://redis:6379/1
     ports:
       - "127.0.0.1:8080:8080"
@@ -85,6 +86,7 @@ services:
       AUTH_COOKIE_SECURE: "False"
       DATABASE_URL: postgresql://${LOCAL_DB_USER}:${LOCAL_DB_PASSWORD}@postgres:5432/${LOCAL_DB_NAME}
       DEBUG: "True"
+      DISABLE_RATE_LIMITS: "true"
       PROXY_API_BASE_URL: http://proxy:8080/v1/proxy
       REDIS_URL: redis://redis:6379/1
     command:
@@ -128,6 +130,7 @@ services:
       __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS: web
       API_URL: http://core:8000/api
       AUTH_COOKIE_SECURE: "false"
+      DISABLE_RATE_LIMITS: "true"
       HOST: 0.0.0.0
       NODE_ENV: development
       PORT: "3000"

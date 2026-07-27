@@ -31,6 +31,11 @@ considered part of the project baseline.
 - First-class personal tracking with backlog, in-progress, completed,
   on-hold, and dropped states, including rating activation semantics and
   completed-only favorites.
+- Dynamic system lists: configurable, tracking-populated `UserList` records by
+  progress state or content type (with TV shows and seasons together). They
+  reuse the normal list cards and detail route, keep membership read-only while
+  allowing custom order, and provide a backlog-only random picker for type
+  lists.
 - Unified public Progress tab with multi-select media/status filters,
   reversible criterion-based sorting, grid/list views, and icon menus;
   paginated public Lists remain separate.

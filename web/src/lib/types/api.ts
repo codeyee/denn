@@ -1,4 +1,5 @@
 import type { MemberRating } from "./listView";
+import type { LocalContentSummary } from "./profile";
 
 export interface EmailLogin {
     email: string;
@@ -128,6 +129,7 @@ export interface ContentItem {
 export enum ListType {
     PERSONAL = "PERSONAL",
     SHARED = "SHARED",
+    DYNAMIC = "DYNAMIC",
 }
 
 export enum ListVisibility {
@@ -148,6 +150,7 @@ export interface UserList {
     name: string;
     description: string | null;
     list_type: ListType;
+    dynamic_key?: string | null;
     visibility: ListVisibility;
     owner: User;
     members?: User[];
@@ -252,6 +255,40 @@ export interface UserContentTracking {
     updated_at: string;
     should_prompt_rating?: boolean;
     effects?: TrackingEffect[];
+}
+
+export type DynamicCollectionGroup = "status" | "type";
+
+export interface DynamicCollection {
+    key: string;
+    list_id: number;
+    name: string;
+    group: DynamicCollectionGroup;
+    item_count: number;
+    enabled: boolean;
+    random_enabled: boolean;
+    cover_images: string[];
+}
+
+export interface DynamicCollectionsResponse {
+    enabled: boolean;
+    collections: DynamicCollection[];
+}
+
+export interface DynamicCollectionItem {
+    tracking_id: number;
+    content: LocalContentSummary;
+    status: TrackingStatus;
+    last_completed_at: string | null;
+    is_favorite: boolean;
+    created_at: string;
+    updated_at: string;
+    progress_policy: ProgressPolicy;
+}
+
+export interface DynamicCollectionItemsResponse {
+    metadata: PaginationMetadata;
+    results: DynamicCollectionItem[];
 }
 
 export type TrackingEffect =

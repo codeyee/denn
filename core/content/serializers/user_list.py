@@ -18,6 +18,7 @@ class UserListSerializer(BaseFlexSerializer):
             'name',
             'description',
             'list_type',
+            'dynamic_key',
             'visibility',
             'owner',
             'member_count',
@@ -29,6 +30,7 @@ class UserListSerializer(BaseFlexSerializer):
         read_only_fields = [
             'id',
             'owner',
+            'dynamic_key',
             'created_at',
             'updated_at',
         ]
@@ -57,6 +59,10 @@ class UserListSerializer(BaseFlexSerializer):
         return obj.items.count()
 
     def validate_list_type(self, value):
+        if value == UserList.ListType.DYNAMIC:
+            raise serializers.ValidationError(
+                "Dynamic lists are created and maintained by the system."
+            )
         if self.instance and self.instance.list_type != value:
             raise serializers.ValidationError("Cannot change the list type after creation.")
 
@@ -77,6 +83,7 @@ class UserListDetailSerializer(BaseFlexSerializer):
             'name',
             'description',
             'list_type',
+            'dynamic_key',
             'visibility',
             'owner',
             'members',
@@ -90,6 +97,7 @@ class UserListDetailSerializer(BaseFlexSerializer):
         read_only_fields = [
             'id',
             'owner',
+            'dynamic_key',
             'members',
             'created_at',
             'updated_at',
