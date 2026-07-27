@@ -170,6 +170,133 @@ class PublicProfileApiTests(APITestCase):
             [{"name": "CD Projekt Red", "type": "developer"}],
         )
 
+    def test_progress_endpoint_composes_tracking_rating_once(self):
+        url = reverse(
+            "profiles:progress",
+            kwargs={"username": self.user.username},
+        )
+        with CaptureQueriesContext(connection) as queries:
+            response = self.client.get(
+                url,
+                {
+                    "status": UserContentTracking.Status.COMPLETED,
+                    "rated": "true",
+                    "reviewed": "true",
+                    "favorite": "true",
+                },
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertLessEqual(len(queries), 10)
+        self.assertEqual(response.data["metadata"]["count"], 1)
+        progress = response.data["results"][0]
+        self.assertEqual(progress["content"]["id"], self.movie.id)
+        self.assertEqual(progress["status"], "completed")
+        self.assertTrue(progress["is_favorite"])
+        self.assertEqual(float(progress["rating"]["score"]), 9.0)
+        self.assertEqual(progress["rating"]["review"], "A sharp review")
+
+    def test_progress_combines_multi_value_filters_and_sort_direction(self):
+        game = ContentItem.objects.create(
+            source_api=ContentItem.SourceAPI.IGDB,
+            external_id="1942",
+            content_type=ContentItem.ContentType.GAME,
+        )
+        ContentItemBrowseMetadata.objects.create(
+            content_item=game,
+            display_title="Alpha Game",
+        )
+        GameDetail.objects.create(
+            content_item=game,
+            title="Alpha Game",
+        )
+        UserContentTracking.objects.create(
+            user=self.user,
+            content_item=game,
+            status=UserContentTracking.Status.IN_PROGRESS,
+        )
+        url = reverse(
+            "profiles:progress",
+            kwargs={"username": self.user.username},
+        )
+        filters = {
+            "type": "MOVIE,GAME",
+            "status": "completed,in_progress",
+            "sort": "title",
+        }
+
+        ascending = self.client.get(url, {**filters, "order": "asc"})
+        descending = self.client.get(url, {**filters, "order": "desc"})
+
+        self.assertEqual(
+            [row["content"]["id"] for row in ascending.data["results"]],
+            [game.id, self.movie.id],
+        )
+        self.assertEqual(
+            [row["content"]["id"] for row in descending.data["results"]],
+            [self.movie.id, game.id],
+        )
+
+    def test_progress_tv_filter_can_split_series_and_seasons(self):
+        tv_show = ContentItem.objects.create(
+            source_api=ContentItem.SourceAPI.TMDB,
+            external_id="1396",
+            content_type=ContentItem.ContentType.TV_SHOW,
+        )
+        season = ContentItem.objects.create(
+            source_api=ContentItem.SourceAPI.TMDB,
+            external_id="1396:1",
+            content_type=ContentItem.ContentType.SEASON,
+        )
+        ContentItemBrowseMetadata.objects.create(
+            content_item=tv_show,
+            display_title="Breaking Bad",
+        )
+        ContentItemBrowseMetadata.objects.create(
+            content_item=season,
+            display_title="Breaking Bad — Season 1",
+        )
+        SeasonDetail.objects.create(
+            content_item=season,
+            tv_show=tv_show,
+            season_number=1,
+            tv_show_name="Breaking Bad",
+            title="Season 1",
+        )
+        for item in (tv_show, season):
+            UserContentTracking.objects.create(
+                user=self.user,
+                content_item=item,
+                status=UserContentTracking.Status.IN_PROGRESS,
+            )
+
+        url = reverse(
+            "profiles:progress",
+            kwargs={"username": self.user.username},
+        )
+        combined = self.client.get(url, {"type": "TV_SHOW", "tvKind": "all"})
+        seasons = self.client.get(
+            url,
+            {"type": "TV_SHOW", "tvKind": "seasons"},
+        )
+
+        self.assertEqual(
+            {row["content"]["id"] for row in combined.data["results"]},
+            {tv_show.id, season.id},
+        )
+        self.assertEqual(
+            [row["content"]["id"] for row in seasons.data["results"]],
+            [season.id],
+        )
+        self.assertEqual(
+            seasons.data["results"][0]["content"]["title"],
+            "Breaking Bad: Season 1",
+        )
+        self.assertEqual(
+            seasons.data["results"][0]["content"]["season_number"],
+            1,
+        )
+
     def test_public_lists_endpoint_excludes_private_lists_and_email(self):
         url = reverse("profiles:lists", kwargs={"username": self.user.username})
         response = self.client.get(url)
@@ -185,6 +312,7 @@ class PublicProfileApiTests(APITestCase):
 
     def test_public_profile_pages_are_local_and_within_query_budget(self):
         endpoint_names = [
+            "profiles:progress",
             "profiles:completed",
             "profiles:ratings",
             "profiles:lists",
@@ -330,7 +458,7 @@ class PublicProfileApiTests(APITestCase):
         ]
         self.assertEqual(tracking["status"], UserContentTracking.Status.COMPLETED)
 
-    def test_season_list_item_uses_canonical_tv_show_tracking(self):
+    def test_season_list_item_uses_independent_season_tracking(self):
         tv_show = ContentItem.objects.create(
             source_api=ContentItem.SourceAPI.TMDB,
             external_id="1396",
@@ -348,7 +476,7 @@ class PublicProfileApiTests(APITestCase):
         )
         UserContentTracking.objects.create(
             user=self.user,
-            content_item=tv_show,
+            content_item=season,
             status=UserContentTracking.Status.IN_PROGRESS,
         )
         ListItem.objects.create(
@@ -369,7 +497,7 @@ class PublicProfileApiTests(APITestCase):
         tracking = response.data["results"][0]["content_item"][
             "current_user_tracking"
         ]
-        self.assertEqual(tracking["content_id"], tv_show.id)
+        self.assertEqual(tracking["content_id"], season.id)
         self.assertEqual(
             tracking["status"],
             UserContentTracking.Status.IN_PROGRESS,

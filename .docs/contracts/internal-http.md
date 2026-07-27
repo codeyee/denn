@@ -278,14 +278,19 @@ enlaces.
 Lecturas anónimas admitidas por el BFF de Core:
 
 - `GET|HEAD /api/profiles/<username>/`
-- `GET|HEAD /api/profiles/<username>/(completed|ratings|lists)/`
+- `GET|HEAD /api/profiles/<username>/(progress|completed|ratings|lists)/`
 - `GET|HEAD /api/content/<id>/`
+- `GET|HEAD /api/content/ratings/` con `content_item_id` o el par
+  `source_api` + `external_id`
+- `GET|HEAD /api/content/ratings/<id>/`
 - `GET|HEAD /api/content/lists/<id>/`
 
 El predicado falla cerrado para cualquier otro método o patrón. Una
 cookie caducada puede provocar un intento de refresh, pero si no se
 restaura la sesión la lectura pública continúa anónima. Mutaciones y
-rutas Core no incluidas arriba requieren sesión.
+rutas Core no incluidas arriba requieren sesión. Las lecturas públicas
+de ratings serializan sólo `id` y `username` del autor; email, nombre y
+apellido no forman parte del contrato público.
 
 El detalle público aplica un throttle de 60 solicitudes por minuto por
 visitante anónimo firmado y de 120 solicitudes por minuto por usuario
@@ -300,6 +305,9 @@ Writes autenticados:
 Los endpoints de pestaña de perfil usan `page_size=24` por defecto y
 máximo 48. El overview limita sus colecciones internas y nunca consulta
 proveedores. El throttle público es 120 solicitudes/minuto por IP.
+`progress` acepta filtros acumulables `type` y `status` separados por comas.
+El orden usa `sort=updated|completed|title|score` y `order=asc|desc`; ambos
+son independientes de la presentación `view`, que sólo vive en la URL web.
 
 Errores de dominio adicionales:
 

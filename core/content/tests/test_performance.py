@@ -47,7 +47,7 @@ class QueryOptimizationTests(TransactionTestCase):
                 user_list=self.user_list,
                 content_item=content_item,
                 added_by=self.user,
-                status=ListItem.Status.COMPLETED
+                context_status=ListItem.Status.COMPLETED
             )
             self.list_items.append(list_item)
 
@@ -256,9 +256,9 @@ class APIPerformanceTests(APITestCase):
     def test_content_detail_endpoint_query_count(self):
         """Sprint 08 / T3: GET /api/content/<id>/ resolves a single item.
 
-        The local-first contract uses a bounded seven-query shape: identity,
+        The local-first contract uses a bounded eight-query shape: identity,
         current-user rating, personal tracking, detail relations, images,
-        providers, and authors.
+        providers, authors, and TV season children.
         This remains below the repository's <=10 list/detail budget and avoids
         a second ratings HTTP waterfall.
         """
@@ -272,7 +272,9 @@ class APIPerformanceTests(APITestCase):
 
         connection.queries_log.clear()
         with override_settings(DEBUG=True):
-            with self.assertNumQueries(7):
+            # Includes the bulk season-child read used to reconstruct TV detail
+            # payloads with stable Denn season ids.
+            with self.assertNumQueries(8):
                 response = self.client.get(f'/api/content/{content_item.id}/')
 
         self.assertEqual(response.status_code, 200)
@@ -313,7 +315,7 @@ class SerializerPerformanceTests(TestCase):
                 user_list=self.user_list,
                 content_item=content_item,
                 added_by=self.user,
-                status=ListItem.Status.COMPLETED
+                context_status=ListItem.Status.COMPLETED
             )
             Rating.objects.create(
                 user=self.user,

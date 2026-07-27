@@ -13,7 +13,7 @@ import { getRatingBadgeData, isPersonalList } from "../utils";
 import { Film } from "lucide-react";
 import { buildContentUrlById } from "@/lib/utils/navigationUtils";
 import { useNavigate } from "@tanstack/react-router";
-import { ListItemTrackingSection } from "./ListItemTrackingSection";
+import { ListItemTrackingSection } from "@/components/common/tracking/ListItemTrackingSection";
 
 interface ListItemRendererProps {
   item: ListItem;
@@ -49,7 +49,13 @@ export function ListItemRenderer({
   const isSeason = contentItem.content_type === "SEASON";
   const title =
     isSeason && sourceData && "tv_show_name" in sourceData
-      ? formatSeasonTitle(sourceData.tv_show_name, sourceData.title)
+      ? formatSeasonTitle(
+          sourceData.tv_show_name,
+          sourceData.title,
+          "season_number" in sourceData
+            ? sourceData.season_number
+            : undefined,
+        )
       : sourceData?.title || "Untitled";
 
   // Get rating badge data
@@ -144,8 +150,11 @@ export function ListItemRenderer({
                 <div className="space-y-1 text-sm text-white/60">
                   {!personal && <p>Added by {item.added_by.username}</p>}
                   <p>Added on {formatReleaseDate(item.added_at)}</p>
-                  {item.completed_at ? (
-                    <p>Completed on {formatReleaseDate(item.completed_at)}</p>
+                  {!personal && item.context_completed_at ? (
+                    <p>
+                      List completed on{" "}
+                      {formatReleaseDate(item.context_completed_at)}
+                    </p>
                   ) : null}
                 </div>
               </div>
@@ -196,31 +205,38 @@ export function ListItemRenderer({
                 >
                   <ExternalLink className="w-4 h-4" />
                 </Button>
-                <Button
+                {!personal ? (
+                  <Button
                   size="sm"
-                  onClick={() => onToggleStatus(item.id, item.status)}
-                  title={
-                    item.status === ItemStatus.COMPLETED
-                      ? "Mark as Pending"
-                      : "Mark as Completed"
+                  onClick={() =>
+                    onToggleStatus(
+                      item.id,
+                      item.context_status ?? ItemStatus.PENDING,
+                    )
                   }
-                  className={`flex-1 cursor-pointer font-semibold transition-colors ${item.status === ItemStatus.COMPLETED
+                  title={
+                    item.context_status === ItemStatus.COMPLETED
+                      ? "Mark pending in this list"
+                      : "Mark completed in this list"
+                  }
+                  className={`flex-1 cursor-pointer font-semibold transition-colors ${item.context_status === ItemStatus.COMPLETED
                     ? "bg-white/10 hover:bg-white/20 text-white border border-white/20"
                     : "bg-green-600 hover:bg-green-700 text-white"
                     }`}
                 >
-                  {item.status === ItemStatus.COMPLETED ? (
+                  {item.context_status === ItemStatus.COMPLETED ? (
                     <>
                       <Circle className="w-4 h-4 mr-2" />
-                      <span className="text-xs">Mark as Pending</span>
+                      <span className="text-xs">List: pending</span>
                     </>
                   ) : (
                     <>
                       <CheckCircle className="w-4 h-4 mr-2" />
-                      <span className="text-xs">Mark Complete</span>
+                      <span className="text-xs">List: complete</span>
                     </>
                   )}
                 </Button>
+                ) : null}
                 {shouldInviteToRate(item) ? (
                   <Button
                     size="sm"
@@ -244,7 +260,13 @@ export function ListItemRenderer({
           }
           trailingContent={
             <div className="flex items-center gap-2">
-              {item.status ? <StatusBadge status={item.status} variant="compact" /> : null}
+              <ListItemTrackingSection item={item} onRate={onRate} compact />
+              {!personal && item.context_status ? (
+                <StatusBadge
+                  status={item.context_status}
+                  variant="compact"
+                />
+              ) : null}
               {ratingData.showUserRating ? (
                 <RatingBadge
                   rating={ratingData.userRating}

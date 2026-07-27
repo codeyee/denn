@@ -9,6 +9,7 @@ import {
   type PublicProfileOverview,
 } from "@/lib/types";
 import type { ListCardData } from "@/components/common/cards/ListCard";
+import { formatAuthors } from "@/lib/utils/authorUtils";
 
 export function profileContentCardItem(item: LocalContentSummary): Content {
   const base = {
@@ -41,7 +42,7 @@ export function profileContentCardItem(item: LocalContentSummary): Content {
       return {
         ...base,
         type: "SEASON",
-        season_number: 0,
+        season_number: item.season_number ?? 0,
         description: null,
         tv_show_name: item.subtitle,
         number_of_episodes: 0,
@@ -104,6 +105,14 @@ export function profileContentCardItem(item: LocalContentSummary): Content {
         platforms: null,
       };
   }
+}
+
+export function getProfileContentAttribution(
+  content: LocalContentSummary,
+): string {
+  const authors = formatAuthors(content.authors, 2);
+  if (authors) return authors;
+  return content.type === ContentType.SEASON ? "" : content.subtitle || "";
 }
 
 export function profileListCardItem(list: PublicListSummary): ListCardData {

@@ -17,12 +17,11 @@ import {
   type PaginatedUserListList,
   type PaginatedProfileResults,
   type ProfileSearchParams,
-  type PublicCompletedItem,
   type PublicListSummary,
   type PublicListDetail,
+  type PublicProgressItem,
   type PublicProfileOverview,
   type PublicProfileTabData,
-  type PublicRatingItem,
   type UserListDetail,
 } from "@/lib/types";
 import type { ListItemQuery } from "@/lib/types/listView";
@@ -207,29 +206,15 @@ async function ensureServerProfileTab(
   const query = params.size > 0 ? `?${params.toString()}` : "";
   const path = `/profiles/${encodedUsername}/${search.tab}/${query}`;
 
-  if (search.tab === "completed") {
+  if (search.tab === "progress") {
     const data = await qc.ensureQueryData({
       queryKey: queryKeys.profiles.tab(username, search.tab, search),
       queryFn: () =>
-        fetchServerCore<PaginatedProfileResults<PublicCompletedItem>>(
+        fetchServerCore<PaginatedProfileResults<PublicProgressItem>>(
           accessToken,
           path,
           requestId,
-          "/api/profiles/:username/completed/",
-        ),
-      staleTime: 60_000,
-    });
-    return { tab: search.tab, data };
-  }
-  if (search.tab === "ratings") {
-    const data = await qc.ensureQueryData({
-      queryKey: queryKeys.profiles.tab(username, search.tab, search),
-      queryFn: () =>
-        fetchServerCore<PaginatedProfileResults<PublicRatingItem>>(
-          accessToken,
-          path,
-          requestId,
-          "/api/profiles/:username/ratings/",
+          "/api/profiles/:username/progress/",
         ),
       staleTime: 60_000,
     });
@@ -501,8 +486,13 @@ async function fetchServerContentDetail(
 function buildProfileSearchParams(search: ProfileSearchParams) {
   const params = new URLSearchParams();
   Object.entries(search).forEach(([key, value]) => {
-    if (key !== "tab" && value !== undefined && value !== "") {
-      params.set(key, String(value));
+    if (
+      key !== "tab" &&
+      key !== "view" &&
+      value !== undefined &&
+      value !== ""
+    ) {
+      params.set(key, Array.isArray(value) ? value.join(",") : String(value));
     }
   });
   return params;

@@ -23,6 +23,7 @@ def from_local(content_item: ContentItem, *, request_country: Optional[str] = No
 
     payload: Dict[str, Any] = {
         'id': content_item.external_id,
+        'denn_id': content_item.id,
         'type': 'season',
         'season_number': detail.season_number,
     }
@@ -32,6 +33,7 @@ def from_local(content_item: ContentItem, *, request_country: Optional[str] = No
         payload['tv_show_name'] = detail.tv_show_name
     if detail.tv_show_id:
         payload['tv_show_id'] = detail.tv_show_id
+        payload['tv_show_external_id'] = detail.tv_show.external_id
     if detail.description:
         payload['description'] = detail.description
     if detail.image_url:

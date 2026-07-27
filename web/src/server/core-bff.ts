@@ -233,8 +233,9 @@ const PUBLIC_AUTH_PATHS = new Set([
 
 const PUBLIC_READ_PATTERNS = [
   /^profiles\/(?!me(?:\/|$))[a-zA-Z0-9._-]+\/$/,
-  /^profiles\/(?!me(?:\/|$))[a-zA-Z0-9._-]+\/(?:completed|ratings|lists)\/$/,
+  /^profiles\/(?!me(?:\/|$))[a-zA-Z0-9._-]+\/(?:progress|completed|ratings|lists)\/$/,
   /^content\/[1-9]\d*\/$/,
+  /^content\/ratings\/(?:[1-9]\d*\/)?$/,
   /^content\/lists\/[1-9]\d*\/$/,
 ];
 

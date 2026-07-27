@@ -8,7 +8,13 @@ export function getListItemTitle(item: ListItem): string {
 
   const isSeason = contentItem.content_type === "SEASON";
   const title = isSeason && sourceData && "tv_show_name" in sourceData
-    ? formatSeasonTitle(sourceData.tv_show_name, sourceData.title)
+    ? formatSeasonTitle(
+        sourceData.tv_show_name,
+        sourceData.title,
+        "season_number" in sourceData
+          ? sourceData.season_number
+          : undefined,
+      )
     : sourceData?.title || "Untitled";
 
   return title;

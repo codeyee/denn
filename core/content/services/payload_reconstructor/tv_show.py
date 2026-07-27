@@ -47,6 +47,32 @@ def from_local(content_item: ContentItem, *, request_country: Optional[str] = No
     if detail.number_of_episodes is not None:
         payload['number_of_episodes'] = detail.number_of_episodes
 
+    seasons = []
+    for season_detail in content_item.season_children.all():
+        season_item = season_detail.content_item
+        season_payload: Dict[str, Any] = {
+            "id": season_item.external_id,
+            "denn_id": season_item.id,
+            "type": "season",
+            "season_number": season_detail.season_number,
+            "title": season_detail.title,
+            "tv_show_name": season_detail.tv_show_name or detail.title,
+            "number_of_episodes": season_detail.number_of_episodes,
+        }
+        if season_detail.description:
+            season_payload["description"] = season_detail.description
+        if season_detail.image_url:
+            season_payload["image_url"] = season_detail.image_url
+        season_release_date = serialize_release_date(season_detail.release_date)
+        if season_release_date:
+            season_payload["release_date"] = season_release_date
+        seasons.append(season_payload)
+    if seasons:
+        payload["seasons"] = sorted(
+            seasons,
+            key=lambda season: (season["season_number"], season["denn_id"]),
+        )
+
     authors = serialize_authors(content_item)
     if authors:
         payload['authors'] = authors

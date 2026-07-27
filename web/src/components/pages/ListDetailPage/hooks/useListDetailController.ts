@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useApplySortAsListOrderMutation } from "@/lib/api/mutations";
-import { ItemStatus, type ListItem, type MemberRating } from "@/lib/types";
+import { ListType, type ListItem, type MemberRating } from "@/lib/types";
 import { isQueryEmpty } from "@/lib/types/listView";
 import { useAuthStore } from "@/stores/auth-store";
 import { useDataStrategy } from "./useDataStrategy";
@@ -46,7 +46,6 @@ export function useListDetailController({
     onItemDeleted: data.onItemDeleted,
     onItemStatusUpdated: data.onItemStatusUpdated,
     currentUserId: currentUser?.id,
-    onRatingModalOpen: modals.openRatingModal,
   });
   const reordering = useListReordering({
     listId,
@@ -59,9 +58,38 @@ export function useListDetailController({
     if (query.page > data.totalPages) explore.setPage(data.totalPages);
   }, [data.totalPages, explore, query.page]);
 
+  const hasPersonalListContextQuery =
+    query.filters.context_status !== undefined ||
+    query.rangeFilters.context_completed_at_gte !== undefined ||
+    query.rangeFilters.context_completed_at_lte !== undefined ||
+    query.groupBy === "context_status" ||
+    query.sort.some(
+      (clause) =>
+        clause.field === "context_status" ||
+        clause.field === "context_completed_at",
+    );
+  const resetExploration = explore.resetExploration;
+  useEffect(() => {
+    if (
+      data.list?.list_type === ListType.PERSONAL &&
+      hasPersonalListContextQuery
+    ) {
+      resetExploration();
+    }
+  }, [
+    data.list?.list_type,
+    hasPersonalListContextQuery,
+    resetExploration,
+  ]);
+
   const shouldInviteToRate = useMemo(
     () => (item: ListItem): boolean => {
-      if (!currentUser || item.status !== ItemStatus.COMPLETED) return false;
+      if (
+        !currentUser ||
+        item.content_item.current_user_tracking?.status !== "completed"
+      ) {
+        return false;
+      }
       return !item.member_ratings?.some(
         (rating: MemberRating) => rating.user?.id === currentUser.id,
       );

@@ -158,7 +158,8 @@ class ListItemModelTests(TestCase):
         )
         self.user_list = UserList.objects.create(
             owner=self.user,
-            name='Test List'
+            name='Test List',
+            list_type=UserList.ListType.SHARED,
         )
         self.content_item = ContentItem.objects.create(
             source_api='tmdb',
@@ -188,41 +189,39 @@ class ListItemModelTests(TestCase):
         self.assertEqual(item1.list_order, 1)
         self.assertEqual(item2.list_order, 2)
 
-    def test_completed_status_sets_timestamp(self):
-        """Test that setting status to COMPLETED sets completed_at timestamp."""
+    def test_completed_context_status_sets_timestamp(self):
+        """Shared-list completion sets its contextual timestamp."""
         item = ListItem.objects.create(
             user_list=self.user_list,
             content_item=self.content_item,
             added_by=self.user,
-            status=ListItem.Status.PENDING
+            context_status=ListItem.Status.PENDING
         )
 
-        self.assertIsNone(item.completed_at)
+        self.assertIsNone(item.context_completed_at)
 
-        # Mark as completed
-        item.status = ListItem.Status.COMPLETED
+        item.context_status = ListItem.Status.COMPLETED
         item.save()
 
         item.refresh_from_db()
-        self.assertIsNotNone(item.completed_at)
+        self.assertIsNotNone(item.context_completed_at)
 
-    def test_pending_status_clears_timestamp(self):
-        """Test that changing status back to PENDING clears completed_at."""
+    def test_pending_context_status_clears_timestamp(self):
+        """Returning shared context to pending clears its timestamp."""
         item = ListItem.objects.create(
             user_list=self.user_list,
             content_item=self.content_item,
             added_by=self.user,
-            status=ListItem.Status.COMPLETED
+            context_status=ListItem.Status.COMPLETED
         )
 
-        self.assertIsNotNone(item.completed_at)
+        self.assertIsNotNone(item.context_completed_at)
 
-        # Change back to pending
-        item.status = ListItem.Status.PENDING
+        item.context_status = ListItem.Status.PENDING
         item.save()
 
         item.refresh_from_db()
-        self.assertIsNone(item.completed_at)
+        self.assertIsNone(item.context_completed_at)
 
     def test_unique_list_order_per_list_constraint(self):
         """Test that list_order must be unique within a list."""

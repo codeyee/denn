@@ -32,7 +32,6 @@ interface UseListItemActionsOptions {
     nextStatus: ItemStatus
   ) => void;
   currentUserId?: number;
-  onRatingModalOpen?: (item: ListItem) => void;
 }
 
 interface UseListItemActionsReturn {
@@ -75,7 +74,6 @@ export function useListItemActions({
   onItemDeleted,
   onItemStatusUpdated,
   currentUserId,
-  onRatingModalOpen,
 }: UseListItemActionsOptions): UseListItemActionsReturn {
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -91,15 +89,17 @@ export function useListItemActions({
   const toggleStatusMutation = useToggleListItemStatusMutation<ToggleSnapshot>({
     onMutate: ({ itemId, nextStatus }) => {
       const target = listItems.find((i) => i.id === itemId);
-      const previousStatus = (target?.status ?? ItemStatus.PENDING) as ItemStatus;
+      const previousStatus = (
+        target?.context_status ?? ItemStatus.PENDING
+      ) as ItemStatus;
 
       setListItems((prev) =>
         prev.map((item) =>
           item.id === itemId
             ? {
                 ...item,
-                status: nextStatus,
-                completed_at:
+                context_status: nextStatus,
+                context_completed_at:
                   nextStatus === ItemStatus.COMPLETED
                     ? new Date().toISOString()
                     : null,
@@ -116,8 +116,9 @@ export function useListItemActions({
           item.id === itemId
             ? {
                 ...item,
-                status: snapshot?.previousStatus ?? ItemStatus.PENDING,
-                completed_at: null,
+                context_status:
+                  snapshot?.previousStatus ?? ItemStatus.PENDING,
+                context_completed_at: null,
               }
             : item
         )
@@ -126,28 +127,11 @@ export function useListItemActions({
     },
     onSuccess: ({ itemId, nextStatus }) => {
       setError(null);
-      const previous = listItems.find((i) => i.id === itemId)?.status as ItemStatus;
+      const previous = (
+        listItems.find((i) => i.id === itemId)?.context_status ??
+        ItemStatus.PENDING
+      ) as ItemStatus;
       onItemStatusUpdated?.(itemId, previous, nextStatus);
-
-      if (
-        nextStatus === ItemStatus.COMPLETED &&
-        currentUserId &&
-        onRatingModalOpen
-      ) {
-        const item = listItems.find((i) => i.id === itemId);
-        if (item) {
-          const hasUserRated =
-            item.member_ratings &&
-            Array.isArray(item.member_ratings) &&
-            item.member_ratings.some(
-              (rating: MemberRating) => rating.user?.id === currentUserId
-            );
-
-          if (!hasUserRated) {
-            onRatingModalOpen({ ...item, status: nextStatus });
-          }
-        }
-      }
     },
   });
 

@@ -9,7 +9,10 @@ import {
 import { Link } from "@tanstack/react-router";
 import { Card } from "../Card";
 import { ContentType } from "@/lib/types";
-import { formatSeasonTitle } from "@/lib/utils/titleUtils";
+import {
+  formatSeasonLocalTitle,
+  formatSeasonTitle,
+} from "@/lib/utils/titleUtils";
 import { Content } from "@/lib/types";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/common/ui/Button";
@@ -35,6 +38,7 @@ interface ContentCardProps {
   metadataSlot?: ReactNode;
   footerSlot?: ReactNode;
   showAddToList?: boolean;
+  seasonTitleScope?: "global" | "parent";
 }
 
 export function ContentCard({
@@ -45,6 +49,7 @@ export function ContentCard({
   metadataSlot,
   footerSlot,
   showAddToList = true,
+  seasonTitleScope = "global",
 }: ContentCardProps) {
   const [isNavigating, setIsNavigating] = useState(false);
   const modal = useContentCardModal(item);
@@ -80,7 +85,17 @@ export function ContentCard({
   const isSeason = item.type === "SEASON";
   const title =
     isSeason && "tv_show_name" in item
-      ? formatSeasonTitle(item.tv_show_name, item.title)
+      ? seasonTitleScope === "parent"
+        ? formatSeasonLocalTitle(
+            item.title,
+            "season_number" in item ? item.season_number : undefined,
+            item.tv_show_name,
+          )
+        : formatSeasonTitle(
+            item.tv_show_name,
+            item.title,
+            "season_number" in item ? item.season_number : undefined,
+          )
       : item.title;
   const detailLinkProps = item.denn_id
     ? {

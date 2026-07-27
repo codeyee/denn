@@ -16,6 +16,7 @@ import { useHoverPrefetch } from "@/lib/perf/useHoverPrefetch";
 import { getListItemTitle, getListItemSubtitle } from "./utils";
 import { ListItemCardHover } from "./components/ListItemCardHover";
 import { getRatingBadgeData } from "@/components/pages/ListDetailPage/utils";
+import { ListItemTrackingSection } from "@/components/common/tracking/ListItemTrackingSection";
 
 interface ListItemCardProps {
   item: ListItem;
@@ -125,9 +126,9 @@ export function ListItemCard({
       >
         {/* Badges - Positioned absolutely over the card image */}
         <div className="absolute top-3 right-3 z-20 flex flex-col items-end gap-2">
-          {item.status && (
+          {list.list_type === "SHARED" && item.context_status && (
             <StatusBadge
-              status={item.status}
+              status={item.context_status}
               className="backdrop-blur-md bg-black/40 shadow-lg"
             />
           )}
@@ -159,6 +160,13 @@ export function ListItemCard({
 
         {/* Footer Content - Simple info, no buttons (buttons only in hover) */}
         <Card.Footer className="flex-col gap-2">
+          <div className="relative z-20">
+            <ListItemTrackingSection
+              item={item}
+              onRate={() => onRateClick?.()}
+              compact
+            />
+          </div>
           {/* Metadata: Original Title / Authors / TV Show Name */}
           {subtitle && (
             <div className="text-white/60 text-xs line-clamp-3">

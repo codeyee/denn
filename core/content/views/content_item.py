@@ -365,24 +365,17 @@ class ContentItemDetailByIdView(APIView):
             ContentItem.objects.select_related('season_detail__tv_show'),
             pk=id,
         )
-        canonical_item = item
-        if item.content_type == ContentItem.ContentType.SEASON:
-            try:
-                canonical_item = item.season_detail.tv_show or item
-            except Exception:
-                canonical_item = item
-
         current_user_rating = None
         current_user_tracking = None
         if request.user.is_authenticated:
             current_user_rating = Rating.objects.filter(
                 user=request.user,
-                content_item=canonical_item,
+                content_item=item,
                 is_active=True,
             ).select_related('content_item').first()
             current_user_tracking = UserContentTracking.objects.filter(
                 user=request.user,
-                content_item=canonical_item,
+                content_item=item,
             ).first()
         from content.services.source_data_orchestrator import fetch_bulk_source_data
 
@@ -397,7 +390,6 @@ class ContentItemDetailByIdView(APIView):
                 'request': request,
                 'include_source_data': True,
                 'source_data_cache': source_data_cache,
-                'canonical_content_id': canonical_item.id,
                 'current_user_rating': current_user_rating,
                 'current_user_tracking': current_user_tracking,
             },

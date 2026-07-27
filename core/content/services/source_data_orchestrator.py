@@ -26,7 +26,7 @@ from core.middleware.perf_timing import (
     perf_record_proxy_batch,
 )
 
-from .local_content_store import detail_is_fresh
+from .local_content_store import detail_is_complete, detail_is_fresh
 from .local_content_store.mappers import MAPPERS
 from . import payload_reconstructor
 
@@ -61,6 +61,7 @@ def _hydrate_details(items: List[ContentItem]) -> List[ContentItem]:
             'streaming_platforms',
             'content_authors__author',
             'season_detail__episodes',
+            'season_children__content_item',
             'album_detail__tracks__track_authors__author',
             'game_detail__genres',
             'game_detail__themes',
@@ -76,6 +77,7 @@ def _classify(items: List[ContentItem]) -> Dict[str, List[ContentItem]]:
     fresh: List[ContentItem] = []
     stale: List[ContentItem] = []
     missing: List[ContentItem] = []
+    incomplete: List[ContentItem] = []
     force = bool(getattr(settings, 'FORCE_PROXY_FETCH', False))
 
     for item in items:
@@ -86,11 +88,18 @@ def _classify(items: List[ContentItem]) -> Dict[str, List[ContentItem]]:
             continue
         if detail is None:
             missing.append(item)
+        elif not detail_is_complete(item):
+            incomplete.append(item)
         elif detail_is_fresh(item):
             fresh.append(item)
         else:
             stale.append(item)
-    return {'fresh': fresh, 'stale': stale, 'missing': missing}
+    return {
+        'fresh': fresh,
+        'stale': stale,
+        'missing': missing,
+        'incomplete': incomplete,
+    }
 
 
 def _proxy_fetch(items: List[ContentItem], country_code: Optional[str]) -> Dict[int, Optional[Dict[str, Any]]]:
@@ -219,11 +228,16 @@ def fetch_bulk_source_data(
     fresh_items = classified['fresh']
     stale_items = classified['stale']
     missing_items = classified['missing']
-    synchronous_provider_items = missing_items + ([] if stale_while_revalidate else stale_items)
+    incomplete_items = classified['incomplete']
+    synchronous_provider_items = (
+        missing_items
+        + incomplete_items
+        + ([] if stale_while_revalidate else stale_items)
+    )
     perf_record_data_source(
         fresh=len(fresh_items),
         stale=len(stale_items),
-        missing=len(missing_items),
+        missing=len(missing_items) + len(incomplete_items),
         provider_fetches=len(synchronous_provider_items),
     )
 
@@ -250,7 +264,7 @@ def fetch_bulk_source_data(
     if needs_proxy:
         proxy_calls = _proxy_call_count(needs_proxy)
         proxy_results = _proxy_fetch(needs_proxy, country_code)
-        stale_id_set = {i.id for i in stale_items}
+        fallback_id_set = {i.id for i in stale_items + incomplete_items}
         persisted: List[ContentItem] = []
         for item in needs_proxy:
             payload = proxy_results.get(item.id)
@@ -258,7 +272,7 @@ def fetch_bulk_source_data(
                 _persist(item, payload, country_code)
                 refreshed_ids.append(item.id)
                 persisted.append(item)
-            elif item.id in stale_id_set:
+            elif item.id in fallback_id_set:
                 fallback = payload_reconstructor.from_local(item)
                 if fallback is not None:
                     fallback['is_stale'] = True

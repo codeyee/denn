@@ -55,7 +55,10 @@ class BrowseMetadataMapperTests(TestCase):
             content_type=ContentItem.ContentType.SEASON,
         )
         fields = build_browse_metadata(item, SEASON_DEMON_SLAYER_S01)
-        self.assertEqual(fields.display_title, 'Demon Slayer: Kimetsu no Yaiba')
+        self.assertEqual(
+            fields.display_title,
+            'Demon Slayer: Kimetsu no Yaiba: Season 1',
+        )
         self.assertEqual(fields.release_date, date(2019, 4, 6))
 
     def test_album_payload_picks_artist_authors_only(self):

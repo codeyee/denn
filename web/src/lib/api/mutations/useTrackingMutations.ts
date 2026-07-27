@@ -6,6 +6,7 @@ import {
 
 import { useToast } from "@/components/common/Toast";
 import { trackingActions } from "@/lib/api";
+import { ApiRequestError } from "@/lib/api/api";
 import { queryKeys } from "@/lib/api/queries/keys";
 import type {
   ContentItem,
@@ -18,11 +19,17 @@ type DetailSnapshot = Array<[QueryKey, ContentItem | undefined]>;
 interface TrackingVariables {
   contentId: number;
   status: TrackingStatus;
+  acknowledgeEffects?: boolean;
 }
 
 interface FavoriteVariables {
   contentId: number;
   isFavorite: boolean;
+}
+
+interface DeleteTrackingVariables {
+  contentId: number;
+  acknowledgeEffects?: boolean;
 }
 
 export function useSetTrackingStatusMutation() {
@@ -35,8 +42,8 @@ export function useSetTrackingStatusMutation() {
     TrackingVariables,
     { snapshot: DetailSnapshot }
   >({
-    mutationFn: ({ contentId, status }) =>
-      trackingActions.setStatus(contentId, status),
+    mutationFn: ({ contentId, status, acknowledgeEffects }) =>
+      trackingActions.setStatus(contentId, status, acknowledgeEffects),
     onMutate: async ({ contentId, status }) => {
       const snapshot = await snapshotContentDetails(queryClient);
       updateTrackingInCachedDetails(queryClient, contentId, (current) => ({
@@ -46,8 +53,10 @@ export function useSetTrackingStatusMutation() {
           status === "completed"
             ? current?.last_completed_at ?? new Date().toISOString()
             : current?.last_completed_at ?? null,
-        is_favorite: current?.is_favorite ?? false,
-        favorited_at: current?.favorited_at ?? null,
+        is_favorite:
+          status === "completed" ? current?.is_favorite ?? false : false,
+        favorited_at:
+          status === "completed" ? current?.favorited_at ?? null : null,
         created_at: current?.created_at ?? new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }));
@@ -55,6 +64,12 @@ export function useSetTrackingStatusMutation() {
     },
     onError: (error, _variables, context) => {
       restoreSnapshot(queryClient, context?.snapshot);
+      if (
+        error instanceof ApiRequestError &&
+        error.data.error === "TRACKING_EFFECTS_REQUIRE_CONFIRMATION"
+      ) {
+        return;
+      }
       showToast(error.message || "Could not update tracking.", "error");
     },
     onSuccess: (tracking, { contentId }) => {
@@ -116,10 +131,11 @@ export function useDeleteTrackingMutation() {
   return useMutation<
     void,
     Error,
-    { contentId: number },
+    DeleteTrackingVariables,
     { snapshot: DetailSnapshot }
   >({
-    mutationFn: ({ contentId }) => trackingActions.remove(contentId),
+    mutationFn: ({ contentId, acknowledgeEffects }) =>
+      trackingActions.remove(contentId, acknowledgeEffects),
     onMutate: async ({ contentId }) => {
       const snapshot = await snapshotContentDetails(queryClient);
       updateTrackingInCachedDetails(queryClient, contentId, () => null);
@@ -127,6 +143,12 @@ export function useDeleteTrackingMutation() {
     },
     onError: (error, _variables, context) => {
       restoreSnapshot(queryClient, context?.snapshot);
+      if (
+        error instanceof ApiRequestError &&
+        error.data.error === "TRACKING_EFFECTS_REQUIRE_CONFIRMATION"
+      ) {
+        return;
+      }
       showToast(error.message || "Could not remove tracking.", "error");
     },
     onSettled: () => invalidateTrackingResources(queryClient),

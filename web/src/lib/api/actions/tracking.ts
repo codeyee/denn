@@ -5,15 +5,21 @@ export const trackingActions = {
   setStatus: (
     contentId: number,
     status: TrackingStatus,
+    acknowledgeEffects = false,
   ): Promise<UserContentTracking> =>
     api.put<UserContentTracking>(
       `/content/tracking/${contentId}/`,
-      { status },
+      { status, acknowledge_effects: acknowledgeEffects },
       true,
     ),
 
-  remove: (contentId: number): Promise<void> =>
-    api.delete<void>(`/content/tracking/${contentId}/`, true),
+  remove: (contentId: number, acknowledgeEffects = false): Promise<void> =>
+    api.delete<void>(
+      `/content/tracking/${contentId}/${
+        acknowledgeEffects ? "?acknowledge_effects=true" : ""
+      }`,
+      true,
+    ),
 
   setFavorite: (
     contentId: number,

@@ -120,6 +120,7 @@ export interface ContentItem {
     average_rating: string | null;
     current_user_rating: Rating | null;
     current_user_tracking: UserContentTracking | null;
+    progress_policy: ProgressPolicy;
     created_at: string;
     source_data?: SourceData | string | null;
 }
@@ -165,9 +166,9 @@ export interface ListItem {
     list_order: number;
     content_item: ContentItemData;
     added_by: User;
-    status: ItemStatus;
+    context_status: ItemStatus | null;
     added_at: string;
-    completed_at: string | null;
+    context_completed_at: string | null;
     member_ratings: MemberRating[];
     list_rating: number | null;
     member_rating_count: number;
@@ -177,7 +178,7 @@ export interface ListItemCreate {
     source_api: SourceApi;
     external_id: string;
     content_type: ContentType;
-    status: ItemStatus;
+    context_status?: ItemStatus | null;
 }
 
 export enum ItemStatus {
@@ -250,6 +251,24 @@ export interface UserContentTracking {
     created_at: string;
     updated_at: string;
     should_prompt_rating?: boolean;
+    effects?: TrackingEffect[];
+}
+
+export type TrackingEffect =
+    | "rating_archived"
+    | "review_archived"
+    | "favorite_removed";
+
+export interface ProgressState {
+    value: TrackingStatus;
+    label: string;
+    is_final: boolean;
+}
+
+export interface ProgressPolicy {
+    content_type: ContentType;
+    final_status: TrackingStatus;
+    states: ProgressState[];
 }
 
 export interface Author {
@@ -331,6 +350,7 @@ export interface TVShowDetail {
 
 export interface TVSeason {
     id: string;
+    denn_id: number;
     season_number: number;
     title: string;
     description: string | null;
@@ -348,6 +368,8 @@ export interface TVSeasonDetail {
     description: string | null;
     image_url: string | null;
     tv_show_name: string | null;
+    tv_show_id?: number;
+    tv_show_external_id?: string;
     release_date: string | null;
     number_of_episodes: number;
     images: Image[];
@@ -537,6 +559,7 @@ export interface ContentItemData {
     average_rating: number | null;
     current_user_rating: Rating | null;
     current_user_tracking: UserContentTracking | null;
+    progress_policy: ProgressPolicy;
     created_at: string;
     source_data: SourceData;
 }
@@ -705,7 +728,7 @@ export interface ListWithItemsPreview extends ListSummary {
 
 export interface ListItemBasic {
     id: number;
-    status: ItemStatus;
+    context_status: ItemStatus | null;
     content_item: ContentItemBasic;
     list_order?: number;
 }

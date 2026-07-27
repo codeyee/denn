@@ -1,19 +1,18 @@
 import { useNavigate } from "@tanstack/react-router";
+import { LoaderCircle } from "lucide-react";
 
-import { VerticalList } from "@/components/common/lists/VerticalList";
 import type { ReactNode } from "react";
 import {
-  usePublicCompletedQuery,
   usePublicListsQuery,
-  usePublicRatingsQuery,
+  usePublicProgressQuery,
 } from "@/lib/api/queries/usePublicProfileQueries";
 import type {
   ProfileSearchParams,
   PublicProfileTabData,
 } from "@/lib/types";
-import { CompletedGrid, PublicListGrid } from "./ProfileCollections";
+import { PublicListGrid } from "./ProfileCollections";
+import { ProgressCollection } from "./ProgressCollection";
 import { ProfileFilters } from "./ProfileFilters";
-import { ReviewRow } from "./ReviewRow";
 import {
   ProfilePagination,
   ProfileTabEmpty,
@@ -28,24 +27,21 @@ interface ProfileTabContentProps {
 }
 
 export function ProfileTabContent(props: ProfileTabContentProps) {
-  if (props.search.tab === "completed") {
-    return <CompletedTab {...props} />;
-  }
-  if (props.search.tab === "ratings") {
-    return <RatingsTab {...props} />;
+  if (props.search.tab === "progress") {
+    return <ProgressTab {...props} />;
   }
   return <ListsTab {...props} />;
 }
 
-function CompletedTab({
+function ProgressTab({
   username,
   search,
   initialData,
 }: ProfileTabContentProps) {
-  const query = usePublicCompletedQuery(
+  const query = usePublicProgressQuery(
     username,
     search,
-    initialData?.tab === "completed" ? initialData.data : undefined,
+    initialData?.tab === "progress" ? initialData.data : undefined,
   );
   const changeSearch = useProfileSearchChange(username, search);
   if (query.isPending) return <ProfileTabLoading />;
@@ -55,56 +51,19 @@ function CompletedTab({
 
   return (
     <TabShell
-      title="Completed"
+      title="Progress"
       count={query.data.metadata.count}
       search={search}
       onChange={changeSearch}
+      isUpdating={query.isFetching}
     >
       {query.data.results.length > 0 ? (
-        <CompletedGrid items={query.data.results} />
+        <ProgressCollection
+          items={query.data.results}
+          view={search.view ?? "grid"}
+        />
       ) : (
-        <ProfileTabEmpty message="No completed titles match these filters." />
-      )}
-      <ProfilePagination
-        search={search}
-        totalPages={query.data.metadata.total_pages}
-        onChange={changeSearch}
-      />
-    </TabShell>
-  );
-}
-
-function RatingsTab({
-  username,
-  search,
-  initialData,
-}: ProfileTabContentProps) {
-  const query = usePublicRatingsQuery(
-    username,
-    search,
-    initialData?.tab === "ratings" ? initialData.data : undefined,
-  );
-  const changeSearch = useProfileSearchChange(username, search);
-  if (query.isPending) return <ProfileTabLoading />;
-  if (query.isError) {
-    return <ProfileTabError onRetry={() => void query.refetch()} />;
-  }
-
-  return (
-    <TabShell
-      title="Ratings & Reviews"
-      count={query.data.metadata.count}
-      search={search}
-      onChange={changeSearch}
-    >
-      {query.data.results.length > 0 ? (
-        <VerticalList spacing="md">
-          {query.data.results.map((rating) => (
-            <ReviewRow key={rating.id} rating={rating} />
-          ))}
-        </VerticalList>
-      ) : (
-        <ProfileTabEmpty message="No ratings match these filters." />
+        <ProfileTabEmpty message="No progress matches these filters." />
       )}
       <ProfilePagination
         search={search}
@@ -133,6 +92,7 @@ function ListsTab({ username, search, initialData }: ProfileTabContentProps) {
       count={query.data.metadata.count}
       search={search}
       onChange={changeSearch}
+      isUpdating={query.isFetching}
     >
       {query.data.results.length > 0 ? (
         <PublicListGrid lists={query.data.results} />
@@ -153,21 +113,36 @@ function TabShell({
   count,
   search,
   onChange,
+  isUpdating,
   children,
 }: {
   title: string;
   count: number;
   search: ProfileSearchParams;
   onChange: (updates: Partial<ProfileSearchParams>) => void;
+  isUpdating: boolean;
   children: ReactNode;
 }) {
   return (
     <section className="py-8 md:py-12" aria-labelledby="profile-tab-heading">
-      <div className="mb-5 flex items-baseline gap-3">
+      <div className="mb-5 flex flex-wrap items-center gap-3">
         <h2 id="profile-tab-heading" className="text-2xl font-bold text-white">
           {title}
         </h2>
         <span className="text-sm text-white/50">{count} total</span>
+        {isUpdating ? (
+          <span
+            role="status"
+            aria-live="polite"
+            className="ml-auto inline-flex items-center gap-2 text-xs font-medium text-white/55"
+          >
+            <LoaderCircle
+              aria-hidden="true"
+              className="size-3.5 animate-spin motion-reduce:animate-none"
+            />
+            Updating results
+          </span>
+        ) : null}
       </div>
       <ProfileFilters search={search} onChange={onChange} />
       {children}

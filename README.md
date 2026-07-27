@@ -75,6 +75,7 @@ For most work, read in this order:
 7. [`.docs/adr/0002-web-auth-cookies.md`](./.docs/adr/0002-web-auth-cookies.md)
 8. [`.docs/adr/0003-migrate-web-from-nextjs-to-tanstack-start.md`](./.docs/adr/0003-migrate-web-from-nextjs-to-tanstack-start.md)
 9. [`.docs/adr/0004-public-catalog-auth-boundary.md`](./.docs/adr/0004-public-catalog-auth-boundary.md)
+10. [`.docs/adr/0005-unified-personal-progress.md`](./.docs/adr/0005-unified-personal-progress.md)
 
 Operational rule:
 
@@ -390,6 +391,8 @@ Start here when you need project context:
   frontend stack (TanStack Start)
 - [`.docs/adr/0004-public-catalog-auth-boundary.md`](./.docs/adr/0004-public-catalog-auth-boundary.md) -
   public catalog and login-on-action boundary
+- [`.docs/adr/0005-unified-personal-progress.md`](./.docs/adr/0005-unified-personal-progress.md) -
+  unified, type-aware personal progress and independent seasons
 - [`.docs/contracts/internal-http.md`](./.docs/contracts/internal-http.md) -
   cross-service contract
 - [`.docs/observability.md`](./.docs/observability.md) - log schema,

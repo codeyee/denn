@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { ContentTrackingControls } from "@/components/pages/ContentDetailPage/components/ContentTrackingControls";
+import { ContentTrackingControls } from "./ContentTrackingControls";
 import {
   useDeleteTrackingMutation,
   useSetFavoriteMutation,
@@ -11,15 +11,18 @@ import type {
   TrackingStatus,
   UserContentTracking,
 } from "@/lib/types";
+import { getTrackingEffectDescription } from "@/lib/utils/trackingEffects";
 
 interface ListItemTrackingSectionProps {
   item: ListItem;
   onRate: (item: ListItem) => void;
+  compact?: boolean;
 }
 
 export function ListItemTrackingSection({
   item,
   onRate,
+  compact = false,
 }: ListItemTrackingSectionProps) {
   const [tracking, setTracking] = useState<UserContentTracking | null>(
     item.content_item.current_user_tracking ?? null,
@@ -44,8 +47,22 @@ export function ListItemTrackingSection({
       });
       setTracking(updated);
       if (updated.should_prompt_rating) onRate(item);
-    } catch {
+    } catch (error) {
       setTracking(previous);
+      const effectText = getTrackingEffectDescription(error);
+      if (
+        effectText !== null &&
+        window.confirm(
+          `Changing progress will ${effectText || "update related activity"}. Continue?`,
+        )
+      ) {
+        const updated = await setStatus.mutateAsync({
+          contentId: item.content_item.id,
+          status,
+          acknowledgeEffects: true,
+        });
+        setTracking(updated);
+      }
     }
   }
 
@@ -71,27 +88,50 @@ export function ListItemTrackingSection({
   }
 
   async function stopTracking() {
-    if (!window.confirm("Stop tracking this content?")) return;
     const previous = tracking;
     setTracking(null);
     try {
       await removeTracking.mutateAsync({ contentId: item.content_item.id });
-    } catch {
+    } catch (error) {
       setTracking(previous);
+      const effectText = getTrackingEffectDescription(error);
+      if (
+        effectText !== null &&
+        window.confirm(
+          `Stopping progress will ${effectText || "update related activity"}. Continue?`,
+        )
+      ) {
+        setTracking(null);
+        try {
+          await removeTracking.mutateAsync({
+            contentId: item.content_item.id,
+            acknowledgeEffects: true,
+          });
+        } catch {
+          setTracking(previous);
+        }
+      }
     }
   }
 
   return (
-    <section aria-label="Your personal tracking">
-      <h4 className="mb-2 text-sm font-semibold text-white/80">
-        Your tracking
-      </h4>
+    <section
+      aria-label="Your personal progress"
+      onClick={(event) => event.stopPropagation()}
+    >
+      {!compact ? (
+        <h4 className="mb-2 text-sm font-semibold text-white/80">
+          Your progress
+        </h4>
+      ) : null}
       <ContentTrackingControls
         tracking={tracking}
+        policy={item.content_item.progress_policy}
         disabled={disabled}
         onStatusChange={(status) => void changeStatus(status)}
         onFavoriteChange={(favorite) => void changeFavorite(favorite)}
         onRemove={() => void stopTracking()}
+        compact={compact}
       />
     </section>
   );
@@ -108,8 +148,9 @@ function optimisticTracking(
     status,
     last_completed_at:
       status === "completed" ? (current?.last_completed_at ?? now) : null,
-    is_favorite: current?.is_favorite ?? false,
-    favorited_at: current?.favorited_at ?? null,
+    is_favorite: status === "completed" ? current?.is_favorite ?? false : false,
+    favorited_at:
+      status === "completed" ? current?.favorited_at ?? null : null,
     created_at: current?.created_at ?? now,
     updated_at: now,
   };

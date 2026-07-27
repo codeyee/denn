@@ -48,6 +48,10 @@ class UserContentTracking(models.Model):
                 ),
                 name="tracking_favorite_date_consistent",
             ),
+            models.CheckConstraint(
+                condition=Q(is_favorite=False) | Q(status="completed"),
+                name="tracking_favorite_requires_completed",
+            ),
         ]
         indexes = [
             models.Index(

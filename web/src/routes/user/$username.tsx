@@ -13,21 +13,24 @@ import {
 } from "@/components/pages/PublicProfilePage";
 import { pickRandomFavoriteBanner } from "@/components/pages/PublicProfilePage/utils";
 import { prefetchPublicProfileQueries } from "@/lib/api/queries/server";
-import { publicProfileSearchSchema } from "@/lib/profileSearch";
+import {
+  profileDataSearchKey,
+  publicProfileSearchValidator,
+} from "@/lib/profileSearch";
 
 export const Route = createFileRoute("/user/$username")({
-  validateSearch: publicProfileSearchSchema,
-  loaderDeps: ({ search }) => ({ search }),
-  loader: async ({ context, params, deps }) => {
+  validateSearch: publicProfileSearchValidator,
+  loader: async ({ context, params, location }) => {
+    const search = publicProfileSearchValidator.parse(location.search);
     const initialData = await prefetchPublicProfileQueries(
       context.queryClient,
       context.session,
       params.username,
-      deps.search,
+      search,
     );
     return {
       username: params.username,
-      search: deps.search,
+      initialSearch: search,
       initialData,
       bannerMedia: pickRandomFavoriteBanner(initialData.overview),
     };
@@ -37,7 +40,7 @@ export const Route = createFileRoute("/user/$username")({
       { title: `@${params.username} | Denn` },
       {
         name: "description",
-        content: `See @${params.username}'s completed titles, ratings, reviews, favorites, and public lists on Denn.`,
+        content: `See @${params.username}'s progress, ratings, reviews, favorites, and public lists on Denn.`,
       },
     ],
     links: [
@@ -53,7 +56,12 @@ export const Route = createFileRoute("/user/$username")({
 });
 
 function PublicProfileRoute() {
-  const { username, search, initialData, bannerMedia } = Route.useLoaderData();
+  const { username, initialSearch, initialData, bannerMedia } =
+    Route.useLoaderData();
+  const search = Route.useSearch();
+  const initialTabData = sameDataSearch(search, initialSearch)
+    ? initialData.activeTab
+    : null;
   return (
     <div className="relative min-h-screen bg-background-logged-in">
       <Navbar />
@@ -61,11 +69,20 @@ function PublicProfileRoute() {
         username={username}
         search={search}
         initialOverview={initialData.overview}
-        initialTabData={initialData.activeTab}
+        initialTabData={initialTabData}
         initialBannerMedia={bannerMedia}
       />
       <Footer />
     </div>
+  );
+}
+
+function sameDataSearch(
+  current: ReturnType<typeof Route.useSearch>,
+  initial: ReturnType<typeof Route.useSearch>,
+) {
+  return (
+    profileDataSearchKey(current) === profileDataSearchKey(initial)
   );
 }
 

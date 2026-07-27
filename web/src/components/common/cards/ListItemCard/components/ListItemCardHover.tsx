@@ -7,6 +7,7 @@ import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { formatUserDisplayName } from "@/lib/utils/userUtils";
 import { isPersonalList } from "@/components/pages/ListDetailPage/utils";
 import { Card } from "../../Card";
+import { ListItemTrackingSection } from "@/components/common/tracking/ListItemTrackingSection";
 
 interface ListItemCardHoverProps {
   item: ListItem;
@@ -39,7 +40,9 @@ export function ListItemCardHover({
               <span className="text-xs text-white/60">Position:</span>
               <span className="text-sm font-semibold">#{item.list_order}</span>
             </div>
-            {item.status && <StatusBadge status={item.status} variant="compact" />}
+            {!personal && item.context_status ? (
+              <StatusBadge status={item.context_status} variant="compact" />
+            ) : null}
           </div>
 
           <div className="space-y-2 text-xs">
@@ -57,11 +60,11 @@ export function ListItemCardHover({
                 {formatReleaseDate(item.added_at)}
               </span>
             </div>
-            {item.completed_at && (
+            {!personal && item.context_completed_at && (
               <div>
-                <span className="text-white/50">Completed on:</span>{" "}
+                <span className="text-white/50">List completed on:</span>{" "}
                 <span className="text-white/80">
-                  {formatReleaseDate(item.completed_at)}
+                  {formatReleaseDate(item.context_completed_at)}
                 </span>
               </div>
             )}
@@ -76,6 +79,12 @@ export function ListItemCardHover({
             )}
           </div>
         </div>
+
+        <ListItemTrackingSection
+          item={item}
+          onRate={() => onRateClick?.()}
+          compact
+        />
 
         {showRatingInvitation && onRateClick && (
           <div className="pt-2 mt-2 border-t border-white/10">
@@ -103,35 +112,40 @@ export function ListItemCardHover({
         )}
 
         <div className="flex gap-2 pt-2 border-t border-white/10">
-          <Button
+          {!personal ? (
+            <Button
             size="sm"
             onClick={(e) => {
               e.stopPropagation();
-              onToggleStatus(item.id, item.status);
+              onToggleStatus(
+                item.id,
+                item.context_status ?? ItemStatus.PENDING,
+              );
             }}
             title={
-              item.status === ItemStatus.COMPLETED
-                ? "Mark as Pending"
-                : "Mark as Completed"
+              item.context_status === ItemStatus.COMPLETED
+                ? "Mark pending in this list"
+                : "Mark completed in this list"
             }
             className={`flex-1 cursor-pointer font-semibold transition-colors ${
-              item.status === ItemStatus.COMPLETED
+              item.context_status === ItemStatus.COMPLETED
                 ? "bg-white/10 hover:bg-white/20 text-white border border-white/20"
                 : "bg-green-600 hover:bg-green-700 text-white"
             }`}
           >
-            {item.status === ItemStatus.COMPLETED ? (
+            {item.context_status === ItemStatus.COMPLETED ? (
               <>
                 <Circle className="w-4 h-4 mr-2" />
-                <span className="text-xs">Mark as Pending</span>
+                <span className="text-xs">List: pending</span>
               </>
             ) : (
               <>
                 <CheckCircle className="w-4 h-4 mr-2" />
-                <span className="text-xs">Mark Complete</span>
+                <span className="text-xs">List: complete</span>
               </>
             )}
           </Button>
+          ) : null}
           <Button
             size="sm"
             onClick={(e) => {

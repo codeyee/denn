@@ -1,5 +1,5 @@
 from django.shortcuts import get_object_or_404
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -38,13 +38,25 @@ class UserContentTrackingView(APIView):
             user=request.user,
             content_item=content_item,
             status=serializer.validated_data["status"],
+            acknowledge_effects=serializer.validated_data["acknowledge_effects"],
         )
         transition.tracking.should_prompt_rating = transition.should_prompt_rating
+        transition.tracking.effects = list(transition.effects)
         return Response(UserContentTrackingSerializer(transition.tracking).data)
 
     @extend_schema(
         tags=["Tracking"],
         summary="Delete the current user's tracking state",
+        parameters=[
+            OpenApiParameter(
+                "acknowledge_effects",
+                bool,
+                description=(
+                    "Required when deletion archives a rating/review or "
+                    "removes a favorite."
+                ),
+            )
+        ],
         responses={204: None},
     )
     def delete(self, request, content_id):
@@ -52,7 +64,14 @@ class UserContentTrackingView(APIView):
             ContentItem.objects.select_related("season_detail__tv_show"),
             pk=content_id,
         )
-        delete_tracking(user=request.user, content_item=content_item)
+        delete_tracking(
+            user=request.user,
+            content_item=content_item,
+            acknowledge_effects=(
+                request.query_params.get("acknowledge_effects", "").lower()
+                == "true"
+            ),
+        )
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 

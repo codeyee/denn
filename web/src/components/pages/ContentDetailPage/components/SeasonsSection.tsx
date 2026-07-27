@@ -37,6 +37,7 @@ export function SeasonsSection({ detailData, contentItem }: SeasonsSectionProps)
           return (
             <ContentCard
               key={season.id}
+              seasonTitleScope="parent"
               item={{
                 ...seasonItem,
                 release_date: seasonItem.release_date === null ? undefined : seasonItem.release_date,
@@ -53,12 +54,14 @@ function createSeasonItem(season: TVSeason, tvShow: TVShowDetail) {
   const externalId = `${tvShow.id}:${season.season_number}`;
   return {
     id: externalId,
+    denn_id: season.denn_id,
     title: season.title || `Season ${season.season_number}`,
     image_url: season.image_url,
     release_date: season.release_date,
     number_of_episodes: season.number_of_episodes,
     description: season.description,
-    tv_show_name: null,
+    tv_show_name: tvShow.title,
+    season_number: season.season_number,
     type: "SEASON" as const,
     external_id: externalId,
     source_api: SourceApi.TMDB,

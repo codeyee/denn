@@ -13,9 +13,9 @@ class PublicListItemSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "list_order",
-            "status",
+            "context_status",
             "added_at",
-            "completed_at",
+            "context_completed_at",
             "content",
         ]
 

@@ -5,6 +5,7 @@ from content.models import UserContentTracking
 
 class TrackingStatusSerializer(serializers.Serializer):
     status = serializers.ChoiceField(choices=UserContentTracking.Status.choices)
+    acknowledge_effects = serializers.BooleanField(required=False, default=False)
 
 
 class TrackingFavoriteSerializer(serializers.Serializer):
@@ -14,6 +15,11 @@ class TrackingFavoriteSerializer(serializers.Serializer):
 class UserContentTrackingSerializer(serializers.ModelSerializer):
     content_id = serializers.IntegerField(source="content_item_id")
     should_prompt_rating = serializers.BooleanField(read_only=True, default=False)
+    effects = serializers.ListField(
+        child=serializers.CharField(),
+        read_only=True,
+        default=list,
+    )
 
     class Meta:
         model = UserContentTracking
@@ -26,5 +32,6 @@ class UserContentTrackingSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
             "should_prompt_rating",
+            "effects",
         ]
         read_only_fields = fields

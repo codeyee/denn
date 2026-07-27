@@ -30,11 +30,13 @@ class ListItem(models.Model):
         help_text='User who added this item'
     )
 
-    status = models.CharField(
+    context_status = models.CharField(
         max_length=10,
         choices=Status.choices,
-        default=Status.PENDING,
-        help_text='Status of the item'
+        null=True,
+        blank=True,
+        default=None,
+        help_text='Shared-list context; personal progress lives in tracking'
     )
 
     added_at = models.DateTimeField(
@@ -42,10 +44,10 @@ class ListItem(models.Model):
         help_text='Date and time of addition'
     )
 
-    completed_at = models.DateTimeField(
+    context_completed_at = models.DateTimeField(
         null=True,
         blank=True,
-        help_text='Date and time of completion'
+        help_text='Date and time of contextual shared-list completion'
     )
 
     list_order = models.IntegerField(
@@ -58,7 +60,10 @@ class ListItem(models.Model):
         ordering = ['list_order', '-added_at']
 
         indexes = [
-            models.Index(fields=['user_list', 'status']),
+            models.Index(
+                fields=['user_list', 'context_status'],
+                name='list_items_context_4aac12_idx',
+            ),
             models.Index(fields=['content_item']),
             models.Index(fields=['-added_at']),
             models.Index(fields=['user_list', 'list_order']),
@@ -79,12 +84,15 @@ class ListItem(models.Model):
         return f"{self.content_item} in {self.user_list.name}"
 
     def save(self, *args, **kwargs):
-        if self.status == self.Status.COMPLETED and not self.completed_at:
+        if (
+            self.context_status == self.Status.COMPLETED
+            and not self.context_completed_at
+        ):
             from django.utils import timezone
-            self.completed_at = timezone.now()
+            self.context_completed_at = timezone.now()
 
-        elif self.status == self.Status.PENDING:
-            self.completed_at = None
+        elif self.context_status != self.Status.COMPLETED:
+            self.context_completed_at = None
 
         if (self.list_order or 0) <= 0 and self.user_list_id:
             max_position = (

@@ -5,7 +5,7 @@ from collections import defaultdict
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
-from django.db.models import Avg, Count
+from django.db.models import Count
 
 from authentication.models import UserPublicProfile
 from content.models import (
@@ -21,7 +21,7 @@ USERNAME_PATTERN = re.compile(r"^[a-z0-9._-]+$")
 
 
 class Command(BaseCommand):
-    help = "Backfill public profiles, season parents and canonical tracking."
+    help = "Backfill public profiles, season parents and unified personal progress."
 
     def add_arguments(self, parser):
         parser.add_argument("--dry-run", action="store_true")
@@ -44,22 +44,39 @@ class Command(BaseCommand):
         report["profiles_created"] = self._backfill_profiles(apply=apply)
         report["season_parents_linked"] = self._backfill_season_parents(apply=apply)
 
-        (
-            ratings_seeded,
-            rating_parent_gaps,
-            season_ratings_rehomed,
-            season_rating_conflicts_deactivated,
-        ) = self._seed_from_ratings(apply=apply)
-        lists_seeded, list_parent_gaps = self._seed_from_personal_lists(apply=apply)
+        ratings_seeded, ratings_normalized = self._seed_from_ratings(apply=apply)
+        completed_lists_seeded = self._seed_from_personal_lists(apply=apply)
+        backlog_lists_seeded = self._seed_missing_personal_list_backlog(
+            apply=apply
+        )
         report["tracking_seeded_from_ratings"] = ratings_seeded
-        report["tracking_seeded_from_personal_lists"] = lists_seeded
-        report["season_ratings_rehomed"] = season_ratings_rehomed
-        report["season_rating_conflicts_deactivated"] = (
-            season_rating_conflicts_deactivated
+        report["active_ratings_normalized_to_completed"] = ratings_normalized
+        report["tracking_seeded_from_personal_lists"] = (
+            completed_lists_seeded + backlog_lists_seeded
         )
-        report["seasons_without_parent"] = sorted(
-            set(rating_parent_gaps + list_parent_gaps + self._season_parent_gaps())
+        report["tracking_seeded_from_personal_lists_as_completed"] = (
+            completed_lists_seeded
         )
+        report["tracking_seeded_from_personal_lists_as_backlog"] = (
+            backlog_lists_seeded
+        )
+        report["personal_context_rows_cleared"] = self._clear_personal_context(
+            apply=apply
+        )
+        report["seasons_without_parent"] = self._season_parent_gaps()
+        report["historical_season_parent_rating_ambiguity"] = {
+            "not_inferable_from_current_schema": True,
+            "parent_ratings_with_season_children": Rating.objects.filter(
+                content_item__content_type=ContentItem.ContentType.TV_SHOW,
+                content_item__season_children__isnull=False,
+            ).distinct().count(),
+        }
+        report["direct_season_ratings"] = Rating.objects.filter(
+            content_item__content_type=ContentItem.ContentType.SEASON,
+        ).count()
+        report["direct_season_tracking"] = UserContentTracking.objects.filter(
+            content_item__content_type=ContentItem.ContentType.SEASON,
+        ).count()
         return report
 
     def _base_report(self):
@@ -97,7 +114,7 @@ class Command(BaseCommand):
         )
         shared_rows_omitted = ListItem.objects.filter(
             user_list__list_type="SHARED",
-            status=ListItem.Status.COMPLETED,
+            context_status=ListItem.Status.COMPLETED,
         ).count()
 
         return {
@@ -138,62 +155,36 @@ class Command(BaseCommand):
 
     def _seed_from_ratings(self, *, apply):
         seeded = 0
-        parent_gaps = []
-        rehomed = 0
-        conflicts_deactivated = 0
+        normalized = 0
         for rating in Rating.objects.select_related(
             "user",
             "content_item",
-            "content_item__season_detail__tv_show",
         ).order_by("created_at", "id"):
-            canonical = self._canonical_content(rating.content_item)
-            if canonical is None:
-                parent_gaps.append(rating.content_item_id)
-                continue
-            if rating.content_item_id != canonical.id:
-                existing_canonical_rating = Rating.objects.filter(
-                    user=rating.user,
-                    content_item=canonical,
-                ).exclude(pk=rating.pk).first()
-                if existing_canonical_rating is None:
-                    rehomed += 1
-                    if apply:
-                        previous_content_id = rating.content_item_id
-                        rating.content_item = canonical
-                        rating.save(update_fields=["content_item", "updated_at"])
-                        self._refresh_rating_aggregate(previous_content_id)
-                elif rating.is_active:
-                    conflicts_deactivated += 1
-                    if apply:
-                        rating.is_active = False
-                        rating.save(update_fields=["is_active", "updated_at"])
-            if self._ensure_completed_tracking(
+            created, changed = self._ensure_completed_tracking(
                 user=rating.user,
-                content_item=canonical,
+                content_item=rating.content_item,
                 completed_at=rating.created_at,
+                normalize_status=rating.is_active,
                 apply=apply,
-            ):
+            )
+            if created:
                 seeded += 1
-        return seeded, parent_gaps, rehomed, conflicts_deactivated
+            if changed:
+                normalized += 1
+        return seeded, normalized
 
     def _seed_from_personal_lists(self, *, apply):
         earliest = defaultdict(lambda: None)
-        parent_gaps = []
         items = ListItem.objects.filter(
             user_list__list_type="PERSONAL",
-            status=ListItem.Status.COMPLETED,
+            context_status=ListItem.Status.COMPLETED,
         ).select_related(
             "user_list__owner",
             "content_item",
-            "content_item__season_detail__tv_show",
         )
-        for item in items.order_by("completed_at", "added_at", "id"):
-            canonical = self._canonical_content(item.content_item)
-            if canonical is None:
-                parent_gaps.append(item.content_item_id)
-                continue
-            key = (item.user_list.owner_id, canonical.id)
-            evidence_at = item.completed_at or item.added_at
+        for item in items.order_by("context_completed_at", "added_at", "id"):
+            key = (item.user_list.owner_id, item.content_item_id)
+            evidence_at = item.context_completed_at or item.added_at
             previous = earliest[key]
             if previous is None or evidence_at < previous:
                 earliest[key] = evidence_at
@@ -204,14 +195,16 @@ class Command(BaseCommand):
         )
         seeded = 0
         for (user_id, content_id), completed_at in sorted(earliest.items()):
-            if self._ensure_completed_tracking(
+            created, _changed = self._ensure_completed_tracking(
                 user=users[user_id],
                 content_item=content_items[content_id],
                 completed_at=completed_at,
+                normalize_status=False,
                 apply=apply,
-            ):
+            )
+            if created:
                 seeded += 1
-        return seeded, parent_gaps
+        return seeded
 
     def _ensure_completed_tracking(
         self,
@@ -219,6 +212,7 @@ class Command(BaseCommand):
         user,
         content_item,
         completed_at,
+        normalize_status,
         apply,
     ):
         existing = UserContentTracking.objects.filter(
@@ -226,17 +220,25 @@ class Command(BaseCommand):
             content_item=content_item,
         ).first()
         if existing is not None:
+            status_changed = (
+                normalize_status
+                and existing.status != UserContentTracking.Status.COMPLETED
+            )
             if (
                 apply
-                and existing.status == UserContentTracking.Status.COMPLETED
                 and (
-                    existing.last_completed_at is None
+                    status_changed
+                    or existing.last_completed_at is None
                     or completed_at < existing.last_completed_at
                 )
             ):
+                if status_changed:
+                    existing.status = UserContentTracking.Status.COMPLETED
                 existing.last_completed_at = completed_at
-                existing.save(update_fields=["last_completed_at", "updated_at"])
-            return False
+                existing.save(
+                    update_fields=["status", "last_completed_at", "updated_at"]
+                )
+            return False, status_changed
 
         if apply:
             UserContentTracking.objects.create(
@@ -245,25 +247,68 @@ class Command(BaseCommand):
                 status=UserContentTracking.Status.COMPLETED,
                 last_completed_at=completed_at,
             )
-        return True
+        return True, False
 
-    def _canonical_content(self, content_item):
-        if content_item.content_type != ContentItem.ContentType.SEASON:
-            return content_item
-        try:
-            return content_item.season_detail.tv_show
-        except Exception:
-            return None
-
-    def _refresh_rating_aggregate(self, content_item_id):
-        aggregate = Rating.objects.filter(
-            content_item_id=content_item_id,
-            is_active=True,
-        ).aggregate(
-            rating_count=Count("id"),
-            average_rating=Avg("score"),
+    def _seed_missing_personal_list_backlog(self, *, apply):
+        candidates = set(
+            ListItem.objects.filter(
+                user_list__list_type="PERSONAL",
+            )
+            .exclude(context_status=ListItem.Status.COMPLETED)
+            .order_by()
+            .values_list("user_list__owner_id", "content_item_id")
+            .distinct()
         )
-        ContentItem.objects.filter(pk=content_item_id).update(**aggregate)
+        if not candidates:
+            return 0
+
+        user_ids = {user_id for user_id, _content_id in candidates}
+        content_ids = {content_id for _user_id, content_id in candidates}
+        existing = set(
+            UserContentTracking.objects.filter(
+                user_id__in=user_ids,
+                content_item_id__in=content_ids,
+            ).values_list("user_id", "content_item_id")
+        )
+        rating_pairs = set(
+            Rating.objects.filter(
+                user_id__in=user_ids,
+                content_item_id__in=content_ids,
+            ).values_list("user_id", "content_item_id")
+        )
+        completed_list_pairs = set(
+            ListItem.objects.filter(
+                user_list__list_type="PERSONAL",
+                context_status=ListItem.Status.COMPLETED,
+                user_list__owner_id__in=user_ids,
+                content_item_id__in=content_ids,
+            ).values_list("user_list__owner_id", "content_item_id")
+        )
+        missing = sorted(
+            candidates - existing - rating_pairs - completed_list_pairs
+        )
+        if apply:
+            UserContentTracking.objects.bulk_create(
+                [
+                    UserContentTracking(
+                        user_id=user_id,
+                        content_item_id=content_item_id,
+                        status=UserContentTracking.Status.BACKLOG,
+                    )
+                    for user_id, content_item_id in missing
+                ],
+                ignore_conflicts=True,
+            )
+        return len(missing)
+
+    def _clear_personal_context(self, *, apply):
+        rows = ListItem.objects.filter(
+            user_list__list_type="PERSONAL",
+        ).exclude(context_status__isnull=True)
+        count = rows.count()
+        if apply:
+            rows.update(context_status=None, context_completed_at=None)
+        return count
 
     def _season_parent_gaps(self):
         return list(

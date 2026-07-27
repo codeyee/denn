@@ -57,7 +57,7 @@ export function PublicListPage({ list }: { list: PublicListDetail }) {
                     item={profileContentCardItem(item.content)}
                     showAddToList={false}
                     badgeSlot={
-                      item.status === "COMPLETED" ? (
+                      item.context_status === "COMPLETED" ? (
                         <span className="grid h-8 w-8 place-items-center rounded-full bg-emerald-500/90 text-black">
                           <CheckCircle2 aria-label="Completed" className="h-4 w-4" />
                         </span>

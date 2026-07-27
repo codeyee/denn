@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 class LocalContentSummarySerializer(serializers.Serializer):
     id = serializers.IntegerField()
     type = serializers.CharField(source="content_type")
+    season_number = serializers.SerializerMethodField()
     title = serializers.SerializerMethodField()
     subtitle = serializers.SerializerMethodField()
     date = serializers.SerializerMethodField()
@@ -19,9 +20,23 @@ class LocalContentSummarySerializer(serializers.Serializer):
     backdrop = serializers.SerializerMethodField()
     authors = serializers.SerializerMethodField()
 
+    def get_season_number(self, obj) -> Optional[int]:
+        if obj.content_type != ContentItem.ContentType.SEASON:
+            return None
+        detail = self._detail(obj)
+        return getattr(detail, "season_number", None) if detail else None
+
     def get_title(self, obj) -> str:
         browse_meta = self._related(obj, "browse_meta")
         detail = self._detail(obj)
+        if obj.content_type == ContentItem.ContentType.SEASON and detail:
+            from content.services.content_display import format_season_title
+
+            return format_season_title(
+                tv_show_name=getattr(detail, "tv_show_name", ""),
+                season_number=getattr(detail, "season_number", None),
+                season_title=getattr(detail, "title", ""),
+            )
         title = (
             getattr(browse_meta, "display_title", "")
             or getattr(detail, "title", "")

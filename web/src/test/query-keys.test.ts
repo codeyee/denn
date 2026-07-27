@@ -56,16 +56,17 @@ describe("queryKeys", () => {
       "CO",
     ]);
     expect(
-      queryKeys.profiles.tab("alice", "ratings", {
-        tab: "ratings",
+      queryKeys.profiles.tab("alice", "progress", {
+        tab: "progress",
         page: 2,
-        kind: "reviews",
+        reviewed: true,
+        view: "list",
       }),
     ).toEqual([
       "profiles",
       "alice",
-      "ratings",
-      { tab: "ratings", page: 2, kind: "reviews" },
+      "progress",
+      { tab: "progress", page: 2, reviewed: true },
     ]);
   });
 });

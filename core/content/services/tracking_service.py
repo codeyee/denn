@@ -6,6 +6,7 @@ from django.db.models import OuterRef, Subquery
 from django.utils import timezone
 
 from content.models import ContentItem, Rating, UserContentTracking
+from content.services.progress_policy import is_status_supported
 from core.error_codes import ErrorCode
 from core.exceptions import APIError
 
@@ -17,54 +18,59 @@ FAVORITE_LIMIT_PER_TYPE = 5
 class TrackingTransition:
     tracking: UserContentTracking
     should_prompt_rating: bool
+    effects: tuple[str, ...] = ()
 
 
-def annotate_list_items_with_canonical_tracking(queryset, user):
+@transaction.atomic
+def ensure_tracking(
+    *,
+    user: User,
+    content_item: ContentItem,
+    status: str = UserContentTracking.Status.BACKLOG,
+) -> UserContentTracking:
+    if not is_status_supported(content_item.content_type, status):
+        raise APIError(
+            ErrorCode.TRACKING_STATUS_UNSUPPORTED,
+            extra_data={
+                "content_type": content_item.content_type,
+                "status": status,
+            },
+        )
+    _lock_user(user)
+    tracking, _created = UserContentTracking.objects.get_or_create(
+        user=user,
+        content_item=content_item,
+        defaults={"status": status},
+    )
+    return tracking
+
+
+def annotate_list_items_with_personal_tracking(queryset, user):
     tracking = UserContentTracking.objects.filter(
         user=user,
-        content_item_id=OuterRef("content_item__season_detail__tv_show_id"),
+        content_item_id=OuterRef("content_item_id"),
     )
     return queryset.annotate(
-        canonical_tracking_content_id=Subquery(
+        personal_tracking_content_id=Subquery(
             tracking.values("content_item_id")[:1]
         ),
-        canonical_tracking_status=Subquery(tracking.values("status")[:1]),
-        canonical_tracking_last_completed_at=Subquery(
+        personal_tracking_status=Subquery(tracking.values("status")[:1]),
+        personal_tracking_last_completed_at=Subquery(
             tracking.values("last_completed_at")[:1]
         ),
-        canonical_tracking_is_favorite=Subquery(
+        personal_tracking_is_favorite=Subquery(
             tracking.values("is_favorite")[:1]
         ),
-        canonical_tracking_favorited_at=Subquery(
+        personal_tracking_favorited_at=Subquery(
             tracking.values("favorited_at")[:1]
         ),
-        canonical_tracking_created_at=Subquery(
+        personal_tracking_created_at=Subquery(
             tracking.values("created_at")[:1]
         ),
-        canonical_tracking_updated_at=Subquery(
+        personal_tracking_updated_at=Subquery(
             tracking.values("updated_at")[:1]
         ),
     )
-
-
-def canonicalize_tracking_content(content_item: ContentItem) -> ContentItem:
-    if content_item.content_type != ContentItem.ContentType.SEASON:
-        return content_item
-
-    try:
-        tv_show = content_item.season_detail.tv_show
-    except Exception:
-        tv_show = None
-
-    if tv_show is None:
-        raise APIError(
-            ErrorCode.TRACKING_PARENT_MISSING,
-            extra_data={
-                "content_item_id": content_item.pk,
-                "requires_backfill": True,
-            },
-        )
-    return tv_show
 
 
 @transaction.atomic
@@ -73,13 +79,21 @@ def transition_tracking(
     user: User,
     content_item: ContentItem,
     status: str,
+    acknowledge_effects: bool = False,
 ) -> TrackingTransition:
-    canonical_item = canonicalize_tracking_content(content_item)
+    if not is_status_supported(content_item.content_type, status):
+        raise APIError(
+            ErrorCode.TRACKING_STATUS_UNSUPPORTED,
+            extra_data={
+                "content_type": content_item.content_type,
+                "status": status,
+            },
+        )
     _lock_user(user)
 
     tracking, created = UserContentTracking.objects.select_for_update().get_or_create(
         user=user,
-        content_item=canonical_item,
+        content_item=content_item,
         defaults={
             "status": status,
             "last_completed_at": (
@@ -94,10 +108,32 @@ def transition_tracking(
 
     rating = (
         Rating.objects.select_for_update()
-        .filter(user=user, content_item=canonical_item)
+        .filter(user=user, content_item=content_item)
         .first()
     )
     should_prompt_rating = False
+    effects = []
+
+    if (
+        not created
+        and previous_status == UserContentTracking.Status.COMPLETED
+        and status != UserContentTracking.Status.COMPLETED
+    ):
+        if rating is not None and rating.is_active:
+            effects.append(
+                "review_archived" if (rating.comment or "").strip() else "rating_archived"
+            )
+        if tracking.is_favorite:
+            effects.append("favorite_removed")
+        if effects and not acknowledge_effects:
+            raise APIError(
+                ErrorCode.TRACKING_EFFECTS_REQUIRE_CONFIRMATION,
+                extra_data={
+                    "effects": effects,
+                    "current_status": previous_status,
+                    "requested_status": status,
+                },
+            )
 
     if status == UserContentTracking.Status.COMPLETED:
         if not created and previous_status != UserContentTracking.Status.COMPLETED:
@@ -111,11 +147,18 @@ def transition_tracking(
     elif rating is not None and rating.is_active:
         rating.is_active = False
         rating.save(update_fields=["is_active", "updated_at"])
+        if tracking.is_favorite:
+            tracking.is_favorite = False
+            tracking.favorited_at = None
+    elif status != UserContentTracking.Status.COMPLETED and tracking.is_favorite:
+        tracking.is_favorite = False
+        tracking.favorited_at = None
 
     tracking.save()
     return TrackingTransition(
         tracking=tracking,
         should_prompt_rating=should_prompt_rating,
+        effects=tuple(effects),
     )
 
 
@@ -128,12 +171,11 @@ def save_rating(
     comment: str = "",
     spoiler: bool = False,
 ) -> Rating:
-    canonical_item = canonicalize_tracking_content(content_item)
     _lock_user(user)
 
     tracking, created = UserContentTracking.objects.select_for_update().get_or_create(
         user=user,
-        content_item=canonical_item,
+        content_item=content_item,
         defaults={
             "status": UserContentTracking.Status.COMPLETED,
             "last_completed_at": timezone.now(),
@@ -147,7 +189,7 @@ def save_rating(
     normalized_comment = (comment or "").strip()
     rating, _created = Rating.objects.update_or_create(
         user=user,
-        content_item=canonical_item,
+        content_item=content_item,
         defaults={
             "score": score,
             "comment": normalized_comment,
@@ -165,12 +207,11 @@ def set_favorite(
     content_item: ContentItem,
     is_favorite: bool,
 ) -> UserContentTracking:
-    canonical_item = canonicalize_tracking_content(content_item)
     _lock_user(user)
 
     tracking = UserContentTracking.objects.select_for_update().filter(
         user=user,
-        content_item=canonical_item,
+        content_item=content_item,
     ).first()
     if tracking is None or (
         is_favorite and tracking.status != UserContentTracking.Status.COMPLETED
@@ -183,7 +224,7 @@ def set_favorite(
             .filter(
                 user=user,
                 is_favorite=True,
-                content_item__content_type=canonical_item.content_type,
+                content_item__content_type=content_item.content_type,
             )
             .exclude(pk=tracking.pk)
             .count()
@@ -192,7 +233,7 @@ def set_favorite(
             raise APIError(
                 ErrorCode.FAVORITE_LIMIT_REACHED,
                 extra_data={
-                    "content_type": canonical_item.content_type,
+                    "content_type": content_item.content_type,
                     "limit": FAVORITE_LIMIT_PER_TYPE,
                 },
             )
@@ -204,22 +245,43 @@ def set_favorite(
 
 
 @transaction.atomic
-def delete_tracking(*, user: User, content_item: ContentItem) -> bool:
-    canonical_item = canonicalize_tracking_content(content_item)
+def delete_tracking(
+    *,
+    user: User,
+    content_item: ContentItem,
+    acknowledge_effects: bool = False,
+) -> bool:
     _lock_user(user)
 
     tracking = UserContentTracking.objects.select_for_update().filter(
         user=user,
-        content_item=canonical_item,
+        content_item=content_item,
     ).first()
     if tracking is None:
         return False
 
     rating = Rating.objects.select_for_update().filter(
         user=user,
-        content_item=canonical_item,
+        content_item=content_item,
         is_active=True,
     ).first()
+    effects = []
+    if rating is not None:
+        effects.append(
+            "review_archived" if (rating.comment or "").strip() else "rating_archived"
+        )
+    if tracking.is_favorite:
+        effects.append("favorite_removed")
+    if effects and not acknowledge_effects:
+        raise APIError(
+            ErrorCode.TRACKING_EFFECTS_REQUIRE_CONFIRMATION,
+            extra_data={
+                "effects": effects,
+                "current_status": tracking.status,
+                "requested_status": None,
+            },
+        )
+
     if rating is not None:
         rating.is_active = False
         rating.save(update_fields=["is_active", "updated_at"])

@@ -8,6 +8,17 @@ interface RequestConfig extends RequestInit {
   requiresAuth?: boolean;
 }
 
+export class ApiRequestError extends Error {
+  constructor(
+    public readonly status: number,
+    public readonly data: Record<string, unknown>,
+    message: string,
+  ) {
+    super(message);
+    this.name = "ApiRequestError";
+  }
+}
+
 export async function apiRequest<T = unknown>(
   endpoint: string,
   config: RequestConfig = {},
@@ -45,7 +56,9 @@ export async function apiRequest<T = unknown>(
       useAuthStore.getState().clearSession();
       useAuthStore.getState().setSessionResolution("expired");
     }
-    throw new Error(
+    throw new ApiRequestError(
+      response.status,
+      errorData,
       `Request failed (${response.status})${message ? `: ${message}` : ""}`,
     );
   }

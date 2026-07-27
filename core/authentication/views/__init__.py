@@ -4,6 +4,7 @@ from .profile import (
     PublicProfileCompletedView,
     PublicProfileListsView,
     PublicProfileOverviewView,
+    PublicProfileProgressView,
     PublicProfileRatingsView,
 )
 from .register import RegisterView
@@ -16,6 +17,7 @@ __all__ = [
     "PublicProfileCompletedView",
     "PublicProfileListsView",
     "PublicProfileOverviewView",
+    "PublicProfileProgressView",
     "PublicProfileRatingsView",
     "RegisterView",
 ]

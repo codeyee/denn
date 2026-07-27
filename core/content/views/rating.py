@@ -1,6 +1,6 @@
 from rest_framework import viewsets, status
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.db.models import Avg, Count, Q
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiExample, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
@@ -128,9 +128,10 @@ class RatingViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
         if self.action == 'list':
             queryset = queryset.filter(is_active=True)
         elif self.action == 'retrieve':
-            queryset = queryset.filter(
-                Q(is_active=True) | Q(user=self.request.user)
-            )
+            visible = Q(is_active=True)
+            if self.request.user.is_authenticated:
+                visible |= Q(user=self.request.user)
+            queryset = queryset.filter(visible)
 
         content_item_id = self.request.query_params.get('content_item_id')
         if content_item_id:
@@ -161,6 +162,8 @@ class RatingViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
         return RatingSerializer
 
     def get_permissions(self):
+        if self.action in ['list', 'retrieve']:
+            return [AllowAny()]
         if self.action in ['update', 'partial_update', 'destroy']:
             return [IsAuthenticated(), IsOwnerOfRating()]
 
@@ -197,14 +200,27 @@ class RatingViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
         return Response(RatingSerializer(rating).data)
 
     def list(self, request, *args, **kwargs):
-
         queryset = self.get_queryset()
+        content_item_id = request.query_params.get('content_item_id')
+        source_api = request.query_params.get('source_api')
+        external_id = request.query_params.get('external_id')
+
+        if (
+            not request.user.is_authenticated
+            and not content_item_id
+            and not (source_api and external_id)
+        ):
+            return Response(
+                {
+                    'detail': (
+                        'Anonymous rating reads require content_item_id '
+                        'or source_api and external_id.'
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         if request.query_params.get('stats_only') == 'true':
-            content_item_id = request.query_params.get('content_item_id')
-            source_api = request.query_params.get('source_api')
-            external_id = request.query_params.get('external_id')
-
             if not content_item_id and not (source_api and external_id):
                 return Response(
                     {'detail': 'Debes proporcionar content_item_id o (source_api y external_id).'},

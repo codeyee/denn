@@ -25,7 +25,7 @@ from content.permissions import IsOwnerOrReadOnly
 from content.services.list_service import get_list_stats
 from content.services.bulk_check_service import check_items_in_lists, ensure_content_items
 from content.services.tracking_service import (
-    annotate_list_items_with_canonical_tracking,
+    annotate_list_items_with_personal_tracking,
 )
 
 from rest_flex_fields.views import FlexFieldsMixin
@@ -190,7 +190,7 @@ class UserListViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
             'content_item__season_detail__tv_show',
             'added_by',
         ).prefetch_related(*items_prefetches)
-        items_qs = annotate_list_items_with_canonical_tracking(
+        items_qs = annotate_list_items_with_personal_tracking(
             items_qs,
             user,
         ).order_by(

@@ -109,7 +109,7 @@ REDOC_UI_SETTINGS = {
 # Enum name overrides for better OpenAPI schema generation
 ENUM_NAME_OVERRIDES = {
     "ListTypeEnum": "content.models.user_list.UserList.ListType",
-    "StatusEnum": "content.models.list_item.ListItem.Status",
+    "ListContextStatusEnum": "content.models.list_item.ListItem.Status",
     "ContentTypeEnum": "content.models.content_item.ContentItem.ContentType",
     "SourceAPIEnum": "content.models.content_item.ContentItem.SourceAPI",
 }

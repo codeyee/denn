@@ -1,12 +1,24 @@
 import { ListPlus, Star } from "lucide-react";
 
+import { ContentTrackingControls } from "@/components/common/tracking/ContentTrackingControls";
 import { Button } from "@/components/common/ui/Button";
+import type {
+  ProgressPolicy,
+  TrackingStatus,
+  UserContentTracking,
+} from "@/lib/types";
 
 interface ContentActionsProps {
   isAuthenticated?: boolean;
   hasUserRating?: boolean;
   onAddToList?: () => void;
   onRateContent?: () => void;
+  tracking?: UserContentTracking | null;
+  progressPolicy?: ProgressPolicy;
+  isTrackingLoading?: boolean;
+  onTrackingStatusChange?: (status: TrackingStatus) => void;
+  onFavoriteChange?: (isFavorite: boolean) => void;
+  onDeleteTracking?: () => void;
   align?: "center" | "start";
 }
 
@@ -15,9 +27,15 @@ export function ContentActions({
   hasUserRating,
   onAddToList,
   onRateContent,
+  tracking,
+  progressPolicy,
+  isTrackingLoading = false,
+  onTrackingStatusChange,
+  onFavoriteChange,
+  onDeleteTracking,
   align = "start",
 }: ContentActionsProps) {
-  if (!onAddToList && !onRateContent) return null;
+  if (!onAddToList && !onRateContent && !progressPolicy) return null;
 
   return (
     <div className={align === "center" ? "text-center" : undefined}>
@@ -47,6 +65,20 @@ export function ContentActions({
             {hasUserRating ? "Edit Rating" : "Rate This"}
           </Button>
         )}
+        {isAuthenticated &&
+        progressPolicy &&
+        onTrackingStatusChange &&
+        onFavoriteChange &&
+        onDeleteTracking ? (
+          <ContentTrackingControls
+            tracking={tracking ?? null}
+            policy={progressPolicy}
+            disabled={isTrackingLoading}
+            onStatusChange={onTrackingStatusChange}
+            onFavoriteChange={onFavoriteChange}
+            onRemove={onDeleteTracking}
+          />
+        ) : null}
       </div>
       {!isAuthenticated && (
         <p className="mt-2 line-clamp-1 max-w-xl font-sans text-xs text-white/80 md:text-sm">

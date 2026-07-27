@@ -26,8 +26,8 @@ interface UseViewerStateReturn {
  */
 function resolveGroupKey(item: ListItem, groupBy: GroupByField): string {
   switch (groupBy) {
-    case "status":
-      return item.status;
+    case "context_status":
+      return item.context_status ?? "";
     case "content_type":
       return item.content_item.content_type;
     case "source_api":

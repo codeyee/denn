@@ -24,7 +24,7 @@ from django.db.models import QuerySet
 
 # field -> ORM lookup (filter side)
 ALLOWED_FILTERS: Dict[str, str] = {
-    'status': 'status',
+    'context_status': 'context_status',
     'content_type': 'content_item__content_type',
     'source_api': 'content_item__source_api',
     'added_by': 'added_by_id',
@@ -37,8 +37,8 @@ RANGE_FILTERS: Dict[str, Tuple[str, str]] = {
     'list_rating_lte': ('member_rating_avg_annotated__lte', 'float'),
     'added_at_gte': ('added_at__gte', 'datetime'),
     'added_at_lte': ('added_at__lte', 'datetime'),
-    'completed_at_gte': ('completed_at__gte', 'datetime'),
-    'completed_at_lte': ('completed_at__lte', 'datetime'),
+    'context_completed_at_gte': ('context_completed_at__gte', 'datetime'),
+    'context_completed_at_lte': ('context_completed_at__lte', 'datetime'),
     'release_date_gte': ('content_item__browse_meta__release_date__gte', 'date'),
     'release_date_lte': ('content_item__browse_meta__release_date__lte', 'date'),
 }
@@ -47,8 +47,8 @@ RANGE_FILTERS: Dict[str, Tuple[str, str]] = {
 ALLOWED_SORTS: Dict[str, str] = {
     'list_order': 'list_order',
     'added_at': 'added_at',
-    'completed_at': 'completed_at',
-    'status': 'status',
+    'context_completed_at': 'context_completed_at',
+    'context_status': 'context_status',
     'content_type': 'content_item__content_type',
     'list_rating': 'member_rating_avg_annotated',
     'display_title': 'content_item__browse_meta__display_title',
@@ -59,7 +59,7 @@ ALLOWED_SORTS: Dict[str, str] = {
 
 # field -> grouping config (orm field, label_resolver_name)
 ALLOWED_GROUPS: Dict[str, str] = {
-    'status': 'status',
+    'context_status': 'context_status',
     'content_type': 'content_item__content_type',
     'source_api': 'content_item__source_api',
     'added_by': 'added_by_id',
@@ -195,7 +195,7 @@ def apply_query(queryset: QuerySet, query: ListItemQuery) -> QuerySet:
 # --------- group header builder ---------
 
 GROUP_LABELS: Dict[str, Dict[str, str]] = {
-    'status': {
+    'context_status': {
         'PENDING': 'Pending',
         'COMPLETED': 'Completed',
     },
@@ -217,8 +217,8 @@ GROUP_LABELS: Dict[str, Dict[str, str]] = {
 
 
 def _resolve_group_key(item, group_by: str) -> Optional[str]:
-    if group_by == 'status':
-        return item.status
+    if group_by == 'context_status':
+        return item.context_status
     if group_by == 'content_type':
         return item.content_item.content_type
     if group_by == 'source_api':

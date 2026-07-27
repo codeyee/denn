@@ -8,8 +8,10 @@ import { describe, expect, it, vi } from "vitest";
 
 import { ToastProvider } from "@/components/common/Toast";
 import { trackingActions } from "@/lib/api";
+import { ApiRequestError } from "@/lib/api/api";
 import { useSetTrackingStatusMutation } from "@/lib/api/mutations";
 import { queryKeys } from "@/lib/api/queries";
+import { getTrackingEffectDescription } from "@/lib/utils/trackingEffects";
 import {
   ContentType,
   SourceApi,
@@ -49,6 +51,21 @@ describe("tracking optimistic updates", () => {
       queryClient.getQueryData<ContentItem>(key)?.current_user_tracking?.status,
     ).toBe("backlog");
   });
+
+  it("turns server-declared side effects into explicit confirmation copy", () => {
+    const error = new ApiRequestError(
+      409,
+      {
+        error: "TRACKING_EFFECTS_REQUIRE_CONFIRMATION",
+        effects: ["review_archived", "favorite_removed"],
+      },
+      "Confirmation required",
+    );
+
+    expect(getTrackingEffectDescription(error)).toBe(
+      "archive your rating and review and remove this favorite",
+    );
+  });
 });
 
 function contentItem(): ContentItem {
@@ -68,6 +85,14 @@ function contentItem(): ContentItem {
       favorited_at: null,
       created_at: "2026-01-01T00:00:00Z",
       updated_at: "2026-01-01T00:00:00Z",
+    },
+    progress_policy: {
+      content_type: ContentType.MOVIE,
+      final_status: "completed",
+      states: [
+        { value: "backlog", label: "Plan to watch", is_final: false },
+        { value: "completed", label: "Watched", is_final: true },
+      ],
     },
     created_at: "2026-01-01T00:00:00Z",
     source_data: null,

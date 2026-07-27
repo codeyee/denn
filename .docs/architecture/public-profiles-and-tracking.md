@@ -8,8 +8,8 @@ personal tracking, ratings, favorites, and public-list read model.
 - `User.username` is the stable public identifier and
   `UserPublicProfile` owns the editable public `bio` and `avatar_url`.
 - `UserContentTracking` is the canonical personal state for one
-  `(user, content item)` pair. `ListItem.status` remains contextual list
-  state and must not be used as personal tracking.
+  `(user, content item)` pair. `ListItem.context_status` is nullable,
+  shared-list context and must not be used as personal tracking.
 - `Rating` owns score, review text, spoiler state, and whether that
   rating is currently active.
 - `UserList.visibility` is independent from `UserList.list_type`.
@@ -39,26 +39,35 @@ profile data from their dedicated endpoints.
 
 ## Tracking State Machine
 
-`UserContentTracking` supports:
+`UserContentTracking` uses one backend-owned, type-aware policy:
 
-- `backlog`
-- `in_progress`
-- `completed`
-- `on_hold`
-- `dropped`
+- movie: `backlog`, `in_progress`, `dropped`, `completed`;
+- TV show, season, book, and game: `backlog`, `in_progress`, `on_hold`,
+  `dropped`, `completed`;
+- album: `backlog`, `in_progress`, `completed`.
+
+The content API serializes the supported values and labels. Every selector in
+content detail, personal lists, and shared lists consumes that policy instead
+of defining another frontend state map.
 
 All transitions run through `content.services.tracking_service` inside a
 database transaction.
 
-- Any state may transition to any other state.
+- Adding content to a personal list creates `backlog` tracking when none
+  exists and preserves any existing state. Shared-list additions do not
+  change personal tracking.
+- Any supported state may transition to any other supported state for that
+  content type.
 - Rating a title creates or moves tracking to `completed`.
 - Manual completion asks for a rating only when there is no active
   rating.
-- Leaving `completed` preserves score, review, and favorite data but
-  makes the rating publicly inactive.
+- Leaving `completed` archives the preserved rating/review and removes the
+  favorite. If either effect applies, the API first returns a conflict that
+  lists the effects and requires explicit acknowledgement.
 - Returning to `completed` reactivates the preserved rating.
-- Deleting tracking inactivates the historical rating and clears the
-  favorite without deleting rating history.
+- Deleting tracking first reports any rating/review archive or favorite
+  removal, requires explicit acknowledgement, then inactivates the historical
+  rating and clears the favorite without deleting rating history.
 - Global aggregates and all public surfaces include active ratings only.
 
 Tracking records carry `last_completed_at`, `is_favorite`, and
@@ -71,16 +80,13 @@ forced to false when no review exists.
 Favorites are a tracking attribute, separate from rating score.
 
 - A title must be completed before it can become a favorite.
-- Each user may preserve at most five favorites per canonical content
+- Each user may preserve at most five active favorites per content
   type.
-- Temporarily inactive favorites still count toward the quota.
 - Quota conflicts return HTTP 409 with
   `FAVORITE_LIMIT_REACHED`.
-- A `SEASON` is canonicalized to its persisted parent `TV_SHOW` before
-  tracking is written.
-- If the local season-parent relationship is missing, the write returns
-  a recoverable error and requires the backfill. It never calls
-  `proxy` synchronously.
+- A `SEASON` targets its own persisted `ContentItem`. Its
+  `SeasonDetail.tv_show` relation supplies hierarchy and navigation, not state
+  redirection.
 
 The favorite quota locks the user row before counting and writing. The
 concurrency test runs on databases that support `select_for_update`;
@@ -91,6 +97,7 @@ SQLite skips that database-specific assertion.
 Anonymous reads:
 
 - `GET /api/profiles/<username>/`
+- `GET /api/profiles/<username>/progress/`
 - `GET /api/profiles/<username>/completed/`
 - `GET /api/profiles/<username>/ratings/`
 - `GET /api/profiles/<username>/lists/`
@@ -104,13 +111,17 @@ Authenticated writes:
 - `DELETE /api/content/tracking/<content_id>/`
 - `PATCH /api/content/tracking/<content_id>/favorite/`
 
-Profile collection endpoints use 24 rows by default and cap
-`page_size` at 48. Their supported filters are:
+Profile collection endpoints use 24 rows by default and cap `page_size` at 48.
+New clients use the unified Progress endpoint. Its supported filters are text,
+multiple progress statuses, multiple content types, series/season subtype,
+rating presence, review presence, favorite, score range, and sort. `type` and
+`status` accept comma-separated values. Sorting separates the criterion
+(`updated`, `completed`, `title`, or `score`) from `order=asc|desc`. The older
+Completed and Ratings endpoints are compatibility projections over the same
+tracking source.
 
-- completed: text, content type, completion date, title, and score;
-- ratings: text, content type, review presence, favorite, score range,
-  and sort;
-- lists: text, owner/member role, creation/update time, and name.
+The lists collection supports text, owner/member role, creation/update time,
+and name.
 
 Public profile endpoints are throttled at 120 requests per minute per
 IP. A private or nonexistent list returns the same 404 response to an
@@ -150,17 +161,26 @@ into a login redirect.
 
 Content-detail query keys include `viewerId` or `anonymous`, preventing
 personal rating/tracking data from crossing cache scopes. Profile keys
-include username, tab, and validated filters. The route loader
-prefetches overview and the active tab together and returns the initial
-payload explicitly so the first client render matches SSR without a
-`HydrationBoundary`.
+include username, tab, and validated filters. On initial entry, the route
+loader prefetches overview and the active tab together and returns the payload
+explicitly so the first client render matches SSR without a
+`HydrationBoundary`. Search-parameter changes remain client-side: the mounted
+profile stays visible and TanStack Query preserves the previous result while
+the next filtered page is fetched.
 
 ## Public Profile UI
 
 `/user/$username` is anonymous, shareable, and SSR-rendered. It has
 validated search parameters, route metadata and canonical URL, one
-`main`, one `h1`, explicit pending/error/404 states, and tabs for
-Overview, Completed, Ratings & Reviews, and Lists.
+`main`, one `h1`, explicit pending/error/404 states, and tabs for Overview,
+Progress, and Lists. Progress renders each tracked content item once and
+composes status, rating/review, and favorite metadata into that row.
+It offers a poster grid and a horizontal review-style list over the same
+paginated result and cache key. The selected view stays in the URL but is not
+sent to Core as a data filter. Content types and progress statuses are
+independent multi-select chip groups. Sort criterion and direction are
+independent controls, and secondary categorical filters use
+keyboard-accessible icon menus.
 
 The approved visual direction stays inside the existing Denn system:
 
@@ -171,6 +191,8 @@ The approved visual direction stays inside the existing Denn system:
 - direct external avatar loading with `no-referrer` and an initials
   fallback;
 - spoiler reviews hidden behind an accessible reveal control;
+- compact review indicators that navigate to the public, content-scoped
+  ratings section without exposing private account fields;
 - keyboard tabs, visible focus, 44px targets, stable geometry, reduced
   motion, and lazy non-banner media.
 
@@ -194,14 +216,23 @@ The command is transactional and idempotent. It:
 
 - creates missing public profiles;
 - links locally resolvable season parents;
-- seeds completed tracking from ratings using `created_at`;
+- seeds completed tracking from ratings using `created_at` and normalizes
+  active-rating invariants;
 - seeds from completed personal-list items using the earliest available
   date;
+- seeds all other personal-list membership as `backlog` without overwriting
+  existing tracking;
+- clears contextual state from personal-list rows after progress is seeded;
+- preserves shared-list state as contextual state;
 - never attributes a shared-list completion without the user's own
   rating;
-- reports username anomalies and case collisions, content/rating
-  duplicates, missing browse metadata, unresolved season parents, and
-  omitted shared rows.
+- never rehomes new season state to a TV show;
+- reports username anomalies and case collisions, content/rating duplicates,
+  missing browse metadata, unresolved season parents, historical
+  season-to-parent attribution ambiguity, and omitted shared rows.
 
 Use the operational procedure in
 [`../runbooks/public-profile-tracking-backfill.md`](../runbooks/public-profile-tracking-backfill.md).
+
+The structural decision is recorded in
+[`../adr/0005-unified-personal-progress.md`](../adr/0005-unified-personal-progress.md).

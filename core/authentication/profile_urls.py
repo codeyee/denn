@@ -5,6 +5,7 @@ from authentication.views import (
     PublicProfileCompletedView,
     PublicProfileListsView,
     PublicProfileOverviewView,
+    PublicProfileProgressView,
     PublicProfileRatingsView,
 )
 
@@ -13,6 +14,11 @@ app_name = "profiles"
 
 urlpatterns = [
     path("me/", CurrentUserPublicProfileView.as_view(), name="me"),
+    path(
+        "<str:username>/progress/",
+        PublicProfileProgressView.as_view(),
+        name="progress",
+    ),
     path(
         "<str:username>/completed/",
         PublicProfileCompletedView.as_view(),

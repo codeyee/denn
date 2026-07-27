@@ -3,12 +3,9 @@ import { Search, X } from "lucide-react";
 
 import { Button } from "@/components/common/ui/Button";
 import { Input } from "@/components/common/ui/Input";
-import {
-  CONTENT_TYPE_DEFINITIONS,
-  DISCOVERY_CONTENT_TYPES,
-} from "@/lib/contentTypes";
 import type { ProfileSearchParams } from "@/lib/types";
-import { FilterSelect, ProfileRatingFilters } from "./ProfileRatingFilters";
+import { FilterSelect } from "./ProfileRatingFilters";
+import { ProfileProgressToolbar } from "./ProfileProgressToolbar";
 
 interface ProfileFiltersProps {
   search: ProfileSearchParams;
@@ -16,6 +13,13 @@ interface ProfileFiltersProps {
 }
 
 export function ProfileFilters({ search, onChange }: ProfileFiltersProps) {
+  if (search.tab === "progress") {
+    return <ProfileProgressToolbar search={search} onChange={onChange} />;
+  }
+  return <ListProfileFilters search={search} onChange={onChange} />;
+}
+
+function ListProfileFilters({ search, onChange }: ProfileFiltersProps) {
   const [query, setQuery] = useState(search.q ?? "");
   useEffect(() => setQuery(search.q ?? ""), [search.q]);
 
@@ -43,24 +47,7 @@ export function ProfileFilters({ search, onChange }: ProfileFiltersProps) {
             <Search aria-hidden="true" className="h-4 w-4" />
           </Button>
         </div>
-        {search.tab !== "lists" ? (
-          <FilterSelect
-            value={search.type ?? ""}
-            label="Content type"
-            onChange={(value) =>
-              onChange({
-                type: (value as ProfileSearchParams["type"]) || undefined,
-              })
-            }
-          >
-            <option value="">All types</option>
-            {DISCOVERY_CONTENT_TYPES.map((type) => (
-              <option key={type} value={type}>
-                {CONTENT_TYPE_DEFINITIONS[type].pluralLabel}
-              </option>
-            ))}
-          </FilterSelect>
-        ) : (
+        {search.tab === "lists" ? (
           <FilterSelect
             value={search.role ?? "all"}
             label="List role"
@@ -72,12 +59,9 @@ export function ProfileFilters({ search, onChange }: ProfileFiltersProps) {
             <option value="owner">Owner</option>
             <option value="member">Member</option>
           </FilterSelect>
-        )}
+        ) : null}
         <SortSelect search={search} onChange={onChange} />
       </div>
-      {search.tab === "ratings" ? (
-        <ProfileRatingFilters search={search} onChange={onChange} />
-      ) : null}
       <div className="mt-3 flex justify-end">
         <Button
           type="button"
@@ -88,7 +72,11 @@ export function ProfileFilters({ search, onChange }: ProfileFiltersProps) {
               q: undefined,
               type: undefined,
               sort: undefined,
-              kind: undefined,
+              order: undefined,
+              status: undefined,
+              tvKind: undefined,
+              rated: undefined,
+              reviewed: undefined,
               favorite: undefined,
               minScore: undefined,
               maxScore: undefined,
@@ -109,21 +97,14 @@ function SortSelect({
   onChange,
 }: ProfileFiltersProps) {
   const options =
-    search.tab === "completed"
+    search.tab === "progress"
       ? [
-          ["date_desc", "Recently completed"],
-          ["date_asc", "Oldest completed"],
+          ["recent", "Recently updated"],
+          ["oldest", "Oldest update"],
           ["title", "Title A–Z"],
           ["-score", "Highest rated"],
         ]
-      : search.tab === "ratings"
-        ? [
-            ["recent", "Most recent"],
-            ["oldest", "Oldest"],
-            ["title", "Title A–Z"],
-            ["-score", "Highest score"],
-          ]
-        : [
+      : [
             ["updated", "Recently updated"],
             ["created", "Recently created"],
             ["name", "Name A–Z"],

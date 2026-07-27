@@ -11,6 +11,7 @@ import { ListContentRenderer } from "./components/ListContentRenderer";
 import { ListModals } from "./components/ListModals";
 import type { useListDetailController } from "./hooks/useListDetailController";
 import { ListErrorState, ListLoadingState } from "./ListDetailStates";
+import { ListType } from "@/lib/types";
 
 type Controller = ReturnType<typeof useListDetailController>;
 
@@ -50,6 +51,7 @@ export function ListDetailView({ controller }: { controller: Controller }) {
               <ExploreToolbar
                 query={query}
                 totalItemCount={data.totalItemCount}
+                showListContext={data.list.list_type === ListType.SHARED}
                 isReorderMode={reordering.isReorderMode}
                 canApplySort={canApplySort}
                 applySortHint={

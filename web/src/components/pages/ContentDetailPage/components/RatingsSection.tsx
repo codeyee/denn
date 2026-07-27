@@ -1,5 +1,5 @@
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/common/ui/Button";
 import { useRatingsListQuery, RATINGS_PAGE_SIZE } from "@/lib/api/queries";
 import type { ContentItem, Rating } from "@/lib/types";
@@ -27,6 +27,14 @@ export function RatingsSection({
     pageSize: RATINGS_PAGE_SIZE,
   });
 
+  useEffect(() => {
+    if (window.location.hash !== "#ratings") return;
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById("ratings")?.scrollIntoView({ block: "start" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [contentItem.id]);
+
   const metadata = ratingsQuery.data?.metadata;
   const error =
     ratingsQuery.error instanceof Error ? ratingsQuery.error.message : null;
@@ -41,7 +49,7 @@ export function RatingsSection({
 
   if (ratingsQuery.isLoading && page === 1) {
     return (
-      <div className="layout-content mt-8">
+      <div id="ratings" className="layout-content mt-8 scroll-mt-24">
         <div className="flex items-center justify-center min-h-[200px]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4" />
@@ -53,7 +61,7 @@ export function RatingsSection({
   }
 
   return (
-    <div className="layout-content mt-8">
+    <div id="ratings" className="layout-content mt-8 scroll-mt-24">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-white">Ratings</h2>
       </div>

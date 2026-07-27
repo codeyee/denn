@@ -73,7 +73,7 @@ export function useListOperations({
                     source_api: contentItem.source_api as SourceApi,
                     external_id: contentItem.external_id,
                     content_type: contentItem.content_type as ContentType,
-                    status: "PENDING",
+                    context_status: "PENDING",
                 } as ListItemCreate,
             });
 
@@ -132,9 +132,9 @@ export function useListOperations({
                             source_api: contentItem.source_api as SourceApi,
                             external_id: `${tvShowId}:${seasonNumber}`,
                             content_type: ContentType.SEASON,
-                            status: "PENDING",
+                            context_status: "PENDING",
                         } as ListItemCreate,
-                        "id,status"
+                        "id,context_status"
                     );
 
                     addedSeasons.push(seasonNumber);
@@ -206,7 +206,7 @@ export function useListOperations({
                                 external_id: contentItem.external_id,
                                 content_type:
                                     contentItem.content_type as ContentType,
-                                status: "PENDING",
+                                context_status: "PENDING",
                             } as ListItemCreate,
                         });
                         showToast("Added to list", "success");

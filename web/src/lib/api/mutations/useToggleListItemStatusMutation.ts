@@ -39,8 +39,8 @@ export function useToggleListItemStatusMutation<TContext = unknown>(
   return useMutation<unknown, Error, ToggleVariables, TContext | undefined>({
     mutationFn: ({ listId, itemId, nextStatus }) =>
       listItemActions.patch(listId, itemId, {
-        status: nextStatus,
-        completed_at:
+        context_status: nextStatus,
+        context_completed_at:
           nextStatus === ItemStatus.COMPLETED ? new Date().toISOString() : null,
       }),
     onMutate: async (vars) => {

@@ -104,8 +104,14 @@ def _map_tv_show(payload: Dict[str, Any]) -> BrowseFields:
 
 
 def _map_season(payload: Dict[str, Any]) -> BrowseFields:
+    from content.services.content_display import format_season_title
+
     return BrowseFields(
-        display_title=normalized_title(payload),
+        display_title=format_season_title(
+            tv_show_name=payload.get("tv_show_name") or "",
+            season_number=payload.get("season_number"),
+            season_title=normalized_title(payload),
+        ),
         release_date=parse_iso_date(payload.get('release_date')),
     )
 

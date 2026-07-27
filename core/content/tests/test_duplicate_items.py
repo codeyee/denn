@@ -2,7 +2,12 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 from django.contrib.auth.models import User
-from content.models import UserList, ListItem, ContentItem
+from content.models import (
+    UserList,
+    ListItem,
+    ContentItem,
+    UserContentTracking,
+)
 
 
 class DuplicateItemValidationTests(APITestCase):
@@ -39,14 +44,22 @@ class DuplicateItemValidationTests(APITestCase):
             'source_api': 'tmdb',
             'external_id': '101',
             'content_type': 'MOVIE',
-            'status': 'PENDING'
+            'context_status': 'PENDING'
         }
 
         response = self.client.post(url, data, format='json')
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertIn('id', response.data)
-        self.assertEqual(response.data['status'], 'PENDING')
+        self.assertIsNone(response.data['context_status'])
+        tracking = UserContentTracking.objects.get(
+            user=self.user,
+            content_item__external_id='101',
+        )
+        self.assertEqual(
+            tracking.status,
+            UserContentTracking.Status.BACKLOG,
+        )
 
     def test_duplicate_item_returns_400(self):
         """
@@ -58,7 +71,7 @@ class DuplicateItemValidationTests(APITestCase):
             'source_api': 'tmdb',
             'external_id': '101',
             'content_type': 'MOVIE',
-            'status': 'PENDING'
+            'context_status': 'PENDING'
         }
 
         # First add - should succeed
@@ -87,7 +100,7 @@ class DuplicateItemValidationTests(APITestCase):
             'source_api': 'tmdb',
             'external_id': '101',
             'content_type': 'MOVIE',
-            'status': 'PENDING'
+            'context_status': 'PENDING'
         }
 
         # First add
@@ -103,8 +116,8 @@ class DuplicateItemValidationTests(APITestCase):
         existing_item = second_response.data['existing_item']
         self.assertIn('id', existing_item)
         self.assertIn('added_at', existing_item)
-        self.assertIn('status', existing_item)
-        self.assertEqual(existing_item['status'], 'PENDING')
+        self.assertIn('context_status', existing_item)
+        self.assertIsNone(existing_item['context_status'])
 
     def test_same_item_different_list_allowed(self):
         """
@@ -117,10 +130,16 @@ class DuplicateItemValidationTests(APITestCase):
             'source_api': 'tmdb',
             'external_id': '101',
             'content_type': 'MOVIE',
-            'status': 'PENDING'
+            'context_status': 'PENDING'
         }
         response1 = self.client.post(url1, data, format='json')
         self.assertEqual(response1.status_code, status.HTTP_201_CREATED)
+        tracking = UserContentTracking.objects.get(
+            user=self.user,
+            content_item__external_id='101',
+        )
+        tracking.status = UserContentTracking.Status.COMPLETED
+        tracking.save(update_fields=['status', 'updated_at'])
 
         # Add same item to different list - should succeed
         url2 = reverse('content:lists:items-list', kwargs={'list_pk': self.another_list.id})
@@ -128,6 +147,47 @@ class DuplicateItemValidationTests(APITestCase):
 
         self.assertEqual(response2.status_code, status.HTTP_201_CREATED)
         self.assertNotEqual(response1.data['id'], response2.data['id'])
+        tracking.refresh_from_db()
+        self.assertEqual(
+            tracking.status,
+            UserContentTracking.Status.COMPLETED,
+        )
+        self.assertEqual(
+            UserContentTracking.objects.filter(
+                user=self.user,
+                content_item=tracking.content_item,
+            ).count(),
+            1,
+        )
+
+    def test_shared_list_does_not_create_personal_tracking(self):
+        shared_list = UserList.objects.create(
+            name='Shared List',
+            owner=self.user,
+            list_type=UserList.ListType.SHARED,
+        )
+        url = reverse(
+            'content:lists:items-list',
+            kwargs={'list_pk': shared_list.id},
+        )
+
+        response = self.client.post(
+            url,
+            {
+                'source_api': 'tmdb',
+                'external_id': 'shared-101',
+                'content_type': 'MOVIE',
+            },
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertFalse(
+            UserContentTracking.objects.filter(
+                user=self.user,
+                content_item__external_id='shared-101',
+            ).exists()
+        )
 
     def test_duplicate_with_different_status_still_fails(self):
         """
@@ -141,7 +201,7 @@ class DuplicateItemValidationTests(APITestCase):
             'source_api': 'tmdb',
             'external_id': '101',
             'content_type': 'MOVIE',
-            'status': 'PENDING'
+            'context_status': 'PENDING'
         }
         response1 = self.client.post(url, data1, format='json')
         self.assertEqual(response1.status_code, status.HTTP_201_CREATED)
@@ -151,7 +211,7 @@ class DuplicateItemValidationTests(APITestCase):
             'source_api': 'tmdb',
             'external_id': '101',
             'content_type': 'MOVIE',
-            'status': 'COMPLETED'
+            'context_status': 'COMPLETED'
         }
         response2 = self.client.post(url, data2, format='json')
 

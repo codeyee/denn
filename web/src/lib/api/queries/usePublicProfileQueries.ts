@@ -4,10 +4,9 @@ import { profileActions } from "@/lib/api";
 import type {
   PaginatedProfileResults,
   ProfileSearchParams,
-  PublicCompletedItem,
   PublicListSummary,
+  PublicProgressItem,
   PublicProfileOverview,
-  PublicRatingItem,
 } from "@/lib/types";
 import { queryKeys } from "./keys";
 
@@ -23,29 +22,17 @@ export function usePublicProfileOverviewQuery(
   });
 }
 
-export function usePublicCompletedQuery(
+export function usePublicProgressQuery(
   username: string,
   search: ProfileSearchParams,
-  initialData?: PaginatedProfileResults<PublicCompletedItem>,
+  initialData?: PaginatedProfileResults<PublicProgressItem>,
 ) {
   return useQuery({
-    queryKey: queryKeys.profiles.tab(username, "completed", search),
-    queryFn: () => profileActions.completed(username, search),
+    queryKey: queryKeys.profiles.tab(username, "progress", search),
+    queryFn: () => profileActions.progress(username, search),
     staleTime: 60_000,
     initialData,
-  });
-}
-
-export function usePublicRatingsQuery(
-  username: string,
-  search: ProfileSearchParams,
-  initialData?: PaginatedProfileResults<PublicRatingItem>,
-) {
-  return useQuery({
-    queryKey: queryKeys.profiles.tab(username, "ratings", search),
-    queryFn: () => profileActions.ratings(username, search),
-    staleTime: 60_000,
-    initialData,
+    placeholderData: (previousData) => previousData,
   });
 }
 
@@ -59,5 +46,6 @@ export function usePublicListsQuery(
     queryFn: () => profileActions.lists(username, search),
     staleTime: 60_000,
     initialData,
+    placeholderData: (previousData) => previousData,
   });
 }

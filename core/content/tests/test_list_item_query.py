@@ -30,8 +30,10 @@ class ParseListItemQueryTests(APITestCase):
         self.assertIsNone(q.group_by)
 
     def test_filter_single(self):
-        q = parse_list_item_query(self._params(**{'filter[status]': 'COMPLETED'}))
-        self.assertEqual(q.filters, {'status': 'COMPLETED'})
+        q = parse_list_item_query(
+            self._params(**{'filter[context_status]': 'COMPLETED'})
+        )
+        self.assertEqual(q.filters, {'context_status': 'COMPLETED'})
 
     def test_filter_csv(self):
         q = parse_list_item_query(self._params(**{'filter[content_type]': 'ALBUM,MOVIE'}))
@@ -58,8 +60,8 @@ class ParseListItemQueryTests(APITestCase):
             parse_list_item_query(self._params(sort='foo'))
 
     def test_group_by_valid(self):
-        q = parse_list_item_query(self._params(group_by='status'))
-        self.assertEqual(q.group_by, 'status')
+        q = parse_list_item_query(self._params(group_by='context_status'))
+        self.assertEqual(q.group_by, 'context_status')
 
     def test_group_by_unknown_raises(self):
         with self.assertRaises(QueryParseError):
@@ -82,7 +84,7 @@ class ListItemEndpointQueryTests(APITestCase):
         self.client.force_authenticate(user=self.user)
 
         self.lst = UserList.objects.create(
-            name='Mixed', owner=self.user, list_type=UserList.ListType.PERSONAL,
+            name='Mixed', owner=self.user, list_type=UserList.ListType.SHARED,
         )
 
         self.movie = ContentItem.objects.create(
@@ -100,22 +102,25 @@ class ListItemEndpointQueryTests(APITestCase):
 
         self.li_movie = ListItem.objects.create(
             user_list=self.lst, content_item=self.movie, added_by=self.user, list_order=1,
-            status=ListItem.Status.COMPLETED,
+            context_status=ListItem.Status.COMPLETED,
         )
         self.li_album = ListItem.objects.create(
             user_list=self.lst, content_item=self.album, added_by=self.user, list_order=2,
-            status=ListItem.Status.PENDING,
+            context_status=ListItem.Status.PENDING,
         )
         self.li_book = ListItem.objects.create(
             user_list=self.lst, content_item=self.book, added_by=self.user, list_order=3,
-            status=ListItem.Status.PENDING,
+            context_status=ListItem.Status.PENDING,
         )
 
     def _items_url(self):
         return reverse('content:lists:items-list', kwargs={'list_pk': self.lst.id})
 
-    def test_filter_status_completed(self):
-        response = self.client.get(self._items_url(), {'filter[status]': 'COMPLETED'})
+    def test_filter_context_status_completed(self):
+        response = self.client.get(
+            self._items_url(),
+            {'filter[context_status]': 'COMPLETED'},
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         ids = [item['id'] for item in response.data['results']]
         self.assertEqual(ids, [self.li_movie.id])
@@ -139,7 +144,10 @@ class ListItemEndpointQueryTests(APITestCase):
         self.assertIn('Unknown sort field', response.data['detail'])
 
     def test_group_by_emits_group_metadata(self):
-        response = self.client.get(self._items_url(), {'group_by': 'status'})
+        response = self.client.get(
+            self._items_url(),
+            {'group_by': 'context_status'},
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         groups = response.data['metadata'].get('groups')
         self.assertIsNotNone(groups, 'Expected `groups` metadata when group_by is active')
@@ -181,7 +189,7 @@ class ListItemEndpointQueryTests(APITestCase):
 
     def test_pagination_remains_global_with_grouping(self):
         response = self.client.get(self._items_url(), {
-            'group_by': 'status', 'page_size': 2, 'page': 1,
+            'group_by': 'context_status', 'page_size': 2, 'page': 1,
         })
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['metadata']['count'], 3)
@@ -230,14 +238,14 @@ class ApplySortAsListOrderTests(APITestCase):
 
     def test_rejects_when_filters_present(self):
         response = self.client.post(
-            self._url() + '?filter[status]=PENDING',
+            self._url() + '?filter[context_status]=PENDING',
             {'sort': 'content_type'}, format='json',
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_rejects_when_grouping_present(self):
         response = self.client.post(
-            self._url() + '?group_by=status',
+            self._url() + '?group_by=context_status',
             {'sort': 'content_type'}, format='json',
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

@@ -31,12 +31,15 @@ considered part of the project baseline.
 - First-class personal tracking with backlog, in-progress, completed,
   on-hold, and dropped states, including rating activation semantics and
   completed-only favorites.
-- Filterable, sortable, paginated public Completed, Ratings & Reviews,
-  and Lists tabs.
+- Unified public Progress tab with multi-select media/status filters,
+  reversible criterion-based sorting, grid/list views, and icon menus;
+  paginated public Lists remain separate.
 - Anonymous content-detail and public-list reads, with private lists
   returning 404 to outsiders.
 - Personal and shared lists with items, members, invitations, ratings,
   and list-item status workflows.
+- Personal-list additions seed missing personal progress as `backlog` while
+  preserving existing state; shared-list additions remain contextual only.
 - List exploration with backend query model for filters, range filters,
   multi-field sort, grouping, and stable pagination.
 - Canonical list ordering plus "apply current sort as list order".
@@ -127,9 +130,11 @@ considered part of the project baseline.
   exposure, ordered cross-service deployment, Core migrations before
   Gunicorn, dedicated-account headed-browser smoke, exact cache timing,
   and deployed cold/warm Home percentiles.
-- Conservative, idempotent public-profile/tracking backfill with dry-run
-  reporting for username anomalies, duplicates, season-parent gaps,
-  missing metadata, and intentionally omitted shared-list completions.
+- Conservative, idempotent public-progress backfill with dry-run reporting
+  for username anomalies, duplicates, direct-season coverage, historical
+  parent-rating ambiguity, missing metadata, and intentionally omitted
+  shared-list completions; missing personal-list progress is seeded as
+  `backlog`.
 
 ## Current Compatibility Guarantees
 

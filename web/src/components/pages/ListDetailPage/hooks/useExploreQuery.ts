@@ -31,7 +31,7 @@ import {
  */
 
 const ALLOWED_FILTERS: ReadonlySet<string> = new Set<FilterField>([
-  "status",
+  "context_status",
   "content_type",
   "source_api",
   "added_by",
@@ -42,8 +42,8 @@ const ALLOWED_RANGE_FILTERS: ReadonlySet<string> = new Set<RangeFilterField>([
   "list_rating_lte",
   "added_at_gte",
   "added_at_lte",
-  "completed_at_gte",
-  "completed_at_lte",
+  "context_completed_at_gte",
+  "context_completed_at_lte",
   "release_date_gte",
   "release_date_lte",
 ]);
@@ -51,8 +51,8 @@ const ALLOWED_RANGE_FILTERS: ReadonlySet<string> = new Set<RangeFilterField>([
 const ALLOWED_SORTS: ReadonlySet<string> = new Set<SortField>([
   "list_order",
   "added_at",
-  "completed_at",
-  "status",
+  "context_completed_at",
+  "context_status",
   "content_type",
   "list_rating",
   "display_title",
@@ -62,7 +62,7 @@ const ALLOWED_SORTS: ReadonlySet<string> = new Set<SortField>([
 ]);
 
 const ALLOWED_GROUPS: ReadonlySet<string> = new Set<GroupByField>([
-  "status",
+  "context_status",
   "content_type",
   "source_api",
   "added_by",

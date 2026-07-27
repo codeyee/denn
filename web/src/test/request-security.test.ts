@@ -61,6 +61,9 @@ describe("BFF request security", () => {
       isPublicCoreRequest("HEAD", "profiles/alice/completed/"),
     ).toBe(true);
     expect(isPublicCoreRequest("GET", "content/42/")).toBe(true);
+    expect(isPublicCoreRequest("GET", "content/ratings/")).toBe(true);
+    expect(isPublicCoreRequest("GET", "content/ratings/42/")).toBe(true);
+    expect(isPublicCoreRequest("POST", "content/ratings/")).toBe(false);
     expect(isPublicCoreRequest("GET", "content/lists/7/")).toBe(true);
     expect(isPublicCoreRequest("PATCH", "profiles/me/")).toBe(false);
     expect(isPublicCoreRequest("GET", "profiles/me/")).toBe(false);

@@ -1,31 +1,31 @@
-import { Heart, Trash2 } from "lucide-react";
+import { Star, Trash2 } from "lucide-react";
 import { useId } from "react";
 
 import { Button } from "@/components/common/ui/Button";
-import type { TrackingStatus, UserContentTracking } from "@/lib/types";
+import type {
+  ProgressPolicy,
+  TrackingStatus,
+  UserContentTracking,
+} from "@/lib/types";
 
-interface ContentTrackingControlsProps {
+export interface ContentTrackingControlsProps {
   tracking: UserContentTracking | null;
+  policy: ProgressPolicy;
   disabled: boolean;
   onStatusChange: (status: TrackingStatus) => void;
   onFavoriteChange: (isFavorite: boolean) => void;
   onRemove: () => void;
+  compact?: boolean;
 }
-
-const TRACKING_OPTIONS: Array<{ value: TrackingStatus; label: string }> = [
-  { value: "backlog", label: "Backlog" },
-  { value: "in_progress", label: "In progress" },
-  { value: "completed", label: "Completed" },
-  { value: "on_hold", label: "On hold" },
-  { value: "dropped", label: "Dropped" },
-];
 
 export function ContentTrackingControls({
   tracking,
+  policy,
   disabled,
   onStatusChange,
   onFavoriteChange,
   onRemove,
+  compact = false,
 }: ContentTrackingControlsProps) {
   const isCompleted = tracking?.status === "completed";
   const statusId = useId();
@@ -52,14 +52,14 @@ export function ContentTrackingControls({
         <option value="" disabled>
           Track this content
         </option>
-        {TRACKING_OPTIONS.map((option) => (
+        {policy.states.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}
           </option>
         ))}
       </select>
 
-      {tracking && (
+      {tracking && !compact && (
         <>
           <Button
             type="button"
@@ -74,10 +74,10 @@ export function ContentTrackingControls({
             onClick={() => onFavoriteChange(!tracking.is_favorite)}
             className="border-white/20 bg-black/60 text-white hover:bg-white/10"
           >
-            <Heart
+            <Star
               className={
                 tracking.is_favorite
-                  ? "fill-rose-400 text-rose-400"
+                  ? "fill-amber-300 text-amber-300"
                   : "text-white"
               }
             />

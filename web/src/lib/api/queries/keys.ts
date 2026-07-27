@@ -15,6 +15,7 @@
 import type { ListItemQuery } from "@/lib/types/listView";
 import type { BulkCheckItem } from "@/lib/types";
 import type { ProfileSearchParams, ProfileTab } from "@/lib/types";
+import { profileDataSearchParams } from "@/lib/profileSearch";
 
 interface ListItemsParams {
   page?: number;
@@ -94,6 +95,10 @@ export const queryKeys = {
       username: string,
       tab: Exclude<ProfileTab, "overview">,
       params: Partial<ProfileSearchParams>,
-    ) => ["profiles", username, tab, params] as const,
+    ) => ["profiles", username, tab, profileRequestParams(params)] as const,
   },
 } as const;
+
+function profileRequestParams(params: Partial<ProfileSearchParams>) {
+  return profileDataSearchParams(params as ProfileSearchParams);
+}

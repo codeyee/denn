@@ -7,13 +7,13 @@ from unittest.mock import patch
 from django.test import TestCase, override_settings
 from django.utils import timezone
 
-from content.models import ContentItem, MovieDetail
+from content.models import ContentItem, MovieDetail, TvShowDetail
 from content.services.local_content_store import (
     ensure_content_detail,
     get_or_create_content_item,
 )
 from content.services.source_data_orchestrator import fetch_bulk_source_data
-from content.tests.fixtures.payloads import MOVIE_MEMENTO
+from content.tests.fixtures.payloads import MOVIE_MEMENTO, TV_DEMON_SLAYER
 
 
 def _ingest_movie(external_id: str = '77'):
@@ -88,6 +88,50 @@ class OrchestratorMissingTests(TestCase):
 
         self.assertIn(item.id, results)
         self.assertTrue(MovieDetail.objects.filter(content_item=item).exists())
+
+    def test_incomplete_tv_detail_repairs_season_links_synchronously(self):
+        item, _ = get_or_create_content_item(
+            ContentItem.SourceAPI.TMDB,
+            "85937",
+            ContentItem.ContentType.TV_SHOW,
+        )
+        TvShowDetail.objects.create(
+            content_item=item,
+            title="Demon Slayer: Kimetsu no Yaiba",
+            number_of_seasons=5,
+        )
+
+        with patch("content.services.source_data_orchestrator._proxy_fetch") as mocked:
+            mocked.return_value = {item.id: TV_DEMON_SLAYER}
+            results = fetch_bulk_source_data(
+                [item],
+                stale_while_revalidate=True,
+            )
+
+        mocked.assert_called_once()
+        self.assertEqual(len(results[item.id]["seasons"]), 1)
+        self.assertEqual(item.season_children.count(), 1)
+
+    def test_incomplete_tv_detail_falls_back_when_proxy_is_down(self):
+        item, _ = get_or_create_content_item(
+            ContentItem.SourceAPI.TMDB,
+            "85937",
+            ContentItem.ContentType.TV_SHOW,
+        )
+        TvShowDetail.objects.create(
+            content_item=item,
+            title="Demon Slayer: Kimetsu no Yaiba",
+            number_of_seasons=5,
+        )
+
+        with patch("content.services.source_data_orchestrator._proxy_fetch") as mocked:
+            mocked.return_value = {}
+            results = fetch_bulk_source_data(
+                [item],
+                stale_while_revalidate=True,
+            )
+
+        self.assertTrue(results[item.id]["is_stale"])
 
 
 class OrchestratorProxyDownTests(TestCase):

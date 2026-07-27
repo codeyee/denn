@@ -11,6 +11,7 @@ from .public_api import (
     PublicCompletedItemSerializer,
     PublicListSerializer,
     PublicProfileOverviewSerializer,
+    PublicProgressItemSerializer,
     PublicRatingItemSerializer,
 )
 
@@ -25,5 +26,6 @@ __all__ = [
     'PublicCompletedItemSerializer',
     'PublicListSerializer',
     'PublicProfileOverviewSerializer',
+    'PublicProgressItemSerializer',
     'PublicRatingItemSerializer',
 ]

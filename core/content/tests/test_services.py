@@ -16,7 +16,12 @@ class ListServiceTests(TestCase):
         self.shared.members.add(self.user, self.member)
 
         self.ci = ContentItem.objects.create(source_api='tmdb', external_id='1', content_type='MOVIE')
-        ListItem.objects.create(user_list=self.shared, content_item=self.ci, added_by=self.user, status='COMPLETED')
+        ListItem.objects.create(
+            user_list=self.shared,
+            content_item=self.ci,
+            added_by=self.user,
+            context_status='COMPLETED',
+        )
 
     def test_get_list_stats_returns_correct_counts(self):
         stats = get_list_stats(self.shared)

@@ -74,6 +74,9 @@ class TvShowReconstructorTests(TestCase):
         self.assertEqual(rebuilt['number_of_seasons'], TV_DEMON_SLAYER['number_of_seasons'])
         self.assertEqual(rebuilt['release_date'], TV_DEMON_SLAYER['release_date'])
         self.assertIn('platforms', rebuilt)
+        self.assertEqual(len(rebuilt["seasons"]), 1)
+        self.assertIsInstance(rebuilt["seasons"][0]["denn_id"], int)
+        self.assertEqual(rebuilt["seasons"][0]["season_number"], 1)
 
 
 class SeasonReconstructorTests(TestCase):

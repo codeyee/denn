@@ -99,3 +99,15 @@ class ErrorCode:
         message='Only completed content can be marked as a favorite',
         http_status=status.HTTP_409_CONFLICT,
     )
+
+    TRACKING_STATUS_UNSUPPORTED = ErrorCodeData(
+        code='TRACKING_STATUS_UNSUPPORTED',
+        message='This progress state is not supported for the content type',
+        http_status=status.HTTP_400_BAD_REQUEST,
+    )
+
+    TRACKING_EFFECTS_REQUIRE_CONFIRMATION = ErrorCodeData(
+        code='TRACKING_EFFECTS_REQUIRE_CONFIRMATION',
+        message='Confirm the effects of leaving the completed state',
+        http_status=status.HTTP_409_CONFLICT,
+    )

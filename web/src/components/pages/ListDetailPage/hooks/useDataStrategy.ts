@@ -115,12 +115,19 @@ export function useDataStrategy({
       setTotalItemCount((prev) => Math.max(0, prev - 1));
       setStats((prev) => {
         if (!prev) return prev;
+        const personal = list?.list_type === ListType.PERSONAL;
+        const itemIsCompleted = personal
+          ? item.content_item.current_user_tracking?.status === "completed"
+          : item.context_status === ItemStatus.COMPLETED;
+        const itemIsPending = personal
+          ? !itemIsCompleted
+          : item.context_status !== ItemStatus.COMPLETED;
         const nextCompleted =
-          item.status === ItemStatus.COMPLETED
+          itemIsCompleted
             ? Math.max(0, prev.completed_items - 1)
             : prev.completed_items;
         const nextPending =
-          item.status === ItemStatus.PENDING
+          itemIsPending
             ? Math.max(0, prev.pending_items - 1)
             : prev.pending_items;
         return {
@@ -132,7 +139,7 @@ export function useDataStrategy({
       });
       void refetchCurrentPage();
     },
-    [refetchCurrentPage, setStats, setTotalItemCount],
+    [list?.list_type, refetchCurrentPage, setStats, setTotalItemCount],
   );
 
   const onItemStatusUpdated = useCallback(

@@ -5,6 +5,7 @@ from django.contrib.auth.models import User
 from django.db.models import (
     Count,
     Exists,
+    F,
     IntegerField,
     OuterRef,
     Prefetch,
@@ -26,6 +27,7 @@ from authentication.serializers import (
     PublicListSerializer,
     PublicProfileIdentitySerializer,
     PublicProfileOverviewSerializer,
+    PublicProgressItemSerializer,
     PublicRatingItemSerializer,
     UserPublicProfileEditSerializer,
 )
@@ -69,10 +71,15 @@ def _content_prefetches(prefix=""):
     )
 
 
-def _profile_filter_parameters(*extra):
+def _profile_filter_parameters(*extra, multi_type=False):
     return [
         OpenApiParameter("q", str),
-        OpenApiParameter("type", str, enum=ContentItem.ContentType.values),
+        OpenApiParameter(
+            "type",
+            str,
+            enum=ContentItem.ContentType.values,
+            many=multi_type,
+        ),
         OpenApiParameter("page", int),
         OpenApiParameter("page_size", int),
         *extra,
@@ -337,6 +344,166 @@ class PublicProfileCompletedView(PublicProfileBaseView):
         return self.get_paginated_response(data)
 
 
+class PublicProfileProgressView(PublicProfileBaseView):
+    serializer_class = PublicProgressItemSerializer
+
+    @extend_schema(
+        tags=["Public Profiles"],
+        summary="List unified personal progress for a public profile",
+        parameters=_profile_filter_parameters(
+            OpenApiParameter(
+                "status",
+                str,
+                enum=UserContentTracking.Status.values,
+                many=True,
+            ),
+            OpenApiParameter(
+                "tvKind",
+                str,
+                enum=["all", "series", "seasons"],
+            ),
+            OpenApiParameter("rated", bool),
+            OpenApiParameter("reviewed", bool),
+            OpenApiParameter("favorite", bool),
+            OpenApiParameter("minScore", float),
+            OpenApiParameter("maxScore", float),
+            OpenApiParameter(
+                "sort",
+                str,
+                enum=[
+                    "updated",
+                    "title",
+                    "score",
+                    "completed",
+                ],
+            ),
+            OpenApiParameter("order", str, enum=["asc", "desc"]),
+            multi_type=True,
+        ),
+        responses={200: PublicProgressItemSerializer(many=True)},
+    )
+    def get(self, request, username):
+        user = self.get_profile_user()
+        active_rating = Rating.objects.filter(
+            user=user,
+            content_item_id=OuterRef("content_item_id"),
+            is_active=True,
+        )
+        queryset = (
+            UserContentTracking.objects.filter(user=user)
+            .select_related(
+                "content_item",
+                *[
+                    f"content_item__{field}"
+                    for field in CONTENT_RELATED_FIELDS
+                ],
+            )
+            .prefetch_related(*_content_prefetches("content_item__"))
+            .annotate(
+                rating_id=Subquery(active_rating.values("id")[:1]),
+                rating_score=Subquery(active_rating.values("score")[:1]),
+                rating_review=Subquery(active_rating.values("comment")[:1]),
+                rating_spoiler=Subquery(active_rating.values("spoiler")[:1]),
+                rating_created_at=Subquery(
+                    active_rating.values("created_at")[:1]
+                ),
+                rating_updated_at=Subquery(
+                    active_rating.values("updated_at")[:1]
+                ),
+                has_rating=Exists(active_rating),
+                content_title=Coalesce(
+                    "content_item__browse_meta__display_title",
+                    Value(""),
+                ),
+            )
+        )
+
+        query = request.query_params.get("q", "").strip()
+        if query:
+            queryset = queryset.filter(
+                content_item__browse_meta__display_title__icontains=query
+            )
+        content_types = _parse_multi_filter(
+            request,
+            "type",
+            ContentItem.ContentType.values,
+        )
+        tv_kind = request.query_params.get("tvKind", "all")
+        if content_types:
+            expanded_types = set(content_types)
+            if ContentItem.ContentType.TV_SHOW in expanded_types:
+                if tv_kind == "seasons":
+                    expanded_types.discard(ContentItem.ContentType.TV_SHOW)
+                    expanded_types.add(ContentItem.ContentType.SEASON)
+                elif tv_kind != "series":
+                    expanded_types.add(ContentItem.ContentType.SEASON)
+            queryset = queryset.filter(
+                content_item__content_type__in=expanded_types
+            )
+
+        progress_statuses = _parse_multi_filter(
+            request,
+            "status",
+            UserContentTracking.Status.values,
+        )
+        if progress_statuses:
+            queryset = queryset.filter(status__in=progress_statuses)
+        rated = _parse_bool_filter(request, "rated")
+        reviewed = _parse_bool_filter(request, "reviewed")
+        favorite = _parse_bool_filter(request, "favorite")
+        if rated is not None:
+            queryset = queryset.filter(has_rating=rated)
+        if reviewed is True:
+            queryset = queryset.filter(rating_review__isnull=False).exclude(
+                rating_review=""
+            )
+        elif reviewed is False:
+            queryset = queryset.filter(
+                Q(rating_review__isnull=True) | Q(rating_review="")
+            )
+        if favorite is not None:
+            queryset = queryset.filter(is_favorite=favorite)
+
+        min_score = _parse_score_filter(request, "minScore")
+        max_score = _parse_score_filter(request, "maxScore")
+        if min_score is not None and max_score is not None and min_score > max_score:
+            raise ValidationError({
+                "maxScore": ["Must be greater than or equal to minScore."]
+            })
+        if min_score is not None:
+            queryset = queryset.filter(rating_score__gte=min_score)
+        if max_score is not None:
+            queryset = queryset.filter(rating_score__lte=max_score)
+
+        ordering = _progress_ordering(request)
+        page = self.paginate_queryset(queryset.order_by(*ordering))
+        data = [
+            {
+                "id": tracking.id,
+                "content": _serialize_content(tracking.content_item),
+                "status": tracking.status,
+                "completed_at": tracking.last_completed_at,
+                "is_favorite": tracking.is_favorite,
+                "rating": (
+                    {
+                        "id": tracking.rating_id,
+                        "score": tracking.rating_score,
+                        "review": tracking.rating_review,
+                        "spoiler": tracking.rating_spoiler,
+                        "created_at": tracking.rating_created_at,
+                        "updated_at": tracking.rating_updated_at,
+                    }
+                    if tracking.has_rating
+                    else None
+                ),
+                "created_at": tracking.created_at,
+                "updated_at": tracking.updated_at,
+            }
+            for tracking in page
+        ]
+        return self.get_paginated_response(data)
+
+
 class PublicProfileRatingsView(PublicProfileBaseView):
     serializer_class = PublicRatingItemSerializer
 
@@ -438,6 +605,65 @@ def _parse_score_filter(request, name):
     if score < Decimal("0.5") or score > Decimal("10.0"):
         raise ValidationError({name: ["Must be between 0.5 and 10.0."]})
     return score
+
+
+def _parse_bool_filter(request, name):
+    raw_value = request.query_params.get(name)
+    if raw_value in {None, ""}:
+        return None
+    if raw_value not in {"true", "false"}:
+        raise ValidationError({name: ["Must be true or false."]})
+    return raw_value == "true"
+
+
+def _parse_multi_filter(request, name, allowed_values):
+    values = []
+    for raw_value in request.query_params.getlist(name):
+        values.extend(
+            value.strip()
+            for value in raw_value.split(",")
+            if value.strip()
+        )
+    return list(dict.fromkeys(
+        value for value in values if value in allowed_values
+    ))
+
+
+def _progress_ordering(request):
+    raw_sort = request.query_params.get("sort", "updated")
+    raw_order = request.query_params.get("order")
+    legacy_sort = {
+        "recent": ("updated", "desc"),
+        "oldest": ("updated", "asc"),
+        "-title": ("title", "desc"),
+        "-score": ("score", "desc"),
+    }
+    sort_key, legacy_order = legacy_sort.get(
+        raw_sort,
+        (
+            raw_sort if raw_sort in {"updated", "title", "score", "completed"}
+            else "updated",
+            None,
+        ),
+    )
+    default_order = "asc" if sort_key == "title" else "desc"
+    order = (
+        raw_order
+        if raw_order in {"asc", "desc"}
+        else legacy_order or default_order
+    )
+    field = {
+        "updated": "updated_at",
+        "title": "content_title",
+        "score": "rating_score",
+        "completed": "last_completed_at",
+    }[sort_key]
+    primary = (
+        F(field).desc(nulls_last=True)
+        if order == "desc"
+        else F(field).asc(nulls_last=True)
+    )
+    return primary, "-id" if order == "desc" else "id"
 
 
 class PublicProfileListsView(PublicProfileBaseView):

@@ -91,9 +91,11 @@ The hybrid topology is deliberate and documented in
   proxy base path, and Web Vitals ingestion bounds request size, accepted
   fields, and per-instance log volume.
 - The Core BFF admits anonymous `GET`/`HEAD` only for strict profile,
-  content-detail, and list-detail patterns. Public reads degrade to
-  anonymous after an unsuccessful stale-cookie refresh; all mutations
-  remain authenticated.
+  content-detail, content-scoped rating, and list-detail patterns.
+  Public rating payloads expose only the reviewer's id and username, and
+  anonymous collection reads require a concrete content scope. Public reads
+  degrade to anonymous after an unsuccessful stale-cookie refresh; all
+  mutations remain authenticated.
 - `GET /api/version` exposes only the full web `BUILD_SHA` with
   `Cache-Control: no-store`. Cross-service deploys use it to prove the
   compatible BFF is live before the core auth cutover.
@@ -216,15 +218,22 @@ direct search; both provider and aggregate caches isolate that policy.
 
 ## Current Personal Tracking And Public Surface
 
-- One tracking row exists per user and canonical content item, with
-  backlog, in-progress, completed, on-hold, and dropped states.
-- Rating writes auto-complete. Leaving completed inactivates the
-  preserved rating/review; returning reactivates it.
+- One tracking row exists per user and content item. Supported states and
+  labels are type-aware and serialized from the backend policy.
+- Rating writes auto-complete. Leaving completed requires explicit
+  acknowledgement before it archives a preserved rating/review or removes a
+  favorite; returning reactivates the preserved rating/review.
 - Favorites are completed-only, separate from score, and capped at five
-  preserved favorites per canonical content type.
-- Seasons canonicalize to a locally persisted parent TV show before a
-  tracking write; the write path never synchronously calls `proxy`.
-- Public profile overview and tab endpoints use local content summaries,
+  active favorites per content type.
+- Seasons are independently tracked, rated, reviewed, favorited, and listed.
+  Their persisted parent relation provides hierarchy and navigation without
+  redirecting personal state to the TV show.
+- Personal-list rows derive progress from tracking. Shared-list rows may also
+  carry a separate, explicit contextual status.
+- Adding an item to a personal list creates missing `backlog` tracking and
+  preserves existing progress; shared-list additions do not mutate personal
+  tracking.
+- Public profile overview and the unified Progress endpoint use local content summaries,
   stable pagination, bounded filters, a public-IP throttle, query-count
   budgets, and zero provider calls.
 - The public-profile loader fetches overview and the active tab in
@@ -245,3 +254,5 @@ direct search; both provider and aggregate caches isolate that policy.
 - Open work: [`../roadmap/open-plans.md`](../roadmap/open-plans.md)
 - Public catalog boundary:
   [`../adr/0004-public-catalog-auth-boundary.md`](../adr/0004-public-catalog-auth-boundary.md)
+- Unified personal progress:
+  [`../adr/0005-unified-personal-progress.md`](../adr/0005-unified-personal-progress.md)

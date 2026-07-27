@@ -65,11 +65,27 @@ def get_list_stats(user_list):
     from django.db.models import Count, Q as _Q
 
     items_qs = user_list.items.all()
-    counts = items_qs.aggregate(
-        total=Count('id'),
-        pending=Count('id', filter=_Q(status='PENDING')),
-        completed=Count('id', filter=_Q(status='COMPLETED')),
-    )
+    if user_list.list_type == UserList.ListType.PERSONAL:
+        from content.models import UserContentTracking
+
+        tracked_ids = items_qs.values_list("content_item_id", flat=True)
+        completed = UserContentTracking.objects.filter(
+            user_id=user_list.owner_id,
+            content_item_id__in=tracked_ids,
+            status=UserContentTracking.Status.COMPLETED,
+        ).count()
+        total = items_qs.count()
+        counts = {
+            "total": total,
+            "pending": total - completed,
+            "completed": completed,
+        }
+    else:
+        counts = items_qs.aggregate(
+            total=Count('id'),
+            pending=Count('id', filter=_Q(context_status='PENDING')),
+            completed=Count('id', filter=_Q(context_status='COMPLETED')),
+        )
     content_types_qs = items_qs.values(
         'content_item__content_type'
     ).annotate(count=Count('id')).order_by()

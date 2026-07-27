@@ -20,7 +20,7 @@ _MAPPED_KEYS = (
     'id', 'type', 'imdb_id', 'title', 'original_title', 'tagline',
     'description', 'image_url', 'release_date', 'status',
     'number_of_seasons', 'number_of_episodes',
-    'authors', 'images', 'platforms',
+    'authors', 'images', 'platforms', 'seasons',
 )
 
 
@@ -57,3 +57,54 @@ def upsert(
         replace_content_item_authors(content_item, payload)
         replace_images(content_item, payload)
         replace_streaming_platforms(content_item, payload, request_country=request_country)
+        _upsert_seasons(
+            content_item,
+            payload,
+            request_country=request_country,
+        )
+
+
+def _upsert_seasons(
+    tv_show: ContentItem,
+    payload: Dict[str, Any],
+    *,
+    request_country: Optional[str],
+) -> None:
+    raw_seasons = payload.get("seasons")
+    if not isinstance(raw_seasons, list):
+        return
+
+    from content.services.browse_metadata_service import upsert_browse_metadata
+    from .season import upsert as upsert_season
+
+    for raw_season in raw_seasons:
+        if not isinstance(raw_season, dict):
+            continue
+        season_number = raw_season.get("season_number")
+        if not isinstance(season_number, int):
+            continue
+        external_id = f"{tv_show.external_id}:{season_number}"
+        season_item, _created = ContentItem.objects.get_or_create(
+            source_api=tv_show.source_api,
+            external_id=external_id,
+            content_type=ContentItem.ContentType.SEASON,
+        )
+        season_payload = {
+            **raw_season,
+            "id": external_id,
+            "type": "season",
+            "season_number": season_number,
+            "tv_show_name": (
+                raw_season.get("tv_show_name")
+                or payload.get("title")
+                or payload.get("original_title")
+                or ""
+            ),
+        }
+        upsert_season(
+            season_item,
+            season_payload,
+            request_country=request_country,
+            tv_show=tv_show,
+        )
+        upsert_browse_metadata(season_item, season_payload)

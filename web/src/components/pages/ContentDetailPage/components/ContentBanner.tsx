@@ -1,11 +1,15 @@
 
-import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { SourceApi, Author, ContentType } from "@/lib/types";
+import {
+  Author,
+  ContentType,
+  type ProgressPolicy,
+  type TrackingStatus,
+  type UserContentTracking,
+} from "@/lib/types";
 import { getBannerImageUrl } from "@/lib/utils/imageUtils";
 import { formatAuthors } from "@/lib/utils/authorUtils";
-import { buildContentUrlById } from "@/lib/utils/navigationUtils";
-import { contentItemActions } from "@/lib/api";
+import { formatSeasonTitle } from "@/lib/utils/titleUtils";
 import { CONTENT_TYPE_ICONS } from "@/lib/icons/contentTypeIcons";
 import { Content } from "@/lib/types";
 import { ResponsiveMedia } from "@/components/common/media/ResponsiveMedia";
@@ -18,22 +22,31 @@ import { ContentActions } from "./ContentActions";
 interface ContentBannerProps {
   item: Content;
   tvShowTitle?: string;
-  externalId?: string;
-  sourceApi?: SourceApi | string;
   onAddToList?: () => void;
   onRateContent?: () => void;
   isAuthenticated?: boolean;
   hasUserRating?: boolean;
+  tracking: UserContentTracking | null;
+  progressPolicy: ProgressPolicy;
+  isTrackingLoading: boolean;
+  onTrackingStatusChange: (status: TrackingStatus) => void;
+  onFavoriteChange: (isFavorite: boolean) => void;
+  onDeleteTracking: () => void;
 }
 
 export function ContentBanner({
   item,
   tvShowTitle,
-  externalId,
   onAddToList,
   onRateContent,
   isAuthenticated,
   hasUserRating,
+  tracking,
+  progressPolicy,
+  isTrackingLoading,
+  onTrackingStatusChange,
+  onFavoriteChange,
+  onDeleteTracking,
 }: ContentBannerProps) {
   // `item.type` comes from the proxy detail payload (uppercase content type
   // like "MOVIE"). When the payload failed to load we still receive a bare
@@ -72,31 +85,16 @@ export function ContentBanner({
   const isBook = normalizedType === "BOOK";
   const isSeason = normalizedType === "SEASON";
 
-  const displayTitle = itemTitle;
   const tvShowName = isSeason ? (('tv_show_name' in item && item.tv_show_name) || tvShowTitle) : null;
-  const tvShowExternalId = isSeason && externalId ? externalId.split(":")[0] : null;
-  const [tvShowUrl, setTvShowUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!isAuthenticated || !tvShowExternalId) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const resolved = await contentItemActions.getOrCreate(
-          tvShowExternalId,
-          ContentType.TV_SHOW
-        );
-        if (!cancelled) {
-          setTvShowUrl(buildContentUrlById(resolved.id));
-        }
-      } catch (error) {
-        console.error("Failed to resolve TV show URL:", error);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [isAuthenticated, tvShowExternalId]);
+  const seasonNumber =
+    isSeason && "season_number" in item ? item.season_number : undefined;
+  const displayTitle = isSeason
+    ? formatSeasonTitle(tvShowName, itemTitle, seasonNumber)
+    : itemTitle;
+  const tvShowId =
+    isSeason && "tv_show_id" in item && typeof item.tv_show_id === "number"
+      ? item.tv_show_id
+      : null;
 
   return (
     <BannerShell
@@ -129,8 +127,13 @@ export function ContentBanner({
           {/* Subtitle: TV show name (seasons), Authors (albums/books), Original title (movies/TV) */}
           {isSeason && tvShowName ? (
             <div className="mt-1 font-sans text-sm text-white/85 opacity-90 md:mt-2 md:text-base">
-              {tvShowUrl ? (
-                <Link to={tvShowUrl} className="hover:text-white hover:underline transition-colors">
+              {tvShowId ? (
+                <Link
+                  to="/content/$id"
+                  params={{ id: String(tvShowId) }}
+                  preload="intent"
+                  className="transition-colors hover:text-white hover:underline"
+                >
                   {tvShowName}
                 </Link>
               ) : tvShowName}
@@ -150,6 +153,12 @@ export function ContentBanner({
             hasUserRating={hasUserRating}
             onAddToList={onAddToList}
             onRateContent={onRateContent}
+            tracking={tracking}
+            progressPolicy={progressPolicy}
+            isTrackingLoading={isTrackingLoading}
+            onTrackingStatusChange={onTrackingStatusChange}
+            onFavoriteChange={onFavoriteChange}
+            onDeleteTracking={onDeleteTracking}
           />
       </div>
     </BannerShell>

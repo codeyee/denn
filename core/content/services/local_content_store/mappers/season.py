@@ -27,6 +27,7 @@ def upsert(
     payload: Dict[str, Any],
     *,
     request_country: Optional[str] = None,
+    tv_show: Optional[ContentItem] = None,
 ) -> None:
     require_payload_shape(payload, expected_type='season')
 
@@ -39,7 +40,7 @@ def upsert(
         declared_count = len(raw_episodes)
 
     defaults = {
-        'tv_show': _resolve_local_tv_show(content_item),
+        'tv_show': tv_show or _resolve_local_tv_show(content_item),
         'season_number': payload.get('season_number') or 0,
         'tv_show_name': payload.get('tv_show_name') or '',
         'title': payload.get('title') or '',
@@ -56,9 +57,10 @@ def upsert(
             defaults=defaults,
         )
 
-        Episode.objects.filter(season_detail=season_detail).delete()
+        if "episodes" in payload:
+            Episode.objects.filter(season_detail=season_detail).delete()
         rows: List[Episode] = []
-        if isinstance(raw_episodes, list):
+        if "episodes" in payload and isinstance(raw_episodes, list):
             for entry in raw_episodes:
                 if not isinstance(entry, dict):
                     continue
@@ -82,8 +84,14 @@ def upsert(
         if rows:
             Episode.objects.bulk_create(rows)
 
-        replace_images(content_item, payload)
-        replace_streaming_platforms(content_item, payload, request_country=request_country)
+        if "images" in payload:
+            replace_images(content_item, payload)
+        if "platforms" in payload:
+            replace_streaming_platforms(
+                content_item,
+                payload,
+                request_country=request_country,
+            )
 
 
 def _resolve_local_tv_show(content_item: ContentItem) -> Optional[ContentItem]:

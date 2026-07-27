@@ -22,9 +22,10 @@ Start here, then read in this order:
 6. [`adr/0002-web-auth-cookies.md`](./adr/0002-web-auth-cookies.md)
 7. [`adr/0003-migrate-web-from-nextjs-to-tanstack-start.md`](./adr/0003-migrate-web-from-nextjs-to-tanstack-start.md)
 8. [`adr/0004-public-catalog-auth-boundary.md`](./adr/0004-public-catalog-auth-boundary.md)
-9. [`contracts/internal-http.md`](./contracts/internal-http.md)
-10. [`observability.md`](./observability.md)
-11. [`workspace-operating-model.md`](./workspace-operating-model.md)
+9. [`adr/0005-unified-personal-progress.md`](./adr/0005-unified-personal-progress.md)
+10. [`contracts/internal-http.md`](./contracts/internal-http.md)
+11. [`observability.md`](./observability.md)
+12. [`workspace-operating-model.md`](./workspace-operating-model.md)
 
 ## Practical Usage Flow
 

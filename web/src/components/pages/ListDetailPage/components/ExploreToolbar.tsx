@@ -19,6 +19,7 @@ import {
 interface ExploreToolbarProps {
   query: ListItemQuery;
   totalItemCount: number;
+  showListContext: boolean;
   isReorderMode: boolean;
   canApplySort: boolean;
   applySortHint?: string;
@@ -37,13 +38,13 @@ interface ExploreToolbarProps {
 const SORT_FIELD_OPTIONS: Array<{ value: SortField; label: string }> = [
   { value: "list_order", label: "Default order" },
   { value: "added_at", label: "Date added" },
-  { value: "completed_at", label: "Date completed" },
+  { value: "context_completed_at", label: "List completion date" },
   { value: "list_rating", label: "List rating" },
   { value: "display_title", label: "Title" },
   { value: "artist", label: "Artist" },
   { value: "album_title", label: "Album title" },
   { value: "release_date", label: "Release date" },
-  { value: "status", label: "Status" },
+  { value: "context_status", label: "List status" },
   { value: "content_type", label: "Content type" },
 ];
 
@@ -59,7 +60,7 @@ const CONTENT_TYPE_OPTIONS = FILTERABLE_CONTENT_TYPES.map((type) => ({
 
 const GROUP_BY_OPTIONS: Array<{ value: GroupByField | ""; label: string }> = [
   { value: "", label: "No grouping" },
-  { value: "status", label: "Status" },
+  { value: "context_status", label: "List status" },
   { value: "content_type", label: "Content type" },
   { value: "source_api", label: "Source" },
   { value: "added_by", label: "Added by" },
@@ -78,6 +79,7 @@ function singleFilterValue(
 export function ExploreToolbar({
   query,
   totalItemCount,
+  showListContext,
   isReorderMode,
   canApplySort,
   applySortHint,
@@ -90,10 +92,20 @@ export function ExploreToolbar({
   onApplySortAsListOrder,
 }: ExploreToolbarProps) {
   if (isReorderMode) return null;
+  const sortFieldOptions = showListContext
+    ? SORT_FIELD_OPTIONS
+    : SORT_FIELD_OPTIONS.filter(
+        (option) =>
+          option.value !== "context_status" &&
+          option.value !== "context_completed_at",
+      );
+  const groupByOptions = showListContext
+    ? GROUP_BY_OPTIONS
+    : GROUP_BY_OPTIONS.filter((option) => option.value !== "context_status");
 
   const handleAddSort = () => {
     const used = new Set(query.sort.map((c) => c.field));
-    const next = SORT_FIELD_OPTIONS.find((o) => !used.has(o.value));
+    const next = sortFieldOptions.find((o) => !used.has(o.value));
     if (!next) return;
     onSetSort([...query.sort, { field: next.value, direction: "asc" }]);
   };
@@ -153,16 +165,20 @@ export function ExploreToolbar({
         </div>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="space-y-2">
+      <div
+        className={`grid grid-cols-1 gap-4 ${
+          showListContext ? "md:grid-cols-3" : "md:grid-cols-2"
+        }`}
+      >
+        {showListContext ? <div className="space-y-2">
           <label className="text-xs uppercase tracking-wide text-white/50">
             Status
           </label>
           <Select
             aria-label="Status filter"
-            value={singleFilterValue(query.filters, "status")}
+            value={singleFilterValue(query.filters, "context_status")}
             onChange={(e) =>
-              onSetFilter("status", e.target.value || null)
+              onSetFilter("context_status", e.target.value || null)
             }
             className="w-full px-3 py-2 text-sm rounded-md bg-white/5 hover:bg-white/10 text-white border border-white/10"
           >
@@ -173,7 +189,7 @@ export function ExploreToolbar({
               </option>
             ))}
           </Select>
-        </div>
+        </div> : null}
 
         <div className="space-y-2">
           <label className="text-xs uppercase tracking-wide text-white/50">
@@ -212,7 +228,7 @@ export function ExploreToolbar({
             }
             className="w-full px-3 py-2 text-sm rounded-md bg-white/5 hover:bg-white/10 text-white border border-white/10"
           >
-            {GROUP_BY_OPTIONS.map((opt) => (
+            {groupByOptions.map((opt) => (
               <option key={opt.value} value={opt.value}>
                 {opt.label}
               </option>
@@ -230,7 +246,7 @@ export function ExploreToolbar({
             type="button"
             onClick={handleAddSort}
             className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
-            disabled={query.sort.length >= SORT_FIELD_OPTIONS.length}
+            disabled={query.sort.length >= sortFieldOptions.length}
           >
             <Plus className="w-3 h-3" /> Add field
           </button>
@@ -258,7 +274,7 @@ export function ExploreToolbar({
                   }
                   className="flex-1 px-3 py-1.5 text-sm rounded-md bg-white/5 hover:bg-white/10 text-white border border-white/10"
                 >
-                  {SORT_FIELD_OPTIONS.map((opt) => (
+                  {sortFieldOptions.map((opt) => (
                     <option key={opt.value} value={opt.value}>
                       {opt.label}
                     </option>

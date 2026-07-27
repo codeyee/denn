@@ -101,6 +101,7 @@ function favorite(
       poster: null,
       backdrop: null,
       authors: null,
+      season_number: null,
     },
     score,
     favorited_at: favoritedAt,

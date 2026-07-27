@@ -17,7 +17,7 @@ from content.services import (
     QueryParseError,
 )
 from content.services.tracking_service import (
-    annotate_list_items_with_canonical_tracking,
+    annotate_list_items_with_personal_tracking,
 )
 
 from rest_flex_fields.views import FlexFieldsMixin
@@ -47,10 +47,10 @@ from rest_flex_fields.views import FlexFieldsMixin
         - Use `unpaginated=true` to bypass pagination and fetch all items (useful for reordering)
 
         **Examples:**
-        - `?fields=id,status` - Return only basic item info
+        - `?fields=id,context_status` - Return only basic item info
         - `?omit=member_ratings` - Exclude member ratings from response
         - `?expand=content_item` - Expand content_item relationship with full details
-        - `?expand=content_item&fields=id,status,content_item.source_data` - Expand content item and only return source data
+        - `?expand=content_item&fields=id,context_status,content_item.source_data` - Expand content item and only return source data
         - `?expand=content_item&source_fields=title,cover.url` - Expand content and filter external API data to only title and cover URL
         - `?expand=content_item,added_by&fields=id,content_item,added_by.username` - Expand multiple relationships with field selection
         - `?source_fields=title,release_date,genres.name` - Filter source_data to specific fields (works with dot notation for nested data)
@@ -62,13 +62,13 @@ from rest_flex_fields.views import FlexFieldsMixin
             OpenApiParameter('page', OpenApiTypes.INT, OpenApiParameter.QUERY, required=False, description='Page number (default: 1)'),
             OpenApiParameter('page_size', OpenApiTypes.INT, OpenApiParameter.QUERY, required=False, description='Number of items per page (default: 20, max: 100).'),
             OpenApiParameter('unpaginated', OpenApiTypes.BOOL, OpenApiParameter.QUERY, required=False, description='Set to true to bypass pagination and fetch all items.'),
-            OpenApiParameter('fields', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Comma-separated list of fields to include (e.g., "id,status")'),
+            OpenApiParameter('fields', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Comma-separated list of fields to include (e.g., "id,context_status")'),
             OpenApiParameter('omit', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Comma-separated list of fields to exclude'),
             OpenApiParameter('expand', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Comma-separated list of relationships to expand (e.g., "content_item,added_by")'),
             OpenApiParameter('source_fields', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Comma-separated list of fields to include from external API source_data. Supports dot notation (e.g., "title,cover.url,genres.name")'),
             OpenApiParameter('sort', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Comma-separated sort fields with optional `-` for desc (e.g., "artist,-release_date,list_order"). Whitelisted fields only.'),
-            OpenApiParameter('group_by', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Single field to group the page by (e.g., "status", "content_type", "artist"). Pagination remains global.'),
-            OpenApiParameter('filter[status]', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Filter by status. CSV supported (e.g., "PENDING,COMPLETED").'),
+            OpenApiParameter('group_by', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Single field to group the page by (e.g., "context_status", "content_type", "artist"). Pagination remains global.'),
+            OpenApiParameter('filter[context_status]', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Filter by shared-list context status. CSV supported (e.g., "PENDING,COMPLETED").'),
             OpenApiParameter('filter[content_type]', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Filter by content type. CSV supported.'),
             OpenApiParameter('filter[source_api]', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Filter by source API. CSV supported.'),
             OpenApiParameter('filter[added_by]', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description='Filter by user id who added the item. CSV supported.'),
@@ -97,7 +97,7 @@ from rest_flex_fields.views import FlexFieldsMixin
         - `source_fields`: Filter external API source_data to specific fields
 
         **Examples:**
-        - `?fields=id,status,content_item` - Return basic item info with content item
+        - `?fields=id,context_status,content_item` - Return basic item info with content item
         - `?expand=content_item,added_by` - Expand content item and user who added it
         - `?source_fields=title,cover.url,runtime` - Filter source_data to specific fields only
         - `?expand=content_item&source_fields=title,genres.name,providers.provider_name` - Expand and filter nested external API data
@@ -136,7 +136,7 @@ from rest_flex_fields.views import FlexFieldsMixin
                     'source_api': 'tmdb',
                     'external_id': '550',
                     'content_type': 'MOVIE',
-                    'status': 'PENDING'
+                    'context_status': 'PENDING'
                 },
                 request_only=True
             ),
@@ -146,7 +146,7 @@ from rest_flex_fields.views import FlexFieldsMixin
                     'source_api': 'spotify',
                     'external_id': '7ycBtnsMtyVbbwTfJwRjSP',
                     'content_type': 'ALBUM',
-                    'status': 'PENDING'
+                    'context_status': 'PENDING'
                 },
                 request_only=True
             )
@@ -155,7 +155,10 @@ from rest_flex_fields.views import FlexFieldsMixin
     update=extend_schema(
         tags=['List Items'],
         summary='Update list item',
-        description='Update a list item. Can change status (PENDING/COMPLETED).',
+        description=(
+            'Update a list item. Shared lists may change context_status '
+            '(PENDING/COMPLETED); personal progress uses the tracking API.'
+        ),
         request=ListItemSerializer,
         responses={200: ListItemSerializer}
     ),
@@ -168,7 +171,7 @@ from rest_flex_fields.views import FlexFieldsMixin
         examples=[
             OpenApiExample(
                 'Mark as Completed',
-                value={'status': 'COMPLETED'},
+                value={'context_status': 'COMPLETED'},
                 request_only=True
             ),
         ]
@@ -248,7 +251,7 @@ class ListItemViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
             ),
         )
 
-        qs = annotate_list_items_with_canonical_tracking(qs, self.request.user)
+        qs = annotate_list_items_with_personal_tracking(qs, self.request.user)
         qs = annotate_items_with_ratings(qs, member_ids)
 
         return qs.order_by('list_order', '-added_at')

@@ -2,7 +2,7 @@ import { User } from "./api";
 
 export type GroupBy =
   | 'none'
-  | 'status'
+  | 'context_status'
   | 'content_type'
   | 'date_added'
   | 'rating';
@@ -11,7 +11,7 @@ export type SortBy =
   | 'list_order'    // Default order
   | 'added_at'      // Date added
   | 'name'          // Alphabetical by content title
-  | 'completed_at'  // Completion date
+  | 'context_completed_at'  // Shared-list completion date
   | 'list_rating'   // List rating
   | 'added_by'      // User who added the item
   | 'content_type'; // Content type (Movie, TV Show, etc.)
@@ -84,8 +84,8 @@ export interface MemberRating {
 export type SortField =
   | 'list_order'
   | 'added_at'
-  | 'completed_at'
-  | 'status'
+  | 'context_completed_at'
+  | 'context_status'
   | 'content_type'
   | 'list_rating'
   | 'display_title'
@@ -94,7 +94,7 @@ export type SortField =
   | 'release_date';
 
 export type FilterField =
-  | 'status'
+  | 'context_status'
   | 'content_type'
   | 'source_api'
   | 'added_by';
@@ -104,13 +104,13 @@ export type RangeFilterField =
   | 'list_rating_lte'
   | 'added_at_gte'
   | 'added_at_lte'
-  | 'completed_at_gte'
-  | 'completed_at_lte'
+  | 'context_completed_at_gte'
+  | 'context_completed_at_lte'
   | 'release_date_gte'
   | 'release_date_lte';
 
 export type GroupByField =
-  | 'status'
+  | 'context_status'
   | 'content_type'
   | 'source_api'
   | 'added_by'

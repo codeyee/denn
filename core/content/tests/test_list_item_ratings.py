@@ -2,7 +2,13 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 from django.contrib.auth.models import User
-from content.models import UserList, ListItem, ContentItem, Rating
+from content.models import (
+    ContentItem,
+    ListItem,
+    Rating,
+    UserContentTracking,
+    UserList,
+)
 from decimal import Decimal
 
 
@@ -59,7 +65,7 @@ class ListItemRatingsTests(APITestCase):
             user_list=self.shared_list,
             content_item=self.movie1,
             added_by=self.owner,
-            status=ListItem.Status.COMPLETED
+            context_status=ListItem.Status.COMPLETED
         )
 
         url = reverse('content:lists:items-list', kwargs={'list_pk': self.shared_list.id})
@@ -81,7 +87,7 @@ class ListItemRatingsTests(APITestCase):
             user_list=self.shared_list,
             content_item=self.movie1,
             added_by=self.owner,
-            status=ListItem.Status.COMPLETED
+            context_status=ListItem.Status.COMPLETED
         )
 
         # Add single rating
@@ -109,7 +115,7 @@ class ListItemRatingsTests(APITestCase):
             user_list=self.shared_list,
             content_item=self.movie1,
             added_by=self.owner,
-            status=ListItem.Status.COMPLETED
+            context_status=ListItem.Status.COMPLETED
         )
 
         # Add ratings from three members
@@ -136,7 +142,7 @@ class ListItemRatingsTests(APITestCase):
             user_list=self.shared_list,
             content_item=self.movie1,
             added_by=self.owner,
-            status=ListItem.Status.PENDING  # Not completed
+            context_status=ListItem.Status.PENDING
         )
 
         # Add ratings anyway
@@ -163,7 +169,7 @@ class ListItemRatingsTests(APITestCase):
             user_list=self.shared_list,
             content_item=self.movie1,
             added_by=self.owner,
-            status=ListItem.Status.COMPLETED
+            context_status=ListItem.Status.COMPLETED
         )
 
         # Add ratings from members
@@ -200,7 +206,7 @@ class ListItemRatingsTests(APITestCase):
             user_list=new_list,
             content_item=self.movie1,
             added_by=self.owner,
-            status=ListItem.Status.COMPLETED
+            context_status=ListItem.Status.COMPLETED
         )
 
         # Add ratings
@@ -226,7 +232,7 @@ class ListItemRatingsTests(APITestCase):
             user_list=self.shared_list,
             content_item=self.movie1,
             added_by=self.owner,
-            status=ListItem.Status.COMPLETED
+            context_status=ListItem.Status.COMPLETED
         )
 
         # Ratings that average to 8.333...
@@ -262,7 +268,7 @@ class ListItemRatingsTests(APITestCase):
                 user_list=self.shared_list,
                 content_item=movie,
                 added_by=self.owner,
-                status=ListItem.Status.COMPLETED
+                context_status=ListItem.Status.COMPLETED
             )
 
             # Add ratings from all members
@@ -285,7 +291,7 @@ class ListItemRatingsTests(APITestCase):
 
         # Verify all items have correct ratings
         for item in response.data['results']:
-            if item['status'] == 'COMPLETED':
+            if item['context_status'] == 'COMPLETED':
                 self.assertIsNotNone(item['list_rating'])
                 self.assertGreater(item['member_rating_count'], 0)
 
@@ -315,7 +321,11 @@ class ListItemRatingsTests(APITestCase):
             user_list=self.personal_list,
             content_item=self.movie1,
             added_by=self.owner,
-            status=ListItem.Status.COMPLETED
+        )
+        UserContentTracking.objects.create(
+            user=self.owner,
+            content_item=self.movie1,
+            status=UserContentTracking.Status.COMPLETED,
         )
 
         # Add owner rating
@@ -344,7 +354,7 @@ class ListItemRatingsTests(APITestCase):
             user_list=self.shared_list,
             content_item=self.movie1,
             added_by=self.owner,
-            status=ListItem.Status.COMPLETED
+            context_status=ListItem.Status.COMPLETED
         )
         Rating.objects.create(content_item=self.movie1, user=self.owner, score=Decimal('8.0'))
 
@@ -353,7 +363,7 @@ class ListItemRatingsTests(APITestCase):
             user_list=self.shared_list,
             content_item=self.movie2,
             added_by=self.owner,
-            status=ListItem.Status.PENDING
+            context_status=ListItem.Status.PENDING
         )
         Rating.objects.create(content_item=self.movie2, user=self.owner, score=Decimal('9.0'))
 
@@ -365,9 +375,9 @@ class ListItemRatingsTests(APITestCase):
 
         # Find items in response
         completed_data = next(item for item in response.data['results']
-                             if item['status'] == 'COMPLETED')
+                             if item['context_status'] == 'COMPLETED')
         pending_data = next(item for item in response.data['results']
-                           if item['status'] == 'PENDING')
+                           if item['context_status'] == 'PENDING')
 
         # Completed should have ratings
         self.assertEqual(completed_data['list_rating'], 8.0)
@@ -386,7 +396,7 @@ class ListItemRatingsTests(APITestCase):
             user_list=self.shared_list,
             content_item=self.movie1,
             added_by=self.owner,
-            status=ListItem.Status.COMPLETED
+            context_status=ListItem.Status.COMPLETED
         )
 
         Rating.objects.create(content_item=self.movie1, user=self.owner, score=Decimal('8.5'))

@@ -27,6 +27,7 @@ from content.models import (
 )
 from content.services.local_content_store import (
     detail_for,
+    detail_is_complete,
     detail_is_fresh,
     ensure_content_detail,
     get_or_create_content_item,
@@ -122,6 +123,18 @@ class TvShowMapperTests(TestCase):
         detail = TvShowDetail.objects.get(content_item=item)
         self.assertEqual(detail.title, 'Demon Slayer: Kimetsu no Yaiba')
         self.assertEqual(detail.number_of_seasons, 5)
+        season = ContentItem.objects.get(
+            source_api=ContentItem.SourceAPI.TMDB,
+            external_id="85937:1",
+            content_type=ContentItem.ContentType.SEASON,
+        )
+        self.assertEqual(season.season_detail.tv_show, item)
+        self.assertEqual(season.season_detail.season_number, 1)
+        self.assertEqual(
+            season.browse_meta.display_title,
+            "Demon Slayer: Kimetsu no Yaiba: Season 1",
+        )
+        self.assertTrue(detail_is_complete(item))
 
 
 class SeasonMapperTests(TestCase):
@@ -206,6 +219,20 @@ class DetailHelpersTests(TestCase):
         )
         self.assertFalse(ensure_content_detail(item, payload={}))
         self.assertFalse(ensure_content_detail(item, payload={'foo': 'bar'}))
+
+    def test_tv_detail_with_expected_but_unlinked_seasons_is_incomplete(self):
+        item, _ = get_or_create_content_item(
+            ContentItem.SourceAPI.TMDB,
+            "85937",
+            ContentItem.ContentType.TV_SHOW,
+        )
+        TvShowDetail.objects.create(
+            content_item=item,
+            title="Demon Slayer: Kimetsu no Yaiba",
+            number_of_seasons=5,
+        )
+
+        self.assertFalse(detail_is_complete(item))
 
 
 class AuthorCaseCollisionRegressionTests(TestCase):

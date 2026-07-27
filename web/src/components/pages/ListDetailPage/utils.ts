@@ -65,8 +65,8 @@ export function groupItemsByCriterion(
     let groupKey: string;
 
     switch (groupBy) {
-      case 'status':
-        groupKey = item.status;
+      case 'context_status':
+        groupKey = item.context_status ?? 'PENDING';
         break;
 
       case 'content_type':
@@ -111,7 +111,7 @@ function sortGroups(
   groupBy: GroupBy
 ): GroupedItems<ListItem>[] {
   switch (groupBy) {
-    case 'status':
+    case 'context_status':
       // Pending first, then Completed
       return groups.sort((a, b) => {
         if (a.groupKey === ItemStatus.PENDING) return -1;
@@ -187,9 +187,9 @@ export function groupItemsComposite(
       let label: string;
 
       switch (groupBy) {
-        case 'status':
-          value = item.status;
-          label = getStatusLabel(item.status);
+        case 'context_status':
+          value = item.context_status ?? ItemStatus.PENDING;
+          label = getStatusLabel(item.context_status ?? ItemStatus.PENDING);
           break;
 
         case 'content_type':
@@ -272,12 +272,12 @@ export function sortItems(
         comparison = getItemTitle(a).localeCompare(getItemTitle(b));
         break;
 
-      case 'completed_at':
+      case 'context_completed_at':
         // Handle nulls: nulls go to the end
-        if (a.completed_at === null && b.completed_at === null) comparison = 0;
-        else if (a.completed_at === null) comparison = 1;
-        else if (b.completed_at === null) comparison = -1;
-        else comparison = new Date(a.completed_at).getTime() - new Date(b.completed_at).getTime();
+        if (a.context_completed_at === null && b.context_completed_at === null) comparison = 0;
+        else if (a.context_completed_at === null) comparison = 1;
+        else if (b.context_completed_at === null) comparison = -1;
+        else comparison = new Date(a.context_completed_at).getTime() - new Date(b.context_completed_at).getTime();
         break;
 
       case 'list_rating':

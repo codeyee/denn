@@ -1,13 +1,21 @@
 from rest_framework import serializers
+from django.contrib.auth.models import User
 from content.models import Rating, ContentItem
 from .content_item import ContentItemSerializer
-from .user import UserSerializer
 from core.serializers import BaseFlexSerializer
 from content.services.tracking_service import save_rating
 
+
+class PublicRatingUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'username']
+        read_only_fields = ['id', 'username']
+
+
 class RatingSerializer(BaseFlexSerializer):
     content_item = ContentItemSerializer(read_only=True)
-    user = UserSerializer(read_only=True)
+    user = PublicRatingUserSerializer(read_only=True)
 
     class Meta:
         model = Rating
@@ -34,7 +42,7 @@ class RatingSerializer(BaseFlexSerializer):
 
         expandable_fields = {
             'content_item': (ContentItemSerializer, {'many': False}),
-            'user': (UserSerializer, {'many': False}),
+            'user': (PublicRatingUserSerializer, {'many': False}),
         }
 
 class RatingCreateSerializer(serializers.ModelSerializer):
@@ -54,7 +62,7 @@ class RatingCreateSerializer(serializers.ModelSerializer):
     )
 
     content_item = ContentItemSerializer(read_only=True)
-    user = UserSerializer(read_only=True)
+    user = PublicRatingUserSerializer(read_only=True)
 
     class Meta:
         model = Rating

@@ -1,10 +1,13 @@
 import json
 import threading
+from importlib import import_module
 from io import StringIO
+from types import SimpleNamespace
 
+from django.apps import apps
 from django.contrib.auth.models import User
 from django.core.management import call_command
-from django.db import close_old_connections
+from django.db import close_old_connections, connection
 from django.test import TestCase, TransactionTestCase, skipUnlessDBFeature
 from django.urls import reverse
 from django.utils import timezone
@@ -57,15 +60,30 @@ class TrackingServiceTests(TestCase):
             content_item=self.movie,
             is_favorite=True,
         )
+        with self.assertRaises(APIError) as raised:
+            transition_tracking(
+                user=self.user,
+                content_item=self.movie,
+                status=UserContentTracking.Status.IN_PROGRESS,
+            )
+        self.assertEqual(
+            raised.exception.error_code.code,
+            "TRACKING_EFFECTS_REQUIRE_CONFIRMATION",
+        )
+        self.assertEqual(
+            raised.exception.extra_data["effects"],
+            ["review_archived", "favorite_removed"],
+        )
         transition_tracking(
             user=self.user,
             content_item=self.movie,
             status=UserContentTracking.Status.IN_PROGRESS,
+            acknowledge_effects=True,
         )
         rating.refresh_from_db()
         tracking.refresh_from_db()
         self.assertFalse(rating.is_active)
-        self.assertTrue(tracking.is_favorite)
+        self.assertFalse(tracking.is_favorite)
 
         result = transition_tracking(
             user=self.user,
@@ -76,8 +94,18 @@ class TrackingServiceTests(TestCase):
         self.assertTrue(rating.is_active)
         self.assertFalse(result.should_prompt_rating)
 
-        self.assertTrue(
+        with self.assertRaises(APIError) as deletion:
             delete_tracking(user=self.user, content_item=self.movie)
+        self.assertEqual(
+            deletion.exception.extra_data["effects"],
+            ["review_archived"],
+        )
+        self.assertTrue(
+            delete_tracking(
+                user=self.user,
+                content_item=self.movie,
+                acknowledge_effects=True,
+            )
         )
         rating.refresh_from_db()
         self.assertFalse(rating.is_active)
@@ -122,12 +150,13 @@ class TrackingServiceTests(TestCase):
             user=self.user,
             content_item=self.movie,
             status=UserContentTracking.Status.DROPPED,
+            acknowledge_effects=True,
         )
         self.movie.refresh_from_db()
         self.assertEqual(self.movie.rating_count, 0)
         self.assertIsNone(self.movie.average_rating)
 
-    def test_favorite_limit_counts_preserved_inactive_favorites(self):
+    def test_leaving_completed_removes_favorite_and_frees_quota(self):
         movies = [self.movie]
         movies.extend(
             ContentItem.objects.create(
@@ -148,6 +177,7 @@ class TrackingServiceTests(TestCase):
             user=self.user,
             content_item=movies[0],
             status=UserContentTracking.Status.DROPPED,
+            acknowledge_effects=True,
         )
         transition_tracking(
             user=self.user,
@@ -155,18 +185,21 @@ class TrackingServiceTests(TestCase):
             status=UserContentTracking.Status.COMPLETED,
         )
 
-        with self.assertRaises(APIError) as raised:
-            set_favorite(
-                user=self.user,
-                content_item=movies[5],
-                is_favorite=True,
-            )
+        set_favorite(
+            user=self.user,
+            content_item=movies[5],
+            is_favorite=True,
+        )
         self.assertEqual(
-            raised.exception.error_code.code,
-            "FAVORITE_LIMIT_REACHED",
+            UserContentTracking.objects.filter(
+                user=self.user,
+                is_favorite=True,
+                content_item__content_type=ContentItem.ContentType.MOVIE,
+            ).count(),
+            5,
         )
 
-    def test_season_tracking_canonicalizes_to_local_tv_show(self):
+    def test_season_tracking_is_independent_from_local_tv_show(self):
         tv_show = ContentItem.objects.create(
             source_api=ContentItem.SourceAPI.TMDB,
             external_id="1396",
@@ -188,9 +221,15 @@ class TrackingServiceTests(TestCase):
             content_item=season,
             status=UserContentTracking.Status.BACKLOG,
         )
-        self.assertEqual(result.tracking.content_item, tv_show)
+        self.assertEqual(result.tracking.content_item, season)
+        self.assertFalse(
+            UserContentTracking.objects.filter(
+                user=self.user,
+                content_item=tv_show,
+            ).exists()
+        )
 
-    def test_season_without_parent_returns_recoverable_error(self):
+    def test_season_without_parent_can_still_track_independently(self):
         season = ContentItem.objects.create(
             source_api=ContentItem.SourceAPI.TMDB,
             external_id="1396:1",
@@ -198,17 +237,24 @@ class TrackingServiceTests(TestCase):
         )
         SeasonDetail.objects.create(content_item=season, season_number=1)
 
+        result = transition_tracking(
+            user=self.user,
+            content_item=season,
+            status=UserContentTracking.Status.BACKLOG,
+        )
+        self.assertEqual(result.tracking.content_item, season)
+
+    def test_type_policy_rejects_movie_on_hold(self):
         with self.assertRaises(APIError) as raised:
             transition_tracking(
                 user=self.user,
-                content_item=season,
-                status=UserContentTracking.Status.BACKLOG,
+                content_item=self.movie,
+                status=UserContentTracking.Status.ON_HOLD,
             )
         self.assertEqual(
             raised.exception.error_code.code,
-            "TRACKING_PARENT_MISSING",
+            "TRACKING_STATUS_UNSUPPORTED",
         )
-        self.assertTrue(raised.exception.extra_data["requires_backfill"])
 
 
 @skipUnlessDBFeature("has_select_for_update")
@@ -293,6 +339,11 @@ class PublicProfileTrackingBackfillTests(TestCase):
             external_id="2",
             content_type=ContentItem.ContentType.MOVIE,
         )
+        self.planned_movie = ContentItem.objects.create(
+            source_api=ContentItem.SourceAPI.TMDB,
+            external_id="3",
+            content_type=ContentItem.ContentType.MOVIE,
+        )
         Rating.objects.create(
             user=self.user,
             content_item=self.rated_movie,
@@ -307,8 +358,13 @@ class PublicProfileTrackingBackfillTests(TestCase):
             user_list=personal,
             content_item=self.list_movie,
             added_by=self.user,
-            status=ListItem.Status.COMPLETED,
-            completed_at=timezone.now(),
+            context_status=ListItem.Status.COMPLETED,
+            context_completed_at=timezone.now(),
+        )
+        ListItem.objects.create(
+            user_list=personal,
+            content_item=self.planned_movie,
+            added_by=self.user,
         )
         shared = UserList.objects.create(
             owner=self.user,
@@ -319,7 +375,7 @@ class PublicProfileTrackingBackfillTests(TestCase):
             user_list=shared,
             content_item=self.list_movie,
             added_by=self.user,
-            status=ListItem.Status.COMPLETED,
+            context_status=ListItem.Status.COMPLETED,
         )
 
     def test_backfill_is_dry_run_safe_and_apply_is_idempotent(self):
@@ -334,7 +390,15 @@ class PublicProfileTrackingBackfillTests(TestCase):
         dry_run = json.loads(dry_run_output.getvalue())
         self.assertEqual(dry_run["mode"], "dry-run")
         self.assertEqual(dry_run["tracking_seeded_from_ratings"], 1)
-        self.assertEqual(dry_run["tracking_seeded_from_personal_lists"], 1)
+        self.assertEqual(dry_run["tracking_seeded_from_personal_lists"], 2)
+        self.assertEqual(
+            dry_run["tracking_seeded_from_personal_lists_as_completed"],
+            1,
+        )
+        self.assertEqual(
+            dry_run["tracking_seeded_from_personal_lists_as_backlog"],
+            1,
+        )
         self.assertEqual(dry_run["shared_completed_rows_omitted"], 1)
         self.assertEqual(UserContentTracking.objects.count(), 0)
 
@@ -344,7 +408,14 @@ class PublicProfileTrackingBackfillTests(TestCase):
             "--apply",
             stdout=first_output,
         )
-        self.assertEqual(UserContentTracking.objects.count(), 2)
+        self.assertEqual(UserContentTracking.objects.count(), 3)
+        self.assertTrue(
+            UserContentTracking.objects.filter(
+                user=self.user,
+                content_item=self.planned_movie,
+                status=UserContentTracking.Status.BACKLOG,
+            ).exists()
+        )
 
         second_output = StringIO()
         call_command(
@@ -355,9 +426,13 @@ class PublicProfileTrackingBackfillTests(TestCase):
         second = json.loads(second_output.getvalue())
         self.assertEqual(second["tracking_seeded_from_ratings"], 0)
         self.assertEqual(second["tracking_seeded_from_personal_lists"], 0)
-        self.assertEqual(UserContentTracking.objects.count(), 2)
+        self.assertEqual(
+            second["tracking_seeded_from_personal_lists_as_backlog"],
+            0,
+        )
+        self.assertEqual(UserContentTracking.objects.count(), 3)
 
-    def test_backfill_rehomes_season_rating_to_canonical_tv_show(self):
+    def test_backfill_preserves_direct_season_rating_and_tracking(self):
         tv_show = ContentItem.objects.create(
             source_api=ContentItem.SourceAPI.TMDB,
             external_id="1396",
@@ -389,15 +464,21 @@ class PublicProfileTrackingBackfillTests(TestCase):
 
         report = json.loads(output.getvalue())
         legacy_rating.refresh_from_db()
-        season.refresh_from_db()
-        self.assertEqual(report["season_ratings_rehomed"], 1)
-        self.assertEqual(legacy_rating.content_item, tv_show)
-        self.assertEqual(season.rating_count, 0)
+        self.assertEqual(report["direct_season_ratings"], 1)
+        self.assertEqual(legacy_rating.content_item, season)
+        self.assertTrue(
+            UserContentTracking.objects.filter(
+                user=self.user,
+                content_item=season,
+                status=UserContentTracking.Status.COMPLETED,
+            ).exists()
+        )
 
         transition_tracking(
             user=self.user,
             content_item=season,
             status=UserContentTracking.Status.DROPPED,
+            acknowledge_effects=True,
         )
         legacy_rating.refresh_from_db()
         self.assertFalse(legacy_rating.is_active)
@@ -410,11 +491,102 @@ class PublicProfileTrackingBackfillTests(TestCase):
         )
         self.assertEqual(updated.id, legacy_rating.id)
         self.assertEqual(
-            Rating.objects.filter(user=self.user, content_item=tv_show).count(),
+            Rating.objects.filter(user=self.user, content_item=season).count(),
             1,
         )
         self.assertFalse(
-            Rating.objects.filter(user=self.user, content_item=season).exists()
+            Rating.objects.filter(user=self.user, content_item=tv_show).exists()
+        )
+
+
+class PersonalListBacklogMigrationTests(TestCase):
+    def test_migration_seeds_once_and_preserves_existing_progress(self):
+        user = User.objects.create_user(username="migration-user")
+        backlog_movie = ContentItem.objects.create(
+            source_api=ContentItem.SourceAPI.TMDB,
+            external_id="migration-backlog",
+            content_type=ContentItem.ContentType.MOVIE,
+        )
+        completed_movie = ContentItem.objects.create(
+            source_api=ContentItem.SourceAPI.TMDB,
+            external_id="migration-completed",
+            content_type=ContentItem.ContentType.MOVIE,
+        )
+        shared_movie = ContentItem.objects.create(
+            source_api=ContentItem.SourceAPI.TMDB,
+            external_id="migration-shared",
+            content_type=ContentItem.ContentType.MOVIE,
+        )
+        first_list = UserList.objects.create(
+            owner=user,
+            name="First",
+            list_type=UserList.ListType.PERSONAL,
+        )
+        second_list = UserList.objects.create(
+            owner=user,
+            name="Second",
+            list_type=UserList.ListType.PERSONAL,
+        )
+        shared_list = UserList.objects.create(
+            owner=user,
+            name="Shared",
+            list_type=UserList.ListType.SHARED,
+        )
+        for user_list, content_item in (
+            (first_list, backlog_movie),
+            (second_list, backlog_movie),
+            (first_list, completed_movie),
+            (shared_list, shared_movie),
+        ):
+            ListItem.objects.create(
+                user_list=user_list,
+                content_item=content_item,
+                added_by=user,
+            )
+        completed_tracking = UserContentTracking.objects.create(
+            user=user,
+            content_item=completed_movie,
+            status=UserContentTracking.Status.COMPLETED,
+            is_favorite=True,
+            favorited_at=timezone.now(),
+        )
+        rating = Rating.objects.create(
+            user=user,
+            content_item=completed_movie,
+            score="9.0",
+        )
+        migration = import_module(
+            "content.migrations.0016_seed_personal_list_backlog"
+        )
+        schema_editor = SimpleNamespace(connection=connection)
+
+        migration.seed_personal_list_backlog(apps, schema_editor)
+        migration.seed_personal_list_backlog(apps, schema_editor)
+
+        self.assertTrue(
+            UserContentTracking.objects.filter(
+                user=user,
+                content_item=backlog_movie,
+                status=UserContentTracking.Status.BACKLOG,
+            ).exists()
+        )
+        completed_tracking.refresh_from_db()
+        rating.refresh_from_db()
+        self.assertEqual(
+            completed_tracking.status,
+            UserContentTracking.Status.COMPLETED,
+        )
+        self.assertTrue(completed_tracking.is_favorite)
+        self.assertTrue(rating.is_active)
+        self.assertFalse(
+            UserContentTracking.objects.filter(
+                user=user,
+                content_item=shared_movie,
+            ).exists()
+        )
+        self.assertEqual(
+            UserContentTracking.objects.filter(user=user).count(),
+            2,
         )
 
 
@@ -485,7 +657,15 @@ class TrackingApiTests(APITestCase):
         self.assertEqual(favorite.status_code, 200)
         self.assertTrue(favorite.data["is_favorite"])
 
-        deleted = self.client.delete(detail_url)
+        rejected_delete = self.client.delete(detail_url)
+        self.assertEqual(rejected_delete.status_code, 409)
+        self.assertEqual(
+            rejected_delete.data["effects"],
+            ["favorite_removed"],
+        )
+        deleted = self.client.delete(
+            f"{detail_url}?acknowledge_effects=true"
+        )
         self.assertEqual(deleted.status_code, 204)
         self.assertFalse(
             UserContentTracking.objects.filter(

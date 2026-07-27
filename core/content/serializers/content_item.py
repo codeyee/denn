@@ -1,11 +1,13 @@
 from rest_framework import serializers
 from content.models import ContentItem
+from content.services.progress_policy import get_progress_policy
 from core.serializers import BaseFlexSerializer
 
 class ContentItemSerializer(BaseFlexSerializer):
     source_data = serializers.SerializerMethodField()
     current_user_rating = serializers.SerializerMethodField()
     current_user_tracking = serializers.SerializerMethodField()
+    progress_policy = serializers.SerializerMethodField()
 
     class Meta:
         model = ContentItem
@@ -19,6 +21,7 @@ class ContentItemSerializer(BaseFlexSerializer):
             'average_rating',
             'current_user_rating',
             'current_user_tracking',
+            'progress_policy',
             'created_at',
             'source_data',
         ]
@@ -29,6 +32,7 @@ class ContentItemSerializer(BaseFlexSerializer):
             'average_rating',
             'current_user_rating',
             'current_user_tracking',
+            'progress_policy',
             'created_at',
             'source_data',
         ]
@@ -97,6 +101,9 @@ class ContentItemSerializer(BaseFlexSerializer):
             'created_at': tracking.created_at,
             'updated_at': tracking.updated_at,
         }
+
+    def get_progress_policy(self, obj):
+        return get_progress_policy(obj.content_type)
 
     def _should_include_source_data(self):
         if self.context.get('skip_source_data', False):

@@ -42,6 +42,17 @@ class PublicRatingItemSerializer(serializers.Serializer):
     updated_at = serializers.DateTimeField()
 
 
+class PublicProgressItemSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    content = LocalContentSummarySerializer()
+    status = serializers.CharField()
+    completed_at = serializers.DateTimeField(allow_null=True)
+    is_favorite = serializers.BooleanField()
+    rating = serializers.DictField(allow_null=True)
+    created_at = serializers.DateTimeField()
+    updated_at = serializers.DateTimeField()
+
+
 class PublicProfileCountersSerializer(serializers.Serializer):
     completed = serializers.IntegerField()
     ratings = serializers.IntegerField()

@@ -23,6 +23,7 @@ import {
 } from "@/lib/api/mutations";
 import type { TrackingStatus } from "@/lib/types";
 import { useAuthRequiredAction } from "@/hooks/useAuthRequiredAction";
+import { getTrackingEffectDescription } from "@/lib/utils/trackingEffects";
 
 interface ContentDetailPageProps {
   contentId: number;
@@ -114,13 +115,65 @@ export function ContentDetailPage({
   }
 
   const handleTrackingStatusChange = async (status: TrackingStatus) => {
-    const tracking = await setTrackingStatus.mutateAsync({
-      contentId: contentItem.id,
-      status,
-    });
-    if (tracking.should_prompt_rating) {
-      modals.openRatingModal();
+    try {
+      const tracking = await setTrackingStatus.mutateAsync({
+        contentId: contentItem.id,
+        status,
+      });
+      if (tracking.should_prompt_rating) {
+        modals.openRatingModal();
+      }
+    } catch (error) {
+      const effectText = getTrackingEffectDescription(error);
+      if (effectText === null) return;
+      if (
+        window.confirm(
+          `Changing progress will ${effectText || "update related activity"}. Continue?`,
+        )
+      ) {
+        const tracking = await setTrackingStatus.mutateAsync({
+          contentId: contentItem.id,
+          status,
+          acknowledgeEffects: true,
+        });
+        if (tracking.should_prompt_rating) {
+          modals.openRatingModal();
+        }
+      }
     }
+  };
+
+  const handleDeleteTracking = async () => {
+    try {
+      await deleteTracking.mutateAsync({ contentId: contentItem.id });
+    } catch (error) {
+      const effectText = getTrackingEffectDescription(error);
+      if (
+        effectText !== null &&
+        window.confirm(
+          `Stopping progress will ${effectText || "update related activity"}. Continue?`,
+        )
+      ) {
+        await deleteTracking.mutateAsync({
+          contentId: contentItem.id,
+          acknowledgeEffects: true,
+        });
+      }
+    }
+  };
+
+  const handleRateContent = () => {
+    requireAuth(() => {
+      if (
+        contentItem.current_user_tracking?.status !== "completed" &&
+        !window.confirm(
+          "Saving a rating will mark this content as completed. Continue?",
+        )
+      ) {
+        return;
+      }
+      modals.openRatingModal();
+    });
   };
 
   return (
@@ -138,7 +191,7 @@ export function ContentDetailPage({
             userRating={rating.userRating}
             isAuthenticated={isAuthenticated}
             onAddToList={() => requireAuth(modals.openAddToListModal)}
-            onRateContent={() => requireAuth(modals.openRatingModal)}
+            onRateContent={handleRateContent}
             tracking={contentItem.current_user_tracking ?? null}
             isTrackingLoading={isTrackingLoading}
             onTrackingStatusChange={(status) => {
@@ -150,11 +203,7 @@ export function ContentDetailPage({
                 isFavorite,
               });
             }}
-            onDeleteTracking={() => {
-              if (window.confirm("Stop tracking this content?")) {
-                void deleteTracking.mutateAsync({ contentId: contentItem.id });
-              }
-            }}
+            onDeleteTracking={() => void handleDeleteTracking()}
           />
 
           <AboutSection
@@ -167,16 +216,14 @@ export function ContentDetailPage({
             onDeleteRating={rating.handleDeleteRating}
           />
 
-          {activeUser && contentItem.content_type !== ContentType.SEASON && (
-            <RatingsSection
-              contentItem={contentItem}
-              userRating={rating.userRating}
-              onEditRating={modals.openRatingModal}
-              onDeleteRating={rating.handleDeleteRating}
-              isRatingLoading={rating.isRatingLoading}
-              user={activeUser}
-            />
-          )}
+          <RatingsSection
+            contentItem={contentItem}
+            userRating={rating.userRating}
+            onEditRating={modals.openRatingModal}
+            onDeleteRating={rating.handleDeleteRating}
+            isRatingLoading={rating.isRatingLoading}
+            user={activeUser}
+          />
 
           <TracksSection
             detailData={detailData}

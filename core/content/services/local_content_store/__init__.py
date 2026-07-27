@@ -75,6 +75,19 @@ def detail_is_fresh(content_item: ContentItem) -> bool:
     ).ttl
 
 
+def detail_is_complete(content_item: ContentItem) -> bool:
+    """Return whether locally persisted detail satisfies structural invariants."""
+    detail = detail_for(content_item)
+    if detail is None:
+        return False
+    if (
+        content_item.content_type == ContentItem.ContentType.TV_SHOW
+        and (detail.number_of_seasons or 0) > 0
+    ):
+        return bool(content_item.season_children.all())
+    return True
+
+
 def ensure_content_detail(
     content_item: ContentItem,
     *,
@@ -90,7 +103,11 @@ def ensure_content_detail(
     Returns True if a refresh actually ran, False if the existing Detail
     was already fresh (or if no payload could be obtained).
     """
-    if not force and detail_is_fresh(content_item):
+    if (
+        not force
+        and detail_is_fresh(content_item)
+        and detail_is_complete(content_item)
+    ):
         return False
 
     if payload is None:
@@ -138,6 +155,7 @@ __all__ = [
     'MAPPERS',
     'get_or_create_content_item',
     'detail_for',
+    'detail_is_complete',
     'detail_is_fresh',
     'ensure_content_detail',
 ]

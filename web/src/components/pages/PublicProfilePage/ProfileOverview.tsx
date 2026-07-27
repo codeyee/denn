@@ -24,7 +24,7 @@ export function ProfileOverview({
       <ProfileSection
         title="Recent reviews"
         action={
-          <SectionLink username={username} tab="ratings">
+          <SectionLink username={username} tab="progress">
             View all
           </SectionLink>
         }
@@ -43,7 +43,7 @@ export function ProfileOverview({
       <ProfileSection
         title="Recently completed"
         action={
-          <SectionLink username={username} tab="completed">
+          <SectionLink username={username} tab="progress">
             View all
           </SectionLink>
         }
@@ -99,7 +99,7 @@ function SectionLink({
   children,
 }: {
   username: string;
-  tab: "completed" | "ratings" | "lists";
+  tab: "progress" | "lists";
   children: ReactNode;
 }) {
   return (

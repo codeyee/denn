@@ -158,7 +158,7 @@ function parseSort(value?: string): SortClause[] {
 }
 
 function isFilterField(value: string): value is FilterField {
-  return ["status", "content_type", "source_api", "added_by"].includes(value);
+  return ["context_status", "content_type", "source_api", "added_by"].includes(value);
 }
 
 function isRangeFilterField(value: string): value is RangeFilterField {
@@ -167,8 +167,8 @@ function isRangeFilterField(value: string): value is RangeFilterField {
     "list_rating_lte",
     "added_at_gte",
     "added_at_lte",
-    "completed_at_gte",
-    "completed_at_lte",
+    "context_completed_at_gte",
+    "context_completed_at_lte",
     "release_date_gte",
     "release_date_lte",
   ].includes(value);
@@ -178,8 +178,8 @@ function isSortField(value: string): value is SortField {
   return [
     "list_order",
     "added_at",
-    "completed_at",
-    "status",
+    "context_completed_at",
+    "context_status",
     "content_type",
     "list_rating",
     "display_title",
@@ -190,5 +190,5 @@ function isSortField(value: string): value is SortField {
 }
 
 function isGroupByField(value: string): value is GroupByField {
-  return ["status", "content_type", "source_api", "added_by", "artist"].includes(value);
+  return ["context_status", "content_type", "source_api", "added_by", "artist"].includes(value);
 }

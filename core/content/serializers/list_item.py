@@ -1,7 +1,9 @@
 from types import SimpleNamespace
 
+from django.db import transaction
 from rest_framework import serializers
 from content.models import ListItem, ContentItem, Rating
+from content.services.tracking_service import ensure_tracking
 from .content_item import ContentItemSerializer
 from .user import UserSerializer
 
@@ -40,9 +42,9 @@ class ListItemSerializer(BaseFlexSerializer):
             'list_order',
             'content_item',
             'added_by',
-            'status',
+            'context_status',
             'added_at',
-            'completed_at',
+            'context_completed_at',
             'member_ratings',
             'list_rating',
             'member_rating_count',
@@ -55,7 +57,7 @@ class ListItemSerializer(BaseFlexSerializer):
             'content_item',
             'added_by',
             'added_at',
-            'completed_at',
+            'context_completed_at',
             'member_ratings',
             'list_rating',
             'member_rating_count',
@@ -69,22 +71,22 @@ class ListItemSerializer(BaseFlexSerializer):
 
     def get_content_item(self, obj):
         context = self.context
-        canonical_tracking_status = getattr(
+        personal_tracking_status = getattr(
             obj,
-            "canonical_tracking_status",
+            "personal_tracking_status",
             None,
         )
-        if canonical_tracking_status is not None:
+        if personal_tracking_status is not None:
             context = {
                 **self.context,
                 "current_user_tracking": SimpleNamespace(
-                    content_item_id=obj.canonical_tracking_content_id,
-                    status=canonical_tracking_status,
-                    last_completed_at=obj.canonical_tracking_last_completed_at,
-                    is_favorite=obj.canonical_tracking_is_favorite,
-                    favorited_at=obj.canonical_tracking_favorited_at,
-                    created_at=obj.canonical_tracking_created_at,
-                    updated_at=obj.canonical_tracking_updated_at,
+                    content_item_id=obj.personal_tracking_content_id,
+                    status=personal_tracking_status,
+                    last_completed_at=obj.personal_tracking_last_completed_at,
+                    is_favorite=obj.personal_tracking_is_favorite,
+                    favorited_at=obj.personal_tracking_favorited_at,
+                    created_at=obj.personal_tracking_created_at,
+                    updated_at=obj.personal_tracking_updated_at,
                 ),
             }
         kwargs = {'context': context}
@@ -111,6 +113,20 @@ class ListItemSerializer(BaseFlexSerializer):
 
         return ContentItemSerializer(obj.content_item, **kwargs).data
 
+    def validate(self, attrs):
+        if (
+            self.instance
+            and self.instance.user_list.list_type
+            == self.instance.user_list.ListType.PERSONAL
+            and attrs.get("context_status") is not None
+        ):
+            raise serializers.ValidationError({
+                "context_status": (
+                    "Personal lists use the content tracking progress state."
+                )
+            })
+        return attrs
+
     def _get_member_ids(self, obj):
         """
         Helper to get all member IDs including owner.
@@ -130,7 +146,7 @@ class ListItemSerializer(BaseFlexSerializer):
         return member_ids
 
     def get_member_ratings(self, obj):
-        if obj.status != ListItem.Status.COMPLETED:
+        if not self._ratings_are_visible(obj):
             return []
 
         if hasattr(obj.content_item, 'member_ratings_prefetched'):
@@ -156,7 +172,7 @@ class ListItemSerializer(BaseFlexSerializer):
         ).data
 
     def get_list_rating(self, obj):
-        if obj.status != ListItem.Status.COMPLETED:
+        if not self._ratings_are_visible(obj):
             return None
 
         if hasattr(obj, 'member_rating_avg_annotated'):
@@ -173,7 +189,7 @@ class ListItemSerializer(BaseFlexSerializer):
         return None
 
     def get_member_rating_count(self, obj):
-        if obj.status != ListItem.Status.COMPLETED:
+        if not self._ratings_are_visible(obj):
             return 0
 
         if hasattr(obj, 'member_rating_count_annotated'):
@@ -183,6 +199,11 @@ class ListItemSerializer(BaseFlexSerializer):
             return len(obj.content_item.member_ratings_prefetched)
 
         return 0
+
+    def _ratings_are_visible(self, obj):
+        if obj.user_list.list_type == obj.user_list.ListType.SHARED:
+            return obj.context_status == ListItem.Status.COMPLETED
+        return getattr(obj, "personal_tracking_status", None) == "completed"
 
 class ListItemCreateSerializer(serializers.ModelSerializer):
     source_api = serializers.ChoiceField(
@@ -214,9 +235,9 @@ class ListItemCreateSerializer(serializers.ModelSerializer):
             'content_type',
             'content_item',
             'added_by',
-            'status',
+            'context_status',
             'added_at',
-            'completed_at',
+            'context_completed_at',
         ]
 
         read_only_fields = [
@@ -225,7 +246,7 @@ class ListItemCreateSerializer(serializers.ModelSerializer):
             'content_item',
             'added_by',
             'added_at',
-            'completed_at'
+            'context_completed_at'
         ]
 
     def get_content_item(self, obj):
@@ -252,6 +273,7 @@ class ListItemCreateSerializer(serializers.ModelSerializer):
 
         return attrs
 
+    @transaction.atomic
     def create(self, validated_data):
         source_api = validated_data.pop('source_api')
         external_id = validated_data.pop('external_id')
@@ -266,6 +288,11 @@ class ListItemCreateSerializer(serializers.ModelSerializer):
 
         # Check for duplicate item in the same list
         user_list = validated_data.get('user_list')
+        if user_list.list_type == user_list.ListType.PERSONAL:
+            validated_data["context_status"] = None
+            validated_data["context_completed_at"] = None
+        elif validated_data.get("context_status") is None:
+            validated_data["context_status"] = ListItem.Status.PENDING
         existing_item = ListItem.objects.filter(
             user_list=user_list,
             content_item=content_item
@@ -277,7 +304,7 @@ class ListItemCreateSerializer(serializers.ModelSerializer):
                 existing_item={
                     'id': existing_item.id,
                     'added_at': existing_item.added_at.isoformat(),
-                    'status': existing_item.status
+                    'context_status': existing_item.context_status
                 }
             )
 
@@ -285,5 +312,10 @@ class ListItemCreateSerializer(serializers.ModelSerializer):
             content_item=content_item,
             **validated_data
         )
+        if user_list.list_type == user_list.ListType.PERSONAL:
+            ensure_tracking(
+                user=user_list.owner,
+                content_item=content_item,
+            )
 
         return list_item

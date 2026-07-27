@@ -4,13 +4,16 @@ import type {
   ListType,
   ListVisibility,
   PaginationMetadata,
+  TrackingStatus,
 } from "./api";
 
-export type ProfileTab = "overview" | "completed" | "ratings" | "lists";
+export type ProfileTab = "overview" | "progress" | "lists";
+export type ProfileContentType = Exclude<`${ContentType}`, "PERSON">;
 
 export interface LocalContentSummary {
   id: number;
   type: ContentType;
+  season_number: number | null;
   title: string;
   subtitle: string | null;
   date: string | null;
@@ -52,6 +55,26 @@ export interface PublicRatingItem {
   updated_at: string;
 }
 
+export interface PublicProgressRating {
+  id: number;
+  score: string;
+  review: string | null;
+  spoiler: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PublicProgressItem {
+  id: number;
+  content: LocalContentSummary;
+  status: TrackingStatus;
+  completed_at: string | null;
+  is_favorite: boolean;
+  rating: PublicProgressRating | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface PublicListSummary {
   id: number;
   name: string;
@@ -70,9 +93,9 @@ export interface PublicListSummary {
 export interface PublicListItem {
   id: number;
   list_order: number;
-  status: "PENDING" | "COMPLETED";
+  context_status: "PENDING" | "COMPLETED" | null;
   added_at: string;
-  completed_at: string | null;
+  context_completed_at: string | null;
   content: LocalContentSummary;
 }
 
@@ -119,12 +142,8 @@ export interface PaginatedProfileResults<T> {
 
 export type PublicProfileTabData =
   | {
-      tab: "completed";
-      data: PaginatedProfileResults<PublicCompletedItem>;
-    }
-  | {
-      tab: "ratings";
-      data: PaginatedProfileResults<PublicRatingItem>;
+      tab: "progress";
+      data: PaginatedProfileResults<PublicProgressItem>;
     }
   | {
       tab: "lists";
@@ -133,15 +152,20 @@ export type PublicProfileTabData =
 
 export interface ProfileSearchParams {
   tab: ProfileTab;
-  type?: Exclude<ContentType, ContentType.PERSON>;
+  type?: ProfileContentType[];
   q?: string;
   sort?: string;
+  order?: "asc" | "desc";
   page: number;
-  kind?: "all" | "reviews" | "ratings_only";
+  status?: TrackingStatus[];
+  tvKind?: "all" | "series" | "seasons";
+  rated?: boolean;
+  reviewed?: boolean;
   favorite?: boolean;
   minScore?: number;
   maxScore?: number;
   role?: "all" | "owner" | "member";
+  view?: "grid" | "list";
 }
 
 export interface PublicProfileUpdate {

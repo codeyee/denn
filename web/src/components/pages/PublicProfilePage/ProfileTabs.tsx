@@ -6,8 +6,7 @@ import type { ProfileSearchParams, ProfileTab } from "@/lib/types";
 
 const PROFILE_TABS: Array<{ value: ProfileTab; label: string }> = [
   { value: "overview", label: "Overview" },
-  { value: "completed", label: "Completed" },
-  { value: "ratings", label: "Ratings & Reviews" },
+  { value: "progress", label: "Progress" },
   { value: "lists", label: "Lists" },
 ];
 

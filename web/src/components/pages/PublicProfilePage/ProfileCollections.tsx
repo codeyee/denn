@@ -1,20 +1,20 @@
-import { Star } from "lucide-react";
-
 import { ContentCard } from "@/components/common/cards/ContentCard";
 import { ListCard } from "@/components/common/cards/ListCard";
-import { RatingBadge } from "@/components/common/ui/RatingBadge";
-import { formatAuthors } from "@/lib/utils/authorUtils";
 import type {
   PublicCompletedItem,
   PublicFavorite,
   PublicListSummary,
 } from "@/lib/types";
-import { formatProfileDate, profileContentCardItem, profileListCardItem } from "./utils";
+import {
+  formatProfileDate,
+  getProfileContentAttribution,
+  profileContentCardItem,
+  profileListCardItem,
+} from "./utils";
+import { ProfileCardIndicators } from "./ProfileIndicators";
 
 const PROFILE_CONTENT_GRID_CLASS =
   "grid grid-cols-2 gap-x-3 gap-y-7 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6";
-const PROFILE_RATING_BADGE_CLASS =
-  "border-amber-300/70 bg-[#180d12]/95 text-amber-100";
 
 export function CompletedGrid({
   items,
@@ -28,17 +28,13 @@ export function CompletedGrid({
           key={item.content.id}
           item={profileContentCardItem(item.content)}
           showAddToList={false}
-          leadingBadgeSlot={
-            item.score ? (
-              <RatingBadge
-                rating={Number(item.score)}
-                variant="user"
-                className={PROFILE_RATING_BADGE_CLASS}
+          badgeSlot={
+            item.score || item.is_favorite ? (
+              <ProfileCardIndicators
+                rating={item.score ? Number(item.score) : null}
+                isFavorite={item.is_favorite}
               />
             ) : null
-          }
-          badgeSlot={
-            item.is_favorite ? <FavoriteBadge /> : null
           }
           metadataSlot={
             <ProfileCardMetadata
@@ -60,27 +56,15 @@ export function FavoriteGrid({ items }: { items: PublicFavorite[] }) {
           key={item.content.id}
           item={profileContentCardItem(item.content)}
           showAddToList={false}
-          leadingBadgeSlot={
-            item.score ? (
-              <RatingBadge
-                rating={Number(item.score)}
-                variant="user"
-                className={PROFILE_RATING_BADGE_CLASS}
-              />
-            ) : null
+          badgeSlot={
+            <ProfileCardIndicators
+              rating={item.score ? Number(item.score) : null}
+              isFavorite
+            />
           }
-          badgeSlot={<FavoriteBadge />}
         />
       ))}
     </div>
-  );
-}
-
-function FavoriteBadge() {
-  return (
-    <span className="grid h-8 w-8 place-items-center rounded-full bg-[#180d12]/95 text-amber-200">
-      <Star aria-label="Favorite" className="h-4 w-4 fill-current" />
-    </span>
   );
 }
 
@@ -102,7 +86,7 @@ function ProfileCardMetadata({
 function getContentAttribution(
   content: PublicCompletedItem["content"],
 ): string {
-  return formatAuthors(content.authors, 2) || content.subtitle || "";
+  return getProfileContentAttribution(content);
 }
 
 export function PublicListGrid({ lists }: { lists: PublicListSummary[] }) {

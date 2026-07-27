@@ -13,7 +13,6 @@ import {
   UserContentTracking,
   TrackingStatus,
 } from "@/lib/types";
-import { ContentTrackingControls } from "./ContentTrackingControls";
 
 interface ContentHeaderProps {
   displayItem: MovieDetail | TVShowDetail | TVSeasonDetail | AlbumDetail | GameDetail | BookDetail;
@@ -50,12 +49,16 @@ export function ContentHeader({
         <ContentBanner
           item={displayItem}
           tvShowTitle={contentItem.content_type === ContentType.SEASON ? tvShowTitle : undefined}
-          externalId={contentItem.external_id}
-          sourceApi={contentItem.source_api}
           onAddToList={onAddToList}
           onRateContent={onRateContent}
           isAuthenticated={isAuthenticated}
           hasUserRating={!!userRating}
+          tracking={tracking}
+          progressPolicy={contentItem.progress_policy}
+          isTrackingLoading={isTrackingLoading}
+          onTrackingStatusChange={onTrackingStatusChange}
+          onFavoriteChange={onFavoriteChange}
+          onDeleteTracking={onDeleteTracking}
         />
       </section>
 
@@ -78,15 +81,6 @@ export function ContentHeader({
               </div>
             </div>
           ) : null}
-          {isAuthenticated && (
-            <ContentTrackingControls
-              tracking={tracking}
-              disabled={isTrackingLoading}
-              onStatusChange={onTrackingStatusChange}
-              onFavoriteChange={onFavoriteChange}
-              onRemove={onDeleteTracking}
-            />
-          )}
         </div>
       </section>
     </>

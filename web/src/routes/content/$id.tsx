@@ -9,7 +9,8 @@ import { Navbar } from "@/components/layout/Navbar";
 import { ContentDetailPage } from "@/components/pages/ContentDetailPage";
 import { ContentDetailSkeleton } from "@/components/pages/ContentDetailPage/ContentDetailSkeleton";
 import { prefetchContentDetailQueries } from "@/lib/api/queries/server";
-import type { ContentItem } from "@/lib/types";
+import { ContentType, type ContentItem } from "@/lib/types";
+import { formatSeasonTitle } from "@/lib/utils/titleUtils";
 
 export const Route = createFileRoute("/content/$id")({
   loader: async ({ context, params }) => {
@@ -94,6 +95,24 @@ function contentTitle(item?: ContentItem) {
     typeof item.source_data === "string"
       ? safeJsonObject(item.source_data)
       : item.source_data;
+
+  if (item.content_type === ContentType.SEASON && sourceData) {
+    const seasonTitle =
+      "title" in sourceData && typeof sourceData.title === "string"
+        ? sourceData.title
+        : null;
+    const tvShowName =
+      "tv_show_name" in sourceData &&
+      typeof sourceData.tv_show_name === "string"
+        ? sourceData.tv_show_name
+        : null;
+    const seasonNumber =
+      "season_number" in sourceData &&
+      typeof sourceData.season_number === "number"
+        ? sourceData.season_number
+        : undefined;
+    return formatSeasonTitle(tvShowName, seasonTitle, seasonNumber);
+  }
 
   if (
     sourceData &&

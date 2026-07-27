@@ -34,12 +34,12 @@ class FlexFieldsTests(APITestCase):
     def test_fields_parameter(self):
         """Test that ?fields parameter restricts returned fields"""
         url = reverse('content:lists:items-list', kwargs={'list_pk': self.user_list.id})
-        response = self.client.get(url, {'fields': 'id,status'})
+        response = self.client.get(url, {'fields': 'id,context_status'})
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(len(response.data['results']) > 0)
         item = response.data['results'][0]
-        self.assertEqual(set(item.keys()), {'id', 'status'})
+        self.assertEqual(set(item.keys()), {'id', 'context_status'})
 
     def test_expand_parameter(self):
         """Test that ?expand parameter expands relationships"""
