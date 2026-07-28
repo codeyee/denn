@@ -6,6 +6,7 @@ import type {
   PaginationMetadata,
   TrackingStatus,
 } from "./api";
+import type { BannerMediaTreatment } from "../utils/imageUtils";
 
 export type ProfileTab = "overview" | "progress" | "lists";
 export type ProfileContentType = Exclude<`${ContentType}`, "PERSON">;
@@ -123,6 +124,7 @@ export interface ProfileBannerMedia {
   content_id: number;
   type: ContentType;
   image_url: string;
+  treatment?: BannerMediaTreatment;
 }
 
 export interface PublicProfileOverview {

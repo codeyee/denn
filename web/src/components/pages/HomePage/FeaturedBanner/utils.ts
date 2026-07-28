@@ -1,9 +1,16 @@
 import { Content } from "@/lib/types";
-import { getBannerImageUrl } from "@/lib/utils/imageUtils";
+import {
+  getBannerMedia,
+  type BannerMedia,
+} from "@/lib/utils/imageUtils";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 
+export function getBestBannerMedia(item: Content): BannerMedia | null {
+  return getBannerMedia(item.images, item.image_url);
+}
+
 export function getBestImageUrl(item: Content): string | undefined {
-  return getBannerImageUrl(item.images, item.image_url) || undefined;
+  return getBestBannerMedia(item)?.imageUrl || undefined;
 }
 
 export function getFooterInfo(item: Content): string {

@@ -12,10 +12,8 @@ import { formatAuthors } from "@/lib/utils/authorUtils";
 import { formatSeasonTitle } from "@/lib/utils/titleUtils";
 import { CONTENT_TYPE_ICONS } from "@/lib/icons/contentTypeIcons";
 import { Content } from "@/lib/types";
-import { ContainedPosterBannerMedia } from "@/components/common/media/ContainedPosterBannerMedia";
-import { ResponsiveMedia } from "@/components/common/media/ResponsiveMedia";
+import { BannerArtwork } from "@/components/common/media/BannerArtwork";
 import {
-  BANNER_MEDIA_POSITION,
   BannerShell,
 } from "@/components/common/media/BannerShell";
 import { ContentActions } from "./ContentActions";
@@ -101,23 +99,8 @@ export function ContentBanner({
   return (
     <BannerShell
       media={
-        bannerMedia?.treatment === "cover" ? (
-          <ResponsiveMedia
-            src={bannerMedia.imageUrl}
-            alt={bannerAlt}
-            data-banner-media="cover"
-            width={1600}
-            height={900}
-            sizes="100vw"
-            priority
-            className={`absolute inset-0 h-full w-full object-cover ${BANNER_MEDIA_POSITION}`}
-          />
-        ) : bannerMedia ? (
-          <ContainedPosterBannerMedia
-            src={bannerMedia.imageUrl}
-            alt={bannerAlt}
-            priority
-          />
+        bannerMedia ? (
+          <BannerArtwork media={bannerMedia} alt={bannerAlt} priority />
         ) : undefined
       }
       fallback={

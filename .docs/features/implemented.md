@@ -106,7 +106,9 @@ considered part of the project baseline.
 - Shared semantic responsive media for hero, cards, episodes, and
   detail banners, with reserved dimensions, provider-aware `srcset`,
   useful alt text, async decoding, lazy non-critical media, and one
-  priority LCP image.
+  priority LCP image. Banner artwork is format-aware: panoramic media
+  remains full-bleed, while poster-only media uses a blurred ambient copy
+  and a centered contained foreground across detail, homepage, and profile.
 - Accessible featured-content carousel with user pause/resume,
   focus/hover pause, reduced-motion opt-out, roving tab stops, stable
   geometry, and delayed loading of inactive artwork.

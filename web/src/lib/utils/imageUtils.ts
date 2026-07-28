@@ -1,8 +1,10 @@
 import { Image, ImageType, ImageSize } from "@/lib/types";
 
+export type BannerMediaTreatment = "cover" | "contained-poster";
+
 export interface BannerMedia {
   imageUrl: string;
-  treatment: "cover" | "contained-poster";
+  treatment: BannerMediaTreatment;
 }
 
 const HORIZONTAL_BANNER_TYPES = [

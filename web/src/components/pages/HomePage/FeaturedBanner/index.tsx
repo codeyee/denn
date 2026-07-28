@@ -1,16 +1,13 @@
 import { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import {
-  BANNER_MEDIA_POSITION,
-  COMPACT_BANNER_SIZE,
-} from "@/components/common/media/BannerShell";
-import { ResponsiveMedia } from "@/components/common/media/ResponsiveMedia";
+import { BannerArtwork } from "@/components/common/media/BannerArtwork";
+import { COMPACT_BANNER_SIZE } from "@/components/common/media/BannerShell";
 import { Content } from "@/lib/types";
 import { navigateToContentById } from "@/lib/utils/navigationUtils";
 import { useBannerAutoRotation } from "./hooks/useBannerAutoRotation";
 import { useBannerGestures } from "./hooks/useBannerGestures";
-import { getBestImageUrl } from "./utils";
+import { getBestBannerMedia } from "./utils";
 import { BannerContent } from "./components/BannerContent";
 import { BannerControls } from "./components/BannerControls";
 
@@ -28,7 +25,7 @@ export function FeaturedBanner({ items, autoRotateMs = 5000 }: FeaturedBannerPro
 
   const validItems = useMemo(
     () => items.filter((item) =>
-      Boolean(item.denn_id && getBestImageUrl(item)),
+      Boolean(item.denn_id && getBestBannerMedia(item)),
     ),
     [items]
   );
@@ -62,7 +59,7 @@ export function FeaturedBanner({ items, autoRotateMs = 5000 }: FeaturedBannerPro
   if (validItems.length === 0) return null;
 
   const current = validItems[index];
-  const currentImage = getBestImageUrl(current);
+  const currentMedia = getBestBannerMedia(current);
 
   return (
     <section
@@ -87,17 +84,13 @@ export function FeaturedBanner({ items, autoRotateMs = 5000 }: FeaturedBannerPro
             exit={shouldReduceMotion ? undefined : { opacity: 0 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
           >
-            {currentImage && (
-              <ResponsiveMedia
-                src={currentImage}
+            {currentMedia ? (
+              <BannerArtwork
+                media={currentMedia}
                 alt={`${current.title} featured artwork`}
-                width={1600}
-                height={900}
-                sizes="100vw"
                 priority
-                className={`h-full w-full object-cover ${BANNER_MEDIA_POSITION}`}
               />
-            )}
+            ) : null}
           </motion.div>
         </AnimatePresence>
       </div>

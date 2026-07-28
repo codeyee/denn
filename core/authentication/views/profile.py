@@ -844,14 +844,39 @@ def _select_banner_media(favorite_rows, content_map):
         content = content_map.get(row["content_item_id"])
         if content is None:
             continue
-        summary = _serialize_content(content)
-        image_url = summary["backdrop"]
+        image_url, treatment = _preferred_banner_image(content)
         if image_url:
             media.append(
                 {
                     "content_id": content.id,
                     "type": content.content_type,
                     "image_url": image_url,
+                    "treatment": treatment,
                 }
             )
     return media[:5]
+
+
+def _preferred_banner_image(content):
+    images = list(content.images.all())
+    for image_type, treatment in (
+        (Image.Type.GALLERY, "cover"),
+        (Image.Type.POSTER, "contained-poster"),
+    ):
+        for image_size in (Image.Size.ORIGINAL, Image.Size.STANDARD):
+            image = next(
+                (
+                    candidate
+                    for candidate in images
+                    if candidate.type == image_type
+                    and candidate.size == image_size
+                    and candidate.image_url
+                ),
+                None,
+            )
+            if image:
+                return image.image_url, treatment
+
+    summary = _serialize_content(content)
+    image_url = summary["poster"] or summary["backdrop"]
+    return image_url, "contained-poster" if image_url else "cover"

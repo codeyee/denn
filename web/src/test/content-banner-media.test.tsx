@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { ContainedPosterBannerMedia } from "@/components/common/media/ContainedPosterBannerMedia";
+import { getBestBannerMedia } from "@/components/pages/HomePage/FeaturedBanner/utils";
 import { ImageSize, ImageType, type Image } from "@/lib/types";
 import { getBannerMedia } from "@/lib/utils/imageUtils";
 
@@ -53,6 +54,19 @@ describe("content banner media selection", () => {
     });
     expect(getBannerMedia([], "legacy-poster.jpg")).toEqual({
       imageUrl: "legacy-poster.jpg",
+      treatment: "contained-poster",
+    });
+  });
+
+  it("keeps homepage selection aligned with the detail banner treatment", () => {
+    const album = {
+      type: "ALBUM",
+      image_url: "album-poster.jpg",
+      images: [image(ImageType.POSTER, ImageSize.ORIGINAL, "album-poster.jpg")],
+    } as Parameters<typeof getBestBannerMedia>[0];
+
+    expect(getBestBannerMedia(album)).toEqual({
+      imageUrl: "album-poster.jpg",
       treatment: "contained-poster",
     });
   });

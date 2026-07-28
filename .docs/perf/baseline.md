@@ -310,13 +310,15 @@ static tiles. It no longer ran a permanent animation frame loop,
 regenerated TV-noise pixels, applied a viewport-sized blur, or promoted
 the sphere with `will-change`.
 
-The homepage featured banner now follows the same rule: it keeps its
-single active responsive image, content gradients, and bounded
-crossfade, but no longer mounts the continuously refreshed TV-noise
-canvas. A five-second local steady-state check recorded zero canvases,
-one active banner image, and 79.675 ms of main-thread task time including
-one scheduled carousel rotation. No comparable pre-change runtime
-sample was retained, so this is a regression point rather than a
+The homepage featured banner now follows the same rule: it keeps one
+active responsive image for full-bleed artwork, and poster-only slides
+use the bounded two-copy ambient/foreground treatment. It keeps the
+content gradients and bounded crossfade and does not mount the
+continuously refreshed TV-noise canvas. The recorded fixture used a
+full-bleed item: a five-second local steady-state check recorded zero
+canvases, one active banner image, and 79.675 ms of main-thread task time
+including one scheduled carousel rotation. No comparable pre-change
+runtime sample was retained, so this is a regression point rather than a
 before/after claim.
 
 ## Dynamic Collections Performance Contract

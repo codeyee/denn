@@ -8,11 +8,8 @@ import {
   Trophy,
 } from "lucide-react";
 
-import {
-  BANNER_MEDIA_POSITION,
-  BannerShell,
-} from "@/components/common/media/BannerShell";
-import { ResponsiveMedia } from "@/components/common/media/ResponsiveMedia";
+import { BannerArtwork } from "@/components/common/media/BannerArtwork";
+import { BannerShell } from "@/components/common/media/BannerShell";
 import { Button } from "@/components/common/ui/Button";
 import { UserAvatar } from "@/components/common/ui/UserAvatar";
 import type { ProfileBannerMedia, PublicProfileOverview } from "@/lib/types";
@@ -39,14 +36,13 @@ export function ProfileBanner({
     <BannerShell
       media={
         bannerMedia ? (
-          <ResponsiveMedia
-            src={bannerMedia.image_url}
+          <BannerArtwork
+            media={{
+              imageUrl: bannerMedia.image_url,
+              treatment: bannerMedia.treatment ?? "cover",
+            }}
             alt=""
-            width={1600}
-            height={900}
-            sizes="100vw"
             priority
-            className={`absolute inset-0 h-full w-full object-cover ${BANNER_MEDIA_POSITION}`}
           />
         ) : undefined
       }

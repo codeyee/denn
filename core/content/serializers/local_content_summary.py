@@ -87,14 +87,20 @@ class LocalContentSummarySerializer(serializers.Serializer):
         return poster or getattr(detail, "image_url", "") or None
 
     def get_backdrop(self, obj) -> Optional[str]:
-        return next(
-            (
-                image.image_url
-                for image in self._prefetched(obj, "images")
-                if image.type == Image.Type.GALLERY
-            ),
-            None,
-        )
+        images = self._prefetched(obj, "images")
+        for size in (Image.Size.ORIGINAL, Image.Size.STANDARD):
+            image = next(
+                (
+                    image.image_url
+                    for image in images
+                    if image.type == Image.Type.GALLERY
+                    and image.size == size
+                ),
+                None,
+            )
+            if image:
+                return image
+        return None
 
     def get_authors(self, obj) -> Optional[list[dict[str, str]]]:
         authors = [

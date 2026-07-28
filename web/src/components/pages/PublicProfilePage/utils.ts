@@ -132,12 +132,13 @@ export function pickRandomFavoriteBanner(
   const favoriteMedia = Object.values(overview.favorites)
     .flatMap((items) => items ?? [])
     .flatMap(({ content }) => {
-      const imageUrl = content.backdrop;
+      const imageUrl = content.backdrop || content.poster;
       return imageUrl
         ? [{
             content_id: content.id,
             type: content.type,
             image_url: imageUrl,
+            treatment: content.backdrop ? "cover" : "contained-poster",
           }]
         : [];
     });

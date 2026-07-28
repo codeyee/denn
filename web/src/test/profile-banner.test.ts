@@ -42,14 +42,16 @@ const overview = {
 } as unknown as PublicProfileOverview;
 
 describe("profile banner selection", () => {
-  it("selects panoramic art and never falls back to a portrait cover", () => {
+  it("prefers panoramic art and contains a poster-only favorite", () => {
     expect(pickRandomFavoriteBanner(overview, () => 0)).toMatchObject({
       content_id: 1,
       image_url: "https://example.com/first-backdrop.jpg",
+      treatment: "cover",
     });
     expect(pickRandomFavoriteBanner(overview, () => 0.99)).toMatchObject({
-      content_id: 1,
-      image_url: "https://example.com/first-backdrop.jpg",
+      content_id: 2,
+      image_url: "https://example.com/second-poster.jpg",
+      treatment: "contained-poster",
     });
   });
 

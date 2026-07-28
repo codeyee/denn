@@ -124,6 +124,54 @@ class PublicProfileApiTests(APITestCase):
             response.data["banner_media"][0]["image_url"],
             "https://images.example/fight-club-backdrop.jpg",
         )
+        self.assertEqual(response.data["banner_media"][0]["treatment"], "cover")
+
+    def test_poster_only_favorite_gets_a_contained_banner_media(self):
+        album = ContentItem.objects.create(
+            source_api=ContentItem.SourceAPI.SPOTIFY,
+            external_id="album-1",
+            content_type=ContentItem.ContentType.ALBUM,
+        )
+        ContentItemBrowseMetadata.objects.create(
+            content_item=album,
+            display_title="Night Signals",
+        )
+        Image.objects.create(
+            content_item=album,
+            type=Image.Type.POSTER,
+            size=Image.Size.ORIGINAL,
+            image_url="https://images.example/night-signals.jpg",
+        )
+        UserContentTracking.objects.create(
+            user=self.user,
+            content_item=album,
+            status=UserContentTracking.Status.COMPLETED,
+            last_completed_at=self.user.date_joined,
+            is_favorite=True,
+            favorited_at=self.user.date_joined,
+        )
+
+        response = self.client.get(
+            reverse(
+                "profiles:overview",
+                kwargs={"username": self.user.username},
+            )
+        )
+
+        self.assertEqual(response.status_code, 200)
+        album_banner = next(
+            media
+            for media in response.data["banner_media"]
+            if media["content_id"] == album.id
+        )
+        self.assertEqual(
+            album_banner["image_url"],
+            "https://images.example/night-signals.jpg",
+        )
+        self.assertEqual(
+            album_banner["treatment"],
+            "contained-poster",
+        )
 
     def test_game_favorites_include_developer_attribution(self):
         game = ContentItem.objects.create(

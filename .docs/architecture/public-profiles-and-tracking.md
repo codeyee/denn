@@ -142,8 +142,9 @@ active type filters, every favorite is visible in the same grid.
 Local content summaries include ordered authors and distinguish poster
 art from gallery art. Profile cards show at most the first two authors
 and collapse the remainder into the shared `& N more` treatment. Banner
-candidates use gallery art only; a profile with no panoramic favorite
-art keeps the plum fallback instead of stretching a portrait cover.
+candidates prefer the highest-quality gallery art and fall back to the
+highest-quality poster with contained artwork treatment, so poster-only
+albums and books still render a usable profile banner.
 
 ## Browser And BFF Behavior
 
@@ -185,7 +186,9 @@ keyboard-accessible icon menus.
 The approved visual direction stays inside the existing Denn system:
 
 - black/plum surfaces and the extracted `BannerShell`;
-- responsive panoramic favorite artwork with a plum fallback;
+- responsive favorite artwork with a plum fallback; gallery art fills the
+  banner while poster-only art uses a blurred ambient copy and a centered
+  contained foreground;
 - the existing content/list cards, vertical lists, rating badge, and
   star control extended through composition;
 - direct external avatar loading with `no-referrer` and an initials
