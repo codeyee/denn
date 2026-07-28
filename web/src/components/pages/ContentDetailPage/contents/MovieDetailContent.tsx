@@ -1,5 +1,6 @@
 
 import { MovieDetail } from "@/lib/types";
+import { normalizeContentPlatforms } from "@/lib/platforms/contentPlatforms";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { formatAuthors } from "@/lib/utils/authorUtils";
 import { PlatformsDisplay } from "../platforms/PlatformsDisplay";
@@ -11,7 +12,7 @@ interface MovieDetailContentProps {
 export function MovieDetailContent({ movie }: MovieDetailContentProps) {
   const releaseDate = formatReleaseDate(movie.release_date);
 
-  const platformsByAction = movie.platforms || {};
+  const normalizedPlatforms = normalizeContentPlatforms(movie.platforms);
 
   return (
     <div className="layout-content mt-8">
@@ -77,7 +78,7 @@ export function MovieDetailContent({ movie }: MovieDetailContentProps) {
 
         {/* Right column - Where to Watch */}
         <div className="lg:col-span-1">
-          <PlatformsDisplay platforms={platformsByAction} />
+          <PlatformsDisplay platforms={normalizedPlatforms} />
         </div>
       </div>
     </div>

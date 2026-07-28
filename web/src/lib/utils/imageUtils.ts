@@ -1,5 +1,18 @@
 import { Image, ImageType, ImageSize } from "@/lib/types";
 
+export interface BannerMedia {
+  imageUrl: string;
+  treatment: "cover" | "contained-poster";
+}
+
+const HORIZONTAL_BANNER_TYPES = [
+  "banner",
+  "backdrop",
+  "screenshot",
+  "promotional",
+  ImageType.GALLERY,
+] as const;
+
 function getFallbackSize(size: ImageSize): ImageSize {
   return size === ImageSize.ORIGINAL ? ImageSize.STANDARD : ImageSize.ORIGINAL;
 }
@@ -26,17 +39,36 @@ export function getImageUrl(
   return typeImages[0]?.image_url || null;
 }
 
+export function getBannerMedia(
+  images: Image[] | undefined | null,
+  imageUrl?: string | null
+): BannerMedia | null {
+  for (const type of HORIZONTAL_BANNER_TYPES) {
+    const horizontalImage = getImageUrl(images, type, ImageSize.ORIGINAL);
+    if (horizontalImage) {
+      return {
+        imageUrl: horizontalImage,
+        treatment: "cover",
+      };
+    }
+  }
+
+  const poster = getImageUrl(images, ImageType.POSTER, ImageSize.ORIGINAL);
+  const posterUrl = poster || imageUrl;
+
+  return posterUrl
+    ? {
+        imageUrl: posterUrl,
+        treatment: "contained-poster",
+      }
+    : null;
+}
+
 export function getBannerImageUrl(
   images: Image[] | undefined | null,
   imageUrl?: string | null
 ): string | null {
-  const gallery = getImageUrl(images, ImageType.GALLERY, ImageSize.ORIGINAL);
-  if (gallery) return gallery;
-
-  const poster = getImageUrl(images, ImageType.POSTER, ImageSize.ORIGINAL);
-  if (poster) return poster;
-
-  return imageUrl || null;
+  return getBannerMedia(images, imageUrl)?.imageUrl || null;
 }
 
 export function getCardImageUrl(

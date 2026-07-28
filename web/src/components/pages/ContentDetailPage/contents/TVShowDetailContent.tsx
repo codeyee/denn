@@ -1,5 +1,6 @@
 
 import { TVShowDetail } from "@/lib/types";
+import { normalizeContentPlatforms } from "@/lib/platforms/contentPlatforms";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { formatAuthors } from "@/lib/utils/authorUtils";
 import { PlatformsDisplay } from "../platforms/PlatformsDisplay";
@@ -15,7 +16,7 @@ export function TVShowDetailContent({
     tvShow.status === "Returning Series" ? "Currently in emission" : "Ended";
   const releaseDate = formatReleaseDate(tvShow.release_date);
 
-  const platformsByAction = tvShow.platforms || {};
+  const normalizedPlatforms = normalizeContentPlatforms(tvShow.platforms);
 
   return (
     <div className="layout-content mt-8">
@@ -97,7 +98,7 @@ export function TVShowDetailContent({
 
         {/* Right column - Where to Watch */}
         <div className="lg:col-span-1">
-          <PlatformsDisplay platforms={platformsByAction} />
+          <PlatformsDisplay platforms={normalizedPlatforms} />
         </div>
       </div>
     </div>

@@ -1,8 +1,9 @@
 
-import { GameDetail, Platform } from "@/lib/types";
+import { GameDetail } from "@/lib/types";
+import { groupGamePlatforms } from "@/lib/platforms/gamePlatforms";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { formatAuthors } from "@/lib/utils/authorUtils";
-import { PlatformsDisplay } from "../platforms/PlatformsDisplay";
+import { GamePlatformsDisplay } from "../platforms/GamePlatformsDisplay";
 
 interface GameDetailContentProps {
   game: GameDetail;
@@ -11,8 +12,7 @@ interface GameDetailContentProps {
 export function GameDetailContent({ game }: GameDetailContentProps) {
   const releaseDate = formatReleaseDate(game.release_date);
 
-  const platformsByAction: Record<string, Platform[]> =
-    game.platforms && game.platforms.length > 0 ? { platforms: game.platforms } : {};
+  const platformGroups = groupGamePlatforms(game.platforms, game.distribution_networks);
 
   return (
     <div className="layout-content mt-8">
@@ -72,10 +72,7 @@ export function GameDetailContent({ game }: GameDetailContentProps) {
 
         {/* Right column - Where to Play */}
         <div className="lg:col-span-1">
-          <PlatformsDisplay
-            platforms={platformsByAction}
-            title="Where to Play"
-          />
+          <GamePlatformsDisplay groups={platformGroups} />
         </div>
       </div>
     </div>

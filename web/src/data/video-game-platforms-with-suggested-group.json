@@ -1,0 +1,1056 @@
+{
+  "video_game_platforms": [
+    {
+      "name": "Neo Geo AES",
+      "most_recent_version": "1991-12-31",
+      "suggested_group": "neo_geo"
+    },
+    {
+      "name": "Nintendo Switch 2",
+      "most_recent_version": "2025-06-05",
+      "suggested_group": "nintendo_switch"
+    },
+    {
+      "name": "PlayStation 5",
+      "most_recent_version": "2024-11-07",
+      "suggested_group": "playstation"
+    },
+    {
+      "name": "visionOS",
+      "most_recent_version": "2024-02-02",
+      "suggested_group": "vr"
+    },
+    {
+      "name": "Meta Quest 3",
+      "most_recent_version": "2023-12-31",
+      "suggested_group": "vr"
+    },
+    {
+      "name": "Mac",
+      "most_recent_version": "2023-09-26",
+      "suggested_group": "mac"
+    },
+    {
+      "name": "Atari 2600",
+      "most_recent_version": "2023-12-01",
+      "suggested_group": "atari"
+    },
+    {
+      "name": "PlayStation VR2",
+      "most_recent_version": "2023-02-22",
+      "suggested_group": "playstation"
+    },
+    {
+      "name": "Android",
+      "most_recent_version": "2022-08-15",
+      "suggested_group": "android"
+    },
+    {
+      "name": "Nintendo Switch",
+      "most_recent_version": "2022-09-26",
+      "suggested_group": "nintendo_switch"
+    },
+    {
+      "name": "Evercade",
+      "most_recent_version": "2022-12-15",
+      "suggested_group": "retro_console"
+    },
+    {
+      "name": "PC (Microsoft Windows)",
+      "most_recent_version": "2021-10-05",
+      "suggested_group": "windows"
+    },
+    {
+      "name": "Polymega",
+      "most_recent_version": "2021-09-12",
+      "suggested_group": "retro_console"
+    },
+    {
+      "name": "Oculus Quest",
+      "most_recent_version": "2021-07-08",
+      "suggested_group": "vr"
+    },
+    {
+      "name": "Playdate",
+      "most_recent_version": "2021-12-31",
+      "suggested_group": "retro_handheld"
+    },
+    {
+      "name": "Meta Quest 2",
+      "most_recent_version": "2020-10-13",
+      "suggested_group": "vr"
+    },
+    {
+      "name": "Xbox Series X|S",
+      "most_recent_version": "2020-11-10",
+      "suggested_group": "xbox"
+    },
+    {
+      "name": "Oculus Rift",
+      "most_recent_version": "2019-09-25",
+      "suggested_group": "vr"
+    },
+    {
+      "name": "LeapTV",
+      "most_recent_version": "2019-01-20",
+      "suggested_group": "educational"
+    },
+    {
+      "name": "Xbox One",
+      "most_recent_version": "2019-05-07",
+      "suggested_group": "xbox"
+    },
+    {
+      "name": "Gear VR",
+      "most_recent_version": "2017-12-06",
+      "suggested_group": "vr"
+    },
+    {
+      "name": "PlayStation VR",
+      "most_recent_version": "2017-10-10",
+      "suggested_group": "playstation"
+    },
+    {
+      "name": "New Nintendo 3DS",
+      "most_recent_version": "2017-05-26",
+      "suggested_group": "nintendo_3ds"
+    },
+    {
+      "name": "PlayStation 4",
+      "most_recent_version": "2016-11-10",
+      "suggested_group": "playstation"
+    },
+    {
+      "name": "Oculus Go",
+      "most_recent_version": "2016-04-20",
+      "suggested_group": "vr"
+    },
+    {
+      "name": "Windows Phone",
+      "most_recent_version": "2016-03-16",
+      "suggested_group": "mobile_legacy"
+    },
+    {
+      "name": "Arduboy",
+      "most_recent_version": "2016-02-24",
+      "suggested_group": "retro_handheld"
+    },
+    {
+      "name": "Nintendo 3DS",
+      "most_recent_version": "2016-02-27",
+      "suggested_group": "nintendo_3ds"
+    },
+    {
+      "name": "PlayStation Vita",
+      "most_recent_version": "2015-03-20",
+      "suggested_group": "playstation"
+    },
+    {
+      "name": "Wii U",
+      "most_recent_version": "2013-11-26",
+      "suggested_group": "nintendo_wii"
+    },
+    {
+      "name": "Ouya",
+      "most_recent_version": "2013-06-25",
+      "suggested_group": "other"
+    },
+    {
+      "name": "Wii",
+      "most_recent_version": "2013-11-17",
+      "suggested_group": "nintendo_wii"
+    },
+    {
+      "name": "PlayStation 3",
+      "most_recent_version": "2012-10-04",
+      "suggested_group": "playstation"
+    },
+    {
+      "name": "PlayStation Portable",
+      "most_recent_version": "2011-10-26",
+      "suggested_group": "playstation"
+    },
+    {
+      "name": "Nintendo DS",
+      "most_recent_version": "2010-04-15",
+      "suggested_group": "nintendo_ds"
+    },
+    {
+      "name": "Leapster Explorer/LeadPad Explorer",
+      "most_recent_version": "2010-06-07",
+      "suggested_group": "educational"
+    },
+    {
+      "name": "Nintendo DSi",
+      "most_recent_version": "2010-04-15",
+      "suggested_group": "nintendo_ds"
+    },
+    {
+      "name": "Xbox 360",
+      "most_recent_version": "2010-06-19",
+      "suggested_group": "xbox"
+    },
+    {
+      "name": "Zeebo",
+      "most_recent_version": "2009-11-04",
+      "suggested_group": "other"
+    },
+    {
+      "name": "PlayStation 2",
+      "most_recent_version": "2009-10-15",
+      "suggested_group": "playstation"
+    },
+    {
+      "name": "Arcade",
+      "most_recent_version": "2009-12-31",
+      "suggested_group": "arcade"
+    },
+    {
+      "name": "Uzebox",
+      "most_recent_version": "2008-08-24",
+      "suggested_group": "retro_handheld"
+    },
+    {
+      "name": "Windows Mobile",
+      "most_recent_version": "2007-02-12",
+      "suggested_group": "mobile_legacy"
+    },
+    {
+      "name": "Legacy Mobile Device",
+      "most_recent_version": "2007-09-18",
+      "suggested_group": "mobile_legacy"
+    },
+    {
+      "name": "iOS",
+      "most_recent_version": "2007-06-29",
+      "suggested_group": "ios"
+    },
+    {
+      "name": "Blu-ray Player",
+      "most_recent_version": "2006-06-20",
+      "suggested_group": "other"
+    },
+    {
+      "name": "HyperScan",
+      "most_recent_version": "2006-10-23",
+      "suggested_group": "retro_console"
+    },
+    {
+      "name": "Advanced Pico Beena",
+      "most_recent_version": "2005-08-06",
+      "suggested_group": "educational"
+    },
+    {
+      "name": "Game Boy Advance",
+      "most_recent_version": "2005-11-04",
+      "suggested_group": "nintendo_gameboy"
+    },
+    {
+      "name": "Gizmondo",
+      "most_recent_version": "2005-03-19",
+      "suggested_group": "retro_handheld"
+    },
+    {
+      "name": "Digiblast",
+      "most_recent_version": "2005-08-05",
+      "suggested_group": "retro_handheld"
+    },
+    {
+      "name": "N-Gage",
+      "most_recent_version": "2004-05-26",
+      "suggested_group": "mobile_legacy"
+    },
+    {
+      "name": "V.Smile",
+      "most_recent_version": "2004-08-04",
+      "suggested_group": "educational"
+    },
+    {
+      "name": "Leapster",
+      "most_recent_version": "2003-10-07",
+      "suggested_group": "educational"
+    },
+    {
+      "name": "Nintendo 64",
+      "most_recent_version": "2003-11-17",
+      "suggested_group": "nintendo_n64"
+    },
+    {
+      "name": "Tapwave Zodiac",
+      "most_recent_version": "2003-10-15",
+      "suggested_group": "mobile_legacy"
+    },
+    {
+      "name": "e-Reader / Card-e Reader",
+      "most_recent_version": "2003-10-31",
+      "suggested_group": "nintendo"
+    },
+    {
+      "name": "WonderSwan",
+      "most_recent_version": "2002-07-12",
+      "suggested_group": "retro_handheld"
+    },
+    {
+      "name": "Nintendo GameCube",
+      "most_recent_version": "2002-08-23",
+      "suggested_group": "nintendo_gamecube"
+    },
+    {
+      "name": "WonderSwan Color",
+      "most_recent_version": "2002-07-12",
+      "suggested_group": "retro_handheld"
+    },
+    {
+      "name": "Pokémon mini",
+      "most_recent_version": "2002-03-15",
+      "suggested_group": "nintendo"
+    },
+    {
+      "name": "Xbox",
+      "most_recent_version": "2002-02-22",
+      "suggested_group": "xbox"
+    },
+    {
+      "name": "Nuon",
+      "most_recent_version": "2000-12-31",
+      "suggested_group": "retro_console"
+    },
+    {
+      "name": "PlayStation",
+      "most_recent_version": "2000-07-07",
+      "suggested_group": "playstation"
+    },
+    {
+      "name": "Dreamcast",
+      "most_recent_version": "1999-11-30",
+      "suggested_group": "sega"
+    },
+    {
+      "name": "Game Boy Color",
+      "most_recent_version": "1999-01-12",
+      "suggested_group": "nintendo_gameboy"
+    },
+    {
+      "name": "PocketStation",
+      "most_recent_version": "1999-01-23",
+      "suggested_group": "playstation"
+    },
+    {
+      "name": "Neo Geo Pocket Color",
+      "most_recent_version": "1999-10-01",
+      "suggested_group": "neo_geo"
+    },
+    {
+      "name": "DVD Player",
+      "most_recent_version": "1999-02-01",
+      "suggested_group": "other"
+    },
+    {
+      "name": "BlackBerry OS",
+      "most_recent_version": "1999-01-15",
+      "suggested_group": "mobile_legacy"
+    },
+    {
+      "name": "64DD",
+      "most_recent_version": "1999-12-13",
+      "suggested_group": "nintendo"
+    },
+    {
+      "name": "Visual Memory Unit / Visual Memory System",
+      "most_recent_version": "1999-11-30",
+      "suggested_group": "sega"
+    },
+    {
+      "name": "Sega Mega Drive/Genesis",
+      "most_recent_version": "1998-12-31",
+      "suggested_group": "sega"
+    },
+    {
+      "name": "Super Nintendo Entertainment System",
+      "most_recent_version": "1998-03-27",
+      "suggested_group": "nintendo_snes"
+    },
+    {
+      "name": "Game Boy",
+      "most_recent_version": "1998-04-14",
+      "suggested_group": "nintendo_gameboy"
+    },
+    {
+      "name": "Neo Geo Pocket",
+      "most_recent_version": "1998-10-28",
+      "suggested_group": "neo_geo"
+    },
+    {
+      "name": "Game.com",
+      "most_recent_version": "1997-09-12",
+      "suggested_group": "retro_handheld"
+    },
+    {
+      "name": "Super Famicom",
+      "most_recent_version": "1997-12-31",
+      "suggested_group": "nintendo_snes"
+    },
+    {
+      "name": "Satellaview",
+      "most_recent_version": "1997-11-05",
+      "suggested_group": "nintendo"
+    },
+    {
+      "name": "Hyper Neo Geo 64",
+      "most_recent_version": "1997-09-10",
+      "suggested_group": "neo_geo"
+    },
+    {
+      "name": "Palm OS",
+      "most_recent_version": "1996-12-31",
+      "suggested_group": "mobile_legacy"
+    },
+    {
+      "name": "Apple Pippin",
+      "most_recent_version": "1996-12-31",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "Sega 32X",
+      "most_recent_version": "1995-01-01",
+      "suggested_group": "sega"
+    },
+    {
+      "name": "Sega Pico",
+      "most_recent_version": "1995-07-25",
+      "suggested_group": "sega"
+    },
+    {
+      "name": "Super A'Can",
+      "most_recent_version": "1995-10-25",
+      "suggested_group": "other"
+    },
+    {
+      "name": "Atari Jaguar CD",
+      "most_recent_version": "1995-09-21",
+      "suggested_group": "atari"
+    },
+    {
+      "name": "Sega Saturn",
+      "most_recent_version": "1995-08-30",
+      "suggested_group": "sega"
+    },
+    {
+      "name": "Sega CD 32X",
+      "most_recent_version": "1995-03-01",
+      "suggested_group": "sega"
+    },
+    {
+      "name": "Neo Geo CD",
+      "most_recent_version": "1995-10-31",
+      "suggested_group": "neo_geo"
+    },
+    {
+      "name": "R-Zone",
+      "most_recent_version": "1995-12-31",
+      "suggested_group": "retro_handheld"
+    },
+    {
+      "name": "Casio Loopy",
+      "most_recent_version": "1995-12-31",
+      "suggested_group": "other"
+    },
+    {
+      "name": "Virtual Boy",
+      "most_recent_version": "1995-12-31",
+      "suggested_group": "nintendo"
+    },
+    {
+      "name": "Sega Master System/Mark III",
+      "most_recent_version": "1994-12-31",
+      "suggested_group": "sega"
+    },
+    {
+      "name": "Playdia",
+      "most_recent_version": "1994-09-23",
+      "suggested_group": "retro_console"
+    },
+    {
+      "name": "3DO Interactive Multiplayer",
+      "most_recent_version": "1994-12-03",
+      "suggested_group": "retro_console"
+    },
+    {
+      "name": "FM Towns",
+      "most_recent_version": "1994-12-31",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "PC-FX",
+      "most_recent_version": "1994-12-23",
+      "suggested_group": "retro_console"
+    },
+    {
+      "name": "Terebikko / See 'n Say Video Phone",
+      "most_recent_version": "1994-12-31",
+      "suggested_group": "educational"
+    },
+    {
+      "name": "Atari Jaguar",
+      "most_recent_version": "1993-12-31",
+      "suggested_group": "atari"
+    },
+    {
+      "name": "Family Computer",
+      "most_recent_version": "1993-12-01",
+      "suggested_group": "nintendo_nes"
+    },
+    {
+      "name": "Nintendo Entertainment System",
+      "most_recent_version": "1993-12-31",
+      "suggested_group": "nintendo_nes"
+    },
+    {
+      "name": "Sega CD",
+      "most_recent_version": "1993-12-31",
+      "suggested_group": "sega"
+    },
+    {
+      "name": "LaserActive",
+      "most_recent_version": "1993-09-13",
+      "suggested_group": "retro_console"
+    },
+    {
+      "name": "Mega Duck/Cougar Boy",
+      "most_recent_version": "1993-12-31",
+      "suggested_group": "retro_handheld"
+    },
+    {
+      "name": "Amiga CD32",
+      "most_recent_version": "1993-09-15",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "Amiga",
+      "most_recent_version": "1992-10-21",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "Sega Game Gear",
+      "most_recent_version": "1992-12-31",
+      "suggested_group": "sega"
+    },
+    {
+      "name": "Philips CD-i",
+      "most_recent_version": "1992-12-31",
+      "suggested_group": "retro_console"
+    },
+    {
+      "name": "Watara/QuickShot Supervision",
+      "most_recent_version": "1992-12-31",
+      "suggested_group": "retro_handheld"
+    },
+    {
+      "name": "Linux",
+      "most_recent_version": "1991-09-17",
+      "suggested_group": "linux"
+    },
+    {
+      "name": "Commodore CDTV",
+      "most_recent_version": "1991-11-14",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "Turbografx-16/PC Engine CD",
+      "most_recent_version": "1991-10-25",
+      "suggested_group": "retro_console"
+    },
+    {
+      "name": "Atari Lynx",
+      "most_recent_version": "1991-12-31",
+      "suggested_group": "atari"
+    },
+    {
+      "name": "Neo Geo MVS",
+      "most_recent_version": "1991-12-31",
+      "suggested_group": "neo_geo"
+    },
+    {
+      "name": "BBC Microcomputer System",
+      "most_recent_version": "1990-12-31",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "Gamate",
+      "most_recent_version": "1990-12-31",
+      "suggested_group": "retro_handheld"
+    },
+    {
+      "name": "TurboGrafx-16/PC Engine",
+      "most_recent_version": "1990-12-31",
+      "suggested_group": "retro_console"
+    },
+    {
+      "name": "Amstrad GX4000",
+      "most_recent_version": "1990-09-01",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "Apple IIGS",
+      "most_recent_version": "1989-12-31",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "PC-9800 Series",
+      "most_recent_version": "1989-04-20",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "PC Engine SuperGrafx",
+      "most_recent_version": "1989-12-08",
+      "suggested_group": "retro_console"
+    },
+    {
+      "name": "Sharp X1",
+      "most_recent_version": "1987-09-11",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "Acorn Archimedes",
+      "most_recent_version": "1987-12-31",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "Sharp X68000",
+      "most_recent_version": "1987-03-01",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "Commodore C64/128/MAX",
+      "most_recent_version": "1986-12-31",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "Family Computer Disk System",
+      "most_recent_version": "1986-02-21",
+      "suggested_group": "nintendo_nes"
+    },
+    {
+      "name": "Tatung Einstein",
+      "most_recent_version": "1985-12-31",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "Dragon 32/64",
+      "most_recent_version": "1985-12-31",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "Atari ST/STE",
+      "most_recent_version": "1985-06-01",
+      "suggested_group": "atari"
+    },
+    {
+      "name": "Amstrad CPC",
+      "most_recent_version": "1985-08-15",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "Acorn Electron",
+      "most_recent_version": "1985-12-31",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "Amstrad PCW",
+      "most_recent_version": "1985-09-01",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "HP 3000",
+      "most_recent_version": "1984-12-31",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "Atari 5200",
+      "most_recent_version": "1984-05-24",
+      "suggested_group": "atari"
+    },
+    {
+      "name": "Atari 7800",
+      "most_recent_version": "1984-06-14",
+      "suggested_group": "atari"
+    },
+    {
+      "name": "Commodore 16",
+      "most_recent_version": "1984-12-31",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "Epoch Super Cassette Vision",
+      "most_recent_version": "1984-07-17",
+      "suggested_group": "retro_console"
+    },
+    {
+      "name": "Thomson MO5",
+      "most_recent_version": "1984-12-31",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "Sinclair QL",
+      "most_recent_version": "1984-01-12",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "Sharp MZ-2200",
+      "most_recent_version": "1983-12-31",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "Tomy Tutor / Pyuta / Grandstand Tutor",
+      "most_recent_version": "1983-12-31",
+      "suggested_group": "educational"
+    },
+    {
+      "name": "NEC PC-6000 Series",
+      "most_recent_version": "1983-12-31",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "Commodore Plus/4",
+      "most_recent_version": "1983-12-31",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "SG-1000",
+      "most_recent_version": "1983-07-15",
+      "suggested_group": "sega"
+    },
+    {
+      "name": "MSX2",
+      "most_recent_version": "1983-12-31",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "MSX",
+      "most_recent_version": "1983-06-16",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "Vectrex",
+      "most_recent_version": "1983-06-01",
+      "suggested_group": "retro_console"
+    },
+    {
+      "name": "Intellivision",
+      "most_recent_version": "1982-12-31",
+      "suggested_group": "retro_console"
+    },
+    {
+      "name": "ColecoVision",
+      "most_recent_version": "1982-08-01",
+      "suggested_group": "retro_console"
+    },
+    {
+      "name": "FM-7",
+      "most_recent_version": "1982-11-01",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "TRS-80",
+      "most_recent_version": "1982-10-01",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "ZX Spectrum",
+      "most_recent_version": "1982-12-31",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "Arcadia 2001",
+      "most_recent_version": "1982-02-01",
+      "suggested_group": "retro_console"
+    },
+    {
+      "name": "Commodore VIC-20",
+      "most_recent_version": "1982-12-31",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "Epoch Cassette Vision",
+      "most_recent_version": "1981-07-30",
+      "suggested_group": "retro_console"
+    },
+    {
+      "name": "DOS",
+      "most_recent_version": "1981-08-15",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "Texas Instruments TI-99",
+      "most_recent_version": "1981-06-01",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "PC-8800 Series",
+      "most_recent_version": "1981-11-01",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "Sinclair ZX81",
+      "most_recent_version": "1981-03-05",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "Microvision",
+      "most_recent_version": "1980-12-31",
+      "suggested_group": "retro_handheld"
+    },
+    {
+      "name": "Atari 8-bit",
+      "most_recent_version": "1980-12-31",
+      "suggested_group": "atari"
+    },
+    {
+      "name": "TRS-80 Color Computer",
+      "most_recent_version": "1980-09-01",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "Game & Watch",
+      "most_recent_version": "1980-04-28",
+      "suggested_group": "nintendo"
+    },
+    {
+      "name": "Odyssey 2 / Videopac G7000",
+      "most_recent_version": "1979-12-31",
+      "suggested_group": "retro_console"
+    },
+    {
+      "name": "Elektor TV Games Computer",
+      "most_recent_version": "1979-04-01",
+      "suggested_group": "other"
+    },
+    {
+      "name": "1292 Advanced Programmable Video System",
+      "most_recent_version": "1979-12-31",
+      "suggested_group": "retro_console"
+    },
+    {
+      "name": "Apple II",
+      "most_recent_version": "1978-12-31",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "PC-50X Family",
+      "most_recent_version": "1978-12-31",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "VC 4000",
+      "most_recent_version": "1978-12-31",
+      "suggested_group": "other"
+    },
+    {
+      "name": "Exidy Sorcerer",
+      "most_recent_version": "1978-12-31",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "AY-3-8607",
+      "most_recent_version": "1977-12-31",
+      "suggested_group": "other"
+    },
+    {
+      "name": "Bally Astrocade",
+      "most_recent_version": "1977-12-31",
+      "suggested_group": "retro_console"
+    },
+    {
+      "name": "AY-3-8603",
+      "most_recent_version": "1977-12-31",
+      "suggested_group": "other"
+    },
+    {
+      "name": "AY-3-8500",
+      "most_recent_version": "1977-12-31",
+      "suggested_group": "other"
+    },
+    {
+      "name": "Commodore PET",
+      "most_recent_version": "1977-01-01",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "Fairchild Channel F",
+      "most_recent_version": "1977-12-31",
+      "suggested_group": "retro_console"
+    },
+    {
+      "name": "AY-3-8710",
+      "most_recent_version": "1977-12-31",
+      "suggested_group": "other"
+    },
+    {
+      "name": "AY-3-8606",
+      "most_recent_version": "1977-12-31",
+      "suggested_group": "other"
+    },
+    {
+      "name": "AY-3-8605",
+      "most_recent_version": "1977-12-31",
+      "suggested_group": "other"
+    },
+    {
+      "name": "AY-3-8610",
+      "most_recent_version": "1977-12-31",
+      "suggested_group": "other"
+    },
+    {
+      "name": "AY-3-8760",
+      "most_recent_version": "1977-12-31",
+      "suggested_group": "other"
+    },
+    {
+      "name": "Sol-20",
+      "most_recent_version": "1976-12-31",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "Odyssey",
+      "most_recent_version": "1975-12-31",
+      "suggested_group": "retro_console"
+    },
+    {
+      "name": "PLATO",
+      "most_recent_version": "1974-03-01",
+      "suggested_group": "retro_console"
+    },
+    {
+      "name": "CDC Cyber 70",
+      "most_recent_version": "1974-12-31",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "PDP-11",
+      "most_recent_version": "1971-12-31",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "SDS Sigma 7",
+      "most_recent_version": "1971-07-01",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "PDP-10",
+      "most_recent_version": "1971-12-31",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "HP 2100",
+      "most_recent_version": "1971-12-03",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "Call-A-Computer time-shared mainframe computer system",
+      "most_recent_version": "1970-12-31",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "PDP-8",
+      "most_recent_version": "1969-12-31",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "Super NES CD-ROM System",
+      "most_recent_version": "1959-01-01",
+      "suggested_group": "nintendo_snes"
+    },
+    {
+      "name": "PDP-1",
+      "most_recent_version": "1959-12-31",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "Donner Model 30",
+      "most_recent_version": "1958-10-18",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "EDSAC",
+      "most_recent_version": "1952-12-31",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "Ferranti Nimrod Computer",
+      "most_recent_version": "1951-12-31",
+      "suggested_group": "retro_computer"
+    },
+    {
+      "name": "Handheld Electronic LCD",
+      "most_recent_version": null,
+      "suggested_group": "retro_handheld"
+    },
+    {
+      "name": "SwanCrystal",
+      "most_recent_version": null,
+      "suggested_group": "retro_handheld"
+    },
+    {
+      "name": "Panasonic M2",
+      "most_recent_version": null,
+      "suggested_group": "retro_console"
+    },
+    {
+      "name": "Panasonic Jungle",
+      "most_recent_version": null,
+      "suggested_group": "retro_handheld"
+    },
+    {
+      "name": "Intellivision Amico",
+      "most_recent_version": null,
+      "suggested_group": "retro_console"
+    },
+    {
+      "name": "Legacy Computer",
+      "most_recent_version": null,
+      "suggested_group": "retro_computer"
+    }
+  ],
+  "distribution_networks": [
+    {
+      "name": "Web browser",
+      "most_recent_version": "2023-07-20",
+      "suggested_group": "browser"
+    },
+    {
+      "name": "OOParts",
+      "most_recent_version": "2020-04-24",
+      "suggested_group": "other"
+    },
+    {
+      "name": "Google Stadia",
+      "most_recent_version": "2019-11-19",
+      "suggested_group": "cloud_gaming"
+    },
+    {
+      "name": "Plug & Play",
+      "most_recent_version": "2018-02-08",
+      "suggested_group": "other"
+    },
+    {
+      "name": "Amazon Fire TV",
+      "most_recent_version": "2014-04-02",
+      "suggested_group": "android"
+    },
+    {
+      "name": "OnLive Game System",
+      "most_recent_version": "2010-06-17",
+      "suggested_group": "cloud_gaming"
+    },
+    {
+      "name": "Virtual Console",
+      "most_recent_version": "2007-01-23",
+      "suggested_group": "nintendo"
+    },
+    {
+      "name": "AirConsole",
+      "most_recent_version": null,
+      "suggested_group": "cloud_gaming"
+    }
+  ]
+}

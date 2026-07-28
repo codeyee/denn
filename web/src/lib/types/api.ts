@@ -322,6 +322,11 @@ export interface Image {
 export interface Platform {
     name: string;
     image_url: string | null;
+    id?: string | number | null;
+    provider_id?: string | number | null;
+    providerId?: string | number | null;
+    url?: string | null;
+    link?: string | null;
 }
 
 export interface SearchItem {
@@ -530,6 +535,7 @@ export interface GameDetail {
     image_url: string | null;
     authors: Author[] | null;
     platforms: Platform[] | null;
+    distribution_networks?: Platform[] | null;
     images: Image[];
     genres: string[];
     themes: string[];

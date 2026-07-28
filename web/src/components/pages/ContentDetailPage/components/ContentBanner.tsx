@@ -7,11 +7,12 @@ import {
   type TrackingStatus,
   type UserContentTracking,
 } from "@/lib/types";
-import { getBannerImageUrl } from "@/lib/utils/imageUtils";
+import { getBannerMedia } from "@/lib/utils/imageUtils";
 import { formatAuthors } from "@/lib/utils/authorUtils";
 import { formatSeasonTitle } from "@/lib/utils/titleUtils";
 import { CONTENT_TYPE_ICONS } from "@/lib/icons/contentTypeIcons";
 import { Content } from "@/lib/types";
+import { ContainedPosterBannerMedia } from "@/components/common/media/ContainedPosterBannerMedia";
 import { ResponsiveMedia } from "@/components/common/media/ResponsiveMedia";
 import {
   BANNER_MEDIA_POSITION,
@@ -58,7 +59,7 @@ export function ContentBanner({
   ) as string;
   const normalizedType = rawType.toUpperCase();
   const Icon = CONTENT_TYPE_ICONS[normalizedType as ContentType];
-  const backgroundUrl = getBannerImageUrl(item.images, item.image_url) || undefined;
+  const bannerMedia = getBannerMedia(item.images, item.image_url);
 
   const getOriginalTitle = (item: Content): string => {
     if ("original_title" in item && item.original_title) {
@@ -95,19 +96,27 @@ export function ContentBanner({
     isSeason && "tv_show_id" in item && typeof item.tv_show_id === "number"
       ? item.tv_show_id
       : null;
+  const bannerAlt = `${displayTitle} artwork`;
 
   return (
     <BannerShell
       media={
-        backgroundUrl ? (
+        bannerMedia?.treatment === "cover" ? (
           <ResponsiveMedia
-            src={backgroundUrl}
-            alt={`${displayTitle} artwork`}
+            src={bannerMedia.imageUrl}
+            alt={bannerAlt}
+            data-banner-media="cover"
             width={1600}
             height={900}
             sizes="100vw"
             priority
             className={`absolute inset-0 h-full w-full object-cover ${BANNER_MEDIA_POSITION}`}
+          />
+        ) : bannerMedia ? (
+          <ContainedPosterBannerMedia
+            src={bannerMedia.imageUrl}
+            alt={bannerAlt}
+            priority
           />
         ) : undefined
       }

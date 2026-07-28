@@ -1,5 +1,6 @@
 
 import { TVSeasonDetail, ContentItem, Rating } from "@/lib/types";
+import { normalizeContentPlatforms } from "@/lib/platforms/contentPlatforms";
 import { EpisodeCard } from "@/components/common/cards/EpisodeCard";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { PlatformsDisplay } from "../platforms/PlatformsDisplay";
@@ -26,7 +27,7 @@ export function SeasonDetailContent({
 }: SeasonDetailContentProps) {
   const releaseDate = formatReleaseDate(season.release_date);
 
-  const platformsByAction = season.platforms || {};
+  const normalizedPlatforms = normalizeContentPlatforms(season.platforms);
 
   return (
     <>
@@ -65,7 +66,7 @@ export function SeasonDetailContent({
 
           {/* Right column - Where to Watch */}
           <div className="lg:col-span-1">
-            <PlatformsDisplay platforms={platformsByAction} />
+            <PlatformsDisplay platforms={normalizedPlatforms} />
           </div>
         </div>
       </div>
