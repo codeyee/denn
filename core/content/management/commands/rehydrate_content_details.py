@@ -1,4 +1,4 @@
-"""Rehydrate per-type ContentDetail rows whose dynamic refresh window expired."""
+"""Rehydrate stale details and optionally repair resolved game durations."""
 from __future__ import annotations
 
 import json
@@ -82,6 +82,10 @@ class Command(BaseCommand):
             '--workers', type=int, default=_DEFAULT_WORKERS,
             help=f'Parallel proxy fetches per content_type (default: {_DEFAULT_WORKERS}).',
         )
+        parser.add_argument(
+            '--include-no-data', action='store_true',
+            help='Reprocess existing IGDB game duration rows with no_data (one-off repair).',
+        )
 
     def handle(self, *args, **options):
         ctype_arg: str = (options['content_type'] or 'ALL').upper()
@@ -100,6 +104,7 @@ class Command(BaseCommand):
         workers = max(1, int(options['workers']))
         limit = max(1, int(options['limit']))
         dry_run = bool(options['dry_run'])
+        include_no_data = bool(options['include_no_data'])
 
         for ct in types_to_run:
             self._run_one_type(
@@ -108,6 +113,7 @@ class Command(BaseCommand):
                 workers=workers,
                 ttl_override=ttl_override,
                 dry_run=dry_run,
+                include_no_data=include_no_data,
             )
 
     def _run_one_type(
@@ -118,14 +124,20 @@ class Command(BaseCommand):
         workers: int,
         ttl_override: Optional[timedelta],
         dry_run: bool,
+        include_no_data: bool,
     ) -> _TypeStats:
-        items = self._select_stale_items(content_type, limit, ttl_override)
+        items = self._select_stale_items(
+            content_type,
+            limit,
+            ttl_override,
+            include_no_data=include_no_data,
+        )
         stats = _TypeStats(content_type=content_type, total=len(items))
 
         prefix = f'[{content_type}]'
         self.stdout.write(self.style.NOTICE(
             f'{prefix} {len(items)} refresh candidate(s) (limit={limit}, dry_run={dry_run}, '
-            f'ttl_override={ttl_override})'
+            f'ttl_override={ttl_override}, include_no_data={include_no_data})'
         ))
 
         if not items:
@@ -212,6 +224,8 @@ class Command(BaseCommand):
         content_type: str,
         limit: int,
         ttl_override: Optional[timedelta],
+        *,
+        include_no_data: bool = False,
     ) -> List[ContentItem]:
         related_name = DETAIL_RELATED_NAME.get(content_type)
 
@@ -242,9 +256,19 @@ class Command(BaseCommand):
                 content_item_id=OuterRef('pk'),
                 provider=GameDurationEstimate.Provider.IGDB,
             )
-            qs = qs.annotate(has_game_duration=Exists(has_game_duration)).filter(
-                Q(refresh_due_at__lt=Now()) | Q(has_game_duration=False),
-            )
+            qs = qs.annotate(has_game_duration=Exists(has_game_duration))
+            selection = Q(refresh_due_at__lt=Now()) | Q(has_game_duration=False)
+            if include_no_data:
+                has_no_data_duration = GameDurationEstimate.objects.filter(
+                    content_item_id=OuterRef('pk'),
+                    provider=GameDurationEstimate.Provider.IGDB,
+                    status=GameDurationEstimate.Status.NO_DATA,
+                )
+                qs = qs.annotate(
+                    has_no_data_duration=Exists(has_no_data_duration),
+                )
+                selection |= Q(has_no_data_duration=True)
+            qs = qs.filter(selection)
         else:
             qs = qs.filter(refresh_due_at__lt=Now())
         qs = qs.order_by('refresh_due_at')[:limit]

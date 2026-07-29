@@ -148,7 +148,7 @@ class RehydrateCommandTests(TestCase):
         )
         self.assertEqual(json.loads(log_line)['total'], 1)
 
-    def test_game_with_no_duration_data_is_not_selected(self):
+    def test_game_with_no_duration_data_is_not_selected_without_repair_flag(self):
         item = _seed_game_without_duration()
         no_duration_payload = {
             **GAME_RDR2,
@@ -169,6 +169,35 @@ class RehydrateCommandTests(TestCase):
             line for line in buf.getvalue().splitlines() if line.startswith('{')
         )
         self.assertEqual(json.loads(log_line)['total'], 0)
+
+    def test_game_with_no_duration_data_is_selected_for_repair(self):
+        item = _seed_game_without_duration()
+        no_duration_payload = {
+            **GAME_RDR2,
+            'duration': {'source': 'igdb', 'status': 'no_data'},
+        }
+        upsert_game(item, no_duration_payload)
+
+        with patch(
+            'content.utils.fetch_source_data',
+            return_value=GAME_RDR2,
+        ):
+            buf = StringIO()
+            call_command(
+                'rehydrate_content_details',
+                '--content-type', 'GAME',
+                '--include-no-data',
+                '--workers', '1',
+                stdout=buf,
+            )
+
+        duration = GameDurationEstimate.objects.get(content_item=item)
+        self.assertEqual(duration.status, GameDurationEstimate.Status.MATCHED)
+        self.assertIsNotNone(duration.normally_seconds)
+        log_line = next(
+            line for line in buf.getvalue().splitlines() if line.startswith('{')
+        )
+        self.assertEqual(json.loads(log_line)['total'], 1)
 
     def test_ttl_override_includes_younger_items(self):
         item = _seed_movie('77')

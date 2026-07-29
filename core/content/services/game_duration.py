@@ -15,9 +15,8 @@ GAME_DURATION_FIELDS = (
 
 
 def normalize_game_duration_values(duration: Mapping[str, Any]) -> Dict[str, Optional[int]]:
-    """Drop impossible values and reject contradictory ordered estimates."""
+    """Drop impossible values and keep only normal on contradiction."""
     normalized: Dict[str, Optional[int]] = {}
-    previous: Optional[int] = None
 
     for field in GAME_DURATION_FIELDS:
         value = duration.get(field)
@@ -26,12 +25,21 @@ def normalize_game_duration_values(duration: Mapping[str, Any]) -> Dict[str, Opt
             and not isinstance(value, bool)
             and 0 < value <= MAX_GAME_DURATION_SECONDS
         ):
-            if previous is not None and value < previous:
-                return {name: None for name in GAME_DURATION_FIELDS}
             normalized[field] = value
-            previous = value
         else:
             normalized[field] = None
+
+    previous: Optional[int] = None
+    for field in GAME_DURATION_FIELDS:
+        value = normalized[field]
+        if value is None:
+            continue
+        if previous is not None and value < previous:
+            return {
+                name: normalized['normally_seconds'] if name == 'normally_seconds' else None
+                for name in GAME_DURATION_FIELDS
+            }
+        previous = value
 
     return normalized
 

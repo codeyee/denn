@@ -296,7 +296,6 @@ func extractDuration(tb *games.IgdbTimeToBeat, failed bool) *models.GameDuration
 		duration.CompletelySeconds,
 	) {
 		duration.HastilySeconds = nil
-		duration.NormallySeconds = nil
 		duration.CompletelySeconds = nil
 	}
 	if duration.HastilySeconds != nil || duration.NormallySeconds != nil || duration.CompletelySeconds != nil {

@@ -39,7 +39,9 @@ la semántica de IGDB: partida apresurada, ritmo normal y completado. `updated_a
 es la fecha de sincronización local; IGDB no expone un `source_updated_at`
 compatible con esta consulta. La ausencia o el error de `duration` no convierte
 el detalle del juego en un error de la respuesta. Las credenciales de IGDB
-siguen siendo exclusivas de `proxy`.
+siguen siendo exclusivas de `proxy`. Cuando las estimaciones disponibles
+contradicen el orden esperado, el contrato conserva únicamente
+`normally_seconds`; `hastily_seconds` y `completely_seconds` se descartan.
 
 `core` no expone endpoints `/api/proxy/...`. `web` no expone metadata externa fuera de `/api/proxy/*`.
 
