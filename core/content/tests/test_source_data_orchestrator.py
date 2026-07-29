@@ -7,13 +7,20 @@ from unittest.mock import patch
 from django.test import TestCase, override_settings
 from django.utils import timezone
 
-from content.models import ContentItem, MovieDetail, TvShowDetail
+from content.models import (
+    ContentItem,
+    GameDetail,
+    GameDurationEstimate,
+    MovieDetail,
+    TvShowDetail,
+)
 from content.services.local_content_store import (
     ensure_content_detail,
     get_or_create_content_item,
 )
+from content.services.local_content_store.mappers.game import upsert as upsert_game
 from content.services.source_data_orchestrator import fetch_bulk_source_data
-from content.tests.fixtures.payloads import MOVIE_MEMENTO, TV_DEMON_SLAYER
+from content.tests.fixtures.payloads import GAME_RDR2, MOVIE_MEMENTO, TV_DEMON_SLAYER
 
 
 def _ingest_movie(external_id: str = '77'):
@@ -31,6 +38,14 @@ def _make_stale(item: ContentItem):
     MovieDetail.objects.filter(content_item=item).update(
         last_refreshed_at=timezone.now() - timedelta(days=365),
     )
+
+
+def _seed_game_without_duration(external_id: str = '25076') -> ContentItem:
+    item, _ = get_or_create_content_item(
+        ContentItem.SourceAPI.IGDB, external_id, ContentItem.ContentType.GAME,
+    )
+    GameDetail.objects.create(content_item=item, title='Red Dead Redemption 2')
+    return item
 
 
 class OrchestratorAllFreshTests(TestCase):
@@ -111,6 +126,37 @@ class OrchestratorMissingTests(TestCase):
         mocked.assert_called_once()
         self.assertEqual(len(results[item.id]["seasons"]), 1)
         self.assertEqual(item.season_children.count(), 1)
+
+    def test_existing_game_without_duration_triggers_proxy_and_persists_it(self):
+        item = _seed_game_without_duration()
+
+        with patch('content.services.source_data_orchestrator._proxy_fetch') as mocked:
+            mocked.return_value = {item.id: GAME_RDR2}
+            results = fetch_bulk_source_data([item], stale_while_revalidate=True)
+
+        mocked.assert_called_once()
+        self.assertEqual(results[item.id]['duration']['status'], 'matched')
+        self.assertEqual(results[item.id]['duration']['hastily_seconds'], 180000)
+        self.assertTrue(
+            GameDurationEstimate.objects.filter(
+                content_item=item,
+                provider=GameDurationEstimate.Provider.IGDB,
+            ).exists()
+        )
+
+    def test_existing_game_with_no_duration_data_is_not_refetched(self):
+        item = _seed_game_without_duration()
+        no_duration_payload = {
+            **GAME_RDR2,
+            'duration': {'source': 'igdb', 'status': 'no_data'},
+        }
+        upsert_game(item, no_duration_payload)
+
+        with patch('content.services.source_data_orchestrator._proxy_fetch') as mocked:
+            results = fetch_bulk_source_data([item])
+
+        mocked.assert_not_called()
+        self.assertEqual(results[item.id]['duration']['status'], 'no_data')
 
     def test_incomplete_tv_detail_falls_back_when_proxy_is_down(self):
         item, _ = get_or_create_content_item(

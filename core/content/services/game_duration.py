@@ -6,6 +6,7 @@ from typing import Any, Dict, Mapping, Optional
 
 MAX_GAME_DURATION_HOURS = 3000
 MAX_GAME_DURATION_SECONDS = MAX_GAME_DURATION_HOURS * 60 * 60
+MAX_GAME_DURATION_RETRIES = 3
 GAME_DURATION_FIELDS = (
     'hastily_seconds',
     'normally_seconds',

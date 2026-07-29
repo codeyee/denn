@@ -11,6 +11,7 @@ from content.models import (
 )
 from content.services.payload_helpers import hash_payload, parse_iso_date
 from content.services.game_duration import (
+    MAX_GAME_DURATION_RETRIES,
     normalize_game_duration_values,
     normalized_game_duration_status,
 )
@@ -30,7 +31,7 @@ _MAPPED_KEYS = (
     'duration',
 )
 
-_MAX_DURATION_RETRIES = 3
+_MAX_DURATION_RETRIES = MAX_GAME_DURATION_RETRIES
 
 
 def upsert(

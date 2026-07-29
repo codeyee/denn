@@ -10,13 +10,14 @@ from django.core.management import CommandError, call_command
 from django.test import TestCase
 from django.utils import timezone
 
-from content.models import ContentItem
+from content.models import ContentItem, GameDetail, GameDurationEstimate
 from content.models.detail import MovieDetail
 from content.services.local_content_store import (
     ensure_content_detail,
     get_or_create_content_item,
 )
-from content.tests.fixtures.payloads import MOVIE_MEMENTO
+from content.services.local_content_store.mappers.game import upsert as upsert_game
+from content.tests.fixtures.payloads import GAME_RDR2, MOVIE_MEMENTO
 
 
 def _seed_movie(external_id: str = '77') -> ContentItem:
@@ -35,6 +36,14 @@ def _age_movie(item: ContentItem, *, days: int) -> None:
     MovieDetail.objects.filter(content_item=item).update(
         last_refreshed_at=timezone.now() - timedelta(days=days)
     )
+
+
+def _seed_game_without_duration(external_id: str = '25076') -> ContentItem:
+    item, _ = get_or_create_content_item(
+        ContentItem.SourceAPI.IGDB, external_id, ContentItem.ContentType.GAME,
+    )
+    GameDetail.objects.create(content_item=item, title='Red Dead Redemption 2')
+    return item
 
 
 class RehydrateCommandTests(TestCase):
@@ -116,6 +125,50 @@ class RehydrateCommandTests(TestCase):
         evt = json.loads(log_line)
         self.assertEqual(evt['total'], 0)
         self.assertEqual(evt['refreshed'], 0)
+
+    def test_fresh_game_without_duration_is_selected_for_backfill(self):
+        item = _seed_game_without_duration()
+
+        with patch(
+            'content.utils.fetch_source_data',
+            return_value=GAME_RDR2,
+        ):
+            buf = StringIO()
+            call_command(
+                'rehydrate_content_details',
+                '--content-type', 'GAME',
+                '--workers', '1',
+                stdout=buf,
+            )
+
+        duration = GameDurationEstimate.objects.get(content_item=item)
+        self.assertEqual(duration.status, GameDurationEstimate.Status.MATCHED)
+        log_line = next(
+            line for line in buf.getvalue().splitlines() if line.startswith('{')
+        )
+        self.assertEqual(json.loads(log_line)['total'], 1)
+
+    def test_game_with_no_duration_data_is_not_selected(self):
+        item = _seed_game_without_duration()
+        no_duration_payload = {
+            **GAME_RDR2,
+            'duration': {'source': 'igdb', 'status': 'no_data'},
+        }
+        upsert_game(item, no_duration_payload)
+
+        buf = StringIO()
+        with patch('content.utils.fetch_source_data') as fetch_mock:
+            call_command(
+                'rehydrate_content_details',
+                '--content-type', 'GAME',
+                stdout=buf,
+            )
+            fetch_mock.assert_not_called()
+
+        log_line = next(
+            line for line in buf.getvalue().splitlines() if line.startswith('{')
+        )
+        self.assertEqual(json.loads(log_line)['total'], 0)
 
     def test_ttl_override_includes_younger_items(self):
         item = _seed_movie('77')

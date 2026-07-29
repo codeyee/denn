@@ -10,9 +10,10 @@ from datetime import timedelta
 from typing import Iterable, List, Optional
 
 from django.core.management.base import BaseCommand, CommandError
+from django.db.models import Exists, OuterRef, Q
 from django.db.models.functions import Now
 
-from content.models import ContentItem
+from content.models import ContentItem, GameDurationEstimate
 from content.services.local_content_store import (
     detail_for,
     ensure_content_detail,
@@ -58,7 +59,7 @@ class _TypeStats:
 
 
 class Command(BaseCommand):
-    help = 'Rehydrate stale ContentDetail rows from the proxy.'
+    help = 'Rehydrate stale or incomplete ContentDetail rows from the proxy.'
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -123,7 +124,7 @@ class Command(BaseCommand):
 
         prefix = f'[{content_type}]'
         self.stdout.write(self.style.NOTICE(
-            f'{prefix} {len(items)} stale item(s) (limit={limit}, dry_run={dry_run}, '
+            f'{prefix} {len(items)} refresh candidate(s) (limit={limit}, dry_run={dry_run}, '
             f'ttl_override={ttl_override})'
         ))
 
@@ -234,10 +235,19 @@ class Command(BaseCommand):
                     related_name=related_name,
                 ),
             )
-            .filter(refresh_due_at__lt=Now())
             .select_related(related_name)
-            .order_by('refresh_due_at')[:limit]
         )
+        if content_type == ContentItem.ContentType.GAME:
+            has_game_duration = GameDurationEstimate.objects.filter(
+                content_item_id=OuterRef('pk'),
+                provider=GameDurationEstimate.Provider.IGDB,
+            )
+            qs = qs.annotate(has_game_duration=Exists(has_game_duration)).filter(
+                Q(refresh_due_at__lt=Now()) | Q(has_game_duration=False),
+            )
+        else:
+            qs = qs.filter(refresh_due_at__lt=Now())
+        qs = qs.order_by('refresh_due_at')[:limit]
         return list(qs)
 
     def _log(self, stats: _TypeStats) -> None:

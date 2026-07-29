@@ -295,6 +295,18 @@ class DetailHelpersTests(TestCase):
 
         self.assertFalse(detail_is_complete(item))
 
+    def test_existing_game_without_duration_is_incomplete(self):
+        item, _ = get_or_create_content_item(
+            ContentItem.SourceAPI.IGDB, '25076', ContentItem.ContentType.GAME,
+        )
+        GameDetail.objects.create(content_item=item, title='Red Dead Redemption 2')
+
+        self.assertFalse(detail_is_complete(item))
+
+        upsert_game(item, GAME_RDR2)
+
+        self.assertTrue(detail_is_complete(item))
+
 
 class AuthorCaseCollisionRegressionTests(TestCase):
     """Regression: payloads bringing the same Author with different casing
