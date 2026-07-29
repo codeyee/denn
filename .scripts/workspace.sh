@@ -448,6 +448,7 @@ prepare_compose_env() {
 }
 
 load_instance_from_compose_env() {
+  local requested_instance
   [[ -f "$COMPOSE_ENV_FILE" ]] || return 1
 
   INSTANCE_ID="$(read_env_value "$COMPOSE_ENV_FILE" INSTANCE_ID)"
@@ -461,6 +462,11 @@ load_instance_from_compose_env() {
 
   [[ -n "$INSTANCE_ID" && -n "$PROJECT_NAME" ]] \
     || fail "local Compose metadata is incomplete; refusing to destroy an unknown stack"
+
+  requested_instance="${INSTANCE:-${DENN_INSTANCE:-}}"
+  if [[ -n "$requested_instance" && "$(slugify "$requested_instance")" != "$INSTANCE_ID" ]]; then
+    fail "this worktree is assigned to instance '$INSTANCE_ID'; refusing to destroy requested instance '$requested_instance'"
+  fi
 }
 
 compose() {
