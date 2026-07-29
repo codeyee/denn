@@ -36,7 +36,7 @@ def ensure_tracking(
                 "status": status,
             },
         )
-    _lock_user(user)
+    lock_user(user)
     tracking, _created = UserContentTracking.objects.get_or_create(
         user=user,
         content_item=content_item,
@@ -92,7 +92,7 @@ def transition_tracking(
                 "status": status,
             },
         )
-    _lock_user(user)
+    lock_user(user)
 
     tracking, created = UserContentTracking.objects.select_for_update().get_or_create(
         user=user,
@@ -151,9 +151,11 @@ def transition_tracking(
         rating.is_active = False
         rating.save(update_fields=["is_active", "updated_at"])
         if tracking.is_favorite:
+            _clear_banner_selection(user, content_item)
             tracking.is_favorite = False
             tracking.favorited_at = None
     elif status != UserContentTracking.Status.COMPLETED and tracking.is_favorite:
+        _clear_banner_selection(user, content_item)
         tracking.is_favorite = False
         tracking.favorited_at = None
 
@@ -177,7 +179,7 @@ def save_rating(
     comment: str = "",
     spoiler: bool = False,
 ) -> Rating:
-    _lock_user(user)
+    lock_user(user)
 
     tracking, created = UserContentTracking.objects.select_for_update().get_or_create(
         user=user,
@@ -216,7 +218,7 @@ def set_favorite(
     content_item: ContentItem,
     is_favorite: bool,
 ) -> UserContentTracking:
-    _lock_user(user)
+    lock_user(user)
 
     tracking = UserContentTracking.objects.select_for_update().filter(
         user=user,
@@ -249,6 +251,8 @@ def set_favorite(
 
     tracking.is_favorite = is_favorite
     tracking.favorited_at = timezone.now() if is_favorite else None
+    if not is_favorite:
+        _clear_banner_selection(user, content_item)
     tracking.save(update_fields=["is_favorite", "favorited_at", "updated_at"])
     return tracking
 
@@ -260,7 +264,7 @@ def delete_tracking(
     content_item: ContentItem,
     acknowledge_effects: bool = False,
 ) -> bool:
-    _lock_user(user)
+    lock_user(user)
 
     tracking = UserContentTracking.objects.select_for_update().filter(
         user=user,
@@ -295,11 +299,25 @@ def delete_tracking(
         rating.is_active = False
         rating.save(update_fields=["is_active", "updated_at"])
     tracking.delete()
+    if tracking.is_favorite:
+        _clear_banner_selection(user, content_item)
     from content.services.dynamic_collections import sync_dynamic_collections
 
     sync_dynamic_collections(user)
     return True
 
 
-def _lock_user(user: User) -> None:
+def lock_user(user: User) -> None:
     User.objects.select_for_update().only("id").get(pk=user.pk)
+
+
+def _clear_banner_selection(user: User, content_item: ContentItem) -> None:
+    from authentication.models import UserPublicProfile
+
+    UserPublicProfile.objects.filter(
+        user=user,
+        banner_content_item=content_item,
+    ).update(
+        banner_content_item=None,
+        banner_image=None,
+    )

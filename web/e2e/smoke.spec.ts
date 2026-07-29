@@ -144,7 +144,7 @@ test("a personal action honors next and returns to public id-first detail", asyn
   expect(consoleErrors).toEqual([]);
 });
 
-test("public profile, tabs, reviews and public navigation work anonymously", async ({
+test("public profile, tabs and public navigation work anonymously", async ({
   page,
   request,
 }) => {
@@ -167,14 +167,9 @@ test("public profile, tabs, reviews and public navigation work anonymously", asy
   ).toBe(true);
   expect(profileReads.some(({ service }) => service === "proxy")).toBe(false);
 
-  await page.getByRole("tab", { name: "Ratings & Reviews" }).click();
-  await expect(page).toHaveURL(/tab=ratings/);
-  await expect(
-    page.getByText("A deterministic review with a fixture spoiler."),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: /spoiler/i }),
-  ).toHaveCount(0);
+  await page.getByRole("tab", { name: "Progress" }).click();
+  await expect(page).toHaveURL(/tab=progress/);
+  await expect(page.getByRole("heading", { name: "Progress" })).toBeVisible();
 
   await page.getByRole("tab", { name: "Overview" }).click();
   await page.getByRole("link", { name: "Open list Public Fixture Picks" }).click();
@@ -247,42 +242,33 @@ test("profile favorites combine score order with multi-select type filters", asy
   await expect(favorites.getByRole("link")).toHaveCount(3);
 });
 
-test("profile filters, sorting, pagination and shareable URLs stay canonical", async ({
+test("profile progress and list filters stay canonical", async ({
   page,
 }) => {
   await page.goto(
-    "/user/phase0-fixture?tab=ratings&page=2&kind=reviews&favorite=true&minScore=7&maxScore=10&sort=-score",
+    "/user/phase0-fixture?tab=progress&page=2&reviewed=true&favorite=true&minScore=7&maxScore=10&sort=score&order=desc",
   );
-  await expect(
-    page.getByRole("heading", { name: "Ratings & Reviews", level: 2 }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Progress", level: 2 })).toBeVisible();
   await expect(page.getByText("2/2")).toBeVisible();
-  await page.getByLabel("Rating kind").selectOption("ratings_only");
-  await expect(page).toHaveURL(/kind=ratings_only/);
-  await expect(page).toHaveURL(/page=1/);
-  await page
-    .getByRole("form", { name: "Filter profile activity" })
-    .getByLabel("Favorite")
-    .selectOption("false");
+  const progressFilters = page.getByRole("form", { name: "Filter profile progress" });
+  await progressFilters.getByRole("button", { name: /Favorite/ }).click();
+  await page.getByRole("menuitemradio", { name: "Not favorites" }).click();
   await expect(page).toHaveURL(/favorite=false/);
-  await page.getByLabel("Sort order").selectOption("oldest");
-  await expect(page).toHaveURL(/sort=oldest/);
+  await progressFilters.getByRole("button", { name: /Sort criterion/ }).click();
+  await page.getByRole("menuitemradio", { name: "Title" }).click();
+  await expect(page).toHaveURL(/sort=title/);
   await page.getByRole("button", { name: "Go to next page" }).click();
   await expect(page).toHaveURL(/page=2/);
 
-  await page.getByRole("tab", { name: "Completed" }).click();
-  await page.getByLabel("Search completed").fill("phase movie");
-  await page.getByRole("button", { name: "Search", exact: true }).click();
-  await expect(page).toHaveURL(/q=phase(\+|%20)movie/);
-  await page.getByLabel("Content type").selectOption("MOVIE");
-  await expect(page).toHaveURL(/type=MOVIE/);
-  await page.getByLabel("Sort order").selectOption("title");
-  await expect(page).toHaveURL(/sort=title/);
-
   await page.getByRole("tab", { name: "Lists" }).click();
+  await page.getByLabel("Search lists").fill("public");
+  await page.getByRole("button", { name: "Search", exact: true }).click();
+  await expect(page).toHaveURL(/q=public/);
   await page.getByLabel("List role").selectOption("member");
   await expect(page).toHaveURL(/role=member/);
   await expect(page).toHaveURL(/page=1/);
+  await page.getByLabel("Sort order").selectOption("name");
+  await expect(page).toHaveURL(/sort=name/);
 });
 
 test("broken public avatar falls back to initials", async ({ page, request }) => {

@@ -29,6 +29,20 @@ class UserPublicProfile(models.Model):
         blank=True,
         validators=[URLValidator(schemes=["https"])],
     )
+    banner_content_item = models.ForeignKey(
+        "content.ContentItem",
+        blank=True,
+        null=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+    )
+    banner_image = models.ForeignKey(
+        "content.Image",
+        blank=True,
+        null=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

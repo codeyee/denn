@@ -6,7 +6,8 @@ personal tracking, ratings, favorites, and public-list read model.
 ## Ownership And Sources Of Truth
 
 - `User.username` is the stable public identifier and
-  `UserPublicProfile` owns the editable public `bio` and `avatar_url`.
+  `UserPublicProfile` owns the editable public `bio`, `avatar_url`, and
+  optional banner selection.
 - `UserContentTracking` is the canonical personal state for one
   `(user, content item)` pair. `ListItem.context_status` is nullable,
   shared-list context and must not be used as personal tracking.
@@ -31,6 +32,10 @@ Every user has a one-to-one `UserPublicProfile`.
   working. The backfill reports legacy anomalies instead of renaming
   users.
 - Usernames are read-only after registration.
+- A banner selection stores a completed active favorite and, optionally, one
+  of that content item's persisted gallery or poster images. The backend
+  validates both references against the current user and favorite state.
+  Clearing the selection restores the random favorite fallback.
 
 Public serializers never expose email, account preferences, sessions,
 private lists, or private memberships. `/api/auth/user/` is a compact
@@ -130,8 +135,10 @@ management serializer for a public list; outsiders receive the
 PII-safe public serializer.
 
 The overview is bounded to five favorites per type, four recent
-reviews, six recent completions, four public lists, and five banner
-images. Public page and overview query paths are protected by
+reviews, six recent completions, four public lists, and five random fallback
+banner candidates. It also exposes the selected banner and bounded image
+options for each favorite so the owner can choose a specific gallery or
+poster image. Public page and overview query paths are protected by
 `query_count <= 10` tests and assert zero provider calls.
 
 The frontend combines the bounded favorite groups into one collection,
@@ -201,8 +208,10 @@ The approved visual direction stays inside the existing Denn system:
 
 For an authenticated user, the navbar avatar links directly to
 `/user/<username>`. Owners see their immutable username and edit their
-bio/avatar in a modal on that public page; a successful mutation updates
-the visible profile and navbar identity before revalidation.
+bio/avatar/banner in a modal on that public page; a successful mutation
+updates the visible profile and navbar identity before revalidation. When a
+favorite is removed, its banner selection is cleared in the tracking
+transaction and the profile returns to the random fallback.
 Private account preferences and session actions live at `/settings`.
 `/profile` is not an application route.
 

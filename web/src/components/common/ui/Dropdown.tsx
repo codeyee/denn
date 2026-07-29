@@ -58,6 +58,42 @@ function DropdownMenu({ children }: { children: React.ReactNode }) {
         {open && (
           <div
             ref={menuRef}
+            onKeyDown={(event) => {
+              if (event.key === "Escape") {
+                event.preventDefault()
+                setOpen(false)
+                triggerRef.current?.focus()
+                return
+              }
+
+              if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) {
+                return
+              }
+
+              const items = Array.from(
+                menuRef.current?.querySelectorAll<HTMLElement>(
+                  '[role^="menuitem"]',
+                ) ?? [],
+              )
+              if (items.length === 0) return
+
+              event.preventDefault()
+              const currentIndex = items.findIndex(
+                (item) =>
+                  item === document.activeElement ||
+                  item.contains(document.activeElement),
+              )
+              const nextIndex =
+                event.key === "Home"
+                  ? 0
+                  : event.key === "End"
+                    ? items.length - 1
+                    : (currentIndex +
+                        (event.key === "ArrowDown" ? 1 : -1) +
+                        items.length) %
+                      items.length
+              items[nextIndex]?.focus()
+            }}
             className={cn("absolute z-50 mt-3", alignClasses[contentAlign as keyof typeof alignClasses])}
           >
             {content}
@@ -85,6 +121,8 @@ function DropdownMenuTrigger({
     return (
       <Slot
         ref={triggerRef}
+        aria-expanded={open}
+        aria-haspopup="menu"
         onClick={() => setOpen(!open)}
       >
         {children}
@@ -97,6 +135,8 @@ function DropdownMenuTrigger({
       ref={triggerRef}
       onClick={() => setOpen(!open)}
       className={cn("outline-none", className)}
+      aria-expanded={open}
+      aria-haspopup="menu"
       {...props}
     >
       {children}
@@ -113,6 +153,7 @@ function DropdownMenuContent({
 }) {
   return (
     <div
+      role="menu"
       className={cn(
         "min-w-56 overflow-hidden rounded-md border border-white/10 bg-[#1d131c] p-2 text-white shadow-md",
         className
@@ -129,6 +170,7 @@ function DropdownMenuItem({
   className,
   onClick,
   onSelect,
+  onKeyDown,
   ...props
 }: React.ComponentProps<"div"> & {
   onClick?: () => void
@@ -145,13 +187,38 @@ function DropdownMenuItem({
     }
   }
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    onKeyDown?.(e)
+    if (e.defaultPrevented) return
+    if (e.target !== e.currentTarget) return
+    if (e.key !== "Enter" && e.key !== " ") return
+
+    e.preventDefault()
+    e.stopPropagation()
+    const interactiveElement = e.currentTarget.querySelector<HTMLElement>(
+      'a[href], button:not([disabled]), [role="button"]',
+    )
+    if (interactiveElement) {
+      interactiveElement.click()
+      return
+    }
+    onClick?.()
+    onSelect?.()
+    if (!onSelect) {
+      context?.setOpen(false)
+    }
+  }
+
   return (
     <div
+      role="menuitem"
+      tabIndex={0}
       className={cn(
         "relative flex cursor-pointer select-none items-center rounded-sm p-2 text-sm outline-none transition-colors hover:bg-white/10 focus:bg-white/10 focus:text-white data-disabled:pointer-events-none data-disabled:opacity-50",
         className
       )}
       onClick={handleClick}
+      onKeyDown={handleKeyDown}
       {...props}
     >
       {children}

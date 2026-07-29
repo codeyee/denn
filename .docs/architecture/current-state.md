@@ -242,6 +242,9 @@ direct search; both provider and aggregate caches isolate that policy.
 - Public profile overview and the unified Progress endpoint use local content summaries,
   stable pagination, bounded filters, a public-IP throttle, query-count
   budgets, and zero provider calls.
+- Public profile owners can persist a favorite and optional gallery/poster
+  image as their banner; removing that favorite clears the preference and
+  restores random fallback selection.
 - The public-profile loader fetches overview and the active tab in
   parallel and serializes initial query data so SSR and the first client
   render stay identical.

@@ -65,4 +65,24 @@ describe("navbar user menu", () => {
       "/settings",
     );
   });
+
+  it("activates nested links from a focused menu item", async () => {
+    const user = userEvent.setup();
+    render(<Navbar />);
+
+    await user.click(
+      screen.getByRole("button", { name: "Open @emmanuel menu" }),
+    );
+
+    const settingsLink = screen.getByRole("link", { name: "Settings" });
+    const menuItem = settingsLink.closest('[role="menuitem"]');
+    const click = vi.spyOn(settingsLink, "click").mockImplementation(() => {});
+
+    expect(menuItem).not.toBeNull();
+    (menuItem as HTMLElement).focus();
+    await user.keyboard("{Enter}");
+
+    expect(click).toHaveBeenCalledOnce();
+    click.mockRestore();
+  });
 });

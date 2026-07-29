@@ -3,6 +3,7 @@ from django.core.validators import URLValidator
 from rest_framework import serializers
 
 from authentication.models import UserPreferences, UserPublicProfile
+from content.models import Image, UserContentTracking
 
 
 class ProfileSerializer(serializers.ModelSerializer):
@@ -48,6 +49,15 @@ class ProfileSerializer(serializers.ModelSerializer):
 class PublicProfileIdentitySerializer(serializers.ModelSerializer):
     username = serializers.CharField(source="user.username")
     joined_at = serializers.DateTimeField(source="user.date_joined")
+    banner_content_id = serializers.IntegerField(
+        source="banner_content_item_id",
+        allow_null=True,
+        read_only=True,
+    )
+    banner_image_id = serializers.IntegerField(
+        allow_null=True,
+        read_only=True,
+    )
 
     class Meta:
         model = UserPublicProfile
@@ -56,6 +66,8 @@ class PublicProfileIdentitySerializer(serializers.ModelSerializer):
             "bio",
             "avatar_url",
             "joined_at",
+            "banner_content_id",
+            "banner_image_id",
         ]
 
 
@@ -66,8 +78,77 @@ class UserPublicProfileEditSerializer(serializers.ModelSerializer):
         required=False,
         validators=[URLValidator(schemes=["https"])],
     )
+    banner_content_id = serializers.IntegerField(
+        source="banner_content_item_id",
+        allow_null=True,
+        required=False,
+    )
+    banner_image_id = serializers.IntegerField(
+        allow_null=True,
+        required=False,
+    )
 
     class Meta:
         model = UserPublicProfile
-        fields = ["bio", "avatar_url", "updated_at"]
+        fields = [
+            "bio",
+            "avatar_url",
+            "banner_content_id",
+            "banner_image_id",
+            "updated_at",
+        ]
         read_only_fields = ["updated_at"]
+
+    def validate(self, attrs):
+        profile = self.instance
+        content_was_cleared = (
+            "banner_content_item_id" in attrs
+            and attrs["banner_content_item_id"] is None
+        )
+        content_id = attrs.get(
+            "banner_content_item_id",
+            profile.banner_content_item_id if profile else None,
+        )
+        image_id = attrs.get("banner_image_id")
+        if "banner_image_id" not in attrs:
+            image_id = (
+                None
+                if content_was_cleared
+                else profile.banner_image_id if profile else None
+            )
+
+        if content_id is None:
+            if image_id is not None and not content_was_cleared:
+                raise serializers.ValidationError({
+                    "banner_image_id": (
+                        "Choose a favorite before choosing a banner image."
+                    ),
+                })
+            attrs["banner_image_id"] = None
+            return attrs
+
+        user = self.context["request"].user
+        is_favorite = UserContentTracking.objects.filter(
+            user=user,
+            content_item_id=content_id,
+            status=UserContentTracking.Status.COMPLETED,
+            is_favorite=True,
+        ).exists()
+        if not is_favorite:
+            raise serializers.ValidationError({
+                "banner_content_id": "Choose one of your active favorites.",
+            })
+
+        if image_id is not None:
+            image_exists = Image.objects.filter(
+                pk=image_id,
+                content_item_id=content_id,
+            ).exists()
+            if not image_exists:
+                raise serializers.ValidationError({
+                    "banner_image_id": "Choose an image from that favorite.",
+                })
+        elif "banner_content_item_id" in attrs:
+            attrs["banner_image_id"] = None
+
+        return attrs

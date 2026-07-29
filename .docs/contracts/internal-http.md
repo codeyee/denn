@@ -310,6 +310,11 @@ Writes autenticados:
 - `PUT|DELETE /api/content/tracking/<content_id>/`
 - `PATCH /api/content/tracking/<content_id>/favorite/`
 
+`PATCH /api/profiles/me/` acepta `banner_content_id` como un favorito
+completado activo del usuario y `banner_image_id` como una imagen persistida
+del mismo contenido; ambos pueden enviarse como `null` para volver al banner
+aleatorio. Core rechaza referencias que no cumplan esa relación.
+
 Los endpoints de pestaña de perfil usan `page_size=24` por defecto y
 máximo 48. El overview limita sus colecciones internas y nunca consulta
 proveedores. El throttle público es 120 solicitudes/minuto por IP en entornos

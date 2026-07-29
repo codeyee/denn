@@ -2,6 +2,7 @@ from collections import defaultdict
 from decimal import Decimal, InvalidOperation
 
 from django.contrib.auth.models import User
+from django.db import transaction
 from django.db.models import (
     Count,
     Exists,
@@ -40,6 +41,7 @@ from content.models import (
     UserList,
 )
 from content.serializers import LocalContentSummarySerializer
+from content.services.tracking_service import lock_user
 from core.pagination import PublicProfilePagination
 from core.throttling import PublicProfileRateThrottle
 
@@ -265,6 +267,12 @@ class PublicProfileOverviewView(PublicProfileBaseView):
         ]
         serialized_lists = [_serialize_list(row, user) for row in list_rows]
         banner_media = _select_banner_media(favorite_rows, content_map)
+        selected_banner = _selected_banner_media(
+            profile,
+            favorite_rows,
+            content_map,
+        )
+        banner_options = _select_banner_options(favorite_rows, content_map)
 
         payload = {
             "profile": PublicProfileIdentitySerializer(profile).data,
@@ -280,6 +288,8 @@ class PublicProfileOverviewView(PublicProfileBaseView):
             "recent_completed": recent_completed,
             "public_lists": serialized_lists,
             "banner_media": banner_media,
+            "selected_banner": selected_banner,
+            "banner_options": banner_options,
         }
         return Response(payload)
 
@@ -726,7 +736,9 @@ class CurrentUserPublicProfileView(generics.GenericAPIView):
         request=UserPublicProfileEditSerializer,
         responses={200: PublicProfileIdentitySerializer},
     )
+    @transaction.atomic
     def patch(self, request):
+        lock_user(request.user)
         profile, _created = UserPublicProfile.objects.get_or_create(user=request.user)
         serializer = self.get_serializer(profile, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
@@ -844,39 +856,157 @@ def _select_banner_media(favorite_rows, content_map):
         content = content_map.get(row["content_item_id"])
         if content is None:
             continue
-        image_url, treatment = _preferred_banner_image(content)
-        if image_url:
-            media.append(
-                {
-                    "content_id": content.id,
-                    "type": content.content_type,
-                    "image_url": image_url,
-                    "treatment": treatment,
-                }
-            )
+        preferred = _preferred_banner_option(content)
+        if preferred:
+            media.append(preferred)
     return media[:5]
 
 
-def _preferred_banner_image(content):
-    images = list(content.images.all())
-    for image_type, treatment in (
-        (Image.Type.GALLERY, "cover"),
-        (Image.Type.POSTER, "contained-poster"),
-    ):
-        for image_size in (Image.Size.ORIGINAL, Image.Size.STANDARD):
-            image = next(
-                (
-                    candidate
-                    for candidate in images
-                    if candidate.type == image_type
-                    and candidate.size == image_size
-                    and candidate.image_url
-                ),
-                None,
+def _selected_banner_media(profile, favorite_rows, content_map):
+    favorite_ids = {row["content_item_id"] for row in favorite_rows}
+    content_id = profile.banner_content_item_id
+    if content_id is None or content_id not in favorite_ids:
+        return None
+
+    content = content_map.get(content_id)
+    if content is None:
+        return None
+
+    if profile.banner_image_id is not None:
+        image = next(
+            (
+                candidate
+                for candidate in content.images.all()
+                if candidate.id == profile.banner_image_id
+                and candidate.image_url
+            ),
+            None,
+        )
+        if image is None:
+            return None
+        return _banner_media(
+            content,
+            image.image_url,
+            _banner_treatment(image),
+            image.id,
+        )
+
+    return _preferred_banner_option(content)
+
+
+def _select_banner_options(favorite_rows, content_map):
+    options = []
+    seen_content_ids = set()
+    for row in favorite_rows:
+        content_id = row["content_item_id"]
+        if content_id in seen_content_ids:
+            continue
+        content = content_map.get(content_id)
+        if content is None:
+            continue
+        seen_content_ids.add(content_id)
+        options.extend(_banner_options_for_content(content))
+    return options
+
+
+def _banner_options_for_content(content):
+    options = []
+    seen_urls = set()
+    preferred = _preferred_banner_option(content)
+    if preferred:
+        options.append({**preferred, "image_id": None})
+    for image in _ordered_banner_images(content):
+        if image.image_url in seen_urls:
+            continue
+        seen_urls.add(image.image_url)
+        options.append(
+            _banner_media(
+                content,
+                image.image_url,
+                _banner_treatment(image),
+                image.id,
             )
-            if image:
-                return image.image_url, treatment
+        )
+
+    summary = _serialize_content(content)
+    metadata = {
+        "title": summary["title"],
+        "authors": _banner_option_authors(content, summary),
+    }
+
+    return [{**option, **metadata} for option in options[:12]]
+
+
+def _banner_option_authors(content, summary):
+    if content.content_type == ContentItem.ContentType.ALBUM:
+        return _first_two_names(summary.get("subtitle"))
+
+    return [
+        author["name"]
+        for author in (summary.get("authors") or [])[:2]
+        if author.get("name")
+    ]
+
+
+def _first_two_names(value):
+    names = [name.strip() for name in (value or "").split(",") if name.strip()]
+    return names[:2]
+
+
+def _preferred_banner_option(content):
+    for image in _ordered_banner_images(content):
+        return _banner_media(
+            content,
+            image.image_url,
+            _banner_treatment(image),
+            image.id,
+        )
 
     summary = _serialize_content(content)
     image_url = summary["poster"] or summary["backdrop"]
-    return image_url, "contained-poster" if image_url else "cover"
+    if not image_url:
+        return None
+    return _banner_media(
+        content,
+        image_url,
+        "contained-poster",
+        None,
+    )
+
+
+def _ordered_banner_images(content):
+    type_priority = {
+        Image.Type.GALLERY: 0,
+        Image.Type.POSTER: 1,
+    }
+    size_priority = {
+        Image.Size.ORIGINAL: 0,
+        Image.Size.STANDARD: 1,
+    }
+    return sorted(
+        (
+            image
+            for image in content.images.all()
+            if image.image_url
+        ),
+        key=lambda image: (
+            type_priority.get(image.type, 2),
+            size_priority.get(image.size, 2),
+            image.position,
+            image.id,
+        ),
+    )
+
+
+def _banner_media(content, image_url, treatment, image_id):
+    return {
+        "content_id": content.id,
+        "type": content.content_type,
+        "image_id": image_id,
+        "image_url": image_url,
+        "treatment": treatment,
+    }
+
+
+def _banner_treatment(image):
+    return "cover" if image.type == Image.Type.GALLERY else "contained-poster"

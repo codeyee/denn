@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { usePublicProfileOverviewQuery } from "@/lib/api/queries/usePublicProfileQueries";
 import type {
@@ -14,6 +14,11 @@ import { ProfileBanner } from "./ProfileBanner";
 import { ProfileOverview } from "./ProfileOverview";
 import { ProfileTabContent } from "./ProfileTabContent";
 import { ProfileTabs } from "./ProfileTabs";
+import {
+  getSelectedBannerMedia,
+  isFavoriteBannerMedia,
+  pickRandomFavoriteBanner,
+} from "./utils";
 
 interface PublicProfilePageProps {
   username: string;
@@ -31,13 +36,42 @@ export function PublicProfilePage({
   initialBannerMedia,
 }: PublicProfilePageProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [bannerMedia] = useState(initialBannerMedia);
+  const [bannerMedia, setBannerMedia] = useState(initialBannerMedia);
+  const previousSelectionKey = useRef(
+    getBannerSelectionKey(initialOverview),
+  );
   const editButtonRef = useRef<HTMLButtonElement>(null);
   const overviewQuery = usePublicProfileOverviewQuery(
     username,
     initialOverview,
   );
   const viewer = useAuthStore((state) => state.user);
+  const overview = overviewQuery.data;
+  const selectedBanner = overview
+    ? getSelectedBannerMedia(overview)
+    : undefined;
+
+  useEffect(() => {
+    if (!overview) return;
+
+    const selectionKey = getBannerSelectionKey(overview);
+    const selectionWasCleared =
+      previousSelectionKey.current !== null && selectionKey === null;
+
+    if (selectedBanner) {
+      setBannerMedia(selectedBanner);
+    } else if (selectionWasCleared) {
+      setBannerMedia(pickRandomFavoriteBanner(overview));
+    } else {
+      setBannerMedia((current) => {
+        if (current && isFavoriteBannerMedia(current, overview)) {
+          return current;
+        }
+        return pickRandomFavoriteBanner(overview);
+      });
+    }
+    previousSelectionKey.current = selectionKey;
+  }, [overview, selectedBanner]);
 
   if (overviewQuery.isPending) {
     return <PublicProfileSkeleton />;
@@ -45,8 +79,10 @@ export function PublicProfilePage({
   if (overviewQuery.isError) {
     throw overviewQuery.error;
   }
+  if (!overview) {
+    return <PublicProfileSkeleton />;
+  }
 
-  const overview = overviewQuery.data;
   const isOwner = viewer?.username === overview.profile.username;
 
   function handleEditOpenChange(open: boolean) {
@@ -91,10 +127,17 @@ export function PublicProfilePage({
           isOpen={isEditing}
           onOpenChange={handleEditOpenChange}
           profile={overview.profile}
+          bannerOptions={overview.banner_options}
         />
       ) : null}
     </main>
   );
+}
+
+function getBannerSelectionKey(overview: PublicProfileOverview) {
+  const { banner_content_id: contentId, banner_image_id: imageId } =
+    overview.profile;
+  return contentId === null ? null : `${contentId}:${imageId ?? "auto"}`;
 }
 
 export function PublicProfileSkeleton() {

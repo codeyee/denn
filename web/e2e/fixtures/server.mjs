@@ -109,6 +109,14 @@ const contentItem = {
   average_rating: null,
   current_user_rating: null,
   current_user_tracking: null,
+  progress_policy: {
+    content_type: "MOVIE",
+    final_status: "completed",
+    states: [
+      { value: "backlog", label: "Plan to watch", is_final: false },
+      { value: "completed", label: "Watched", is_final: true },
+    ],
+  },
   created_at: now,
   source_data: movie,
 };
@@ -263,7 +271,38 @@ const publicProfile = {
   bio: user.bio,
   avatar_url: user.avatar_url,
   joined_at: "2025-01-15T12:00:00Z",
+  banner_content_id: null,
+  banner_image_id: null,
 };
+const bannerOptions = [
+  {
+    content_id: localContent.id,
+    type: localContent.type,
+    image_id: null,
+    image_url: localContent.backdrop,
+    treatment: "cover",
+    title: localContent.title,
+    authors: ["Fixture Studio One", "Fixture Studio Two"],
+  },
+  {
+    content_id: localGame.id,
+    type: localGame.type,
+    image_id: null,
+    image_url: localGame.poster,
+    treatment: "contained-poster",
+    title: localGame.title,
+    authors: ["Fixture Game Studio"],
+  },
+  {
+    content_id: localBook.id,
+    type: localBook.type,
+    image_id: null,
+    image_url: localBook.poster,
+    treatment: "contained-poster",
+    title: localBook.title,
+    authors: ["Fixture Author"],
+  },
+];
 const publicRating = {
   id: 1,
   content: localContent,
@@ -271,6 +310,23 @@ const publicRating = {
   review: "A deterministic review with a fixture spoiler.",
   spoiler: true,
   is_favorite: true,
+  created_at: now,
+  updated_at: now,
+};
+const publicProgress = {
+  id: 1,
+  content: localContent,
+  status: "completed",
+  completed_at: now,
+  is_favorite: true,
+  rating: {
+    id: 1,
+    score: "9.0",
+    review: "A deterministic review with a fixture spoiler.",
+    spoiler: true,
+    created_at: now,
+    updated_at: now,
+  },
   created_at: now,
   updated_at: now,
 };
@@ -483,6 +539,12 @@ const core = createServer(async (request, response) => {
       user.avatar_url = body.avatar_url;
       publicProfile.avatar_url = body.avatar_url;
     }
+    if ("banner_content_id" in body) {
+      publicProfile.banner_content_id = body.banner_content_id;
+    }
+    if ("banner_image_id" in body) {
+      publicProfile.banner_image_id = body.banner_image_id;
+    }
     return json(response, 200, publicProfile, headers);
   }
   if (url.pathname === "/api/auth/token/refresh/") {
@@ -499,7 +561,7 @@ const core = createServer(async (request, response) => {
   ) {
     return json(response, 200, { detail: "ok" }, headers);
   }
-  const profileMatch = /^\/api\/profiles\/([^/]+)\/(?:(completed|ratings|lists)\/)?$/.exec(
+  const profileMatch = /^\/api\/profiles\/([^/]+)\/(?:(completed|ratings|progress|lists)\/)?$/.exec(
     url.pathname,
   );
   if (profileMatch && request.method === "GET") {
@@ -526,6 +588,8 @@ const core = createServer(async (request, response) => {
             bio: "",
             avatar_url: "",
             joined_at: now,
+            banner_content_id: null,
+            banner_image_id: null,
           },
           counters: {
             completed: 0,
@@ -539,6 +603,8 @@ const core = createServer(async (request, response) => {
           recent_completed: [],
           public_lists: [],
           banner_media: [],
+          selected_banner: null,
+          banner_options: [],
         },
         headers,
       );
@@ -569,6 +635,14 @@ const core = createServer(async (request, response) => {
         response,
         200,
         { metadata: profilePageMetadata(url), results: [publicRating] },
+        headers,
+      );
+    }
+    if (tab === "progress") {
+      return json(
+        response,
+        200,
+        { metadata: profilePageMetadata(url), results: [publicProgress] },
         headers,
       );
     }
@@ -637,6 +711,8 @@ const core = createServer(async (request, response) => {
             image_url: localContent.backdrop,
           },
         ],
+        selected_banner: null,
+        banner_options: bannerOptions,
       },
       headers,
     );
