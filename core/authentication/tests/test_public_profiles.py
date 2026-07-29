@@ -267,6 +267,30 @@ class PublicProfileApiTests(APITestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn("banner_content_id", response.data["fields"])
 
+    def test_clearing_banner_content_also_clears_saved_image(self):
+        self.client.force_authenticate(self.user)
+        self.client.patch(
+            reverse("profiles:me"),
+            {
+                "banner_content_id": self.movie.id,
+                "banner_image_id": self.movie_gallery.id,
+            },
+            format="json",
+        )
+
+        response = self.client.patch(
+            reverse("profiles:me"),
+            {"banner_content_id": None},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNone(response.data["banner_content_id"])
+        self.assertIsNone(response.data["banner_image_id"])
+        self.user.public_profile.refresh_from_db()
+        self.assertIsNone(self.user.public_profile.banner_content_item_id)
+        self.assertIsNone(self.user.public_profile.banner_image_id)
+
     def test_clearing_a_favorite_clears_its_banner_selection(self):
         self.client.force_authenticate(self.user)
         self.client.patch(

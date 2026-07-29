@@ -2,6 +2,7 @@ from collections import defaultdict
 from decimal import Decimal, InvalidOperation
 
 from django.contrib.auth.models import User
+from django.db import transaction
 from django.db.models import (
     Count,
     Exists,
@@ -40,6 +41,7 @@ from content.models import (
     UserList,
 )
 from content.serializers import LocalContentSummarySerializer
+from content.services.tracking_service import lock_user
 from core.pagination import PublicProfilePagination
 from core.throttling import PublicProfileRateThrottle
 
@@ -734,7 +736,9 @@ class CurrentUserPublicProfileView(generics.GenericAPIView):
         request=UserPublicProfileEditSerializer,
         responses={200: PublicProfileIdentitySerializer},
     )
+    @transaction.atomic
     def patch(self, request):
+        lock_user(request.user)
         profile, _created = UserPublicProfile.objects.get_or_create(user=request.user)
         serializer = self.get_serializer(profile, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)

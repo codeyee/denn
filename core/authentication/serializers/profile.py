@@ -101,17 +101,24 @@ class UserPublicProfileEditSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         profile = self.instance
+        content_was_cleared = (
+            "banner_content_item_id" in attrs
+            and attrs["banner_content_item_id"] is None
+        )
         content_id = attrs.get(
             "banner_content_item_id",
             profile.banner_content_item_id if profile else None,
         )
-        image_id = attrs.get(
-            "banner_image_id",
-            profile.banner_image_id if profile else None,
-        )
+        image_id = attrs.get("banner_image_id")
+        if "banner_image_id" not in attrs:
+            image_id = (
+                None
+                if content_was_cleared
+                else profile.banner_image_id if profile else None
+            )
 
         if content_id is None:
-            if image_id is not None:
+            if image_id is not None and not content_was_cleared:
                 raise serializers.ValidationError({
                     "banner_image_id": (
                         "Choose a favorite before choosing a banner image."

@@ -78,8 +78,10 @@ function DropdownMenu({ children }: { children: React.ReactNode }) {
               if (items.length === 0) return
 
               event.preventDefault()
-              const currentIndex = items.indexOf(
-                document.activeElement as HTMLElement,
+              const currentIndex = items.findIndex(
+                (item) =>
+                  item === document.activeElement ||
+                  item.contains(document.activeElement),
               )
               const nextIndex =
                 event.key === "Home"
@@ -188,10 +190,18 @@ function DropdownMenuItem({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     onKeyDown?.(e)
     if (e.defaultPrevented) return
+    if (e.target !== e.currentTarget) return
     if (e.key !== "Enter" && e.key !== " ") return
 
     e.preventDefault()
     e.stopPropagation()
+    const interactiveElement = e.currentTarget.querySelector<HTMLElement>(
+      'a[href], button:not([disabled]), [role="button"]',
+    )
+    if (interactiveElement) {
+      interactiveElement.click()
+      return
+    }
     onClick?.()
     onSelect?.()
     if (!onSelect) {

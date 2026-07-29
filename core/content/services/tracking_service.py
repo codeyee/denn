@@ -36,7 +36,7 @@ def ensure_tracking(
                 "status": status,
             },
         )
-    _lock_user(user)
+    lock_user(user)
     tracking, _created = UserContentTracking.objects.get_or_create(
         user=user,
         content_item=content_item,
@@ -92,7 +92,7 @@ def transition_tracking(
                 "status": status,
             },
         )
-    _lock_user(user)
+    lock_user(user)
 
     tracking, created = UserContentTracking.objects.select_for_update().get_or_create(
         user=user,
@@ -179,7 +179,7 @@ def save_rating(
     comment: str = "",
     spoiler: bool = False,
 ) -> Rating:
-    _lock_user(user)
+    lock_user(user)
 
     tracking, created = UserContentTracking.objects.select_for_update().get_or_create(
         user=user,
@@ -218,7 +218,7 @@ def set_favorite(
     content_item: ContentItem,
     is_favorite: bool,
 ) -> UserContentTracking:
-    _lock_user(user)
+    lock_user(user)
 
     tracking = UserContentTracking.objects.select_for_update().filter(
         user=user,
@@ -307,7 +307,7 @@ def delete_tracking(
     return True
 
 
-def _lock_user(user: User) -> None:
+def lock_user(user: User) -> None:
     User.objects.select_for_update().only("id").get(pk=user.pk)
 
 
