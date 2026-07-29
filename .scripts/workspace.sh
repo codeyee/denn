@@ -196,9 +196,13 @@ resolve_instance_id() {
 reservation_block_is_free() {
   local web_port="$1"
   local port file key
+  local -a files=()
   shopt -s nullglob
-  local files=("$INSTANCE_STATE_DIR"/*.env)
+  files=("$INSTANCE_STATE_DIR"/*.env)
   shopt -u nullglob
+  if ((${#files[@]} == 0)); then
+    return 0
+  fi
   for port in \
     "$web_port" \
     "$((web_port + 5000))" \
@@ -764,7 +768,8 @@ cmd_db_backups() {
   fi
 
   shopt -s nullglob
-  local files=("$BACKUP_DIR"/*.sql.gz)
+  local -a files=()
+  files=("$BACKUP_DIR"/*.sql.gz)
   shopt -u nullglob
   if (( ${#files[@]} == 0 )); then
     echo "(no local backups)"

@@ -76,6 +76,7 @@ func (s *Service) GetGameComplete(ctx context.Context, id int) (models.Game, err
 		// instead of falling through to a generic 500.
 		return models.Game{}, clients.ErrNotFound
 	}
+	s.enrichTimeToBeats(ctx, data)
 
 	return mapper.MapGame(data[0]), nil
 }
@@ -111,6 +112,7 @@ func (s *Service) GetBulkGames(ctx context.Context, ids []int) ([]models.Game, e
 				mu.Unlock()
 				return
 			}
+			s.enrichTimeToBeats(ctx, data)
 
 			mu.Lock()
 			for _, item := range data {
@@ -129,6 +131,34 @@ func (s *Service) GetBulkGames(ctx context.Context, ids []int) ([]models.Game, e
 		return allGames, fmt.Errorf("igdb bulk games: %w", errors.Join(batchErrs...))
 	}
 	return allGames, nil
+}
+
+func (s *Service) enrichTimeToBeats(ctx context.Context, data []games.IgdbGame) {
+	if len(data) == 0 {
+		return
+	}
+
+	ids := make([]int, 0, len(data))
+	for _, item := range data {
+		ids = append(ids, item.ID)
+	}
+
+	times, err := unmarshalResponse[[]games.IgdbTimeToBeat](s.client.GetGameTimeToBeats(ctx, ids))
+	if err != nil {
+		log.Printf("igdb: game time to beat enrichment failed for %v: %v", ids, err)
+		for i := range data {
+			data[i].TimeToBeatError = true
+		}
+		return
+	}
+
+	byGameID := make(map[int]*games.IgdbTimeToBeat, len(times))
+	for i := range times {
+		byGameID[times[i].GameID] = &times[i]
+	}
+	for i := range data {
+		data[i].TimeToBeats = byGameID[data[i].ID]
+	}
 }
 
 func (s *Service) GetPopularGames(ctx context.Context, limit, offset int) ([]models.SearchItem, error) {

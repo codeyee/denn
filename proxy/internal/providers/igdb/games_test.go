@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -15,9 +16,11 @@ import (
 type MockRoundTripper struct {
 	Response *http.Response
 	Err      error
+	Request  *http.Request
 }
 
 func (m *MockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	m.Request = req
 	return m.Response, m.Err
 }
 
@@ -81,10 +84,10 @@ func TestSearchGames(t *testing.T) {
 			Header:     make(http.Header),
 		},
 	}
-	
+
 	mockClient := &http.Client{Transport: mockTransport}
 	cache := NewMockCache()
-	
+
 	baseClient := clients.NewBaseClient(BaseURL, clients.WithHTTPClient(mockClient))
 	c := &Client{
 		CachedClient: clients.NewCachedClient(baseClient, cache, clients.CacheConfig{}),
@@ -95,7 +98,7 @@ func TestSearchGames(t *testing.T) {
 	}
 
 	resp, err := c.SearchGames(context.Background(), "Zelda", 10, 0)
-	
+
 	if err != nil {
 		t.Fatalf("SearchGames failed: %v", err)
 	}
@@ -103,16 +106,16 @@ func TestSearchGames(t *testing.T) {
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("got status %d; want %d", resp.StatusCode, http.StatusOK)
 	}
-	
+
 	var games []map[string]interface{}
 	if err := json.Unmarshal(resp.Data, &games); err != nil {
 		t.Fatalf("Failed to decode response: %v", err)
 	}
-	
+
 	if len(games) != 1 {
 		t.Errorf("got %d games; want 1", len(games))
 	}
-	
+
 	if games[0]["name"] != "Test Game" {
 		t.Errorf("got name %s; want Test Game", games[0]["name"])
 	}
@@ -134,10 +137,10 @@ func TestGetGame(t *testing.T) {
 			Header:     make(http.Header),
 		},
 	}
-	
+
 	baseClient := clients.NewBaseClient(BaseURL, clients.WithHTTPClient(&http.Client{Transport: mockTransport}))
 	cache := NewMockCache()
-	
+
 	c := &Client{
 		CachedClient: clients.NewCachedClient(baseClient, cache, clients.CacheConfig{}),
 		cache:        cache,
@@ -145,20 +148,73 @@ func TestGetGame(t *testing.T) {
 	}
 
 	resp, err := c.GetGame(context.Background(), 123)
-	
+
 	if err != nil {
 		t.Fatalf("GetGame failed: %v", err)
 	}
 
 	var games []map[string]interface{}
 	json.Unmarshal(resp.Data, &games)
-	
+
 	if len(games) != 1 {
 		t.Errorf("expected 1 game, got %d", len(games))
 	}
-	
+
 	if games[0]["id"].(float64) != 123 {
 		t.Errorf("expected ID 123, got %v", games[0]["id"])
+	}
+
+}
+
+func TestGetGameTimeToBeats(t *testing.T) {
+	mockTimes := []map[string]interface{}{{
+		"game_id":    123,
+		"hastily":    3600,
+		"normally":   7200,
+		"completely": 10800,
+		"count":      10,
+	}}
+	mockBody, _ := json.Marshal(mockTimes)
+	mockTransport := &MockRoundTripper{
+		Response: &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(bytes.NewReader(mockBody)),
+			Header:     make(http.Header),
+		},
+	}
+
+	baseClient := clients.NewBaseClient(BaseURL, clients.WithHTTPClient(&http.Client{Transport: mockTransport}))
+	c := &Client{
+		CachedClient: clients.NewCachedClient(baseClient, NewMockCache(), clients.CacheConfig{}),
+		token:        "test-token",
+	}
+
+	resp, err := c.GetGameTimeToBeats(context.Background(), []int{123})
+	if err != nil {
+		t.Fatalf("GetGameTimeToBeats failed: %v", err)
+	}
+
+	body, err := io.ReadAll(mockTransport.Request.Body)
+	if err != nil {
+		t.Fatalf("read request body: %v", err)
+	}
+	requestBody := string(body)
+	if !strings.Contains(requestBody, "game_id = (123)") {
+		t.Errorf("request did not target game 123: %s", requestBody)
+	}
+	if !strings.Contains(requestBody, "fields game_id,hastily,normally,completely,count") {
+		t.Errorf("request fields were incomplete: %s", requestBody)
+	}
+	if strings.Contains(requestBody, "updated_at") {
+		t.Errorf("request included unsupported updated_at field: %s", requestBody)
+	}
+
+	var times []map[string]interface{}
+	if err := json.Unmarshal(resp.Data, &times); err != nil {
+		t.Fatalf("decode time response: %v", err)
+	}
+	if times[0]["game_id"].(float64) != 123 {
+		t.Errorf("expected game_id 123, got %v", times[0]["game_id"])
 	}
 }
 
@@ -176,10 +232,10 @@ func TestGetBulkGames(t *testing.T) {
 			Header:     make(http.Header),
 		},
 	}
-	
+
 	baseClient := clients.NewBaseClient(BaseURL, clients.WithHTTPClient(&http.Client{Transport: mockTransport}))
 	cache := NewMockCache()
-	
+
 	c := &Client{
 		CachedClient: clients.NewCachedClient(baseClient, cache, clients.CacheConfig{}),
 		cache:        cache,
@@ -187,14 +243,14 @@ func TestGetBulkGames(t *testing.T) {
 	}
 
 	resp, err := c.GetBulkGames(context.Background(), []int{1, 2})
-	
+
 	if err != nil {
 		t.Fatalf("GetBulkGames failed: %v", err)
 	}
 
 	var games []map[string]interface{}
 	json.Unmarshal(resp.Data, &games)
-	
+
 	if len(games) != 2 {
 		t.Errorf("expected 2 games, got %d", len(games))
 	}
@@ -213,10 +269,10 @@ func TestGetPopularGames(t *testing.T) {
 			Header:     make(http.Header),
 		},
 	}
-	
+
 	baseClient := clients.NewBaseClient(BaseURL, clients.WithHTTPClient(&http.Client{Transport: mockTransport}))
 	cache := NewMockCache()
-	
+
 	c := &Client{
 		CachedClient: clients.NewCachedClient(baseClient, cache, clients.CacheConfig{}),
 		cache:        cache,
@@ -227,10 +283,10 @@ func TestGetPopularGames(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetPopularGames failed: %v", err)
 	}
-	
+
 	var games []map[string]interface{}
 	json.Unmarshal(resp.Data, &games)
-	
+
 	if len(games) != 1 {
 		t.Errorf("expected 1 game, got %d", len(games))
 	}
@@ -249,10 +305,10 @@ func TestGetPopularityPrimitives(t *testing.T) {
 			Header:     make(http.Header),
 		},
 	}
-	
+
 	baseClient := clients.NewBaseClient(BaseURL, clients.WithHTTPClient(&http.Client{Transport: mockTransport}))
 	cache := NewMockCache()
-	
+
 	c := &Client{
 		CachedClient: clients.NewCachedClient(baseClient, cache, clients.CacheConfig{}),
 		cache:        cache,
@@ -263,10 +319,10 @@ func TestGetPopularityPrimitives(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetPopularityPrimitives failed: %v", err)
 	}
-	
+
 	var prims []map[string]interface{}
 	json.Unmarshal(resp.Data, &prims)
-	
+
 	if len(prims) != 1 {
 		t.Errorf("expected 1 primitive, got %d", len(prims))
 	}

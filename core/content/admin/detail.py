@@ -5,6 +5,7 @@ from content.models import (
     BookDetail,
     Episode,
     GameDetail,
+    GameDurationEstimate,
     GameMode,
     GamePlatform,
     Genre,
@@ -80,6 +81,15 @@ class GameDetailAdmin(admin.ModelAdmin):
     raw_id_fields = ['content_item']
     readonly_fields = ['last_refreshed_at', 'source_payload_hash']
     inlines = [GamePlatformInline]
+
+
+@admin.register(GameDurationEstimate)
+class GameDurationEstimateAdmin(admin.ModelAdmin):
+    list_display = ['id', 'content_item', 'provider', 'status', 'synced_at']
+    list_filter = ['provider', 'status']
+    search_fields = ['content_item__external_id', 'provider_external_id']
+    raw_id_fields = ['content_item']
+    readonly_fields = ['synced_at']
 
 
 @admin.register(BookDetail)

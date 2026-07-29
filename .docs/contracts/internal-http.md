@@ -16,6 +16,28 @@ web (server)    → core    (/api/content/resolve-ids/)
 core            → proxy   (/v1/proxy/*)   [enriquecimiento de ContentItem]
 ```
 
+### 1.1 Duración estimada de videojuegos
+
+El detalle normalizado de un juego puede incluir `duration`, sin exponer el
+payload crudo de IGDB:
+
+```json
+{
+  "source": "igdb",
+  "status": "matched",
+  "main_story_seconds": 36000,
+  "main_extra_seconds": 54000,
+  "completionist_seconds": 90000,
+  "source_updated_at": "2026-07-01T00:00:00Z",
+  "sample_count": 24
+}
+```
+
+Todos los valores de duración son opcionales. `status` puede ser `matched`,
+`no_data`, `stale` o `error`. La ausencia o el error de `duration` no convierte
+el detalle del juego en un error de la respuesta. Las credenciales de IGDB
+siguen siendo exclusivas de `proxy`.
+
 `core` no expone endpoints `/api/proxy/...`. `web` no expone metadata externa fuera de `/api/proxy/*`.
 
 ## 2. Headers

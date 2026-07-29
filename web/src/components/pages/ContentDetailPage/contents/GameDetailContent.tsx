@@ -4,6 +4,14 @@ import { groupGamePlatforms } from "@/lib/platforms/gamePlatforms";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { formatAuthors } from "@/lib/utils/authorUtils";
 import { GamePlatformsDisplay } from "../platforms/GamePlatformsDisplay";
+import { getGameDurationRows } from "@/lib/utils/gameDuration";
+import { BookOpen, Clock3, Trophy, type LucideIcon } from "lucide-react";
+
+const DURATION_ICONS: Record<string, LucideIcon> = {
+  Rushed: Clock3,
+  Normal: BookOpen,
+  Complete: Trophy,
+};
 
 interface GameDetailContentProps {
   game: GameDetail;
@@ -11,6 +19,7 @@ interface GameDetailContentProps {
 
 export function GameDetailContent({ game }: GameDetailContentProps) {
   const releaseDate = formatReleaseDate(game.release_date);
+  const durationRows = getGameDurationRows(game.duration);
 
   const platformGroups = groupGamePlatforms(game.platforms, game.distribution_networks);
 
@@ -26,6 +35,43 @@ export function GameDetailContent({ game }: GameDetailContentProps) {
             <p className="text-gray-300 mb-6 leading-relaxed font-sans">
               {game.description}
             </p>
+          )}
+
+          {durationRows.length > 0 && (
+            <section className="mb-8" aria-labelledby="estimated-play-time-heading">
+              <h3
+                id="estimated-play-time-heading"
+                className="text-lg font-bold text-white mb-3"
+              >
+                Estimated play time
+              </h3>
+              <dl className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {durationRows.map(({ label, value }) => {
+                  const Icon = DURATION_ICONS[label] ?? Clock3;
+
+                  return (
+                    <div
+                      key={label}
+                      className="flex min-h-20 items-center gap-2.5 rounded-lg border border-white/10 bg-white/10 p-3"
+                    >
+                      <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-white/10">
+                        <Icon aria-hidden="true" className="size-5 text-white/80" strokeWidth={1.75} />
+                      </span>
+                      <div className="min-w-0">
+                        <dt className="text-sm font-semibold text-white">{label}</dt>
+                        <dd className="mt-1 text-base font-bold text-white">~{value}</dd>
+                      </div>
+                    </div>
+                  );
+                })}
+              </dl>
+              {game.duration?.status === "stale" && (
+                <p className="mt-3 flex items-center gap-2 text-xs text-yellow-300/85">
+                  <Clock3 aria-hidden="true" className="size-3.5" />
+                  Estimate may be out of date.
+                </p>
+              )}
+            </section>
           )}
 
           <div className="space-y-2">

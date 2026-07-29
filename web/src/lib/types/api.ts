@@ -524,6 +524,18 @@ export interface GamePlayTime {
     completely: number;
 }
 
+export type GameDurationStatus = "matched" | "no_data" | "stale" | "error";
+
+export interface GameDuration {
+    source: string;
+    status: GameDurationStatus;
+    hastily_seconds?: number;
+    normally_seconds?: number;
+    completely_seconds?: number;
+    updated_at?: string;
+    sample_count?: number;
+}
+
 export interface GameDetail {
     id: string;
     denn_id?: number;
@@ -542,6 +554,7 @@ export interface GameDetail {
     game_modes: string[];
     series: string | null;
     play_time: GamePlayTime | null;
+    duration?: GameDuration | null;
 }
 
 export interface GameSearchResponse {

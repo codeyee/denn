@@ -21,6 +21,14 @@ PAYLOAD = {
     'themes': ['Action', 'Open world'],
     'game_modes': ['Single player', 'Multiplayer'],
     'play_time': {'min': 50, 'max': 200},
+    'duration': {
+        'source': 'igdb',
+        'status': 'matched',
+        'hastily_seconds': 180000,
+        'normally_seconds': 288000,
+        'completely_seconds': 720000,
+        'sample_count': 24,
+    },
     'images': [
         {'type': 'poster', 'size': 'standard', 'image_url': 'https://images.igdb.com/igdb/image/upload/t_cover_big/rdr2.jpg'},
     ],

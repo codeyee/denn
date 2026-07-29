@@ -75,18 +75,20 @@ func NewClient(clientID, clientSecret string, cache clients.Cache, opts ...clien
 
 	cacheConfig := clients.CacheConfig{
 		KeyTemplates: map[string]string{
-			"api_igdb_search":     "igdb:search:{query}:{limit}:{offset}:{body_hash}",
-			"api_igdb_details":    "igdb:details:{game_id}:{body_hash}",
-			"api_igdb_bulk":       "igdb:bulk:{ids_hash}:{body_hash}",
-			"api_igdb_popular":    "igdb:popular:{limit}:{offset}:{body_hash}",
-			"api_igdb_popularity": "igdb:popularity:{popularity_type}:{limit}:{body_hash}",
+			"api_igdb_search":             "igdb:search:{query}:{limit}:{offset}:{body_hash}",
+			"api_igdb_details":            "igdb:details:{game_id}:{body_hash}",
+			"api_igdb_bulk":               "igdb:bulk:{ids_hash}:{body_hash}",
+			"api_igdb_game_time_to_beats": "igdb:game-time-to-beats:{ids_hash}:{body_hash}",
+			"api_igdb_popular":            "igdb:popular:{limit}:{offset}:{body_hash}",
+			"api_igdb_popularity":         "igdb:popularity:{popularity_type}:{limit}:{body_hash}",
 		},
 		TTLs: map[string]time.Duration{
-			"api_igdb_search":     cachettl.SearchTTL,
-			"api_igdb_details":    cachettl.DetailTTL,
-			"api_igdb_bulk":       cachettl.DetailTTL,
-			"api_igdb_popular":    cachettl.CatalogueTTL,
-			"api_igdb_popularity": cachettl.CatalogueTTL,
+			"api_igdb_search":             cachettl.SearchTTL,
+			"api_igdb_details":            cachettl.DetailTTL,
+			"api_igdb_bulk":               cachettl.DetailTTL,
+			"api_igdb_game_time_to_beats": cachettl.DetailTTL,
+			"api_igdb_popular":            cachettl.CatalogueTTL,
+			"api_igdb_popularity":         cachettl.CatalogueTTL,
 		},
 	}
 
