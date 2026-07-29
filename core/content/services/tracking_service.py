@@ -264,7 +264,7 @@ def delete_tracking(
     content_item: ContentItem,
     acknowledge_effects: bool = False,
 ) -> bool:
-    _lock_user(user)
+    lock_user(user)
 
     tracking = UserContentTracking.objects.select_for_update().filter(
         user=user,
