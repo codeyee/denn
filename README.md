@@ -366,7 +366,7 @@ Root validation commands:
 
 ```bash
 make validate-web
-make validate-core
+make validate-core INSTANCE=feature-a
 make validate-proxy
 make test
 make e2e-web
@@ -377,7 +377,9 @@ make e2e-web-performance
 Notes:
 
 - `make validate-web` runs lint plus the production build.
-- `make validate-core` depends on a working test database and valid env.
+- `make validate-core INSTANCE=<id>` targets that instance's running local
+  PostgreSQL; without `INSTANCE`, it preserves the CI-friendly host test
+  behavior and depends on the configured test database.
 - `make validate-proxy` must remain deterministic and offline-safe.
 - `make e2e-web` builds the Nitro production bundle and runs the stable
   Playwright smoke on desktop and mobile.

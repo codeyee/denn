@@ -47,6 +47,7 @@ Database:
   ./.scripts/workspace.sh db-restore FILE
   ./.scripts/workspace.sh local-clone FILE
   ./.scripts/workspace.sh db-shell
+  ./.scripts/workspace.sh test-core
 
 Instance selection:
   INSTANCE=<slug> selects the Compose project for this worktree.
@@ -110,15 +111,20 @@ slugify() {
 }
 
 default_instance_id() {
-  local branch worktree_parent
+  local branch worktree_git_dir worktree_id
   branch="$(git -C "$ROOT_DIR" branch --show-current 2>/dev/null || true)"
   if [[ -n "$branch" ]]; then
     slugify "$branch"
     return 0
   fi
 
-  worktree_parent="$(basename "$(dirname "$ROOT_DIR")")"
-  slugify "wt-$worktree_parent"
+  worktree_git_dir="$(git -C "$ROOT_DIR" rev-parse --git-dir 2>/dev/null || true)"
+  worktree_id="$(basename "$worktree_git_dir")"
+  if [[ -n "$worktree_id" && "$worktree_id" != ".git" ]]; then
+    slugify "wt-$worktree_id"
+  else
+    slugify "wt-$(basename "$ROOT_DIR")"
+  fi
 }
 
 validate_port() {
@@ -223,6 +229,19 @@ calculate_derived_ports() {
   validate_port REDIS_PORT "$REDIS_PORT"
 }
 
+validate_port_block() {
+  local web_port="$1"
+  local port
+  validate_port WEB_PORT "$web_port"
+  for port in \
+    "$((web_port + 5000))" \
+    "$((web_port + 5080))" \
+    "$((web_port + 2432))" \
+    "$((web_port + 3390))"; do
+    validate_port "derived port" "$port"
+  done
+}
+
 write_instance_reservation() {
   local temporary_file
   temporary_file="$(mktemp "$INSTANCE_STATE_DIR/.${INSTANCE_ID}.XXXXXX")"
@@ -250,6 +269,12 @@ resolve_instance_ports() {
 
   if [[ -n "$requested_web" && -n "$existing_web" && "$requested_web" != "$existing_web" ]]; then
     fail "instance '$INSTANCE_ID' is already assigned to web port $existing_web"
+  fi
+
+  if [[ -n "$existing_web" ]]; then
+    validate_port_block "$existing_web"
+  elif [[ -n "$requested_web" ]]; then
+    validate_port_block "$requested_web"
   fi
 
   acquire_port_lock
@@ -420,6 +445,22 @@ prepare_compose_env() {
   } >"$temporary_file"
   mv "$temporary_file" "$COMPOSE_ENV_FILE"
   chmod 600 "$COMPOSE_ENV_FILE"
+}
+
+load_instance_from_compose_env() {
+  [[ -f "$COMPOSE_ENV_FILE" ]] || return 1
+
+  INSTANCE_ID="$(read_env_value "$COMPOSE_ENV_FILE" INSTANCE_ID)"
+  PROJECT_NAME="$(read_env_value "$COMPOSE_ENV_FILE" COMPOSE_PROJECT_NAME)"
+  WEB_PORT="$(read_env_value "$COMPOSE_ENV_FILE" WEB_PORT)"
+  CORE_PORT="$(read_env_value "$COMPOSE_ENV_FILE" CORE_PORT)"
+  PROXY_PORT="$(read_env_value "$COMPOSE_ENV_FILE" PROXY_PORT)"
+  POSTGRES_PORT="$(read_env_value "$COMPOSE_ENV_FILE" POSTGRES_PORT)"
+  REDIS_PORT="$(read_env_value "$COMPOSE_ENV_FILE" REDIS_PORT)"
+  INSTANCE_STATE_FILE="$INSTANCE_STATE_DIR/$INSTANCE_ID.env"
+
+  [[ -n "$INSTANCE_ID" && -n "$PROJECT_NAME" ]] \
+    || fail "local Compose metadata is incomplete; refusing to destroy an unknown stack"
 }
 
 compose() {
@@ -777,9 +818,28 @@ cmd_db_shell() {
     psql -U "$LOCAL_DB_USER" -d "$LOCAL_DB_NAME"
 }
 
+cmd_test_core() {
+  check_prerequisites
+  prepare_compose_env
+  require_postgres_service
+  [[ -x "$ROOT_DIR/core/.venv/bin/python" ]] \
+    || fail "core/.venv/bin/python is missing; install the Core development dependencies first"
+
+  (
+    cd "$ROOT_DIR/core"
+    DATABASE_URL="postgresql://${LOCAL_DB_USER}:${LOCAL_DB_PASSWORD}@127.0.0.1:${POSTGRES_PORT}/${LOCAL_DB_NAME}" \
+      AUTH_COOKIE_SECURE=True \
+      .venv/bin/python manage.py test
+  )
+}
+
 cmd_destroy() {
   check_prerequisites
-  [[ -f "$COMPOSE_ENV_FILE" ]] || prepare_compose_env
+  if [[ -f "$COMPOSE_ENV_FILE" ]]; then
+    load_instance_from_compose_env
+  else
+    prepare_compose_env
+  fi
   compose down --remove-orphans --volumes
   rm -f "$INSTANCE_STATE_FILE"
   echo "✓ local stack and its project-scoped volumes were destroyed for $PROJECT_NAME"
@@ -805,5 +865,6 @@ case "${1:-}" in
   db-restore)      cmd_db_restore "${2:-}" ;;
   local-clone)     cmd_db_restore "${2:-}" ;;
   db-shell)        cmd_db_shell ;;
+  test-core)       cmd_test_core ;;
   *)               usage; exit 1 ;;
 esac

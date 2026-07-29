@@ -85,7 +85,9 @@ Use root `make` targets unless you are debugging a service in isolation.
 - `make test`: run the default backend suite (`proxy` + `core`).
 - `make validate-web`: validate the auth-card asset budget, then run frontend
   lint + Vite production build.
-- `make validate-core`: run Django tests.
+- `make validate-core INSTANCE=<id>`: run Django tests against that
+  instance's local PostgreSQL; without `INSTANCE`, use the CI-friendly
+  host test behavior.
 - `make validate-proxy`: run Go tests.
 - `make build-proxy`: verify the Go service builds cleanly.
 
@@ -94,7 +96,8 @@ Notes:
 - `make validate-web` wraps the minimum CI gate for `web`. It validates the
   auth-card asset budget, runs ESLint and `vite build`; the build emits a Nitro
   bundle to `web/.output/`.
-- `make validate-core` depends on a working test database and valid env configuration.
+- `make validate-core INSTANCE=<id>` depends on that instance's running
+  database and valid local env configuration.
 - `make validate-proxy` must stay deterministic and offline-safe by default.
 
 ### Local Agent Workflow

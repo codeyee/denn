@@ -45,10 +45,10 @@ help:
 	@echo "Tests:"
 	@echo "  make test             run full test suite (proxy + core)"
 	@echo "  make validate-web     run frontend lint + build"
-	@echo "  make validate-core    run django tests"
+	@echo "  make validate-core    run django tests (INSTANCE=<id> for its local DB)"
 	@echo "  make validate-proxy   run go tests"
 	@echo "  make test-proxy       go test ./..."
-	@echo "  make test-core        django tests"
+	@echo "  make test-core        django tests (INSTANCE=<id> for its local DB)"
 	@echo "  make test-web         vitest run if configured"
 	@echo "  make e2e-web          production-build Playwright smoke (desktop + mobile)"
 	@echo "  make e2e-web-regressions  expected-failure audit reproductions"
@@ -117,7 +117,11 @@ test-proxy:
 	cd proxy && go test ./...
 
 test-core:
-	cd core && AUTH_COOKIE_SECURE=True .venv/bin/python manage.py test
+	@if [ -n "$(INSTANCE)" ] || [ -n "$(WEB_PORT)" ]; then \
+		INSTANCE="$(INSTANCE)" WEB_PORT="$(WEB_PORT)" $(SCRIPT) test-core; \
+	else \
+		cd core && AUTH_COOKIE_SECURE=True .venv/bin/python manage.py test; \
+	fi
 
 test-web:
 	cd web && node node_modules/vitest/vitest.mjs run

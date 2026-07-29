@@ -29,7 +29,7 @@ tooling.
     `vite build`; artefacto Nitro en `web/.output/`)
   - `make e2e-web` (production-build Playwright smoke; desktop + móvil)
 - `core`
-  - `make validate-core`
+  - `make validate-core INSTANCE=<id>` against the selected local database
 - `proxy`
   - `make validate-proxy`
 

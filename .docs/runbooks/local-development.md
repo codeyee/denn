@@ -136,6 +136,18 @@ Replace the placeholders with the URLs printed by `make up` or
 Use `make smoke-local` for an authenticated proxy probe. It reads the
 key privately and never prints it.
 
+Run host-side Core tests against the selected instance by passing its
+identity (or primary port):
+
+```bash
+make test-core INSTANCE=feature-b WEB_PORT=3001
+make validate-core INSTANCE=feature-b
+```
+
+The instance-aware target exports a loopback `DATABASE_URL` using that
+stack's PostgreSQL port before invoking Django. Without `INSTANCE` or
+`WEB_PORT`, `make test-core` keeps the CI-friendly host test behavior.
+
 Stop the stack with:
 
 ```bash
