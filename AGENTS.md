@@ -73,11 +73,13 @@ Practical lookup flow:
 Use root `make` targets unless you are debugging a service in isolation.
 
 - `make check`: verify Docker and reject non-local or inconsistent env configuration.
-- `make setup-local`: prepare the Compose images and persistent PostgreSQL volume.
-- `make up` / `make down`: start or stop PostgreSQL, Redis, `proxy`, `core`, and `web`; `down` preserves database data.
-- `make status` / `make logs` / `make doctor`: inspect the local workspace.
-- `make smoke-local`: exercise local HTTP, proxy auth, migrations, restored data, and loopback bindings.
-- `make browser-local`: run Playwright against the real local stack.
+- `make setup-local`: prepare images and isolated resources for the current worktree.
+- `make up` / `make down`: start or stop this worktree's PostgreSQL, Redis, `proxy`, `core`, and `web`; `down` preserves its database volume.
+- `make local-up INSTANCE=<id> WEB_PORT=<port>`: explicitly start an isolated worktree instance.
+- `make local-status` / `make local-logs` / `make local-doctor`: inspect one instance.
+- `make local-smoke`: exercise local HTTP, proxy auth, migrations, and loopback bindings for one instance.
+- `make local-browser`: run Playwright against one worktree's real local stack.
+- `make local-destroy`: explicitly remove only the current instance and its project-scoped volumes.
 - `make restart-web` / `make restart-core` / `make restart-proxy`: restart one service.
 - `make env-store` / `make env-link`: reuse private env files across worktrees without committing them.
 - `make test`: run the default backend suite (`proxy` + `core`).
@@ -100,17 +102,20 @@ Notes:
 For application changes, use this sequence unless the task needs an isolated
 test:
 
-1. Run `make check`, then `make up`.
+1. Run `make check`, then `make up` (or `make local-up INSTANCE=<id> WEB_PORT=<port>` when the port must be explicit).
 2. Make the change. Vite and Django reload bind-mounted source automatically.
 3. Run `make restart-proxy` after Go changes.
-4. Use only `http://127.0.0.1:3000`, `:8000`, and `:8080` for browser or
-   `curl` verification.
+4. Use the URLs printed by `make up`; they are loopback-only and unique to
+   the worktree. Never assume ports from another instance.
 5. Run `make smoke-local`; run `make browser-local` for browser-visible or
    cross-service behavior.
 
-In a new worktree, run `make env-link` before `make check`. The canonical
-procedure, including snapshot restore and failure recovery, is
-`.docs/runbooks/local-development.md`.
+In a new worktree, run `make env-link` before `make check`. A worktree's
+Compose project, network, PostgreSQL volume, Redis state and published
+ports are isolated from every other worktree. Use `make local-clone` with a
+validated local dump when the instance needs a copy of the local dataset.
+The canonical procedure, including snapshot restore and failure recovery,
+is `.docs/runbooks/local-development.md`.
 
 Do not add a repository MCP server merely to wrap these commands. Make,
 Compose, curl, and Playwright are the local automation contract for agents.

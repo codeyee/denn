@@ -17,6 +17,7 @@ Esta carpeta contiene las decisiones de arquitectura del workspace `denn` (`web`
 | [0001](./0001-external-metadata-integration.md) | Integración de metadata externa (`web`/`core`/`proxy`) | Accepted |
 | [0002](./0002-web-auth-cookies.md) | Sesión web sobre cookies `HttpOnly` | Accepted |
 | [0003](./0003-migrate-web-from-nextjs-to-tanstack-start.md) | Migrar `web/` de Next.js App Router a TanStack Start | Accepted |
+| [0006](./0006-isolated-local-worktree-stacks.md) | Stacks Compose locales aislados por worktree | Accepted |
 
 ## Cuándo escribir un ADR
 

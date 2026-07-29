@@ -269,7 +269,12 @@ The canonical contract is documented in [`.docs/contracts/internal-http.md`](./.
 ## Local Development
 
 The full development stack runs in Docker Compose and publishes only to
-loopback:
+loopback. Each Git worktree gets its own Compose project, network,
+PostgreSQL volume, Redis container and host-port block. This permits
+parallel agent and human work without sharing database state.
+
+From a worktree, the default commands create or reuse that worktree's
+instance:
 
 ```bash
 make check
@@ -278,22 +283,39 @@ make up
 make smoke-local
 ```
 
-Open `http://127.0.0.1:3000`. PostgreSQL 18, Redis, `proxy`, `core`, and
-`web` are all local. Source is bind-mounted; Vite and Django reload
-automatically, while Go changes use `make restart-proxy`.
+The command prints the assigned URLs. The first instance normally uses
+`http://127.0.0.1:3000`, with Core on `8000` and the proxy on `8080`.
+Subsequent instances automatically use the next free block, such as
+web `3001`, Core `8001`, proxy `8081`, PostgreSQL `5433` and Redis `6391`.
+The frontend port can be selected explicitly:
 
-Useful daily commands:
+Run each command from its corresponding Git worktree:
 
 ```bash
-make status
-make logs
-make doctor
-make restart-web
-make restart-core
-make restart-proxy
-make browser-local
-make down
+make local-up INSTANCE=feature-a WEB_PORT=3000
+make local-up INSTANCE=feature-b WEB_PORT=3001
+make local-up INSTANCE=feature-c WEB_PORT=3002
 ```
+
+Inside Compose, services continue to communicate through `web`, `core`,
+`proxy`, `postgres` and `redis`; only loopback host ports vary. Source is
+bind-mounted, Vite and Django reload automatically, and Go changes use
+`make restart-proxy`.
+
+Useful instance-scoped commands:
+
+```bash
+make local-status INSTANCE=feature-b
+make local-logs INSTANCE=feature-b SERVICE=web
+make local-smoke INSTANCE=feature-b
+make local-browser INSTANCE=feature-b
+make local-down INSTANCE=feature-b
+make local-destroy INSTANCE=feature-b
+```
+
+`local-destroy` is the only command that removes the instance's
+project-scoped Docker volumes. It does not affect another worktree and it
+does not touch production images, deployments or volumes.
 
 Create local-only `web/.env`, `core/.env`, and `proxy/.env` files from
 their examples. `make check` rejects production service/database URLs,
@@ -316,9 +338,23 @@ The default private store is `~/.config/denn/local`; override it with
 [`.docs/contracts/internal-http.md`](./.docs/contracts/internal-http.md).
 `PROXY_API_KEY` remains server-only.
 
-`make browser-local` targets the running stack and real local snapshot.
-It is deliberately separate from `make e2e-web`, whose deterministic,
-non-personal fixtures remain the CI gate.
+To populate an isolated PostgreSQL instance from a validated local dump:
+
+```bash
+make local-up INSTANCE=feature-b WEB_PORT=3001
+make local-clone INSTANCE=feature-b FILE=backups/denn-feature-a-db-<timestamp>.sql.gz
+make local-smoke INSTANCE=feature-b REQUIRE_LOCAL_SNAPSHOT=true
+```
+
+The dump is restored into the selected worktree only. Do not connect a
+local instance directly to production or copy production credentials into
+the repository.
+
+`make browser-local` targets the current worktree's running stack and
+`make local-browser INSTANCE=...` makes that scope explicit. The local
+browser smoke may use the restored local snapshot. It is deliberately
+separate from `make e2e-web`, whose deterministic, non-personal fixtures
+remain the CI gate.
 
 See [the local development runbook](./.docs/runbooks/local-development.md)
 for snapshot backup/restore, agent usage, security boundaries, and
