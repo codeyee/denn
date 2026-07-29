@@ -109,6 +109,14 @@ const contentItem = {
   average_rating: null,
   current_user_rating: null,
   current_user_tracking: null,
+  progress_policy: {
+    content_type: "MOVIE",
+    final_status: "completed",
+    states: [
+      { value: "backlog", label: "Plan to watch", is_final: false },
+      { value: "completed", label: "Watched", is_final: true },
+    ],
+  },
   created_at: now,
   source_data: movie,
 };
@@ -302,6 +310,23 @@ const publicRating = {
   review: "A deterministic review with a fixture spoiler.",
   spoiler: true,
   is_favorite: true,
+  created_at: now,
+  updated_at: now,
+};
+const publicProgress = {
+  id: 1,
+  content: localContent,
+  status: "completed",
+  completed_at: now,
+  is_favorite: true,
+  rating: {
+    id: 1,
+    score: "9.0",
+    review: "A deterministic review with a fixture spoiler.",
+    spoiler: true,
+    created_at: now,
+    updated_at: now,
+  },
   created_at: now,
   updated_at: now,
 };
@@ -536,7 +561,7 @@ const core = createServer(async (request, response) => {
   ) {
     return json(response, 200, { detail: "ok" }, headers);
   }
-  const profileMatch = /^\/api\/profiles\/([^/]+)\/(?:(completed|ratings|lists)\/)?$/.exec(
+  const profileMatch = /^\/api\/profiles\/([^/]+)\/(?:(completed|ratings|progress|lists)\/)?$/.exec(
     url.pathname,
   );
   if (profileMatch && request.method === "GET") {
@@ -610,6 +635,14 @@ const core = createServer(async (request, response) => {
         response,
         200,
         { metadata: profilePageMetadata(url), results: [publicRating] },
+        headers,
+      );
+    }
+    if (tab === "progress") {
+      return json(
+        response,
+        200,
+        { metadata: profilePageMetadata(url), results: [publicProgress] },
         headers,
       );
     }
