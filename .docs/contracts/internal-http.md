@@ -25,16 +25,19 @@ payload crudo de IGDB:
 {
   "source": "igdb",
   "status": "matched",
-  "main_story_seconds": 36000,
-  "main_extra_seconds": 54000,
-  "completionist_seconds": 90000,
-  "source_updated_at": "2026-07-01T00:00:00Z",
+  "hastily_seconds": 36000,
+  "normally_seconds": 54000,
+  "completely_seconds": 90000,
+  "updated_at": "2026-07-29T00:00:00Z",
   "sample_count": 24
 }
 ```
 
 Todos los valores de duración son opcionales. `status` puede ser `matched`,
-`no_data`, `stale` o `error`. La ausencia o el error de `duration` no convierte
+`no_data`, `stale` o `error`. `hastily`, `normally` y `completely` conservan
+la semántica de IGDB: partida apresurada, ritmo normal y completado. `updated_at`
+es la fecha de sincronización local; IGDB no expone un `source_updated_at`
+compatible con esta consulta. La ausencia o el error de `duration` no convierte
 el detalle del juego en un error de la respuesta. Las credenciales de IGDB
 siguen siendo exclusivas de `proxy`.
 

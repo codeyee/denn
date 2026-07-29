@@ -4,9 +4,11 @@ The `rehydrate_content_details` Django management command refreshes
 locally cached `MovieDetail` / `TvShowDetail` / `SeasonDetail` /
 `AlbumDetail` / `GameDetail` / `BookDetail` rows whose dynamic refresh
 window has expired, by re-fetching from the Go proxy and re-running the
-type-specific mapper.
+type-specific mapper. For games, it also selects existing `GameDetail` rows
+that do not yet have an IGDB `GameDurationEstimate`, even when their normal
+refresh window is still fresh.
 
-This is the **periodic refresh** job. The first-time backfill of items that do not yet have a Detail row at all is `backfill_content_details`.
+This is the **periodic refresh** job. The first-time backfill of items that do not yet have a Detail row at all is `backfill_content_details`. The game-duration gap is therefore repaired both when a game is read through the local-first path and when this job runs.
 
 ## When to run
 
@@ -34,6 +36,8 @@ Run after any of the following:
 - Spike in stale-on-failure responses observed in the
   `event=orchestrator` logs (`fresh_local` ratio dropping).
 - A change to `CONTENT_REHYDRATION_POLICY`.
+- The first deployment of game-duration support, to backfill existing games:
+  `python manage.py rehydrate_content_details --content-type GAME --limit 500 --workers 4`.
 
 ## Usage
 

@@ -46,7 +46,9 @@ considered part of the project baseline.
   normal, and complete playthroughs, preserving IGDB's source semantics.
   Values above 3,000 hours are discarded, and contradictory estimates are
   treated as no data across proxy normalization, local persistence, payload
-  reconstruction, and the frontend display.
+  reconstruction, and the frontend display. Existing game details without a
+  duration record are rehydrated on demand and by the periodic rehydration
+  command.
 - Personal and shared lists with items, members, invitations, ratings,
   and list-item status workflows.
 - Personal-list additions seed missing personal progress as `backlog` while

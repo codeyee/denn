@@ -16,7 +16,8 @@ from typing import Any, Optional, Tuple
 
 from django.utils import timezone
 
-from content.models import ContentItem
+from content.models import ContentItem, GameDurationEstimate
+from content.services.game_duration import MAX_GAME_DURATION_RETRIES
 
 from .mappers import MAPPERS
 from .refresh_policy import DETAIL_RELATED_NAME, compute_refresh_policy
@@ -76,10 +77,21 @@ def detail_is_fresh(content_item: ContentItem) -> bool:
 
 
 def detail_is_complete(content_item: ContentItem) -> bool:
-    """Return whether locally persisted detail satisfies structural invariants."""
+    """Return whether locally persisted detail satisfies required invariants."""
     detail = detail_for(content_item)
     if detail is None:
         return False
+    if content_item.content_type == ContentItem.ContentType.GAME:
+        has_resolved_duration = any(
+            estimate.provider == GameDurationEstimate.Provider.IGDB
+            and (
+                estimate.status != GameDurationEstimate.Status.ERROR
+                or estimate.retry_count >= MAX_GAME_DURATION_RETRIES
+            )
+            for estimate in content_item.game_duration_estimates.all()
+        )
+        if not has_resolved_duration:
+            return False
     if (
         content_item.content_type == ContentItem.ContentType.TV_SHOW
         and (detail.number_of_seasons or 0) > 0
