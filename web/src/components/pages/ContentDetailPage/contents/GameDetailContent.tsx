@@ -4,6 +4,7 @@ import { groupGamePlatforms } from "@/lib/platforms/gamePlatforms";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { formatAuthors } from "@/lib/utils/authorUtils";
 import { GamePlatformsDisplay } from "../platforms/GamePlatformsDisplay";
+import { getGameDurationRows } from "@/lib/utils/gameDuration";
 
 interface GameDetailContentProps {
   game: GameDetail;
@@ -11,6 +12,7 @@ interface GameDetailContentProps {
 
 export function GameDetailContent({ game }: GameDetailContentProps) {
   const releaseDate = formatReleaseDate(game.release_date);
+  const durationRows = getGameDurationRows(game.duration);
 
   const platformGroups = groupGamePlatforms(game.platforms, game.distribution_networks);
 
@@ -26,6 +28,37 @@ export function GameDetailContent({ game }: GameDetailContentProps) {
             <p className="text-gray-300 mb-6 leading-relaxed font-sans">
               {game.description}
             </p>
+          )}
+
+          {game.duration && (
+            <section className="mb-8" aria-labelledby="estimated-play-time-heading">
+              <h3
+                id="estimated-play-time-heading"
+                className="text-lg font-bold text-white mb-3"
+              >
+                Estimated play time
+              </h3>
+              {durationRows.length > 0 ? (
+                <dl className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {durationRows.map(({ label, value }) => (
+                    <div key={label} className="border-l border-white/15 pl-3">
+                      <dt className="text-sm text-white/60">{label}</dt>
+                      <dd className="mt-1 text-white font-semibold">~{value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              ) : (
+                <p className="text-white/55">
+                  {game.duration.status === "error"
+                    ? "Estimated play time is temporarily unavailable."
+                    : "Estimated play time unavailable."}
+                </p>
+              )}
+              <p className="mt-3 text-xs text-white/45">
+                Approximate community averages from {game.duration.source.toUpperCase()}.
+                {game.duration.status === "stale" && " This estimate may be out of date."}
+              </p>
+            </section>
           )}
 
           <div className="space-y-2">

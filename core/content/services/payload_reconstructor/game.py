@@ -45,6 +45,26 @@ def from_local(content_item: ContentItem, *, request_country: Optional[str] = No
             play_time['max'] = detail.play_time_max
         payload['play_time'] = play_time
 
+    estimates = content_item.game_duration_estimates.all()
+    estimate = estimates.filter(provider='igdb').first()
+    if estimate is not None:
+        duration: Dict[str, Any] = {
+            'source': estimate.provider,
+            'status': estimate.status,
+            'updated_at': estimate.synced_at.isoformat() if estimate.synced_at else None,
+        }
+        if estimate.main_story_seconds is not None:
+            duration['main_story_seconds'] = estimate.main_story_seconds
+        if estimate.main_extra_seconds is not None:
+            duration['main_extra_seconds'] = estimate.main_extra_seconds
+        if estimate.completionist_seconds is not None:
+            duration['completionist_seconds'] = estimate.completionist_seconds
+        if estimate.source_updated_at is not None:
+            duration['source_updated_at'] = estimate.source_updated_at.isoformat()
+        if estimate.sample_count:
+            duration['sample_count'] = estimate.sample_count
+        payload['duration'] = duration
+
     authors = serialize_authors(content_item)
     if authors:
         payload['authors'] = authors

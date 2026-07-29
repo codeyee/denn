@@ -54,10 +54,13 @@ type IgdbFranchise struct {
 }
 
 type IgdbTimeToBeat struct {
-	ID         int `json:"id"`
-	Hastily    int `json:"hastily"`
-	Normally   int `json:"normally"`
-	Completely int `json:"completely"`
+	ID         int   `json:"id"`
+	GameID     int   `json:"game_id"`
+	Hastily    int   `json:"hastily"`
+	Normally   int   `json:"normally"`
+	Completely int   `json:"completely"`
+	Count      int   `json:"count"`
+	UpdatedAt  int64 `json:"updated_at"`
 }
 
 type IgdbGame struct {
@@ -78,6 +81,7 @@ type IgdbGame struct {
 	Collections       []IgdbCollection      `json:"collections"`
 	Franchises        []IgdbFranchise       `json:"franchises"`
 	TimeToBeats       *IgdbTimeToBeat       `json:"game_time_to_beats"`
+	TimeToBeatError   bool                  `json:"-"`
 }
 
 type IgdbPopularityPrimitive struct {

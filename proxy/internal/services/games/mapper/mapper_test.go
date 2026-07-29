@@ -143,6 +143,8 @@ func TestMapGame_FullDetail(t *testing.T) {
 			Hastily:    100,
 			Normally:   200,
 			Completely: 300,
+			Count:      12,
+			UpdatedAt:  1700000000,
 		},
 	}
 
@@ -173,6 +175,30 @@ func TestMapGame_FullDetail(t *testing.T) {
 	}
 	if result.PlayTime.Normally != 200 {
 		t.Errorf("expected Normally 200, got %d", result.PlayTime.Normally)
+	}
+	if result.Duration == nil || result.Duration.Status != "matched" {
+		t.Fatalf("expected matched duration, got %#v", result.Duration)
+	}
+	if result.Duration.MainStorySeconds == nil || *result.Duration.MainStorySeconds != 100 {
+		t.Errorf("expected main story duration 100 seconds, got %#v", result.Duration.MainStorySeconds)
+	}
+	if result.Duration.SampleCount != 12 {
+		t.Errorf("expected sample count 12, got %d", result.Duration.SampleCount)
+	}
+}
+
+func TestMapGame_TimeToBeatErrorIsNonBlocking(t *testing.T) {
+	result := MapGame(games.IgdbGame{
+		ID:              1,
+		Name:            "Game without duration enrichment",
+		TimeToBeatError: true,
+	})
+
+	if result.Title != "Game without duration enrichment" {
+		t.Fatalf("expected game to remain mapped, got %q", result.Title)
+	}
+	if result.Duration == nil || result.Duration.Status != "error" {
+		t.Fatalf("expected error duration status, got %#v", result.Duration)
 	}
 }
 

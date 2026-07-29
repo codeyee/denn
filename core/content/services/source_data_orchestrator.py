@@ -52,25 +52,37 @@ def _hydrate_details(items: List[ContentItem]) -> List[ContentItem]:
     if not items:
         return items
     ids = [i.id for i in items]
+    prefetches = [
+        'images',
+        'streaming_platforms',
+        'content_authors__author',
+        'season_detail__episodes',
+        'season_children__content_item',
+        'album_detail__tracks__track_authors__author',
+        'game_detail__genres',
+        'game_detail__themes',
+        'game_detail__game_modes',
+        'game_detail__platforms',
+    ]
+    if any(item.content_type == ContentItem.ContentType.GAME for item in items):
+        prefetches.append('game_duration_estimates')
+
     qs = (
         ContentItem.objects
         .filter(id__in=ids)
         .select_related(*_DETAIL_RELATED_NAMES)
-        .prefetch_related(
-            'images',
-            'streaming_platforms',
-            'content_authors__author',
-            'season_detail__episodes',
-            'season_children__content_item',
-            'album_detail__tracks__track_authors__author',
-            'game_detail__genres',
-            'game_detail__themes',
-            'game_detail__game_modes',
-            'game_detail__platforms',
-        )
+        .prefetch_related(*prefetches)
     )
     by_id = {i.id: i for i in qs}
     return [by_id[i.id] for i in items if i.id in by_id]
+
+
+def _mark_stale(payload: Dict[str, Any]) -> Dict[str, Any]:
+    payload['is_stale'] = True
+    duration = payload.get('duration')
+    if isinstance(duration, dict) and duration.get('status') == 'matched':
+        payload['duration'] = {**duration, 'status': 'stale'}
+    return payload
 
 
 def _classify(items: List[ContentItem]) -> Dict[str, List[ContentItem]]:
@@ -254,8 +266,7 @@ def fetch_bulk_source_data(
         for item in stale_items:
             payload = payload_reconstructor.from_local(item)
             if payload is not None:
-                payload['is_stale'] = True
-                results[item.id] = payload
+                results[item.id] = _mark_stale(payload)
         scheduled_refreshes = _schedule_stale_refresh(stale_items, country_code)
 
     refreshed_ids: List[int] = []
@@ -275,8 +286,7 @@ def fetch_bulk_source_data(
             elif item.id in fallback_id_set:
                 fallback = payload_reconstructor.from_local(item)
                 if fallback is not None:
-                    fallback['is_stale'] = True
-                    results[item.id] = fallback
+                    results[item.id] = _mark_stale(fallback)
 
         # Re-hydrate just the items we wrote so the reconstructor sees
         # the new Detail rows (the original instances still hold the

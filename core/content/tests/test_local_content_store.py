@@ -16,6 +16,7 @@ from content.models import (
     ContentItemAuthor,
     Episode,
     GameDetail,
+    GameDurationEstimate,
     GamePlatform,
     Image,
     MovieDetail,
@@ -32,6 +33,7 @@ from content.services.local_content_store import (
     ensure_content_detail,
     get_or_create_content_item,
 )
+from content.services.local_content_store.mappers.game import upsert as upsert_game
 from content.tests.fixtures.payloads import (
     ALBUM_DATA,
     BOOK_WORDS_OF_RADIANCE,
@@ -186,11 +188,30 @@ class GameMapperTests(TestCase):
         self.assertEqual(game.series, 'Red Dead')
         self.assertEqual(game.play_time_min, 50)
         self.assertEqual(game.play_time_max, 200)
+        duration = GameDurationEstimate.objects.get(content_item=item)
+        self.assertEqual(duration.status, GameDurationEstimate.Status.MATCHED)
+        self.assertEqual(duration.main_story_seconds, 180000)
+        self.assertEqual(duration.completionist_seconds, 720000)
+        self.assertEqual(duration.sample_count, 24)
 
         self.assertEqual(GamePlatform.objects.filter(game_detail=game).count(), 3)
         self.assertEqual(game.genres.count(), 2)
         self.assertEqual(game.themes.count(), 2)
         self.assertEqual(game.game_modes.count(), 2)
+
+    def test_duration_error_is_persisted_with_bounded_retries(self):
+        item, _ = get_or_create_content_item(
+            ContentItem.SourceAPI.IGDB, '25076', ContentItem.ContentType.GAME,
+        )
+        error_payload = {**GAME_RDR2, 'duration': {'source': 'igdb', 'status': 'error'}}
+
+        for _ in range(4):
+            upsert_game(item, error_payload)
+
+        duration = GameDurationEstimate.objects.get(content_item=item)
+        self.assertEqual(duration.status, GameDurationEstimate.Status.ERROR)
+        self.assertEqual(duration.retry_count, 3)
+        self.assertEqual(duration.last_error_code, 'igdb_time_to_beats_failed')
 
 
 class BookMapperTests(TestCase):

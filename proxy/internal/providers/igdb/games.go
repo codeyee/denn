@@ -12,7 +12,8 @@ import (
 )
 
 const (
-	defaultFields = "id,name,summary,storyline,cover.url,cover.image_id,screenshots.url,screenshots.image_id,artworks.url,artworks.image_id,first_release_date,platforms.name,platforms.platform_logo.image_id,game_type,involved_companies.company.name,involved_companies.developer,genres.name,themes.name,game_modes.name,collections.name,franchises.name"
+	defaultFields     = "id,name,summary,storyline,cover.url,cover.image_id,screenshots.url,screenshots.image_id,artworks.url,artworks.image_id,first_release_date,platforms.name,platforms.platform_logo.image_id,game_type,involved_companies.company.name,involved_companies.developer,genres.name,themes.name,game_modes.name,collections.name,franchises.name"
+	timeToBeatFields  = "game_id,hastily,normally,completely,count,updated_at"
 	includedGameTypes = "0,4,8,9" // Main Game, Expansion, Remake, Remaster
 )
 
@@ -22,7 +23,7 @@ func hashBody(body string) string {
 
 func (c *Client) SearchGames(ctx context.Context, query string, limit, offset int) (*clients.Response, error) {
 	// Filter by game_type instead of category
-	body := fmt.Sprintf(`search "%s"; fields %s; where game_type = (%s); limit %d; offset %d;`, 
+	body := fmt.Sprintf(`search "%s"; fields %s; where game_type = (%s); limit %d; offset %d;`,
 		query, defaultFields, includedGameTypes, limit, offset)
 
 	return c.CachedPost(ctx, "games", "api_igdb_search", body, nil, map[string]string{
@@ -54,8 +55,26 @@ func (c *Client) GetBulkGames(ctx context.Context, ids []int) (*clients.Response
 	idsStr := strings.Join(strIDs, ",")
 
 	body := fmt.Sprintf("fields %s; where id = (%s); limit %d;", defaultFields, idsStr, len(ids))
- 
+
 	return c.CachedPost(ctx, "games", "api_igdb_bulk", body, nil, map[string]string{
+		"ids_hash":  idsStr,
+		"body_hash": hashBody(body),
+	})
+}
+
+func (c *Client) GetGameTimeToBeats(ctx context.Context, ids []int) (*clients.Response, error) {
+	if len(ids) == 0 {
+		return &clients.Response{Data: []byte("[]"), StatusCode: 200}, nil
+	}
+
+	strIDs := make([]string, len(ids))
+	for i, id := range ids {
+		strIDs[i] = strconv.Itoa(id)
+	}
+	idsStr := strings.Join(strIDs, ",")
+	body := fmt.Sprintf("fields %s; where game_id = (%s); limit %d;", timeToBeatFields, idsStr, len(ids))
+
+	return c.CachedPost(ctx, "game_time_to_beats", "api_igdb_game_time_to_beats", body, nil, map[string]string{
 		"ids_hash":  idsStr,
 		"body_hash": hashBody(body),
 	})

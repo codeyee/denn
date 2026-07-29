@@ -252,6 +252,45 @@ func extractPlayTime(tb *games.IgdbTimeToBeat) *models.PlayTime {
 	}
 }
 
+func extractDuration(tb *games.IgdbTimeToBeat, failed bool) *models.GameDuration {
+	duration := &models.GameDuration{
+		Source: "igdb",
+		Status: "no_data",
+	}
+	if failed {
+		duration.Status = "error"
+		return duration
+	}
+	if tb == nil {
+		return duration
+	}
+
+	if tb.Hastily > 0 {
+		value := tb.Hastily
+		duration.MainStorySeconds = &value
+	}
+	if tb.Normally > 0 {
+		value := tb.Normally
+		duration.MainExtraSeconds = &value
+	}
+	if tb.Completely > 0 {
+		value := tb.Completely
+		duration.CompletionistSeconds = &value
+	}
+	if duration.MainStorySeconds != nil || duration.MainExtraSeconds != nil || duration.CompletionistSeconds != nil {
+		duration.Status = "matched"
+	}
+	if tb.Count > 0 {
+		duration.SampleCount = tb.Count
+	}
+	if tb.UpdatedAt > 0 {
+		updatedAt := time.Unix(tb.UpdatedAt, 0).UTC()
+		duration.SourceUpdatedAt = &updatedAt
+	}
+
+	return duration
+}
+
 func MapSearchItem(game games.IgdbGame) models.SearchItem {
 	return models.SearchItem{
 		ID:          strconv.Itoa(game.ID),
@@ -285,6 +324,7 @@ func MapGame(item games.IgdbGame) models.Game {
 		Series:    extractSeries(item.Collections, item.Franchises),
 
 		PlayTime: extractPlayTime(item.TimeToBeats),
+		Duration: extractDuration(item.TimeToBeats, item.TimeToBeatError),
 	}
 }
 

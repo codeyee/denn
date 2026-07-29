@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 from django.db import transaction
+from django.utils.dateparse import parse_datetime
 
 from content.models import (
     ContentItem,
@@ -24,7 +25,10 @@ _MAPPED_KEYS = (
     'id', 'type', 'title', 'game_type', 'description', 'image_url',
     'release_date', 'series', 'authors', 'platforms', 'genres',
     'themes', 'game_modes', 'play_time', 'images',
+    'duration',
 )
+
+_MAX_DURATION_RETRIES = 3
 
 
 def upsert(
@@ -41,6 +45,24 @@ def upsert(
     play_time = payload.get('play_time') or {}
     play_min = play_time.get('min') if isinstance(play_time, dict) else None
     play_max = play_time.get('max') if isinstance(play_time, dict) else None
+    duration = payload.get('duration') or {}
+    if not isinstance(duration, dict):
+        duration = {}
+
+    source_updated_at = duration.get('source_updated_at')
+    if isinstance(source_updated_at, str):
+        source_updated_at = parse_datetime(source_updated_at)
+    else:
+        source_updated_at = None
+
+    duration_values = {
+        'main_story_seconds': duration.get('main_story_seconds'),
+        'main_extra_seconds': duration.get('main_extra_seconds'),
+        'completionist_seconds': duration.get('completionist_seconds'),
+    }
+    duration_status = duration.get('status') or (
+        'matched' if any(value is not None and value > 0 for value in duration_values.values()) else 'no_data'
+    )
 
     defaults = {
         'title': payload.get('title') or '',
@@ -85,3 +107,31 @@ def upsert(
                 )
         if rows:
             GamePlatform.objects.bulk_create(rows)
+
+        if duration or isinstance(payload.get('play_time'), dict):
+            from content.models import GameDurationEstimate
+
+            estimate = GameDurationEstimate.objects.filter(
+                content_item=content_item,
+                provider=GameDurationEstimate.Provider.IGDB,
+            ).first()
+            is_error = duration_status == GameDurationEstimate.Status.ERROR
+            retry_count = (
+                min((estimate.retry_count if estimate else 0) + 1, _MAX_DURATION_RETRIES)
+                if is_error
+                else 0
+            )
+            GameDurationEstimate.objects.update_or_create(
+                content_item=content_item,
+                provider=GameDurationEstimate.Provider.IGDB,
+                defaults={
+                    'provider_external_id': str(payload.get('id') or content_item.external_id),
+                    **duration_values,
+                    'source_updated_at': source_updated_at,
+                    'status': duration_status,
+                    'sample_count': duration.get('sample_count') or 0,
+                    'retry_count': retry_count,
+                    'payload_hash': hash_payload(duration),
+                    'last_error_code': 'igdb_time_to_beats_failed' if is_error else '',
+                },
+            )

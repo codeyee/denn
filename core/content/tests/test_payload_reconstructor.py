@@ -114,6 +114,8 @@ class GameReconstructorTests(TestCase):
         self.assertEqual(rebuilt['title'], 'Red Dead Redemption 2')
         self.assertEqual(set(rebuilt['genres']), set(GAME_RDR2['genres']))
         self.assertEqual(rebuilt['play_time'], GAME_RDR2['play_time'])
+        self.assertEqual(rebuilt['duration']['status'], 'matched')
+        self.assertEqual(rebuilt['duration']['main_story_seconds'], 180000)
         self.assertEqual(len(rebuilt['platforms']), 3)
 
 
