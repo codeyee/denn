@@ -13,7 +13,7 @@ import (
 
 const (
 	defaultFields     = "id,name,summary,storyline,cover.url,cover.image_id,screenshots.url,screenshots.image_id,artworks.url,artworks.image_id,first_release_date,platforms.name,platforms.platform_logo.image_id,game_type,involved_companies.company.name,involved_companies.developer,genres.name,themes.name,game_modes.name,collections.name,franchises.name"
-	timeToBeatFields  = "game_id,hastily,normally,completely,count,updated_at"
+	timeToBeatFields  = "game_id,hastily,normally,completely,count"
 	includedGameTypes = "0,4,8,9" // Main Game, Expansion, Remake, Remaster
 )
 

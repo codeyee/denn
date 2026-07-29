@@ -54,13 +54,12 @@ type IgdbFranchise struct {
 }
 
 type IgdbTimeToBeat struct {
-	ID         int   `json:"id"`
-	GameID     int   `json:"game_id"`
-	Hastily    int   `json:"hastily"`
-	Normally   int   `json:"normally"`
-	Completely int   `json:"completely"`
-	Count      int   `json:"count"`
-	UpdatedAt  int64 `json:"updated_at"`
+	ID         int `json:"id"`
+	GameID     int `json:"game_id"`
+	Hastily    int `json:"hastily"`
+	Normally   int `json:"normally"`
+	Completely int `json:"completely"`
+	Count      int `json:"count"`
 }
 
 type IgdbGame struct {

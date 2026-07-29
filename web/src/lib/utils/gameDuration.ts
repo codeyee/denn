@@ -1,5 +1,9 @@
 import type { GameDuration } from "@/lib/types";
 
+export const MAX_GAME_DURATION_HOURS = 3000;
+
+const MAX_GAME_DURATION_SECONDS = MAX_GAME_DURATION_HOURS * 60 * 60;
+
 export interface GameDurationRow {
   label: string;
   value: string;
@@ -13,16 +17,27 @@ export function getGameDurationRows(
   }
 
   const values: Array<[string, number | undefined]> = [
-    ["Main Story", duration.main_story_seconds],
-    ["Main + Extras", duration.main_extra_seconds],
-    ["Completionist", duration.completionist_seconds],
+    ["Rushed", duration.hastily_seconds],
+    ["Normal", duration.normally_seconds],
+    ["Complete", duration.completely_seconds],
   ];
 
-  return values.flatMap(([label, seconds]) => (
-    typeof seconds === "number" && seconds > 0
-      ? [{ label, value: formatGameDuration(seconds) }]
+  const usableValues = values.flatMap(([label, seconds]) => (
+    typeof seconds === "number" && Number.isFinite(seconds) && seconds > 0 && seconds <= MAX_GAME_DURATION_SECONDS
+      ? [{ label, seconds }]
       : []
   ));
+
+  for (let index = 1; index < usableValues.length; index += 1) {
+    if (usableValues[index].seconds < usableValues[index - 1].seconds) {
+      return [];
+    }
+  }
+
+  return usableValues.map(({ label, seconds }) => ({
+    label,
+    value: formatGameDuration(seconds),
+  }));
 }
 
 export function formatGameDuration(seconds: number): string {

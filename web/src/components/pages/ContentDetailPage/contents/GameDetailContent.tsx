@@ -5,6 +5,13 @@ import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { formatAuthors } from "@/lib/utils/authorUtils";
 import { GamePlatformsDisplay } from "../platforms/GamePlatformsDisplay";
 import { getGameDurationRows } from "@/lib/utils/gameDuration";
+import { BookOpen, Clock3, Trophy, type LucideIcon } from "lucide-react";
+
+const DURATION_ICONS: Record<string, LucideIcon> = {
+  Rushed: Clock3,
+  Normal: BookOpen,
+  Complete: Trophy,
+};
 
 interface GameDetailContentProps {
   game: GameDetail;
@@ -30,7 +37,7 @@ export function GameDetailContent({ game }: GameDetailContentProps) {
             </p>
           )}
 
-          {game.duration && (
+          {durationRows.length > 0 && (
             <section className="mb-8" aria-labelledby="estimated-play-time-heading">
               <h3
                 id="estimated-play-time-heading"
@@ -38,26 +45,32 @@ export function GameDetailContent({ game }: GameDetailContentProps) {
               >
                 Estimated play time
               </h3>
-              {durationRows.length > 0 ? (
-                <dl className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  {durationRows.map(({ label, value }) => (
-                    <div key={label} className="border-l border-white/15 pl-3">
-                      <dt className="text-sm text-white/60">{label}</dt>
-                      <dd className="mt-1 text-white font-semibold">~{value}</dd>
+              <dl className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {durationRows.map(({ label, value }) => {
+                  const Icon = DURATION_ICONS[label] ?? Clock3;
+
+                  return (
+                    <div
+                      key={label}
+                      className="flex min-h-20 items-center gap-2.5 rounded-lg border border-white/10 bg-white/10 p-3"
+                    >
+                      <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-white/10">
+                        <Icon aria-hidden="true" className="size-5 text-white/80" strokeWidth={1.75} />
+                      </span>
+                      <div className="min-w-0">
+                        <dt className="text-sm font-semibold text-white">{label}</dt>
+                        <dd className="mt-1 text-base font-bold text-white">~{value}</dd>
+                      </div>
                     </div>
-                  ))}
-                </dl>
-              ) : (
-                <p className="text-white/55">
-                  {game.duration.status === "error"
-                    ? "Estimated play time is temporarily unavailable."
-                    : "Estimated play time unavailable."}
+                  );
+                })}
+              </dl>
+              {game.duration?.status === "stale" && (
+                <p className="mt-3 flex items-center gap-2 text-xs text-yellow-300/85">
+                  <Clock3 aria-hidden="true" className="size-3.5" />
+                  Estimate may be out of date.
                 </p>
               )}
-              <p className="mt-3 text-xs text-white/45">
-                Approximate community averages from {game.duration.source.toUpperCase()}.
-                {game.duration.status === "stale" && " This estimate may be out of date."}
-              </p>
             </section>
           )}
 

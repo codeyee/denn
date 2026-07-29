@@ -144,7 +144,6 @@ func TestMapGame_FullDetail(t *testing.T) {
 			Normally:   200,
 			Completely: 300,
 			Count:      12,
-			UpdatedAt:  1700000000,
 		},
 	}
 
@@ -179,8 +178,8 @@ func TestMapGame_FullDetail(t *testing.T) {
 	if result.Duration == nil || result.Duration.Status != "matched" {
 		t.Fatalf("expected matched duration, got %#v", result.Duration)
 	}
-	if result.Duration.MainStorySeconds == nil || *result.Duration.MainStorySeconds != 100 {
-		t.Errorf("expected main story duration 100 seconds, got %#v", result.Duration.MainStorySeconds)
+	if result.Duration.HastilySeconds == nil || *result.Duration.HastilySeconds != 100 {
+		t.Errorf("expected rushed duration 100 seconds, got %#v", result.Duration.HastilySeconds)
 	}
 	if result.Duration.SampleCount != 12 {
 		t.Errorf("expected sample count 12, got %d", result.Duration.SampleCount)
@@ -199,6 +198,50 @@ func TestMapGame_TimeToBeatErrorIsNonBlocking(t *testing.T) {
 	}
 	if result.Duration == nil || result.Duration.Status != "error" {
 		t.Fatalf("expected error duration status, got %#v", result.Duration)
+	}
+}
+
+func TestMapGame_DurationDropsValuesAboveThreeThousandHours(t *testing.T) {
+	result := MapGame(games.IgdbGame{
+		ID:   1,
+		Name: "Service Game",
+		TimeToBeats: &games.IgdbTimeToBeat{
+			Hastily:    10 * 60 * 60,
+			Normally:   3001 * 60 * 60,
+			Completely: 20 * 60 * 60,
+		},
+	})
+
+	if result.Duration == nil || result.Duration.Status != "matched" {
+		t.Fatalf("expected matched duration, got %#v", result.Duration)
+	}
+	if result.Duration.HastilySeconds == nil || *result.Duration.HastilySeconds != 10*60*60 {
+		t.Errorf("expected rushed duration to be kept, got %#v", result.Duration.HastilySeconds)
+	}
+	if result.Duration.NormallySeconds != nil {
+		t.Errorf("expected normal outlier to be discarded, got %d", *result.Duration.NormallySeconds)
+	}
+	if result.Duration.CompletelySeconds == nil || *result.Duration.CompletelySeconds != 20*60*60 {
+		t.Errorf("expected complete duration to be kept, got %#v", result.Duration.CompletelySeconds)
+	}
+}
+
+func TestMapGame_DurationRejectsContradictoryValues(t *testing.T) {
+	result := MapGame(games.IgdbGame{
+		ID:   1,
+		Name: "Contradictory Game",
+		TimeToBeats: &games.IgdbTimeToBeat{
+			Hastily:    100 * 60 * 60,
+			Normally:   50 * 60 * 60,
+			Completely: 200 * 60 * 60,
+		},
+	})
+
+	if result.Duration == nil || result.Duration.Status != "no_data" {
+		t.Fatalf("expected no_data duration, got %#v", result.Duration)
+	}
+	if result.Duration.HastilySeconds != nil || result.Duration.NormallySeconds != nil || result.Duration.CompletelySeconds != nil {
+		t.Fatalf("expected contradictory durations to be discarded, got %#v", result.Duration)
 	}
 }
 

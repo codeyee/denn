@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from django.test import TestCase
 
-from content.models import ContentItem
+from content.models import ContentItem, GameDurationEstimate
 from content.services import payload_reconstructor
 from content.services.local_content_store import (
     ensure_content_detail,
@@ -115,8 +115,28 @@ class GameReconstructorTests(TestCase):
         self.assertEqual(set(rebuilt['genres']), set(GAME_RDR2['genres']))
         self.assertEqual(rebuilt['play_time'], GAME_RDR2['play_time'])
         self.assertEqual(rebuilt['duration']['status'], 'matched')
-        self.assertEqual(rebuilt['duration']['main_story_seconds'], 180000)
+        self.assertEqual(rebuilt['duration']['hastily_seconds'], 180000)
+        self.assertIn('updated_at', rebuilt['duration'])
         self.assertEqual(len(rebuilt['platforms']), 3)
+
+    def test_reconstructor_sanitizes_existing_bad_duration(self):
+        item = _ingest(
+            ContentItem.SourceAPI.IGDB, '25076', ContentItem.ContentType.GAME, GAME_RDR2,
+        )
+        estimate = GameDurationEstimate.objects.get(content_item=item)
+        estimate.hastily_seconds = 100 * 60 * 60
+        estimate.normally_seconds = 50 * 60 * 60
+        estimate.completely_seconds = 3001 * 60 * 60
+        estimate.save(update_fields=[
+            'hastily_seconds', 'normally_seconds', 'completely_seconds',
+        ])
+
+        rebuilt = payload_reconstructor.from_local(item)
+
+        self.assertEqual(rebuilt['duration']['status'], 'no_data')
+        self.assertNotIn('hastily_seconds', rebuilt['duration'])
+        self.assertNotIn('normally_seconds', rebuilt['duration'])
+        self.assertNotIn('completely_seconds', rebuilt['duration'])
 
 
 class BookReconstructorTests(TestCase):

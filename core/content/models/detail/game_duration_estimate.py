@@ -20,10 +20,9 @@ class GameDurationEstimate(models.Model):
     )
     provider = models.CharField(max_length=32, choices=Provider.choices)
     provider_external_id = models.CharField(max_length=255)
-    main_story_seconds = models.PositiveIntegerField(null=True, blank=True)
-    main_extra_seconds = models.PositiveIntegerField(null=True, blank=True)
-    completionist_seconds = models.PositiveIntegerField(null=True, blank=True)
-    source_updated_at = models.DateTimeField(null=True, blank=True)
+    hastily_seconds = models.PositiveIntegerField(null=True, blank=True)
+    normally_seconds = models.PositiveIntegerField(null=True, blank=True)
+    completely_seconds = models.PositiveIntegerField(null=True, blank=True)
     synced_at = models.DateTimeField(auto_now=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.NO_DATA)
     sample_count = models.PositiveIntegerField(default=0)
@@ -41,7 +40,6 @@ class GameDurationEstimate(models.Model):
         ]
         indexes = [
             models.Index(fields=['provider', 'status'], name='game_dur_provider_status_idx'),
-            models.Index(fields=['status', 'source_updated_at'], name='game_dur_status_updated_idx'),
         ]
 
     def __str__(self):

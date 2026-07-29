@@ -529,10 +529,9 @@ export type GameDurationStatus = "matched" | "no_data" | "stale" | "error";
 export interface GameDuration {
     source: string;
     status: GameDurationStatus;
-    main_story_seconds?: number;
-    main_extra_seconds?: number;
-    completionist_seconds?: number;
-    source_updated_at?: string;
+    hastily_seconds?: number;
+    normally_seconds?: number;
+    completely_seconds?: number;
     updated_at?: string;
     sample_count?: number;
 }

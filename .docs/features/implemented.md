@@ -42,6 +42,11 @@ considered part of the project baseline.
   paginated public Lists remain separate.
 - Anonymous content-detail and public-list reads, with private lists
   returning 404 to outsiders.
+- Game detail pages expose optional IGDB time-to-beat estimates for rushed,
+  normal, and complete playthroughs, preserving IGDB's source semantics.
+  Values above 3,000 hours are discarded, and contradictory estimates are
+  treated as no data across proxy normalization, local persistence, payload
+  reconstruction, and the frontend display.
 - Personal and shared lists with items, members, invitations, ratings,
   and list-item status workflows.
 - Personal-list additions seed missing personal progress as `backlog` while

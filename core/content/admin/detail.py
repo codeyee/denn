@@ -85,7 +85,7 @@ class GameDetailAdmin(admin.ModelAdmin):
 
 @admin.register(GameDurationEstimate)
 class GameDurationEstimateAdmin(admin.ModelAdmin):
-    list_display = ['id', 'content_item', 'provider', 'status', 'source_updated_at', 'synced_at']
+    list_display = ['id', 'content_item', 'provider', 'status', 'synced_at']
     list_filter = ['provider', 'status']
     search_fields = ['content_item__external_id', 'provider_external_id']
     raw_id_fields = ['content_item']

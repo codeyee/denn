@@ -173,7 +173,6 @@ func TestGetGameTimeToBeats(t *testing.T) {
 		"normally":   7200,
 		"completely": 10800,
 		"count":      10,
-		"updated_at": 1700000000,
 	}}
 	mockBody, _ := json.Marshal(mockTimes)
 	mockTransport := &MockRoundTripper{
@@ -203,8 +202,11 @@ func TestGetGameTimeToBeats(t *testing.T) {
 	if !strings.Contains(requestBody, "game_id = (123)") {
 		t.Errorf("request did not target game 123: %s", requestBody)
 	}
-	if !strings.Contains(requestBody, "fields game_id,hastily,normally,completely,count,updated_at") {
+	if !strings.Contains(requestBody, "fields game_id,hastily,normally,completely,count") {
 		t.Errorf("request fields were incomplete: %s", requestBody)
+	}
+	if strings.Contains(requestBody, "updated_at") {
+		t.Errorf("request included unsupported updated_at field: %s", requestBody)
 	}
 
 	var times []map[string]interface{}

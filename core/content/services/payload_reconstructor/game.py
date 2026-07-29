@@ -4,6 +4,10 @@ from __future__ import annotations
 from typing import Any, Dict, Optional
 
 from content.models import ContentItem
+from content.services.game_duration import (
+    normalize_game_duration_values,
+    normalized_game_duration_status,
+)
 
 from ._common import (
     serialize_authors,
@@ -48,19 +52,23 @@ def from_local(content_item: ContentItem, *, request_country: Optional[str] = No
     estimates = content_item.game_duration_estimates.all()
     estimate = estimates.filter(provider='igdb').first()
     if estimate is not None:
+        duration_values = normalize_game_duration_values({
+            'hastily_seconds': estimate.hastily_seconds,
+            'normally_seconds': estimate.normally_seconds,
+            'completely_seconds': estimate.completely_seconds,
+        })
+        duration_status = normalized_game_duration_status(
+            estimate.status,
+            duration_values,
+        )
         duration: Dict[str, Any] = {
             'source': estimate.provider,
-            'status': estimate.status,
+            'status': duration_status,
             'updated_at': estimate.synced_at.isoformat() if estimate.synced_at else None,
         }
-        if estimate.main_story_seconds is not None:
-            duration['main_story_seconds'] = estimate.main_story_seconds
-        if estimate.main_extra_seconds is not None:
-            duration['main_extra_seconds'] = estimate.main_extra_seconds
-        if estimate.completionist_seconds is not None:
-            duration['completionist_seconds'] = estimate.completionist_seconds
-        if estimate.source_updated_at is not None:
-            duration['source_updated_at'] = estimate.source_updated_at.isoformat()
+        for field, value in duration_values.items():
+            if value is not None:
+                duration[field] = value
         if estimate.sample_count:
             duration['sample_count'] = estimate.sample_count
         payload['duration'] = duration

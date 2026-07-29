@@ -1,7 +1,5 @@
 package models
 
-import "time"
-
 type PlayTime struct {
 	Hastily    int `json:"hastily"`
 	Normally   int `json:"normally"`
@@ -9,13 +7,12 @@ type PlayTime struct {
 }
 
 type GameDuration struct {
-	Source               string     `json:"source"`
-	Status               string     `json:"status"`
-	MainStorySeconds     *int       `json:"main_story_seconds,omitempty"`
-	MainExtraSeconds     *int       `json:"main_extra_seconds,omitempty"`
-	CompletionistSeconds *int       `json:"completionist_seconds,omitempty"`
-	SourceUpdatedAt      *time.Time `json:"source_updated_at,omitempty"`
-	SampleCount          int        `json:"sample_count,omitempty"`
+	Source            string `json:"source"`
+	Status            string `json:"status"`
+	HastilySeconds    *int   `json:"hastily_seconds,omitempty"`
+	NormallySeconds   *int   `json:"normally_seconds,omitempty"`
+	CompletelySeconds *int   `json:"completely_seconds,omitempty"`
+	SampleCount       int    `json:"sample_count,omitempty"`
 }
 
 type Game struct {

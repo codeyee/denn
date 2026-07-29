@@ -11,7 +11,8 @@ import (
 )
 
 const (
-	igdbImageBaseURL = "https://images.igdb.com/igdb/image/upload"
+	igdbImageBaseURL       = "https://images.igdb.com/igdb/image/upload"
+	maxGameDurationSeconds = 3000 * 60 * 60
 
 	GameTypeOriginal            = "original"
 	GameTypeStandaloneExpansion = "standalone_expansion"
@@ -252,6 +253,27 @@ func extractPlayTime(tb *games.IgdbTimeToBeat) *models.PlayTime {
 	}
 }
 
+func normalizeGameDurationSeconds(value int) *int {
+	if value <= 0 || value > maxGameDurationSeconds {
+		return nil
+	}
+	return &value
+}
+
+func hasOrderedGameDurations(values ...*int) bool {
+	var previous *int
+	for _, value := range values {
+		if value == nil {
+			continue
+		}
+		if previous != nil && *value < *previous {
+			return false
+		}
+		previous = value
+	}
+	return true
+}
+
 func extractDuration(tb *games.IgdbTimeToBeat, failed bool) *models.GameDuration {
 	duration := &models.GameDuration{
 		Source: "igdb",
@@ -265,29 +287,24 @@ func extractDuration(tb *games.IgdbTimeToBeat, failed bool) *models.GameDuration
 		return duration
 	}
 
-	if tb.Hastily > 0 {
-		value := tb.Hastily
-		duration.MainStorySeconds = &value
+	duration.HastilySeconds = normalizeGameDurationSeconds(tb.Hastily)
+	duration.NormallySeconds = normalizeGameDurationSeconds(tb.Normally)
+	duration.CompletelySeconds = normalizeGameDurationSeconds(tb.Completely)
+	if !hasOrderedGameDurations(
+		duration.HastilySeconds,
+		duration.NormallySeconds,
+		duration.CompletelySeconds,
+	) {
+		duration.HastilySeconds = nil
+		duration.NormallySeconds = nil
+		duration.CompletelySeconds = nil
 	}
-	if tb.Normally > 0 {
-		value := tb.Normally
-		duration.MainExtraSeconds = &value
-	}
-	if tb.Completely > 0 {
-		value := tb.Completely
-		duration.CompletionistSeconds = &value
-	}
-	if duration.MainStorySeconds != nil || duration.MainExtraSeconds != nil || duration.CompletionistSeconds != nil {
+	if duration.HastilySeconds != nil || duration.NormallySeconds != nil || duration.CompletelySeconds != nil {
 		duration.Status = "matched"
 	}
 	if tb.Count > 0 {
 		duration.SampleCount = tb.Count
 	}
-	if tb.UpdatedAt > 0 {
-		updatedAt := time.Unix(tb.UpdatedAt, 0).UTC()
-		duration.SourceUpdatedAt = &updatedAt
-	}
-
 	return duration
 }
 

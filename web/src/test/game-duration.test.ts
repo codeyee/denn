@@ -16,15 +16,38 @@ describe("game duration", () => {
     expect(getGameDurationRows({
       source: "igdb",
       status: "matched",
-      main_story_seconds: 36000,
-      completionist_seconds: 72000,
+      hastily_seconds: 36000,
+      completely_seconds: 72000,
     })).toEqual([
-      { label: "Main Story", value: "10 h" },
-      { label: "Completionist", value: "20 h" },
+      { label: "Rushed", value: "10 h" },
+      { label: "Complete", value: "20 h" },
     ]);
   });
 
   it("renders no rows when the source has no usable data", () => {
     expect(getGameDurationRows({ source: "igdb", status: "no_data" })).toEqual([]);
+  });
+
+  it("discards estimates above 3000 hours while keeping valid metrics", () => {
+    expect(getGameDurationRows({
+      source: "igdb",
+      status: "matched",
+      hastily_seconds: 10 * 60 * 60,
+      normally_seconds: 3001 * 60 * 60,
+      completely_seconds: 20 * 60 * 60,
+    })).toEqual([
+      { label: "Rushed", value: "10 h" },
+      { label: "Complete", value: "20 h" },
+    ]);
+  });
+
+  it("hides estimates when the available metrics are not ordered", () => {
+    expect(getGameDurationRows({
+      source: "igdb",
+      status: "matched",
+      hastily_seconds: 100 * 60 * 60,
+      normally_seconds: 50 * 60 * 60,
+      completely_seconds: 200 * 60 * 60,
+    })).toEqual([]);
   });
 });
