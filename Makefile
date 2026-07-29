@@ -1,4 +1,5 @@
 .PHONY: help setup-local up down restart status doctor logs check smoke-local browser-local \
+        local-up local-down local-restart local-status local-doctor local-logs local-smoke local-browser local-destroy local-clone \
         restart-proxy restart-core restart-web \
         env-store env-link \
         tail-proxy tail-core tail-web tail-redis tail-postgres \
@@ -13,15 +14,18 @@ SCRIPT := ./.scripts/workspace.sh
 
 help:
 	@echo "Local dev (Docker Compose, full stack):"
-	@echo "  make setup-local      validate envs, prepare volume, pull/build images"
-	@echo "  make up               start postgres + redis + proxy + core + web"
-	@echo "  make down             stop the stack and preserve the database volume"
+	@echo "  make setup-local      validate envs, prepare this worktree's images"
+	@echo "  make up               start this worktree's isolated stack"
+	@echo "  make down             stop this worktree and preserve its database"
+	@echo "  make local-up INSTANCE=feature-a WEB_PORT=3000"
+	@echo "  make local-status INSTANCE=feature-a"
+	@echo "  make local-destroy INSTANCE=feature-a  (removes only its volumes)"
 	@echo "  make restart          down + up"
 	@echo "  make status           compact status table"
 	@echo "  make doctor           validate envs, services, ports, migrations, and data"
 	@echo "  make check            verify Docker and local-only env guardrails"
-	@echo "  make smoke-local      HTTP, authenticated proxy, migration, and DB smoke"
-	@echo "  make browser-local    Playwright smoke against the real local stack"
+	@echo "  make smoke-local      HTTP, authenticated proxy and migration smoke"
+	@echo "  make browser-local    Playwright smoke against this worktree"
 	@echo "  make restart-web      restart only the Vite service"
 	@echo "  make restart-core     restart only Django"
 	@echo "  make restart-proxy    restart Go after source changes"
@@ -41,10 +45,10 @@ help:
 	@echo "Tests:"
 	@echo "  make test             run full test suite (proxy + core)"
 	@echo "  make validate-web     run frontend lint + build"
-	@echo "  make validate-core    run django tests"
+	@echo "  make validate-core    run django tests (INSTANCE=<id> for its local DB)"
 	@echo "  make validate-proxy   run go tests"
 	@echo "  make test-proxy       go test ./..."
-	@echo "  make test-core        django tests"
+	@echo "  make test-core        django tests (INSTANCE=<id> for its local DB)"
 	@echo "  make test-web         vitest run if configured"
 	@echo "  make e2e-web          production-build Playwright smoke (desktop + mobile)"
 	@echo "  make e2e-web-regressions  expected-failure audit reproductions"
@@ -54,34 +58,45 @@ help:
 	@echo "  make build-web        run frontend production build"
 	@echo
 	@echo "Database (local Postgres in docker):"
-	@echo "  make db-backup        dump local DB to backups/<ts>.sql.gz (custom format + gzip)"
+	@echo "  make db-backup        dump this instance DB to backups/<instance>-db-<ts>.sql.gz"
 	@echo "  make db-backups       list existing backups (newest first)"
 	@echo "  make db-restore FILE=backups/foo.sql.gz   restore a backup (drops + recreates DB)"
+	@echo "  make local-clone INSTANCE=<id> FILE=backups/foo.sql.gz"
 	@echo "  make db-shell         open psql against the local DB"
 
-setup-local:   ; @$(SCRIPT) setup-local
-up:            ; @$(SCRIPT) up
-down:          ; @$(SCRIPT) down
-restart:       ; @$(SCRIPT) restart
-status:        ; @$(SCRIPT) status
-doctor:        ; @$(SCRIPT) doctor
-logs:          ; @$(SCRIPT) logs
-check:         ; @$(SCRIPT) check
-smoke-local:   ; @$(SCRIPT) smoke-local
-browser-local: ; @$(SCRIPT) browser-local
+setup-local:   ; @INSTANCE="$(INSTANCE)" WEB_PORT="$(WEB_PORT)" $(SCRIPT) setup-local
+up:            ; @INSTANCE="$(INSTANCE)" WEB_PORT="$(WEB_PORT)" $(SCRIPT) up
+down:          ; @INSTANCE="$(INSTANCE)" WEB_PORT="$(WEB_PORT)" $(SCRIPT) down
+restart:       ; @INSTANCE="$(INSTANCE)" WEB_PORT="$(WEB_PORT)" $(SCRIPT) restart
+status:        ; @INSTANCE="$(INSTANCE)" WEB_PORT="$(WEB_PORT)" $(SCRIPT) status
+doctor:        ; @INSTANCE="$(INSTANCE)" WEB_PORT="$(WEB_PORT)" $(SCRIPT) doctor
+logs:          ; @INSTANCE="$(INSTANCE)" WEB_PORT="$(WEB_PORT)" $(SCRIPT) logs "$(SERVICE)"
+check:         ; @INSTANCE="$(INSTANCE)" WEB_PORT="$(WEB_PORT)" $(SCRIPT) check
+smoke-local:   ; @INSTANCE="$(INSTANCE)" WEB_PORT="$(WEB_PORT)" REQUIRE_LOCAL_SNAPSHOT="$(REQUIRE_LOCAL_SNAPSHOT)" $(SCRIPT) smoke-local
+browser-local: ; @INSTANCE="$(INSTANCE)" WEB_PORT="$(WEB_PORT)" REQUIRE_LOCAL_SNAPSHOT="$(REQUIRE_LOCAL_SNAPSHOT)" $(SCRIPT) browser-local
 
-restart-proxy: ; @$(SCRIPT) restart-service proxy
-restart-core:  ; @$(SCRIPT) restart-service core
-restart-web:   ; @$(SCRIPT) restart-service web
+local-up:      ; @INSTANCE="$(INSTANCE)" WEB_PORT="$(WEB_PORT)" $(SCRIPT) up
+local-down:    ; @INSTANCE="$(INSTANCE)" WEB_PORT="$(WEB_PORT)" $(SCRIPT) down
+local-restart: ; @INSTANCE="$(INSTANCE)" WEB_PORT="$(WEB_PORT)" $(SCRIPT) restart
+local-status:  ; @INSTANCE="$(INSTANCE)" WEB_PORT="$(WEB_PORT)" $(SCRIPT) status
+local-doctor:  ; @INSTANCE="$(INSTANCE)" WEB_PORT="$(WEB_PORT)" $(SCRIPT) doctor
+local-logs:    ; @INSTANCE="$(INSTANCE)" WEB_PORT="$(WEB_PORT)" $(SCRIPT) logs "$(SERVICE)"
+local-smoke:   ; @INSTANCE="$(INSTANCE)" WEB_PORT="$(WEB_PORT)" REQUIRE_LOCAL_SNAPSHOT="$(REQUIRE_LOCAL_SNAPSHOT)" $(SCRIPT) smoke-local
+local-browser: ; @INSTANCE="$(INSTANCE)" WEB_PORT="$(WEB_PORT)" REQUIRE_LOCAL_SNAPSHOT="$(REQUIRE_LOCAL_SNAPSHOT)" $(SCRIPT) browser-local
+local-destroy: ; @INSTANCE="$(INSTANCE)" WEB_PORT="$(WEB_PORT)" $(SCRIPT) destroy
 
-env-store:     ; @$(SCRIPT) env-store
-env-link:      ; @$(SCRIPT) env-link
+restart-proxy: ; @INSTANCE="$(INSTANCE)" WEB_PORT="$(WEB_PORT)" $(SCRIPT) restart-service proxy
+restart-core:  ; @INSTANCE="$(INSTANCE)" WEB_PORT="$(WEB_PORT)" $(SCRIPT) restart-service core
+restart-web:   ; @INSTANCE="$(INSTANCE)" WEB_PORT="$(WEB_PORT)" $(SCRIPT) restart-service web
 
-tail-proxy:    ; @$(SCRIPT) logs proxy
-tail-core:     ; @$(SCRIPT) logs core
-tail-web:      ; @$(SCRIPT) logs web
-tail-redis:    ; @$(SCRIPT) logs redis
-tail-postgres: ; @$(SCRIPT) logs postgres
+env-store:     ; @INSTANCE="$(INSTANCE)" WEB_PORT="$(WEB_PORT)" $(SCRIPT) env-store
+env-link:      ; @INSTANCE="$(INSTANCE)" WEB_PORT="$(WEB_PORT)" $(SCRIPT) env-link
+
+tail-proxy:    ; @INSTANCE="$(INSTANCE)" WEB_PORT="$(WEB_PORT)" $(SCRIPT) logs proxy
+tail-core:     ; @INSTANCE="$(INSTANCE)" WEB_PORT="$(WEB_PORT)" $(SCRIPT) logs core
+tail-web:      ; @INSTANCE="$(INSTANCE)" WEB_PORT="$(WEB_PORT)" $(SCRIPT) logs web
+tail-redis:    ; @INSTANCE="$(INSTANCE)" WEB_PORT="$(WEB_PORT)" $(SCRIPT) logs redis
+tail-postgres: ; @INSTANCE="$(INSTANCE)" WEB_PORT="$(WEB_PORT)" $(SCRIPT) logs postgres
 
 test: test-proxy test-core
 
@@ -102,7 +117,11 @@ test-proxy:
 	cd proxy && go test ./...
 
 test-core:
-	cd core && AUTH_COOKIE_SECURE=True .venv/bin/python manage.py test
+	@if [ -n "$(INSTANCE)" ] || [ -n "$(WEB_PORT)" ]; then \
+		INSTANCE="$(INSTANCE)" WEB_PORT="$(WEB_PORT)" $(SCRIPT) test-core; \
+	else \
+		cd core && AUTH_COOKIE_SECURE=True .venv/bin/python manage.py test; \
+	fi
 
 test-web:
 	cd web && node node_modules/vitest/vitest.mjs run
@@ -123,17 +142,24 @@ build-proxy:
 	cd proxy && go build -o /tmp/denn-proxy-build ./cmd/api && rm -f /tmp/denn-proxy-build
 
 # ── database ────────────────────────────────────────────────────────────────
-# Override local paths with: PG_CONTAINER=foo BACKUP_DIR=/safe/path make db-backup
+# Override the ignored backup directory with: BACKUP_DIR=/safe/path make db-backup
 
-db-backup:   ; @$(SCRIPT) db-backup
-db-backups:  ; @$(SCRIPT) db-backups
-db-shell:    ; @$(SCRIPT) db-shell
+db-backup:   ; @INSTANCE="$(INSTANCE)" WEB_PORT="$(WEB_PORT)" $(SCRIPT) db-backup
+db-backups:  ; @INSTANCE="$(INSTANCE)" WEB_PORT="$(WEB_PORT)" $(SCRIPT) db-backups
+db-shell:    ; @INSTANCE="$(INSTANCE)" WEB_PORT="$(WEB_PORT)" $(SCRIPT) db-shell
 
 db-restore:
 	@if [ -z "$(FILE)" ]; then \
-	  echo "usage: make db-restore FILE=backups/denn-db-<timestamp>.sql.gz"; \
+	  echo "usage: make db-restore FILE=backups/denn-<instance>-db-<timestamp>.sql.gz"; \
 	  echo; echo "available backups:"; \
-	  $(SCRIPT) db-backups; \
+	  INSTANCE="$(INSTANCE)" WEB_PORT="$(WEB_PORT)" $(SCRIPT) db-backups; \
 	  exit 1; \
 	fi
-	@$(SCRIPT) db-restore "$(FILE)"
+	@INSTANCE="$(INSTANCE)" WEB_PORT="$(WEB_PORT)" $(SCRIPT) db-restore "$(FILE)"
+
+local-clone:
+	@if [ -z "$(FILE)" ]; then \
+	  echo "usage: make local-clone INSTANCE=<id> FILE=backups/<dump>.sql.gz"; \
+	  exit 1; \
+	fi
+	@INSTANCE="$(INSTANCE)" WEB_PORT="$(WEB_PORT)" $(SCRIPT) local-clone "$(FILE)"

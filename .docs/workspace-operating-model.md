@@ -29,7 +29,7 @@ tooling.
     `vite build`; artefacto Nitro en `web/.output/`)
   - `make e2e-web` (production-build Playwright smoke; desktop + móvil)
 - `core`
-  - `make validate-core`
+  - `make validate-core INSTANCE=<id>` against the selected local database
 - `proxy`
   - `make validate-proxy`
 
@@ -73,24 +73,37 @@ Tags are per app and include `latest` plus a short SHA tag.
 
 - `compose.local.yml` is the canonical full-stack runtime for local
   development. It runs PostgreSQL 18, Redis, `proxy`, `core`, and `web`.
+- Every worktree is one Compose project, named `denn-<instance>`, with its
+  own network, PostgreSQL volume, Redis state, dependency volumes and
+  published port block. Fixed `container_name` values and the external
+  shared `denn-pg-data` volume are intentionally not used.
 - All published ports bind to `127.0.0.1`; service-to-service traffic
-  stays on the Compose network.
-- PostgreSQL uses the external `denn-pg-data` volume. `make down`
-  preserves it.
-- `web`, `core`, and `proxy` source trees are bind-mounted. Vite and
-  Django reload automatically; `make restart-proxy` restarts Go.
-- Root commands are the stable human/agent contract:
-  - `make check` / `make setup-local`
-  - `make up` / `make down`
-  - `make status` / `make logs` / `make doctor`
-  - `make smoke-local` / `make browser-local`
+  stays on the instance's Compose network and continues to use service
+  names such as `postgres`, `redis`, `proxy` and `core`.
+- The worktree-local `.workspace/compose.env` records the instance id,
+  project name, credentials and allocated ports. It is ignored and mode
+  `0600`; allocation metadata is kept outside Git.
+- `web`, `core` and `proxy` source trees are bind-mounted. Vite and Django
+  reload automatically; `make restart-proxy` restarts Go.
+- Root commands remain the stable human/agent contract. `make up` derives
+  an instance from the current worktree, while the explicit aliases make
+  parallel work obvious:
+  - `make local-up INSTANCE=<id> WEB_PORT=<port>`
+  - `make local-down INSTANCE=<id>` / `make local-destroy INSTANCE=<id>`
+  - `make local-status INSTANCE=<id>` / `make local-logs INSTANCE=<id>`
+  - `make local-smoke INSTANCE=<id>` / `make local-browser INSTANCE=<id>`
   - `make restart-web` / `make restart-core` / `make restart-proxy`
+- A validated local PostgreSQL dump can be restored into one instance with
+  `make local-clone INSTANCE=<id> FILE=<dump>`. This copies data into that
+  instance; it never shares a database volume with another worktree.
 - Local env files remain outside Git. `make env-store` keeps one private
   copy outside the repository and `make env-link` links new worktrees to
-  it.
-- `make browser-local` uses the real local stack and may exercise
+  it. Compose injects per-instance internal URLs and loopback origins.
+- `make local-browser` uses the real selected local stack and may exercise
   provider APIs. `make e2e-web` remains deterministic, non-personal,
   offline-safe fixture coverage for CI.
+- This model is local-only. Production workflows publish service images
+  and do not consume `compose.local.yml`, worktree state or local volumes.
 - Agents should call the root commands directly. A Denn-specific MCP
   wrapper is intentionally absent because it would duplicate this
   contract and widen secret handling without adding capability.

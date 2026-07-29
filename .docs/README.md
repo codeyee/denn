@@ -26,6 +26,7 @@ Start here, then read in this order:
 10. [`contracts/internal-http.md`](./contracts/internal-http.md)
 11. [`observability.md`](./observability.md)
 12. [`workspace-operating-model.md`](./workspace-operating-model.md)
+13. [`adr/0006-isolated-local-worktree-stacks.md`](./adr/0006-isolated-local-worktree-stacks.md)
 
 ## Practical Usage Flow
 
@@ -189,6 +190,7 @@ Use the rest as specialized references:
 - [`runbooks/auth-bff-rollout.md`](./runbooks/auth-bff-rollout.md)
 - [`runbooks/browser-e2e-and-baseline.md`](./runbooks/browser-e2e-and-baseline.md)
 - [`runbooks/local-development.md`](./runbooks/local-development.md)
+- [`adr/0006-isolated-local-worktree-stacks.md`](./adr/0006-isolated-local-worktree-stacks.md)
 - [`runbooks/homepage-cache-warmup.md`](./runbooks/homepage-cache-warmup.md)
 - [`runbooks/public-profile-tracking-backfill.md`](./runbooks/public-profile-tracking-backfill.md)
 - [`history/implementation-history.md`](./history/implementation-history.md)
