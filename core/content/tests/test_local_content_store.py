@@ -248,9 +248,9 @@ class GameMapperTests(TestCase):
         upsert_game(item, payload)
 
         duration = GameDurationEstimate.objects.get(content_item=item)
-        self.assertEqual(duration.status, GameDurationEstimate.Status.NO_DATA)
+        self.assertEqual(duration.status, GameDurationEstimate.Status.MATCHED)
         self.assertIsNone(duration.hastily_seconds)
-        self.assertIsNone(duration.normally_seconds)
+        self.assertEqual(duration.normally_seconds, 50 * 60 * 60)
         self.assertIsNone(duration.completely_seconds)
 
 

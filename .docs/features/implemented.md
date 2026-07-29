@@ -44,8 +44,8 @@ considered part of the project baseline.
   returning 404 to outsiders.
 - Game detail pages expose optional IGDB time-to-beat estimates for rushed,
   normal, and complete playthroughs, preserving IGDB's source semantics.
-  Values above 3,000 hours are discarded, and contradictory estimates are
-  treated as no data across proxy normalization, local persistence, payload
+  Values above 3,000 hours are discarded, and contradictory estimates retain
+  only the normal value across proxy normalization, local persistence, payload
   reconstruction, and the frontend display. Existing game details without a
   duration record are rehydrated on demand and by the periodic rehydration
   command.
