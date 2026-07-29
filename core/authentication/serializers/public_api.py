@@ -71,3 +71,5 @@ class PublicProfileOverviewSerializer(serializers.Serializer):
     recent_completed = PublicCompletedItemSerializer(many=True)
     public_lists = PublicListSerializer(many=True)
     banner_media = serializers.ListField(child=serializers.DictField())
+    selected_banner = serializers.DictField(allow_null=True)
+    banner_options = serializers.ListField(child=serializers.DictField())

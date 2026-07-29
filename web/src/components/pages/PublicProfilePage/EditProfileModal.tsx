@@ -8,8 +8,11 @@ import { Button } from "@/components/common/ui/Button";
 import { Input } from "@/components/common/ui/Input";
 import { UserAvatar } from "@/components/common/ui/UserAvatar";
 import { useUpdatePublicProfileMutation } from "@/lib/api/mutations";
-import type { PublicProfileIdentity } from "@/lib/types";
-
+import type {
+  ProfileBannerOption,
+  PublicProfileIdentity,
+} from "@/lib/types";
+import { ProfileBannerPicker } from "./ProfileBannerPicker";
 const editProfileSchema = z.object({
   bio: z.string().max(280, "Bio must be 280 characters or fewer."),
   avatar_url: z
@@ -19,20 +22,23 @@ const editProfileSchema = z.object({
       (value) => !value || value.startsWith("https://"),
       "Use an HTTPS image URL.",
     ),
+  banner_content_id: z.number().int().nullable(),
+  banner_image_id: z.number().int().nullable(),
 });
-
 type EditProfileForm = z.infer<typeof editProfileSchema>;
 
 interface EditProfileModalProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   profile: PublicProfileIdentity;
+  bannerOptions: ProfileBannerOption[];
 }
 
 export function EditProfileModal({
   isOpen,
   onOpenChange,
   profile,
+  bannerOptions,
 }: EditProfileModalProps) {
   const mutation = useUpdatePublicProfileMutation();
   const form = useForm<EditProfileForm>({
@@ -40,18 +46,31 @@ export function EditProfileModal({
     defaultValues: {
       bio: profile.bio,
       avatar_url: profile.avatar_url,
+      banner_content_id: profile.banner_content_id,
+      banner_image_id: profile.banner_image_id,
     },
   });
   const watchedBio = form.watch("bio");
   const watchedAvatar = form.watch("avatar_url");
+  const watchedBannerContentId = form.watch("banner_content_id");
+  const watchedBannerImageId = form.watch("banner_image_id");
 
   useEffect(() => {
     if (!isOpen) return;
     form.reset({
       bio: profile.bio,
       avatar_url: profile.avatar_url,
+      banner_content_id: profile.banner_content_id,
+      banner_image_id: profile.banner_image_id,
     });
-  }, [form, isOpen, profile.avatar_url, profile.bio]);
+  }, [
+    form,
+    isOpen,
+    profile.avatar_url,
+    profile.banner_content_id,
+    profile.banner_image_id,
+    profile.bio,
+  ]);
 
   async function submit(values: EditProfileForm) {
     let updatedProfile: PublicProfileIdentity;
@@ -66,6 +85,8 @@ export function EditProfileModal({
     form.reset({
       bio: updatedProfile.bio,
       avatar_url: updatedProfile.avatar_url,
+      banner_content_id: updatedProfile.banner_content_id,
+      banner_image_id: updatedProfile.banner_image_id,
     });
     onOpenChange(false);
   }
@@ -133,6 +154,27 @@ export function EditProfileModal({
               error={form.formState.errors.avatar_url?.message}
               className="min-h-11 border-white/15 bg-black/20 text-white"
               {...form.register("avatar_url")}
+            />
+            <ProfileBannerPicker
+              options={bannerOptions}
+              contentId={watchedBannerContentId}
+              imageId={watchedBannerImageId}
+              onContentChange={(contentId) => {
+                form.setValue("banner_content_id", contentId, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                });
+                form.setValue("banner_image_id", null, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                });
+              }}
+              onImageChange={(imageId) => {
+                form.setValue("banner_image_id", imageId, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                });
+              }}
             />
             <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
               <Button

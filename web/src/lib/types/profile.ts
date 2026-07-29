@@ -28,6 +28,8 @@ export interface PublicProfileIdentity {
   bio: string;
   avatar_url: string;
   joined_at: string;
+  banner_content_id: number | null;
+  banner_image_id: number | null;
 }
 
 export interface PublicProfileCounters {
@@ -123,8 +125,14 @@ export interface PublicFavorite {
 export interface ProfileBannerMedia {
   content_id: number;
   type: ContentType;
+  image_id?: number | null;
   image_url: string;
   treatment?: BannerMediaTreatment;
+}
+
+export interface ProfileBannerOption extends ProfileBannerMedia {
+  title: string;
+  authors?: string[];
 }
 
 export interface PublicProfileOverview {
@@ -135,6 +143,8 @@ export interface PublicProfileOverview {
   recent_completed: PublicCompletedItem[];
   public_lists: PublicListSummary[];
   banner_media: ProfileBannerMedia[];
+  selected_banner: ProfileBannerMedia | null;
+  banner_options: ProfileBannerOption[];
 }
 
 export interface PaginatedProfileResults<T> {
@@ -173,4 +183,6 @@ export interface ProfileSearchParams {
 export interface PublicProfileUpdate {
   bio: string;
   avatar_url: string;
+  banner_content_id: number | null;
+  banner_image_id: number | null;
 }

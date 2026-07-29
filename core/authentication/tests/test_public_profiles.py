@@ -59,7 +59,7 @@ class PublicProfileApiTests(APITestCase):
             role="director",
             position=0,
         )
-        Image.objects.create(
+        self.movie_gallery = Image.objects.create(
             content_item=self.movie,
             type=Image.Type.GALLERY,
             size=Image.Size.ORIGINAL,
@@ -135,6 +135,7 @@ class PublicProfileApiTests(APITestCase):
         ContentItemBrowseMetadata.objects.create(
             content_item=album,
             display_title="Night Signals",
+            artist="First Artist, Second Artist, Third Artist",
         )
         Image.objects.create(
             content_item=album,
@@ -172,6 +173,132 @@ class PublicProfileApiTests(APITestCase):
             album_banner["treatment"],
             "contained-poster",
         )
+        album_option = next(
+            option
+            for option in response.data["banner_options"]
+            if option["content_id"] == album.id and option["image_id"] is None
+        )
+        self.assertEqual(
+            album_option["authors"],
+            ["First Artist", "Second Artist"],
+        )
+
+    def test_banner_options_include_first_two_authors(self):
+        second_director = Author.objects.create(name="Second Director")
+        ContentItemAuthor.objects.create(
+            content_item=self.movie,
+            author=second_director,
+            role="director",
+            position=1,
+        )
+
+        response = self.client.get(
+            reverse(
+                "profiles:overview",
+                kwargs={"username": self.user.username},
+            )
+        )
+
+        movie_option = next(
+            option
+            for option in response.data["banner_options"]
+            if option["content_id"] == self.movie.id and option["image_id"] is None
+        )
+        self.assertEqual(
+            movie_option["authors"],
+            ["David Fincher", "Second Director"],
+        )
+
+    def test_owner_can_choose_favorite_and_specific_banner_image(self):
+        self.client.force_authenticate(self.user)
+        update = self.client.patch(
+            reverse("profiles:me"),
+            {
+                "banner_content_id": self.movie.id,
+                "banner_image_id": self.movie_gallery.id,
+            },
+            format="json",
+        )
+
+        self.assertEqual(update.status_code, 200)
+        self.assertEqual(update.data["banner_content_id"], self.movie.id)
+        self.assertEqual(update.data["banner_image_id"], self.movie_gallery.id)
+
+        overview = self.client.get(
+            reverse(
+                "profiles:overview",
+                kwargs={"username": self.user.username},
+            )
+        )
+
+        self.assertEqual(overview.status_code, 200)
+        self.assertEqual(
+            overview.data["selected_banner"]["image_id"],
+            self.movie_gallery.id,
+        )
+        self.assertTrue(
+            any(
+                option["image_id"] is None
+                and option["content_id"] == self.movie.id
+                for option in overview.data["banner_options"]
+            )
+        )
+        self.assertTrue(
+            any(
+                option["image_id"] == self.movie_gallery.id
+                for option in overview.data["banner_options"]
+            )
+        )
+
+    def test_banner_selection_requires_an_active_favorite(self):
+        other_movie = ContentItem.objects.create(
+            source_api=ContentItem.SourceAPI.TMDB,
+            external_id="other-movie",
+            content_type=ContentItem.ContentType.MOVIE,
+        )
+        self.client.force_authenticate(self.user)
+
+        response = self.client.patch(
+            reverse("profiles:me"),
+            {"banner_content_id": other_movie.id},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("banner_content_id", response.data["fields"])
+
+    def test_clearing_a_favorite_clears_its_banner_selection(self):
+        self.client.force_authenticate(self.user)
+        self.client.patch(
+            reverse("profiles:me"),
+            {
+                "banner_content_id": self.movie.id,
+                "banner_image_id": self.movie_gallery.id,
+            },
+            format="json",
+        )
+
+        clear_favorite = self.client.patch(
+            reverse(
+                "content:content-tracking-favorite",
+                kwargs={"content_id": self.movie.id},
+            ),
+            {"is_favorite": False},
+            format="json",
+        )
+
+        self.assertEqual(clear_favorite.status_code, 200)
+        self.user.public_profile.refresh_from_db()
+        self.assertIsNone(self.user.public_profile.banner_content_item_id)
+        self.assertIsNone(self.user.public_profile.banner_image_id)
+
+        overview = self.client.get(
+            reverse(
+                "profiles:overview",
+                kwargs={"username": self.user.username},
+            )
+        )
+        self.assertIsNone(overview.data["selected_banner"])
 
     def test_game_favorites_include_developer_attribution(self):
         game = ContentItem.objects.create(

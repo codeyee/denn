@@ -39,6 +39,8 @@ export function useUpdatePublicProfileMutation() {
                 ...current.profile,
                 bio: data.bio,
                 avatar_url: data.avatar_url,
+                banner_content_id: data.banner_content_id,
+                banner_image_id: data.banner_image_id,
               },
             }
           : current,
@@ -66,7 +68,20 @@ export function useUpdatePublicProfileMutation() {
     onSuccess: (profile, { username }) => {
       queryClient.setQueryData<PublicProfileOverview>(
         queryKeys.profiles.overview(username),
-        (current) => current ? { ...current, profile } : current,
+        (current) => current
+          ? {
+              ...current,
+              profile,
+              selected_banner:
+                profile.banner_content_id === null
+                  ? null
+                  : current.banner_options.find(
+                      (option) =>
+                        option.content_id === profile.banner_content_id &&
+                        option.image_id === profile.banner_image_id,
+                    ) ?? null,
+            }
+          : current,
       );
       const user = useAuthStore.getState().user;
       if (user) {

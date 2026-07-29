@@ -5,6 +5,7 @@ import {
   type Content,
   type LocalContentSummary,
   type ProfileBannerMedia,
+  type ProfileBannerOption,
   type PublicListSummary,
   type PublicProfileOverview,
 } from "@/lib/types";
@@ -129,7 +130,10 @@ export function pickRandomFavoriteBanner(
   overview: PublicProfileOverview,
   random: () => number = Math.random,
 ): ProfileBannerMedia | undefined {
-  const favoriteMedia = Object.values(overview.favorites)
+  const selectedBanner = getSelectedBannerMedia(overview);
+  if (selectedBanner) return selectedBanner;
+
+  const favoriteMedia: ProfileBannerMedia[] = Object.values(overview.favorites)
     .flatMap((items) => items ?? [])
     .flatMap(({ content }) => {
       const imageUrl = content.backdrop || content.poster;
@@ -162,6 +166,36 @@ export function pickRandomFavoriteBanner(
     candidates.length - 1,
   );
   return candidates[index];
+}
+
+export function getSelectedBannerMedia(
+  overview: PublicProfileOverview,
+): ProfileBannerMedia | undefined {
+  if (!overview.profile) return undefined;
+  const { banner_content_id: contentId, banner_image_id: imageId } =
+    overview.profile;
+  if (contentId === null) return undefined;
+
+  if (
+    overview.selected_banner?.content_id === contentId &&
+    overview.selected_banner.image_id === imageId
+  ) {
+    return overview.selected_banner;
+  }
+
+  return overview.banner_options.find(
+    (option: ProfileBannerOption) =>
+      option.content_id === contentId && option.image_id === imageId,
+  );
+}
+
+export function isFavoriteBannerMedia(
+  media: ProfileBannerMedia,
+  overview: PublicProfileOverview,
+): boolean {
+  return Object.values(overview.favorites)
+    .flatMap((items) => items ?? [])
+    .some(({ content }) => content.id === media.content_id);
 }
 
 export function formatJoinedAt(value: string) {

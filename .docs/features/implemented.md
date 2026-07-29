@@ -24,7 +24,8 @@ considered part of the project baseline.
 - Stable public identity at `/user/<username>` with editable bio/avatar,
   joined date, counters, score-sorted combined favorites with
   multi-select media filters, recent completions and reviews, author
-  attribution, panoramic favorite artwork, public-list modules, and an
+  attribution, panoramic favorite artwork, owner-selected favorite banner
+  artwork with gallery/poster alternatives, public-list modules, and an
   owner-only edit modal that reflects saved changes immediately.
 - Private account preferences and session actions at `/settings`;
   `/profile` is intentionally absent.
