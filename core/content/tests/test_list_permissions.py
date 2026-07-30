@@ -4,7 +4,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from content.models import ContentItem, ListInvitation, ListItem, ListMembership, UserList
+from content.models import ContentItem, ListInvitation, ListMembership, UserList
 
 
 class ListMembershipModelTests(APITestCase):

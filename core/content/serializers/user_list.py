@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from content.models import ListMembership, UserList
+from content.models import UserList
 from .user import UserSerializer, MemberSerializer
 from content.services.list_policy import ALL_MEMBER_ROLES, effective_memberships
 
