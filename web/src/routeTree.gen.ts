@@ -19,10 +19,12 @@ import { Route as ContactRouteImport } from './routes/contact'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ContentIndexRouteImport } from './routes/content/index'
+import { Route as BrowseIndexRouteImport } from './routes/browse/index'
 import { Route as UserUsernameRouteImport } from './routes/user/$username'
 import { Route as ListsIdRouteImport } from './routes/lists/$id'
 import { Route as ContentIdRouteImport } from './routes/content/$id'
 import { Route as CollectionsKeyRouteImport } from './routes/collections/$key'
+import { Route as BrowseTypeRouteImport } from './routes/browse/$type'
 import { Route as ApiVersionRouteImport } from './routes/api/version'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as ApiCardsRouteImport } from './routes/api/cards'
@@ -86,6 +88,11 @@ const ContentIndexRoute = ContentIndexRouteImport.update({
   path: '/content/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BrowseIndexRoute = BrowseIndexRouteImport.update({
+  id: '/browse/',
+  path: '/browse/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const UserUsernameRoute = UserUsernameRouteImport.update({
   id: '/user/$username',
   path: '/user/$username',
@@ -104,6 +111,11 @@ const ContentIdRoute = ContentIdRouteImport.update({
 const CollectionsKeyRoute = CollectionsKeyRouteImport.update({
   id: '/collections/$key',
   path: '/collections/$key',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BrowseTypeRoute = BrowseTypeRouteImport.update({
+  id: '/browse/$type',
+  path: '/browse/$type',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiVersionRoute = ApiVersionRouteImport.update({
@@ -180,10 +192,12 @@ export interface FileRoutesByFullPath {
   '/api/cards': typeof ApiCardsRoute
   '/api/health': typeof ApiHealthRoute
   '/api/version': typeof ApiVersionRoute
+  '/browse/$type': typeof BrowseTypeRoute
   '/collections/$key': typeof CollectionsKeyRoute
   '/content/$id': typeof ContentIdRoute
   '/lists/$id': typeof ListsIdRoute
   '/user/$username': typeof UserUsernameRoute
+  '/browse/': typeof BrowseIndexRoute
   '/content/': typeof ContentIndexRoute
   '/api/auth/csrf': typeof ApiAuthCsrfRoute
   '/api/auth/login': typeof ApiAuthLoginRoute
@@ -208,10 +222,12 @@ export interface FileRoutesByTo {
   '/api/cards': typeof ApiCardsRoute
   '/api/health': typeof ApiHealthRoute
   '/api/version': typeof ApiVersionRoute
+  '/browse/$type': typeof BrowseTypeRoute
   '/collections/$key': typeof CollectionsKeyRoute
   '/content/$id': typeof ContentIdRoute
   '/lists/$id': typeof ListsIdRoute
   '/user/$username': typeof UserUsernameRoute
+  '/browse': typeof BrowseIndexRoute
   '/content': typeof ContentIndexRoute
   '/api/auth/csrf': typeof ApiAuthCsrfRoute
   '/api/auth/login': typeof ApiAuthLoginRoute
@@ -237,10 +253,12 @@ export interface FileRoutesById {
   '/api/cards': typeof ApiCardsRoute
   '/api/health': typeof ApiHealthRoute
   '/api/version': typeof ApiVersionRoute
+  '/browse/$type': typeof BrowseTypeRoute
   '/collections/$key': typeof CollectionsKeyRoute
   '/content/$id': typeof ContentIdRoute
   '/lists/$id': typeof ListsIdRoute
   '/user/$username': typeof UserUsernameRoute
+  '/browse/': typeof BrowseIndexRoute
   '/content/': typeof ContentIndexRoute
   '/api/auth/csrf': typeof ApiAuthCsrfRoute
   '/api/auth/login': typeof ApiAuthLoginRoute
@@ -267,10 +285,12 @@ export interface FileRouteTypes {
     | '/api/cards'
     | '/api/health'
     | '/api/version'
+    | '/browse/$type'
     | '/collections/$key'
     | '/content/$id'
     | '/lists/$id'
     | '/user/$username'
+    | '/browse/'
     | '/content/'
     | '/api/auth/csrf'
     | '/api/auth/login'
@@ -295,10 +315,12 @@ export interface FileRouteTypes {
     | '/api/cards'
     | '/api/health'
     | '/api/version'
+    | '/browse/$type'
     | '/collections/$key'
     | '/content/$id'
     | '/lists/$id'
     | '/user/$username'
+    | '/browse'
     | '/content'
     | '/api/auth/csrf'
     | '/api/auth/login'
@@ -323,10 +345,12 @@ export interface FileRouteTypes {
     | '/api/cards'
     | '/api/health'
     | '/api/version'
+    | '/browse/$type'
     | '/collections/$key'
     | '/content/$id'
     | '/lists/$id'
     | '/user/$username'
+    | '/browse/'
     | '/content/'
     | '/api/auth/csrf'
     | '/api/auth/login'
@@ -352,10 +376,12 @@ export interface RootRouteChildren {
   ApiCardsRoute: typeof ApiCardsRoute
   ApiHealthRoute: typeof ApiHealthRoute
   ApiVersionRoute: typeof ApiVersionRoute
+  BrowseTypeRoute: typeof BrowseTypeRoute
   CollectionsKeyRoute: typeof CollectionsKeyRoute
   ContentIdRoute: typeof ContentIdRoute
   ListsIdRoute: typeof ListsIdRoute
   UserUsernameRoute: typeof UserUsernameRoute
+  BrowseIndexRoute: typeof BrowseIndexRoute
   ContentIndexRoute: typeof ContentIndexRoute
   ApiAuthCsrfRoute: typeof ApiAuthCsrfRoute
   ApiAuthLoginRoute: typeof ApiAuthLoginRoute
@@ -440,6 +466,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ContentIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/browse/': {
+      id: '/browse/'
+      path: '/browse'
+      fullPath: '/browse/'
+      preLoaderRoute: typeof BrowseIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/user/$username': {
       id: '/user/$username'
       path: '/user/$username'
@@ -466,6 +499,13 @@ declare module '@tanstack/react-router' {
       path: '/collections/$key'
       fullPath: '/collections/$key'
       preLoaderRoute: typeof CollectionsKeyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/browse/$type': {
+      id: '/browse/$type'
+      path: '/browse/$type'
+      fullPath: '/browse/$type'
+      preLoaderRoute: typeof BrowseTypeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/version': {
@@ -568,10 +608,12 @@ const rootRouteChildren: RootRouteChildren = {
   ApiCardsRoute: ApiCardsRoute,
   ApiHealthRoute: ApiHealthRoute,
   ApiVersionRoute: ApiVersionRoute,
+  BrowseTypeRoute: BrowseTypeRoute,
   CollectionsKeyRoute: CollectionsKeyRoute,
   ContentIdRoute: ContentIdRoute,
   ListsIdRoute: ListsIdRoute,
   UserUsernameRoute: UserUsernameRoute,
+  BrowseIndexRoute: BrowseIndexRoute,
   ContentIndexRoute: ContentIndexRoute,
   ApiAuthCsrfRoute: ApiAuthCsrfRoute,
   ApiAuthLoginRoute: ApiAuthLoginRoute,

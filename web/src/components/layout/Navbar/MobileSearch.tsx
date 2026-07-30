@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { useLocation, useNavigate } from "@tanstack/react-router";
 import { Search, X } from "lucide-react";
 
 import { Button } from "@/components/common/ui/Button";
+import { SearchInput } from "@/components/common/ui/SearchInput";
 
 interface MobileSearchProps {
   value: string;
@@ -11,12 +12,19 @@ interface MobileSearchProps {
 
 export function MobileSearch({ value, onChange }: MobileSearchProps) {
   const navigate = useNavigate();
+  const pathname = useLocation({ select: (location) => location.pathname });
   const inputRef = useRef<HTMLInputElement>(null);
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
     if (isOpen) requestAnimationFrame(() => inputRef.current?.focus());
   }, [isOpen]);
+
+  useEffect(() => {
+    if (pathname === "/search") {
+      setIsOpen(false);
+    }
+  }, [pathname]);
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -50,21 +58,16 @@ export function MobileSearch({ value, onChange }: MobileSearchProps) {
           onSubmit={submit}
           className="absolute inset-x-4 top-full mt-1 flex items-center gap-2 rounded-xl bg-neutral-950 p-2 shadow-lg lg:hidden"
         >
-          <label htmlFor="mobile-navbar-search-input" className="sr-only">
-            Search movies, TV shows, games, albums, and books
-          </label>
-          <Search
-            aria-hidden="true"
-            className="ml-2 size-5 shrink-0 text-gray-300"
-          />
-          <input
+          <SearchInput
             id="mobile-navbar-search-input"
-            ref={inputRef}
-            type="search"
+            inputRef={inputRef}
             value={value}
-            onChange={(event) => onChange(event.target.value)}
+            onChange={onChange}
+            onClear={() => onChange("")}
+            label="Search movies, TV shows, games, albums, and books"
             placeholder="Search Denn"
-            className="min-h-11 min-w-0 flex-1 bg-transparent px-2 text-white placeholder:text-gray-300 focus:outline-none"
+            containerClassName="min-w-0 flex-1"
+            inputClassName="rounded-md border-white/20 bg-transparent py-2 pl-11 placeholder:text-white/55"
           />
           <Button type="submit" size="sm">
             Search

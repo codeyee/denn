@@ -61,3 +61,18 @@ func (c *Client) GetPopularMovies(ctx context.Context, page int) (*clients.Respo
 		"page": strconv.Itoa(page),
 	})
 }
+
+func (c *Client) GetRecentMovies(ctx context.Context, page int, until string) (*clients.Response, error) {
+	params := url.Values{
+		"page":                     {strconv.Itoa(page)},
+		"sort_by":                  {"primary_release_date.desc"},
+		"primary_release_date.lte": {until},
+		"include_adult":            {"false"},
+		"include_video":            {"false"},
+	}
+
+	return c.CachedGet(ctx, "discover/movie", "recent_movies", params, map[string]string{
+		"page":  strconv.Itoa(page),
+		"until": until,
+	})
+}

@@ -208,6 +208,72 @@ const adultSearch = {
     error: null,
   },
 };
+
+const browseFamilies = {
+  movies: Array.from({ length: 25 }, (_, index) => ({
+    ...movie,
+    id: String(101 + index),
+    title: index === 0 ? movie.title : `Browse Movie ${index + 1}`,
+    original_title: index === 0 ? movie.original_title : `Browse Movie ${index + 1}`,
+  })),
+  "tv-shows": [
+    {
+      ...movie,
+      id: "201",
+      type: "tv_show",
+      title: "Phase Zero TV Show",
+      original_title: "Phase Zero TV Show",
+    },
+  ],
+  games: [
+    {
+      ...movie,
+      id: "301",
+      type: "game",
+      title: "Phase Zero Game",
+      original_title: "Phase Zero Game",
+    },
+  ],
+  albums: [
+    {
+      ...movie,
+      id: "401",
+      type: "album",
+      title: "Phase Zero Album",
+      original_title: "Phase Zero Album",
+    },
+  ],
+  books: [book],
+};
+
+function browseResponse(url) {
+  const type = url.searchParams.get("type") ?? "movies";
+  const page = Math.min(
+    100,
+    Math.max(1, Number(url.searchParams.get("page") ?? 1)),
+  );
+  const query = url.searchParams.get("q")?.trim().toLowerCase() ?? "";
+  const source = browseFamilies[type] ?? [];
+  const filtered = query
+    ? source.filter((item) => item.title.toLowerCase().includes(query))
+    : source;
+  const pageSize = 24;
+  const totalPages = Math.ceil(filtered.length / pageSize);
+  const results = filtered.slice((page - 1) * pageSize, page * pageSize);
+  return {
+    type,
+    mode: query ? "search" : url.searchParams.get("sort") === "recent" ? "recent" : "popular",
+    status: results.length > 0 ? "complete" : "empty",
+    results,
+    metadata: {
+      page,
+      total_results: filtered.length,
+      total_pages: totalPages,
+    },
+    error: null,
+  };
+}
+
 const pagination = {
   count: 0,
   page_size: 20,
@@ -930,6 +996,13 @@ const proxy = createServer((request, response) => {
       ...headers,
       "X-Cache": "BYPASS",
       "X-Content-Policy": allowAdult ? "adult-include" : "adult-exclude",
+    });
+  }
+  if (url.pathname === "/v1/proxy/browse") {
+    return json(response, 200, browseResponse(url), {
+      ...headers,
+      "X-Cache": "MISS",
+      "X-Content-Policy": "adult-exclude",
     });
   }
   return json(response, 404, { error: "fixture route not found" }, headers);

@@ -10,6 +10,8 @@ import { buildCatalogVisitorHeaders } from "@/server/catalog-visitor";
 import { buildProxyHeaders, getLogicalRequestId } from "@/server/proxy";
 import {
   type ContentItem,
+  type BrowseResponse,
+  type BrowseType,
   type HomepageResponse,
   type ListStatsResponse,
   type MultiSearchResponse,
@@ -110,6 +112,33 @@ export const prefetchSearchQuery = createIsomorphicFn()
           requestId,
           allowAdult,
         ),
+    });
+  })
+  .client(async () => undefined);
+
+export const prefetchBrowseQuery = createIsomorphicFn()
+  .server(async (
+    qc: QueryClient,
+    type: BrowseType,
+    page: number,
+    sort: "popular" | "recent",
+    query: string,
+    country: string | null,
+  ) => {
+    const requestId = getLogicalRequestId();
+    await qc.prefetchQuery({
+      queryKey: queryKeys.browse.byParams({
+        type,
+        page,
+        sort,
+        query: query || undefined,
+        country,
+      }),
+      queryFn: () =>
+        fetchServerBrowse(type, page, sort, query, country, requestId).catch(
+          () => degradedBrowseResponse(type, page, sort, query),
+        ),
+      staleTime: 30_000,
     });
   })
   .client(async () => undefined);
@@ -432,6 +461,51 @@ async function fetchServerSearch(
     },
   );
   return resolveCatalogContentIds(response, country, requestId);
+}
+
+async function fetchServerBrowse(
+  type: BrowseType,
+  page: number,
+  sort: "popular" | "recent",
+  query: string,
+  country: string | null,
+  requestId: string,
+) {
+  const params = new URLSearchParams({
+    type: type === "music" ? "albums" : type,
+    page: String(page),
+    sort,
+  });
+  if (query) params.set("q", query);
+
+  const response = await fetchJson<BrowseResponse>(
+    `${getProxyApiUrl()}/browse?${params.toString()}`,
+    {
+      headers: buildProxyHeaders(country, { requestId }),
+    },
+    {
+      requestId,
+      targetService: "proxy",
+      route: "/v1/proxy/browse",
+    },
+  );
+  return resolveCatalogContentIds(response, country, requestId);
+}
+
+function degradedBrowseResponse(
+  type: BrowseType,
+  page: number,
+  sort: "popular" | "recent",
+  query: string,
+): BrowseResponse {
+  return {
+    type: type === "music" ? "albums" : type,
+    mode: query ? "search" : sort,
+    status: "degraded",
+    results: [],
+    metadata: { page, total_pages: 0, total_results: 0 },
+    error: "BROWSE_UNAVAILABLE",
+  };
 }
 
 async function fetchServerUserLists(

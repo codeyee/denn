@@ -18,6 +18,8 @@ var cacheConfig = clients.CacheConfig{
 		"watch_providers_season": "tmdb:wp:season:{id}:{season}",
 		"popular_movies":         "tmdb:popular:movies:{page}",
 		"popular_tv":             "tmdb:popular:tv:{page}",
+		"recent_movies":          "tmdb:recent:movies:{page}:{until}",
+		"recent_tv":              "tmdb:recent:tv:{page}:{until}",
 	},
 
 	TTLs: map[string]time.Duration{
@@ -28,6 +30,8 @@ var cacheConfig = clients.CacheConfig{
 		"watch_providers_season": cachettl.MediaTTL,
 		"popular_movies":         cachettl.CatalogueTTL,
 		"popular_tv":             cachettl.CatalogueTTL,
+		"recent_movies":          cachettl.CatalogueTTL,
+		"recent_tv":              cachettl.CatalogueTTL,
 	},
 }
 

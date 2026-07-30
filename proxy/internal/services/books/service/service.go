@@ -11,8 +11,8 @@ import (
 	"github.com/codeyee/denn-proxy/internal/models"
 	olclient "github.com/codeyee/denn-proxy/internal/providers/openlibrary"
 	"github.com/codeyee/denn-proxy/internal/services/books"
-	servicecommon "github.com/codeyee/denn-proxy/internal/services/common"
 	"github.com/codeyee/denn-proxy/internal/services/books/mapper"
+	servicecommon "github.com/codeyee/denn-proxy/internal/services/common"
 )
 
 type SearchResult struct {
@@ -168,4 +168,24 @@ func (s *Service) GetTrendingBooks(ctx context.Context, page, limit int) (Search
 		TotalResults: total,
 		Results:      items,
 	}, nil
+}
+
+func (s *Service) GetRecentBooks(ctx context.Context, page, limit int) (SearchResult, error) {
+	data, err := unmarshalResponse[books.OlSearchResponse](s.client.GetRecentBooks(ctx, page, limit))
+	if err != nil {
+		return SearchResult{}, fmt.Errorf("get recent books: %w", err)
+	}
+
+	items := make([]models.SearchItem, 0, len(data.Docs))
+	for _, doc := range data.Docs {
+		items = append(items, mapper.MapSearchItem(doc))
+	}
+	items = servicecommon.FilterEligibleSearchItems(items, time.Now())
+
+	totalPages := 0
+	if data.NumFound > 0 && limit > 0 {
+		totalPages = (data.NumFound + limit - 1) / limit
+	}
+
+	return SearchResult{Page: page, TotalPages: totalPages, TotalResults: data.NumFound, Results: items}, nil
 }

@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 
 interface SectionTitleProps {
@@ -6,6 +7,7 @@ interface SectionTitleProps {
   id?: string;
   level?: 2 | 3;
   className?: string;
+  action?: ReactNode;
 }
 
 export function SectionTitle({
@@ -14,13 +16,13 @@ export function SectionTitle({
   id,
   level = 2,
   className = "",
+  action,
 }: SectionTitleProps) {
   const Heading = level === 3 ? "h3" : "h2";
-
-  return (
+  const heading = (
     <Heading
       id={id}
-      className={`flex items-center gap-3 text-wrap-balance text-2xl font-bold text-white md:text-3xl ${className}`}
+      className={`flex min-w-0 items-center gap-3 text-wrap-balance text-2xl font-bold text-white md:text-3xl ${className}`}
     >
       {Icon ? (
         <Icon
@@ -30,5 +32,14 @@ export function SectionTitle({
       ) : null}
       <span>{title}</span>
     </Heading>
+  );
+
+  if (!action) return heading;
+
+  return (
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-2 sm:gap-x-4">
+      {heading}
+      {action}
+    </div>
   );
 }

@@ -8,7 +8,7 @@ import {
   normalizeRequestId,
 } from "@/server/proxy";
 import { resolveCatalogContentIds } from "@/server/catalog";
-import type { HomepageResponse, MultiSearchResponse } from "@/lib/types";
+import type { BrowseResponse, HomepageResponse, MultiSearchResponse } from "@/lib/types";
 
 function jsonResponse(data: unknown, status: number, headers: HeadersInit = {}) {
   return new Response(JSON.stringify(data), {
@@ -60,7 +60,11 @@ function normalizeCacheStatus(value: string | null): string | null {
 }
 
 export function isCatalogDiscoveryPath(path: string) {
-  return path === "homepage" || path === "search";
+  return path === "homepage" || path === "search" || isBrowsePath(path);
+}
+
+export function isBrowsePath(path: string) {
+  return path === "browse";
 }
 
 export const Route = createFileRoute("/api/proxy/$")({
@@ -92,7 +96,8 @@ export const Route = createFileRoute("/api/proxy/$")({
           const response = await fetch(url, { headers });
           const proxyData = (await response.json()) as
             | HomepageResponse
-            | MultiSearchResponse;
+            | MultiSearchResponse
+            | BrowseResponse;
           const durationMs =
             Math.round((performance.now() - started) * 100) / 100;
           const cacheStatus = normalizeCacheStatus(

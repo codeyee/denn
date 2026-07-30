@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/codeyee/denn-proxy/internal/clients"
 	servicecommon "github.com/codeyee/denn-proxy/internal/services/common"
@@ -87,6 +88,18 @@ func (c *Client) GetPopularGames(ctx context.Context, limit, offset int) (*clien
 	return c.CachedPost(ctx, "games", "api_igdb_popular", body, nil, map[string]string{
 		"limit":     strconv.Itoa(limit),
 		"offset":    strconv.Itoa(offset),
+		"body_hash": hashBody(body),
+	})
+}
+
+func (c *Client) GetRecentGames(ctx context.Context, limit, offset int, until time.Time) (*clients.Response, error) {
+	body := fmt.Sprintf("fields %s; where game_type = (%s) & first_release_date != null & first_release_date <= %d; sort first_release_date desc; limit %d; offset %d;",
+		defaultFields, includedGameTypes, until.UTC().Unix(), limit, offset)
+
+	return c.CachedPost(ctx, "games", "api_igdb_recent", body, nil, map[string]string{
+		"limit":     strconv.Itoa(limit),
+		"offset":    strconv.Itoa(offset),
+		"until":     strconv.FormatInt(until.UTC().Unix(), 10),
 		"body_hash": hashBody(body),
 	})
 }

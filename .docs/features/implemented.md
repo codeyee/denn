@@ -12,6 +12,9 @@ considered part of the project baseline.
 - Public homepage and multi-source discovery across movies, TV shows,
   games, albums, and books; authentication adds personal lists.
 - Public search with typed result transformation per media family.
+- Public Browse hub and family routes for movies, TV shows, games, music, and
+  books, with popular/recent modes, family search, normalized URL state,
+  canonical metadata, safe eligibility, degraded states, and id-first cards.
 - Public content detail pages routed by internal Denn content id, with
   aggregate rating data but no anonymous personal state.
 - Shared responsive login and registration shell using Denn's
@@ -99,6 +102,9 @@ considered part of the project baseline.
 - Homepage and search aggregate caches with country/query/policy-scoped
   keys, stale-while-revalidate, single-flight homepage misses, bounded
   provider retries, and circuit breakers.
+- Browse aggregate cache keys include family, mode, query hash, page, country,
+  and policy version; fresh/stale reads and single-flight prevent duplicate
+  provider work.
 - General-discovery release eligibility with a 24-hour grace window and
   TMDB adult exclusion before aggregate cache writes.
 - Safe-by-default adult-content preference: automatic discovery remains

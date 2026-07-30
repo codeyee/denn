@@ -7,6 +7,7 @@ interface CarouselProps {
   children: React.ReactNode;
   title?: string;
   titleIcon?: LucideIcon;
+  titleAction?: React.ReactNode;
   className?: string;
   itemsPerView?: number;
   gap?: number;
@@ -18,6 +19,7 @@ export function Carousel({
   children,
   title,
   titleIcon,
+  titleAction,
   className = "",
   itemsPerView,
   gap = 16,
@@ -51,6 +53,7 @@ export function Carousel({
           id={titleId}
           icon={titleIcon}
           title={title}
+          action={titleAction}
         />
       )}
 

@@ -175,13 +175,17 @@ por un hub dedicado.
 
 ### Lote 13B
 - [x] Search sin login funciona.
-- [ ] Browse por tipo funciona.
+- [x] Browse por tipo funciona para películas, series, juegos, música y
+  libros con popular/recent, búsqueda por familia, estados degradados e ids
+  internos estables.
 - [x] Content page pública funciona.
 - [ ] Gallery lightbox funciona sin romper layout móvil.
 
 ### Lote 13C
 - [ ] Sitemap publicado.
 - [x] Metadata/canonical básica de rutas públicas.
+- [x] Browse público SSR con canonical por familia, `noindex,follow` para
+  búsqueda interna y navegación desde Home/Navbar/Footer.
 - [x] Baseline local de Home/Search/Detail anónimos registrado.
 - [ ] Cache/tráfico anónimo real rebaselined después del deploy.
 
@@ -206,7 +210,8 @@ por un hub dedicado.
 - Existe catálogo público usable sin login.
 - Las fichas públicas muestran agregados y listas públicas.
 - Search público devuelve solo obras.
-- Browse por tipo existe y es navegable.
+- Browse por tipo existe y es navegable. Temporadas quedan explícitamente como
+  follow-up: no forman parte del criterio de cierre de Issue #62.
 - El contenido público es indexable y compartible.
 - Las galerías se pueden inspeccionar sin abandonar la ficha.
 

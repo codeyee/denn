@@ -23,6 +23,7 @@ interface Summary {
 const flows = {
   login: { path: "/login", authenticated: false },
   publicHome: { path: "/", authenticated: false },
+  publicBrowse: { path: "/browse/movies", authenticated: false },
   publicSearch: { path: "/search?q=phase", authenticated: false },
   publicDetail: { path: "/content/1", authenticated: false },
   publicProfile: { path: "/user/phase0-fixture", authenticated: false },
@@ -158,7 +159,7 @@ test("records a repeatable cold/warm production-build baseline", async ({
     const warm: Sample[] = [];
 
     for (let iteration = 0; iteration < 5; iteration += 1) {
-      if (flow === "home" || flow === "publicHome") {
+      if (flow === "home" || flow === "publicHome" || flow === "publicBrowse") {
         await request.post(`${fixtureUrl}/__fixture__/scenario`, {
           data: { cacheStatus: "MISS" },
         });
@@ -206,4 +207,8 @@ test("records a repeatable cold/warm production-build baseline", async ({
   expect(baseline.publicHome.warm.p75.lcp).toBeLessThan(2_500);
   expect(baseline.publicHome.cold.p75.cls).toBeLessThan(0.1);
   expect(baseline.publicHome.warm.p75.cls).toBeLessThan(0.1);
+  expect(baseline.publicBrowse.cold.p75.lcp).toBeLessThan(2_500);
+  expect(baseline.publicBrowse.warm.p75.lcp).toBeLessThan(2_500);
+  expect(baseline.publicBrowse.cold.p75.cls).toBeLessThan(0.1);
+  expect(baseline.publicBrowse.warm.p75.cls).toBeLessThan(0.1);
 });

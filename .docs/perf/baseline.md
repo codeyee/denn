@@ -412,6 +412,40 @@ that the real OpenLibrary-shaped category renders when results exist.
 The live observation is operational evidence, not combined with the
 fixture percentiles above.
 
+## Browse Flow Baseline (Issue #62)
+
+The implemented public path is `Home -> Browse family -> Detail`:
+
+1. SSR/browser navigation issues one aggregate `GET /v1/proxy/browse` through
+   the web BFF for the selected family, mode, page, and optional family query.
+2. The web server performs one bulk `POST /api/content/resolve-ids/` to Core;
+   there are zero Core or Proxy calls per card.
+3. Cards navigate with the resolved internal id to `/content/<id>`; hover and
+   focus only prefetch the detail `GET`.
+
+Captured 2026-07-29 against the deterministic Nitro production bundle,
+anonymous fixture services, five fresh browser contexts per flow, and a
+same-context warm reload. The benchmark command was `make
+e2e-web-performance`; raw vitals are in `web/test-results/phase0-baseline.json`.
+The Browse smoke suite separately verifies `X-Cache`, request ids, the
+`requested_count`/`resolved_count`/`unresolved_count` log contract, and zero
+per-card resolution writes.
+
+| Flow | State | Proxy calls | Core resolution | Per-card calls | TTFB p50/p75/p95 | LCP p50/p75/p95 | INP p50/p75/p95 | CLS p50/p75/p95 |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| Home | cold | 1 aggregate | 1 bulk | 0 | 14.9 / 15.0 / 16.9 ms | 44 / 44 / 48 ms | 0 / 0 / 0 ms | 0 / 0 / 0 |
+| Home | warm | 1 cached aggregate | 1 bulk | 0 | 20.3 / 22.6 / 30.7 ms | 60 / 64 / 76 ms | 0 / 0 / 0 ms | 0 / 0 / 0 |
+| Browse movies | cold miss | 1 aggregate | 1 bulk | 0 | 29.4 / 40.4 / 44.0 ms | 64 / 72 / 80 ms | 0 / 0 / 0 ms | 0 / 0 / 0 |
+| Browse movies | warm hit | 1 cached aggregate | 1 bulk | 0 | 42.0 / 42.6 / 52.0 ms | 80 / 92 / 92 ms | 0 / 0 / 0 ms | 0 / 0 / 0 |
+| Detail | cold | 0 Browse + 1 detail | 0 bulk + detail read | 0 | 8.9 / 10.0 / 17.9 ms | 36 / 40 / 44 ms | 0 / 0 / 0 ms | 0 / 0 / 0 |
+| Detail | warm | 0 Browse + 1 detail | 0 bulk + detail read | 0 | 18.7 / 18.8 / 18.9 ms | 72 / 72 / 72 ms | 0 / 0 / 0 ms | 0 / 0 / 0 |
+
+The browser vitals are a local engineering floor, not a provider or
+production latency claim. `make e2e-web` additionally covers all five
+families, desktop/mobile layouts, search, pagination, canonicalization,
+keyboard navigation, reduced motion, id-first detail navigation, and the
+absence of browser-visible `PROXY_API_KEY`, Core URLs, or resolution POSTs.
+
 ## Backend Telemetry Contract
 
 With `PERF_LOGGING_ENABLED=true`, every critical `core` request emits:

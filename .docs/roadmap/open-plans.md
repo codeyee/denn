@@ -141,7 +141,7 @@ Implemented foundation:
 
 Still open in Sprint 13:
 
-- browse routes and taxonomy per media family;
+- seasons taxonomy/browse follow-up with a non-N+1 source strategy;
 - sanitized public reviews, distribution aggregates, and public lists
   containing an item;
 - sitemap, richer dynamic SEO, deployed anonymous-traffic rebaseline,
@@ -171,9 +171,8 @@ Product work to land:
 
 - Finish Lists 2.0 roles, owner membership, per-member state,
   permissions, invitations, and Add-to-List semantics.
-- Finish public browse/taxonomy, public content aggregates, gallery,
-  sitemap, metadata, cache, and traffic hardening from Public Catalog
-  1.0.
+- Finish public content aggregates, gallery, sitemap, metadata, cache, and
+  traffic hardening from Public Catalog 1.0; Browse MVP is implemented.
 - Add leaderboard surfaces in the existing rollout order.
 - Keep follow relationships, feed, import/export, and richer stats as
   post-MVP product work.

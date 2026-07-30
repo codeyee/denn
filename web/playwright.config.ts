@@ -55,12 +55,12 @@ export default defineConfig({
   projects: [
     {
       name: "smoke-desktop",
-      testMatch: /(smoke|public-catalog)\.spec\.ts/,
+      testMatch: /(smoke|public-catalog|browse)\.spec\.ts/,
       use: { ...devices["Desktop Chrome"] },
     },
     {
       name: "smoke-mobile",
-      testMatch: /(smoke|public-catalog)\.spec\.ts/,
+      testMatch: /(smoke|public-catalog|browse)\.spec\.ts/,
       use: { ...devices["Pixel 7"] },
     },
     {

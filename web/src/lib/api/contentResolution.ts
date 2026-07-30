@@ -4,12 +4,15 @@ import {
 } from "@/lib/utils/contentTypeUtils";
 import {
   ContentType,
+  type BrowseResponse,
   type HomepageResponse,
   type MultiSearchResponse,
   type SearchItem,
 } from "@/lib/types";
 
 type ResolvableContent = SearchItem;
+
+export type CatalogResponse = HomepageResponse | MultiSearchResponse | BrowseResponse;
 
 export interface ResolvedContentIdentity {
   id: number;
@@ -19,7 +22,7 @@ export interface ResolvedContentIdentity {
 }
 
 export function collectContentIdentities(
-  response: HomepageResponse | MultiSearchResponse,
+  response: CatalogResponse,
 ) {
   return collectItems(response)
     .map((item) => ({
@@ -41,7 +44,7 @@ export function collectContentIdentities(
 }
 
 export function applyResolvedContentIds<
-  T extends HomepageResponse | MultiSearchResponse,
+  T extends CatalogResponse,
 >(
   response: T,
   resolved: ResolvedContentIdentity[],
@@ -66,9 +69,15 @@ export function applyResolvedContentIds<
 }
 
 function collectItems(
-  response: HomepageResponse | MultiSearchResponse,
+  response: CatalogResponse,
 ): ResolvableContent[] {
   const unique = new Map<string, ResolvableContent>();
+  if (isBrowseResponse(response)) {
+    for (const item of response.results) {
+      unique.set(identityKey(String(item.id), item.type), item);
+    }
+    return [...unique.values()];
+  }
   for (const category of Object.values(response)) {
     for (const item of category.results) {
       unique.set(identityKey(String(item.id), item.type), item);
@@ -77,10 +86,17 @@ function collectItems(
   return [...unique.values()];
 }
 
-function mapResponseItems<T extends HomepageResponse | MultiSearchResponse>(
+function mapResponseItems<T extends CatalogResponse>(
   response: T,
   mapItem: (item: ResolvableContent) => ResolvableContent,
 ): T {
+  if (isBrowseResponse(response)) {
+    return {
+      ...response,
+      results: response.results.map(mapItem),
+    } as T;
+  }
+
   return Object.fromEntries(
     Object.entries(response).map(([key, category]) => [
       key,
@@ -90,6 +106,10 @@ function mapResponseItems<T extends HomepageResponse | MultiSearchResponse>(
       },
     ]),
   ) as T;
+}
+
+export function isBrowseResponse(response: CatalogResponse): response is BrowseResponse {
+  return "type" in response && Array.isArray(response.results);
 }
 
 function identityKey(externalId: string, contentType: ContentType) {

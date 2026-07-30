@@ -14,6 +14,8 @@ export { useListItemsQuery } from "./useListItemsQuery";
 export { usePrefetchContentDetail } from "./usePrefetchContentDetail";
 export { useSuggestionsQuery } from "./useSuggestionsQuery";
 export { useMultiSearchQuery } from "./useMultiSearchQuery";
+export { useBrowseQuery } from "./useBrowseQuery";
+export { prefetchBrowseQuery } from "./server";
 export { useListStatsQuery } from "./useListStatsQuery";
 export { useFullListItemsQuery } from "./useFullListItemsQuery";
 export {

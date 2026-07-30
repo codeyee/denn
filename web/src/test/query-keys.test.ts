@@ -27,6 +27,27 @@ describe("queryKeys", () => {
     ]);
   });
 
+  it("separates browse family, mode, query, page, and country", () => {
+    expect(
+      queryKeys.browse.byParams({
+        type: "movies",
+        page: 2,
+        sort: "recent",
+        query: "dune",
+        country: "CO",
+      }),
+    ).toEqual([
+      "browse",
+      {
+        type: "movies",
+        page: 2,
+        sort: "recent",
+        query: "dune",
+        country: "CO",
+      },
+    ]);
+  });
+
   it("separates list page and full-list caches", () => {
     expect(queryKeys.listItems.page(7, { page: 1, pageSize: 20 })).toEqual([
       "list-items",

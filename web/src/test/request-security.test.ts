@@ -38,6 +38,8 @@ describe("BFF request security", () => {
   it("decorates only public discovery responses with stable ids", () => {
     expect(isCatalogDiscoveryPath("homepage")).toBe(true);
     expect(isCatalogDiscoveryPath("search")).toBe(true);
+    expect(isCatalogDiscoveryPath("browse")).toBe(true);
+    expect(isCatalogDiscoveryPath("browse/movies")).toBe(false);
     expect(isCatalogDiscoveryPath("movies/550")).toBe(false);
   });
 
