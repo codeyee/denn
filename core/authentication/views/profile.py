@@ -36,12 +36,19 @@ from content.models import (
     ContentItem,
     ContentItemAuthor,
     Image,
+    ListMembership,
     Rating,
     UserContentTracking,
     UserList,
 )
 from content.serializers import LocalContentSummarySerializer
 from content.services.tracking_service import lock_user
+from content.services.list_policy import (
+    ALL_MEMBER_ROLES,
+    accessible_lists_q,
+    effective_memberships,
+    effective_membership_count_filter,
+)
 from core.pagination import PublicProfilePagination
 from core.throttling import PublicProfileRateThrottle
 
@@ -104,7 +111,12 @@ class PublicProfileOverviewView(PublicProfileBaseView):
     def get_profile_user(self):
         public_list_count = (
             UserList.objects.filter(
-                Q(owner_id=OuterRef("pk")) | Q(members__id=OuterRef("pk")),
+                Q(owner_id=OuterRef("pk"))
+                | Q(
+                    list_type=UserList.ListType.SHARED,
+                    memberships__user_id=OuterRef("pk"),
+                    memberships__role__in=ALL_MEMBER_ROLES,
+                ),
                 visibility=UserList.Visibility.PUBLIC,
             ).exclude(list_type=UserList.ListType.DYNAMIC)
             .order_by()
@@ -217,11 +229,25 @@ class PublicProfileOverviewView(PublicProfileBaseView):
         list_rows = list(
             public_lists.select_related("owner")
             .prefetch_related(
-                Prefetch("members", queryset=User.objects.only("id", "username"))
+                Prefetch(
+                    "memberships",
+                    queryset=ListMembership.objects.select_related("user").only(
+                        "id",
+                        "user_list",
+                        "user",
+                        "role",
+                        "user__id",
+                        "user__username",
+                    ),
+                )
             )
             .annotate(
                 item_count_annotated=Count("items", distinct=True),
-                member_count_annotated=Count("members", distinct=True),
+                member_count_annotated=Count(
+                    "memberships",
+                    filter=effective_membership_count_filter(),
+                    distinct=True,
+                ),
             )
             .order_by("-updated_at", "-id")[:4]
         )
@@ -701,11 +727,25 @@ class PublicProfileListsView(PublicProfileBaseView):
             _public_lists_queryset(user)
             .select_related("owner")
             .prefetch_related(
-                Prefetch("members", queryset=User.objects.only("id", "username"))
+                Prefetch(
+                    "memberships",
+                    queryset=ListMembership.objects.select_related("user").only(
+                        "id",
+                        "user_list",
+                        "user",
+                        "role",
+                        "user__id",
+                        "user__username",
+                    ),
+                )
             )
             .annotate(
                 item_count_annotated=Count("items", distinct=True),
-                member_count_annotated=Count("members", distinct=True),
+                member_count_annotated=Count(
+                    "memberships",
+                    filter=effective_membership_count_filter(),
+                    distinct=True,
+                ),
             )
         )
         query = request.query_params.get("q", "").strip()
@@ -761,7 +801,7 @@ def _filter_content_queryset(queryset, request):
 def _public_lists_queryset(user):
     ids = (
         UserList.objects.filter(
-            Q(owner=user) | Q(members=user),
+            accessible_lists_q(user),
             visibility=UserList.Visibility.PUBLIC,
         ).exclude(list_type=UserList.ListType.DYNAMIC)
         .order_by()
@@ -808,13 +848,11 @@ def _serialize_rating(row, content_map, *, is_favorite):
 
 def _serialize_list(user_list, profile_user):
     collaborators = [
-        {"username": member.username}
-        for member in user_list.members.all()
-        if member.id != user_list.owner_id
+        {"username": membership.user.username}
+        for membership in effective_memberships(user_list)
+        if membership.user_id != user_list.owner_id
     ]
     member_count = user_list.member_count_annotated
-    if user_list.owner_id not in {member.id for member in user_list.members.all()}:
-        member_count += 1
     return {
         "id": user_list.id,
         "name": user_list.name,

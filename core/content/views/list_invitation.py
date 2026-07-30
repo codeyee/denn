@@ -2,7 +2,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from django.utils import timezone
+from django.db import transaction
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiExample, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 from content.models import ListInvitation, UserList
@@ -12,6 +12,8 @@ from content.serializers import (
     ListInvitationResponseSerializer
 )
 from rest_flex_fields.views import FlexFieldsMixin
+from content.services.list_policy import ListAction, ListActionPermission, can, is_collaborative
+from content.services.list_service import add_member
 
 @extend_schema_view(
     list=extend_schema(
@@ -93,6 +95,11 @@ class ListInvitationViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     permit_list_expands = ['inviter', 'invitee', 'user_list']
 
+    def get_permissions(self):
+        if self.action == 'create':
+            return [IsAuthenticated(), ListActionPermission(ListAction.INVITE)]
+        return [IsAuthenticated()]
+
     def get_queryset(self):
         user = self.request.user
         queryset = ListInvitation.objects.select_related(
@@ -142,13 +149,13 @@ class ListInvitationViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        if user_list.owner != request.user:
+        if not can(user_list, request.user, ListAction.INVITE):
             return Response(
                 {'detail': 'Only the list owner can send invitations.'},
                 status=status.HTTP_403_FORBIDDEN
             )
 
-        if user_list.list_type != UserList.ListType.SHARED:
+        if not is_collaborative(user_list):
             return Response(
                 {'detail': 'Only shared lists can have invitations.'},
                 status=status.HTTP_400_BAD_REQUEST
@@ -205,6 +212,7 @@ class ListInvitationViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
         ]
     )
     @action(detail=True, methods=['post'])
+    @transaction.atomic
     def respond(self, request, pk=None):
         invitation = self.get_object()
 
@@ -227,7 +235,11 @@ class ListInvitationViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
         list_name = invitation.user_list.name
 
         if action_type == 'accept':
-            invitation.user_list.members.add(invitation.invitee)
+            add_member(
+                invitation.user_list,
+                invitation.invitee,
+                invitation.role,
+            )
             invitation.delete()
 
             return Response(
@@ -249,7 +261,11 @@ class ListInvitationViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         invitation = self.get_object()
 
-        if invitation.inviter != request.user and invitation.user_list.owner != request.user:
+        if invitation.inviter != request.user and not can(
+            invitation.user_list,
+            request.user,
+            ListAction.INVITE,
+        ):
             return Response(
                 {'detail': 'Only the inviter or list owner can delete this invitation.'},
                 status=status.HTTP_403_FORBIDDEN

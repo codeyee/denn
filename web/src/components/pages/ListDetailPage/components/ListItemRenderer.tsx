@@ -9,7 +9,7 @@ import { RatingBadge } from "@/components/common/ui/RatingBadge";
 import { CONTENT_TYPE_ICONS } from "@/lib/icons/contentTypeIcons";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { formatSeasonTitle } from "@/lib/utils/titleUtils";
-import { getRatingBadgeData, isPersonalList } from "../utils";
+import { canEditListContent, getRatingBadgeData, isPersonalList } from "../utils";
 import { Film } from "lucide-react";
 import { buildContentUrlById } from "@/lib/utils/navigationUtils";
 import { useNavigate } from "@tanstack/react-router";
@@ -62,6 +62,7 @@ export function ListItemRenderer({
   const ratingData = getRatingBadgeData(item, list, currentUserId);
   const personal = isPersonalList(list);
   const systemManaged = list.list_type === ListType.DYNAMIC;
+  const canEditContent = canEditListContent(list, currentUserId);
 
   const handleViewContent = () => {
     void navigate({ to: buildContentUrlById(contentItem.id) });
@@ -206,7 +207,7 @@ export function ListItemRenderer({
                 >
                   <ExternalLink className="w-4 h-4" />
                 </Button>
-                {!personal ? (
+                {canEditContent && !personal ? (
                   <Button
                   size="sm"
                   onClick={() =>
@@ -248,7 +249,7 @@ export function ListItemRenderer({
                     <Star className="w-4 h-4" />
                   </Button>
                 ) : null}
-                {!systemManaged ? (
+                {canEditContent && !systemManaged ? (
                   <Button
                     size="sm"
                     onClick={() => onDelete(item.id)}

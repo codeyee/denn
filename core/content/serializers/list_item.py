@@ -2,7 +2,8 @@ from types import SimpleNamespace
 
 from django.db import transaction
 from rest_framework import serializers
-from content.models import ListItem, ContentItem, Rating
+from content.models import ContentItem, ListItem, ListMembership, Rating, UserList
+from content.services.list_policy import ALL_MEMBER_ROLES, effective_member_ids
 from content.services.tracking_service import ensure_tracking
 from .content_item import ContentItemSerializer
 from .user import UserSerializer
@@ -133,15 +134,25 @@ class ListItemSerializer(BaseFlexSerializer):
         Uses prefetch cache when available to avoid extra queries.
         """
         # Use prefetch cache if available
-        if hasattr(obj.user_list, '_prefetched_objects_cache') and \
-           'members' in obj.user_list._prefetched_objects_cache:
-            member_ids = [m.id for m in obj.user_list.members.all()]
+        memberships = getattr(obj.user_list, 'memberships_prefetched', None)
+        if memberships is not None:
+            if obj.user_list.list_type == UserList.ListType.SHARED:
+                member_ids = [
+                    membership.user_id
+                    for membership in memberships
+                    if membership.role in ALL_MEMBER_ROLES
+                ]
+            elif obj.user_list.list_type == UserList.ListType.PERSONAL:
+                member_ids = [
+                    membership.user_id
+                    for membership in memberships
+                    if membership.user_id == obj.user_list.owner_id
+                    and membership.role == ListMembership.Role.OWNER
+                ]
+            else:
+                member_ids = []
         else:
-            member_ids = list(obj.user_list.members.values_list('id', flat=True))
-
-        # Ensure owner is included
-        if obj.user_list.owner_id not in member_ids:
-            member_ids.append(obj.user_list.owner_id)
+            member_ids = effective_member_ids(obj.user_list_id)
 
         return member_ids
 

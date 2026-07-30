@@ -155,6 +155,13 @@ collection metadata/settings remain Core-only helpers for visibility and the
 legacy `/collections/<key>` redirect resolves to that canonical list route;
 they do not call `proxy` or expose provider credentials.
 
+Editable lists persist a `ListMembership` row for the owner. Shared-list
+members use the roles `owner`, `editor`, or `viewer`; list content and order
+writes require owner/editor, while settings, member management, invitations,
+and role changes require owner. Invitations accept `role=editor|viewer` and
+default to `editor`. Personal lists are owner-only and dynamic collections do
+not participate in collaborative membership.
+
 ### 4.2 `proxy` (Go)
 
 - Query: `?page=N&limit=M` (cap 50).

@@ -29,6 +29,8 @@ interface ListSidebarProps {
   reorderPreparing: boolean;
   itemsLoading: boolean;
   reorderDisabledReason?: string;
+  canEditContent: boolean;
+  canManageSettings: boolean;
   onEditList: () => void;
   onDeleteList: () => void;
   onEnterReorderMode: () => void;
@@ -48,6 +50,8 @@ export function ListSidebar({
   reorderPreparing,
   itemsLoading,
   reorderDisabledReason,
+  canEditContent,
+  canManageSettings,
   onEditList,
   onDeleteList,
   onEnterReorderMode,
@@ -66,22 +70,28 @@ export function ListSidebar({
         <div className="space-y-3">
           {!isReorderMode ? (
             <>
-              <Button
-                onClick={onEnterReorderMode}
-                className="w-full flex items-center justify-center gap-2 cursor-pointer bg-blue-600 text-white hover:bg-blue-700 font-semibold"
-                size="lg"
-                disabled={itemCount === 0 || reorderPreparing || reorderBlocked}
-                title={reorderDisabledReason}
-              >
-                <GripVertical className="w-5 h-5" />
-                {reorderPreparing ? "Preparing reorder..." : "Reorder Items"}
-              </Button>
+              {canEditContent ? (
+                <Button
+                  onClick={onEnterReorderMode}
+                  className="w-full flex items-center justify-center gap-2 cursor-pointer bg-blue-600 text-white hover:bg-blue-700 font-semibold"
+                  size="lg"
+                  disabled={itemCount === 0 || reorderPreparing || reorderBlocked}
+                  title={reorderDisabledReason}
+                >
+                  <GripVertical className="w-5 h-5" />
+                  {reorderPreparing ? "Preparing reorder..." : "Reorder Items"}
+                </Button>
+              ) : (
+                <p className="text-xs text-white/55">
+                  This is a read-only view. Only owners and editors can change list content.
+                </p>
+              )}
               {reorderBlocked && (
                 <p className="text-xs text-amber-400/80 -mt-1">
                   {reorderDisabledReason}
                 </p>
               )}
-              {!isDynamic ? (
+              {!isDynamic && canManageSettings ? (
                 <>
                   <Button
                     onClick={onEditList}
@@ -101,11 +111,11 @@ export function ListSidebar({
                     Delete List
                   </Button>
                 </>
-              ) : (
+              ) : isDynamic ? (
                 <p className="text-xs text-white/55">
                   Progress updates the items automatically. Your order stays personal.
                 </p>
-              )}
+              ) : null}
             </>
           ) : (
             <>

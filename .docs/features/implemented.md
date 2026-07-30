@@ -51,6 +51,10 @@ considered part of the project baseline.
   command.
 - Personal and shared lists with items, members, invitations, ratings,
   and list-item status workflows.
+- Explicit list memberships with persisted owner rows and enforced
+  `owner`/`editor`/`viewer` permissions for list content, ordering, settings,
+  members, and invitations. Public list payloads exclude email and private
+  invitation metadata; dynamic collections remain system-managed.
 - Personal-list additions seed missing personal progress as `backlog` while
   preserving existing state; shared-list additions remain contextual only.
 - List exploration with backend query model for filters, range filters,

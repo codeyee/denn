@@ -130,8 +130,12 @@ function ListsCarousel({
     return null;
   }
 
-  const handleCreateList = async (name: string) => {
-    await createList(name);
+  const handleCreateList = async (
+    name: string,
+    description?: string,
+    listType?: ListType,
+  ) => {
+    await createList(name, description, listType);
   };
 
   return (

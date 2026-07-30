@@ -1,9 +1,21 @@
 import { api } from "../api";
-import type { User } from "@/lib/types";
+import type { ListMember, ListMemberRole, ListMembersResponse } from "@/lib/types";
 
 export const memberActions = {
-  list: (listId: number): Promise<User[]> => {
-    return api.get<User[]>(`/content/lists/${listId}/members/`, true);
+  list: (listId: number): Promise<ListMembersResponse> => {
+    return api.get<ListMembersResponse>(`/content/lists/${listId}/members/`, true);
+  },
+
+  updateRole: (
+    listId: number,
+    memberId: number,
+    role: Exclude<ListMemberRole, "owner">,
+  ): Promise<ListMember> => {
+    return api.patch<ListMember>(
+      `/content/lists/${listId}/members/${memberId}/`,
+      { role },
+      true,
+    );
   },
 
   delete: (listId: number, memberId: number): Promise<void> => {
