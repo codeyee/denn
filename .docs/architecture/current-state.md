@@ -54,6 +54,10 @@ The hybrid topology is deliberate and documented in
   public/global aggregates exclude inactive ratings.
 - List visibility (`PUBLIC`/`PRIVATE`) is independent of collaboration
   type (`PERSONAL`/`SHARED`).
+- Editable lists persist an explicit `ListMembership` row for their owner.
+  Shared-list members have `owner`, `editor`, or `viewer` roles enforced by
+  the central list policy; personal lists are owner-only and dynamic lists
+  are outside the collaborative membership model.
 - `browse_metadata` exists as a derived read model for list exploration
   and sorting.
 - The canonical cross-service error envelope and `X-Request-Id`
@@ -159,6 +163,8 @@ See [`data-fetching.md`](./data-fetching.md).
 Personal tracking, public identity, public-list reads, and profile UI are
 defined in
 [`public-profiles-and-tracking.md`](./public-profiles-and-tracking.md).
+List roles and authorization are defined in
+[`../adr/0008-list-membership-permissions.md`](../adr/0008-list-membership-permissions.md).
 
 ## Current Auth State
 

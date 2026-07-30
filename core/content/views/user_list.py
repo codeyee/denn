@@ -13,6 +13,7 @@ from content.models import (
     ContentItemAuthor,
     ContentItemBrowseMetadata,
     Image,
+    ListMembership,
     UserList,
     ListItem,
     Rating,
@@ -26,7 +27,6 @@ from content.serializers import (
     BulkCheckResponseSerializer,
     PublicUserListDetailSerializer,
 )
-from content.permissions import IsOwnerOrReadOnly
 from content.services.list_service import get_list_stats
 from content.services.bulk_check_service import check_items_in_lists, ensure_content_items
 from content.services.tracking_service import (
@@ -38,6 +38,14 @@ from content.services.dynamic_collections import (
     sync_dynamic_collections,
 )
 from content.services.payload_reconstructor import from_local as source_data_from_local
+from content.services.list_policy import (
+    ListAction,
+    ListActionPermission,
+    accessible_lists_q,
+    can,
+    effective_membership_count_filter,
+    member_ids_subquery,
+)
 
 from rest_flex_fields.views import FlexFieldsMixin
 
@@ -148,14 +156,12 @@ class UserListViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
                 visibility=UserList.Visibility.PUBLIC
             ).exclude(
                 list_type=UserList.ListType.DYNAMIC,
-            ).select_related("owner").prefetch_related("members")
+            ).select_related("owner").prefetch_related("memberships")
         item_filters = self._parse_item_filters()
         user_list_id = self.kwargs.get('pk')
 
         if user_list_id:
-            member_ids_sq = Subquery(
-                UserList.objects.filter(pk=user_list_id).values('members__id')
-            )
+            member_ids_sq = Subquery(member_ids_subquery(user_list_id))
             owner_id_sq = Subquery(
                 UserList.objects.filter(pk=user_list_id).values('owner_id')[:1]
             )
@@ -212,15 +218,23 @@ class UserListViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
         )
 
         queryset = UserList.objects.filter(
-            Q(owner=user) | Q(members=user)
+            accessible_lists_q(user)
         ).distinct().select_related(
             'owner'
         ).prefetch_related(
-            'members',
+            Prefetch(
+                'memberships',
+                queryset=ListMembership.objects.select_related('user'),
+                to_attr='memberships_prefetched',
+            ),
             Prefetch('items', queryset=items_qs),
         ).annotate(
             item_count_annotated=Count('items', distinct=True),
-            member_count_annotated=Count('members', distinct=True),
+            member_count_annotated=Count(
+                'memberships',
+                filter=effective_membership_count_filter(),
+                distinct=True,
+            ),
         )
         return queryset
 
@@ -283,7 +297,7 @@ class UserListViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
         if self.action == 'retrieve':
             return [AllowAny()]
         if self.action in ['update', 'partial_update', 'destroy']:
-            return [IsAuthenticated(), IsOwnerOrReadOnly()]
+            return [IsAuthenticated(), ListActionPermission(ListAction.MANAGE_SETTINGS)]
         return [IsAuthenticated()]
 
     def retrieve(self, request, *args, **kwargs):
@@ -309,12 +323,9 @@ class UserListViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
 
     @staticmethod
     def _can_manage_list(user_list, user):
-        if not user.is_authenticated:
+        if not user or not user.is_authenticated:
             return False
-        return (
-            user_list.owner_id == user.id
-            or user_list.members.filter(id=user.id).exists()
-        )
+        return can(user_list, user, ListAction.VIEW)
 
     def _public_list_for_retrieve(self, pk):
         content_related = [
@@ -333,7 +344,10 @@ class UserListViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
             ).exclude(list_type=UserList.ListType.DYNAMIC)
             .select_related("owner")
             .prefetch_related(
-                "members",
+                Prefetch(
+                    "memberships",
+                    queryset=ListMembership.objects.select_related("user"),
+                ),
                 Prefetch(
                     "items",
                     queryset=ListItem.objects.select_related(
@@ -437,9 +451,7 @@ class UserListViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
     def stats(self, request, pk=None):
         user_list = self.get_object()
 
-        is_owner = user_list.owner == request.user
-        is_member = user_list.members.filter(id=request.user.id).exists()
-        if not (is_owner or is_member):
+        if not can(user_list, request.user, ListAction.VIEW):
             return Response(
                 {'detail': 'No tienes permiso para ver las estadísticas de esta lista.'},
                 status=status.HTTP_403_FORBIDDEN,

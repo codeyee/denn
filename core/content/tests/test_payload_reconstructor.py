@@ -133,9 +133,9 @@ class GameReconstructorTests(TestCase):
 
         rebuilt = payload_reconstructor.from_local(item)
 
-        self.assertEqual(rebuilt['duration']['status'], 'no_data')
+        self.assertEqual(rebuilt['duration']['status'], 'matched')
         self.assertNotIn('hastily_seconds', rebuilt['duration'])
-        self.assertNotIn('normally_seconds', rebuilt['duration'])
+        self.assertEqual(rebuilt['duration']['normally_seconds'], 50 * 60 * 60)
         self.assertNotIn('completely_seconds', rebuilt['duration'])
 
 

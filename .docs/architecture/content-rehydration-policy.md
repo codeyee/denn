@@ -57,7 +57,9 @@ Architecture direction:
 ## Periodic Refresh Path
 
 - `rehydrate_content_details` annotates each row with `refresh_due_at`
-  and selects only rows whose computed due time is in the past.
+  and selects rows whose computed due time is in the past. For games, it
+  also selects missing duration rows; the one-off `--include-no-data` flag
+  additionally repairs existing IGDB duration rows with `status=no_data`.
 - Rows are ordered by `refresh_due_at` ascending so the most overdue
   items are refreshed first.
 - The command emits:

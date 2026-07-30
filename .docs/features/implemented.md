@@ -47,11 +47,17 @@ considered part of the project baseline.
   returning 404 to outsiders.
 - Game detail pages expose optional IGDB time-to-beat estimates for rushed,
   normal, and complete playthroughs, preserving IGDB's source semantics.
-  Values above 3,000 hours are discarded, and contradictory estimates are
-  treated as no data across proxy normalization, local persistence, payload
-  reconstruction, and the frontend display.
+  Values above 3,000 hours are discarded, and contradictory estimates retain
+  only the normal value across proxy normalization, local persistence, payload
+  reconstruction, and the frontend display. Existing game details without a
+  duration record are rehydrated on demand and by the periodic rehydration
+  command.
 - Personal and shared lists with items, members, invitations, ratings,
   and list-item status workflows.
+- Explicit list memberships with persisted owner rows and enforced
+  `owner`/`editor`/`viewer` permissions for list content, ordering, settings,
+  members, and invitations. Public list payloads exclude email and private
+  invitation metadata; dynamic collections remain system-managed.
 - Personal-list additions seed missing personal progress as `backlog` while
   preserving existing state; shared-list additions remain contextual only.
 - List exploration with backend query model for filters, range filters,

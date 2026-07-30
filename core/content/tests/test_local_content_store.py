@@ -248,9 +248,9 @@ class GameMapperTests(TestCase):
         upsert_game(item, payload)
 
         duration = GameDurationEstimate.objects.get(content_item=item)
-        self.assertEqual(duration.status, GameDurationEstimate.Status.NO_DATA)
+        self.assertEqual(duration.status, GameDurationEstimate.Status.MATCHED)
         self.assertIsNone(duration.hastily_seconds)
-        self.assertIsNone(duration.normally_seconds)
+        self.assertEqual(duration.normally_seconds, 50 * 60 * 60)
         self.assertIsNone(duration.completely_seconds)
 
 
@@ -294,6 +294,18 @@ class DetailHelpersTests(TestCase):
         )
 
         self.assertFalse(detail_is_complete(item))
+
+    def test_existing_game_without_duration_is_incomplete(self):
+        item, _ = get_or_create_content_item(
+            ContentItem.SourceAPI.IGDB, '25076', ContentItem.ContentType.GAME,
+        )
+        GameDetail.objects.create(content_item=item, title='Red Dead Redemption 2')
+
+        self.assertFalse(detail_is_complete(item))
+
+        upsert_game(item, GAME_RDR2)
+
+        self.assertTrue(detail_is_complete(item))
 
 
 class AuthorCaseCollisionRegressionTests(TestCase):

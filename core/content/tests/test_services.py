@@ -38,10 +38,10 @@ class ListServiceTests(TestCase):
         ensure_owner_membership(new_list)
         self.assertTrue(new_list.members.filter(pk=self.user.pk).exists())
 
-    def test_ensure_owner_membership_noop_for_personal(self):
+    def test_ensure_owner_membership_repairs_personal(self):
         personal = UserList.objects.create(name='P', owner=self.user, list_type='PERSONAL')
         ensure_owner_membership(personal)
-        self.assertEqual(personal.members.count(), 0)
+        self.assertEqual(personal.members.count(), 1)
 
     def test_remove_member_success(self):
         ok, err, _ = remove_member(self.shared, self.member)

@@ -226,7 +226,7 @@ func TestMapGame_DurationDropsValuesAboveThreeThousandHours(t *testing.T) {
 	}
 }
 
-func TestMapGame_DurationRejectsContradictoryValues(t *testing.T) {
+func TestMapGame_DurationKeepsNormalWhenValuesContradict(t *testing.T) {
 	result := MapGame(games.IgdbGame{
 		ID:   1,
 		Name: "Contradictory Game",
@@ -237,11 +237,17 @@ func TestMapGame_DurationRejectsContradictoryValues(t *testing.T) {
 		},
 	})
 
-	if result.Duration == nil || result.Duration.Status != "no_data" {
-		t.Fatalf("expected no_data duration, got %#v", result.Duration)
+	if result.Duration == nil || result.Duration.Status != "matched" {
+		t.Fatalf("expected matched duration, got %#v", result.Duration)
 	}
-	if result.Duration.HastilySeconds != nil || result.Duration.NormallySeconds != nil || result.Duration.CompletelySeconds != nil {
-		t.Fatalf("expected contradictory durations to be discarded, got %#v", result.Duration)
+	if result.Duration.HastilySeconds != nil {
+		t.Errorf("expected rushed duration to be discarded, got %#v", result.Duration.HastilySeconds)
+	}
+	if result.Duration.NormallySeconds == nil || *result.Duration.NormallySeconds != 50*60*60 {
+		t.Errorf("expected normal duration to be kept, got %#v", result.Duration.NormallySeconds)
+	}
+	if result.Duration.CompletelySeconds != nil {
+		t.Errorf("expected complete duration to be discarded, got %#v", result.Duration.CompletelySeconds)
 	}
 }
 

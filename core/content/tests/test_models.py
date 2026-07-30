@@ -8,7 +8,7 @@ from django.db import IntegrityError
 from django.contrib.auth.models import User
 from decimal import Decimal
 
-from content.models import ContentItem, UserList, ListItem, Rating
+from content.models import ContentItem, ListMembership, UserList, ListItem, Rating
 
 
 class ContentItemModelTests(TestCase):
@@ -93,27 +93,33 @@ class UserListModelTests(TestCase):
             password='testpass123'
         )
 
-    def test_shared_list_auto_adds_owner_as_member(self):
-        """Test that shared lists automatically add owner to members."""
+    def test_editable_lists_persist_owner_membership(self):
+        """Every editable list stores exactly one owner membership."""
         user_list = UserList.objects.create(
             owner=self.owner,
             name='Shared List',
             list_type=UserList.ListType.SHARED
         )
 
-        # Owner should be automatically added to members
-        self.assertIn(self.owner, user_list.members.all())
+        membership = ListMembership.objects.get(
+            user_list=user_list,
+            user=self.owner,
+        )
+        self.assertEqual(membership.role, ListMembership.Role.OWNER)
 
-    def test_personal_list_does_not_auto_add_owner(self):
-        """Test that personal lists don't automatically add owner to members."""
+    def test_personal_list_also_persists_owner_membership(self):
+        """Personal lists use the same owner invariant as shared lists."""
         user_list = UserList.objects.create(
             owner=self.owner,
             name='Personal List',
             list_type=UserList.ListType.PERSONAL
         )
 
-        # Members should be empty for personal lists
-        self.assertEqual(user_list.members.count(), 0)
+        self.assertEqual(user_list.members.count(), 1)
+        self.assertEqual(
+            user_list.memberships.get().role,
+            ListMembership.Role.OWNER,
+        )
 
     def test_ordering_by_created_at_descending(self):
         """Test that lists are ordered by creation date (newest first)."""

@@ -41,13 +41,13 @@ describe("game duration", () => {
     ]);
   });
 
-  it("hides estimates when the available metrics are not ordered", () => {
+  it("keeps only the normal estimate when metrics are not ordered", () => {
     expect(getGameDurationRows({
       source: "igdb",
       status: "matched",
       hastily_seconds: 100 * 60 * 60,
       normally_seconds: 50 * 60 * 60,
       completely_seconds: 200 * 60 * 60,
-    })).toEqual([]);
+    })).toEqual([{ label: "Normal", value: "50 h" }]);
   });
 });

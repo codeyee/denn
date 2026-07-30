@@ -14,7 +14,12 @@ from .dynamic_collections import (
     DynamicCollectionSettingsSerializer,
 )
 from .public_list import PublicUserListDetailSerializer
-from .user import UserSerializer, MemberSerializer
+from .user import (
+    UserSerializer,
+    MemberSerializer,
+    ListMembershipSerializer,
+    ListMembershipRoleSerializer,
+)
 from .list_invitation import (
     ListInvitationSerializer,
     ListInvitationCreateSerializer,
@@ -46,6 +51,8 @@ __all__ = [
     'PublicUserListDetailSerializer',
     'UserSerializer',
     'MemberSerializer',
+    'ListMembershipSerializer',
+    'ListMembershipRoleSerializer',
     'ListInvitationSerializer',
     'ListInvitationCreateSerializer',
     'ListInvitationResponseSerializer',

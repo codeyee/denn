@@ -53,9 +53,10 @@ class UserList(models.Model):
 
     members = models.ManyToManyField(
         User,
+        through='ListMembership',
         related_name='member_lists',
         blank=True,
-        help_text='Members of the list (for shared lists)'
+        help_text='Members of the list (roles are stored in ListMembership)'
     )
 
     created_at = models.DateTimeField(
@@ -91,9 +92,26 @@ class UserList(models.Model):
         return f"{self.name} ({self.owner.username})"
 
     def save(self, *args, **kwargs):
-        is_new = self.pk is None
-        is_shared = self.list_type == self.ListType.SHARED
         super().save(*args, **kwargs)
 
-        if is_new and is_shared:
-            self.members.add(self.owner)
+        from .list_membership import ListMembership
+
+        if self.list_type != self.ListType.DYNAMIC:
+            # The owner is a real membership for both personal and shared
+            # lists. Demote stale owner rows first so an ownership repair is
+            # safe even when legacy data is anomalous.
+            ListMembership.objects.filter(
+                user_list_id=self.pk,
+                role=ListMembership.Role.OWNER,
+            ).exclude(user_id=self.owner_id).update(
+                role=ListMembership.Role.EDITOR,
+            )
+            ListMembership.objects.update_or_create(
+                user_list_id=self.pk,
+                user_id=self.owner_id,
+                defaults={'role': ListMembership.Role.OWNER},
+            )
+        else:
+            # Dynamic collections are system-owned projections, never a
+            # collaborative membership surface.
+            ListMembership.objects.filter(user_list_id=self.pk).delete()

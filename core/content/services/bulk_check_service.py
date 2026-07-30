@@ -1,6 +1,7 @@
 from django.db.models import Q, Count
 
 from content.models import ContentItem, UserList, ListItem
+from content.services.list_policy import accessible_lists_q
 
 
 def check_items_in_lists(user, validated_items):
@@ -24,8 +25,8 @@ def check_items_in_lists(user, validated_items):
         content_items = ContentItem.objects.filter(lookups)
 
     user_lists = UserList.objects.filter(
-        Q(owner=user) | Q(members=user)
-    ).distinct().select_related('owner').prefetch_related('members').annotate(
+        accessible_lists_q(user)
+    ).distinct().select_related('owner').prefetch_related('memberships').annotate(
         item_count_annotated=Count('items'),
     )
 

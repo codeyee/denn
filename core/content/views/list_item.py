@@ -7,7 +7,6 @@ from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiExam
 from drf_spectacular.types import OpenApiTypes
 from content.models import ListItem, UserList, Rating, UserContentTracking
 from content.serializers import ListItemSerializer, ListItemCreateSerializer
-from content.permissions import IsMemberOfList
 from content.services.source_data_orchestrator import fetch_bulk_source_data
 from content.services import (
     annotate_items_with_ratings,
@@ -18,6 +17,13 @@ from content.services import (
 )
 from content.services.tracking_service import (
     annotate_list_items_with_personal_tracking,
+)
+from content.services.list_policy import (
+    effective_member_ids,
+    member_ids_subquery,
+    ListAction,
+    ListActionPermission,
+    can,
 )
 
 from rest_flex_fields.views import FlexFieldsMixin
@@ -185,36 +191,38 @@ from rest_flex_fields.views import FlexFieldsMixin
     )
 )
 class ListItemViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated, IsMemberOfList]
+    permission_classes = [IsAuthenticated]
     permit_list_expands = ['content_item', 'user_list', 'added_by']
+
+    def get_permissions(self):
+        if self.action in {'create', 'update', 'partial_update', 'destroy'}:
+            action = ListAction.EDIT_CONTENT
+        elif self.action in {'reorder', 'move', 'apply_sort'}:
+            action = ListAction.REORDER
+        else:
+            action = ListAction.VIEW
+        return [IsAuthenticated(), ListActionPermission(action)]
 
     def _get_member_ids_for_list(self, list_id):
         """
         Return all member ids (including owner) for the given list.
         Used for annotating list_rating consistently with serializer logic.
         """
-        member_ids = list(
-            UserList.objects.filter(pk=list_id).values_list('members__id', flat=True)
-        )
-        member_ids = [mid for mid in member_ids if mid is not None]
-        owner_id = UserList.objects.filter(pk=list_id).values_list('owner_id', flat=True).first()
-        if owner_id and owner_id not in member_ids:
-            member_ids.append(owner_id)
-        return member_ids
+        return effective_member_ids(list_id)
 
     def get_queryset(self):
         from django.db.models import Q
         list_id = self.kwargs.get('list_pk')
 
-        member_ids_subquery = Subquery(
-            UserList.objects.filter(pk=list_id).values('members__id')
+        member_ids_query = Subquery(
+            member_ids_subquery(list_id)
         )
         owner_id_subquery = Subquery(
             UserList.objects.filter(pk=list_id).values('owner_id')[:1]
         )
 
         ratings_qs = Rating.objects.filter(
-            Q(user_id__in=member_ids_subquery) | Q(user_id=owner_id_subquery),
+            Q(user_id__in=member_ids_query) | Q(user_id=owner_id_subquery),
             is_active=True,
         ).select_related('user').order_by('-created_at')
 
@@ -229,7 +237,7 @@ class ListItemViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
             'added_by',
             'user_list',
         ).prefetch_related(
-            'user_list__members',
+            'user_list__memberships',
             Prefetch(
                 'content_item__ratings',
                 queryset=ratings_qs,
@@ -270,14 +278,9 @@ class ListItemViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
         try:
             user_list = UserList.objects.select_related('owner').get(pk=list_id)
 
-            # Check if user is the owner or a member
-            if user_list.owner == self.request.user:
+            if can(user_list, self.request.user, ListAction.VIEW):
                 return user_list
-
-            if not user_list.members.filter(id=self.request.user.id).exists():
-                return None
-
-            return user_list
+            return None
         except UserList.DoesNotExist:
             return None
 

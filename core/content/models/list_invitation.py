@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from .user_list import UserList
+from .list_membership import ListMembership
 
 class ListInvitation(models.Model):
     class Status(models.TextChoices):
@@ -34,6 +35,16 @@ class ListInvitation(models.Model):
         choices=Status.choices,
         default=Status.PENDING,
         help_text='Invitation status'
+    )
+
+    role = models.CharField(
+        max_length=10,
+        choices=[
+            (ListMembership.Role.EDITOR, 'Editor'),
+            (ListMembership.Role.VIEWER, 'Viewer'),
+        ],
+        default=ListMembership.Role.EDITOR,
+        help_text='Role granted when the invitation is accepted',
     )
 
     created_at = models.DateTimeField(

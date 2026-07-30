@@ -1,6 +1,7 @@
 from .content_item import ContentItem
 from .content_item_browse_metadata import ContentItemBrowseMetadata
 from .user_list import UserList
+from .list_membership import ListMembership
 from .list_item import ListItem
 from .rating import Rating
 from .user_content_tracking import UserContentTracking
@@ -34,6 +35,7 @@ __all__ = [
     'ContentItem',
     'ContentItemBrowseMetadata',
     'UserList',
+    'ListMembership',
     'ListItem',
     'Rating',
     'UserContentTracking',

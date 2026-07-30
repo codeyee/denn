@@ -15,7 +15,10 @@ import { usePrefetchContentDetail } from "@/lib/api/queries/usePrefetchContentDe
 import { useHoverPrefetch } from "@/lib/perf/useHoverPrefetch";
 import { getListItemTitle, getListItemSubtitle } from "./utils";
 import { ListItemCardHover } from "./components/ListItemCardHover";
-import { getRatingBadgeData } from "@/components/pages/ListDetailPage/utils";
+import {
+  canEditListContent,
+  getRatingBadgeData,
+} from "@/components/pages/ListDetailPage/utils";
 import { ListItemTrackingSection } from "@/components/common/tracking/ListItemTrackingSection";
 
 interface ListItemCardProps {
@@ -58,6 +61,7 @@ export function ListItemCard({
     () => getRatingBadgeData(item, list, currentUserId),
     [item, list, currentUserId]
   );
+  const canEditContent = canEditListContent(list, currentUserId);
 
   // T8: warm the ContentDetail cache after 200ms of hover intent.
   // The ContentItem id is already known (no `getOrCreate` round-trip
@@ -118,6 +122,7 @@ export function ListItemCard({
               list={list}
               onToggleStatus={onToggleStatus}
               onDelete={onDelete}
+              canEditContent={canEditContent}
               onRateClick={onRateClick}
               showRatingInvitation={showRatingInvitation}
             />

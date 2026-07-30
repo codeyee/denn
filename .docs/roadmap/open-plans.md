@@ -169,10 +169,13 @@ Current reality:
 
 Product work to land:
 
-- Finish Lists 2.0 roles, owner membership, per-member state,
-  permissions, invitations, and Add-to-List semantics.
+- Finish the remaining Lists 2.0 follow-ups: per-member state, Add-to-List
+  checkbox semantics, and the random pending picker. Explicit roles, owner
+  membership, permission policy, invitation roles, and public privacy are
+  implemented by issue #61.
 - Finish public content aggregates, gallery, sitemap, metadata, cache, and
-  traffic hardening from Public Catalog 1.0; Browse MVP is implemented.
+  traffic hardening from Public Catalog 1.0; Browse/taxonomy MVP is
+  implemented.
 - Add leaderboard surfaces in the existing rollout order.
 - Keep follow relationships, feed, import/export, and richer stats as
   post-MVP product work.

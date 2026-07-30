@@ -30,7 +30,12 @@ export function getGameDurationRows(
 
   for (let index = 1; index < usableValues.length; index += 1) {
     if (usableValues[index].seconds < usableValues[index - 1].seconds) {
-      return [];
+      return usableValues
+        .filter(({ label }) => label === "Normal")
+        .map(({ label, seconds }) => ({
+          label,
+          value: formatGameDuration(seconds),
+        }));
     }
   }
 

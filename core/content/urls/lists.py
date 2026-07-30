@@ -42,6 +42,8 @@ list_member_list = ListMemberViewSet.as_view({
 })
 
 list_member_detail = ListMemberViewSet.as_view({
+    'put': 'update',
+    'patch': 'partial_update',
     'delete': 'destroy'
 })
 

@@ -89,14 +89,14 @@ class QueryOptimizationTests(TransactionTestCase):
 
         # Get queryset and evaluate it
         # Get queryset and evaluate it
-        with self.assertNumQueries(4):  # Optimized to 4 queries
+        with self.assertNumQueries(4):  # Main list, memberships, items, ratings
             queryset = viewset.get_queryset()
             lists = list(queryset)  # Force evaluation
 
             # Access related data to ensure prefetch worked
             for user_list in lists:
                 _ = user_list.owner.username
-                _ = list(user_list.members.all())
+                _ = list(user_list.memberships_prefetched)
                 _ = list(user_list.items.all())
 
     def test_rating_signal_single_query(self):
@@ -247,7 +247,7 @@ class APIPerformanceTests(APITestCase):
 
         connection.queries_log.clear()
         with override_settings(DEBUG=True):
-            with self.assertNumQueries(9):
+            with self.assertNumQueries(8):
                 response = self.client.get(
                     f'/api/content/lists/{self.user_list.id}/items/'
                 )

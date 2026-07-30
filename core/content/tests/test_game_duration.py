@@ -17,7 +17,7 @@ class GameDurationNormalizationTests(SimpleTestCase):
             'completely_seconds': 20 * 60 * 60,
         })
 
-    def test_rejects_contradictory_order(self):
+    def test_keeps_normal_when_order_is_contradictory(self):
         normalized = normalize_game_duration_values({
             'hastily_seconds': 100 * 60 * 60,
             'normally_seconds': 50 * 60 * 60,
@@ -26,7 +26,7 @@ class GameDurationNormalizationTests(SimpleTestCase):
 
         self.assertEqual(normalized, {
             'hastily_seconds': None,
-            'normally_seconds': None,
+            'normally_seconds': 50 * 60 * 60,
             'completely_seconds': None,
         })
 
