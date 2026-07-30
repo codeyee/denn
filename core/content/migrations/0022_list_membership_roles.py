@@ -90,15 +90,6 @@ class Migration(migrations.Migration):
                                 fields=("user_list", "user"),
                                 name="unique_list_membership",
                             ),
-                            models.UniqueConstraint(
-                                condition=Q(role=OWNER),
-                                fields=("user_list",),
-                                name="unique_list_owner_membership",
-                            ),
-                            models.CheckConstraint(
-                                condition=Q(role__in=[OWNER, EDITOR, VIEWER]),
-                                name="valid_list_membership_role",
-                            ),
                         ],
                     },
                 ),
@@ -133,6 +124,29 @@ class Migration(migrations.Migration):
                         name="unique_list_owner_membership",
                     ),
                 ),
+            ],
+            state_operations=[
+                migrations.AddConstraint(
+                    model_name="listmembership",
+                    constraint=models.UniqueConstraint(
+                        condition=Q(role=OWNER),
+                        fields=("user_list",),
+                        name="unique_list_owner_membership",
+                    ),
+                ),
+            ],
+        ),
+        migrations.SeparateDatabaseAndState(
+            database_operations=[
+                migrations.AddConstraint(
+                    model_name="listmembership",
+                    constraint=models.CheckConstraint(
+                        condition=Q(role__in=[OWNER, EDITOR, VIEWER]),
+                        name="valid_list_membership_role",
+                    ),
+                ),
+            ],
+            state_operations=[
                 migrations.AddConstraint(
                     model_name="listmembership",
                     constraint=models.CheckConstraint(
