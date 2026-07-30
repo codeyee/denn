@@ -14,6 +14,7 @@ import { EMPTY_SEARCH_RESULTS, type SearchResults } from "../types";
 interface UseSearchResultsReturn {
     results: SearchResults;
     isLoading: boolean;
+    isFetching: boolean;
     error: string | null;
     hasResults: boolean;
 }
@@ -70,6 +71,7 @@ export function useSearchResults(
     return {
         results: trimmedQuery ? results : EMPTY_SEARCH_RESULTS,
         isLoading: searchQuery.isLoading,
+        isFetching: searchQuery.isFetching,
         error: searchQuery.error instanceof Error ? searchQuery.error.message : null,
         hasResults,
     };

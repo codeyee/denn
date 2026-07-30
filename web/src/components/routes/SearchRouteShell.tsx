@@ -1,15 +1,16 @@
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
+import { useLocation, useNavigate } from "@tanstack/react-router";
+
 import { Navbar } from "@/components/layout/Navbar";
 import { SearchPage } from "@/components/pages/SearchPage";
 import { useSearchResults } from "@/components/pages/SearchPage/hooks/useSearchResults";
+import { useDebouncedSearch } from "@/hooks/useDebouncedSearch";
 import type { SessionSnapshot } from "@/server/session";
 import type { MultiSearchResponse } from "@/lib/types";
 
 // AuthSessionBootstrap is mounted globally in app/layout.tsx; this shell only
 // needs the SSR session snapshot for initial-render branching.
-
-const SEARCH_DEBOUNCE_MS = 400;
 
 interface SearchRouteShellProps {
   session: SessionSnapshot;
@@ -24,46 +25,37 @@ export function SearchRouteShell({
   country,
   initialResults,
 }: SearchRouteShellProps) {
+  const navigate = useNavigate();
+  const searchStr = useLocation({ select: (loc) => loc.searchStr });
   const mobileInputRef = useRef<HTMLInputElement>(null);
   const hasFocusedRef = useRef(false);
-  const [searchQuery, setSearchQuery] = useState(initialQuery);
-  const [debouncedQuery, setDebouncedQuery] = useState(initialQuery);
   const allowAdult = session.user?.allow_adult_content ?? false;
 
-  useEffect(() => {
-    setSearchQuery(initialQuery);
-    setDebouncedQuery(initialQuery);
-  }, [initialQuery]);
+  const currentQuery = new URLSearchParams(searchStr).get("q") ?? "";
+  const updateRouteQuery = useCallback(
+    (query: string) => {
+      if (query === currentQuery) return;
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedQuery(searchQuery.trim());
-    }, SEARCH_DEBOUNCE_MS);
+      void navigate({
+        to: "/search",
+        search: query ? { q: query } : {},
+        replace: true,
+        resetScroll: false,
+      });
+    },
+    [currentQuery, navigate],
+  );
 
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    const url = new URL(window.location.href);
-    const currentQuery = url.searchParams.get("q") ?? "";
-    const nextQuery = debouncedQuery.trim();
-
-    if (currentQuery === nextQuery) {
-      return;
-    }
-
-    if (nextQuery) {
-      url.searchParams.set("q", nextQuery);
-    } else {
-      url.searchParams.delete("q");
-    }
-
-    window.history.replaceState(null, "", `${url.pathname}${url.search}`);
-  }, [debouncedQuery]);
+  const {
+    value: searchQuery,
+    debouncedValue: debouncedQuery,
+    isDebouncing,
+    onChange: setSearchQuery,
+    clear: clearSearch,
+  } = useDebouncedSearch({
+    initialValue: initialQuery,
+    onDebouncedChange: updateRouteQuery,
+  });
 
   useEffect(() => {
     if (hasFocusedRef.current || !mobileInputRef.current) {
@@ -76,7 +68,7 @@ export function SearchRouteShell({
     });
   }, []);
 
-  const { results, isLoading, error, hasResults } = useSearchResults(
+  const { results, isLoading, isFetching, error, hasResults } = useSearchResults(
     debouncedQuery,
     {
       country,
@@ -99,9 +91,12 @@ export function SearchRouteShell({
         debouncedQuery={debouncedQuery}
         results={results}
         isLoading={isLoading}
+        isFetching={isFetching}
         error={error}
         hasResults={hasResults}
+        isDebouncing={isDebouncing}
         mobileInputRef={mobileInputRef}
+        onClearSearch={clearSearch}
         allowAdult={allowAdult}
         isAuthenticated={session.isAuthenticated}
       />

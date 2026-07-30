@@ -23,7 +23,7 @@ today.
 - `web` route loaders and server-side fetch helpers -> `proxy` for
   server-side metadata reads.
 - `web` server -> `core` for trusted bulk resolution of stable Denn ids
-  in homepage/search payloads.
+  in homepage/search/Browse payloads.
 - `core` -> `proxy` only for enrichment and refresh of persisted content
   data.
 
@@ -66,7 +66,8 @@ The hybrid topology is deliberate and documented in
   parallel `web` reads to `core` and `proxy`; responses expose bounded
   cache state and non-sensitive `Server-Timing`.
 - Discovery payloads are resolved to stable Denn ids in one trusted
-  server-side bulk request before cards render. The resolver accepts an
+  server-side bulk request before cards render, including Browse results.
+  Browse drops unresolved cards. The resolver accepts an
   authenticated user or `web` with the shared server-only key; browsers
   cannot call it anonymously. Card hover/focus performs only a pure
   detail prefetch; it never creates content.
@@ -77,7 +78,7 @@ The hybrid topology is deliberate and documented in
 - `web` runs on **TanStack Start** (Vite + Nitro). Routes live in
   `web/src/routes/` using TanStack Router file conventions
   (`__root.tsx`, `index.tsx`, `<segment>.tsx`, `$param.tsx`, `$.ts`).
-- `/`, `/search`, and `/content/<id>` are public catalog surfaces.
+- `/`, `/search`, `/browse`, `/browse/<family>`, and `/content/<id>` are public catalog surfaces.
   Authenticated Home adds personal lists to the same catalog. `/welcome`
   is retired; its cover-gallery visual language is reused by the
   dedicated login and registration shell.

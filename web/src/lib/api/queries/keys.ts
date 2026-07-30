@@ -15,6 +15,7 @@
 import type { ListItemQuery } from "@/lib/types/listView";
 import type { BulkCheckItem } from "@/lib/types";
 import type { ProfileSearchParams, ProfileTab } from "@/lib/types";
+import type { BrowseType } from "@/lib/types";
 import { profileDataSearchParams } from "@/lib/profileSearch";
 
 interface ListItemsParams {
@@ -45,6 +46,16 @@ export const queryKeys = {
       allowAdult: boolean;
     }) =>
       ["search", "multi", params] as const,
+  },
+  browse: {
+    all: ["browse"] as const,
+    byParams: (params: {
+      type: BrowseType;
+      page: number;
+      sort: "popular" | "recent";
+      query?: string;
+      country?: string | null;
+    }) => ["browse", params] as const,
   },
   lists: {
     all: ["lists"] as const,

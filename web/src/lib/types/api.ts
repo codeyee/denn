@@ -455,7 +455,7 @@ export interface ProxyPaginationMetadata {
 export interface ProxyCategoryResponse<T = SearchItem> {
     results: T[];
     metadata: ProxyPaginationMetadata;
-    error: string;
+    error: string | null;
 }
 
 export interface VideoSearchResponse {
@@ -789,6 +789,20 @@ export interface MultiSearchResponse {
     games: ProxyCategoryResponse<SearchItem>;
     albums: ProxyCategoryResponse<SearchItem>;
     books: ProxyCategoryResponse<SearchItem>;
+}
+
+export type BrowseType = "movies" | "tv-shows" | "games" | "music" | "books";
+export type BrowseProviderType = "movies" | "tv-shows" | "games" | "albums" | "books";
+export type BrowseMode = "popular" | "recent" | "search";
+export type BrowseStatus = "complete" | "empty" | "degraded";
+
+export interface BrowseResponse {
+    type: BrowseProviderType;
+    mode: BrowseMode;
+    status: BrowseStatus;
+    results: SearchItem[];
+    metadata: ProxyPaginationMetadata;
+    error: string | null;
 }
 
 export type ListSummary = Pick<UserList, "id" | "name" | "item_count">;

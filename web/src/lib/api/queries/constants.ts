@@ -2,6 +2,7 @@ export const SUGGESTIONS_PAGE_SIZE = 30;
 export const HOME_LIST_ITEMS_SIZE = 8;
 export const HOME_LIST_IMAGES_SIZE = 4;
 export const SEARCH_RESULT_LIMIT = 20;
+export const BROWSE_PAGE_SIZE = 24;
 export const RATINGS_PAGE_SIZE = 10;
 
 export const HOME_LIST_FIELDS = [

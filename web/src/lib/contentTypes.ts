@@ -69,7 +69,7 @@ export const CONTENT_TYPE_DEFINITIONS: Record<
     type: ContentType.ALBUM,
     label: "Album",
     pluralLabel: "Music",
-    sectionTitle: "Popular Music",
+    sectionTitle: "Popular Music Albums",
     icon: Music,
     slug: "music",
     sourceApi: SourceApi.SPOTIFY,

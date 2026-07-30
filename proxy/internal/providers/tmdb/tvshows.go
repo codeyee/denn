@@ -88,3 +88,17 @@ func (c *Client) GetPopularTVShows(ctx context.Context, page int) (*clients.Resp
 		"page": strconv.Itoa(page),
 	})
 }
+
+func (c *Client) GetRecentTVShows(ctx context.Context, page int, until string) (*clients.Response, error) {
+	params := url.Values{
+		"page":               {strconv.Itoa(page)},
+		"sort_by":            {"first_air_date.desc"},
+		"first_air_date.lte": {until},
+		"include_adult":      {"false"},
+	}
+
+	return c.CachedGet(ctx, "discover/tv", "recent_tv", params, map[string]string{
+		"page":  strconv.Itoa(page),
+		"until": until,
+	})
+}

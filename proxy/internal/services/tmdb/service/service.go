@@ -213,6 +213,50 @@ func (s *Service) GetPopularTVShows(ctx context.Context, page, limit int) (Searc
 	}, nil
 }
 
+func (s *Service) GetRecentMovies(ctx context.Context, page, limit int) (SearchResult, error) {
+	until := time.Now().UTC().Format("2006-01-02")
+	data, err := unmarshalResponse[tmdb.TmdbSearchResponse](s.client.GetRecentMovies(ctx, page, until))
+	if err != nil {
+		return SearchResult{}, fmt.Errorf("recent movies: %w", err)
+	}
+
+	items := make([]models.SearchItem, 0, len(data.Results))
+	for _, r := range data.Results {
+		if r.Adult {
+			continue
+		}
+		items = append(items, mapper.MapSearchItemMovie(r))
+	}
+	items = servicecommon.FilterEligibleSearchItems(items, time.Now())
+	if len(items) > limit {
+		items = items[:limit]
+	}
+
+	return SearchResult{Page: data.Page, TotalPages: data.TotalPages, TotalResults: data.TotalResults, Results: items}, nil
+}
+
+func (s *Service) GetRecentTVShows(ctx context.Context, page, limit int) (SearchResult, error) {
+	until := time.Now().UTC().Format("2006-01-02")
+	data, err := unmarshalResponse[tmdb.TmdbSearchResponse](s.client.GetRecentTVShows(ctx, page, until))
+	if err != nil {
+		return SearchResult{}, fmt.Errorf("recent tv shows: %w", err)
+	}
+
+	items := make([]models.SearchItem, 0, len(data.Results))
+	for _, r := range data.Results {
+		if r.Adult {
+			continue
+		}
+		items = append(items, mapper.MapSearchItemTV(r))
+	}
+	items = servicecommon.FilterEligibleSearchItems(items, time.Now())
+	if len(items) > limit {
+		items = items[:limit]
+	}
+
+	return SearchResult{Page: data.Page, TotalPages: data.TotalPages, TotalResults: data.TotalResults, Results: items}, nil
+}
+
 func (s *Service) GetMovieComplete(ctx context.Context, movieID int, country string) (models.Movie, error) {
 	data, err := unmarshalResponse[tmdb.TmdbMovieDetail](
 		s.client.GetMovieDetails(ctx, movieID, movieAppend),

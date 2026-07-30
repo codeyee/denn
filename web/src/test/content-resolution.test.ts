@@ -4,7 +4,7 @@ import {
   applyResolvedContentIds,
   collectContentIdentities,
 } from "@/lib/api/contentResolution";
-import { ContentType, type MultiSearchResponse } from "@/lib/types";
+import { ContentType, type BrowseResponse, type MultiSearchResponse } from "@/lib/types";
 import { normalizeContentType } from "@/lib/utils/contentTypeUtils";
 
 describe("content type normalization", () => {
@@ -67,6 +67,32 @@ describe("bulk content id resolution", () => {
 
     expect(resolved.movies.results[0]?.denn_id).toBe(41);
     expect(resolved.albums.results[0]?.denn_id).toBe(42);
+  });
+
+  it("accepts a single browse payload and decorates each result", () => {
+    const response: BrowseResponse = {
+      type: "movies",
+      mode: "popular",
+      status: "complete",
+      results: [
+        { id: "1", type: ContentType.MOVIE, title: "Dune" },
+        { id: "2", type: ContentType.MOVIE, title: "Arrival" },
+      ],
+      metadata: { page: 1, total_pages: 1, total_results: 2 },
+      error: null,
+    };
+
+    expect(collectContentIdentities(response)).toHaveLength(2);
+    const resolved = applyResolvedContentIds(response, [
+      {
+        id: 99,
+        source_api: "tmdb",
+        external_id: "1",
+        content_type: ContentType.MOVIE,
+      },
+    ]);
+    expect(resolved.results[0]?.denn_id).toBe(99);
+    expect(resolved.results[1]?.denn_id).toBeUndefined();
   });
 });
 

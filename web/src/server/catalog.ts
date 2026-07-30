@@ -1,16 +1,12 @@
 import {
   applyResolvedContentIds,
   collectContentIdentities,
+  isBrowseResponse,
+  type CatalogResponse,
   type ResolvedContentIdentity,
 } from "@/lib/api/contentResolution";
 import { getApiUrl } from "@/lib/env";
-import type {
-  HomepageResponse,
-  MultiSearchResponse,
-} from "@/lib/types";
 import { getProxyApiKey } from "@/server/proxy";
-
-type CatalogResponse = HomepageResponse | MultiSearchResponse;
 
 export async function resolveCatalogContentIds<T extends CatalogResponse>(
   response: T,
@@ -49,6 +45,11 @@ export async function resolveCatalogContentIds<T extends CatalogResponse>(
     results: ResolvedContentIdentity[];
   };
 
+  const resolvedResponse = applyResolvedContentIds(response, resolved.results);
+  const unresolvedCount = isBrowseResponse(resolvedResponse)
+    ? resolvedResponse.results.filter((item) => !item.denn_id).length
+    : Math.max(items.length - resolved.results.length, 0);
+
   console.log(
     JSON.stringify({
       ts: new Date().toISOString(),
@@ -62,8 +63,16 @@ export async function resolveCatalogContentIds<T extends CatalogResponse>(
       duration_ms: durationMs,
       requested_count: items.length,
       resolved_count: resolved.results.length,
+      unresolved_count: unresolvedCount,
     }),
   );
 
-  return applyResolvedContentIds(response, resolved.results);
+  if (isBrowseResponse(resolvedResponse)) {
+    return {
+      ...resolvedResponse,
+      results: resolvedResponse.results.filter((item) => item.denn_id),
+    } as T;
+  }
+
+  return resolvedResponse;
 }

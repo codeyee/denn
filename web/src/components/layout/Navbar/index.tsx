@@ -1,13 +1,14 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useLocation } from "@tanstack/react-router";
 import {
   NavigationMenu,
   NavigationMenuItem,
   NavigationMenuList,
 } from "@/components/common/ui/NavigationMenu";
 import { Button } from "@/components/common/ui/Button";
+import { SearchInput } from "@/components/common/ui/SearchInput";
 import { UserAvatar } from "@/components/common/ui/UserAvatar";
 import { useAuth } from "@/hooks/useAuth";
-import { Search, Settings, LogOut, LogIn, User, UserPlus } from "lucide-react";
+import { Settings, LogOut, LogIn, User, UserPlus } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -24,11 +25,15 @@ interface NavbarProps {
 
 export function Navbar({ searchQuery, onSearchChange }: NavbarProps) {
   const { user, isAuthenticated, logout } = useAuth();
+  const pathname = useLocation({ select: (location) => location.pathname });
+  const isBrowseFamilyRoute = pathname.startsWith("/browse/");
+  const isSearchControlled =
+    searchQuery !== undefined && onSearchChange !== undefined;
   const {
     searchQuery: internalSearchQuery,
     searchInputRef,
     handleSearchChange,
-  } = useNavbarSearch();
+  } = useNavbarSearch({ enabled: !isSearchControlled });
   const resolvedSearchQuery = searchQuery ?? internalSearchQuery;
   const resolvedHandleSearchChange = onSearchChange ?? handleSearchChange;
 
@@ -61,29 +66,27 @@ export function Navbar({ searchQuery, onSearchChange }: NavbarProps) {
             </NavigationMenuList>
           </NavigationMenu>
 
-          <div className="flex-1 max-w-md mx-auto hidden lg:block font-sans">
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-300 pointer-events-none z-10" />
-                <label htmlFor="navbar-search" className="sr-only">
-                  Search movies, TV shows, games, albums, and books
-                </label>
-                <input
-                  id="navbar-search"
-                  ref={searchInputRef}
-                  type="text"
-                  value={resolvedSearchQuery}
-                  onChange={(e) => resolvedHandleSearchChange(e.target.value)}
-                  placeholder="Search for movies, TV shows, games..."
-                  className="w-full pl-12 pr-4 py-2 bg-white/10 backdrop-blur-lg border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white/40 transition-all"
-                />
-              </div>
-          </div>
+          {!isBrowseFamilyRoute && (
+            <div className="flex-1 max-w-md mx-auto hidden lg:block font-sans">
+              <SearchInput
+                id="navbar-search"
+                inputRef={searchInputRef}
+                value={resolvedSearchQuery}
+                onChange={resolvedHandleSearchChange}
+                onClear={() => resolvedHandleSearchChange("")}
+                label="Search movies, TV shows, games, albums, and books"
+                placeholder="Search for movies, TV shows, games..."
+              />
+            </div>
+          )}
 
           <div className="flex items-center gap-3">
-            <MobileSearch
-              value={resolvedSearchQuery}
-              onChange={resolvedHandleSearchChange}
-            />
+            {!isBrowseFamilyRoute && (
+              <MobileSearch
+                value={resolvedSearchQuery}
+                onChange={resolvedHandleSearchChange}
+              />
+            )}
 
             {isAuthenticated && user ? (
               <DropdownMenu>

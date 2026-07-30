@@ -50,3 +50,19 @@ func (c *Client) GetTrendingBooks(ctx context.Context, limit int) (*clients.Resp
 		"limit": strconv.Itoa(limit),
 	})
 }
+
+func (c *Client) GetRecentBooks(ctx context.Context, page, limit int) (*clients.Response, error) {
+	offset := (page - 1) * limit
+	params := url.Values{
+		"q":      {"*"},
+		"sort":   {"new"},
+		"limit":  {strconv.Itoa(limit)},
+		"offset": {strconv.Itoa(offset)},
+		"fields": {"*"},
+	}
+
+	return c.CachedGet(ctx, "search.json", "ol_recent", params, map[string]string{
+		"page":  strconv.Itoa(page),
+		"limit": strconv.Itoa(limit),
+	})
+}

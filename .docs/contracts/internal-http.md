@@ -90,7 +90,7 @@ si no existe sesión. El BFF asigna una cookie opaca `HttpOnly` firmada y
 envía su fingerprint como `X-Catalog-Visitor` dentro del request
 autenticado `web -> core`; el navegador no controla ni observa esos
 headers internos. Cualquier mutación de listas, ratings o contenido
-sigue el camino autenticado. Homepage/search resuelven ids estables
+sigue el camino autenticado. Homepage/search/browse resuelven ids estables
 server-side; ni `X-Api-Key` ni la URL interna de `core` aparecen en
 requests del navegador.
 
@@ -181,6 +181,26 @@ not participate in collaborative membership.
 ### 4.3 Mapeo en `web`
 
 `web` tiene helpers tipados separados (`@/lib/api/api.ts` para core, `@/lib/api/proxyApi.ts` para proxy). No se intenta unificar shapes — se asume cliente con conocimiento del backend al que llama.
+
+### 4.4 Browse público
+
+`GET /v1/proxy/browse` es el agregado público por familia. Recibe
+`type=movies|tv-shows|games|albums|books`, `sort=popular|recent`, `page=1..100`
+y un `q` opcional de hasta 80 caracteres. El tamaño de página es fijo en 24.
+Cuando existe `q`, el modo de respuesta es `search` y la consulta se ordena
+por relevancia; la política de contenido adulto siempre es `exclude`.
+
+La respuesta tiene `{ type, mode, status, results, metadata, error }`, donde
+`status` es `complete`, `empty` o `degraded` y `error` sólo contiene códigos
+estables (`PROVIDER_TIMEOUT`, `PROVIDER_RATE_LIMIT`, `PROVIDER_AUTH_FAILED`,
+`PROVIDER_UNAVAILABLE` o `BROWSE_UNAVAILABLE`). Las tarjetas reciben sus ids
+internos mediante el resolver bulk server-side; Browse elimina resultados que
+no puedan navegar a `/content/<id>`.
+
+Las claves del agregado incluyen familia, modo, hash de consulta, página, país
+y versión de política. El endpoint usa caché fresh/stale, stale-while-revalidate
+y single-flight; mantiene `X-Request-Id`, `X-Cache`, rate limiting y el sobre
+de error canónico.
 
 ## 5. Request ID y correlación
 

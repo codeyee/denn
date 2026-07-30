@@ -1,6 +1,6 @@
 
 import { Footer } from "../../layout/Footer";
-import { SearchInput } from "./components/SearchInput";
+import { SearchInput } from "../../common/ui/SearchInput";
 import { SearchResultsSection } from "./components/SearchResultsSection";
 import { EmptyState } from "../../common/state/EmptyState";
 import { LoadingCarousel } from "../../common/state/LoadingCarousel";
@@ -13,9 +13,12 @@ interface SearchPageProps {
   debouncedQuery: string;
   results: SearchResults;
   isLoading: boolean;
+  isFetching: boolean;
+  isDebouncing: boolean;
   error: string | null;
   hasResults: boolean;
   mobileInputRef: React.RefObject<HTMLInputElement | null>;
+  onClearSearch: () => string;
   allowAdult: boolean;
   isAuthenticated: boolean;
 }
@@ -26,16 +29,28 @@ export function SearchPage({
   debouncedQuery,
   results,
   isLoading,
+  isFetching,
+  isDebouncing,
   error,
   hasResults,
   mobileInputRef,
+  onClearSearch,
   allowAdult,
   isAuthenticated,
 }: SearchPageProps) {
 
-  const showLoading = isLoading || (searchQuery.trim() && !hasResults && !error);
-  const showResults = !isLoading && !error && debouncedQuery.trim();
-  const showInitialState = !searchQuery.trim() && !isLoading && !error;
+  const showLoading = Boolean(
+    isLoading || (searchQuery.trim() && !hasResults && !error),
+  );
+  const showResults = Boolean(!isLoading && !error && debouncedQuery.trim());
+  const showInitialState = Boolean(
+    !searchQuery.trim() && !debouncedQuery.trim() && !isLoading && !error,
+  );
+  const searchStatus = isDebouncing
+    ? "Waiting to search…"
+    : isFetching
+      ? "Searching…"
+      : null;
 
   return (
     <main
@@ -46,23 +61,30 @@ export function SearchPage({
       <h1 className="sr-only">Search Denn</h1>
       {/* Mobile Search Input */}
       <SearchInput
+        id="mobile-search"
+        label="Search movies, TV shows, games, albums, and books"
+        placeholder="Search for movies, TV shows, games..."
+        containerClassName="container mx-auto mt-8 px-4 pb-4 pt-24 lg:hidden"
         value={searchQuery}
         onChange={onSearchQueryChange}
         inputRef={mobileInputRef}
+        onClear={onClearSearch}
       />
 
       <div className="pt-5 lg:pt-30 pb-20">
         {searchQuery.trim() && (
-          <p
-            className="container mx-auto px-4 pb-2 text-sm text-gray-300"
-            role="status"
-          >
+          <div className="container mx-auto flex flex-wrap items-center gap-x-3 gap-y-1 px-4 pb-2 text-sm text-gray-300">
             {allowAdult
               ? "Adult content is included in direct search when a provider supplies a reliable classification. Automatic recommendations remain filtered."
               : isAuthenticated
                 ? "Adult content is filtered from direct search. You can opt in from your profile."
                 : "Adult content is filtered from public search. Sign in to manage your search preference."}
-          </p>
+            {searchStatus ? (
+              <span className="text-white/75" role="status" aria-live="polite">
+                {searchStatus}
+              </span>
+            ) : null}
+          </div>
         )}
         {/* Error State */}
         {error && !isLoading && (
@@ -91,22 +113,27 @@ export function SearchPage({
             <SearchResultsSection
               contentType={ContentType.MOVIE}
               items={results.movies}
+              query={debouncedQuery}
             />
             <SearchResultsSection
               contentType={ContentType.TV_SHOW}
               items={results.tvShows}
+              query={debouncedQuery}
             />
             <SearchResultsSection
               contentType={ContentType.GAME}
               items={results.games}
+              query={debouncedQuery}
             />
             <SearchResultsSection
               contentType={ContentType.ALBUM}
               items={results.music}
+              query={debouncedQuery}
             />
             <SearchResultsSection
               contentType={ContentType.BOOK}
               items={results.books}
+              query={debouncedQuery}
             />
 
             {/* No Results State */}

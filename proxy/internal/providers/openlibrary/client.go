@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	BaseURL      = "https://openlibrary.org"
-	CoversURL    = "https://covers.openlibrary.org"
+	BaseURL   = "https://openlibrary.org"
+	CoversURL = "https://covers.openlibrary.org"
 )
 
 type Client struct {
@@ -33,11 +33,13 @@ func NewClient(cache clients.Cache, opts ...clients.ClientOption) *Client {
 			"ol_search":   "openlibrary:search:{query}:{page}:{limit}",
 			"ol_details":  "openlibrary:details:{book_id}",
 			"ol_trending": "openlibrary:trending:{limit}",
+			"ol_recent":   "openlibrary:recent:{page}:{limit}",
 		},
 		TTLs: map[string]time.Duration{
 			"ol_search":   cachettl.BookSearchTTL,
 			"ol_details":  cachettl.BookDetailTTL,
 			"ol_trending": cachettl.CatalogueTTL,
+			"ol_recent":   cachettl.CatalogueTTL,
 		},
 	}
 

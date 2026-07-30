@@ -178,6 +178,22 @@ func (s *Service) GetPopularGames(ctx context.Context, limit, offset int) ([]mod
 	return servicecommon.FilterEligibleSearchItems(items, time.Now()), nil
 }
 
+func (s *Service) GetRecentGames(ctx context.Context, limit, offset int) ([]models.SearchItem, error) {
+	data, err := unmarshalResponse[[]games.IgdbGame](s.client.GetRecentGames(ctx, limit, offset, time.Now()))
+	if err != nil {
+		return nil, err
+	}
+
+	items := make([]models.SearchItem, 0, len(data))
+	for _, item := range data {
+		if len(item.Platforms) == 1 && item.Platforms[0].ID == 82 {
+			continue
+		}
+		items = append(items, mapper.MapSearchItem(item))
+	}
+	return servicecommon.FilterEligibleSearchItems(items, time.Now()), nil
+}
+
 func (s *Service) GetTrendingGames(ctx context.Context, limit, offset int) ([]models.SearchItem, error) {
 	wantMap, visitsMap, err := s.fetchTrendingPrimitives(ctx, limit)
 

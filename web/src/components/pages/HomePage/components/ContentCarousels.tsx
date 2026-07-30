@@ -2,6 +2,7 @@ import { ContentCard } from "@/components/common/cards/ContentCard";
 import { ListCard } from "@/components/common/cards/ListCard";
 import { CreateListCard } from "@/components/common/cards/CreateListCard";
 import { Carousel } from "@/components/common/ui/Carousel";
+import { BrowseSectionLink } from "@/components/common/ui/BrowseSectionLink";
 import { ErrorState } from "@/components/common/state/ErrorState";
 import {
   CONTENT_TYPE_DEFINITIONS,
@@ -90,15 +91,22 @@ function CarouselSection({
   const definition = CONTENT_TYPE_DEFINITIONS[type];
 
   return (
-    <Carousel
-      title={definition.sectionTitle ?? definition.pluralLabel}
-      titleIcon={definition.icon}
-      className="mb-4 md:mb-8"
-    >
-      {items.map((item) => (
-        <ContentCard key={`${keyPrefix}-${item.id}`} item={item} />
-      ))}
-    </Carousel>
+    <div className="mb-4 md:mb-8">
+      <Carousel
+        title={definition.sectionTitle ?? definition.pluralLabel}
+        titleIcon={definition.icon}
+        titleAction={
+          <BrowseSectionLink
+            type={definition.slug}
+            label={definition.pluralLabel}
+          />
+        }
+      >
+        {items.map((item) => (
+          <ContentCard key={`${keyPrefix}-${item.id}`} item={item} />
+        ))}
+      </Carousel>
+    </div>
   );
 }
 

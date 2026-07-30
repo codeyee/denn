@@ -6,11 +6,16 @@ import {
   queryKeys,
   SEARCH_RESULT_LIMIT,
 } from "@/lib/api/queries";
+import { normalizeSearchQuery } from "@/lib/search";
 import { prefetchSearchQuery } from "@/lib/api/queries/server";
 import type { MultiSearchResponse } from "@/lib/types";
 
 const searchSchema = z.object({
-  q: z.string().optional().catch(undefined),
+  q: z
+    .string()
+    .transform((value) => normalizeSearchQuery(value))
+    .optional()
+    .catch(undefined),
 });
 
 export const Route = createFileRoute("/search")({

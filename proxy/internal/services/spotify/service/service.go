@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -169,4 +170,40 @@ func (s *Service) GetTrendingAlbums(ctx context.Context, page, limit int) (Searc
 		TotalResults: data.Albums.Total,
 		Results:      items,
 	}, nil
+}
+
+func (s *Service) GetRecentAlbums(ctx context.Context, page, limit int) (SearchResult, error) {
+	const chartFeedLimit = 100
+	data, err := unmarshalResponse[spotify.SpotifyNewReleasesResponse](s.client.GetTrendingAlbums(ctx, chartFeedLimit, 0))
+	if err != nil {
+		return SearchResult{}, fmt.Errorf("get recent albums: %w", err)
+	}
+
+	sort.SliceStable(data.Albums.Items, func(i, j int) bool {
+		return data.Albums.Items[i].ReleaseDate > data.Albums.Items[j].ReleaseDate
+	})
+
+	items := make([]models.SearchItem, 0, len(data.Albums.Items))
+	for _, album := range data.Albums.Items {
+		items = append(items, mapper.MapSearchItem(album))
+	}
+	items = servicecommon.FilterEligibleSearchItems(items, time.Now())
+
+	total := len(items)
+	offset := (page - 1) * limit
+	if offset >= total {
+		items = []models.SearchItem{}
+	} else {
+		end := offset + limit
+		if end > total {
+			end = total
+		}
+		items = items[offset:end]
+	}
+
+	totalPages := 0
+	if total > 0 && limit > 0 {
+		totalPages = (total + limit - 1) / limit
+	}
+	return SearchResult{Page: page, TotalPages: totalPages, TotalResults: total, Results: items}, nil
 }

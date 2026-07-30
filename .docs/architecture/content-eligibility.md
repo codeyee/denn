@@ -1,8 +1,8 @@
 # Discovery Content Eligibility
 
 This document defines the browse/search eligibility boundary.
-It applies to the public homepage and multi-search surfaces before their
-aggregate responses are cached.
+It applies to the public homepage, multi-search, and Browse surfaces before
+their aggregate responses are cached.
 
 ## Release Policy
 
@@ -11,12 +11,11 @@ aggregate responses are cached.
   `now + 24 hours`.
 - Missing, malformed, or provider-zero dates fail closed on general
   discovery surfaces.
-- Filtering runs in every provider service used by homepage and search,
+- Filtering runs in every provider service used by homepage, search, and Browse,
   before aggregation and cache writes.
-- Spotify Charts is used only to rank album IDs. Because its current
-  album payload omits release dates, homepage enriches those IDs through
-  Spotify's album endpoint and applies release eligibility to the
-  enriched records before writing the aggregate cache.
+- Spotify Charts supplies the popular feed and the bounded recent feed;
+  Browse sorts the available chart release dates for `recent`. This is not a
+  global new-release catalog and missing dates still fail closed.
 - A valid chart is cached for 24 hours and retained as a 14-day
   last-known-good fallback. Empty or incompatible chart payloads are
   never promoted into either cache.
@@ -35,7 +34,7 @@ discovery browse request.
 
 ## Adult-Safety Boundary
 
-- Homepage, featured content, previews, and other automatic discovery
+- Homepage, featured content, previews, Browse, and other automatic discovery
   always exclude adult content. A user preference cannot relax those
   surfaces.
 - New accounts default `allow_adult_content=false`.

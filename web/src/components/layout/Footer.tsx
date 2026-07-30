@@ -28,6 +28,9 @@ export function Footer() {
           <Link to="/" className="inline-flex min-h-11 items-center hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
             Explore
           </Link>
+          <Link to="/browse" className="inline-flex min-h-11 items-center hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
+            Browse
+          </Link>
           <Link to="/about" className="inline-flex min-h-11 items-center hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
             About
           </Link>
