@@ -28,6 +28,7 @@ Start here, then read in this order:
 12. [`workspace-operating-model.md`](./workspace-operating-model.md)
 13. [`adr/0006-isolated-local-worktree-stacks.md`](./adr/0006-isolated-local-worktree-stacks.md)
 14. [`adr/0007-game-duration-estimates.md`](./adr/0007-game-duration-estimates.md)
+15. [`adr/0008-list-membership-permissions.md`](./adr/0008-list-membership-permissions.md)
 
 ## Practical Usage Flow
 

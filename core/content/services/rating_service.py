@@ -1,6 +1,7 @@
 from django.db.models import Avg, Count, Q, Subquery
 
-from content.models import Rating, UserList, ListItem
+from content.models import Rating
+from .list_policy import member_ids_subquery
 
 
 def get_member_ratings_queryset(*, list_pk=None):
@@ -11,9 +12,7 @@ def get_member_ratings_queryset(*, list_pk=None):
     qs = Rating.objects.filter(is_active=True).select_related('user').order_by('-created_at')
     if list_pk:
         qs = qs.filter(
-            user_id__in=Subquery(
-                UserList.objects.filter(pk=list_pk).values('members__id')
-            )
+            user_id__in=Subquery(member_ids_subquery(list_pk))
         )
     return qs
 

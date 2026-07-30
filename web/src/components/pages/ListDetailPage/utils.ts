@@ -500,6 +500,26 @@ export function isPersonalList(list: { owner: { id: number }; members?: Array<{ 
   return list.members.length === 1 && list.members[0].id === list.owner.id;
 }
 
+export function canEditListContent(
+  list: { owner: { id: number }; members?: Array<{ id: number; role?: string }> },
+  currentUserId?: number,
+): boolean {
+  if (!currentUserId) return false;
+  if (list.owner.id === currentUserId) return true;
+  return list.members?.some(
+    (member) =>
+      member.id === currentUserId &&
+      (member.role === "owner" || member.role === "editor"),
+  ) ?? false;
+}
+
+export function canManageListSettings(
+  list: { owner: { id: number }; members?: Array<{ id: number; role?: string }> },
+  currentUserId?: number,
+): boolean {
+  return Boolean(currentUserId && list.owner.id === currentUserId);
+}
+
 export function getUserRating(item: ListItem, userId: number | undefined): number | null {
   if (!userId || !item.member_ratings || !Array.isArray(item.member_ratings)) {
     return null;

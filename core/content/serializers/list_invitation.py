@@ -9,6 +9,7 @@ class ListInvitationSerializer(BaseFlexSerializer):
     inviter = UserSerializer(read_only=True)
     invitee = UserSerializer(read_only=True)
     user_list = UserListSerializer(read_only=True)
+    role = serializers.SerializerMethodField()
 
     class Meta:
         model = ListInvitation
@@ -19,6 +20,7 @@ class ListInvitationSerializer(BaseFlexSerializer):
             'inviter',
             'invitee',
             'status',
+            'role',
             'created_at',
             'responded_at',
         ]
@@ -39,6 +41,9 @@ class ListInvitationSerializer(BaseFlexSerializer):
             'user_list': (UserListSerializer, {'many': False}),
         }
 
+    def get_role(self, obj):
+        return obj.role.lower()
+
 class ListInvitationCreateSerializer(serializers.ModelSerializer):
     username = serializers.CharField(
         write_only=True,
@@ -50,6 +55,16 @@ class ListInvitationCreateSerializer(serializers.ModelSerializer):
         write_only=True,
         required=False,
         help_text='Email of the user to invite'
+    )
+
+    role = serializers.ChoiceField(
+        choices=[
+            ('editor', 'Editor'),
+            ('viewer', 'Viewer'),
+        ],
+        required=False,
+        default='editor',
+        write_only=True,
     )
 
     inviter = UserSerializer(read_only=True)
@@ -69,6 +84,7 @@ class ListInvitationCreateSerializer(serializers.ModelSerializer):
             'status',
             'created_at',
             'responded_at',
+            'role',
         ]
 
         read_only_fields = [
@@ -99,6 +115,7 @@ class ListInvitationCreateSerializer(serializers.ModelSerializer):
             )
 
         attrs['invitee'] = invitee
+        attrs['role'] = attrs.get('role', 'editor').upper()
 
         request = self.context.get('request')
         if request and invitee.id == request.user.id:
@@ -107,7 +124,7 @@ class ListInvitationCreateSerializer(serializers.ModelSerializer):
             )
 
         user_list = self.context.get('user_list')
-        if user_list and user_list.members.filter(id=invitee.id).exists():
+        if user_list and user_list.memberships.filter(user_id=invitee.id).exists():
             raise serializers.ValidationError(
                 {'detail': f'User {invitee.username} is already a member of this list.'}
             )

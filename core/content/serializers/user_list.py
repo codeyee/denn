@@ -1,6 +1,7 @@
 from rest_framework import serializers
-from content.models import UserList
+from content.models import ListMembership, UserList
 from .user import UserSerializer, MemberSerializer
+from content.services.list_policy import ALL_MEMBER_ROLES, effective_memberships
 
 
 from core.serializers import BaseFlexSerializer
@@ -43,15 +44,8 @@ class UserListSerializer(BaseFlexSerializer):
 
     def get_member_count(self, obj):
         if hasattr(obj, 'member_count_annotated'):
-            count = obj.member_count_annotated
-            if hasattr(obj, '_prefetched_objects_cache') and 'members' in obj._prefetched_objects_cache:
-                if obj.owner_id not in [m.id for m in obj.members.all()]:
-                    count += 1
-            return count
-        count = obj.members.count()
-        if not obj.members.filter(id=obj.owner_id).exists():
-            count += 1
-        return count
+            return obj.member_count_annotated
+        return len(effective_memberships(obj))
 
     def get_item_count(self, obj):
         if hasattr(obj, 'item_count_annotated'):
@@ -104,29 +98,36 @@ class UserListDetailSerializer(BaseFlexSerializer):
         ]
 
     def get_members(self, obj):
-        """Return all members including the owner with is_owner flag"""
-        members_list = list(obj.members.all())
-        if obj.owner_id not in {member.id for member in members_list}:
-            members_list.insert(0, obj.owner)
-
-        # Serialize with context containing the user_list for is_owner calculation
+        """Return all persisted memberships with their explicit roles."""
+        memberships = getattr(obj, 'memberships_prefetched', None)
+        if memberships is None:
+            memberships = list(effective_memberships(obj))
+        elif obj.list_type == UserList.ListType.DYNAMIC:
+            memberships = []
+        elif obj.list_type == UserList.ListType.SHARED:
+            memberships = [
+                membership
+                for membership in memberships
+                if membership.role in ALL_MEMBER_ROLES
+            ]
+        else:
+            memberships = [
+                membership
+                for membership in memberships
+                if membership.user_id == obj.owner_id
+                and membership.role == 'OWNER'
+            ]
+        membership_roles = {membership.user_id: membership.role for membership in memberships}
         return MemberSerializer(
-            members_list,
+            [membership.user for membership in memberships],
             many=True,
-            context={'user_list': obj}
+            context={'user_list': obj, 'membership_roles': membership_roles}
         ).data
 
     def get_member_count(self, obj):
         if hasattr(obj, 'member_count_annotated'):
-            count = obj.member_count_annotated
-            if hasattr(obj, '_prefetched_objects_cache') and 'members' in obj._prefetched_objects_cache:
-                if obj.owner_id not in [m.id for m in obj.members.all()]:
-                    count += 1
-            return count
-        count = obj.members.count()
-        if not obj.members.filter(id=obj.owner_id).exists():
-            count += 1
-        return count
+            return obj.member_count_annotated
+        return len(effective_memberships(obj))
 
     def get_item_count(self, obj):
         if hasattr(obj, 'item_count_annotated'):

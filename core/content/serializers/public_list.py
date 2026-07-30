@@ -3,6 +3,7 @@ from rest_framework import serializers
 from content.models import ListItem, UserList
 
 from .local_content_summary import LocalContentSummarySerializer
+from content.services.list_policy import effective_memberships
 
 
 class PublicListItemSerializer(serializers.ModelSerializer):
@@ -47,9 +48,9 @@ class PublicUserListDetailSerializer(serializers.ModelSerializer):
 
     def get_collaborators(self, obj) -> list:
         return [
-            {"username": member.username}
-            for member in obj.members.all()
-            if member.id != obj.owner_id
+            {"username": membership.user.username}
+            for membership in effective_memberships(obj)
+            if membership.user_id != obj.owner_id
         ]
 
     def get_item_count(self, obj) -> int:

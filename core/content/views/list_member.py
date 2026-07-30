@@ -1,26 +1,45 @@
-from rest_framework import viewsets, status
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth.models import User
-from drf_spectacular.utils import extend_schema, OpenApiExample
-from content.models import UserList
-from content.serializers import UserSerializer
-from content.permissions import IsOwnerOfSharedList
+from drf_spectacular.utils import OpenApiExample, extend_schema
+from rest_framework import status, viewsets
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+
+from content.models import ListMembership, UserList
+from content.serializers import (
+    ListMembershipRoleSerializer,
+    ListMembershipSerializer,
+)
+from content.services.list_policy import (
+    ListAction,
+    ListActionPermission,
+    can,
+    is_collaborative,
+)
+from content.services.list_service import remove_member
+
 
 class ListMemberViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
 
+    def get_permissions(self):
+        action = (
+            ListAction.MANAGE_MEMBERS
+            if self.action in {'destroy', 'update', 'partial_update'}
+            else ListAction.VIEW
+        )
+        return [IsAuthenticated(), ListActionPermission(action)]
+
     def get_list(self, list_id):
-        try:
-            user_list = UserList.objects.get(pk=list_id)
-            return user_list
-        except UserList.DoesNotExist:
-            return None
+        return (
+            UserList.objects.select_related('owner')
+            .filter(pk=list_id)
+            .first()
+        )
 
     @extend_schema(
         tags=['List Members'],
         summary='List all members of a list',
-        description='Get all members of a shared list including the owner.',
+        description='Get all members of a shared list including the owner and role.',
         responses={
             200: OpenApiExample(
                 'Members List',
@@ -30,29 +49,14 @@ class ListMemberViewSet(viewsets.ViewSet):
                         'username': 'john',
                         'email': 'john@example.com',
                         'first_name': 'John',
-                        'last_name': 'Doe'
+                        'last_name': 'Doe',
+                        'role': 'owner',
+                        'is_owner': True,
                     },
-                    'members': [
-                        {
-                            'id': 1,
-                            'username': 'john',
-                            'email': 'john@example.com',
-                            'first_name': 'John',
-                            'last_name': 'Doe'
-                        },
-                        {
-                            'id': 2,
-                            'username': 'maria',
-                            'email': 'maria@example.com',
-                            'first_name': 'Maria',
-                            'last_name': 'Garcia'
-                        }
-                    ]
-                }
+                    'members': [],
+                },
             ),
-            403: OpenApiExample('Forbidden', value={'detail': 'No tienes acceso a esta lista.'}),
-            404: OpenApiExample('Not Found', value={'detail': 'Lista no encontrada.'})
-        }
+        },
     )
     def list(self, request, list_pk=None):
         user_list = self.get_list(list_pk)
@@ -60,57 +64,52 @@ class ListMemberViewSet(viewsets.ViewSet):
         if not user_list:
             return Response(
                 {'detail': 'Lista no encontrada.'},
-                status=status.HTTP_404_NOT_FOUND
+                status=status.HTTP_404_NOT_FOUND,
             )
-
-        if not user_list.members.filter(id=request.user.id).exists():
+        if not is_collaborative(user_list) or not can(
+            user_list,
+            request.user,
+            ListAction.VIEW,
+        ):
             return Response(
                 {'detail': 'No tienes acceso a esta lista.'},
-                status=status.HTTP_403_FORBIDDEN
+                status=status.HTTP_403_FORBIDDEN,
             )
 
-        members = user_list.members.all()
-        serializer = UserSerializer(members, many=True)
+        memberships = list(
+            ListMembership.objects.filter(user_list=user_list)
+            .select_related('user')
+            .order_by('role', 'user__username')
+        )
+        owner_membership = next(
+            (
+                membership
+                for membership in memberships
+                if membership.role == ListMembership.Role.OWNER
+            ),
+            None,
+        )
 
         return Response({
-            'owner': UserSerializer(user_list.owner).data,
-            'members': serializer.data
+            'owner': (
+                ListMembershipSerializer(owner_membership).data
+                if owner_membership else None
+            ),
+            'members': ListMembershipSerializer(memberships, many=True).data,
         })
 
     @extend_schema(
         tags=['List Members'],
         summary='Remove member from list',
-        description='''
-        Remove a member from a shared list.
-
-        Only the list owner can remove members. The owner cannot remove themselves.
-        ''',
-        responses={
-            204: OpenApiExample('Success', value={'detail': 'Usuario maria eliminado de la lista.'}),
-            400: OpenApiExample('Bad Request', value={'detail': 'Solo se pueden eliminar miembros de listas compartidas.'}),
-            403: OpenApiExample('Forbidden', value={'detail': 'Solo el propietario puede eliminar miembros.'}),
-            404: OpenApiExample('Not Found', value={'detail': 'Usuario no encontrado.'})
-        }
+        description='Only the owner can remove a non-owner member.',
+        responses={204: OpenApiExample('Success', value={})},
     )
     def destroy(self, request, list_pk=None, pk=None):
         user_list = self.get_list(list_pk)
-
         if not user_list:
             return Response(
                 {'detail': 'Lista no encontrada.'},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-        if user_list.list_type != UserList.ListType.SHARED:
-            return Response(
-                {'detail': 'Solo se pueden eliminar miembros de listas compartidas.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        if user_list.owner != request.user:
-            return Response(
-                {'detail': 'Solo el propietario puede eliminar miembros.'},
-                status=status.HTTP_403_FORBIDDEN
+                status=status.HTTP_404_NOT_FOUND,
             )
 
         try:
@@ -118,25 +117,53 @@ class ListMemberViewSet(viewsets.ViewSet):
         except User.DoesNotExist:
             return Response(
                 {'detail': 'Usuario no encontrado.'},
-                status=status.HTTP_404_NOT_FOUND
+                status=status.HTTP_404_NOT_FOUND,
             )
 
-        if user_to_remove == user_list.owner:
+        ok, error, error_status = remove_member(user_list, user_to_remove)
+        if not ok:
+            return Response({'detail': error}, status=error_status)
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def update(self, request, list_pk=None, pk=None):
+        return self._update_role(request, list_pk, pk)
+
+    def partial_update(self, request, list_pk=None, pk=None):
+        return self._update_role(request, list_pk, pk)
+
+    @extend_schema(
+        tags=['List Members'],
+        summary='Change a member role',
+        request=ListMembershipRoleSerializer,
+        responses={200: ListMembershipSerializer},
+    )
+    def _update_role(self, request, list_pk, pk):
+        user_list = self.get_list(list_pk)
+        if not user_list or not is_collaborative(user_list):
             return Response(
-                {'detail': 'El propietario no puede eliminarse de la lista.'},
-                status=status.HTTP_400_BAD_REQUEST
+                {'detail': 'Solo las listas compartidas tienen roles de membresía.'},
+                status=status.HTTP_404_NOT_FOUND,
             )
 
-        if not user_list.members.filter(id=user_to_remove.id).exists():
-            return Response(
-                {'detail': 'El usuario no es miembro de esta lista.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        user_list.members.remove(user_to_remove)
-
-        return Response(
-            {'detail': f'Usuario {user_to_remove.username} eliminado de la lista.'},
-            status=status.HTTP_204_NO_CONTENT
+        membership = (
+            ListMembership.objects.select_related('user')
+            .filter(user_list=user_list, user_id=pk)
+            .first()
         )
+        if membership is None:
+            return Response(
+                {'detail': 'El usuario no es miembro de la lista.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        if membership.role == ListMembership.Role.OWNER:
+            return Response(
+                {'detail': 'El owner no puede cambiarse mediante este endpoint.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
+        serializer = ListMembershipRoleSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        membership.role = serializer.validated_data['role'].upper()
+        membership.save(update_fields=['role'])
+        return Response(ListMembershipSerializer(membership).data)

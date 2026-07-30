@@ -1,7 +1,14 @@
-from django.db.models import Q, Count, Prefetch, Subquery
-from django.contrib.auth.models import User
+from django.db import transaction
+from django.db.models import Count, Prefetch, Subquery
 
-from content.models import UserList, ListItem, Rating
+from content.models import ListMembership, UserList, ListItem, Rating
+from .list_policy import (
+    accessible_lists_q,
+    effective_membership_count_filter,
+    effective_memberships,
+    is_collaborative,
+    member_ids_subquery,
+)
 
 
 def get_user_lists(user, *, list_pk=None, item_filters=None, ratings_queryset=None, items_queryset=None):
@@ -9,15 +16,17 @@ def get_user_lists(user, *, list_pk=None, item_filters=None, ratings_queryset=No
     Return the annotated UserList queryset for a user (owner or member).
     Annotations: item_count_annotated, member_count_annotated.
     """
-    qs = UserList.objects.filter(
-        Q(owner=user) | Q(members=user)
-    ).distinct().select_related(
+    qs = UserList.objects.filter(accessible_lists_q(user)).distinct().select_related(
         'owner'
     ).prefetch_related(
-        'members',
+        'memberships',
     ).annotate(
         item_count_annotated=Count('items', distinct=True),
-        member_count_annotated=Count('members', distinct=True),
+        member_count_annotated=Count(
+            'memberships',
+            filter=effective_membership_count_filter(),
+            distinct=True,
+        ),
     )
 
     if items_queryset is not None:
@@ -51,9 +60,7 @@ def build_ratings_queryset(*, list_pk=None):
     if list_pk:
         return Rating.objects.filter(
             is_active=True,
-            user_id__in=Subquery(
-                UserList.objects.filter(pk=list_pk).values('members__id')
-            )
+            user_id__in=Subquery(member_ids_subquery(list_pk))
         ).select_related('user').order_by('-created_at')
     return Rating.objects.filter(is_active=True).select_related(
         'user'
@@ -102,16 +109,41 @@ def get_list_stats(user_list):
         'total_items': counts['total'],
         'pending_items': counts['pending'],
         'completed_items': counts['completed'],
-        'member_count': user_list.members.count(),
+        'member_count': len(effective_memberships(user_list)),
         'content_types': content_types,
     }
 
 
 def ensure_owner_membership(user_list):
-    """Ensure the owner is in the members M2M for SHARED lists."""
-    if user_list.list_type == UserList.ListType.SHARED:
-        if not user_list.members.filter(pk=user_list.owner_id).exists():
-            user_list.members.add(user_list.owner)
+    """Repair the single persisted owner membership for editable lists."""
+    if user_list.list_type == UserList.ListType.DYNAMIC:
+        return None
+
+    with transaction.atomic():
+        ListMembership.objects.filter(
+            user_list_id=user_list.id,
+            role=ListMembership.Role.OWNER,
+        ).exclude(user_id=user_list.owner_id).update(
+            role=ListMembership.Role.EDITOR,
+        )
+        return ListMembership.objects.update_or_create(
+            user_list_id=user_list.id,
+            user_id=user_list.owner_id,
+            defaults={'role': ListMembership.Role.OWNER},
+        )[0]
+
+
+def add_member(user_list, user, role=ListMembership.Role.EDITOR):
+    """Create a shared-list membership without allowing owner escalation."""
+    if not is_collaborative(user_list):
+        raise ValueError('Solo las listas compartidas admiten miembros.')
+    if role == ListMembership.Role.OWNER:
+        raise ValueError('El owner se gestiona mediante UserList.owner.')
+    return ListMembership.objects.get_or_create(
+        user_list_id=user_list.id,
+        user_id=user.id,
+        defaults={'role': role},
+    )[0]
 
 
 def remove_member(user_list, user_to_remove):
@@ -121,14 +153,18 @@ def remove_member(user_list, user_to_remove):
     """
     from rest_framework import status as http_status
 
-    if user_list.list_type != UserList.ListType.SHARED:
+    if not is_collaborative(user_list):
         return False, 'Solo se pueden eliminar miembros de listas compartidas.', http_status.HTTP_400_BAD_REQUEST
 
     if user_to_remove == user_list.owner:
         return False, 'El propietario no puede eliminarse de la lista.', http_status.HTTP_400_BAD_REQUEST
 
-    if not user_list.members.filter(id=user_to_remove.id).exists():
+    membership = ListMembership.objects.filter(
+        user_list_id=user_list.id,
+        user_id=user_to_remove.id,
+    ).first()
+    if membership is None:
         return False, 'El usuario no es miembro de esta lista.', http_status.HTTP_400_BAD_REQUEST
 
-    user_list.members.remove(user_to_remove)
+    membership.delete()
     return True, None, None

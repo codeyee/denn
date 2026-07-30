@@ -145,6 +145,18 @@ export interface User {
     last_name?: string;
 }
 
+export type ListMemberRole = "owner" | "editor" | "viewer";
+
+export interface ListMember extends User {
+    role: ListMemberRole;
+    is_owner: boolean;
+}
+
+export interface ListMembersResponse {
+    owner: ListMember | null;
+    members: ListMember[];
+}
+
 export interface UserList {
     id: number;
     name: string;
@@ -153,7 +165,8 @@ export interface UserList {
     dynamic_key?: string | null;
     visibility: ListVisibility;
     owner: User;
-    members?: User[];
+    member_count: number;
+    members?: ListMember[];
     item_count: string;
     created_at: string;
     updated_at: string;
@@ -195,6 +208,7 @@ export interface ListInvitation {
     inviter: User;
     invitee: User;
     status: InvitationStatus;
+    role: Exclude<ListMemberRole, "owner">;
     created_at: string;
     responded_at: string | null;
 }
@@ -202,6 +216,7 @@ export interface ListInvitation {
 export interface ListInvitationCreate {
     username?: string;
     email?: string;
+    role?: Exclude<ListMemberRole, "owner">;
 }
 
 export interface ListInvitationResponse {

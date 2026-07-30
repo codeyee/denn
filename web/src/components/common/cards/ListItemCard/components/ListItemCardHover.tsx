@@ -15,6 +15,7 @@ interface ListItemCardHoverProps {
   list: UserListDetail;
   onToggleStatus: (itemId: number, currentStatus: string) => void;
   onDelete: (itemId: number) => void;
+  canEditContent: boolean;
   onRateClick?: () => void;
   showRatingInvitation?: boolean;
 }
@@ -25,6 +26,7 @@ export function ListItemCardHover({
   list,
   onToggleStatus,
   onDelete,
+  canEditContent,
   onRateClick,
   showRatingInvitation = false,
 }: ListItemCardHoverProps) {
@@ -113,7 +115,7 @@ export function ListItemCardHover({
         )}
 
         <div className="flex gap-2 pt-2 border-t border-white/10">
-          {!personal ? (
+          {canEditContent && !personal ? (
             <Button
             size="sm"
             onClick={(e) => {
@@ -147,7 +149,7 @@ export function ListItemCardHover({
             )}
           </Button>
           ) : null}
-          {!systemManaged && <Button
+          {canEditContent && !systemManaged && <Button
             size="sm"
             onClick={(e) => {
               e.stopPropagation();

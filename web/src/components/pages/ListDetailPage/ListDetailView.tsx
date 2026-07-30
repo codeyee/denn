@@ -12,6 +12,10 @@ import { ListModals } from "./components/ListModals";
 import type { useListDetailController } from "./hooks/useListDetailController";
 import { ListErrorState, ListLoadingState } from "./ListDetailStates";
 import { ListType } from "@/lib/types";
+import {
+  canEditListContent,
+  canManageListSettings,
+} from "./utils";
 
 type Controller = ReturnType<typeof useListDetailController>;
 
@@ -40,6 +44,9 @@ export function ListDetailView({ controller }: { controller: Controller }) {
     return <ListErrorState message={data.error || "List not found"} />;
   }
 
+  const canEditContent = canEditListContent(data.list, currentUser?.id);
+  const canManageSettings = canManageListSettings(data.list, currentUser?.id);
+
   return (
     <>
       <Navbar />
@@ -54,9 +61,11 @@ export function ListDetailView({ controller }: { controller: Controller }) {
                 showListContext={data.list.list_type === ListType.SHARED}
                 showTrackingStatus={data.list.list_type === ListType.DYNAMIC}
                 isReorderMode={reordering.isReorderMode}
-                canApplySort={canApplySort}
+                canApplySort={canEditContent && canApplySort}
                 applySortHint={
-                  canApplySort
+                  !canEditContent
+                    ? "Only owners and editors can change the canonical list order."
+                    : canApplySort
                     ? "Promote the current sort to the canonical list order."
                     : exploreIsEmpty
                       ? "Set an explicit sort (other than default order) to enable promotion."
@@ -68,7 +77,9 @@ export function ListDetailView({ controller }: { controller: Controller }) {
                 onSetFilter={explore.setFilter}
                 onSetPageSize={explore.setPageSize}
                 onResetExploration={explore.resetExploration}
-                onApplySortAsListOrder={handleApplySortAsListOrder}
+                onApplySortAsListOrder={
+                  canEditContent ? handleApplySortAsListOrder : () => undefined
+                }
               />
               <ItemsHeader
                 itemCount={data.totalItemCount}
@@ -127,6 +138,8 @@ export function ListDetailView({ controller }: { controller: Controller }) {
               reorderPreparing={reordering.reorderPreparing}
               itemsLoading={data.itemsLoading || data.fullItemsLoading}
               reorderDisabledReason={reorderDisabledReason}
+              canEditContent={canEditContent}
+              canManageSettings={canManageSettings}
               onEditList={modals.openEditModal}
               onDeleteList={modals.openDeleteListDialog}
               onEnterReorderMode={() => {
