@@ -613,6 +613,31 @@ class TrackingApiTests(APITestCase):
         )
         self.assertEqual(response.status_code, 401)
 
+    def test_random_backlog_pick_excludes_previous_result(self):
+        self.client.force_authenticate(self.user)
+        UserContentTracking.objects.create(
+            user=self.user,
+            content_item=self.movie,
+            status=UserContentTracking.Status.BACKLOG,
+        )
+
+        response = self.client.post(
+            reverse("content:content-tracking-random"),
+            {},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["result"]["content"]["id"], self.movie.id)
+        repeat = self.client.post(
+            reverse("content:content-tracking-random"),
+            {"exclude_content_ids": [self.movie.id]},
+            format="json",
+        )
+
+        self.assertEqual(repeat.status_code, 200)
+        self.assertIsNone(repeat.data["result"])
+
     def test_tracking_status_favorite_and_delete_contract(self):
         self.client.force_authenticate(self.user)
         detail_url = reverse(

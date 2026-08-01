@@ -11,8 +11,9 @@ público.
 
 Este sprint sigue abierto. El issue #61 cerró owner persistido, roles
 `owner/editor/viewer`, la policy de permisos, roles de invitación y la
-privacidad pública. Aún faltan estado por miembro, Add-to-List
-checkbox-first y el selector aleatorio de pendientes. No reinterpretar
+privacidad pública. Aún faltan estado por miembro y Add-to-List
+checkbox-first. El selector aleatorio de pendientes se amplió y entregó
+como picker interactivo para listas elegibles y el progreso del dueño. No reinterpretar
 este lote como cierre de Lists 2.0.
 
 ## Objetivo
@@ -54,8 +55,8 @@ privada, roles explícitos y estado por miembro en listas compartidas.
 - UX de miembros, roles, visibilidad e invitaciones.
 - UX de Add-to-List sobre el nuevo contrato de membresía, incluyendo
   metadata de listas y estados seleccionados.
-- Acción "pick pending" para destacar aleatoriamente un item pendiente
-  de una lista, si no compromete la entrega principal.
+- Acción "pick pending" ampliada a un picker con animación horizontal,
+  exclusión del resultado anterior y transición opcional a `in_progress`.
 - Render anónimo de listas públicas.
 - Documentación de permisos y rollout.
 

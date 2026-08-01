@@ -169,8 +169,9 @@ Current reality:
 
 Product work to land:
 
-- Finish the remaining Lists 2.0 follow-ups: per-member state, Add-to-List
-  checkbox semantics, and the random pending picker. Explicit roles, owner
+- Finish the remaining Lists 2.0 follow-ups: per-member state and Add-to-List
+  checkbox semantics. The interactive random picker is implemented across
+  eligible list types and the owner's Progress tab. Explicit roles, owner
   membership, permission policy, invitation roles, and public privacy are
   implemented by issue #61.
 - Finish public content aggregates, gallery, sitemap, metadata, cache, and

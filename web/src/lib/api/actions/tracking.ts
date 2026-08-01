@@ -1,5 +1,9 @@
 import { api } from "../api";
-import type { TrackingStatus, UserContentTracking } from "@/lib/types";
+import type {
+  RandomTrackingPick,
+  TrackingStatus,
+  UserContentTracking,
+} from "@/lib/types";
 
 export const trackingActions = {
   setStatus: (
@@ -28,6 +32,15 @@ export const trackingActions = {
     api.patch<UserContentTracking>(
       `/content/tracking/${contentId}/favorite/`,
       { is_favorite: isFavorite },
+      true,
+    ),
+
+  pickRandom: (
+    excludeContentIds: number[] = [],
+  ): Promise<{ result: RandomTrackingPick | null }> =>
+    api.post<{ result: RandomTrackingPick | null }>(
+      "/content/tracking/random/",
+      { exclude_content_ids: excludeContentIds },
       true,
     ),
 };

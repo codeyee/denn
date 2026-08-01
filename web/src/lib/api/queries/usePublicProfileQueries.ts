@@ -26,6 +26,7 @@ export function usePublicProgressQuery(
   username: string,
   search: ProfileSearchParams,
   initialData?: PaginatedProfileResults<PublicProgressItem>,
+  options: { enabled?: boolean } = {},
 ) {
   return useQuery({
     queryKey: queryKeys.profiles.tab(username, "progress", search),
@@ -33,6 +34,7 @@ export function usePublicProgressQuery(
     staleTime: 60_000,
     initialData,
     placeholderData: (previousData) => previousData,
+    enabled: options.enabled,
   });
 }
 

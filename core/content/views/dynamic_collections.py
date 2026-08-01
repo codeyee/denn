@@ -10,6 +10,7 @@ from content.serializers import (
     DynamicCollectionItemSerializer,
     DynamicCollectionSerializer,
     DynamicCollectionSettingsSerializer,
+    RandomSelectionRequestSerializer,
 )
 from content.services.dynamic_collections import (
     DYNAMIC_COLLECTIONS,
@@ -153,15 +154,21 @@ class DynamicCollectionRandomView(DynamicCollectionBaseView):
     @extend_schema(
         tags=["Dynamic Collections"],
         summary="Choose a random planned item from a dynamic collection",
+        request=RandomSelectionRequestSerializer,
         responses={200: DynamicCollectionItemSerializer},
     )
     def post(self, request, key):
         definition = self.get_available_definition(request, key)
         if not definition.random_enabled:
             raise Http404
+        serializer = RandomSelectionRequestSerializer(data=request.data or {})
+        serializer.is_valid(raise_exception=True)
         queryset = collection_queryset(request.user, definition)
         if definition.group == "type":
             queryset = queryset.filter(status="backlog")
+        queryset = queryset.exclude(
+            content_item_id__in=serializer.validated_data["exclude_content_ids"],
+        )
         count = queryset.count()
         if count == 0:
             return Response({"result": None})

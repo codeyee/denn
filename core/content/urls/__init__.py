@@ -6,6 +6,7 @@ from content.views import (
     ContentItemGetOrCreateView,
     LegacyContentRedirectView,
     UserContentFavoriteView,
+    UserContentTrackingRandomView,
     UserContentTrackingView,
 )
 
@@ -20,6 +21,11 @@ urlpatterns = [
 
     path('get-or-create/', ContentItemGetOrCreateView.as_view(), name='content-get-or-create'),
     path('resolve-ids/', ContentItemBulkResolveView.as_view(), name='content-resolve-ids'),
+    path(
+        'tracking/random/',
+        UserContentTrackingRandomView.as_view(),
+        name='content-tracking-random',
+    ),
     path(
         'tracking/<int:content_id>/',
         UserContentTrackingView.as_view(),

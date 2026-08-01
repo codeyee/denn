@@ -4,6 +4,8 @@ from .list_item import ListItemSerializer, ListItemCreateSerializer
 from .rating import RatingSerializer, RatingCreateSerializer
 from .local_content_summary import LocalContentSummarySerializer
 from .tracking import (
+    RandomSelectionRequestSerializer,
+    RandomTrackingPickSerializer,
     TrackingFavoriteSerializer,
     TrackingStatusSerializer,
     UserContentTrackingSerializer,
@@ -42,6 +44,8 @@ __all__ = [
     'RatingSerializer',
     'RatingCreateSerializer',
     'LocalContentSummarySerializer',
+    'RandomSelectionRequestSerializer',
+    'RandomTrackingPickSerializer',
     'TrackingFavoriteSerializer',
     'TrackingStatusSerializer',
     'UserContentTrackingSerializer',

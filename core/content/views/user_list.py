@@ -23,6 +23,7 @@ from content.serializers import (
     UserListSerializer,
     UserListDetailSerializer,
     ListItemSerializer,
+    RandomSelectionRequestSerializer,
     BulkCheckRequestSerializer,
     BulkCheckResponseSerializer,
     PublicUserListDetailSerializer,
@@ -385,29 +386,48 @@ class UserListViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
             raise ValidationError("System-managed lists cannot be deleted.")
         instance.delete()
 
+    @extend_schema(
+        request=RandomSelectionRequestSerializer,
+        responses={200: ListItemSerializer},
+    )
     @action(detail=True, methods=['post'], url_path='random')
     def random_item(self, request, pk=None):
         user_list = self.get_object()
-        if user_list.list_type != UserList.ListType.DYNAMIC:
-            return Response(
-                {'detail': 'Random selection is only available for dynamic lists.'},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-        definition = get_definition(user_list.dynamic_key or '')
-        if definition is None or not definition.random_enabled:
-            return Response(
-                {'detail': 'Random selection is unavailable for this list.'},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+        serializer = RandomSelectionRequestSerializer(data=request.data or {})
+        serializer.is_valid(raise_exception=True)
+        excluded_ids = serializer.validated_data['exclude_content_ids']
         queryset = ListItem.objects.filter(user_list=user_list).select_related(
             'content_item',
             'added_by',
         )
-        if definition.group == 'type':
+
+        if user_list.list_type == UserList.ListType.DYNAMIC:
+            definition = get_definition(user_list.dynamic_key or '')
+            if definition is None or not definition.random_enabled:
+                return Response(
+                    {'detail': 'Random selection is unavailable for this list.'},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
             queryset = queryset.filter(
                 content_item__user_tracking__user=request.user,
                 content_item__user_tracking__status=UserContentTracking.Status.BACKLOG,
             )
+        elif user_list.list_type == UserList.ListType.PERSONAL:
+            queryset = queryset.filter(
+                content_item__user_tracking__user=request.user,
+                content_item__user_tracking__status=UserContentTracking.Status.BACKLOG,
+            )
+        else:
+            queryset = queryset.filter(
+                Q(context_status__isnull=True)
+                | Q(context_status=ListItem.Status.PENDING),
+            )
+
+        queryset = queryset.exclude(content_item_id__in=excluded_ids)
+        queryset = annotate_list_items_with_personal_tracking(
+            queryset,
+            request.user,
+        )
         count = queryset.count()
         if count == 0:
             return Response({'result': None})

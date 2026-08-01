@@ -32,6 +32,7 @@ import {
   HOME_LIST_IMAGES_SIZE,
   HOME_LIST_ITEMS_SIZE,
   HOME_LIST_SOURCE_FIELDS,
+  HOME_PROGRESS_SEARCH,
   LIST_DETAIL_METADATA_PARAMS,
   LIST_VIEWER_SOURCE_FIELDS,
   SEARCH_RESULT_LIMIT,
@@ -80,6 +81,26 @@ export const prefetchHomeQueries = createIsomorphicFn()
         queryFn: () =>
           fetchServerUserLists(accessToken, listParams, requestId),
       }));
+
+      if (session.user) {
+        const username = session.user.username;
+        const encodedUsername = encodeURIComponent(username);
+        const progressParams = buildProfileSearchParams(HOME_PROGRESS_SEARCH);
+        queries.push(qc.prefetchQuery({
+          queryKey: queryKeys.profiles.tab(
+            username,
+            "progress",
+            HOME_PROGRESS_SEARCH,
+          ),
+          queryFn: () =>
+            fetchServerCore<PaginatedProfileResults<PublicProgressItem>>(
+              accessToken,
+              `/profiles/${encodedUsername}/progress/?${progressParams.toString()}`,
+              requestId,
+              "/api/profiles/:username/progress/",
+            ),
+        }));
+      }
     }
 
     await Promise.allSettled(queries);

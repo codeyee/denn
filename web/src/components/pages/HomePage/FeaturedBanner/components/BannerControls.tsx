@@ -42,7 +42,7 @@ export function BannerControls({
         type="button"
         aria-label="Show previous featured item"
         onClick={onPrevious}
-        className="flex size-11 items-center justify-center rounded-full transition-colors hover:bg-white/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+        className="flex size-11 cursor-pointer items-center justify-center rounded-full transition-[background-color,transform] hover:scale-105 hover:bg-white/15 active:scale-95 focus-visible:scale-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white motion-reduce:transition-none motion-reduce:hover:scale-100 motion-reduce:focus-visible:scale-100"
       >
         <ChevronLeft aria-hidden="true" className="size-5" />
       </button>
@@ -61,7 +61,7 @@ export function BannerControls({
         aria-pressed={isPaused}
         disabled={!canToggleAutoplay}
         onClick={onPauseToggle}
-        className="flex size-11 items-center justify-center rounded-full transition-colors hover:bg-white/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:cursor-default disabled:text-white/45"
+        className="flex size-11 cursor-pointer items-center justify-center rounded-full transition-[background-color,transform] hover:scale-105 hover:bg-white/15 active:scale-95 focus-visible:scale-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:cursor-default disabled:text-white/45 motion-reduce:transition-none motion-reduce:hover:scale-100 motion-reduce:focus-visible:scale-100"
       >
         {isPaused ? (
           <Play aria-hidden="true" className="size-4 fill-current" />
@@ -74,7 +74,7 @@ export function BannerControls({
         type="button"
         aria-label="Show next featured item"
         onClick={onNext}
-        className="flex size-11 items-center justify-center rounded-full transition-colors hover:bg-white/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+        className="flex size-11 cursor-pointer items-center justify-center rounded-full transition-[background-color,transform] hover:scale-105 hover:bg-white/15 active:scale-95 focus-visible:scale-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white motion-reduce:transition-none motion-reduce:hover:scale-100 motion-reduce:focus-visible:scale-100"
       >
         <ChevronRight aria-hidden="true" className="size-5" />
       </button>

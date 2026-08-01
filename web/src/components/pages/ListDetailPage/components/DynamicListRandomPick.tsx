@@ -1,14 +1,16 @@
-import { useMutation } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
-import { Dices, Sparkles } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Dices } from "lucide-react";
 
-import { Card } from "@/components/common/cards/Card";
-import { getListItemSubtitle, getListItemTitle } from "@/components/common/cards/ListItemCard/utils";
+import {
+  RandomPickerModal,
+  type RandomPickerItem,
+} from "@/components/common/random";
 import { Button } from "@/components/common/ui/Button";
+import { useSetTrackingStatusMutation } from "@/lib/api/mutations";
 import { listActions } from "@/lib/api";
-import { CONTENT_TYPE_DEFINITIONS } from "@/lib/contentTypes";
-import { type SourceData, type UserListDetail } from "@/lib/types";
+import { ListType, type ListItem, type UserListDetail } from "@/lib/types";
 import { getCardImageUrl } from "@/lib/utils/imageUtils";
+import { getListItemSubtitle, getListItemTitle } from "@/components/common/cards/ListItemCard/utils";
 
 const RANDOM_ENABLED_DYNAMIC_KEYS = new Set([
   "backlog",
@@ -19,110 +21,78 @@ const RANDOM_ENABLED_DYNAMIC_KEYS = new Set([
   "books",
 ]);
 
-const TRACKING_STATUS_LABELS = {
-  backlog: "Backlog",
-  in_progress: "In progress",
-  on_hold: "On hold",
-  dropped: "Dropped",
-  completed: "Completed",
-} as const;
-
 interface DynamicListRandomPickProps {
   list: UserListDetail;
+  previewItems: ListItem[];
 }
 
-export function DynamicListRandomPick({ list }: DynamicListRandomPickProps) {
-  const randomMutation = useMutation({
-    mutationFn: () => listActions.pickRandom(list.id),
-  });
-  const item = randomMutation.data?.result ?? null;
+export function DynamicListRandomPick({
+  list,
+  previewItems,
+}: DynamicListRandomPickProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const setTrackingStatus = useSetTrackingStatusMutation();
+  const canPick =
+    list.list_type !== ListType.DYNAMIC ||
+    RANDOM_ENABLED_DYNAMIC_KEYS.has(list.dynamic_key ?? "");
+  const preview = useMemo(
+    () => previewItems.map(toPickerItem),
+    [previewItems],
+  );
 
-  if (!RANDOM_ENABLED_DYNAMIC_KEYS.has(list.dynamic_key ?? "")) {
-    return null;
-  }
-
-  const title = item ? getListItemTitle(item) : "";
-  const subtitle = item ? getListItemSubtitle(item) : "";
-  const sourceData = item?.content_item.source_data as SourceData | undefined;
-  const imageUrl = getCardImageUrl(sourceData?.images, sourceData?.image_url);
-  const trackingStatus = item?.content_item.current_user_tracking?.status;
-  const contentType = item
-    ? CONTENT_TYPE_DEFINITIONS[item.content_item.content_type]
-    : null;
+  if (!canPick) return null;
 
   return (
-    <section className="rounded-2xl border border-white/10 bg-white/5 p-6">
-      <div className="mb-4 flex items-start gap-3">
-        <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-amber-300" aria-hidden="true" />
-        <div>
-          <h3 className="text-xl font-bold text-white">Choose for me</h3>
-          <p className="mt-1 text-sm text-white/60">
-            Pick something planned from this list.
-          </p>
-        </div>
-      </div>
-
-      <Button
-        onClick={() => randomMutation.mutate()}
-        disabled={randomMutation.isPending}
-        className="w-full cursor-pointer justify-center gap-2 bg-primary font-semibold text-primary-foreground hover:bg-primary/90"
-        size="lg"
-      >
-        <Dices className="h-5 w-5" />
-        {randomMutation.isPending
-          ? "Choosing…"
-          : item
-            ? "Choose another"
-            : "Choose for me"}
-      </Button>
-
-      {randomMutation.isSuccess && !item ? (
-        <p className="mt-4 text-sm text-white/65" role="status">
-          There are no planned items to choose from yet.
-        </p>
-      ) : null}
-
-      {item && contentType ? (
-        <div
-          className="mt-4 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-200"
-          aria-live="polite"
+    <>
+      <div className="mb-6 flex justify-start md:justify-end">
+        <Button
+          variant="outline"
+          size="lg"
+          onClick={() => setIsOpen(true)}
+          className="gap-2 border-amber-300/30 text-amber-100 hover:bg-amber-300/10 hover:text-amber-50"
         >
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-amber-200">
-            Your pick
-          </p>
-          <Link
-            to="/content/$id"
-            params={{ id: String(item.content_item.id) }}
-            preload="intent"
-            aria-label={`View ${title}`}
-            className="block rounded-2xl outline-none focus-visible:ring-4 focus-visible:ring-white/80"
-          >
-            <Card
-              id={`random-pick-${item.id}`}
-              title={title}
-              type={item.content_item.content_type}
-              backgroundImage={imageUrl ?? undefined}
-              backgroundImageAlt={`${title} artwork`}
-              isEmpty={!imageUrl}
-              priorityImage
-              disableHover
-            >
-              <Card.Footer className="flex-wrap gap-x-1.5 gap-y-1">
-                <span>{contentType.label}</span>
-                {trackingStatus ? <span aria-hidden="true">•</span> : null}
-                {trackingStatus ? (
-                  <span>{TRACKING_STATUS_LABELS[trackingStatus]}</span>
-                ) : null}
-                {subtitle ? (
-                  <span className="basis-full line-clamp-1 text-white/65">
-                    {subtitle}
-                  </span>
-                ) : null}
-              </Card.Footer>
-            </Card>
-          </Link>
-        </div>
-      ) : null}
-    </section>
+          <Dices className="h-5 w-5" aria-hidden="true" />
+          Choose for me
+        </Button>
+      </div>
+      <RandomPickerModal
+        isOpen={isOpen}
+        onOpenChange={setIsOpen}
+        title="Choose for me"
+        description="Pick something planned from this list."
+        previewItems={preview}
+        emptyMessage="There are no planned items to choose from yet."
+        autoDrawOnOpen
+        onDraw={async (excludeContentId) => {
+          const response = await listActions.pickRandom(
+            list.id,
+            excludeContentId ? [excludeContentId] : [],
+          );
+          return response.result ? toPickerItem(response.result) : null;
+        }}
+        onStart={async (item) => {
+          await setTrackingStatus.mutateAsync({
+            contentId: item.contentId,
+            status: "in_progress",
+          });
+        }}
+      />
+    </>
   );
+}
+
+function toPickerItem(item: ListItem): RandomPickerItem {
+  const sourceData = item.content_item.source_data;
+  const title = getListItemTitle(item);
+  const contentType = item.content_item.content_type;
+
+  return {
+    id: item.id,
+    contentId: item.content_item.id,
+    title,
+    subtitle: getListItemSubtitle(item),
+    imageUrl: getCardImageUrl(sourceData?.images, sourceData?.image_url),
+    contentType,
+    status: item.content_item.current_user_tracking?.status ?? null,
+  };
 }

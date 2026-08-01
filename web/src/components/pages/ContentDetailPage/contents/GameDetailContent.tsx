@@ -3,6 +3,7 @@ import { GameDetail } from "@/lib/types";
 import { groupGamePlatforms } from "@/lib/platforms/gamePlatforms";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { formatAuthors } from "@/lib/utils/authorUtils";
+import { cn } from "@/lib/utils/tailwindUtils";
 import { GamePlatformsDisplay } from "../platforms/GamePlatformsDisplay";
 import { getGameDurationRows } from "@/lib/utils/gameDuration";
 import { BookOpen, Clock3, Trophy, type LucideIcon } from "lucide-react";
@@ -22,15 +23,16 @@ export function GameDetailContent({ game }: GameDetailContentProps) {
   const durationRows = getGameDurationRows(game.duration);
 
   const platformGroups = groupGamePlatforms(game.platforms, game.distribution_networks);
+  const hasPlatforms = platformGroups.length > 0;
 
   return (
     <div className="layout-content mt-8">
       <h2 className="text-2xl font-bold text-white mb-6">About</h2>
 
-      {/* 2-column layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      {/* About layout */}
+      <div className={cn("grid grid-cols-1 gap-8", hasPlatforms && "lg:grid-cols-3")}>
         {/* Left column - Description */}
-        <div className="lg:col-span-2">
+        <div className={cn(hasPlatforms && "lg:col-span-2")}>
           {game.description && (
             <p className="text-gray-300 mb-6 leading-relaxed font-sans">
               {game.description}
@@ -116,10 +118,11 @@ export function GameDetailContent({ game }: GameDetailContentProps) {
           </div>
         </div>
 
-        {/* Right column - Where to Play */}
-        <div className="lg:col-span-1">
-          <GamePlatformsDisplay groups={platformGroups} />
-        </div>
+        {hasPlatforms && (
+          <div className="lg:col-span-1">
+            <GamePlatformsDisplay groups={platformGroups} />
+          </div>
+        )}
       </div>
     </div>
   );

@@ -7,7 +7,6 @@ import {
 } from "@/lib/platforms/contentPlatforms";
 import { useSettingsStore } from "@/stores/settings-store";
 import { DEFAULT_COUNTRY } from "@/lib/utils/countryUtils";
-import { EmptyState } from "@/components/common/state/EmptyState";
 import { ListFilter } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ContentPlatformTile } from "./ContentPlatformTile";
@@ -31,6 +30,8 @@ export function PlatformsDisplay({
     () => filterContentPlatformsByAction(platforms, activeAction),
     [activeAction, platforms],
   );
+
+  if (platforms.length === 0) return null;
 
   return (
     <div>
@@ -80,15 +81,11 @@ export function PlatformsDisplay({
         )}
       </div>
 
-      {platforms.length > 0 ? (
-        <div className="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2">
-          {visiblePlatforms.map((platform) => (
-            <ContentPlatformTile key={platform.key} platform={platform} />
-          ))}
-        </div>
-      ) : (
-        <EmptyState compact message="No platforms available." />
-      )}
+      <div className="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2">
+        {visiblePlatforms.map((platform) => (
+          <ContentPlatformTile key={platform.key} platform={platform} />
+        ))}
+      </div>
     </div>
   );
 }

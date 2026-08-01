@@ -48,60 +48,62 @@ export function Carousel({
       aria-label={title ? undefined : "Content carousel"}
       className={`layout-carousel group relative ${className}`}
     >
-      {title && (
-        <SectionTitle
-          id={titleId}
-          icon={titleIcon}
-          title={title}
-          action={titleAction}
-        />
-      )}
-
-      <div className="relative">
-        {showPreviousFade && <CarouselEdgeFade direction="previous" />}
-        {showNextFade && <CarouselEdgeFade direction="next" />}
-        {showNavigation && (
-          <CarouselButton
-            direction="previous"
-            onClick={scroll.handlePrevious}
-            scrollerId={scrollerId}
-          />
-        )}
-        {showNavigation && (
-          <CarouselButton
-            direction="next"
-            onClick={scroll.handleNext}
-            scrollerId={scrollerId}
+      <div className="layout-carousel-content">
+        {title && (
+          <SectionTitle
+            id={titleId}
+            icon={titleIcon}
+            title={title}
+            action={titleAction}
           />
         )}
 
-        <div
-          id={scrollerId}
-          ref={containerRef}
-          onScroll={scroll.updateScrollState}
-          onWheel={scroll.handleWheel}
-          tabIndex={0}
-          aria-label={title ? `${title} items` : "Carousel items"}
-          data-carousel-scroller
-          className="flex snap-x snap-proximity gap-4 overflow-x-auto overscroll-x-contain py-4 [scroll-padding-inline:0] [scrollbar-width:none] [touch-action:pan-x_pan-y] [-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden"
-          style={{ scrollbarWidth: "none" }}
-        >
-          {items.map((child, index) => (
-            <div
-              key={typeof child === "object" && child && "key" in child && child.key
-                ? child.key
-                : `carousel-item-${index}`}
-              role="group"
-              aria-roledescription="slide"
-              aria-label={`${index + 1} of ${items.length}`}
-              className="shrink-0 snap-start"
-              style={{
-                width: `calc((100% - ${gap * (scroll.visibleItems - 1)}px) / ${scroll.visibleItems})`,
-              }}
-            >
-              {child}
-            </div>
-          ))}
+        <div className="layout-carousel-track">
+          {showPreviousFade && <CarouselEdgeFade direction="previous" />}
+          {showNextFade && <CarouselEdgeFade direction="next" />}
+          {showNavigation && (
+            <CarouselButton
+              direction="previous"
+              onClick={scroll.handlePrevious}
+              scrollerId={scrollerId}
+            />
+          )}
+          {showNavigation && (
+            <CarouselButton
+              direction="next"
+              onClick={scroll.handleNext}
+              scrollerId={scrollerId}
+            />
+          )}
+
+          <div
+            id={scrollerId}
+            ref={containerRef}
+            onScroll={scroll.updateScrollState}
+            onWheel={scroll.handleWheel}
+            tabIndex={0}
+            aria-label={title ? `${title} items` : "Carousel items"}
+            data-carousel-scroller
+            className="flex snap-x snap-proximity gap-4 overflow-x-auto overscroll-x-contain px-0 py-4 [scroll-padding-inline:0] [scrollbar-width:none] [touch-action:pan-x_pan-y] [-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden"
+            style={{ scrollbarWidth: "none" }}
+          >
+            {items.map((child, index) => (
+              <div
+                key={typeof child === "object" && child && "key" in child && child.key
+                  ? child.key
+                  : `carousel-item-${index}`}
+                role="group"
+                aria-roledescription="slide"
+                aria-label={`${index + 1} of ${items.length}`}
+                className="shrink-0 snap-start"
+                style={{
+                  width: `calc((100% - ${gap * (scroll.visibleItems - 1)}px) / ${scroll.visibleItems})`,
+                }}
+              >
+                {child}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </section>
@@ -147,11 +149,7 @@ function CarouselButton({
       aria-controls={scrollerId}
       aria-label={isPrevious ? "View previous content" : "View next content"}
       data-carousel-control={direction}
-      className={`absolute top-1/2 z-40 flex size-11 -translate-y-1/2 touch-manipulation items-center justify-center rounded-full bg-black/80 text-white opacity-80 transition-[opacity,transform,background-color] duration-200 hover:scale-105 hover:bg-black hover:opacity-100 focus-visible:scale-105 focus-visible:bg-black focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white motion-reduce:transition-none motion-reduce:hover:scale-100 motion-reduce:focus-visible:scale-100 md:size-12 ${
-        isPrevious
-          ? "left-[max(0px,env(safe-area-inset-left))]"
-          : "right-[max(0px,env(safe-area-inset-right))]"
-      }`}
+      className="absolute top-1/2 z-40 flex size-11 -translate-y-1/2 touch-manipulation cursor-pointer items-center justify-center rounded-full bg-black/80 text-white opacity-80 transition-[opacity,transform,background-color] duration-200 active:scale-95 hover:scale-105 hover:bg-black hover:opacity-100 focus-visible:scale-105 focus-visible:bg-black focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white motion-reduce:transition-none motion-reduce:hover:scale-100 motion-reduce:focus-visible:scale-100 md:size-12"
     >
       <Icon aria-hidden="true" className="size-6 md:size-7" />
     </button>

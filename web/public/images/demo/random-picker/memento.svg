@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512" role="img" aria-labelledby="title desc">
+  <title id="title">Memento</title>
+  <desc id="desc">Local demo artwork for Memento</desc>
+  <rect width="320" height="512" fill="#24131d"/>
+  <circle cx="160" cy="176" r="92" fill="#c17732" opacity=".24"/>
+  <circle cx="160" cy="176" r="66" fill="none" stroke="#f4c36a" stroke-width="7"/>
+  <path d="M160 176V132M160 176l35 25" fill="none" stroke="#f4c36a" stroke-width="7" stroke-linecap="round"/>
+  <path d="M48 300h224" stroke="#f4c36a" stroke-width="2" opacity=".45"/>
+  <text x="48" y="365" fill="#fff7e6" font-family="system-ui, sans-serif" font-size="28" font-weight="700">MEMENTO</text>
+  <text x="48" y="398" fill="#f4c36a" font-family="monospace" font-size="12" letter-spacing="3">LOCAL DEMO / MOVIE</text>
+</svg>
