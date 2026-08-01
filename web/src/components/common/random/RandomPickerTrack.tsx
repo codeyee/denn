@@ -59,7 +59,7 @@ export function RandomPickerTrack({
   }, [activeIndex, items, onCenterItemChange, phase]);
 
   return (
-    <div className="relative min-h-[186px] overflow-hidden rounded-xl border border-white/10 bg-black/30 py-4">
+    <div className="relative min-h-[186px] overflow-hidden rounded-xl border border-white/10 bg-[var(--color-background-logged-in)] py-4">
       <div
         className={`random-picker-track relative left-1/2 flex w-max gap-3 px-6 ${
           phase === "rolling"
@@ -87,11 +87,11 @@ export function RandomPickerTrack({
         aria-hidden="true"
       />
       <div
-        className="pointer-events-none absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-black/80 to-transparent"
+        className="pointer-events-none absolute inset-y-0 left-0 w-16 bg-linear-to-r from-[var(--color-background-logged-in)] to-transparent"
         aria-hidden="true"
       />
       <div
-        className="pointer-events-none absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-black/80 to-transparent"
+        className="pointer-events-none absolute inset-y-0 right-0 w-16 bg-linear-to-l from-[var(--color-background-logged-in)] to-transparent"
         aria-hidden="true"
       />
     </div>

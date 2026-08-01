@@ -70,7 +70,7 @@ export function MediaListItem({
           mediaFallback={mediaFallback}
           sizes={isReview ? "256px" : "176px"}
         />
-        <div className="pointer-events-none absolute inset-0 bg-linear-to-r from-transparent via-hero-gradient-70 to-list-item-background transition-colors duration-200 group-hover:to-list-item-background-hover motion-reduce:transition-none" />
+        <div className="pointer-events-none absolute -inset-y-px -right-px w-[calc(100%+1px)] bg-linear-to-r from-transparent via-hero-gradient-70 to-list-item-background transition-colors duration-200 group-hover:to-list-item-background-hover motion-reduce:transition-none" />
       </div>
 
       {overlay}
