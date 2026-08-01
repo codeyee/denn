@@ -8,15 +8,16 @@ import { formatReleaseDate } from "@/lib/utils/dateUtils";
 interface EpisodeCardProps {
   episode: TVEpisode;
   className?: string;
+  onOpenGallery?: () => void;
 }
 
-export function EpisodeCard({ episode, className = "" }: EpisodeCardProps) {
+export function EpisodeCard({ episode, className = "", onOpenGallery }: EpisodeCardProps) {
   const title = episode.title || `Episode ${episode.episode_number}`;
   const imageUrl = episode.image_url || undefined;
   const releaseDate = formatReleaseDate(episode.release_date);
   const duration = episode.duration_minutes ? `${episode.duration_minutes} min` : "";
 
-  return (
+  const card = (
     <motion.div
       key={episode.id}
       className={`w-full ${className}`}
@@ -82,5 +83,19 @@ export function EpisodeCard({ episode, className = "" }: EpisodeCardProps) {
         </div>
       </div>
     </motion.div>
+  );
+
+  if (!imageUrl || !onOpenGallery) return card;
+
+  return (
+    <button
+      type="button"
+      onClick={onOpenGallery}
+      aria-label={`Open ${title} in gallery`}
+      aria-haspopup="dialog"
+      className="group block w-full cursor-pointer rounded-2xl text-left outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+    >
+      {card}
+    </button>
   );
 }

@@ -7,13 +7,20 @@ import { ErrorState } from "../../common/state/ErrorState";
 import { EmptyState } from "../../common/state/EmptyState";
 import { ContentCarousels } from "./components/ContentCarousels";
 import { useHomeData } from "./hooks/useHomeData";
-import type { HomepageResponse, PaginatedUserListList } from "@/lib/types";
+import type {
+  HomepageResponse,
+  PaginatedProfileResults,
+  PaginatedUserListList,
+  PublicProgressItem,
+} from "@/lib/types";
 
 interface HomePageProps {
   country?: string | null;
   isAuthenticated: boolean;
   initialSuggestions?: HomepageResponse;
   initialLists?: PaginatedUserListList;
+  initialProgress?: PaginatedProfileResults<PublicProgressItem>;
+  progressUsername?: string | null;
 }
 
 export function HomePage({
@@ -21,12 +28,16 @@ export function HomePage({
   isAuthenticated,
   initialSuggestions,
   initialLists,
+  initialProgress,
+  progressUsername,
 }: HomePageProps) {
   const data = useHomeData({
     country,
     isAuthenticated,
+    progressUsername,
     initialSuggestions,
     initialLists,
+    initialProgress,
   });
 
   const { featuredItems } = useFeaturedItems({
@@ -64,8 +75,10 @@ export function HomePage({
           suggestions={data.suggestions}
           showPersonalLists={isAuthenticated}
           lists={data.lists}
+          inProgress={data.progress}
           suggestionsError={data.suggestionsError}
           listsError={data.listsError}
+          progressError={data.progressError}
           createList={data.createList}
           isCreatingList={data.isCreatingList}
         />

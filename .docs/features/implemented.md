@@ -38,8 +38,13 @@ considered part of the project baseline.
 - Dynamic system lists: configurable, tracking-populated `UserList` records by
   progress state or content type (with TV shows and seasons together). They
   reuse the normal list cards and detail route, keep membership read-only while
-  allowing custom order, and provide a backlog-only random picker for type
-  lists.
+  allowing custom order, and provide a backlog-only random picker for eligible
+  dynamic lists.
+- Interactive random picker across accessible personal, shared, and eligible
+  dynamic lists, with server-side exclusion of the previous result,
+  horizontal reduced-motion-aware artwork roll, id-first detail navigation,
+  and an inline action to move the selected item to `in_progress`. The owner
+  also gets the picker in their Progress tab for backlog content.
 - Unified public Progress tab with multi-select media/status filters,
   reversible criterion-based sorting, grid/list views, and icon menus;
   paginated public Lists remain separate.

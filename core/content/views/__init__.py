@@ -10,7 +10,11 @@ from .content_item import (
     ContentItemGetOrCreateView,
     LegacyContentRedirectView,
 )
-from .tracking import UserContentFavoriteView, UserContentTrackingView
+from .tracking import (
+    UserContentFavoriteView,
+    UserContentTrackingRandomView,
+    UserContentTrackingView,
+)
 from .dynamic_collections import (
     DynamicCollectionItemsView,
     DynamicCollectionListView,
@@ -30,6 +34,7 @@ __all__ = [
     'ContentItemGetOrCreateView',
     'LegacyContentRedirectView',
     'UserContentFavoriteView',
+    'UserContentTrackingRandomView',
     'UserContentTrackingView',
     'DynamicCollectionItemsView',
     'DynamicCollectionListView',

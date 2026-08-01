@@ -5,25 +5,37 @@ import {
     HOME_LIST_IMAGES_SIZE,
     HOME_LIST_ITEMS_SIZE,
     HOME_LIST_SOURCE_FIELDS,
+    HOME_PROGRESS_SEARCH,
     SUGGESTIONS_PAGE_SIZE,
     useSuggestionsQuery,
     useUserListsQuery,
 } from "@/lib/api/queries";
 import { useCreateListMutation } from "@/lib/api/mutations";
-import type { HomepageResponse, ListType, PaginatedUserListList } from "@/lib/types";
+import { usePublicProgressQuery } from "@/lib/api/queries/usePublicProfileQueries";
+import type {
+    HomepageResponse,
+    ListType,
+    PaginatedProfileResults,
+    PaginatedUserListList,
+    PublicProgressItem,
+} from "@/lib/types";
 
 interface UseHomeDataOptions {
     country?: string | null;
     isAuthenticated?: boolean;
+    progressUsername?: string | null;
     initialSuggestions?: HomepageResponse;
     initialLists?: PaginatedUserListList;
+    initialProgress?: PaginatedProfileResults<PublicProgressItem>;
 }
 
 export function useHomeData({
     country,
     isAuthenticated = false,
+    progressUsername,
     initialSuggestions,
     initialLists,
+    initialProgress,
 }: UseHomeDataOptions = {}) {
     const suggestionsQuery = useSuggestionsQuery(SUGGESTIONS_PAGE_SIZE, {
         country,
@@ -39,6 +51,12 @@ export function useHomeData({
         enabled: isAuthenticated,
         initialData: initialLists,
     });
+    const progressQuery = usePublicProgressQuery(
+        progressUsername ?? "",
+        HOME_PROGRESS_SEARCH,
+        initialProgress,
+        { enabled: Boolean(isAuthenticated && progressUsername) },
+    );
     const createListMutation = useCreateListMutation();
 
     const suggestions = useMemo(
@@ -53,19 +71,23 @@ export function useHomeData({
     );
 
     const lists = listsQuery.data?.results ?? [];
+    const progress = progressQuery.data?.results ?? [];
     const suggestionsError = errorMessage(suggestionsQuery.error);
     const listsError = errorMessage(listsQuery.error);
-    const hasAnyError = Boolean(suggestionsError || listsError);
+    const progressError = errorMessage(progressQuery.error);
+    const hasAnyError = Boolean(suggestionsError || listsError || progressError);
 
     const isAllEmpty =
         !suggestionsQuery.isLoading &&
         !listsQuery.isLoading &&
+        !progressQuery.isLoading &&
         suggestions.movies.length === 0 &&
         suggestions.tvShows.length === 0 &&
         suggestions.games.length === 0 &&
         suggestions.music.length === 0 &&
         suggestions.books.length === 0 &&
-        lists.length === 0;
+        lists.length === 0 &&
+        progress.length === 0;
 
     const createList = async (
         name: string,
@@ -82,6 +104,9 @@ export function useHomeData({
         lists,
         listsLoading: isAuthenticated && listsQuery.isLoading,
         listsError,
+        progress,
+        progressLoading: isAuthenticated && progressQuery.isLoading,
+        progressError,
         createList,
         isCreatingList: createListMutation.isPending,
         hasAnyError,

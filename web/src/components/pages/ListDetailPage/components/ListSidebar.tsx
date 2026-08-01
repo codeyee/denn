@@ -15,7 +15,6 @@ import { UserListDetail, ListType } from "@/lib/types";
 import { Button } from "@/components/common/ui/Button";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { formatUserDisplayNameWithUsername } from "@/lib/utils/userUtils";
-import { DynamicListRandomPick } from "./DynamicListRandomPick";
 
 interface ListSidebarProps {
   list: UserListDetail;
@@ -142,8 +141,6 @@ export function ListSidebar({
           )}
         </div>
       </div>
-
-      <DynamicListRandomPick list={list} />
 
       {/* List Stats Card */}
       <div className="bg-white/5 rounded-2xl p-6 border border-white/10">

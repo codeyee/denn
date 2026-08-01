@@ -7,6 +7,7 @@ import {
   ListNavigationSearch,
   ListSidebar,
 } from "./components";
+import { DynamicListRandomPick } from "./components/DynamicListRandomPick";
 import { ListContentRenderer } from "./components/ListContentRenderer";
 import { ListModals } from "./components/ListModals";
 import type { useListDetailController } from "./hooks/useListDetailController";
@@ -53,6 +54,10 @@ export function ListDetailView({ controller }: { controller: Controller }) {
       <main id="main-content" tabIndex={-1} className="relative min-h-screen w-full bg-background-logged-in">
         <div className="container mx-auto mt-8 px-4 pb-8 pt-30">
           <ListHeader list={data.list} />
+          <DynamicListRandomPick
+            list={data.list}
+            previewItems={viewer.displayItems}
+          />
           <div className="flex flex-col gap-6 md:flex-row lg:gap-8">
             <div className="order-2 min-w-0 flex-1 pb-8 md:order-1">
               <ExploreToolbar

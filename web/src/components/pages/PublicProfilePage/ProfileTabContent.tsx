@@ -11,6 +11,7 @@ import type {
   PublicProfileTabData,
 } from "@/lib/types";
 import { PublicListGrid } from "./ProfileCollections";
+import { ProfileRandomPick } from "./ProfileRandomPick";
 import { ProgressCollection } from "./ProgressCollection";
 import { ProfileFilters } from "./ProfileFilters";
 import {
@@ -24,6 +25,7 @@ interface ProfileTabContentProps {
   username: string;
   search: ProfileSearchParams;
   initialData: PublicProfileTabData | null;
+  isOwner: boolean;
 }
 
 export function ProfileTabContent(props: ProfileTabContentProps) {
@@ -37,6 +39,7 @@ function ProgressTab({
   username,
   search,
   initialData,
+  isOwner,
 }: ProfileTabContentProps) {
   const query = usePublicProgressQuery(
     username,
@@ -50,27 +53,30 @@ function ProgressTab({
   }
 
   return (
-    <TabShell
-      title="Progress"
-      count={query.data.metadata.count}
-      search={search}
-      onChange={changeSearch}
-      isUpdating={query.isFetching}
-    >
-      {query.data.results.length > 0 ? (
-        <ProgressCollection
-          items={query.data.results}
-          view={search.view ?? "grid"}
-        />
-      ) : (
-        <ProfileTabEmpty message="No progress matches these filters." />
-      )}
-      <ProfilePagination
+    <>
+      {isOwner ? <ProfileRandomPick items={query.data.results} /> : null}
+      <TabShell
+        title="Progress"
+        count={query.data.metadata.count}
         search={search}
-        totalPages={query.data.metadata.total_pages}
         onChange={changeSearch}
-      />
-    </TabShell>
+        isUpdating={query.isFetching}
+      >
+        {query.data.results.length > 0 ? (
+          <ProgressCollection
+            items={query.data.results}
+            view={search.view ?? "grid"}
+          />
+        ) : (
+          <ProfileTabEmpty message="No progress matches these filters." />
+        )}
+        <ProfilePagination
+          search={search}
+          totalPages={query.data.metadata.total_pages}
+          onChange={changeSearch}
+        />
+      </TabShell>
+    </>
   );
 }
 

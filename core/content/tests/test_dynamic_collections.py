@@ -207,6 +207,71 @@ class DynamicCollectionsApiTests(APITestCase):
             "Season one",
         )
 
+    def test_personal_list_random_pick_uses_personal_backlog(self):
+        personal = UserList.objects.create(
+            owner=self.user,
+            name="Personal queue",
+            list_type=UserList.ListType.PERSONAL,
+        )
+        ListItem.objects.create(
+            user_list=personal,
+            content_item=self.movie,
+            added_by=self.user,
+        )
+        response = self.client.post(f"/api/content/lists/{personal.id}/random/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["result"]["content_item"]["id"], self.movie.id)
+
+    def test_shared_list_random_pick_uses_pending_context(self):
+        pending = self._content("shared-pending", ContentItem.ContentType.MOVIE)
+        completed = self._content("shared-completed", ContentItem.ContentType.MOVIE)
+        shared = UserList.objects.create(
+            owner=self.user,
+            name="Shared queue",
+            list_type=UserList.ListType.SHARED,
+        )
+        ListItem.objects.create(
+            user_list=shared,
+            content_item=pending,
+            added_by=self.user,
+            context_status=ListItem.Status.PENDING,
+        )
+        ListItem.objects.create(
+            user_list=shared,
+            content_item=completed,
+            added_by=self.user,
+            context_status=ListItem.Status.COMPLETED,
+        )
+
+        response = self.client.post(f"/api/content/lists/{shared.id}/random/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["result"]["content_item"]["id"], pending.id)
+
+    def test_list_random_pick_can_exclude_previous_result(self):
+        personal = UserList.objects.create(
+            owner=self.user,
+            name="One-shot queue",
+            list_type=UserList.ListType.PERSONAL,
+        )
+        ListItem.objects.create(
+            user_list=personal,
+            content_item=self.movie,
+            added_by=self.user,
+        )
+
+        response = self.client.post(f"/api/content/lists/{personal.id}/random/")
+        excluded = response.data["result"]["content_item"]["id"]
+        repeat = self.client.post(
+            f"/api/content/lists/{personal.id}/random/",
+            {"exclude_content_ids": [excluded]},
+            format="json",
+        )
+
+        self.assertEqual(repeat.status_code, status.HTTP_200_OK)
+        self.assertIsNone(repeat.data["result"])
+
     def test_random_returns_empty_result_when_no_planned_content_exists(self):
         response = self.client.post("/api/content/dynamic-collections/albums/random/")
 

@@ -46,6 +46,12 @@ The hybrid topology is deliberate and documented in
   Their membership cannot be manually edited or deleted, while each user can
   reorder the current items. Users can hide the feature globally or hide an
   individual status/type list without deleting progress or manual lists.
+- The list detail route exposes a server-selected random picker for accessible
+  personal, shared, and eligible dynamic lists. Personal and dynamic picks
+  come from the current user's backlog; shared picks exclude contextually
+  completed items. The request can exclude the previous content id to avoid an
+  immediate repeat. The authenticated owner's public Progress tab also
+  exposes the same interaction against their backlog.
 - Public identities live at `/user/<username>` and compose only
   persisted Core metadata. Public profiles, public content detail, and
   public lists are anonymous reads; private lists are indistinguishable

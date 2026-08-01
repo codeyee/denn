@@ -22,6 +22,13 @@ export const dynamicCollectionActions = {
     const suffix = search.size ? `?${search.toString()}` : "";
     return api.get(`/content/dynamic-collections/${encodeURIComponent(key)}/items/${suffix}`, true);
   },
-  pickRandom: (key: string): Promise<{ result: DynamicCollectionItem | null }> =>
-    api.post(`/content/dynamic-collections/${encodeURIComponent(key)}/random/`, undefined, true),
+  pickRandom: (
+    key: string,
+    excludeContentIds: number[] = [],
+  ): Promise<{ result: DynamicCollectionItem | null }> =>
+    api.post(
+      `/content/dynamic-collections/${encodeURIComponent(key)}/random/`,
+      { exclude_content_ids: excludeContentIds },
+      true,
+    ),
 };

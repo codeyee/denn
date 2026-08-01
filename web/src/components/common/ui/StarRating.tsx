@@ -2,7 +2,7 @@
 import { Star } from "lucide-react";
 
 interface StarRatingProps {
-  value: number;
+  value: number | null;
   onChange?: (value: number) => void;
   maxStars?: number;
   readonly?: boolean;
@@ -17,7 +17,7 @@ export function StarRating({
   size = 24,
 }: StarRatingProps) {
   const getStarState = (starIndex: number) => {
-    const starValue = value - starIndex;
+    const starValue = (value ?? 0) - starIndex;
 
     if (starValue >= 1) {
       return "full";
@@ -65,11 +65,13 @@ export function StarRating({
           <input
             type="range"
             aria-label="Rating"
-            aria-valuetext={`${value} out of ${maxStars}`}
-            min={0.5}
+            aria-valuetext={
+              value ? `${value} out of ${maxStars}` : "No rating selected"
+            }
+            min={0}
             max={maxStars}
             step={0.5}
-            value={value}
+            value={value ?? 0}
             onChange={(event) => onChange(Number(event.target.value))}
             className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
           />
@@ -77,7 +79,9 @@ export function StarRating({
       </div>
       {!readonly && (
         <span className="ml-2 text-white/60 font-sans text-md">
-          {Number.isInteger(value) ? value.toString() : value.toFixed(1)} / {maxStars}
+          {value
+            ? `${Number.isInteger(value) ? value : value.toFixed(1)} / ${maxStars}`
+            : "Select a rating"}
         </span>
       )}
     </div>

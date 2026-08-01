@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512" role="img" aria-labelledby="title desc">
+  <title id="title">Red Dead Redemption 2</title>
+  <desc id="desc">Local demo artwork for Red Dead Redemption 2</desc>
+  <rect width="320" height="512" fill="#170e12"/>
+  <rect y="90" width="320" height="210" fill="#7d241d"/>
+  <circle cx="242" cy="154" r="55" fill="#f0b34c" opacity=".8"/>
+  <path d="M0 310 72 240l54 48 62-74 132 96v100H0Z" fill="#26171b"/>
+  <path d="M42 300h226" stroke="#f0b34c" stroke-width="3" opacity=".55"/>
+  <text x="34" y="378" fill="#fff3dc" font-family="system-ui, sans-serif" font-size="22" font-weight="800">RED DEAD</text>
+  <text x="34" y="406" fill="#fff3dc" font-family="system-ui, sans-serif" font-size="22" font-weight="800">REDEMPTION 2</text>
+  <text x="34" y="438" fill="#f0b34c" font-family="monospace" font-size="11" letter-spacing="2">LOCAL DEMO / GAME</text>
+</svg>

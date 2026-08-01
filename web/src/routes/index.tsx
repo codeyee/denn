@@ -1,9 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { HomeRouteShell } from "@/components/routes/HomeRouteShell";
-import { queryKeys, SUGGESTIONS_PAGE_SIZE } from "@/lib/api/queries";
+import {
+  HOME_PROGRESS_SEARCH,
+  queryKeys,
+  SUGGESTIONS_PAGE_SIZE,
+} from "@/lib/api/queries";
 import { homeListParams, prefetchHomeQueries } from "@/lib/api/queries/server";
-import type { HomepageResponse, PaginatedUserListList } from "@/lib/types";
+import type {
+  HomepageResponse,
+  PaginatedProfileResults,
+  PaginatedUserListList,
+  PublicProgressItem,
+} from "@/lib/types";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -37,13 +46,24 @@ export const Route = createFileRoute("/")({
         context.queryClient.getQueryData<PaginatedUserListList>(
           queryKeys.lists.list(homeListParams(context.country)),
         ),
+      initialProgress: context.session.user
+        ? context.queryClient.getQueryData<
+            PaginatedProfileResults<PublicProgressItem>
+          >(
+            queryKeys.profiles.tab(
+              context.session.user.username,
+              "progress",
+              HOME_PROGRESS_SEARCH,
+            ),
+          )
+        : undefined,
     };
   },
   component: HomeRoute,
 });
 
 function HomeRoute() {
-  const { session, country, initialSuggestions, initialLists } =
+  const { session, country, initialSuggestions, initialLists, initialProgress } =
     Route.useLoaderData();
   return (
     <HomeRouteShell
@@ -51,6 +71,7 @@ function HomeRoute() {
       country={country}
       initialSuggestions={initialSuggestions}
       initialLists={initialLists}
+      initialProgress={initialProgress}
     />
   );
 }

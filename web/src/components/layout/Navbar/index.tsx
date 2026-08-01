@@ -93,15 +93,18 @@ export function Navbar({ searchQuery, onSearchChange }: NavbarProps) {
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
-                    size="icon"
                     aria-label={`Open @${user.username} menu`}
                     aria-haspopup="menu"
+                    className="max-w-52 gap-2 px-2 md:px-3"
                   >
                     <UserAvatar
                       avatarUrl={user.avatar_url}
                       username={user.username}
                       className="h-9 w-9 border border-white/25 text-sm"
                     />
+                    <span className="max-w-32 truncate text-sm font-semibold text-white/90">
+                      @{user.username}
+                    </span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" data-user-menu>

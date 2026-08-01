@@ -197,7 +197,7 @@ El espacio es amplio alrededor de hero, secciones y banners, y compacto dentro d
 - hover/focus/touch abre un popover portal con el mismo artwork, descripción y `Add to List`;
 - desktop muestra más densidad y hover; mobile prioriza navegación directa y controles de carousel.
 
-Los carousels usan scroll horizontal/snap, botones prev/next circulares negros y grupos accesibles (`1 of 20`). No convertir el carousel en una tabla ni eliminar la navegación por teclado/touch.
+Los carousels usan scroll horizontal/snap, botones prev/next circulares negros y grupos accesibles (`1 of 20`). El carril de tarjetas conserva el ancho y la alineación del contenido; los controles viven en los márgenes exteriores de ese carril para no desplazar ni ocultar la primera o última card. Los estados hover, active y focus comunican que son accionables. No convertir el carousel en una tabla ni eliminar la navegación por teclado/touch.
 
 ### Media and banners
 
@@ -218,7 +218,7 @@ No forzar un poster cuadrado a llenar un banner sin ese tratamiento. Los fallbac
 - **Ghost/link:** chrome mínimo; navegación secundaria.
 - **Destructive:** rojo solo para borrar o cerrar sesión de forma explícita.
 
-Todos los estados interactivos necesitan default, hover, focus, active/selected cuando aplique, disabled y loading. Los icon buttons deben tener nombre accesible, target de 44 px y no depender de tooltip para explicar su función.
+Todos los estados interactivos necesitan default, hover, focus, active/selected cuando aplique, disabled y loading. Los controles muestran `cursor: pointer` cuando están disponibles y `cursor: not-allowed` cuando están deshabilitados. Los icon buttons deben tener nombre accesible, target de 44 px y no depender de tooltip para explicar su función.
 
 ### Inputs and search
 

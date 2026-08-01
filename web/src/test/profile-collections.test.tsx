@@ -56,11 +56,33 @@ vi.mock("@/components/common/cards/ContentCard", () => ({
   ),
 }));
 
+vi.mock("@/components/common/cards/ListCard", () => ({
+  ListCard: ({
+    list,
+    footerSlot,
+  }: {
+    list: { name: string };
+    footerSlot?: ReactNode;
+  }) => (
+    <article data-testid={`list-card-${list.name}`}>
+      {list.name}
+      {footerSlot ? <div data-testid="outside-footer">{footerSlot}</div> : null}
+    </article>
+  ),
+}));
+
 import {
   CompletedGrid,
+  PublicListGrid,
 } from "@/components/pages/PublicProfilePage/ProfileCollections";
 import { ProgressCollection } from "@/components/pages/PublicProfilePage/ProgressCollection";
-import { AuthorType, ContentType, type LocalContentSummary } from "@/lib/types";
+import {
+  AuthorType,
+  ContentType,
+  ListType,
+  type LocalContentSummary,
+  type PublicListSummary,
+} from "@/lib/types";
 
 const content: LocalContentSummary = {
   id: 42,
@@ -202,6 +224,31 @@ describe("public profile content collections", () => {
     ).toBeInTheDocument();
     expect(within(metadata).queryByText(/2020/)).not.toBeInTheDocument();
     expect(within(card).queryByTestId("outside-footer")).not.toBeInTheDocument();
+  });
+
+  it("keeps public list cards compact and does not render descriptions outside them", () => {
+    const list: PublicListSummary = {
+      id: 11,
+      name: "Weekend queue",
+      description: "Titles to watch this weekend.",
+      list_type: ListType.PERSONAL,
+      visibility: "PUBLIC",
+      role: "owner",
+      owner: { username: "reader" },
+      collaborators: [],
+      item_count: 4,
+      member_count: 1,
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-02T00:00:00Z",
+    };
+
+    render(<PublicListGrid lists={[list]} />);
+
+    const card = screen.getByTestId("list-card-Weekend queue");
+    expect(card).toBeInTheDocument();
+    expect(screen.queryByText(list.description)).not.toBeInTheDocument();
+    expect(screen.queryByTestId("outside-footer")).not.toBeInTheDocument();
+    expect(card.parentElement).toHaveClass("xl:grid-cols-6");
   });
 
   it("does not repeat the series title as season attribution", () => {

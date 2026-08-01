@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512" role="img" aria-labelledby="title desc">
+  <title id="title">Words of Radiance</title>
+  <desc id="desc">Local demo artwork for Words of Radiance</desc>
+  <rect width="320" height="512" fill="#102442"/>
+  <path d="M160 42 268 252 160 350 52 252Z" fill="#5bc0d0" opacity=".72"/>
+  <path d="m160 42 28 210-28 98-28-98Z" fill="#e7f4ed" opacity=".86"/>
+  <path d="m52 252 108-45 108 45-108 98Z" fill="#316a9b"/>
+  <text x="34" y="398" fill="#f2fbff" font-family="system-ui, sans-serif" font-size="23" font-weight="800">WORDS OF</text>
+  <text x="34" y="426" fill="#f2fbff" font-family="system-ui, sans-serif" font-size="23" font-weight="800">RADIANCE</text>
+  <text x="34" y="458" fill="#8ce5e1" font-family="monospace" font-size="11" letter-spacing="2">LOCAL DEMO / BOOK</text>
+</svg>

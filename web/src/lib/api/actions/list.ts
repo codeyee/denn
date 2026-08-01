@@ -67,10 +67,13 @@ export const listActions = {
         return api.get<ListStatsResponse>(`/content/lists/${id}/stats/`, true);
     },
 
-    pickRandom: (id: number): Promise<{ result: ListItem | null }> => {
+    pickRandom: (
+        id: number,
+        excludeContentIds: number[] = [],
+    ): Promise<{ result: ListItem | null }> => {
         return api.post<{ result: ListItem | null }>(
             `/content/lists/${id}/random/`,
-            undefined,
+            { exclude_content_ids: excludeContentIds },
             true,
         );
     },

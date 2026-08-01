@@ -91,7 +91,7 @@ function getContentAttribution(
 
 export function PublicListGrid({ lists }: { lists: PublicListSummary[] }) {
   return (
-    <div className="grid grid-cols-2 gap-x-3 gap-y-7 sm:grid-cols-3 lg:grid-cols-4">
+    <div className={PROFILE_CONTENT_GRID_CLASS}>
       {lists.map((list) => (
         <ListCard
           key={list.id}
@@ -100,10 +100,6 @@ export function PublicListGrid({ lists }: { lists: PublicListSummary[] }) {
             <span className="rounded-full bg-black/70 px-2.5 py-1 text-xs font-semibold capitalize text-white">
               {list.role}
             </span>
-          }
-          footerSlot={
-            list.description ||
-            `${list.member_count} ${list.member_count === 1 ? "member" : "members"}`
           }
         />
       ))}

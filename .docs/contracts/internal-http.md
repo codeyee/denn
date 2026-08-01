@@ -155,6 +155,25 @@ collection metadata/settings remain Core-only helpers for visibility and the
 legacy `/collections/<key>` redirect resolves to that canonical list route;
 they do not call `proxy` or expose provider credentials.
 
+Authenticated random selection uses two Core endpoints. `POST
+/api/content/lists/<id>/random/` selects one eligible item from the accessible
+list and returns the normal `ListItemSerializer` payload. Personal and dynamic
+lists select the current user's `backlog`; shared lists select items whose
+context is not completed. `POST /api/content/tracking/random/` selects from
+the current user's personal backlog and returns a local content summary plus
+the type-aware progress policy. Both endpoints accept an optional JSON body:
+
+```json
+{
+  "exclude_content_ids": [123]
+}
+```
+
+The exclusion list is bounded and is intended to prevent the immediately
+previous result from appearing twice in a row. An empty candidate set returns
+`{"result": null}` with HTTP 200. The browser reaches both endpoints through
+the authenticated same-origin Core BFF; no provider credentials are exposed.
+
 Editable lists persist a `ListMembership` row for the owner. Shared-list
 members use the roles `owner`, `editor`, or `viewer`; list content and order
 writes require owner/editor, while settings, member management, invitations,

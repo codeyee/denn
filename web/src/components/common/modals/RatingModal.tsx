@@ -53,7 +53,7 @@ export function RatingModal({
     resolver: zodResolver(ratingSchema),
     mode: "onTouched",
     defaultValues: {
-      score: existingRating ? parseFloat(existingRating.score) : 5.0,
+      score: existingRating ? parseFloat(existingRating.score) : 0,
       comment: existingRating?.comment || "",
       spoiler: existingRating?.spoiler ?? false,
     },
@@ -71,7 +71,7 @@ export function RatingModal({
       });
     } else if (isOpen && !existingRating) {
       reset({
-        score: 5.0,
+        score: 0,
         comment: "",
         spoiler: false,
       });

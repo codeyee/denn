@@ -3,6 +3,7 @@ import { TVShowDetail } from "@/lib/types";
 import { normalizeContentPlatforms } from "@/lib/platforms/contentPlatforms";
 import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { formatAuthors } from "@/lib/utils/authorUtils";
+import { cn } from "@/lib/utils/tailwindUtils";
 import { PlatformsDisplay } from "../platforms/PlatformsDisplay";
 
 interface TVShowDetailContentProps {
@@ -17,15 +18,16 @@ export function TVShowDetailContent({
   const releaseDate = formatReleaseDate(tvShow.release_date);
 
   const normalizedPlatforms = normalizeContentPlatforms(tvShow.platforms);
+  const hasPlatforms = normalizedPlatforms.length > 0;
 
   return (
     <div className="layout-content mt-8">
       <h2 className="text-2xl font-bold text-white mb-6">About</h2>
 
-      {/* 2-column layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      {/* About layout */}
+      <div className={cn("grid grid-cols-1 gap-8", hasPlatforms && "lg:grid-cols-3")}>
         {/* Left column - Description */}
-        <div className="lg:col-span-2">
+        <div className={cn(hasPlatforms && "lg:col-span-2")}>
           {tvShow.tagline && (
             <p className="text-white/80 italic mb-4 font-sans">
               &quot;{tvShow.tagline}&quot;
@@ -96,10 +98,11 @@ export function TVShowDetailContent({
           )}
         </div>
 
-        {/* Right column - Where to Watch */}
-        <div className="lg:col-span-1">
-          <PlatformsDisplay platforms={normalizedPlatforms} />
-        </div>
+        {hasPlatforms && (
+          <div className="lg:col-span-1">
+            <PlatformsDisplay platforms={normalizedPlatforms} />
+          </div>
+        )}
       </div>
     </div>
   );

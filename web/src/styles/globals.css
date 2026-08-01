@@ -228,6 +228,16 @@
     @apply bg-background text-foreground;
   }
 
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  [role="button"][aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+
   html,
   body {
     overflow-x: clip;
@@ -242,8 +252,26 @@
   }
 
   .layout-carousel {
-    width: calc(100dvw - (2 * var(--layout-gutter)));
-    margin-inline: calc(50% - 50dvw + var(--layout-gutter));
+    width: 100dvw;
+    margin-inline: calc(50% - 50dvw);
+  }
+
+  .layout-carousel-content {
+    width: calc(100% - (2 * var(--layout-gutter)));
+    max-width: var(--layout-content-max);
+    margin-inline: auto;
+  }
+
+  .layout-carousel-track {
+    position: relative;
+  }
+
+  .layout-carousel-track [data-carousel-control="previous"] {
+    left: calc(-1 * var(--layout-gutter));
+  }
+
+  .layout-carousel-track [data-carousel-control="next"] {
+    right: calc(-1 * var(--layout-gutter));
   }
 
   .layout-content,
@@ -520,6 +548,21 @@
     -moz-transform: rotate(0.15deg);
     -ms-transform: rotate(0.15deg);
     -o-transform: rotate(0.15deg);
+  }
+}
+
+.random-picker-track--rolling {
+  transition: transform 72ms linear;
+}
+
+.random-picker-track--settling {
+  transition: transform 720ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .random-picker-track--rolling,
+  .random-picker-track--settling {
+    transition: none;
   }
 }
 

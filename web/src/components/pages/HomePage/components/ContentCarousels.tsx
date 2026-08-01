@@ -4,11 +4,19 @@ import { CreateListCard } from "@/components/common/cards/CreateListCard";
 import { Carousel } from "@/components/common/ui/Carousel";
 import { BrowseSectionLink } from "@/components/common/ui/BrowseSectionLink";
 import { ErrorState } from "@/components/common/state/ErrorState";
+import { InProgressCarousel } from "./InProgressCarousel";
 import {
   CONTENT_TYPE_DEFINITIONS,
   type DiscoveryContentType,
 } from "@/lib/contentTypes";
-import { Content, ContentType, ListType, UserList } from "@/lib/types";
+import {
+  Content,
+  ContentType,
+  type BrowseType,
+  ListType,
+  PublicProgressItem,
+  UserList,
+} from "@/lib/types";
 
 const CONTENT_SECTIONS = [
   { key: "movies", type: ContentType.MOVIE },
@@ -30,8 +38,10 @@ interface ContentCarouselsProps {
     books: Content[];
   };
   lists: UserList[];
+  inProgress: PublicProgressItem[];
   suggestionsError?: string | null;
   listsError?: string | null;
+  progressError?: string | null;
   createList: (
     name: string,
     description?: string,
@@ -50,14 +60,27 @@ interface CarouselSectionProps {
 export function ContentCarousels({
   suggestions,
   lists,
+  inProgress,
   suggestionsError,
   listsError,
+  progressError,
   createList,
   isCreatingList = false,
   showPersonalLists = false,
 }: ContentCarouselsProps) {
   return (
     <>
+      {showPersonalLists && (
+        progressError ? (
+          <ErrorState
+            error={progressError}
+            title="Could not load your progress"
+          />
+        ) : (
+          <InProgressCarousel items={inProgress} />
+        )
+      )}
+
       {showPersonalLists && (
         <ListsCarousel
           lists={lists}
@@ -97,7 +120,7 @@ function CarouselSection({
         titleIcon={definition.icon}
         titleAction={
           <BrowseSectionLink
-            type={definition.slug}
+            type={definition.slug as BrowseType}
             label={definition.pluralLabel}
           />
         }

@@ -117,6 +117,7 @@ export function PublicProfilePage({
                 username={username}
                 search={search}
                 initialData={initialTabData}
+                isOwner={isOwner}
               />
             )}
           </ProfileTabs>

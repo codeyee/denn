@@ -272,6 +272,17 @@ export interface UserContentTracking {
     effects?: TrackingEffect[];
 }
 
+export interface RandomTrackingPick {
+    tracking_id: number;
+    content: LocalContentSummary;
+    status: TrackingStatus;
+    last_completed_at: string | null;
+    is_favorite: boolean;
+    created_at: string;
+    updated_at: string;
+    progress_policy: ProgressPolicy;
+}
+
 export type DynamicCollectionGroup = "status" | "type";
 
 export interface DynamicCollection {

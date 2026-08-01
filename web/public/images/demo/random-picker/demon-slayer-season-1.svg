@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512" role="img" aria-labelledby="title desc">
+  <title id="title">Demon Slayer: Kimetsu no Yaiba: Season 1</title>
+  <desc id="desc">Local demo artwork for Demon Slayer Season 1</desc>
+  <rect width="320" height="512" fill="#170e20"/>
+  <circle cx="160" cy="180" r="104" fill="#b52c42"/>
+  <path d="M160 86v188M66 180h188M94 114l132 132M226 114 94 246" stroke="#f5b15b" stroke-width="4" opacity=".68"/>
+  <circle cx="160" cy="180" r="28" fill="#f5dfb1"/>
+  <text x="34" y="394" fill="#fff4dc" font-family="system-ui, sans-serif" font-size="22" font-weight="800">DEMON SLAYER</text>
+  <text x="34" y="426" fill="#f5b15b" font-family="system-ui, sans-serif" font-size="20" font-weight="700">SEASON 1</text>
+  <text x="34" y="458" fill="#f5b15b" font-family="monospace" font-size="11" letter-spacing="2">LOCAL DEMO / SEASON</text>
+</svg>
