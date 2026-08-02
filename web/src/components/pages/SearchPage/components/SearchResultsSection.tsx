@@ -2,11 +2,14 @@ import { ContentCard } from "../../../common/cards/ContentCard";
 import { Carousel } from "../../../common/ui/Carousel";
 import { BrowseSectionLink } from "../../../common/ui/BrowseSectionLink";
 import { SectionTitle } from "../../../common/ui/SectionTitle";
-import { CONTENT_TYPE_DEFINITIONS } from "@/lib/contentTypes";
+import {
+  CONTENT_TYPE_DEFINITIONS,
+  type DiscoveryContentType,
+} from "@/lib/contentTypes";
+import { ContentType, type BrowseType } from "@/lib/types";
 import type {
   AlbumDetail,
   BookDetail,
-  ContentType,
   GameDetail,
   MovieDetail,
   TVShowDetail,
@@ -19,8 +22,16 @@ type ContentItem =
   | AlbumDetail
   | BookDetail;
 
+const BROWSE_TYPE_BY_CONTENT_TYPE = {
+  [ContentType.MOVIE]: "movies",
+  [ContentType.TV_SHOW]: "tv-shows",
+  [ContentType.GAME]: "games",
+  [ContentType.ALBUM]: "music",
+  [ContentType.BOOK]: "books",
+} satisfies Record<DiscoveryContentType, BrowseType>;
+
 interface SearchResultsSectionProps {
-  contentType: ContentType;
+  contentType: DiscoveryContentType;
   items: ContentItem[];
   query: string;
 }
@@ -40,7 +51,7 @@ export function SearchResultsSection({
         titleIcon={definition.icon}
         titleAction={
           <BrowseSectionLink
-            type={definition.slug}
+            type={BROWSE_TYPE_BY_CONTENT_TYPE[contentType]}
             label={definition.pluralLabel}
             query={query}
           />
@@ -63,7 +74,7 @@ export function SearchResultsSection({
           className="mb-4"
           action={
             <BrowseSectionLink
-              type={definition.slug}
+              type={BROWSE_TYPE_BY_CONTENT_TYPE[contentType]}
               label={definition.pluralLabel}
               query={query}
             />

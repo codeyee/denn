@@ -74,6 +74,24 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
     {
+      name: "visual-mobile",
+      testMatch: /visual-regression\.spec\.ts/,
+      use: {
+        ...devices["Pixel 7"],
+        viewport: { width: 390, height: 844 },
+        reducedMotion: "reduce",
+      },
+    },
+    {
+      name: "visual-desktop",
+      testMatch: /visual-regression\.spec\.ts/,
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: { width: 1440, height: 900 },
+        reducedMotion: "reduce",
+      },
+    },
+    {
       name: "performance",
       testMatch: /performance\.spec\.ts/,
       timeout: 180_000,
