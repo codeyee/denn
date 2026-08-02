@@ -65,9 +65,21 @@ for (const sourceRoute of ["/", "/search?q=phase"]) {
     page,
   }) => {
     await page.goto(sourceRoute);
-    const detailLink = page.getByRole("link", {
+    const allDetailLinks = page.getByRole("link", {
       name: "View details for Phase Zero Movie",
     });
+    const detailLink = sourceRoute === "/"
+      ? page
+          .locator('section[aria-roledescription="carousel"]')
+          .filter({
+            has: page.getByRole("heading", {
+              name: "Popular Movies",
+              exact: true,
+            }),
+          })
+          .getByRole("link", { name: "View details for Phase Zero Movie" })
+          .first()
+      : allDetailLinks.first();
     await expect(detailLink).toHaveCount(1);
     await detailLink.scrollIntoViewIfNeeded();
 
@@ -80,7 +92,7 @@ for (const sourceRoute of ["/", "/search?q=phase"]) {
       y: cardBounds.y + cardBounds.height / 2,
     };
     await page.mouse.move(cardCenter.x, cardCenter.y);
-    await expect(detailLink).toHaveCount(2);
+    await expect(page.locator("[data-card-hover-popover]")).toBeVisible();
     await page.mouse.click(cardCenter.x, cardCenter.y);
 
     await expect(page).toHaveURL(/\/content\/1$/);

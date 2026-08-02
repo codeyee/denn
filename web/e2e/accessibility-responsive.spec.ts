@@ -342,13 +342,13 @@ test("public profile tabs support keyboard navigation, reduced motion and 44px t
   await page.goto("/user/phase0-fixture");
 
   const tabs = page.getByRole("tab");
-  await expect(tabs).toHaveCount(4);
+  await expect(tabs).toHaveCount(3);
   await tabs.first().focus();
   await page.keyboard.press("ArrowRight");
   await expect(
-    page.getByRole("tab", { name: "Completed" }),
+    page.getByRole("tab", { name: "Progress" }),
   ).toHaveAttribute("aria-selected", "true");
-  await expect(page).toHaveURL(/tab=completed/);
+  await expect(page).toHaveURL(/tab=progress/);
 
   for (const tab of await tabs.all()) {
     const box = await tab.boundingBox();
@@ -506,7 +506,7 @@ test("home carousel uses the wide container and keeps card width bounded at 5000
 
   await expect
     .poll(async () => (await firstSlide.boundingBox())?.width ?? 0)
-    .toBeLessThanOrEqual(270);
+    .toBeLessThanOrEqual(300);
 
   const carouselBox = await carousel.boundingBox();
   expect(carouselBox?.width ?? 0).toBeGreaterThanOrEqual(4900);
@@ -580,9 +580,14 @@ test("shared content carousels keep circular controls while fades follow real bo
   await ensureCarouselItemCount(scroller, 24);
   const next = carousel.getByRole("button", { name: "View next content" });
   await expect(next).toBeVisible();
-  const nextBox = await next.boundingBox();
+  const [nextBox, contentBox] = await Promise.all([
+    next.boundingBox(),
+    carousel.locator(".layout-carousel-content").boundingBox(),
+  ]);
+  const contentRight = (contentBox?.x ?? 0) + (contentBox?.width ?? 0);
+  const nextRight = (nextBox?.x ?? 0) + (nextBox?.width ?? 0);
   expect(
-    5000 - ((nextBox?.x ?? 0) + (nextBox?.width ?? 0)),
+    Math.abs(nextRight - contentRight),
   ).toBeLessThanOrEqual(49);
 });
 

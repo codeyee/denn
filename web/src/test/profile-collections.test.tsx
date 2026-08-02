@@ -80,6 +80,7 @@ import {
   AuthorType,
   ContentType,
   ListType,
+  ListVisibility,
   type LocalContentSummary,
   type PublicListSummary,
 } from "@/lib/types";
@@ -227,12 +228,13 @@ describe("public profile content collections", () => {
   });
 
   it("keeps public list cards compact and does not render descriptions outside them", () => {
+    const description = "Titles to watch this weekend.";
     const list: PublicListSummary = {
       id: 11,
       name: "Weekend queue",
-      description: "Titles to watch this weekend.",
+      description,
       list_type: ListType.PERSONAL,
-      visibility: "PUBLIC",
+      visibility: ListVisibility.PUBLIC,
       role: "owner",
       owner: { username: "reader" },
       collaborators: [],
@@ -246,7 +248,7 @@ describe("public profile content collections", () => {
 
     const card = screen.getByTestId("list-card-Weekend queue");
     expect(card).toBeInTheDocument();
-    expect(screen.queryByText(list.description)).not.toBeInTheDocument();
+    expect(screen.queryByText(description)).not.toBeInTheDocument();
     expect(screen.queryByTestId("outside-footer")).not.toBeInTheDocument();
     expect(card.parentElement).toHaveClass("xl:grid-cols-6");
   });
