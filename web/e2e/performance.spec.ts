@@ -1,6 +1,12 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, rm, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
-import type { BrowserContext, Page } from "@playwright/test";
+import type {
+  APIRequestContext,
+  Browser,
+  BrowserContext,
+  Page,
+  TestInfo,
+} from "@playwright/test";
 
 import { test, expect } from "./support/test";
 import { fixtureUrl } from "./support/fixture";
@@ -33,6 +39,16 @@ const flows = {
   lists: { path: "/lists/1", authenticated: true },
   settings: { path: "/settings", authenticated: true },
 };
+const publicFlows = Object.entries(flows).filter(
+  ([, { authenticated }]) => !authenticated,
+);
+const authenticatedFlows = Object.entries(flows).filter(
+  ([, { authenticated }]) => authenticated,
+);
+const output = resolve("test-results/phase0-baseline.json");
+
+type Flow = (typeof flows)[keyof typeof flows];
+type Baseline = Record<string, { cold: Summary; warm: Summary }>;
 
 async function installObservers(page: Page) {
   await page.addInitScript(() => {
@@ -144,17 +160,15 @@ function summarize(samples: Sample[]): Summary {
   };
 }
 
-test("records a repeatable cold/warm production-build baseline", async ({
-  browser,
-  request,
-}, testInfo) => {
+async function recordBaseline(
+  browser: Browser,
+  request: APIRequestContext,
+  flowEntries: [string, Flow][],
+): Promise<Baseline> {
   await request.post(`${fixtureUrl}/__fixture__/reset`);
-  const baseline: Record<
-    string,
-    { cold: Summary; warm: Summary }
-  > = {};
+  const baseline: Baseline = {};
 
-  for (const [flow, { path, authenticated }] of Object.entries(flows)) {
+  for (const [flow, { path, authenticated }] of flowEntries) {
     const cold: Sample[] = [];
     const warm: Sample[] = [];
 
@@ -179,15 +193,19 @@ test("records a repeatable cold/warm production-build baseline", async ({
     };
   }
 
-  const output = resolve("test-results/phase0-baseline.json");
+  return baseline;
+}
+
+async function attachBaseline(baseline: Baseline, testInfo: TestInfo) {
   await mkdir(dirname(output), { recursive: true });
   await writeFile(output, `${JSON.stringify(baseline, null, 2)}\n`, "utf8");
   await testInfo.attach("phase0-baseline.json", {
     path: output,
     contentType: "application/json",
   });
+}
 
-  expect(Object.keys(baseline)).toEqual(Object.keys(flows));
+function expectCoreBudget(baseline: Baseline) {
   expect(baseline.home.cold.p75.cls).toBeLessThan(0.1);
   expect(baseline.home.warm.p75.cls).toBeLessThan(0.1);
   expect(baseline.home.cold.p75.lcp).toBeLessThan(2_500);
@@ -211,4 +229,32 @@ test("records a repeatable cold/warm production-build baseline", async ({
   expect(baseline.publicBrowse.warm.p75.lcp).toBeLessThan(2_500);
   expect(baseline.publicBrowse.cold.p75.cls).toBeLessThan(0.1);
   expect(baseline.publicBrowse.warm.p75.cls).toBeLessThan(0.1);
+}
+
+test.describe("production-build performance baseline", () => {
+  test.describe.configure({ mode: "serial" });
+  const baseline: Baseline = {};
+
+  test.beforeAll(async () => {
+    await rm(output, { force: true });
+  });
+
+  test("records the public cold/warm baseline", async ({ browser, request }, testInfo) => {
+    Object.assign(baseline, await recordBaseline(browser, request, publicFlows));
+    await attachBaseline(baseline, testInfo);
+  });
+
+  test("records the authenticated cold/warm baseline", async ({
+    browser,
+    request,
+  }, testInfo) => {
+    Object.assign(
+      baseline,
+      await recordBaseline(browser, request, authenticatedFlows),
+    );
+    await attachBaseline(baseline, testInfo);
+
+    expect(Object.keys(baseline)).toEqual(Object.keys(flows));
+    expectCoreBudget(baseline);
+  });
 });
