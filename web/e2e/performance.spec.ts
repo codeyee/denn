@@ -196,11 +196,16 @@ async function recordBaseline(
   return baseline;
 }
 
-async function attachBaseline(baseline: Baseline, testInfo: TestInfo) {
-  await mkdir(dirname(output), { recursive: true });
-  await writeFile(output, `${JSON.stringify(baseline, null, 2)}\n`, "utf8");
-  await testInfo.attach("phase0-baseline.json", {
-    path: output,
+async function attachBaseline(
+  baseline: Baseline,
+  testInfo: TestInfo,
+  outputPath = output,
+  attachmentName = "phase0-baseline.json",
+) {
+  await mkdir(dirname(outputPath), { recursive: true });
+  await writeFile(outputPath, `${JSON.stringify(baseline, null, 2)}\n`, "utf8");
+  await testInfo.attach(attachmentName, {
+    path: outputPath,
     contentType: "application/json",
   });
 }
@@ -241,7 +246,12 @@ test.describe("production-build performance baseline", () => {
 
   test("records the public cold/warm baseline", async ({ browser, request }, testInfo) => {
     Object.assign(baseline, await recordBaseline(browser, request, publicFlows));
-    await attachBaseline(baseline, testInfo);
+    await attachBaseline(
+      baseline,
+      testInfo,
+      testInfo.outputPath("phase0-baseline-public.json"),
+      "phase0-baseline-public.json",
+    );
   });
 
   test("records the authenticated cold/warm baseline", async ({
