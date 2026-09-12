@@ -82,7 +82,7 @@ from rest_flex_fields.views import FlexFieldsMixin
         ],
         responses={
             200: ListItemSerializer(many=True),
-            400: OpenApiExample('Bad Query', value={'detail': "Unknown sort field: 'foo'"}),
+            400: OpenApiExample('Bad Query', value={'detail': 'Invalid list query.'}),
             403: OpenApiExample('Forbidden', value={'detail': 'You do not have access to this list.'}),
             404: OpenApiExample('Not Found', value={'detail': 'Lista no encontrada o no tienes acceso a ella.'})
         }
@@ -313,9 +313,9 @@ class ListItemViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
 
         try:
             query = parse_list_item_query(request.query_params)
-        except QueryParseError as exc:
+        except QueryParseError:
             return Response(
-                {'detail': str(exc)},
+                {'detail': 'Invalid list query.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -458,8 +458,11 @@ class ListItemViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
             qd = QueryDict(mutable=True)
             qd['sort'] = sort_raw
             query = parse_list_item_query(qd)
-        except QueryParseError as exc:
-            return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        except QueryParseError:
+            return Response(
+                {'detail': 'Invalid list query.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         if not query.sort:
             return Response(

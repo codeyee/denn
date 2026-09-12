@@ -104,7 +104,7 @@ function buildIgdbSourceSet(src: string): string | undefined {
 }
 
 function buildOpenLibrarySourceSet(src: string): string | undefined {
-  if (!src.includes("covers.openlibrary.org/")) return undefined;
+  if (!isOpenLibraryCoverUrl(src)) return undefined;
   if (!/-[SML]\.(?:jpg|png)$/i.test(src)) return undefined;
 
   return [
@@ -116,4 +116,12 @@ function buildOpenLibrarySourceSet(src: string): string | undefined {
       `${src.replace(/-[SML](\.(?:jpg|png))$/i, `-${variant}$1`)} ${width}w`
     ))
     .join(", ");
+}
+
+function isOpenLibraryCoverUrl(src: string): boolean {
+  try {
+    return new URL(src).origin === "https://covers.openlibrary.org";
+  } catch {
+    return false;
+  }
 }
