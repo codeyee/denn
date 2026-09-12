@@ -141,7 +141,8 @@ class ListItemEndpointQueryTests(APITestCase):
     def test_unknown_sort_returns_400(self):
         response = self.client.get(self._items_url(), {'sort': 'totally_made_up'})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn('Unknown sort field', response.data['detail'])
+        self.assertEqual(response.data['detail'], 'Invalid list query.')
+        self.assertNotIn('totally_made_up', response.data['detail'])
 
     def test_group_by_emits_group_metadata(self):
         response = self.client.get(
@@ -253,6 +254,16 @@ class ApplySortAsListOrderTests(APITestCase):
     def test_rejects_empty_sort(self):
         response = self.client.post(self._url(), {'sort': ''}, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_rejects_unknown_sort_without_reflecting_input(self):
+        response = self.client.post(
+            self._url(),
+            {'sort': 'totally_made_up'},
+            format='json',
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data['detail'], 'Invalid list query.')
+        self.assertNotIn('totally_made_up', response.data['detail'])
 
     def test_rejects_noop_list_order_sort(self):
         response = self.client.post(self._url(), {'sort': 'list_order'}, format='json')
