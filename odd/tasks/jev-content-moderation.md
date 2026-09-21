@@ -91,7 +91,13 @@ Jev supplies independent typed judgments; application code owns precedence, thre
   - Checks: fake-client RED/GREEN tests for questions, thresholds, provider precedence, errors, timeouts, and no-secret logging.
   - Route: delegated; preparation and writer triggers.
 
-  - [x] **JEV-002A — TypeSafe adapter, state, questions, and contract fix (complete)**. JEV-002B deterministic policy composition is next.
+  - [x] **JEV-002A — TypeSafe adapter, state, questions, and contract fix (complete)**.
+
+  - [x] **JEV-002B — Deterministic policy composer** (new stacked slice on `d6e921e` via `agent/jev-moderation-policy`)
+    - Scope: pure, typed, code-owned policy composer `core/content/moderation/policy.py` over the three raw probabilities and the provider explicit flag; no SDK import, no persistence, no Jev call, no network.
+    - Contract: provider affirmative explicit flag is the hard authoritative override (always `explicit_or_sensitive`, never safe); `False`/absent never certifies safety. Jev is advisory: `explicit >= threshold` fails closed to `explicit_or_sensitive`; `review >= threshold` becomes `needs_review`; `safe` discovery only when safe is at/above threshold AND both others are below. Missing/incomplete answers fail closed to `needs_review`; invalid/non-finite/out-of-range inputs fail closed to `unknown`; expected unavailable/skipped outcomes never raise. Raw probabilities are preserved by the caller's payload; the composer returns decision/reason only.
+    - Thresholds are configurable via `PolicyThresholds` and validated as finite floats in [0, 1]. Defaults (0.75/0.75/0.75) are provisional and NOT production-tuned; enforcement remains disabled/shadow-only until JEV-005.
+    - Tests: offline table-driven `core/content/tests/test_jev_moderation_policy.py` (12 tests): provider override, provider False/absent never-safe, safe/explicit/review at-boundary equality, safe below threshold, contradictions, incomplete/missing/None, non-finite/out-of-range/non-numeric -> unknown, threshold validation rejection, custom-threshold boundary behavior.
     - Hygiene correction: JEV-002A1 wording now names the issue #102 question keys and the settings-sourced revision; the disabled-mode test lost its dead placeholder code and now asserts no client construction via a failing injected factory; the usage test asserts `assertFalse(hasattr(judgment, "latency_ms"))`.
     - Correction commit: `446b1ec` (`test(content): harden disabled-mode moderation coverage and ODD currency`). Verification: focused suite → `Found 22 test(s)` / OK; prior `content.tests.test_moderation` → `Found 15 test(s)` / OK; `makemigrations --check --dry-run` → `No changes detected`; client tests deterministically OK with `TYPESAFE_API_KEY` absent and set, no network; 361dcf5..HEAD numstat `0/22` test, `5/2` doc (27 authored changed lines), slice below the 400-line budget.
 
