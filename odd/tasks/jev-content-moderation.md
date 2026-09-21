@@ -53,9 +53,9 @@ Jev supplies independent typed judgments; application code owns precedence, thre
 
 ## TDD and validation
 
-- Mode: strict TDD.
-- Source: repository `AGENTS.md` (`Strict TDD Mode: enabled`).
-- Required cycle per implementation task: observed RED -> GREEN -> REFACTOR.
+- Mode: strict TDD is disabled.
+- Source: repository `AGENTS.md` (`Strict TDD Mode: disabled`).
+- Required cycle per implementation task: direct implementation with applicable functional checks; strict RED -> GREEN -> REFACTOR cycles are not required.
 - Core checks: focused Django tests, then `make validate-core` when the local database harness is available.
 - Web checks: focused tests if present, `make validate-web`.
 - Repository checks: `make test`, `make validate-proxy`, `make local-smoke`, and `make browser-local` as applicable.
@@ -66,10 +66,10 @@ Jev supplies independent typed judgments; application code owns precedence, thre
 - Implementation route: delegated direct.
 - Trigger evidence: the feature spans multiple non-trivial files across `core`, `web`, tests, migrations, and docs; broad exploration exceeded four files.
 - Implementer model: `opencode-go/glm-5.3-flash`.
-- Delivery strategy: `ask-on-risk`.
+- Delivery strategy: `auto-chain`.
 - Forecast: approximately 2,000–3,000 authored changed lines, excluding generated migration output and bulk fixture data.
 - Review budget: about 400 authored changed lines per PR slice.
-- Chain strategy: `stacked-to-main` (user-selected).
+- Chain strategy: `stacked-to-main` (unchanged).
 
 ## Tasks
 
@@ -132,20 +132,21 @@ Jev supplies independent typed judgments; application code owns precedence, thre
   - Acceptance: fresh judgments are skipped, changed inputs reclassify, concurrent duplicates collapse, failures do not break ingestion, and backfill can resume safely.
   - Checks: command, ingestion, idempotency, concurrency, and failure tests.
   - Route: delegated; writer trigger.
+  - Current state: JEV-003A is accepted; the next unit is JEV-003B backfill (JEV-003C incremental scheduling follows).
 
   - [x] **JEV-003A — Deterministic per-item classification service** (new stacked slice on `23b3306` via `agent/jev-moderation-classification-service`)
-    - Scope: pure service `core/content/services/moderation_service.py`. Builds the normalized six-field state from `payload_reconstructor.from_local`, computes a canonical sha256 source_data_hash via `payload_helpers.hash_payload`, reuses complete judgments with the same identity, writes a new COMPLETE/ERROR row, and short-circuits the provider-explicit path without a client call. No scheduling, backfill, UI, API, or background mechanism is touched.
+    - Scope: pure service `core/content/services/moderation_service.py`. Builds the normalized six-field state from `payload_reconstructor.from_local`, computes the source_data_hash inline with canonical JSON (`json.dumps(..., sort_keys=True, ensure_ascii=False, separators=(',', ':'))`) and `hashlib.sha256`, reuses complete judgments with the same identity, persists COMPLETE rows with a typed unavailable outcome instead of ERROR rows, and short-circuits the provider-explicit path without a client call. No scheduling, backfill, UI, API, or background mechanism is touched.
     - Provider explicit: only the TMDB affirmative adult flag may set `provider_explicit=True`. Per the adult-safety boundary, no IGDB/Spotify/OpenLibrary equivalent is normalized, and no persisted adult flag exists yet in the local Detail normalize path, so in current production the override path stays structurally unsupported (provider_explicit stays None for every item). This is reported, not fabricated.
     - Result types: returns either a persisted `ContentModerationJudgment` or a typed `ModerationClassificationOutcome` (`skipped|unavailable`); the disabled path returns `moderation_disabled` without constructing a client or writing a fake row; `ModerationUnavailable` returns a typed `unavailable` outcome with the adapter's code, no ERROR row, and never breaks the caller.
     - Payload honestly retains: raw_nouls, model, usage (input/output tokens, None on the provider-override path), policy decision/reason, policy_thresholds, source_state, provider_explicit, classification_ms (service-measured wall clock), and `requested_at`/`completed_at` on the judgment row itself. Token usage plus timestamps needed by the JEV-003B reporting contract are all persisted on every Jev write.
-    - Tests: offline table-driven `core/content/tests/test_jev_moderation_service.py` (9 tests): state/hash determinism with distinct items, changed-input rehash, idempotent reuse without a second call, changed input reclassification, disabled mode (no client, no write), provider override short-circuits without a Jev call, successful raw_nouls + usage + classification_ms persistence, unavailable does not break the caller and marks an ERROR row, non-TMDB providers never certify safety. Intentionally deferred to JEV-003B: a true concurrent duplicate-identity race test because the service's write path relies on the existing unique constraint rather than an injected injection hook; race collapse is deferred to the backfill slice with a row-existence re-check.
+    - Tests: offline table-driven `core/content/tests/test_jev_moderation_service.py` (16 tests after the correction slice): state/hash determinism with distinct items, changed-input rehash, alias resolution and stale-pre-reuse protection, idempotent reuse without a second call (concrete resolution only), changed input reclassification, disabled mode (no client, no write), provider override short-circuits without a Jev call, successful raw_nouls + usage + classification_ms persistence, unavailable returns a typed outcome with no row, non-TMDB providers never certify safety, missing-detail returns `state_unavailable`, no PENDING state after success, canonical 64-hex hash, injected IntegrityError race collapse, and `provider-rule:v1` audit identity.
     - Repo infrastructure gap (reported, not invented): the repo has no established queue, thread worker, celery, or async scheduling layer for the JEV-003C incremental hook. `fetch_bulk_source_data` is synchronous and the only local scheduler is management-command-driven. A real queue/worker decision is a product/architecture call that must come from the parent before any scheduler code.
   - [x] **JEV-003A-CLASSIFICATION-FIX — moderation identity contract correction** (correction slice on `agent/jev-moderation-classification-fix`, based at `bb09dba`)
     - Fix: inference identity now derives from the concrete resolved model returned by the client (`jev-1.13.0`), not the requested alias. Alias-only requests (`jev-latest`) skip pre-reuse and always perform the classify call, so distinct resolutions never collapse onto a stale judgment; the concrete resolution path still reuses deterministically. Provider overrides keep `provider-rule:v1` as the persisted `model_name` and record the resolved-vs-requested distinction in the payload.
-    - Tests added (9): alias resolution records the concrete `model_name` plus the requested alias, repeated alias requests perform a second call instead of stale pre-reuse, missing normalized detail returns `state_unavailable` with zero calls/writes, no PENDING row is ever left behind after a complete judgment, canonical hash is a non-empty 64-hex digest, injected `IntegrityError` collapses to the existing judgment row, provider override writes the `provider-rule:v1` audit identity with empty `raw_nouls`, deterministic and changed-input state-hash coverage, and non-TMDB providers never certify safety. Total suite: 16 tests.
-    - Commit identity: Conventional Commit `fix(content): resolve moderation identity from concrete Jev model`, exact SHA `17fc476` on `agent/jev-moderation-classification-fix`, stacked on `bb09dba`. Slice arithmetic vs base: `moderation_service.py` 201/79, tests 92/13–20 net; total authored diff 214 insertions / 79 deletions (293 lines), within the 400-line budget.
-    - Verification: focused suite → `Found 16 test(s)` / OK; full `content` app suite → `Ran 328 tests` / OK (skipped=1); `makemigrations --check --dry-run` → `No changes detected`; source and tests syntax clean. No live Jev call; all coverage is offline against injected fakes.
-    - Residual risks: the unresolved alias case (empty/invalid resolved model) returns `typesafe_response_invalid` but has no dedicated unit test; the ERROR-tombstone path was relocated to an honest typed `unavailable` outcome per the JEV-003A contract, so callers should not assume an ERROR row exists after a temporary timeout.
+    - Tests added (9 above the base 7 in `bb09dba`): alias resolution records the concrete `model_name` plus the requested alias, repeated alias requests perform a second call instead of stale pre-reuse, missing normalized detail returns `state_unavailable` with zero calls/writes, no PENDING row is ever left behind after a complete judgment, canonical hash is a non-empty 64-hex digest, injected `IntegrityError` collapses to the existing judgment row, provider override writes the `provider-rule:v1` audit identity with empty `raw_nouls`, deterministic and changed-input state-hash coverage, and non-TMDB providers never certify safety. Total service suite: 16 tests.
+    - Commit identity: Conventional Commit `fix(content): resolve moderation identity from concrete Jev model`, exact SHA `17fc476` on `agent/jev-moderation-classification-fix`, stacked on `bb09dba`. Slice arithmetic `bb09dba..4e504f5`: `moderation_service.py` +132/-69, `test_jev_moderation_service.py` +82/-10, ODD doc +7/-1; total +221/-80 = 301 authored lines, within the 400-line budget.
+    - Independent verifier: PASS. Exact checks: service suite 16 OK; all moderation suites 68 OK; `content` app suite 328 OK (skipped=1); `makemigrations --check --dry-run` `No changes detected`; diff checks clean; worktree clean with HEAD equal to `origin/agent/jev-moderation-classification-fix` at `4e504f5` before this verification correction. No live Jev call; all coverage is offline against injected fakes.
+    - Residual risks: `_KNOWN_ALIASES` currently explicitly recognizes only `jev-latest`; a repeated alias call incurs a Jev request even when the concrete model is unchanged; the empty/whitespace resolved-model branch returns `typesafe_response_invalid` but lacks a dedicated unit test; combined `23b3306..4e504f5` is 507 authored lines and must not become one >400 PR slice under `auto-chain` (split by work-unit boundary at `bb09dba`).
 
 - [ ] **JEV-004 — Expose moderation state and preference through Core APIs**
   - Add a stable moderation summary to relevant content serializers and a mature-content preference without logging preference values.
@@ -169,6 +170,14 @@ Jev supplies independent typed judgments; application code owns precedence, thre
   - Update content eligibility, current architecture, feature documentation, internal API contract if changed, environment reference, and runbooks for backfill/evaluation/rollback.
   - Acceptance: shadow, activation, rollback, model/question/policy versioning, and production safeguards are unambiguous.
   - Checks: documentation links resolve; commands match implementation; final cross-service validation results are recorded.
+- Route: delegated; writer trigger.
+
+- [ ] **JEV-003B — Resumable rate-bounded moderation backfill command** (pending; next unit)
+  - Add a resumable, rate-bounded Django management command that iterates eligible `ContentItem` rows and delegates classification to the accepted JEV-003A service. It must resume safely from its own progress cursor and never reclassify fresh judgments with identical identity.
+  - Logging contract: structured periodic logs (a bounded periodic heartbeat with progress counts, duration, throughput, classification buckets `safe|explicit|needs_review|explicit_override`, token totals) plus structured final logs with the same fields and an explicit durations section. Estimated-cost summary is optional but, when reported, must carry explicit pricing provenance: the pricing source/config name, the pricing date, and the token-to-cost formula, so the number is auditable.
+  - Optional JSON report: an explicit flag may emit the complete run summary as structured JSON on stdout or a user-specified file; JSON must not be the only log path.
+  - Safety boundary: no live Jev call in tests or this task. The command and its docs must make live run eligibility depend on explicit operator/CI opt-in flags, not ambient defaults.
+  - Checks: command argument/flag validation, idempotent reuse behavior, rate-bound pacing, resume-safety against cursor replay, and offline fake-client log/report assertions. All Django tests are offline.
   - Route: delegated; writer trigger.
 
 ## Progress and evidence
@@ -181,4 +190,4 @@ Jev supplies independent typed judgments; application code owns precedence, thre
 
 ## Next step
 
-Start JEV-003 (resumable rate-bounded backfill and non-blocking incremental scheduling) on a new stacked slice. Delivery follows the existing stacked-to-main chain.
+Start JEV-003B (resumable rate-bounded backfill command) on a new stacked slice; JEV-003C incremental scheduling remains a separate follow-up pending a queue/worker architecture decision. Delivery follows `auto-chain` with the existing `stacked-to-main` chain strategy.
