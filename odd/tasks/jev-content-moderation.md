@@ -170,7 +170,7 @@ Jev supplies independent typed judgments; application code owns precedence, thre
   - Update content eligibility, current architecture, feature documentation, internal API contract if changed, environment reference, and runbooks for backfill/evaluation/rollback.
   - Acceptance: shadow, activation, rollback, model/question/policy versioning, and production safeguards are unambiguous.
   - Checks: documentation links resolve; commands match implementation; final cross-service validation results are recorded.
-- Route: delegated; writer trigger.
+  - Route: delegated; writer trigger.
 
 - [ ] **JEV-003B — Resumable rate-bounded moderation backfill command** (in progress; next unit)
   - Add a resumable, rate-bounded Django management command that iterates eligible `ContentItem` rows and delegates classification to the accepted JEV-003A service. It must resume safely from its own progress cursor and never reclassify fresh judgments with identical identity.
@@ -178,7 +178,7 @@ Jev supplies independent typed judgments; application code owns precedence, thre
   - Optional JSON report: an explicit flag may emit the complete run summary as structured JSON on stdout or a user-specified file; JSON must not be the only log path.
   - Safety boundary: no live Jev call in tests or this task. The command and its docs must make live run eligibility depend on explicit operator/CI opt-in flags, not ambient defaults.
   - Checks: command argument/flag validation, idempotent reuse behavior, rate-bound pacing, resume-safety against cursor replay, and offline fake-client log/report assertions. All Django tests are offline.
-- Route: delegated; writer trigger.
+  - Route: delegated; writer trigger.
 
   - [x] **JEV-003B-BACKFILL-COMMAND — resumable rate-bounded backfill implemented** (new stacked slice on `agent/jev-moderation-backfill`, based at `ac20f9d`)
     - Scope: production-capable synchronous Django management command `core/content/management/commands/backfill_moderation.py` plus a new offline test suite and a minimal backward-compatible observation seam in `core/content/services/moderation_service.py` (optional `observation` keyword the service fills with `reused` truth; the accepted JEV-003A contract is otherwise unchanged).

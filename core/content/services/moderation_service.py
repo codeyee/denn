@@ -102,18 +102,18 @@ def classify_content_item(
     """
     settings_getter = settings_getter or _default_settings
     thresholds = thresholds or PolicyThresholds()
-    _obs = observation or {}
-
     if not settings_getter('MODERATION_CLASSIFICATION_ENABLED'):
         # Disabled mode: no client is constructed, no judgment is written.
-        _obs['reused'] = False
+        if observation is not None:
+            observation['reused'] = False
         return ModerationClassificationOutcome('skipped', 'moderation_disabled')
 
     try:
         state, source_data_hash = build_state_and_hash(content_item)
     except ModerationStateError:
         # Typed unavailable outcome, zero calls, zero writes, no exception.
-        _obs['reused'] = False
+        if observation is not None:
+            observation['reused'] = False
         return ModerationClassificationOutcome('skipped', 'state_unavailable')
 
     requested_model = model or settings_getter('MODERATION_MODEL')
@@ -141,7 +141,8 @@ def classify_content_item(
             source_data_hash=source_data_hash,
             question_revision=question_revision,
         )
-        _obs['reused'] = not _created
+        if observation is not None:
+            observation['reused'] = not _created
         return judgment
 
     # Alias requested (or unset): no safe pre-reuse without resolved model.
@@ -159,7 +160,8 @@ def classify_content_item(
             .first()
         )
         if existing is not None:
-            _obs['reused'] = True
+            if observation is not None:
+                observation['reused'] = True
             return existing
 
     started = time.monotonic()
@@ -172,10 +174,12 @@ def classify_content_item(
         moderation_judgment = adapter.classify(state)
     except ModerationUnavailable as error:
         # No ERROR row is persisted here: typed honest outcome for JEV-003B.
-        _obs['reused'] = False
+        if observation is not None:
+            observation['reused'] = False
         return ModerationClassificationOutcome('unavailable', error.code)
 
-    _obs['reused'] = False
+    if observation is not None:
+        observation['reused'] = False
 
     resolved_model = moderation_judgment.model
     if not isinstance(resolved_model, str) or not resolved_model.strip():
@@ -223,7 +227,8 @@ def classify_content_item(
         source_data_hash=source_data_hash,
         question_revision=question_revision,
     )
-    _obs['reused'] = not created
+    if observation is not None:
+        observation['reused'] = not created
     return judgment
 
 

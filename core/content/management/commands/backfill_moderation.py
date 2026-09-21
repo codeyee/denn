@@ -62,21 +62,38 @@ def _emit(stream, event: dict) -> None:
     stream.flush()
 
 
-def _iter_items(after_id: int, limit: int, batch_size: int) -> Iterator[ContentItem]:
+def _progress_event(stream, stats: dict, started_monotonic: float) -> None:
+    duration = round(time.monotonic() - started_monotonic, 3)
+    throughput = round(stats['scanned'] / max(duration, 0.001), 3)
+    _emit(stream, {
+        'event': 'progress', 'scanned': stats['scanned'],
+        'created': stats['created'], 'reused': stats['reused'],
+        'skipped': stats['skipped'], 'unavailable': stats['unavailable'],
+        'error': stats['error'], 'duration_seconds': duration,
+        'throughput_items_per_second': throughput, 'last_id': stats['last_id'],
+    })
+
+
+def _iter_items(
+    after_id: int, limit: int, batch_size: int,
+) -> Iterator[ContentItem]:
     last_id = after_id
+    yielded = 0
     while True:
-        page_size = limit if limit and limit < batch_size else batch_size
+        page_size = batch_size
         page = list(
             ContentItem.objects.filter(pk__gt=last_id)
             .order_by('pk')[:page_size]
         )
         if not page:
             return
-        yield from page
+        for candidate in page:
+            yield candidate
+            yielded += 1
+            if limit and yielded >= limit:
+                return
         last_id = page[-1].pk
-        if limit and last_id >= limit + after_id:
-            return
-        if len(page) < batch_size and not limit:
+        if len(page) < batch_size:
             return
 
 
@@ -92,6 +109,10 @@ class Command(BaseCommand):
                             help='Iterator page size for the bounded scan.')
         parser.add_argument('--delay-ms', type=_non_negative_int, default=0,
                             help='Pause between processed items, in milliseconds.')
+        parser.add_argument('--progress-every', type=_positive_int, default=50,
+                            help='Emit a progress summary event after every N items.')
+        parser.add_argument('--input-price-per-1m', default=None,
+                            help='Override the pricing snapshot input rate (USD per 1M tokens).')
         parser.add_argument('--report', default=None,
                             help='Optional path for an atomic JSON summary report.')
         parser.add_argument('--create-parent-dirs', action='store_true',
@@ -105,12 +126,24 @@ class Command(BaseCommand):
         delay_s = delay_ms / 1000.0
         report_path = options['report']
         create_parents = options['create_parent_dirs']
+        progress_every = options['progress_every']
+        rate_override = options['input_price_per_1m']
         stdout = self.stdout
+        input_price = None
 
         if batch_size <= 0:
             raise CommandError('batch-size must be a positive integer')
         if delay_ms < 0:
             raise CommandError('delay-ms must be a non-negative integer')
+        if rate_override is not None:
+            try:
+                input_price = float(rate_override)
+            except ValueError as err:
+                raise CommandError('input-price-per-1m must be a finite number') from err
+            if input_price < 0 or input_price != input_price or input_price in (
+                float('inf'), float('-inf'),
+            ):
+                raise CommandError('input-price-per-1m must be non-negative and finite')
 
         stats = {
             'scanned': 0, 'created': 0, 'reused': 0,
@@ -125,8 +158,11 @@ class Command(BaseCommand):
             'input_tokens': 0, 'output_tokens': 0, 'missing_usage': 0,
             'last_id': after_id,
         }
+        unavailable_item_ids: list[int] = []
+        failed_item_ids: list[int] = []
+        progress_every = max(progress_every, 1) if progress_every else 1
         started_monotonic = time.monotonic()
-        errors = []
+        processed_since_progress = 0
 
         try:
             for item in _iter_items(after_id, limit, batch_size):
@@ -138,10 +174,20 @@ class Command(BaseCommand):
                     result = classify_content_item(item, observation=observation)
                 except Exception as exc:  # failure isolation: continue.
                     stats['error'] += 1
-                    errors.append({'item_id': item.pk, 'error_code': 'unhandled_exception'})
+                    # Bounded list keeps a compact retry cursor for the operator.
+                    failed_item_ids.append(item.pk)
+                    outcome = 'error'
+                    code = 'unhandled_exception'
+                    classification = None
+                    model_name = None
+                    provider_override = False
+                    reused = False
+                    usage = {'input_tokens': None, 'output_tokens': None}
                     _emit(stdout, {
-                        'event': 'item', 'item_id': item.pk, 'outcome': 'error',
-                        'error_code': 'unhandled_exception', 'detail': str(exc.__class__.__name__),
+                        'event': 'item', 'item_id': item.pk, 'outcome': outcome,
+                        'code': code, 'classification': classification,
+                        'model_name': model_name, 'provider_override': provider_override,
+                        'reused': reused, 'usage': usage,
                         'duration_ms': round((time.monotonic() - item_started) * 1000),
                     })
                 else:
@@ -151,6 +197,8 @@ class Command(BaseCommand):
                             stats['skipped'] += 1
                         else:
                             stats['unavailable'] += 1
+                            # Bounded precise retry cursor for the operator.
+                            unavailable_item_ids.append(item.pk)
                         outcome = result.kind
                         code = result.code
                         usage = None
@@ -170,21 +218,21 @@ class Command(BaseCommand):
                         output_tokens = usage.get('output_tokens')
                         reused = bool(observation.get('reused'))
                         if provider_override:
+                            # Orthogonal signal; reuse/state still tracked separately.
                             stats['provider_override'] += 1
-                        elif reused:
+                        if reused:
                             stats['reused'] += 1
                             # Historical usage belongs to the original call, not this backfill.
                             input_tokens = None
                             output_tokens = None
                         else:
                             stats['created'] += 1
-                        if provider_override:
-                            stats['created'] += 1
                         if classification:
                             stats['buckets'][classification] = (
                                 stats['buckets'].get(classification, 0) + 1
                             )
                         if input_tokens is None and output_tokens is None:
+                            # Genuine remote call completed but returned no usage.
                             stats['missing_usage'] += 1
                         else:
                             if input_tokens is not None:
@@ -200,10 +248,23 @@ class Command(BaseCommand):
                     }
                     _emit(stdout, event)
 
+                processed_since_progress += 1
+                if processed_since_progress >= progress_every and (
+                    progress_every > 0
+                ):
+                    _progress_event(stdout, stats, started_monotonic)
+                    processed_since_progress = 0
+
                 if delay_s > 0:
                     time.sleep(delay_s)
 
             pricing = dict(DEFAULT_PRICING_SNAPSHOT)
+            if input_price is not None:
+                pricing['input_price_per_unit'] = input_price
+                pricing['note'] = (
+                    'Configured rate override; Estimate only; '
+                    'account or gateway pricing may differ.'
+                )
             input_cost = (
                 stats['input_tokens'] / pricing['input_tokens_per_unit']
             ) * pricing['input_price_per_unit']
@@ -216,7 +277,9 @@ class Command(BaseCommand):
             stats['throughput_items_per_second'] = round(
                 stats['scanned'] / max(stats['duration_seconds'], 0.001), 3
             )
-            stats['errors'] = errors
+            # Precise retry cursors for the operator; no ERROR tombstone rows.
+            stats['failed_item_ids'] = failed_item_ids
+            stats['unavailable_item_ids'] = unavailable_item_ids
 
             _emit(stdout, {'event': 'final_summary', **stats})
 
