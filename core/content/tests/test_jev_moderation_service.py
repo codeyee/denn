@@ -18,14 +18,16 @@ DISABLED = {'MODERATION_CLASSIFICATION_ENABLED': False}
 
 
 class _RecordingClient:
-    def __init__(self):
+    def __init__(self, response_model='jev-1.13.0'):
         self.calls = []
+        self.response_model = response_model
 
     def classify(self, state):
         self.calls.append(state)
+        response_model = self.response_model
 
         class _Response:
-            model = 'jev-latest'
+            model = response_model
             nouls = {
                 'safe_for_automatic_discovery': 0.9,
                 'explicit_or_sensitive': 0.05,
@@ -81,12 +83,13 @@ class ModerationServiceTests(TestCase):
         self.assertNotEqual(original, updated)
 
     @override_settings(**ENABLED)
-    def test_idempotent_reuse_returns_same_judgment_without_second_call(self):
+    def test_concrete_model_pre_reuses_judgment_without_second_call(self):
         item = _movie_item()
-        first = classify_content_item(item, client=self.client)
-        second = classify_content_item(item, client=self.client)
+        first = classify_content_item(item, client=self.client, model='jev-1.13.0')
+        second = classify_content_item(item, client=self.client, model='jev-1.13.0')
         self.assertEqual(first.pk, second.pk)
         self.assertEqual(len(self.client.calls), 1)
+        self.assertEqual(first.model_name, 'jev-1.13.0')
 
     @override_settings(**ENABLED)
     def test_changed_source_state_triggers_reclassification(self):
@@ -132,16 +135,13 @@ class ModerationServiceTests(TestCase):
         self.assertIn('classification_ms', judgment.payload)
 
     @override_settings(**ENABLED)
-    def test_unavailable_failure_does_not_break_caller_and_marks_error(self):
+    def test_unavailable_failure_returns_typed_outcome_with_no_row(self):
         item = _movie_item()
         result = classify_content_item(item, client=_UnavailableClient())
         self.assertIsInstance(result, ModerationClassificationOutcome)
         self.assertEqual(result.kind, 'unavailable')
         self.assertEqual(result.code, 'typesafe_timeout')
-        self.assertEqual(
-            ContentModerationJudgment.objects.first().status,
-            ContentModerationJudgment.Status.ERROR,
-        )
+        self.assertFalse(ContentModerationJudgment.objects.exists())
 
     def test_non_tmdb_providers_never_certify_safety(self):
         for api in (
@@ -150,3 +150,75 @@ class ModerationServiceTests(TestCase):
         ):
             item = _movie_item(source_api=api, external_id=str(api))
             self.assertIsNone(_provider_explicit(item))
+
+    @override_settings(**ENABLED)
+    def test_alias_request_resolves_concrete_model_and_records_requested_model(self):
+        judgment = classify_content_item(
+            _movie_item(), client=_RecordingClient(), model='jev-latest'
+        )
+        self.assertEqual(judgment.model_name, _RecordingClient().response_model)
+        self.assertEqual(judgment.payload['requested_model'], 'jev-latest')
+
+    @override_settings(**ENABLED)
+    def test_alias_request_performs_second_call_instead_of_stale_pre_reuse(self):
+        item = _movie_item()
+        client = _RecordingClient()
+        classify_content_item(item, client=client, model='jev-latest')
+        classify_content_item(item, client=client, model='jev-latest')
+        self.assertEqual(len(client.calls), 2)
+
+    @override_settings(**ENABLED)
+    def test_missing_detail_returns_state_unavailable_with_no_client_calls(self):
+        item = ContentItem.objects.create(
+            source_api=ContentItem.SourceAPI.TMDB,
+            external_id='9999',
+            content_type=ContentItem.ContentType.MOVIE,
+        )
+        client = _RecordingClient()
+        result = classify_content_item(item, client=client)
+        self.assertIsInstance(result, ModerationClassificationOutcome)
+        self.assertEqual(result.kind, 'skipped')
+        self.assertEqual(result.code, 'state_unavailable')
+        self.assertEqual(len(client.calls), 0)
+        self.assertFalse(ContentModerationJudgment.objects.exists())
+
+    @override_settings(**ENABLED)
+    def test_successful_judgment_never_leaves_pending_state(self):
+        judgment = classify_content_item(_movie_item(), client=self.client)
+        self.assertEqual(
+            ContentModerationJudgment.objects.filter(
+                status=ContentModerationJudgment.Status.PENDING,
+            ).count(),
+            0,
+        )
+        self.assertEqual(judgment.status, ContentModerationJudgment.Status.COMPLETE)
+
+    def test_canonical_hash_is_nonempty_sha256_hex(self):
+        _, digest = build_state_and_hash(_movie_item())
+        self.assertEqual(len(digest), 64)
+        self.assertTrue(all(c in '0123456789abcdef' for c in digest))
+
+    @override_settings(**ENABLED)
+    def test_race_integrity_error_collapses_to_existing_judgment(self):
+        item = _movie_item()
+        first = classify_content_item(item, client=self.client)
+        with patch.object(
+            ContentModerationJudgment.objects,
+            'get_or_create',
+            side_effect=IntegrityError,
+        ):
+            second = classify_content_item(item, client=self.client)
+        self.assertEqual(first.pk, second.pk)
+
+    @override_settings(**ENABLED)
+    def test_provider_override_writes_provider_rule_audit_identity(self):
+        item = _movie_item()
+        payload = {'type': 'movie', 'title': 'x', 'description': 'd', 'adult': True}
+        with patch(
+            'content.services.moderation_service.from_local', return_value=payload
+        ):
+            judgment = classify_content_item(item, client=self.client)
+        self.assertEqual(judgment.model_name, 'provider-rule:v1')
+        self.assertEqual(judgment.payload['requested_model'], 'jev-latest')
+        self.assertEqual(judgment.payload['provider_explicit'], True)
+        self.assertEqual(judgment.payload['raw_nouls'], {})
