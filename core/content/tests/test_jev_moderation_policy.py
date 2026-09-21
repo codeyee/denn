@@ -21,7 +21,7 @@ class ModerationPolicyComposerTests(unittest.TestCase):
             with self.subTest(safe=safe, explicit=explicit, review=review):
                 self._assert(True, safe, explicit, review, "explicit_or_sensitive")
 
-    def test_provider_false_or_absent_never_certifies_safety(self):
+    def test_exact_bool_false_and_none_follow_jev_without_certifying_safety(self):
         for flag in (False, None):
             self._assert(flag, 0.99, 0.0, 0.0, "safe_for_automatic_discovery")
             self._assert(flag, None, None, None, "needs_review")
@@ -70,6 +70,22 @@ class ModerationPolicyComposerTests(unittest.TestCase):
             with self.subTest(safe=safe, explicit=explicit, review=review):
                 self._assert(False, safe, explicit, review, "unknown")
 
+    def test_corrupt_provider_flag_values_never_become_safe_and_never_raise(self):
+        for corrupt in (1, 0, 1.0, 0.0, "true", "True", "yes", "1", [], [1], {}, {"a": 1}, tuple(), set()):
+            with self.subTest(value=corrupt):
+                result = compose_policy(corrupt, 0.99, 0.0, 0.0)
+                self.assertNotEqual(result.decision, "safe_for_automatic_discovery")
+                self.assertEqual(result.decision, "unknown")
+                self.assertEqual(result.reason, "corrupt_provider_explicit_input")
+
+    def test_true_override_short_circuits_even_with_garbage_probabilities(self):
+        for safe, explicit, review in [
+            (float("nan"), float("inf"), "junk"),
+            (None, [], {1: 2}),
+        ]:
+            with self.subTest(safe=safe, explicit=explicit, review=review):
+                self._assert(True, safe, explicit, review, "explicit_or_sensitive")
+
     def test_threshold_validation_rejects_out_of_range(self):
         with self.assertRaises(ValueError):
             PolicyThresholds(safe_min=1.1)
@@ -77,6 +93,12 @@ class ModerationPolicyComposerTests(unittest.TestCase):
             PolicyThresholds(explicit_at=-0.1)
         with self.assertRaises(ValueError):
             PolicyThresholds(review_at=float("nan"))
+
+    def test_threshold_validation_rejects_bool_and_non_numeric_values(self):
+        for corrupt in (True, False, "0.5", None, [], {}):
+            with self.subTest(value=corrupt):
+                with self.assertRaises(ValueError):
+                    PolicyThresholds(safe_min=corrupt)
 
     def test_custom_thresholds_change_boundary_behavior(self):
         custom = PolicyThresholds(safe_min=0.5, explicit_at=0.9, review_at=0.9)

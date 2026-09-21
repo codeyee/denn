@@ -102,6 +102,8 @@ def compose_policy(
     thresholds = thresholds or PolicyThresholds()
     if provider_explicit is True:
         return PolicyResult("explicit_or_sensitive", "provider_explicit_override")
+    if provider_explicit is not False and provider_explicit is not None:
+        return PolicyResult("unknown", "corrupt_provider_explicit_input")
     try:
         safe_prob = _validated_probability("safe", safe)
         explicit_prob = _validated_probability("explicit", explicit)
