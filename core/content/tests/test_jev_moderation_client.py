@@ -108,28 +108,8 @@ class JevModerationClientTests(unittest.TestCase):
         self.assertEqual(recorder.calls[0][1:], recorder.calls[1][1:])
 
     def test_disabled_mode_returns_typed_skipped_outcome_without_any_call(self):
-        class _MustNotRun:
-            def __init__(self):
-                self.calls = 0
-
-            def system_one(self, state, questions, **kwargs):
-                self.calls += 1
-                raise AssertionError("disabled mode must not call system_one")
-
         disabled_getter = _settings_getter(MODERATION_CLASSIFICATION_ENABLED=False)
-        recorder = _RecordingClient(_noul_response())
-        failed_factory_calls = []
-        created = JevModerationClient(
-            client=recorder,
-            client_factory=lambda: (_ for _ in ()).throw(
-                AssertionError("disabled mode must not construct a client")
-            ),
-            settings_getter=disabled_getter,
-        )
-        outcome = created = created = created = created
-        outcome = created = created  # placeholder cleanup below
         client = JevModerationClient(
-            client=recorder,
             client_factory=lambda: (_ for _ in ()).throw(
                 AssertionError("disabled mode must not construct a client")
             ),
@@ -138,8 +118,6 @@ class JevModerationClientTests(unittest.TestCase):
         result = client.classify(SAMPLE_STATE)
         self.assertIsInstance(result, ModerationSkipped)
         self.assertEqual(result.code, "moderation_disabled")
-        self.assertEqual(recorder.calls, [])
-        self.assertFalse(_MustNotRun().calls)
 
     def test_missing_classification_gate_defaults_to_disabled(self):
         settings_getter = lambda _name: None  # noqa: E731

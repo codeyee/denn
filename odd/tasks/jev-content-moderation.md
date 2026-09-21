@@ -91,10 +91,12 @@ Jev supplies independent typed judgments; application code owns precedence, thre
   - Checks: fake-client RED/GREEN tests for questions, thresholds, provider precedence, errors, timeouts, and no-secret logging.
   - Route: delegated; preparation and writer triggers.
 
+  - [x] **JEV-002A — TypeSafe adapter, state, questions, and contract fix (complete)**. JEV-002B deterministic policy composition is next.
+
   - [x] **JEV-002A1 — TypeSafe SDK, dependencies, state builder, typed questions** (Slice 2, `agent/jev-moderation-typesafe-foundations`)
     - Slice 2 scope: pinned `typesafe-sdk==0.7.1` (plus exact dependency closure and the `idna` bump required by `httpx2`), added `core/content/moderation/` with `state.py` and `questions.py`, minimal package exports, and offline tests for the state builder and the three typed questions.
     - State builder: `build_moderation_state(provider, content_type, title=None, description=None, genres=None, tags=None)` — non-empty provider/content_type, fail-safe empty title/description, normalized deduped sorted genre/tag lists, exactly six named text-only fields.
-    - Three independent typed Noul questions: `adult_content`, `graphic_violence`, `offensive_content`, each with explicit yes/no criteria. Revision constant: `MODERATION_QUESTION_REVISION = "jev-mq-1"`.
+    - Three independent typed Noul questions: `safe_for_automatic_discovery`, `explicit_or_sensitive`, and `needs_review`, each with explicit yes/no criteria. The question revision originates only from `settings.MODERATION_QUESTION_REVISION` via `moderation_question_revision()`.
     - Commit identity: Conventional Commit `build(deps): pin typesafe-sdk with moderation state and questions` as the JEV-002A1 work-unit commit; exact SHA `baad5a5` on `agent/jev-moderation-typesafe-foundations`, stacked on Slice 1 `agent/jev-moderation-persistence` at `7f96822`, targeting `main` at `fcc3886`.
     - Residual risks: no live Jev call was made; question wording is unmeasured until the JEV-006 evaluation fixtures; the moderation client adapter and its typed error/result mapping land in JEV-002A2 (Slice 3).
   - [x] **JEV-002A2 — moderation client adapter and typed error/result mapping** (Slice 3, `agent/jev-moderation-typesafe-adapter`, stacked on Slice 2)
@@ -150,7 +152,8 @@ Jev supplies independent typed judgments; application code owns precedence, thre
 - Verified existing `UserPreferences.allow_adult_content` and settings UI precedent.
 - Verified no current moderation judgment model or TypeSafe SDK dependency.
 - JEV-001 implemented and verified; JEV-002 and later tasks not started.
+- JEV-002A implemented across stacked slices: dependency pin, state builder, typed questions, client adapter with typed error/result mapping, and the issue #102 contract fix including the disabled-moderation gate.
 
 ## Next step
 
-Start JEV-002 (TypeSafe client adapter, state builder, question definitions, code-owned policy composition) on the same branch. PR slice 1 targets `main` and contains only JEV-001.
+Start JEV-002B: deterministic policy composition over the adapter's raw probabilities on the current branch. Delivery follows the existing stacked-to-main chain.
