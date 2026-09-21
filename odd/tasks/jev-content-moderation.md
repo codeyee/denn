@@ -153,8 +153,7 @@ Jev supplies independent typed judgments; application code owns precedence, thre
 - Verified existing authoritative content policy in `.docs/architecture/content-eligibility.md`.
 - Verified existing `UserPreferences.allow_adult_content` and settings UI precedent.
 - Verified no current moderation judgment model or TypeSafe SDK dependency.
-- JEV-001 implemented and verified; JEV-002 and later tasks not started.
-- JEV-002A implemented across stacked slices: dependency pin, state builder, typed questions, client adapter with typed error/result mapping, and the issue #102 contract fix including the disabled-moderation gate.
+- JEV-001 and JEV-002A are implemented and verified; JEV-002B and JEV-003–JEV-007 remain pending.
 
 ## Next step
 
