@@ -92,6 +92,8 @@ Jev supplies independent typed judgments; application code owns precedence, thre
   - Route: delegated; preparation and writer triggers.
 
   - [x] **JEV-002A — TypeSafe adapter, state, questions, and contract fix (complete)**. JEV-002B deterministic policy composition is next.
+    - Hygiene correction: JEV-002A1 wording now names the issue #102 question keys and the settings-sourced revision; the disabled-mode test lost its dead placeholder code and now asserts no client construction via a failing injected factory; the usage test asserts `assertFalse(hasattr(judgment, "latency_ms"))`.
+    - Correction commit: `446b1ec` (`test(content): harden disabled-mode moderation coverage and ODD currency`). Verification: focused suite → `Found 22 test(s)` / OK; prior `content.tests.test_moderation` → `Found 15 test(s)` / OK; `makemigrations --check --dry-run` → `No changes detected`; client tests deterministically OK with `TYPESAFE_API_KEY` absent and set, no network; 361dcf5..HEAD numstat `0/22` test, `5/2` doc (27 authored changed lines), slice below the 400-line budget.
 
   - [x] **JEV-002A1 — TypeSafe SDK, dependencies, state builder, typed questions** (Slice 2, `agent/jev-moderation-typesafe-foundations`)
     - Slice 2 scope: pinned `typesafe-sdk==0.7.1` (plus exact dependency closure and the `idna` bump required by `httpx2`), added `core/content/moderation/` with `state.py` and `questions.py`, minimal package exports, and offline tests for the state builder and the three typed questions.
