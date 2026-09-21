@@ -96,6 +96,14 @@ Jev supplies independent typed judgments; application code owns precedence, thre
     - State builder: `build_moderation_state(provider, content_type, title=None, description=None, genres=None, tags=None)` — non-empty provider/content_type, fail-safe empty title/description, normalized deduped sorted genre/tag lists, exactly six named text-only fields.
     - Three independent typed Noul questions: `adult_content`, `graphic_violence`, `offensive_content`, each with explicit yes/no criteria. Revision constant: `MODERATION_QUESTION_REVISION = "jev-mq-1"`.
     - Residual risks: no live Jev call was made; question wording is unmeasured until the JEV-006 evaluation fixtures; the moderation client adapter and its typed error/result mapping land in JEV-002A2 (Slice 3).
+  - [x] **JEV-002A2 — moderation client adapter and typed error/result mapping** (Slice 3, `agent/jev-moderation-typesafe-adapter`, stacked on Slice 2)
+    - Slice 3 scope: added `errors.py` and `client.py` to the moderation package, expanded the package exports, and added offline tests for the TypeSafe adapter.
+    - Adapter: `JevModerationClient` with injectable client/factory (`default_client_factory = TypeSafeClient`), shared `MODERATION_QUESTIONS`, and stable domain error/result mapping into `ModerationUnavailable(code, retry_after_ms=None, detail=None)` for timeout, connection, rate limit, API, response-validation, and missing-answer cases.
+    - Offline SDK surface verified from the installed package, not docs alone: `TypeSafeClient.system_one(state, questions, model=...)` sync call, `SystemOneResponse.nouls` / `.model` / `.usage`, `Noul(instructions, criteria={"true": ..., "false": ...})`, and exception constructors for timeout, rate limit (with `retry_after_ms`), connection, API, and response-validation errors.
+    - RED evidence: focused suite before `core/content/moderation/` existed → `FAILED (errors=3)` with `ModuleNotFoundError: No module named 'content.moderation'`.
+    - GREEN evidence: full focused suite on the final adapter checkout → `Ran 18 tests ... OK`; pre-existing `content.tests.test_moderation` still `Ran 15 tests ... OK`; `makemigrations --check --dry-run` → `No changes detected` (models untouched).
+    - Rollback boundary: reverting this commit removes the adapter/errors modules, their tests, and their part of the package exports; reverting the foundations slice removes the dependency pins, state/questions modules, and the state/question tests; no JEV-001 behavior is touched.
+    - Residual risks: no live Jev call was made in any slice; question wording is unmeasured until the JEV-006 evaluation fixtures; the adapter returns plain floats without threshold policy — policy composition is deliberately deferred to JEV-002B.
 
 - [ ] **JEV-003 — Classify existing and newly refreshed content**
   - Add a resumable/rate-bounded backfill command and non-blocking incremental scheduling after normalized detail upserts.
