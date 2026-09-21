@@ -1,25 +1,32 @@
-"""Tests for the typed Jev moderation questions (JEV-002A)."""
-import re
+"""Contract tests for the typed Jev moderation questions (JEV-002A)."""
 import unittest
 
 from typesafe_sdk import Noul
 
 from content.moderation.questions import (
-    MODERATION_QUESTION_REVISION,
     MODERATION_QUESTIONS,
+    moderation_question_revision,
 )
 
-FORBIDDEN_STATE_REFERENCES = {"poster", "backdrop", "cover", "url", "rating", "release_date"}
+CONTRACT_KEYS = {
+    "safe_for_automatic_discovery",
+    "explicit_or_sensitive",
+    "needs_review",
+}
+
+NEEDS_REVIEW_SIGNALS = ("sparse", "ambiguous", "contradictory", "insufficient")
 
 
-class ModerationQuestionsTests(unittest.TestCase):
-    def test_holds_exactly_three_named_noul_questions(self):
-        self.assertEqual(
-            set(MODERATION_QUESTIONS),
-            {"adult_content", "graphic_violence", "offensive_content"},
-        )
+class ModerationQuestionsContractTests(unittest.TestCase):
+    def test_holds_exactly_the_issue_102_contract_keys(self):
+        self.assertEqual(set(MODERATION_QUESTIONS), CONTRACT_KEYS)
         for question in MODERATION_QUESTIONS.values():
             self.assertIsInstance(question, Noul)
+
+    def test_needs_review_judges_insufficient_metadata_explicitly(self):
+        instructions = MODERATION_QUESTIONS["needs_review"].instructions.lower()
+        for signal in NEEDS_REVIEW_SIGNALS:
+            self.assertIn(signal, instructions)
 
     def test_every_question_anchors_on_text_only_state(self):
         for name, question in MODERATION_QUESTIONS.items():
@@ -28,8 +35,12 @@ class ModerationQuestionsTests(unittest.TestCase):
             self.assertTrue(instructions.strip(), name)
             self.assertIn("state", instructions, name)
             lowered = instructions.lower()
-            for forbidden in FORBIDDEN_STATE_REFERENCES:
-                self.assertNotIn(forbidden, lowered, f"{name} references {forbidden}")
+            import re
+            for forbidden in ("poster", "backdrop", "cover", "url", "rating", "release_date"):
+                self.assertIsNone(
+                    re.search(rf"\b{re.escape(forbidden)}\b", lowered),
+                    f"{name} references {forbidden}",
+                )
 
     def test_questions_come_with_explicit_yes_and_no_criteria(self):
         for name, question in MODERATION_QUESTIONS.items():
@@ -38,8 +49,13 @@ class ModerationQuestionsTests(unittest.TestCase):
             self.assertTrue(criteria.get("true"), name)
             self.assertTrue(criteria.get("false"), name)
 
-    def test_question_revision_follows_numbered_convention(self):
-        self.assertRegex(MODERATION_QUESTION_REVISION, r"^jev-mq-\d+$")
+    def test_question_revision_comes_only_from_settings(self):
+        from django.conf import settings
+        from django.test import override_settings
+
+        with override_settings(MODERATION_QUESTION_REVISION="q-test"):
+            self.assertEqual(moderation_question_revision(), "q-test")
+        self.assertTrue(settings.MODERATION_QUESTION_REVISION)
 
 
 if __name__ == "__main__":
