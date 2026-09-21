@@ -73,11 +73,16 @@ Jev supplies independent typed judgments; application code owns precedence, thre
 
 ## Tasks
 
-- [ ] **JEV-001 — Persist versioned moderation judgments and configuration**
+- [x] **JEV-001 — Persist versioned moderation judgments and configuration**
   - Add the moderation domain model, migration, indexes, revisions, feature flags, and admin visibility.
   - Acceptance: identical content/model/question inputs are idempotent; source changes become stale rather than overwriting history; disabled mode performs no remote call.
   - Checks: model/migration/config tests; focused Django test command.
   - Route: delegated; writer trigger (multiple non-trivial files).
+  - Result: complete. `ContentModerationJudgment` (`core/content/models/moderation.py`) persists raw typed payload, exact model name, question and policy revisions, status/classification enums, error code, and timestamps. Identity constraint `unique_moderation_judgment_identity(content_item, source_data_hash, model_name, question_revision)` blocks duplicate inference; policy revision is deliberately excluded so policy changes re-evaluate from the stored payload without new rows. `policy_revision` defaults through the serializable callable `content.settings_defaults.current_policy_revision`. Settings are disabled by default (`MODERATION_CLASSIFICATION_ENABLED=False`, `MODERATION_POLICY_MODE=shadow`, model/revision defaults are env-independent) and `TYPESAFE_API_KEY` is not required at import. Admin visibility registered.
+  - RED evidence (honest): pre-implementation scratch attempts were flawed — one failed at import time from a runner path artifact, one discovered 0 tests, and one pre-injected settings making config assertions vacuous; the first real-settings run of the suite failed (1 failure + 3 errors) exposing the empty-string default contract violation and an identity-semantics test error. No clean pre-implementation Django-runner RED was captured; disclosed rather than fabricated.
+  - GREEN evidence: `DATABASE_URL='sqlite://:memory:' python manage.py test content.tests.test_moderation` -> `Ran 15 tests ... OK`; `makemigrations --check --dry-run` -> `No changes detected`; broader proportional runs `manage.py test content` -> `Ran 275 tests ... OK (skipped=1)` and with the repo-standard `AUTH_COOKIE_SECURE=True` `manage.py test authentication core` -> `Ran 49 tests ... OK`. The worktree private env sets `AUTH_COOKIE_SECURE=False`, which alone causes 2 unrelated auth-cookie failures; documented as environmental.
+  - Commit identity: Conventional Commit `feat(content): add versioned Jev moderation judgment model and config` as the JEV-001 work-unit commit on `agent/jev-moderation-persistence` (Slice 1, stacked on Slice 0 `agent/jev-moderation-plan`); the exact SHA is recorded in the follow-up evidence commit.
+  - Rollback boundary: revert this commit to remove the model, migration 0024, `settings_defaults.py`, admin registration, settings keys, and tests together; no unrelated behavior is touched.
 
 - [ ] **JEV-002 — Integrate TypeSafe and compose code-owned policy**
   - Add the Python SDK dependency, a narrow client adapter, normalized state builder, independent Jev questions, error mapping, and deterministic policy composition.
@@ -121,8 +126,8 @@ Jev supplies independent typed judgments; application code owns precedence, thre
 - Verified existing authoritative content policy in `.docs/architecture/content-eligibility.md`.
 - Verified existing `UserPreferences.allow_adult_content` and settings UI precedent.
 - Verified no current moderation judgment model or TypeSafe SDK dependency.
-- No source implementation has started.
+- JEV-001 implemented and verified; JEV-002 and later tasks not started.
 
 ## Next step
 
-Start JEV-001 with strict TDD using a GLM 5.3 Flash implementation task. Planned PR slice 1 targets `main` and contains only the versioned moderation persistence/configuration work unit.
+Start JEV-002 (TypeSafe client adapter, state builder, question definitions, code-owned policy composition) on the same branch. PR slice 1 targets `main` and contains only JEV-001.
