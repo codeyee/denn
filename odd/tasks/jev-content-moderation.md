@@ -172,13 +172,24 @@ Jev supplies independent typed judgments; application code owns precedence, thre
   - Checks: documentation links resolve; commands match implementation; final cross-service validation results are recorded.
 - Route: delegated; writer trigger.
 
-- [ ] **JEV-003B — Resumable rate-bounded moderation backfill command** (pending; next unit)
+- [ ] **JEV-003B — Resumable rate-bounded moderation backfill command** (in progress; next unit)
   - Add a resumable, rate-bounded Django management command that iterates eligible `ContentItem` rows and delegates classification to the accepted JEV-003A service. It must resume safely from its own progress cursor and never reclassify fresh judgments with identical identity.
   - Logging contract: structured periodic logs (a bounded periodic heartbeat with progress counts, duration, throughput, classification buckets `safe|explicit|needs_review|explicit_override`, token totals) plus structured final logs with the same fields and an explicit durations section. Estimated-cost summary is optional but, when reported, must carry explicit pricing provenance: the pricing source/config name, the pricing date, and the token-to-cost formula, so the number is auditable.
   - Optional JSON report: an explicit flag may emit the complete run summary as structured JSON on stdout or a user-specified file; JSON must not be the only log path.
   - Safety boundary: no live Jev call in tests or this task. The command and its docs must make live run eligibility depend on explicit operator/CI opt-in flags, not ambient defaults.
   - Checks: command argument/flag validation, idempotent reuse behavior, rate-bound pacing, resume-safety against cursor replay, and offline fake-client log/report assertions. All Django tests are offline.
-  - Route: delegated; writer trigger.
+- Route: delegated; writer trigger.
+
+  - [x] **JEV-003B-BACKFILL-COMMAND — resumable rate-bounded backfill implemented** (new stacked slice on `agent/jev-moderation-backfill`, based at `ac20f9d`)
+    - Scope: production-capable synchronous Django management command `core/content/management/commands/backfill_moderation.py` plus a new offline test suite and a minimal backward-compatible observation seam in `core/content/services/moderation_service.py` (optional `observation` keyword the service fills with `reused` truth; the accepted JEV-003A contract is otherwise unchanged).
+    - Command behavior: deterministic scan ordered by `pk`, resume cursor `--after-id`, `--limit`, `--batch-size` iterator control, optional `delay-ms` between items (tests patch `time.sleep`, no real pause), JSON-line per-item/periodic/final events on stdout, classified/doc-safe logging (no raw provider payloads, titles, descriptions, questions, API keys, or preference values), and distinct buckets from operational outcomes; `provider_override` and `classification` are tracked separately.
+    - Token and cost accounting: this run's input/output tokens are counted only for rows with `reused=False`; reused judgments and provider-override paths contribute `missing_usage` and are excluded from aggregation. Estimated USD model cost uses a single fixed pricing snapshot (official source, published 2026-09-15, verified 2026-09-21; `input_tokens_per_unit`=1,000,000 and `input_price_per_unit`=$0.042; output tokens free), clearly labeled as an estimate and not as account/gateway pricing.
+    - Failure isolation: one bad item records the error, continues, and produces typed `unavailable`/`skipped` outcomes; the disabled mode (`MODERATION_CLASSIFICATION_ENABLED=False`) yields `skipped` results with no client construction and no hidden network check.
+    - Report file: optional `--report` is written atomically with `NamedTemporaryFile` + `os.replace` only on full success; `--create-parent-dirs` may create the missing parent. Missing parent without that flag raises a typed `CommandError` and writes nothing.
+    - Tests: 16 new offline tests in `core/content/tests/test_jev_moderation_backfill_command.py` covering ordering, resume cursor, limit, batch-size validation, disabled mode with no real client, provider-override/reused/created accounting incl. missing-usage, buckets `safe|explicit|needs_review|unknown`, unavailable/error isolation, exact cost arithmetic from the frozen snapshot, and atomic report-file write; no live Jev call and no network in any case.
+    - Verification: new command suite 16 tests OK; focused moderation suites combined 68 tests OK; full `content` app suite 344 tests OK (skipped=1); `makemigrations --check --dry-run` `No changes detected`; `git diff --check` clean.
+    - Runtime harness: N/A — covered by the full `content` Django suite above, no separate runtime boundary in this slice.
+    - Residual risks: tight coupling to the fixed pricing snapshot (future pricing updates must change the constants and their provenance test explicitly); `provider_override` and `explicit_or_sensitive` buckets overlap by design; the observation seam is optional and intentionally minimal so later consumers can adopt it incrementally.
 
 ## Progress and evidence
 
