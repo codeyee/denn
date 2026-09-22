@@ -195,6 +195,7 @@ Use the rest as specialized references:
 - [`adr/0006-isolated-local-worktree-stacks.md`](./adr/0006-isolated-local-worktree-stacks.md)
 - [`runbooks/homepage-cache-warmup.md`](./runbooks/homepage-cache-warmup.md)
 - [`runbooks/public-profile-tracking-backfill.md`](./runbooks/public-profile-tracking-backfill.md)
+- [`runbooks/content-moderation-backfill.md`](./runbooks/content-moderation-backfill.md)
 - [`history/implementation-history.md`](./history/implementation-history.md)
 - [`definition-of-done.md`](./definition-of-done.md)
 

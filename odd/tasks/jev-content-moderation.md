@@ -172,7 +172,14 @@ Jev supplies independent typed judgments; application code owns precedence, thre
   - Checks: documentation links resolve; commands match implementation; final cross-service validation results are recorded.
 - Route: delegated; writer trigger.
 
-- [ ] **JEV-003B — Resumable rate-bounded moderation backfill command** (pending; next unit)
+- [x] **JEV-003B — Resumable rate-bounded moderation backfill command** (command core complete; incremental scheduling stays in JEV-003C)
+  - Stacked slices on `stacked-to-main`, all offline-verified, no live Jev call or backfill performed:
+    - Observation `725925c` (`agent/jev-moderation-backfill-observation`): per-invocation `reused`/`called`/current-call `usage` contract; 201 authored lines; 25 service tests OK.
+    - Pricing `a06fca1` (`agent/jev-moderation-backfill-metrics`): provenance-rich snapshot, validated rate override, cost estimate; 100 authored lines; 4 tests OK.
+    - Accounting `d58b50c` (same branch): bounded retry IDs, counters, item events, summary with truncation count+boolean; 309 authored lines; 14 tests OK.
+    - Execution `63f2f98` (`agent/jev-moderation-backfill-execution`): ascending-pk paging, exact limit, delay-between-items, progress cadence, exception isolation; 342 authored lines; 9 runner tests OK (48 with metrics+service).
+    - Command `9ef46df` + `aed8c85` (`agent/jev-moderation-backfill-command-v2`): JSONL stdout, atomic `--report`, `--confirm-live` + positive `--limit` gates; 276 authored lines; 8 command tests OK (61 with pre-existing details-command, runner, metrics, service); `makemigrations --check` no changes.
+  - Superseded: over-budget `5e8111d` (`agent/jev-moderation-backfill-runner`, 502 lines) is NOT for PR. No PR exists for any slice. Homepage/admin enforcement is NOT complete.
   - Add a resumable, rate-bounded Django management command that iterates eligible `ContentItem` rows and delegates classification to the accepted JEV-003A service. It must resume safely from its own progress cursor and never reclassify fresh judgments with identical identity.
   - Logging contract: structured periodic logs (a bounded periodic heartbeat with progress counts, duration, throughput, classification buckets `safe|explicit|needs_review|explicit_override`, token totals) plus structured final logs with the same fields and an explicit durations section. Estimated-cost summary is optional but, when reported, must carry explicit pricing provenance: the pricing source/config name, the pricing date, and the token-to-cost formula, so the number is auditable.
   - Optional JSON report: an explicit flag may emit the complete run summary as structured JSON on stdout or a user-specified file; JSON must not be the only log path.
@@ -186,8 +193,8 @@ Jev supplies independent typed judgments; application code owns precedence, thre
 - Verified existing authoritative content policy in `.docs/architecture/content-eligibility.md`.
 - Verified existing `UserPreferences.allow_adult_content` and settings UI precedent.
 - Verified no current moderation judgment model or TypeSafe SDK dependency.
-- JEV-002 (both JEV-002A and JEV-002B) is implemented and verified offline; JEV-003–JEV-007 remain pending.
+- JEV-002 (both JEV-002A and JEV-002B) is implemented and verified offline; the JEV-003B command core above is implemented and verified offline; JEV-003C and JEV-004–JEV-007 remain pending.
 
 ## Next step
 
-Start JEV-003B (resumable rate-bounded backfill command) on a new stacked slice; JEV-003C incremental scheduling remains a separate follow-up pending a queue/worker architecture decision. Delivery follows `auto-chain` with the existing `stacked-to-main` chain strategy.
+Next: operator review of the JEV-003B slices, then JEV-003C incremental scheduling (separate follow-up pending a queue/worker architecture decision). Chain strategy stays `stacked-to-main`. No live Jev call or backfill has been performed in any slice.
