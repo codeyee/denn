@@ -17,7 +17,8 @@ Denn's upstream providers have inconsistent adult-content metadata. TMDB provide
 
 ## Authorized scope
 
-- Normalized text metadata only: provider, content type, title, description, genres, and tags.
+- Build Jev state from provider/content type and safety-relevant text that Core already persists and reconstructs: common title/description; movie/TV original titles and taglines; game themes, modes, type, and series; season parent-show context and episode titles/descriptions; album artists, track titles, and relevant credits; and book authors. Do not treat unpersisted genres, tags, or provider flags as present.
+- Keep Jev input to relevant text. Omit identifiers, URLs, images/artwork, dates, durations, and unrelated metadata. JEV-002-Q3 must not fetch missing provider fields or persist new provider data; future ingestion candidates are tracked in [the provider metadata backlog](../../.docs/ideas/jev-provider-metadata-for-content-moderation.md).
 - Existing-content backfill and incremental classification for new or refreshed content.
 - Persisted versioned judgments, idempotency, staleness, retries, and explicit failure/abstention states.
 - Code-owned policy mapping for automatic discovery, direct search, lists, previews, and detail.
@@ -144,6 +145,20 @@ Jev supplies independent typed judgments; application code owns precedence, thre
     - Verification: focused suite `Ran 41 tests ... OK`; full `content` suite `Ran 372 tests ... OK (skipped=1)`; `makemigrations --check --dry-run` reported `No changes detected`; `git diff --check` clean. No live TypeSafe/provider calls.
     - Work-unit commit: `5b9b928` (`feat(content): refine Jev moderation question revision`), 143 authored lines.
 
+  - [ ] **JEV-002-Q3 — Use persisted type-specific text in Jev state**
+    - Route: delegated; state, question, and test changes cross multiple non-trivial files.
+    - Objective: improve Jev's safety evidence using only relevant text that Core already persists and reconstructs for each content type.
+    - Scope: extend the named moderation state with the applicable existing text: movie/TV original titles and taglines; game themes, modes, type, and series; season parent-show context and episode titles/descriptions; album artists, track titles, and relevant credits; and book authors. Preserve common title/description and current question IDs.
+    - Acceptance criteria:
+      - Optional type-specific fields are explicit, normalized, and populated only from existing Core persistence; absent values remain absent rather than being fetched or invented.
+      - Jev receives no irrelevant identifiers, URLs, assets, dates, durations, or raw provider payloads.
+      - The state hash changes when selected text changes and remains deterministic for equivalent normalized state.
+      - The default semantic question revision advances to `q3`; prior `q1`/`q2` judgments remain immutable and are not reused for q3.
+      - Existing Noul IDs, provider override, and policy thresholds remain unchanged.
+    - Checks: focused offline state/hash/question tests and the applicable Core test suite; no provider calls or live Jev calls.
+    - Exclusions: provider metadata ingestion, upstream API calls, and new persistence fields; future capture is a separate backlog item.
+    - `strict_tdd=false`.
+
   - [ ] **JEV-003 — Classify existing and newly refreshed content**
   - Add a resumable/rate-bounded backfill command and non-blocking incremental scheduling after normalized detail upserts.
   - Acceptance: fresh judgments are skipped, changed inputs reclassify, concurrent duplicates collapse, failures do not break ingestion, and backfill can resume safely.
@@ -214,4 +229,4 @@ Jev supplies independent typed judgments; application code owns precedence, thre
 
 ## Next step
 
-Next: operator review of the JEV-003B slices, then JEV-003C incremental scheduling (separate follow-up pending a queue/worker architecture decision). Chain strategy stays `stacked-to-main`. No live Jev call or backfill has been performed in any slice.
+Next: JEV-002-Q3 adds already-persisted type-specific text to Jev state; provider ingestion remains a separate unapproved backlog item. Then resume the JEV-003B operator review and JEV-003C incremental scheduling, pending a queue/worker architecture decision. Chain strategy stays `stacked-to-main`. No live Jev call or backfill has been performed in any slice.

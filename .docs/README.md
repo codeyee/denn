@@ -175,6 +175,7 @@ If the question is "how should this be designed?", check
 
 Use the rest as specialized references:
 
+- [`ideas/jev-provider-metadata-for-content-moderation.md`](./ideas/jev-provider-metadata-for-content-moderation.md) — future provider-signal capture for Jev issue #102.
 - [`architecture/data-fetching.md`](./architecture/data-fetching.md)
 - [`architecture/auth-session-bootstrap.md`](./architecture/auth-session-bootstrap.md)
 - [`architecture/client-rehydration.md`](./architecture/client-rehydration.md)
