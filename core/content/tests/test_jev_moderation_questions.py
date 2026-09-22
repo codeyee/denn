@@ -1,4 +1,4 @@
-"""Contract tests for the typed Jev moderation questions (JEV-002A)."""
+"""Contract tests for the typed Jev moderation questions (JEV-002-Q3)."""
 import unittest
 
 from typesafe_sdk import Noul
@@ -66,10 +66,35 @@ class ModerationQuestionsContractTests(unittest.TestCase):
         for excluded in (
             "sparse metadata alone",
             "unfamiliar title",
-            "missing genres or tags",
+            "empty type-specific text",
             "ordinary mature themes",
         ):
             self.assertIn(excluded, text)
+
+    def test_questions_reference_the_named_moderation_state_fields(self):
+        fields = (
+            "type_specific.movie.original_title",
+            "type_specific.movie.tagline",
+            "type_specific.tv_show.original_title",
+            "type_specific.tv_show.tagline",
+            "type_specific.game.genres",
+            "type_specific.game.themes",
+            "type_specific.game.game_modes",
+            "type_specific.game.game_type",
+            "type_specific.game.series",
+            "type_specific.season.parent_show_name",
+            "type_specific.season.episodes[].title",
+            "type_specific.season.episodes[].description",
+            "type_specific.album.artists",
+            "type_specific.album.tracks[].title",
+            "type_specific.album.tracks[].credits[].name",
+            "type_specific.album.tracks[].credits[].role",
+            "type_specific.book.authors",
+        )
+        for question in MODERATION_QUESTIONS.values():
+            for field in fields:
+                self.assertIn(field, question.instructions)
+            self.assertIn("empty or missing text is not evidence", question.instructions)
 
     def test_every_question_anchors_on_text_only_state(self):
         for name, question in MODERATION_QUESTIONS.items():
@@ -98,7 +123,7 @@ class ModerationQuestionsContractTests(unittest.TestCase):
 
         with override_settings(MODERATION_QUESTION_REVISION="q-test"):
             self.assertEqual(moderation_question_revision(), "q-test")
-        self.assertEqual(settings.MODERATION_QUESTION_REVISION, "q2")
+        self.assertEqual(settings.MODERATION_QUESTION_REVISION, "q3")
 
 
 if __name__ == "__main__":
