@@ -142,7 +142,7 @@ Jev supplies independent typed judgments; application code owns precedence, thre
     - `strict_tdd=false`.
     - Implementation: rewrote all three Noul instruction/criteria pairs around concrete restricted-category evidence, changed the settings fallback to `q2`, and added offline assertions for the ordinary-content and ambiguity boundaries plus the new default. No state, model, migration, policy threshold, or provider-override changes.
     - Verification: focused suite `Ran 41 tests ... OK`; full `content` suite `Ran 372 tests ... OK (skipped=1)`; `makemigrations --check --dry-run` reported `No changes detected`; `git diff --check` clean. No live TypeSafe/provider calls.
-    - Work-unit commit: recorded after implementation commit.
+    - Work-unit commit: `5b9b928` (`feat(content): refine Jev moderation question revision`), 143 authored lines.
 
   - [ ] **JEV-003 — Classify existing and newly refreshed content**
   - Add a resumable/rate-bounded backfill command and non-blocking incremental scheduling after normalized detail upserts.
