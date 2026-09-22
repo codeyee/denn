@@ -228,11 +228,17 @@ Jev supplies independent typed judgments; application code owns precedence, thre
   - Safety boundary: no live Jev call in tests or this task. The command and its docs must make live run eligibility depend on explicit operator/CI opt-in flags, not ambient defaults.
   - Checks: command argument/flag validation, idempotent reuse behavior, rate-bound pacing, resume-safety against cursor replay, and offline fake-client log/report assertions. All Django tests are offline.
   - Route: delegated; writer trigger.
-  - [ ] **JEV-003B-REPORT-PREFLIGHT — Validate the report destination before classification**
-    - Problem: the command currently checks the `--report` parent only after classification, so an invalid destination can waste billable Jev calls.
+  - [x] **JEV-003B-REPORT-PREFLIGHT — Validate the report destination before classification**
+    - Problem: the command checked the `--report` parent only after classification, so an invalid destination could waste billable Jev calls.
     - Acceptance: deterministic report-path invalidity fails before runner/classifier calls and creates no files or directories; a valid report still uses the existing atomic write flow.
-    - Checks: offline command and runner tests, `makemigrations --check --dry-run`, and no live Jev calls.
-    - Route: delegated direct; the scoped fix updates the command, tests, and this tracker.
+    - Implementation: validate a non-empty path, reject NUL bytes, require an existing writable parent directory, and reject a directory as the destination before `run_backfill`; `_write_report_atomic` repeats validation before creating its temporary file.
+    - Tests: invalid empty, NUL-containing, missing-parent, non-directory-parent, and directory-destination paths produce `CommandError` with zero runner/classifier calls. Missing paths are not created; the valid-path test still confirms atomic output and no temporary leftovers.
+    - Verification: `DATABASE_URL='sqlite://:memory:' MODERATION_CLASSIFICATION_ENABLED=False /Users/emmanuel/Workspace/projects/denn/core/.venv/bin/python manage.py test content.tests.test_backfill_moderation_command content.tests.test_backfill_runner` -> 17 tests OK; `DATABASE_URL='sqlite://:memory:' MODERATION_CLASSIFICATION_ENABLED=False /Users/emmanuel/Workspace/projects/denn/core/.venv/bin/python manage.py test content` -> 380 tests OK (1 skipped); `DATABASE_URL='sqlite://:memory:' MODERATION_CLASSIFICATION_ENABLED=False /Users/emmanuel/Workspace/projects/denn/core/.venv/bin/python manage.py makemigrations --check --dry-run` -> `No changes detected`; `git show --check 9960fc7` passed. Run from `core/`.
+    - Runtime harness: N/A; all tests use offline fakes. No live Jev call or backfill was run.
+    - Environment note: the initial non-escalated focused run failed because the sandbox denied writing under this worktree and preflight reported `report directory is not writable`; the final focused and full suites passed after narrow filesystem escalation. No sandbox bypass was used.
+    - Commit identity: Conventional Commit `fix(content): preflight moderation report destinations`, full SHA `9960fc77eee26dd79df258b86594c535facf1307`, 91 authored changed lines across the task's four files.
+    - Rollback boundary: revert the follow-up tracker-evidence commit first, then revert `9960fc7`; the implementation commit changes only report-path validation, its tests, runbook guidance, and this task entry. It changes no schema or persisted judgments.
+    - Route: delegated direct; writer trigger for the command and test, with the runbook and tracker updated alongside behavior.
 
 ## Progress and evidence
 
