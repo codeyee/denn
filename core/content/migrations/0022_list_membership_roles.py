@@ -34,6 +34,12 @@ def seed_owner_memberships(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
+    # Non-atomic: seed_owner_memberships writes rows before AddConstraint
+    # issues CREATE INDEX. On populated PostgreSQL snapshots those writes
+    # leave pending trigger events that make CREATE INDEX fail inside one
+    # transaction, so each operation must commit separately.
+    atomic = False
+
     dependencies = [
         ("content", "0021_rename_game_duration_metrics"),
     ]
