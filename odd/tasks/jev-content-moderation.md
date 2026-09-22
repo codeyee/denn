@@ -127,7 +127,24 @@ Jev supplies independent typed judgments; application code owns precedence, thre
     - GREEN/functional checks: focused suite → `Ran 22 tests ... OK`; prior JEV-001 tests → `Ran 15 tests ... OK`; `makemigrations --check --dry-run` → `No changes detected`; import sanity → all ten moderation package exports resolve; `git diff --check 8a61347..HEAD` whitespace-clean.
     - Residual risks (updated): per-state text normalization is unchanged; no live Jev call in any slice; the configured settings revision is authoritative from the settings layer only.
 
-- [ ] **JEV-003 — Classify existing and newly refreshed content**
+  - [x] **JEV-002-Q2 — Refine Jev moderation questions and default revision**
+    - Route: delegated.
+    - Objective: replace metadata-completeness wording with narrow safety-boundary questions and move the runtime default semantic question revision from `q1` to `q2` without changing the Noul IDs, moderation state, policy thresholds, or provider override.
+    - Scope: moderation question definitions, the runtime revision default, focused offline question/settings/state/policy tests, and the minimum documentation that records the default revision. Existing `q1` judgments remain immutable and reusable only under `q1`; `q2` judgments use a distinct identity.
+    - Generic baseline finding: an authorized baseline left most items in `needs_review`; only items with richer descriptive metadata were safe, indicating that the `q1` `needs_review` question tracked metadata completeness rather than moderation risk.
+    - Acceptance criteria:
+      - `safe_for_automatic_discovery` includes ordinary mature entertainment and returns false only for concrete restricted-category evidence.
+      - `explicit_or_sensitive` is true only for clearly indicated restricted categories and does not infer restriction from provider or content type alone.
+      - `needs_review` is true only for concrete but ambiguous or contradictory restricted-category signals; sparse metadata and ordinary mature themes are false.
+      - The three existing question IDs and code-owned thresholds remain unchanged, and no state fields, models, or migrations are added.
+      - The runtime default revision is `q2`, while configured revisions and existing `q1` identities remain supported.
+    - Checks: focused offline moderation question/settings/state/policy tests; full Django `content` test suite; `python manage.py makemigrations --check --dry-run`; `git diff --check`. No live TypeSafe calls.
+    - `strict_tdd=false`.
+    - Implementation: rewrote all three Noul instruction/criteria pairs around concrete restricted-category evidence, changed the settings fallback to `q2`, and added offline assertions for the ordinary-content and ambiguity boundaries plus the new default. No state, model, migration, policy threshold, or provider-override changes.
+    - Verification: focused suite `Ran 41 tests ... OK`; full `content` suite `Ran 372 tests ... OK (skipped=1)`; `makemigrations --check --dry-run` reported `No changes detected`; `git diff --check` clean. No live TypeSafe/provider calls.
+    - Work-unit commit: recorded after implementation commit.
+
+  - [ ] **JEV-003 — Classify existing and newly refreshed content**
   - Add a resumable/rate-bounded backfill command and non-blocking incremental scheduling after normalized detail upserts.
   - Acceptance: fresh judgments are skipped, changed inputs reclassify, concurrent duplicates collapse, failures do not break ingestion, and backfill can resume safely.
   - Checks: command, ingestion, idempotency, concurrency, and failure tests.

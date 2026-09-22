@@ -14,7 +14,24 @@ CONTRACT_KEYS = {
     "needs_review",
 }
 
-NEEDS_REVIEW_SIGNALS = ("sparse", "ambiguous", "contradictory", "insufficient")
+RESTRICTED_SIGNALS = (
+    "adult-only explicit sexual content",
+    "nudity",
+    "graphic gore",
+    "extreme violence",
+    "sexual exploitation",
+    "hateful/extremist propaganda",
+)
+ORDINARY_SIGNALS = (
+    "mature themes",
+    "crime",
+    "horror",
+    "action",
+    "non-graphic violence",
+    "profanity",
+    "romance",
+    "alcohol/drug references",
+)
 
 
 class ModerationQuestionsContractTests(unittest.TestCase):
@@ -23,10 +40,36 @@ class ModerationQuestionsContractTests(unittest.TestCase):
         for question in MODERATION_QUESTIONS.values():
             self.assertIsInstance(question, Noul)
 
-    def test_needs_review_judges_insufficient_metadata_explicitly(self):
-        instructions = MODERATION_QUESTIONS["needs_review"].instructions.lower()
-        for signal in NEEDS_REVIEW_SIGNALS:
-            self.assertIn(signal, instructions)
+    def test_safe_question_keeps_ordinary_mature_content_discoverable(self):
+        question = MODERATION_QUESTIONS["safe_for_automatic_discovery"]
+        text = f"{question.instructions} {question.criteria}".lower()
+        for signal in ORDINARY_SIGNALS:
+            self.assertIn(signal, text)
+        for signal in RESTRICTED_SIGNALS:
+            self.assertIn(signal, text)
+        self.assertIn("sparse metadata alone is not evidence", text)
+
+    def test_explicit_question_requires_clear_restricted_evidence(self):
+        question = MODERATION_QUESTIONS["explicit_or_sensitive"]
+        text = f"{question.instructions} {question.criteria}".lower()
+        for signal in RESTRICTED_SIGNALS:
+            self.assertIn(signal, text)
+        for signal in ORDINARY_SIGNALS:
+            self.assertIn(signal, text)
+        self.assertIn("provider or content type alone", text)
+
+    def test_needs_review_requires_concrete_ambiguous_restricted_signal(self):
+        question = MODERATION_QUESTIONS["needs_review"]
+        text = f"{question.instructions} {question.criteria}".lower()
+        self.assertIn("concrete but ambiguous", text)
+        self.assertIn("contradictory", text)
+        for excluded in (
+            "sparse metadata alone",
+            "unfamiliar title",
+            "missing genres or tags",
+            "ordinary mature themes",
+        ):
+            self.assertIn(excluded, text)
 
     def test_every_question_anchors_on_text_only_state(self):
         for name, question in MODERATION_QUESTIONS.items():
@@ -55,7 +98,7 @@ class ModerationQuestionsContractTests(unittest.TestCase):
 
         with override_settings(MODERATION_QUESTION_REVISION="q-test"):
             self.assertEqual(moderation_question_revision(), "q-test")
-        self.assertTrue(settings.MODERATION_QUESTION_REVISION)
+        self.assertEqual(settings.MODERATION_QUESTION_REVISION, "q2")
 
 
 if __name__ == "__main__":
