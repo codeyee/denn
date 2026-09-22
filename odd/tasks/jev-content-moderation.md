@@ -228,6 +228,11 @@ Jev supplies independent typed judgments; application code owns precedence, thre
   - Safety boundary: no live Jev call in tests or this task. The command and its docs must make live run eligibility depend on explicit operator/CI opt-in flags, not ambient defaults.
   - Checks: command argument/flag validation, idempotent reuse behavior, rate-bound pacing, resume-safety against cursor replay, and offline fake-client log/report assertions. All Django tests are offline.
   - Route: delegated; writer trigger.
+  - [ ] **JEV-003B-REPORT-PREFLIGHT — Validate the report destination before classification**
+    - Problem: the command currently checks the `--report` parent only after classification, so an invalid destination can waste billable Jev calls.
+    - Acceptance: deterministic report-path invalidity fails before runner/classifier calls and creates no files or directories; a valid report still uses the existing atomic write flow.
+    - Checks: offline command and runner tests, `makemigrations --check --dry-run`, and no live Jev calls.
+    - Route: delegated direct; the scoped fix updates the command, tests, and this tracker.
 
 ## Progress and evidence
 

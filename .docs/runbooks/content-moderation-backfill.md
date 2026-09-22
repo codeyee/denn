@@ -33,8 +33,16 @@ of these are present:
 - `--limit N` with N positive — exact item cap. There is no unbounded mode.
 
 Missing either one is a `CommandError` before any ORM query or classifier
-call. Invalid numbers, unknown price overrides, and missing report
-directories also fail as `CommandError`, and no secret is ever printed.
+call. Invalid numbers, unknown price overrides, and invalid report destinations
+also fail as `CommandError`. Before fetching or classifying, the command checks
+that the report parent already exists, is a directory, and is writable, and
+that the destination is not a directory. It never creates a missing parent or a
+placeholder report. No secret is ever printed.
+
+The report uses a temporary file in the validated parent and an atomic rename.
+A later filesystem error (for example, a path change or disk failure) can still
+prevent report completion after classification; the command removes its
+in-progress temporary file and never leaves a partial report.
 
 ## Bounded live form (authorized runs only)
 

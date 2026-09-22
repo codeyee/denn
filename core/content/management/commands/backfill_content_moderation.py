@@ -45,10 +45,30 @@ def _fetch_page(after_id: int, page_size: int):
         ContentItem.objects.filter(pk__gt=after_id).order_by('pk')[:page_size])
 
 
-def _write_report_atomic(path: str, summary: dict) -> None:
-    directory = os.path.dirname(os.path.abspath(path))
+def _validate_report_path(path: str) -> str:
+    if not isinstance(path, str) or not path:
+        raise CommandError('invalid --report path: path must be a non-empty string')
+    if '\x00' in path:
+        raise CommandError('invalid --report path: NUL bytes are not allowed')
+
+    try:
+        absolute_path = os.path.abspath(path)
+        directory = os.path.dirname(absolute_path)
+    except (OSError, TypeError, ValueError) as error:
+        raise CommandError(f'invalid --report path: {error}') from error
+
     if not os.path.isdir(directory):
-        raise CommandError(f'report directory does not exist: {directory}')
+        raise CommandError(
+            f'report parent is missing or not a directory: {directory}')
+    if not os.access(directory, os.W_OK):
+        raise CommandError(f'report directory is not writable: {directory}')
+    if os.path.isdir(absolute_path):
+        raise CommandError(f'report path is a directory: {absolute_path}')
+    return directory
+
+
+def _write_report_atomic(path: str, summary: dict) -> None:
+    directory = _validate_report_path(path)
     fd, tmp_path = tempfile.mkstemp(dir=directory, prefix='.backfill-',
                                      suffix='.tmp')
     try:
@@ -97,6 +117,10 @@ class Command(BaseCommand):
         except ValueError as error:
             raise CommandError(f'invalid option: {error}')
 
+        report_path = options['report']
+        if report_path is not None:
+            _validate_report_path(report_path)
+
         def emit(event: dict) -> None:
             self.stdout.write(json.dumps(event, sort_keys=True,
                                          separators=(',', ':'), default=str))
@@ -104,9 +128,9 @@ class Command(BaseCommand):
         summary = run_backfill(fetch_page=_fetch_page,
                                classify=classify_content_item,
                                config=config, pricing=pricing, emit=emit)
-        if options['report']:
+        if report_path is not None:
             try:
-                _write_report_atomic(options['report'], summary)
+                _write_report_atomic(report_path, summary)
             except CommandError:
                 raise
             except OSError as error:
