@@ -128,6 +128,24 @@ class ModerationServiceTests(TestCase):
                 {"genres": ["Action"], "themes": ["Erotic"]},
                 {"genres": ["Action"], "themes": ["Fantasy"]},
             ),
+            (
+                ContentItem.ContentType.SEASON,
+                ContentItem.SourceAPI.TMDB,
+                {"tv_show_name": "Show", "episodes": [{"title": "Pilot", "description": "A"}]},
+                {"tv_show_name": "Show", "episodes": [{"title": "Pilot", "description": "B"}]},
+            ),
+            (
+                ContentItem.ContentType.ALBUM,
+                ContentItem.SourceAPI.SPOTIFY,
+                {"authors": [{"name": "Artist"}], "tracks": [{"title": "Song A"}]},
+                {"authors": [{"name": "Artist"}], "tracks": [{"title": "Song B"}]},
+            ),
+            (
+                ContentItem.ContentType.BOOK,
+                ContentItem.SourceAPI.OPENLIBRARY,
+                {"authors": [{"name": "Author A"}]},
+                {"authors": [{"name": "Author B"}]},
+            ),
         )
         item_id = 999
         for content_type, provider, before, after in cases:
