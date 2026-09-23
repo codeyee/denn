@@ -236,9 +236,9 @@ Jev supplies independent typed judgments; application code owns precedence, thre
     - Result: annotated the single bulk-resolver read with batched current-source and latest-judgment subqueries, then returned only the existing public status/classification fields. The public OpenAPI response now describes this allowlisted summary. Client-supplied `source_data` remains ignored for freshness.
     - Verification: focused `content.tests.test_id_routing.ContentItemBulkResolveTests content.tests.test_moderation_summary_api` -> 26 tests OK; exact required full `DATABASE_URL='sqlite://:memory:' MODERATION_CLASSIFICATION_ENABLED=False /Users/emmanuel/Workspace/projects/denn/core/.venv/bin/python manage.py test content` -> 411 tests OK (1 skipped) after the initial sandbox-only report-path write denial and narrow permission for the identical retry; exact required `makemigrations --check --dry-run` -> `No changes detected`; `git diff --check` -> pass.
     - Runtime harness: N/A; passive resolver response only, no service runtime behavior changed. No live Jev call, backfill, remote action, or deployment.
-    - Rollback boundary: revert the JEV-004D work-unit commit to remove only the additive bulk `moderation` field, its tests, and matching API documentation; no schema or judgment data changes.
-    - Commit identity: pending.
-    - Next step: commit the work unit and record its SHA below.
+    - Rollback boundary: revert implementation commit `c7c1b8d` to remove only the additive bulk `moderation` field, its tests, and matching API documentation; no schema or judgment data changes. Revert the tracker-evidence commit separately if removing this record.
+    - Commit identity: `feat(content): include moderation in bulk resolution`, full SHA `c7c1b8d2870f97a94504f9954d0f792a8d242d31` on `agent/jev-moderation-bulk-summary`.
+    - Next step: Web can consume the batch result and filter only current `complete`/explicit summaries; Core's allowlisted summary intentionally leaves unknown, missing, stale, pending, and `needs_review` visible.
   - User preference/profile exposure remains part of JEV-004 but is not included in JEV-004A.
 
 - [ ] **JEV-005 — Implement disabled-by-default web enforcement path**
