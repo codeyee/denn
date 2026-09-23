@@ -199,6 +199,7 @@ Use the rest as specialized references:
 - [`runbooks/public-profile-tracking-backfill.md`](./runbooks/public-profile-tracking-backfill.md)
 - [`runbooks/content-moderation-backfill.md`](./runbooks/content-moderation-backfill.md)
 - [`runbooks/metadata-preparation.md`](./runbooks/metadata-preparation.md)
+- [`runbooks/jev-moderation-workers.md`](./runbooks/jev-moderation-workers.md) — opt-in worker rollout and operations.
 - [`history/implementation-history.md`](./history/implementation-history.md)
 - [`definition-of-done.md`](./definition-of-done.md)
 

@@ -1,4 +1,5 @@
 .PHONY: help setup-local up down restart status doctor logs check smoke-local browser-local \
+        local-worker-start local-worker-stop \
         local-up local-down local-restart local-status local-doctor local-logs local-smoke local-browser local-destroy local-clone \
         restart-proxy restart-core restart-web \
         env-store env-link \
@@ -19,6 +20,8 @@ help:
 	@echo "  make down             stop this worktree and preserve its database"
 	@echo "  make local-up INSTANCE=feature-a WEB_PORT=3000"
 	@echo "  make local-status INSTANCE=feature-a"
+	@echo "  make local-worker-start SERVICE=metadata-preparation-worker|moderation-worker (opt-in; see moderation runbook)"
+	@echo "  make local-worker-stop SERVICE=metadata-preparation-worker|moderation-worker"
 	@echo "  make local-destroy INSTANCE=feature-a  (removes only its volumes)"
 	@echo "  make restart          down + up"
 	@echo "  make status           compact status table"
@@ -83,6 +86,8 @@ local-doctor:  ; @INSTANCE="$(INSTANCE)" WEB_PORT="$(WEB_PORT)" $(SCRIPT) doctor
 local-logs:    ; @INSTANCE="$(INSTANCE)" WEB_PORT="$(WEB_PORT)" $(SCRIPT) logs "$(SERVICE)"
 local-smoke:   ; @INSTANCE="$(INSTANCE)" WEB_PORT="$(WEB_PORT)" REQUIRE_LOCAL_SNAPSHOT="$(REQUIRE_LOCAL_SNAPSHOT)" $(SCRIPT) smoke-local
 local-browser: ; @INSTANCE="$(INSTANCE)" WEB_PORT="$(WEB_PORT)" REQUIRE_LOCAL_SNAPSHOT="$(REQUIRE_LOCAL_SNAPSHOT)" $(SCRIPT) browser-local
+local-worker-start: ; @INSTANCE="$(INSTANCE)" WEB_PORT="$(WEB_PORT)" $(SCRIPT) worker-start "$(SERVICE)"
+local-worker-stop:  ; @INSTANCE="$(INSTANCE)" WEB_PORT="$(WEB_PORT)" $(SCRIPT) worker-stop "$(SERVICE)"
 local-destroy: ; @INSTANCE="$(INSTANCE)" WEB_PORT="$(WEB_PORT)" $(SCRIPT) destroy
 
 restart-proxy: ; @INSTANCE="$(INSTANCE)" WEB_PORT="$(WEB_PORT)" $(SCRIPT) restart-service proxy

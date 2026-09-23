@@ -279,8 +279,15 @@ limit. Timeouts, unexpected failures, and expired leases become
 `outcome_unknown`; operators must reconcile these before any manual retry.
 Logs contain aggregate outcome counts, duration, and bounded error codes, not
 content state, provider payloads, or credentials. Classification stays off the
-detail request path. This command is not wired into local Compose or production
-process configuration yet.
+detail request path. Local Compose exposes both workers only through its
+non-default `moderation` profile; ordinary `make up` does not start them, and
+neither process runs a catalog backfill. Production worker configuration is
+still an external setup gate; no checked-in Dokploy manifest or live deployment
+state is available.
+
+See [`../runbooks/jev-moderation-workers.md`](../runbooks/jev-moderation-workers.md)
+for migration ordering, opt-in startup, monitoring, backfill separation, and
+rollback controls.
 
 See [`content-lifecycle.md`](./content-lifecycle.md).
 Discovery filtering is defined in
