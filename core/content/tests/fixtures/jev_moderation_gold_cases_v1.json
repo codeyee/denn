@@ -12,7 +12,7 @@
         "provider": "tmdb",
         "content_type": "MOVIE",
         "title": "Amber Harbor",
-        "description": "A fictional story about a quiet coastal town.",
+        "description": "A fictional drama with adult themes and graphic content.",
         "type_specific": {
           "movie": {
             "original_title": "Amber Harbor",
@@ -20,13 +20,13 @@
           }
         }
       },
-      "gold_class": "safe_for_automatic_discovery",
+      "gold_class": "explicit_or_sensitive",
       "adjudication": {
         "status": "synthetic",
         "reviewer_count": 0,
         "guideline_revision": "fixture-v1"
       },
-      "provider_explicit": false
+      "provider_explicit": true
     },
     {
       "case_id": "case_8a9720d1c46f",
@@ -39,7 +39,7 @@
         "provider": "spotify",
         "content_type": "ALBUM",
         "title": "Piedra Clara",
-        "description": "Una obra ficticia con una señal explícita simulada.",
+        "description": "Un álbum ficticio de instrumentales tranquilos y paisajes sonoros.",
         "type_specific": {
           "album": {
             "artists": ["Artista Ficticia"],
@@ -52,13 +52,13 @@
           }
         }
       },
-      "gold_class": "explicit_or_sensitive",
+      "gold_class": "safe_for_automatic_discovery",
       "adjudication": {
         "status": "synthetic",
         "reviewer_count": 0,
         "guideline_revision": "fixture-v1"
       },
-      "provider_explicit": true
+      "provider_explicit": false
     },
     {
       "case_id": "case_4c1f7a9e0b63",

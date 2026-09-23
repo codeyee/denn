@@ -109,6 +109,12 @@ def validate_gold_dataset(document: Any) -> tuple[dict[str, Any], ...]:
             raise GoldCaseValidationError(f"{path}.gold_class: unsupported class")
         if case["provider_explicit"] is not None and type(case["provider_explicit"]) is not bool:
             raise GoldCaseValidationError(f"{path}.provider_explicit: expected bool or null")
+        if case["provider_explicit"] is True and (
+            case["provider"] != "tmdb" or content_type not in {"movie", "tv_show"}
+        ):
+            raise GoldCaseValidationError(
+                f"{path}.provider_explicit: true is supported only for TMDB movies and TV shows"
+            )
 
         state = _require_fields(case["state"], STATE_FIELDS, f"{path}.state")
         if state["provider"] != case["provider"] or state["content_type"] != content_type.upper():

@@ -27,7 +27,8 @@ class ModerationGoldCaseTests(unittest.TestCase):
         self.assertEqual(len(cases), 3)
         self.assertTrue(all(case["adjudication"]["status"] == "synthetic" for case in cases))
         self.assertTrue(all("language" not in case["state"] for case in cases))
-        self.assertEqual(cases[1]["provider_explicit"], True)
+        self.assertEqual(cases[0]["provider_explicit"], True)
+        self.assertEqual(cases[1]["provider_explicit"], False)
 
     def test_case_shape_and_identifiers_are_strict(self):
         mutations = []
@@ -84,6 +85,21 @@ class ModerationGoldCaseTests(unittest.TestCase):
             with self.subTest(invalid=invalid):
                 with self.assertRaises(GoldCaseValidationError):
                     validate_gold_dataset(invalid)
+
+    def test_provider_explicit_is_limited_to_tmdb_movies_and_tv_shows(self):
+        spotify_override = fixture_document()
+        spotify_override["cases"][1]["provider_explicit"] = True
+        tmdb_album_override = fixture_document()
+        tmdb_album_override["cases"][0]["content_type"] = "album"
+        tmdb_album_override["cases"][0]["state"] = {
+            "provider": "tmdb", "content_type": "ALBUM", "title": "Test",
+            "description": "Test", "type_specific": {"album": {"artists": [], "tracks": []}},
+        }
+
+        with self.assertRaisesRegex(GoldCaseValidationError, "provider_explicit"):
+            validate_gold_dataset(spotify_override)
+        with self.assertRaisesRegex(GoldCaseValidationError, "provider_explicit"):
+            validate_gold_dataset(tmdb_album_override)
 
     def test_validator_returns_independent_case_copies(self):
         document = fixture_document()
