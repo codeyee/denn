@@ -322,9 +322,10 @@ resolve discovery results to internal ids before rendering links.
   repeated request candidates as capacity returns. A known normalized detail
   row is not fetched again only because its moderation source hash is null;
   legacy hash backfill remains an operator action. Caller-supplied
-  `source_data` remains untrusted and is never persisted. Saturation can leave
-  candidates unqueued until a later resolution request; provider calls remain
-  the responsibility of a future bounded worker.
+  `source_data` remains untrusted and is never persisted. A separate bounded
+  Core metadata-preparation worker drains admitted jobs through the canonical
+  Core -> Proxy orchestrator; request handling itself makes no provider call.
+  Saturation can leave candidates unqueued until a later resolution request.
 - Hover, focus, and navigation must never call
   `POST /api/content/get-or-create/`; those interactions are pure reads
   against the already-resolved id.

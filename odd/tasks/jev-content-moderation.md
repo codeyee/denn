@@ -385,7 +385,23 @@ Jev supplies independent typed judgments; application code owns precedence, thre
     - Commit identity: Conventional Commit `feat(content): enqueue homepage metadata preparation`, full SHA `9ece42e` on `agent/jev-homepage-preparation`; 309 authored changed lines in the work-unit commit.
     - Route: delegated direct; writer trigger for model, migration, service, resolver, tests, docs, and this tracker.
 
+  - [x] **JEV-003C-METADATA-PREPARATION-WORKER — Drain homepage identity metadata jobs**
+    - Scope: claim the existing migration-0027 preparation queue in bounded batches; fetch only identities missing normalized detail through Core's canonical source-data orchestrator; persist using its existing detail/hash/outbox path.
+    - Safety: short `skip_locked` claims, no network under row locks, token-fenced completion, bounded retries and terminal failure, no startup scan or legacy backfill, no Jev call, no provider work in resolver/home requests. Existing detail completes without a fetch; malformed/empty responses do not overwrite details.
+    - Command: `run_metadata_preparation_worker --once` or continuous bounded polling; aggregate-only logs and graceful SIGINT/SIGTERM stop.
+    - Verification: `DATABASE_URL='sqlite://:memory:' MODERATION_CLASSIFICATION_ENABLED=False /Users/emmanuel/Workspace/projects/denn/core/.venv/bin/python manage.py test content.tests.test_metadata_preparation_worker` -> 7 tests OK; same environment/runner with `manage.py test content` -> 440 tests OK (1 skipped); same environment/runner with `manage.py makemigrations --check --dry-run` -> `No changes detected`; `manage.py run_metadata_preparation_worker --help` -> pass; `PYTHONPYCACHEPREFIX=/tmp/denn-pycache .../python -m compileall -q` for worker, command, and tests -> pass; `git diff --check` -> pass.
+    - Environment: initial non-escalated full suite failed only because two existing moderation-report tests require writable report paths beneath this isolated checkout; the exact suite passed after narrow filesystem approval. Initial bytecode compilation also could not write to worktree `__pycache__`; it passed with `PYTHONPYCACHEPREFIX=/tmp/denn-pycache`.
+    - PostgreSQL: no concurrent PostgreSQL claim integration was run; `skip_locked`, concurrent claims, lease replacement, and stale completion were checked structurally or in SQLite sequentially. Parent/local PostgreSQL integration remains pending.
+    - Runtime: no live provider/Proxy or Jev call, persistent local database mutation, backfill, startup wiring, production deployment, push, or PR publication was performed.
+    - Route: delegated direct; writer trigger for worker, command, tests, docs, and this tracker.
+    - Result: added short-transaction `skip_locked` claims, lease fencing and expiry recovery, capped batches, bounded retry/backoff and terminal failure, canonical bulk-source orchestration, and the graceful one-shot/continuous command. Existing details complete without fetching; malformed or empty proxy results do not create/overwrite details. Canonical normalized writes retain the existing source-hash and moderation-outbox behavior.
+    - Commit identity: pending work-unit commit; the cohesive implementation, tests, runbook, architecture/contract updates, and tracker changes total 594 authored changed lines, above the advisory ~400. No required behavior or tests were cut; PR slicing remains a separate delivery decision.
+    - Route: delegated direct; writer trigger for worker, command, tests, docs, and this tracker.
+
 ## Progress and evidence
+
+- Delivery: plan-only stacked-to-main PR [#105](https://github.com/codeyee/denn/pull/105) is open with green CI for homepage preparation admission (commit `0ee911d`, 128 lines). It is not merged; this metadata-preparation worker is a dependent follow-up slice.
+- Worker slice `agent/jev-metadata-preparation-worker` adds no deployment or production wiring. PostgreSQL concurrency integration is deliberately left to the parent; ordinary worktree policy still owns PR publication and merge.
 
 - Exploration completed by GLM 5.3 Flash in Codex task `01a0c4cd-9ceb-7ba0-a7c1-2d6214d81d8b`.
 - Verified existing authoritative content policy in `.docs/architecture/content-eligibility.md`.

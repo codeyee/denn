@@ -198,6 +198,7 @@ Use the rest as specialized references:
 - [`runbooks/homepage-cache-warmup.md`](./runbooks/homepage-cache-warmup.md)
 - [`runbooks/public-profile-tracking-backfill.md`](./runbooks/public-profile-tracking-backfill.md)
 - [`runbooks/content-moderation-backfill.md`](./runbooks/content-moderation-backfill.md)
+- [`runbooks/metadata-preparation.md`](./runbooks/metadata-preparation.md)
 - [`history/implementation-history.md`](./history/implementation-history.md)
 - [`definition-of-done.md`](./definition-of-done.md)
 

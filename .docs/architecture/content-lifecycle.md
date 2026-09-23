@@ -90,12 +90,18 @@ operation; fresh and stale local reads add none synchronously.
 Operational runbook:
 [`../runbooks/rehydrate-content.md`](../runbooks/rehydrate-content.md)
 
-Homepage-only identities can enter the Core metadata-preparation queue at
-resolution time. A future worker must fetch only through the canonical Core ->
-Proxy path and persist through the normalized detail store; this unit adds no
-worker, network call, startup scan, or legacy database backfill. The backlog
-cap bounds accepted future fetch intent, so identities can remain unqueued
-while saturated and require another resolution request after capacity frees.
+Homepage-only identities enter the Core metadata-preparation queue at
+resolution time. `run_metadata_preparation_worker` claims a bounded batch,
+releases its PostgreSQL row locks, then fetches through the canonical Core ->
+Proxy source-data orchestrator. That orchestrator persists through normalized
+detail writers, which also refresh the moderation source hash and enqueue
+classification work when enabled. The worker has bounded retries and lease
+fencing; it performs no startup scan or legacy backfill. The 1,000-active-job
+admission cap can leave candidates unqueued while saturated; a later identity
+resolution request can admit them after capacity returns.
+
+Operational procedure:
+[`../runbooks/metadata-preparation.md`](../runbooks/metadata-preparation.md)
 
 ## Browse Metadata
 
