@@ -13,6 +13,7 @@ import type {
   PaginatedUserListList,
   PublicProgressItem,
 } from "@/lib/types";
+import { getWebModerationVisibilityEnabledFn } from "@/server/moderation-visibility";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -27,19 +28,24 @@ export const Route = createFileRoute("/")({
     links: [{ rel: "canonical", href: "/" }],
   }),
   loader: async ({ context }) => {
+    const moderationVisibilityEnabled =
+      await getWebModerationVisibilityEnabledFn();
     await prefetchHomeQueries(
       context.queryClient,
       context.session,
       context.country,
+      moderationVisibilityEnabled,
     );
     return {
       session: context.session,
       country: context.country,
+      moderationVisibilityEnabled,
       initialSuggestions:
         context.queryClient.getQueryData<HomepageResponse>(
           queryKeys.suggestions.byParams({
             limit: SUGGESTIONS_PAGE_SIZE,
             country: context.country,
+            moderationVisibilityEnabled,
           }),
         ),
       initialLists:
@@ -63,12 +69,19 @@ export const Route = createFileRoute("/")({
 });
 
 function HomeRoute() {
-  const { session, country, initialSuggestions, initialLists, initialProgress } =
-    Route.useLoaderData();
+  const {
+    session,
+    country,
+    moderationVisibilityEnabled,
+    initialSuggestions,
+    initialLists,
+    initialProgress,
+  } = Route.useLoaderData();
   return (
     <HomeRouteShell
       session={session}
       country={country}
+      moderationVisibilityEnabled={moderationVisibilityEnabled}
       initialSuggestions={initialSuggestions}
       initialLists={initialLists}
       initialProgress={initialProgress}
