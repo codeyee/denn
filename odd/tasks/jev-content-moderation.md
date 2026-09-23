@@ -213,13 +213,14 @@ Jev supplies independent typed judgments; application code owns precedence, thre
   - Acceptance: shadow mode produces zero visible behavior change; enforcement flags apply surface-specific behavior; accessibility, stable layout, SSR, and cache keys are preserved.
   - Checks: policy/component tests, `make validate-web`, browser scenarios for default and opt-in users.
   - Route: delegated; writer trigger.
-  - [ ] **JEV-005-LOCAL-PREVIEW — Show the moderation visual safely in the local Web app**
+  - [x] **JEV-005-LOCAL-PREVIEW — Show the moderation visual safely in the local Web app**
     - Scope: add a development-only reachable preview that demonstrates explicit blur, badge, and keyboard reveal states on the shared content-card treatment; use a clearly labeled fixture when no local persisted explicit judgment exists, and distinguish fixture data from Core API data.
     - Guardrails: keep production surfaces unchanged and enforcement in shadow mode; honor existing adult preference semantics; missing, stale, pending, error, or invalid summaries never imply safety; do not expose raw judgment details or imply CSS blur prevents image download.
     - Checks: focused Web tests, `make validate-web`, and a browser/e2e check against the existing local stack when available. No live Jev call or production deploy.
     - Route: delegated direct; writer trigger.
     - Status: implementation committed as `ba97df3` (`feat(web): add dev moderation preview`) on `agent/jev-moderation-web-preview`, based on `17c167d`; focused Vitest (3 files/5 tests), Web lint, Web build, and auth-card budget check passed in the existing Web container. `http://localhost:3001/dev/moderation-preview` returned HTTP 200.
-    - Pending: browser visual/interaction readback; host `make validate-web` remains blocked by missing `@playwright/test`, though its Web lint/build/auth-card checks passed individually in the mapped container. Build-only generated Nitro type changes were excluded from the candidate.
+    - Browser evidence: at `http://localhost:3001/dev/moderation-preview`, the explicit fixture was visibly blurred; reveal removed the blur and changed the button label to “Blur artwork”. Core ContentItem `1387` loaded through one read-only request and displayed a real `Missing` summary without blur.
+    - Gap: no stored explicit sample was verified in the local database; the explicit visual demonstration remains a clearly labeled fixture. Host `make validate-web` was blocked by missing `@playwright/test`, though focused Vitest (3 files/5 tests), Web lint/build, and the auth-card check passed in the mapped container. No live Jev call or production deploy.
 
 - [ ] **JEV-006 — Build the evaluation harness and go/no-go evidence**
   - Add 300–500 balanced EN/ES cross-provider fixtures, an offline fake-client metric suite, an opt-in live Jev runner, and a report template.
