@@ -45,6 +45,28 @@ Pass an already constructed `JevModerationClient` or a fake object with the same
 
 The returned `execution` section distinguishes selected cases, classify invocations, provider-override no-call cases, and evaluator retries. `latency_ms.source` describes the call-only measurement boundary. Use the fake client for offline checks; do not run the evaluator against a live Jev adapter without a separately approved live-sample plan. Synthetic results must not be used to infer model accuracy or set thresholds.
 
+## Exact-sample preflight
+
+`python manage.py evaluate_jev_moderation` currently exposes an explicit `--dry-run` preflight only. It validates a privacy-screened dataset, an exact comma-separated set of opaque case IDs, a positive maximum case limit, the pinned-model/question settings, and a dated pricing label. It does **not** construct a Jev client, make a network request, or read/write the Core database. The JSON output reports only opaque IDs, readiness booleans, configured model/question identity, call-count upper bound, and the supplied rates; it never includes title, description, state, key, or file path. `SimpleTestCase` tests keep database access disabled for this command path.
+
+The configured model must be a concrete versioned ID such as `jev-1.13.0` before a live run; the repository default `jev-latest` is deliberately marked not ready because aliases can move. The command's pricing inputs are a dated snapshot, not a spend limit. Review the [TypeSafe model pricing page](https://docs.typesafe.ai/models) immediately before any live evaluation. On 2026-09-23, the page listed Jev 1.13 input at `$42/Btok` (`$0.042` per million input tokens) and free output tokens; use the then-current published or account-specific rates instead of assuming this snapshot remains current. The provenance value must be a safe label such as `typesafe-models-reviewed-2026-09-23`; it is stored with the report, not sent to Jev.
+
+Example against the synthetic fixture (preflight only; not an accuracy result):
+
+```sh
+cd core
+python manage.py evaluate_jev_moderation \
+  --dataset content/tests/fixtures/jev_moderation_gold_cases_v1.json \
+  --case-ids case_17b0c3a43d12,case_8a9720d1c46f \
+  --limit 2 \
+  --input-price-per-million-tokens 0.042 \
+  --output-price-per-million-tokens 0 \
+  --price-provenance typesafe-models-reviewed-2026-09-23 \
+  --dry-run
+```
+
+Inspect `ready_for_live_run` before proceeding. `maximum_case_limit` limits selected cases only. Token size varies by metadata, so neither the case limit nor the price snapshot enforces a dollar cap. The preflight is not authorization to send catalog content to TypeSafe.
+
 
 ### Report summary template
 
