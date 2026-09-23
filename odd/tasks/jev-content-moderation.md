@@ -395,7 +395,7 @@ Jev supplies independent typed judgments; application code owns precedence, thre
     - Runtime: no live provider/Proxy or Jev call, persistent local database mutation, backfill, startup wiring, production deployment, push, or PR publication was performed.
     - Route: delegated direct; writer trigger for worker, command, tests, docs, and this tracker.
     - Result: added short-transaction `skip_locked` claims, lease fencing and expiry recovery, capped batches, bounded retry/backoff and terminal failure, canonical bulk-source orchestration, and the graceful one-shot/continuous command. Existing details complete without fetching; malformed or empty proxy results do not create/overwrite details. Canonical normalized writes retain the existing source-hash and moderation-outbox behavior.
-    - Commit identity: pending work-unit commit; the cohesive implementation, tests, runbook, architecture/contract updates, and tracker changes total 594 authored changed lines, above the advisory ~400. No required behavior or tests were cut; PR slicing remains a separate delivery decision.
+    - Commit identity: Conventional Commit `feat(content): process homepage metadata preparation jobs`, full SHA `7a5b68971531f687b37eb0666b5aecc91833b368` on `agent/jev-metadata-preparation-worker`. The cohesive implementation, tests, runbook, architecture/contract updates, and tracker changes total 594 authored changed lines, above the advisory ~400. No required behavior or tests were cut; PR slicing remains a separate delivery decision.
     - Route: delegated direct; writer trigger for worker, command, tests, docs, and this tracker.
 
 ## Progress and evidence
