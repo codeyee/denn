@@ -1,9 +1,9 @@
+import artworkUrl from "@/assets/moderation-preview-artwork.svg";
 import { ContentCard } from "@/components/common/cards/ContentCard";
 import type { Content, ModerationSummary } from "@/lib/types";
 import { ModerationCoreItemLookup } from "./ModerationCoreItemLookup";
 import { ModerationBadge } from "./moderationPreviewUtils";
 
-const artworkUrl = "/moderation-preview-artwork.svg";
 const fixtures: Array<{ id: string; title: string; summary: ModerationSummary }> = [
   {
     id: "fixture-explicit",

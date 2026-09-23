@@ -44,7 +44,7 @@ const sourceData: MovieDetail = {
   title: "Local Core Example",
   original_title: "Local Core Example",
   description: "A local persisted item.",
-  image_url: "/moderation-preview-artwork.svg",
+  image_url: "/fixture-artwork.svg",
   tagline: null,
   imdb_id: null,
   release_date: null,
