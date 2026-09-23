@@ -1,6 +1,6 @@
 # Jev moderation evaluation data contract
 
-This page defines the privacy-safe input contract and classification-report contract for the offline JEV-006 evaluation. The current metrics slice is pure: it makes no Jev client, network, or database call. The committed fixture is synthetic and tests mechanics only; it is not evidence of Jev accuracy. Token, cost, and latency summaries and injected-client execution remain separate open slices.
+This page defines the privacy-safe input contract and classification-report contract for the offline JEV-006 evaluation. The schema, classification metrics, and accounting summaries are pure: they make no Jev client, network, or database call. The committed fixture is synthetic and tests mechanics only; it is not evidence of Jev accuracy. Injected-client execution remains a separate open slice.
 
 ## Gold cases: `jev-moderation-gold-cases/v1`
 
@@ -22,7 +22,7 @@ Validation rejects extra/missing fields, duplicate or non-opaque case IDs, unkno
 
 ## Sampling and evidence limits
 
-JEV-006 targets 300–500 English/Spanish cases. A prior local aggregate found only 18 books and no reliable language field, so an equal-balanced cross-provider sample cannot be drawn from the local catalog. This schema, synthetic fixture, and computed classification metrics establish no representative sample and no model-quality result. Human-adjudicated sampling, operational accounting, and injected-client execution remain open.
+JEV-006 targets 300–500 English/Spanish cases. A prior local aggregate found only 18 books and no reliable language field, so an equal-balanced cross-provider sample cannot be drawn from the local catalog. This schema, synthetic fixture, and computed classification metrics establish no representative sample and no model-quality result. Human-adjudicated sampling and injected-client execution remain open.
 
 
 ## Pure classification report contract
@@ -31,4 +31,22 @@ JEV-006 targets 300–500 English/Spanish cases. A prior local aggregate found o
 
 The report provides the class confusion matrices, per-class precision/recall with numerators and denominators, gold-explicit-to-predicted-safe false-negative rate, review recall, provider/language breakdowns with counts, and model-version consistency. Provider overrides appear only in the policy matrix and per-case flags, never in Jev-only quality metrics. Zero denominators have value `null` and display `N/A`. Raw state text and exception messages do not appear in report rows.
 
-Record a concrete returned model such as `jev-1.13.0`. A moving alias such as `jev-latest`, a missing version, or mixed versions makes a single-version comparison ineligible. See the [TypeSafe model guidance](https://docs.typesafe.ai/models). The status remains `INSUFFICIENT`: metrics do not set pass thresholds or attest that the sample is representative. Token, cost, and supplied-duration summaries will be added in the next accounting slice.
+Record a concrete returned model such as `jev-1.13.0`. A moving alias such as `jev-latest`, a missing version, or mixed versions makes a single-version comparison ineligible. See the [TypeSafe model guidance](https://docs.typesafe.ai/models). The status remains `INSUFFICIENT`: metrics do not set pass thresholds or attest that the sample is representative.
+
+The accounting section uses optional caller-supplied per-case durations; its p50/p95 are not SDK latency. It keeps known input/output token totals and counts incomplete usage. Cost is reported only with price rates and a short price-provenance label; incomplete usage produces a partial known cost and a null complete total. Zero durations or token counts remain valid measurements; missing values are never replaced with zero.
+
+
+### Report summary template
+
+- Dataset schema/version, split, total cases, human-adjudicated cases:
+- Concrete Jev version(s), mixed/unresolved models, single-version eligibility:
+- Confusion matrices and per-class supports, precision, and recall (numerator / denominator):
+- Explicit false-negative rate and review recall:
+- Abstention, unknown, unavailable, and skipped coverage:
+- Provider and manual-language counts:
+- Caller-supplied latency p50 / p95 and missing duration count:
+- Input/output token totals and missing-usage count:
+- Input/output prices per million tokens and provenance:
+- Known priced usage and complete cost total, with status:
+- Provider overrides, separate from Jev-only quality:
+- Go/no-go: **INSUFFICIENT** until representative human-adjudicated live evidence and human-approved thresholds exist.
