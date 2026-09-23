@@ -3,9 +3,11 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import os
 import re
 import time
+from collections.abc import Mapping
 from argparse import ArgumentTypeError
 from contextlib import contextmanager
 from datetime import date
@@ -17,7 +19,8 @@ from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
 from content.moderation.evaluation_accounting import build_accounting_summary
-from content.moderation.evaluation_cases import CASE_ID_RE, GOLD_SCHEMA_VERSION, load_gold_dataset
+from content.moderation.evaluation_cases import CASE_ID_RE, GOLD_CLASSES, GOLD_SCHEMA_VERSION, load_gold_dataset
+from content.moderation.evaluation_metrics import PREDICTIONS, REPORT_SCHEMA_VERSION
 from content.moderation.questions import moderation_question_revision
 
 _MODEL_ID_RE = re.compile(r"^jev-\d+\.\d+\.\d+$")
@@ -28,21 +31,149 @@ _PROVENANCE_RE = re.compile(
 )
 _MAX_LIVE_CASES = 25
 _MAX_LIVE_STATE_BYTES = 20_000
-_SAFE_REPORT_FIELDS = (
-    "go_no_go", "case_count", "confusion_matrix_jev_only",
-    "confusion_matrix_policy_including_provider_override", "per_class_jev_only",
-    "per_class_final_policy", "explicit_false_negative_rate_gold_explicit_to_predicted_safe",
-    "explicit_false_negative_rate_final_policy_gold_explicit_to_predicted_safe",
-    "review_recall_jev_only", "review_recall_final_policy", "coverage",
-    "provider_breakdown", "language_breakdown", "model_consistency", "latency_ms",
-    "usage", "evaluation_identity", "execution",
-)
-_SAFE_CASE_FIELDS = (
-    "case_id", "gold_class", "jev_prediction", "policy_prediction",
-    "inference_attempted", "response_received", "reported_model", "input_tokens",
-    "output_tokens", "failure_code", "provider_override_applied",
-    "provider_override_changed_prediction",
-)
+_REPORT_OUTCOMES = (*GOLD_CLASSES, "unknown", "unavailable", "skipped")
+_REPORT_PROVIDERS = ("tmdb", "igdb", "spotify", "openlibrary")
+_REPORT_LANGUAGES = ("en", "es", "other")
+_GO_NO_GO_REASONS = frozenset({
+    "representative_human_adjudicated_live_sample_not_established",
+    "representativeness_not_attested",
+    "go_no_go_thresholds_not_supplied_or_approved",
+    "no_human_adjudicated_catalog_cases",
+    "mixed_model_versions_are_ineligible_for_single_version_go_no_go",
+    "one_or_more_response_model_versions_are_unresolved",
+})
+_OMIT = object()
+_RATE = object()
+
+
+def _map(allowed_keys, value_schema):
+    return ("map", allowed_keys, value_schema)
+
+
+def _list(value_schema):
+    return ("list", value_schema)
+
+
+_RATE_SCHEMA = {
+    "value": "fraction_or_null",
+    "numerator": "count",
+    "denominator": "count",
+}
+_COUNTS_BY_CLASS = _map(GOLD_CLASSES, "count")
+_COUNTS_BY_OUTCOME = _map(_REPORT_OUTCOMES, "count")
+_MATRIX = _map(GOLD_CLASSES, _COUNTS_BY_OUTCOME)
+_PER_CLASS = _map(GOLD_CLASSES, {
+    "true_positive": "count",
+    "false_positive": "count",
+    "false_negative": "count",
+    "support": "count",
+    "precision": _RATE,
+    "recall": _RATE,
+})
+_COVERAGE = {
+    "case_count": "count",
+    "outcome_counts": _COUNTS_BY_OUTCOME,
+    "outcome_rates": _map(_REPORT_OUTCOMES, _RATE),
+    "needs_review_abstention_rate": _RATE,
+}
+_QUALITY = {
+    "per_class": _PER_CLASS,
+    "explicit_false_negative_rate_gold_explicit_to_predicted_safe": _RATE,
+    "review_recall_gold_needs_review": _RATE,
+    "coverage": _COVERAGE,
+}
+_BREAKDOWN_ENTRY = {
+    "case_count": "count",
+    "gold_class_counts": _COUNTS_BY_CLASS,
+    "jev_prediction_counts": _COUNTS_BY_OUTCOME,
+    "final_policy_prediction_counts": _COUNTS_BY_OUTCOME,
+    "quality": {"jev_only": _QUALITY, "final_policy": _QUALITY},
+}
+_TOKEN_TOTAL = {"known_total": "count", "reported_case_count": "count"}
+_USAGE = {
+    "inference_count": "count",
+    "missing_usage_count": "count",
+    "input_tokens": _TOKEN_TOTAL,
+    "output_tokens": _TOKEN_TOTAL,
+    "cost": {
+        "input_price_per_million_tokens": "price_or_null",
+        "output_price_per_million_tokens": "price_or_null",
+        "price_provenance": "provenance_or_null",
+        "known_usage_cost_usd": "price_or_null",
+        "total_usd": "price_or_null",
+        "status": "cost_status",
+    },
+}
+_LIVE_REPORT_SCHEMA = {
+    "go_no_go": {
+        "reasons": _list("go_no_go_reason"),
+        "human_adjudicated_case_count": "count",
+        "synthetic_case_count": "count",
+        "single_version_eligible": "bool",
+    },
+    "case_count": "count",
+    "confusion_matrix_jev_only": _MATRIX,
+    "confusion_matrix_policy_including_provider_override": _MATRIX,
+    "per_class_jev_only": _PER_CLASS,
+    "per_class_final_policy": _PER_CLASS,
+    "explicit_false_negative_rate_gold_explicit_to_predicted_safe": _RATE,
+    "explicit_false_negative_rate_final_policy_gold_explicit_to_predicted_safe": _RATE,
+    "review_recall_jev_only": _RATE,
+    "review_recall_final_policy": _RATE,
+    "coverage": {
+        "total_case_count": "count",
+        "jev_only": _COVERAGE,
+        "final_policy": _COVERAGE,
+    },
+    "provider_breakdown": _map(_REPORT_PROVIDERS, _BREAKDOWN_ENTRY),
+    "language_breakdown": _map(_REPORT_LANGUAGES, _BREAKDOWN_ENTRY),
+    "model_consistency": {
+        "resolved_model_counts": _map("model_ids", "count"),
+        "mixed_model_versions": "bool",
+        "unresolved_response_model_count": "count",
+        "single_version_eligible": "bool",
+    },
+    "latency_ms": {
+        "supplied_count": "count",
+        "missing_count": "count",
+        "p50": "nonnegative_number_or_null",
+        "p95": "nonnegative_number_or_null",
+    },
+    "usage": _USAGE,
+    "evaluation_identity": {
+        "requested_model": "model_id",
+        "question_revision": "revision",
+        "policy": {
+            "name": "policy_name",
+            "revision": "revision",
+            "thresholds": {
+                "safe_min": "fraction",
+                "explicit_at": "fraction",
+                "review_at": "fraction",
+            },
+        },
+    },
+    "execution": {
+        "selected_case_count": "count",
+        "classify_invocation_count": "count",
+        "provider_override_no_call_count": "count",
+        "evaluator_retry_count": "count",
+    },
+    "cases": _list({
+        "case_id": "case_id",
+        "gold_class": "gold_class",
+        "jev_prediction": "prediction",
+        "policy_prediction": "prediction",
+        "inference_attempted": "bool",
+        "response_received": "bool",
+        "reported_model": "model_id_or_null",
+        "input_tokens": "count_or_null",
+        "output_tokens": "count_or_null",
+        "failure_code": "failure_code_or_null",
+        "provider_override_applied": "bool",
+        "provider_override_changed_prediction": "bool",
+    }),
+}
 
 
 @contextmanager
@@ -57,18 +188,115 @@ def _suppress_typesafe_sdk_logs():
         logger.disabled = was_disabled
 
 
+def _project(value: Any, schema: Any) -> Any:
+    """Project one report node through an explicit schema and strict scalar types."""
+    if schema is _RATE:
+        if not isinstance(value, Mapping):
+            return _OMIT
+        result = _project(value, _RATE_SCHEMA)
+        if result is _OMIT or any(field not in result for field in _RATE_SCHEMA):
+            return _OMIT
+        result["display"] = "N/A" if result["value"] is None else f"{result['value'] * 100:.2f}%"
+        return result
+    if isinstance(schema, dict):
+        if not isinstance(value, Mapping):
+            return _OMIT
+        return {
+            field: projected for field, field_schema in schema.items()
+            if field in value and (projected := _project(value[field], field_schema)) is not _OMIT
+        }
+    if isinstance(schema, tuple) and schema[0] == "map":
+        if not isinstance(value, Mapping):
+            return _OMIT
+        allowed, child_schema = schema[1:]
+        return {
+            key: projected for key, raw in value.items()
+            if isinstance(key, str)
+            and ((allowed == "model_ids" and _MODEL_ID_RE.fullmatch(key)) or (allowed != "model_ids" and key in allowed))
+            and (projected := _project(raw, child_schema)) is not _OMIT
+        }
+    if isinstance(schema, tuple) and schema[0] == "list":
+        if not isinstance(value, (list, tuple)):
+            return _OMIT
+        return [projected for raw in value if (projected := _project(raw, schema[1])) is not _OMIT]
+    if schema == "count":
+        return value if type(value) is int and value >= 0 else _OMIT
+    if schema in {"fraction", "fraction_or_null"}:
+        if schema == "fraction_or_null" and value is None:
+            return None
+        return value if type(value) in (int, float) and math.isfinite(value) and 0 <= value <= 1 else _OMIT
+    if schema == "nonnegative_number_or_null":
+        if value is None:
+            return None
+        return value if type(value) in (int, float) and math.isfinite(value) and value >= 0 else _OMIT
+    if schema == "count_or_null":
+        return None if value is None else value if type(value) is int and value >= 0 else _OMIT
+    if schema in {"bool", "policy_name", "cost_status", "go_no_go_reason", "gold_class", "prediction", "case_id", "model_id", "model_id_or_null", "revision", "failure_code_or_null", "price_or_null", "provenance_or_null"}:
+        if schema in {"bool"}:
+            return value if type(value) is bool else _OMIT
+        if schema == "policy_name":
+            return value if value == "compose_policy" else _OMIT
+        if schema == "cost_status":
+            return value if value in {"complete", "incomplete_usage", "no_inference_usage", "not_priced", "missing_price_rate"} else _OMIT
+        if schema == "go_no_go_reason":
+            return value if isinstance(value, str) and value in _GO_NO_GO_REASONS else _OMIT
+        if schema == "gold_class":
+            return value if isinstance(value, str) and value in GOLD_CLASSES else _OMIT
+        if schema == "prediction":
+            return value if isinstance(value, str) and value in PREDICTIONS else _OMIT
+        if schema == "case_id":
+            return value if isinstance(value, str) and CASE_ID_RE.fullmatch(value) else _OMIT
+        if schema in {"model_id", "model_id_or_null"}:
+            return None if schema == "model_id_or_null" and value is None else value if isinstance(value, str) and _MODEL_ID_RE.fullmatch(value) else _OMIT
+        if schema == "revision":
+            return value if isinstance(value, str) and _REVISION_RE.fullmatch(value) else _OMIT
+        if schema == "failure_code_or_null":
+            return None if value is None else value if isinstance(value, str) and re.fullmatch(r"^[a-z][a-z0-9_]{0,47}$", value) else _OMIT
+        if schema == "price_or_null":
+            if value is None:
+                return None
+            if not isinstance(value, str) or len(value) > 64 or not _PRICE_RE.fullmatch(value):
+                return _OMIT
+            try:
+                price = Decimal(value)
+            except InvalidOperation:
+                return _OMIT
+            return value if price.is_finite() and price >= 0 else _OMIT
+        if schema == "provenance_or_null":
+            return None if value is None else value if isinstance(value, str) and _PROVENANCE_RE.fullmatch(value) else _OMIT
+    return _OMIT
+
+
 def _safe_live_report(report: dict[str, Any]) -> dict[str, Any]:
-    """Project the evaluator result onto stable metrics and opaque case outcomes."""
-    projected = {field: report[field] for field in _SAFE_REPORT_FIELDS if field in report}
-    execution = projected.get("execution")
-    if isinstance(execution, dict):
-        execution["retry_scope"] = (
+    """Project every report object through its allowlisted schema; never pass nested data through."""
+    projected: dict[str, Any] = {"schema_version": REPORT_SCHEMA_VERSION}
+    if not isinstance(report, Mapping):
+        return {**projected, "cases": []}
+    for field, schema in _LIVE_REPORT_SCHEMA.items():
+        if field not in report:
+            continue
+        value = _project(report[field], schema)
+        if value is not _OMIT:
+            projected[field] = value
+    if "go_no_go" in projected:
+        projected["go_no_go"]["status"] = "INSUFFICIENT"
+    if "execution" in projected:
+        projected["execution"]["retry_scope"] = (
             "production TypeSafe adapter retries disabled; evaluator retries disabled"
         )
-    projected["cases"] = [
-        {field: case[field] for field in _SAFE_CASE_FIELDS if field in case}
-        for case in report.get("cases", [])
-    ]
+    if "latency_ms" in projected:
+        projected["latency_ms"]["source"] = (
+            "measured wall time around injected classify calls only; includes adapter behavior, "
+            "excludes aggregation, and is not Jev service-only latency"
+        )
+    if "usage" in projected and "cost" in projected["usage"]:
+        projected["usage"]["cost"]["currency"] = "USD"
+    if "cases" not in projected:
+        projected["cases"] = []
+    else:
+        projected["cases"] = [
+            case for case in projected["cases"] if isinstance(case, dict) and "case_id" in case
+        ]
     return projected
 
 
