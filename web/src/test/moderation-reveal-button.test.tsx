@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import { ContentCard } from "@/components/common/cards/ContentCard";
-import { ModerationRevealButton } from "@/components/common/cards/ContentCard/ModerationRevealButton";
+import { ModerationRevealButton } from "@/components/common/media/ModerationRevealButton";
 import type { Content } from "@/lib/types";
 
 vi.mock("@/hooks/useAuthRequiredAction", () => ({

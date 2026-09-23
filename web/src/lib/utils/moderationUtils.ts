@@ -32,6 +32,11 @@ export function parseModerationSummary(value: unknown): ModerationSummary | null
 
 export function shouldBlurModerationArtwork(
   summary: ModerationSummary | null | undefined,
+  allowAdultContent = false,
 ): boolean {
-  return summary?.status === "complete" && summary.classification === "explicit";
+  return (
+    !allowAdultContent &&
+    summary?.status === "complete" &&
+    summary.classification === "explicit"
+  );
 }

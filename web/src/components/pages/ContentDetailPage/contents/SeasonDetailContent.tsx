@@ -11,6 +11,8 @@ import { formatReleaseDate } from "@/lib/utils/dateUtils";
 import { cn } from "@/lib/utils/tailwindUtils";
 import { PlatformsDisplay } from "../platforms/PlatformsDisplay";
 import { RatingsSection } from "../components/RatingsSection";
+import { ModerationRevealButton } from "@/components/common/media/ModerationRevealButton";
+import { useModerationArtworkReveal } from "@/components/common/media/useModerationArtworkReveal";
 
 interface SeasonDetailContentProps {
   season: TVSeasonDetail;
@@ -20,6 +22,7 @@ interface SeasonDetailContentProps {
   onDeleteRating?: () => void;
   isRatingLoading?: boolean;
   user?: { id: number } | null;
+  allowAdultContent?: boolean;
 }
 
 export function SeasonDetailContent({
@@ -30,9 +33,18 @@ export function SeasonDetailContent({
   onDeleteRating,
   isRatingLoading,
   user,
+  allowAdultContent = false,
 }: SeasonDetailContentProps) {
   const [activeEpisodeIndex, setActiveEpisodeIndex] = useState<number | null>(null);
   const episodes = useMemo(() => season.episodes ?? [], [season.episodes]);
+  const artwork = useModerationArtworkReveal(
+    {
+      id: contentItem?.id ?? season.id,
+      image_url: episodes.find((episode) => episode.image_url)?.image_url,
+    },
+    contentItem?.moderation,
+    allowAdultContent,
+  );
   const releaseDate = formatReleaseDate(season.release_date);
 
   const normalizedPlatforms = normalizeContentPlatforms(season.platforms);
@@ -126,12 +138,21 @@ export function SeasonDetailContent({
       {/* Episodes Section */}
       {episodes.length > 0 && (
         <div className="layout-content mt-8">
-          <h2 className="text-2xl font-bold text-white mb-6">Episodes</h2>
+          <div className="mb-6 flex items-center justify-between gap-4">
+            <h2 className="text-2xl font-bold text-white">Episodes</h2>
+            {artwork.requiresBlur ? (
+              <ModerationRevealButton
+                isRevealed={artwork.isRevealed}
+                onToggle={artwork.toggle}
+              />
+            ) : null}
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
             {episodes.map((episode) => (
               <EpisodeCard
                 key={episode.id}
                 episode={episode}
+                isArtworkBlurred={artwork.isBlurred}
                 onOpenGallery={
                   episodeGalleryIndex.has(episode.id)
                     ? () => setActiveEpisodeIndex(episodeGalleryIndex.get(episode.id) ?? null)
@@ -149,6 +170,7 @@ export function SeasonDetailContent({
               if (!open) setActiveEpisodeIndex(null);
             }}
             onIndexChange={setActiveEpisodeIndex}
+            isImageBlurred={artwork.isBlurred}
           />
         </div>
       )}

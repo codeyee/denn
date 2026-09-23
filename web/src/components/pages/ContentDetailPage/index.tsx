@@ -31,6 +31,7 @@ interface ContentDetailPageProps {
   initialContentItem?: ContentItem;
   isAuthenticated: boolean;
   viewerId?: number;
+  allowAdultContent?: boolean;
 }
 
 export function ContentDetailPage({
@@ -39,6 +40,7 @@ export function ContentDetailPage({
   initialContentItem,
   isAuthenticated,
   viewerId,
+  allowAdultContent = false,
 }: ContentDetailPageProps) {
   const { user } = useAuthStore();
   const activeUser = isAuthenticated ? user : null;
@@ -204,11 +206,14 @@ export function ContentDetailPage({
               });
             }}
             onDeleteTracking={() => void handleDeleteTracking()}
+            moderationSummary={contentItem.moderation}
+            allowAdultContent={isAuthenticated && allowAdultContent}
           />
 
           <AboutSection
             detailData={detailData}
             contentItem={contentItem}
+            allowAdultContent={isAuthenticated && allowAdultContent}
             userRating={rating.userRating}
             user={activeUser}
             isRatingLoading={rating.isRatingLoading}
@@ -238,6 +243,7 @@ export function ContentDetailPage({
           <GallerySection
             detailData={detailData}
             contentItem={contentItem}
+            allowAdultContent={isAuthenticated && allowAdultContent}
           />
 
           <ApiAttribution contentItem={contentItem} />

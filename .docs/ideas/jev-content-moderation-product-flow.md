@@ -22,6 +22,7 @@ The preview applies artwork blur only to a `complete` judgment classified as `ex
 
 - Classify new content close to full-detail ingestion and reuse its judgment across surfaces rather than classifying separately for each view.
 - Blur explicit artwork by default on detail pages and let the user reveal it. The request does not ask to block direct detail access.
+- Detail pages use the existing `allow_adult_content` account preference: anonymous, false, or missing values blur only current `complete`/`explicit` banner, gallery, and episode artwork; true displays it normally. Local reveal never changes the saved preference. Unknown and non-explicit moderation statuses remain visible and unblurred.
 - [x] Exclude currently classified explicit content from homepage suggestions before selecting the featured banner and carousels. This Web slice uses Core's one-call bulk response; uncertain, stale, missing, malformed, and unresolved results remain visible with any stored status intact.
 - Run a bounded batch for initial legacy coverage and provide a human-review path for `needs_review` items.
 - Later, provide a simple authenticated `/admin` surface to view content, start classification, find `needs_review` items, and submit a manual classification.
@@ -44,7 +45,7 @@ This direction fits the existing split: Proxy owns provider calls and its homepa
 | Decision | Why it remains open |
 | --- | --- |
 | Pending detail behavior | Choose whether detail remains available while classification is pending and whether the image-free placeholder is required, or whether another safe presentation is preferred. Blocking the public detail response on Jev latency is not recommended, but the product behavior is not ratified. |
-| `needs_review` on non-homepage surfaces | The homepage rule now explicitly leaves `needs_review` visible as requested. Behavior for other discovery and detail surfaces remains outside this slice. |
+| `needs_review` on non-homepage surfaces | The homepage and detail-artwork rules leave `needs_review` visible and unblurred. Search, Browse, list annotations, and other non-detail surfaces remain outside this slice. |
 | Reclassification and rehydration | Core identifies stale summaries against the current-source hash during bulk resolution, but when to schedule reclassification is open. Web does not immediately invalidate the 5-minute client cache when a judgment changes. |
 | Classification worker | Choose the queue/worker or equivalent execution mechanism, coalescing and retry behavior, and rate/cost bounds. The current detail path is synchronous and the manual command is not an ingestion scheduler. |
 | Admin authority and manual classification | Choose the authentication role, permitted actions, whether an admin may override a model judgment or only request a new run, and required audit fields. |

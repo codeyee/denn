@@ -19,8 +19,8 @@ import { AddToListModal } from "@/components/common/modals/AddToListModal";
 import { usePrefetchContentDetail } from "@/lib/api/queries/usePrefetchContentDetail";
 import { useHoverPrefetch } from "@/lib/perf/useHoverPrefetch";
 import { useContentCardModal } from "./hooks/useContentCardModal";
-import { useModerationArtworkReveal } from "./hooks/useModerationArtworkReveal";
-import { ModerationRevealButton } from "./ModerationRevealButton";
+import { useModerationArtworkReveal } from "@/components/common/media/useModerationArtworkReveal";
+import { ModerationRevealButton } from "@/components/common/media/ModerationRevealButton";
 import { useAuthRequiredAction } from "@/hooks/useAuthRequiredAction";
 import {
   getPosterImageUrl,

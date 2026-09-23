@@ -31,6 +31,7 @@ export const Route = createFileRoute("/content/$id")({
       country: context.country,
       isAuthenticated: context.session.isAuthenticated,
       viewerId: context.session.user?.id,
+      allowAdultContent: context.session.user?.allow_adult_content === true,
       initialContentItem,
     };
   },
@@ -141,6 +142,7 @@ function ContentDetailRoute() {
     country,
     isAuthenticated,
     viewerId,
+    allowAdultContent,
     initialContentItem,
   } = Route.useLoaderData();
   return (
@@ -151,6 +153,7 @@ function ContentDetailRoute() {
         country={country}
         isAuthenticated={isAuthenticated}
         viewerId={viewerId}
+        allowAdultContent={allowAdultContent}
         initialContentItem={initialContentItem}
       />
     </div>

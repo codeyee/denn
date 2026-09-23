@@ -53,7 +53,11 @@ discovery browse request.
   means “include reliably classified TMDB results,” not a universal
   cross-provider rating system.
 - Direct id detail remains an explicit lookup and is not hidden by this
-  discovery preference.
+  discovery preference. The persisted `allow_adult_content` preference also
+  controls explicit detail artwork: missing or false blurs only current
+  `complete`/`explicit` artwork; true displays it normally. Anonymous viewers
+  use the safe default. A local reveal changes only the current view, not the
+  saved preference.
 - Logs contain the request route/cache status but not the user's
   preference value.
 
@@ -73,9 +77,25 @@ discovery browse request.
   5-minute React Query `staleTime`. A later judgment change is therefore not
   globally invalidated immediately; the browser can retain hydrated suggestions
   until the query becomes stale and revalidates.
-- This is a homepage discovery rule only. It does not change direct detail,
-  search, Browse, or user preference behavior, and it does not imply that a
-  source-code change has been deployed.
+- This homepage discovery rule does not hide direct detail, search, or Browse
+  results. Detail pages apply a separate visual-artwork rule below and use the
+  existing user preference; neither rule implies that a source-code change
+  has been deployed.
+
+## Jev Moderation on Content Detail
+
+- Blur detail banner artwork, gallery images, and episode stills only when Core returns the
+  exact current summary `status=complete` and `classification=explicit` and the
+  viewer is anonymous or has `allow_adult_content=false` (including a missing
+  preference value). A true preference displays that artwork normally.
+- Missing, pending, stale, error, unknown, malformed, and `needs_review` summaries stay
+  visible without blur and retain their stored status. Detail lookup remains
+  available; moderation does not block access to the content page.
+- The icon-only Eye/EyeOff controls reveal artwork only in the current view.
+  They do not write the account preference. SSR and hydration use the same
+  session preference, with anonymous/missing values defaulting to blur.
+- CSS blur is a presentation affordance, not access control. The underlying
+  image URLs and image responses remain accessible.
 
 ## Development Moderation Preview
 

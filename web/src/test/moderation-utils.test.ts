@@ -44,4 +44,22 @@ describe("moderation summary handling", () => {
     expect(shouldBlurModerationArtwork({ status: "stale", classification: null })).toBe(false);
     expect(shouldBlurModerationArtwork(undefined)).toBe(false);
   });
+
+  it("honors adult-content opt-in only for complete explicit artwork", () => {
+    const explicit = { status: "complete", classification: "explicit" } as const;
+    expect(shouldBlurModerationArtwork(explicit, false)).toBe(true);
+    expect(shouldBlurModerationArtwork(explicit, true)).toBe(false);
+    expect(
+      shouldBlurModerationArtwork(
+        { status: "complete", classification: "needs_review" },
+        false,
+      ),
+    ).toBe(false);
+    for (const status of ["missing", "pending", "stale", "error"] as const) {
+      expect(
+        shouldBlurModerationArtwork({ status, classification: null }, false),
+      ).toBe(false);
+    }
+    expect(shouldBlurModerationArtwork(undefined, false)).toBe(false);
+  });
 });
