@@ -2,15 +2,18 @@ from datetime import timedelta
 
 from django.test import TestCase
 from django.utils import timezone
+from rest_framework.test import APIRequestFactory
 from drf_spectacular.generators import SchemaGenerator
 
 from content.models import ContentItem, ContentModerationJudgment
 from content.moderation.summary import (
+    _source_hash,
     latest_moderation_prefetch,
     moderation_summary,
     with_moderation_summary,
 )
 from content.serializers import ContentItemSerializer, LocalContentSummarySerializer
+from content.views.content_item import ContentItemDetailByIdView
 
 
 class ModerationSummaryApiTests(TestCase):
@@ -162,6 +165,79 @@ class ModerationSummaryApiTests(TestCase):
             {"status": "complete", "classification": "explicit"},
         )
 
+    def test_complete_judgment_is_stale_when_response_source_hash_differs(self):
+        source_data = {"title": "Current title", "description": "Current description"}
+        self.create_judgment(
+            status=ContentModerationJudgment.Status.COMPLETE,
+            classification=ContentModerationJudgment.Classification.SAFE,
+        )
+
+        summary = moderation_summary(self.item, source_data=source_data)
+
+        self.assertEqual(summary, {"status": "stale", "classification": None})
+
+    def test_complete_judgment_matches_source_hash_of_actual_response(self):
+        source_data = {"title": "Current title", "description": "Current description"}
+        judgment = self.create_judgment(
+            status=ContentModerationJudgment.Status.COMPLETE,
+            classification=ContentModerationJudgment.Classification.SAFE,
+        )
+        ContentModerationJudgment.objects.filter(pk=judgment.pk).update(
+            source_data_hash=_source_hash(self.item, source_data)
+        )
+        self.item.refresh_from_db()
+
+        summary = ContentItemSerializer(
+            self.item,
+            context={"source_data_cache": {self.item.id: source_data}},
+        ).data["moderation"]
+
+        self.assertEqual(summary, {"status": "complete", "classification": "safe"})
+
+    def test_detail_api_compares_against_refreshed_response_payload(self):
+        from unittest.mock import patch
+
+        source_data = {"title": "Refreshed title", "description": "Refreshed text"}
+        self.create_judgment(
+            status=ContentModerationJudgment.Status.COMPLETE,
+            classification=ContentModerationJudgment.Classification.EXPLICIT,
+        )
+        request = APIRequestFactory().get(f"/api/content/{self.item.pk}/")
+
+        with patch(
+            "content.services.source_data_orchestrator.fetch_bulk_source_data",
+            return_value={self.item.pk: source_data},
+        ):
+            response = ContentItemDetailByIdView.as_view()(request, id=self.item.pk)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.data["moderation"],
+            {"status": "stale", "classification": None},
+        )
+        self.assertEqual(response.data["source_data"], source_data)
+
+    def test_annotated_summary_uses_source_hash_without_extra_query(self):
+        source_data = {"title": "Current title", "description": "Current description"}
+        judgment = self.create_judgment(
+            status=ContentModerationJudgment.Status.COMPLETE,
+            classification=ContentModerationJudgment.Classification.EXPLICIT,
+        )
+        ContentModerationJudgment.objects.filter(pk=judgment.pk).update(
+            source_data_hash=_source_hash(self.item, source_data)
+        )
+
+        with self.assertNumQueries(1):
+            item = with_moderation_summary(
+                ContentItem.objects.filter(pk=self.item.pk)
+            ).get()
+            summary = moderation_summary(item, source_data=source_data)
+
+        self.assertEqual(
+            summary,
+            {"status": "complete", "classification": "explicit"},
+        )
+
     def test_summary_contains_only_public_fields(self):
         self.create_judgment(
             status=ContentModerationJudgment.Status.COMPLETE,
@@ -201,12 +277,21 @@ class ModerationSummaryApiTests(TestCase):
         items = list(queryset)
 
         with self.assertNumQueries(0):
-            content_data = ContentItemSerializer(items, many=True).data
+            content_data = ContentItemSerializer(
+                items,
+                many=True,
+                context={
+                    "source_data_cache": {
+                        self.item.id: {"title": "Changed title"},
+                        second_item.id: {"title": "New title"},
+                    }
+                },
+            ).data
             summary_data = LocalContentSummarySerializer(items, many=True).data
 
         self.assertEqual(
             [item["moderation"]["status"] for item in content_data],
-            ["complete", "missing"],
+            ["stale", "missing"],
         )
         self.assertEqual(
             [item["moderation"]["status"] for item in summary_data],

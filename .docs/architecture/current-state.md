@@ -239,10 +239,14 @@ never include a classification. Only completed allowlisted results map to
 `safe`, `explicit`, or `needs_review`; `unknown` remains null.
 
 This summary performs no classification or policy enforcement. `complete`
-means that the persisted row is complete; the read path does not compare its
-source hash with current content or derive freshness. Consumers must not treat
-it as a freshness guarantee. A future freshness change must make that contract
-explicit rather than treating an old `safe` result as current.
+means that the persisted row is complete only when its source hash matches the
+normalized text in the source payload returned by that content response. The
+id-first detail response uses the payload returned by its local-first refresh,
+so a refresh cannot leave an old `safe` or `explicit` judgment looking current.
+List and local profile summaries still expose the latest stored judgment without
+a current-source comparison; they are not freshness guarantees. Building a
+batched current hash for every local summary remains an open JEV-004 task, and
+consumers must not use those summaries as homepage-safety proof.
 
 See [`content-lifecycle.md`](./content-lifecycle.md).
 Discovery filtering is defined in

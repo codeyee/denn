@@ -157,7 +157,9 @@ Each local content summary also includes the read-only `moderation` status
 and nullable classification documented in
 [`current-state.md`](./current-state.md#read-only-moderation-summary). List
 responses prefetch only the latest persisted judgment; non-complete and
-unknown results do not expose a classification.
+unknown results do not expose a classification. These profile summaries do
+not compare the judgment hash with current normalized source data and are not
+proof that a `safe` result is current.
 
 ## Browser And BFF Behavior
 

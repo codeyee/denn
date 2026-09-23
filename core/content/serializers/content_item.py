@@ -79,7 +79,7 @@ class ContentItemSerializer(BaseFlexSerializer):
                 'source_data': None,
                 'current_user_rating': None,
                 'current_user_tracking': None,
-                'moderation': moderation_summary(obj),
+                'moderation': self.get_moderation(obj),
             },
             'score': rating.score,
             'comment': rating.comment,
@@ -114,7 +114,9 @@ class ContentItemSerializer(BaseFlexSerializer):
 
     @extend_schema_field(ModerationSummarySerializer)
     def get_moderation(self, obj):
-        return moderation_summary(obj)
+        source_data_cache = self.context.get('source_data_cache')
+        source_data = source_data_cache.get(obj.id) if source_data_cache is not None else None
+        return moderation_summary(obj, source_data=source_data)
 
     def _should_include_source_data(self):
         if self.context.get('skip_source_data', False):

@@ -1,8 +1,12 @@
 """Read-only moderation summaries for content API responses."""
 
+import hashlib
+import json
+
 from django.db.models import Exists, OuterRef, Prefetch, Subquery
 
 from content.models import ContentModerationJudgment
+from content.moderation.state import build_moderation_state
 
 
 LATEST_MODERATION_ATTRIBUTE = "latest_moderation_judgments"
@@ -10,6 +14,7 @@ ANNOTATED_MODERATION_FIELDS = (
     "moderation_has_judgment",
     "moderation_status",
     "moderation_classification",
+    "moderation_source_hash",
 )
 
 _PUBLIC_CLASSIFICATIONS = {
@@ -30,6 +35,7 @@ def latest_moderation_prefetch(prefix=""):
                 "requested_at",
                 "status",
                 "classification",
+                "source_data_hash",
             )
             .order_by("-requested_at", "-pk")[:1]
         ),
@@ -46,6 +52,7 @@ def with_moderation_summary(queryset):
         moderation_has_judgment=Exists(latest),
         moderation_status=Subquery(latest.values("status")[:1]),
         moderation_classification=Subquery(latest.values("classification")[:1]),
+        moderation_source_hash=Subquery(latest.values("source_data_hash")[:1]),
     )
 
 
@@ -68,12 +75,24 @@ def _latest_judgment(content_item):
     return judgment
 
 
-def moderation_summary(content_item):
+def _source_hash(content_item, source_data):
+    """Hash the normalized text in the source payload returned by this read."""
+    state = build_moderation_state(
+        provider=content_item.source_api,
+        content_type=content_item.content_type,
+        reconstructed_payload=source_data,
+    )
+    canonical = json.dumps(state, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def moderation_summary(content_item, *, source_data=None):
     """Return the allowlisted API view of the latest persisted judgment.
 
-    This does not infer freshness from the source hash. It only preserves
-    statuses persisted by the classifier and never attaches a classification
-    to pending, stale, errored, or malformed judgments.
+    When the caller has the source payload for the response, compare the
+    judgment identity with that payload. A mismatch is stale, not a current
+    classification. The payload is supplied by the view so detail refreshes
+    are compared with the data actually returned, not an old relation cache.
     """
     if all(hasattr(content_item, field) for field in ANNOTATED_MODERATION_FIELDS):
         has_judgment = content_item.moderation_has_judgment
@@ -99,6 +118,13 @@ def moderation_summary(content_item):
     if status != ContentModerationJudgment.Status.COMPLETE:
         return {"status": status, "classification": None}
 
+    if source_data is not None:
+        try:
+            if judgment_source_hash(content_item) != _source_hash(content_item, source_data):
+                return {"status": "stale", "classification": None}
+        except (TypeError, ValueError):
+            return {"status": "stale", "classification": None}
+
     public_classification = _PUBLIC_CLASSIFICATIONS.get(classification)
     if public_classification is not None:
         return {"status": "complete", "classification": public_classification}
@@ -107,3 +133,11 @@ def moderation_summary(content_item):
         return {"status": "complete", "classification": None}
 
     return {"status": "error", "classification": None}
+
+
+def judgment_source_hash(content_item):
+    """Return the source identity of the latest selected judgment."""
+    if all(hasattr(content_item, field) for field in ANNOTATED_MODERATION_FIELDS):
+        return content_item.moderation_source_hash
+    judgment = _latest_judgment(content_item)
+    return judgment.source_data_hash if judgment is not None else None
