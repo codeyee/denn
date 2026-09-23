@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "build": "vite build",
+    "build": "vite build && node scripts/check-production-moderation-artifacts.mjs",
     "cards:check": "node scripts/optimize-auth-cards.mjs --check",
     "cards:optimize": "node scripts/optimize-auth-cards.mjs --write",
     "start": "node .output/server/index.mjs",
