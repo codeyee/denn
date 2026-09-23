@@ -181,7 +181,9 @@ class EvaluationPreflightCommandTests(SimpleTestCase):
                 with self.assertRaisesRegex(CommandError, "TYPESAFE_API_KEY"):
                     self.run_live()
             with override_settings(MODERATION_CLASSIFICATION_ENABLED=False):
-                with self.assertRaisesRegex(CommandError, "CLASSIFICATION_ENABLED"):
+                with self.assertRaisesRegex(
+                    CommandError, r'exact case-sensitive string "True"'
+                ):
                     self.run_live()
             client_factory.assert_not_called()
 

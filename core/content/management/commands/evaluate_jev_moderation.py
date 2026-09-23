@@ -464,7 +464,10 @@ class Command(BaseCommand):
         if not pinned_model:
             raise CommandError("live evaluation requires a concrete pinned MODERATION_MODEL")
         if inference_candidates and not classifier_enabled:
-            raise CommandError("live evaluation requires MODERATION_CLASSIFICATION_ENABLED=true")
+            raise CommandError(
+                'live evaluation requires MODERATION_CLASSIFICATION_ENABLED=True '
+                '(set the environment value to the exact case-sensitive string "True")'
+            )
         if inference_candidates and not key_present:
             raise CommandError("live evaluation requires TYPESAFE_API_KEY to be configured")
 
