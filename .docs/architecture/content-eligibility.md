@@ -59,16 +59,25 @@ discovery browse request.
 
 ## Development Moderation Preview
 
-- The Web route `/dev/moderation-preview` exists only in development and
-  presents synthetic examples plus an optional read-only Core lookup by one
-  submitted `ContentItem` ID. The lookup uses the existing Core client and
-  session; fixture cards make no API requests.
+- The Web route `/dev/moderation-preview` presents synthetic examples plus an
+  optional read-only Core lookup by one submitted `ContentItem` ID. The lookup
+  uses the existing Core client and session; fixture cards make no API requests.
+- The route is still registered in the production route graph. Its `beforeLoad`
+  guard calls `notFound()` when `import.meta.env.DEV` is false, which prevents
+  runtime access but does not exclude the route from the graph or built
+  artifact; the production build emitted both client and server route chunks.
+  Remove or exclude it before release and verify the production output. The guard is in
+  [`dev.moderation-preview.tsx`](../../web/src/routes/dev.moderation-preview.tsx).
 - This preview does not activate moderation enforcement or change production
   discovery, direct-search, or adult-preference behavior.
 - Artwork receives a visual blur only for `status=complete` with
   `classification=explicit`. Missing, pending, stale, errored, malformed, and
   `needs_review` summaries are not described as safe. The reveal control does
   not prevent access to the underlying image.
+
+See the [moderation product-flow note](../ideas/jev-content-moderation-product-flow.md)
+for verified production gaps, the requested outcome, the unratified recommendation,
+and decisions that remain open.
 
 ## Verification
 

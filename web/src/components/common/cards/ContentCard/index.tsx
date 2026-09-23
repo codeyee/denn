@@ -204,20 +204,24 @@ export function ContentCard({
             )}
           </Card.Footer>
         </Card>
-        {moderationRequiresBlur ? (
-          <ModerationRevealButton
-            isRevealed={isArtworkRevealed}
-            onToggle={toggleArtworkReveal}
-          />
-        ) : null}
-        {leadingBadgeSlot ? (
-          <div className="pointer-events-none absolute left-3 top-3 z-30">
-            {leadingBadgeSlot}
-          </div>
-        ) : null}
-        {badgeSlot ? (
-          <div className="pointer-events-none absolute right-3 top-3 z-30">
-            {badgeSlot}
+        {moderationRequiresBlur || leadingBadgeSlot || badgeSlot ? (
+          <div className="pointer-events-none absolute inset-x-3 top-3 z-40 flex flex-col items-end gap-2">
+            {leadingBadgeSlot || badgeSlot ? (
+              <div className="flex w-full items-start justify-between gap-2">
+                {leadingBadgeSlot ? (
+                  <div>{leadingBadgeSlot}</div>
+                ) : (
+                  <span aria-hidden="true" className="flex-1" />
+                )}
+                {badgeSlot ? <div>{badgeSlot}</div> : null}
+              </div>
+            ) : null}
+            {moderationRequiresBlur ? (
+              <ModerationRevealButton
+                isRevealed={isArtworkRevealed}
+                onToggle={toggleArtworkReveal}
+              />
+            ) : null}
           </div>
         ) : null}
         {footerSlot ? (

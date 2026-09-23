@@ -213,6 +213,11 @@ Jev supplies independent typed judgments; application code owns precedence, thre
   - Acceptance: shadow mode produces zero visible behavior change; enforcement flags apply surface-specific behavior; accessibility, stable layout, SSR, and cache keys are preserved.
   - Checks: policy/component tests, `make validate-web`, browser scenarios for default and opt-in users.
   - Route: delegated; writer trigger.
+  - [ ] **JEV-005-REVEAL — Keep explicit-artwork reveal control in an upper corner**
+    - Scope: replace the centered text pill with a compact icon-only Eye/EyeOff button, preserve its accessible name and pressed state, reserve space below both top badge slots, and prevent its click from triggering card navigation.
+    - Guardrail: apply only to complete explicit judgments; preserve development-only route behavior and do not imply the blur blocks image access.
+    - Checks: focused keyboard/touch/accessibility and card-layout tests for both badge slots; mapped Web container Vitest, lint, build, and auth-card budget check.
+    - Route: delegated direct; component, card placement, and tests form one bounded UI behavior.
   - [x] **JEV-005-LOCAL-PREVIEW — Show the moderation visual safely in the local Web app**
     - Scope: add a development-only reachable preview that demonstrates explicit blur, badge, and keyboard reveal states on the shared content-card treatment; use a clearly labeled fixture when no local persisted explicit judgment exists, and distinguish fixture data from Core API data.
     - Guardrails: keep production surfaces unchanged and enforcement in shadow mode; honor existing adult preference semantics; missing, stale, pending, error, or invalid summaries never imply safety; do not expose raw judgment details or imply CSS blur prevents image download.
@@ -232,7 +237,12 @@ Jev supplies independent typed judgments; application code owns precedence, thre
   - Update content eligibility, current architecture, feature documentation, internal API contract if changed, environment reference, and runbooks for backfill/evaluation/rollback.
   - Acceptance: shadow, activation, rollback, model/question/policy versioning, and production safeguards are unambiguous.
   - Checks: documentation links resolve; commands match implementation; final cross-service validation results are recorded.
-- Route: delegated; writer trigger.
+  - Route: delegated; writer trigger.
+  - [ ] **JEV-007-MODERATION-FLOW — Record verified product flow and open decisions**
+    - Scope: add an indexed, explicitly unratified design note that separates current implementation, user-requested outcomes, architecture recommendations, and unresolved product/operational choices; include the development-preview release gate.
+    - Guardrail: do not represent recommendations as approved architecture, implement admin, create an issue, deploy, or run a production backfill.
+    - Checks: linked documentation paths resolve and `git diff --check` passes.
+    - Route: delegated direct; writer trigger for the design note, documentation index, and this tracker.
 
 - [x] **JEV-003B — Resumable rate-bounded moderation backfill command** (command core complete; incremental scheduling stays in JEV-003C)
   - Stacked slices on `stacked-to-main`, all offline-verified, no live Jev call or backfill performed:
