@@ -14,9 +14,11 @@ manifest, and no live platform state is asserted here.
    migrate independently; disable or replace the inherited HTTP `/api/`
    container healthcheck because a worker does not serve HTTP.
 2. **Configure server-only settings.** Set `TYPESAFE_API_KEY` only in Core's
-   server environment. Set `MODERATION_POLICY_MODE=shadow` and enable
-   `MODERATION_CLASSIFICATION_ENABLED` only for the approved collection
-   window. Do not expose the key to Web or browser settings.
+   server environment. Enable `MODERATION_CLASSIFICATION_ENABLED` only for the
+   approved collection window. `MODERATION_POLICY_MODE` has no current runtime
+   consumer and does not control Web presentation. Keep Web visibility off by
+   leaving `WEB_MODERATION_VISIBILITY_ENABLED` unset or `false`; never expose
+   the Jev key to Web or browser settings.
 3. **Start one metadata-preparation worker.** It calls Proxy for queued
    identity-only records; normalized detail writes may enqueue moderation jobs
    when classification is enabled. It does not call Jev or scan the catalog.
@@ -36,9 +38,27 @@ manifest, and no live platform state is asserted here.
    report tokens, duration, estimated cost and bounded error IDs. Never infer
    authorization from `--confirm-live`.
 7. **Keep visible enforcement off until separately approved and validated.**
-   The implemented policy default is `shadow`; no admin panel or production
-   worker deployment is included in this change. Do not invent an enforcement
-   setting that is not present in the deployed application.
+   Core classification enablement does not activate the Web visibility gate.
+   No admin panel or production worker deployment is included in this change.
+   Do not infer production state from repository configuration.
+
+## Web visibility rollout and rollback
+
+`WEB_MODERATION_VISIBILITY_ENABLED` is read only by the Web server and defaults
+to `false`. When `true`, the homepage removes only current complete explicit
+items before hero and carousel selection. Detail artwork is blurred for explicit
+items unless the authenticated viewer has `allow_adult_content=true`. The
+preference changes detail artwork only; it does not restore suppressed homepage
+items. Unknown, pending, stale, incomplete, and `needs_review` summaries remain
+visible. This flag does not protect image URLs from direct access.
+
+After validation and a separately approved release, set the flag to `true` on
+every Web instance and restart them together. To roll back, unset it or set it
+to `false` on every instance, restart, then reload browser clients. The homepage
+query key includes the server-resolved mode so new route loads do not reuse
+results from the other mode. Core's `MODERATION_CLASSIFICATION_ENABLED` and
+`MODERATION_POLICY_MODE` remain separate; neither toggles Web visibility. No
+deployment or production configuration change is asserted here.
 
 ## Local Compose (explicit opt-in)
 

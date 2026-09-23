@@ -9,6 +9,7 @@ import {
 import type { HomepageResponse } from "@/lib/types";
 import { getApiUrl } from "@/lib/env";
 import { getProxyApiKey } from "@/server/proxy";
+import { isWebModerationVisibilityEnabled } from "@/server/moderation-visibility-config";
 
 export async function resolveCatalogContentIds<T extends CatalogResponse>(
   response: T,
@@ -91,8 +92,9 @@ export function resolveHomepageContentIds(
   response: HomepageResponse,
   country: string | null,
   requestId: string,
+  moderationVisibilityEnabled = isWebModerationVisibilityEnabled(),
 ): Promise<HomepageResponse> {
   return resolveCatalogContentIds(response, country, requestId, {
-    suppressCurrentExplicit: true,
+    suppressCurrentExplicit: moderationVisibilityEnabled,
   });
 }

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   parseModerationSummary,
   shouldBlurModerationArtwork,
+  visibleModerationSummary,
 } from "@/lib/utils/moderationUtils";
 
 describe("moderation summary handling", () => {
@@ -43,6 +44,13 @@ describe("moderation summary handling", () => {
     expect(shouldBlurModerationArtwork({ status: "missing", classification: null })).toBe(false);
     expect(shouldBlurModerationArtwork({ status: "stale", classification: null })).toBe(false);
     expect(shouldBlurModerationArtwork(undefined)).toBe(false);
+  });
+
+  it("suppresses moderation-driven detail artwork when Web visibility is disabled", () => {
+    const explicit = { status: "complete", classification: "explicit" } as const;
+
+    expect(visibleModerationSummary(explicit, false)).toBeUndefined();
+    expect(visibleModerationSummary(explicit, true)).toEqual(explicit);
   });
 
   it("honors adult-content opt-in only for complete explicit artwork", () => {

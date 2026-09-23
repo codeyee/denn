@@ -19,6 +19,7 @@ describe("homepage moderation resolution", () => {
   });
 
   it("resolves once, removes only current explicit items, and keeps remaining statuses and order", async () => {
+    vi.stubEnv("WEB_MODERATION_VISIBILITY_ENABLED", "true");
     vi.stubEnv("PROXY_API_KEY", "test-key");
     const fetchMock = vi.fn().mockResolvedValue(
       Response.json({
@@ -91,6 +92,29 @@ describe("homepage moderation resolution", () => {
     expect(featuredIds.every((id) =>
       response.movies.results.some((item) => item.id === id),
     )).toBe(true);
+  });
+
+  it("keeps homepage moderation off by default and does not attach moderation summaries", async () => {
+    vi.stubEnv("WEB_MODERATION_VISIBILITY_ENABLED", "false");
+    const fetchMock = vi.fn().mockResolvedValue(
+      Response.json({
+        results: [
+          resolved(1, "explicit", ContentType.MOVIE, "complete", "explicit"),
+        ],
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await resolveHomepageContentIds(
+      homepage([["explicit", "Explicit"]]),
+      null,
+      requestId,
+    );
+
+    expect(response.movies.results).toHaveLength(1);
+    expect(response.movies.results[0]?.id).toBe("explicit");
+    expect(response.movies.results[0]?.moderation).toBeUndefined();
+    expect(response.movies.results[0]?.denn_id).toBe(1);
   });
 
   it("leaves unresolved catalog items visible when Core returns no identity", async () => {

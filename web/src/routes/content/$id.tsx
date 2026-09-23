@@ -11,6 +11,7 @@ import { ContentDetailSkeleton } from "@/components/pages/ContentDetailPage/Cont
 import { prefetchContentDetailQueries } from "@/lib/api/queries/server";
 import { ContentType, type ContentItem } from "@/lib/types";
 import { formatSeasonTitle } from "@/lib/utils/titleUtils";
+import { getWebModerationVisibilityEnabledFn } from "@/server/moderation-visibility";
 
 export const Route = createFileRoute("/content/$id")({
   loader: async ({ context, params }) => {
@@ -19,6 +20,8 @@ export const Route = createFileRoute("/content/$id")({
       throw redirect({ to: "/" });
     }
 
+    const moderationVisibilityEnabled =
+      await getWebModerationVisibilityEnabledFn();
     const initialContentItem = await prefetchContentDetailQueries(
       context.queryClient,
       context.session,
@@ -29,6 +32,7 @@ export const Route = createFileRoute("/content/$id")({
     return {
       contentId,
       country: context.country,
+      moderationVisibilityEnabled,
       isAuthenticated: context.session.isAuthenticated,
       viewerId: context.session.user?.id,
       allowAdultContent: context.session.user?.allow_adult_content === true,
@@ -143,6 +147,7 @@ function ContentDetailRoute() {
     isAuthenticated,
     viewerId,
     allowAdultContent,
+    moderationVisibilityEnabled,
     initialContentItem,
   } = Route.useLoaderData();
   return (
@@ -154,6 +159,7 @@ function ContentDetailRoute() {
         isAuthenticated={isAuthenticated}
         viewerId={viewerId}
         allowAdultContent={allowAdultContent}
+        moderationVisibilityEnabled={moderationVisibilityEnabled}
         initialContentItem={initialContentItem}
       />
     </div>

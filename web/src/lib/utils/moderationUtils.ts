@@ -30,6 +30,13 @@ export function parseModerationSummary(value: unknown): ModerationSummary | null
   }
 }
 
+export function visibleModerationSummary(
+  summary: ModerationSummary | undefined,
+  visibilityEnabled: boolean,
+): ModerationSummary | undefined {
+  return visibilityEnabled ? summary : undefined;
+}
+
 export function shouldBlurModerationArtwork(
   summary: ModerationSummary | null | undefined,
   allowAdultContent = false,
