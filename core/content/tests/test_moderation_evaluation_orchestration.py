@@ -8,6 +8,7 @@ from unittest.mock import patch
 
 from content.moderation.client import JevModerationClient, ModerationJudgment, UsageTokens
 from content.moderation.errors import ModerationSkipped, ModerationUnavailable
+import content.moderation.evaluation_orchestration as evaluator
 from content.moderation.evaluation_orchestration import evaluate_dataset
 from content.moderation.policy import PolicyThresholds
 
@@ -91,6 +92,28 @@ class ModerationEvaluationOrchestrationTests(unittest.TestCase):
             self.assertNotIn(case["state"]["description"], serialized)
         self.assertEqual(report["evaluation_identity"]["question_revision"], "q3")
         self.assertEqual(report["evaluation_identity"]["policy"]["name"], "compose_policy")
+
+    def test_latency_stops_before_result_parsing_and_policy_composition(self):
+        dataset = load_fixture()
+        selected = dataset["cases"][1]["case_id"]
+        now_ns = [0]
+
+        class AdvancingClient:
+            def classify(self, state):
+                now_ns[0] += 10_000_000
+                return judgment(0.9, 0.1, 0.1)
+
+        parse_result = evaluator._judgment_result
+
+        def slow_parse(case, result, thresholds):
+            now_ns[0] += 100_000_000
+            return parse_result(case, result, thresholds)
+
+        with patch.object(evaluator.time, "perf_counter_ns", side_effect=lambda: now_ns[0]):
+            with patch.object(evaluator, "_judgment_result", side_effect=slow_parse):
+                report = self.evaluate(dataset, AdvancingClient(), selected_case_ids=[selected])
+
+        self.assertEqual(report["latency_ms"]["p50"], 10)
 
     def test_actual_adapter_is_injected_without_constructing_sdk(self):
         calls = []
