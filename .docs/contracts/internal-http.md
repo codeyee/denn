@@ -316,7 +316,15 @@ resolve discovery results to internal ids before rendering links.
   never included. A completed judgment with an unknown classification is
   represented as `complete` with a null classification.
 - New detail is materialized later through the trusted `core` -> `proxy`
-  path; the bulk endpoint does not duplicate discovery fetches.
+  path; the bulk endpoint does not synchronously fetch provider data. It
+  records a durable metadata-preparation job for identities with no normalized
+  detail, up to a 1,000-job active backlog cap. Admission rotates through
+  repeated request candidates as capacity returns. A known normalized detail
+  row is not fetched again only because its moderation source hash is null;
+  legacy hash backfill remains an operator action. Caller-supplied
+  `source_data` remains untrusted and is never persisted. Saturation can leave
+  candidates unqueued until a later resolution request; provider calls remain
+  the responsibility of a future bounded worker.
 - Hover, focus, and navigation must never call
   `POST /api/content/get-or-create/`; those interactions are pure reads
   against the already-resolved id.

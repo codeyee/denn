@@ -375,14 +375,24 @@ Jev supplies independent typed judgments; application code owns precedence, thre
     - Rollback boundary: revert the worker work-unit commit and its tracker evidence; this removes only the worker service, command, focused worker/GET guard tests, and worker documentation, leaving the JEV-003C outbox and judgment data intact.
     - Commit identity: Conventional Commit `feat(content): process incremental moderation outbox jobs`, full SHA `42ab842` on `agent/jev-moderation-worker`. The worker unit changes 614 lines added and 5 removed (619 authored changed lines), above the ~400-line planning advisory; no required behavior or tests were cut. It is a single cohesive worker behavior with its command, focused tests, and docs; PR slicing remains a separate delivery decision.
 
+  - [x] **JEV-003C-HOMEPAGE-PREP — Admit bounded metadata preparation from identity resolution**
+    - Scope: persist deduplicated Core hydration intent for newly resolved identities with no normalized detail. Do not add a worker, Proxy/Jev call, startup scan, or legacy detail/hash backfill.
+    - Behavior: preserve resolver response shape/order and its one bounded `ContentItem` read; detect existing normalized detail in SQL so a legacy null moderation hash does not trigger a needless fetch. A 1,000-active-job cap bounds accepted future work; a locked singleton round-robin cursor advances repeated batches fairly as capacity returns. Caller metadata is never trusted.
+    - Tests: identity-only intent and repeated-request dedupe, existing legacy detail/hash-null exclusion, fair rotating admission under a saturated one-job test cap, unchanged response order/shape and bounded resolver read.
+    - Verification: `DATABASE_URL='sqlite://:memory:' MODERATION_CLASSIFICATION_ENABLED=False /Users/emmanuel/Workspace/projects/denn/core/.venv/bin/python manage.py test content.tests.test_id_routing.ContentItemBulkResolveTests` -> 13 tests OK; exact full `... manage.py test content` -> 433 tests OK (1 skipped) after the initial report-path sandbox denial and narrowly approved rerun; `... manage.py makemigrations --check --dry-run` -> `No changes detected`; `git diff --check` -> pass.
+    - Runtime harness: N/A; this unit persists local intent only. No provider call, worker, production data, startup scan, or backfill was performed.
+    - Rollback boundary: revert the metadata-preparation model/migration, enqueue helper, resolver side-effect, focused tests, lifecycle/API contract notes, and this tracker entry; existing ContentItem identities, normalized details, hashes, and moderation jobs remain unchanged.
+    - Commit identity: pending implementation commit.
+    - Route: delegated direct; writer trigger for model, migration, service, resolver, tests, docs, and this tracker.
+
 ## Progress and evidence
 
 - Exploration completed by GLM 5.3 Flash in Codex task `01a0c4cd-9ceb-7ba0-a7c1-2d6214d81d8b`.
 - Verified existing authoritative content policy in `.docs/architecture/content-eligibility.md`.
 - Verified existing `UserPreferences.allow_adult_content` and settings UI precedent.
 - Verified no current moderation judgment model or TypeSafe SDK dependency.
-- JEV-002 (JEV-002A, JEV-002B, and JEV-002-Q3), JEV-003B command core, JEV-003C outbox enqueue foundation, and the Core incremental worker are implemented and verified offline. Deployment wiring and remaining JEV-004–JEV-007 work remain pending. JEV-007-MODERATION-FLOW, JEV-005-REVEAL, JEV-005-DETAIL-ARTWORK, and JEV-005-DEV-PREVIEW-RELEASE-GATE are complete.
+- JEV-002 (JEV-002A, JEV-002B, and JEV-002-Q3), JEV-003B command core, JEV-003C outbox enqueue foundation, the Core incremental worker, and bounded homepage metadata-preparation admission are implemented and verified offline. The preparation worker and deployment wiring and remaining JEV-004–JEV-007 work remain pending. JEV-007-MODERATION-FLOW, JEV-005-REVEAL, JEV-005-DETAIL-ARTWORK, and JEV-005-DEV-PREVIEW-RELEASE-GATE are complete.
 
 ## Next step
 
-Next: continue JEV-003B operator review, decide and implement worker process/deployment wiring, and complete the remaining dependent work. Resolve the open product choices in `.docs/ideas/jev-content-moderation-product-flow.md` before activating enforcement. Provider ingestion remains a separate backlog item. Chain strategy stays `stacked-to-main`. No Jev call, production backfill, deployment, push, or PR publication was performed by the worker slice.
+Next: implement the separate bounded metadata-preparation worker, continue JEV-003B operator review and decide worker process/deployment wiring, then complete the remaining dependent work. Resolve the open product choices in `.docs/ideas/jev-content-moderation-product-flow.md` before activating enforcement. Provider ingestion remains a separate backlog item. Chain strategy stays `stacked-to-main`. No Jev call, production backfill, deployment, push, or PR publication was performed by the worker slice.

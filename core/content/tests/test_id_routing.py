@@ -14,7 +14,13 @@ from rest_framework.request import Request
 from rest_framework.test import APITestCase, APIRequestFactory
 from drf_spectacular.generators import SchemaGenerator
 
-from content.models import ContentItem, ContentModerationJudgment, Rating
+from content.models import (
+    ContentItem,
+    ContentMetadataPreparationJob,
+    ContentModerationJudgment,
+    MovieDetail,
+    Rating,
+)
 from core.throttling import CatalogDetailRateThrottle
 
 
@@ -219,6 +225,13 @@ class ContentItemBulkResolveTests(APITestCase):
         self.assertEqual(second.status_code, status.HTTP_200_OK)
         self.assertEqual(first.data['results'][0]['id'], second.data['results'][0]['id'])
         self.assertEqual(ContentItem.objects.filter(external_id='77').count(), 1)
+        self.assertEqual(
+            ContentMetadataPreparationJob.objects.filter(
+                content_item__external_id='77',
+                status=ContentMetadataPreparationJob.Status.QUEUED,
+            ).count(),
+            1,
+        )
         self.assertFalse(
             hasattr(ContentItem.objects.get(external_id='77'), 'movie_detail'),
         )
@@ -226,6 +239,58 @@ class ContentItemBulkResolveTests(APITestCase):
             first.data['results'][0]['moderation'],
             {'status': 'missing', 'classification': None},
         )
+
+    def test_identity_resolution_skips_legacy_detail_even_without_current_hash(self):
+        item = ContentItem.objects.create(
+            source_api=ContentItem.SourceAPI.TMDB,
+            external_id='legacy-detail-no-hash',
+            content_type=ContentItem.ContentType.MOVIE,
+        )
+        MovieDetail.objects.create(content_item=item, title='Already normalized')
+        self.assertIsNone(item.current_moderation_source_hash)
+
+        response = self.client.post(
+            self.url,
+            {'items': [{
+                'source_api': item.source_api,
+                'external_id': item.external_id,
+                'content_type': item.content_type,
+            }]},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(
+            ContentMetadataPreparationJob.objects.filter(content_item=item).exists(),
+        )
+
+    def test_capped_repeated_resolution_rotates_admission(self):
+        identities = [f'fair-preparation-{index}' for index in range(3)]
+        request_data = {'items': [{
+            'source_api': ContentItem.SourceAPI.TMDB,
+            'external_id': external_id,
+            'content_type': ContentItem.ContentType.MOVIE,
+        } for external_id in identities]}
+
+        with patch(
+            'content.services.metadata_preparation_enqueue.MAX_PENDING_METADATA_PREPARATION_JOBS',
+            1,
+        ):
+            first = self.client.post(self.url, request_data, format='json')
+            first_job = ContentMetadataPreparationJob.objects.get()
+            ContentMetadataPreparationJob.objects.filter(pk=first_job.pk).update(
+                status=ContentMetadataPreparationJob.Status.DONE,
+            )
+            second = self.client.post(self.url, request_data, format='json')
+
+        self.assertEqual(first.status_code, status.HTTP_200_OK)
+        self.assertEqual(second.status_code, status.HTTP_200_OK)
+        admitted = set(ContentMetadataPreparationJob.objects.values_list(
+            'content_item__external_id', flat=True,
+        ))
+        self.assertEqual(len(admitted), 2)
+        self.assertIn(first_job.content_item.external_id, admitted)
+        self.assertIn('fair-preparation-1', admitted)
 
     def _create_moderation_judgment(self, item, classification, source_hash):
         ContentItem.objects.filter(pk=item.pk).update(

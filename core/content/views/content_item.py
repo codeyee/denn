@@ -4,12 +4,22 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.generics import get_object_or_404
-from django.db.models import Q
+from django.db.models import Exists, OuterRef, Q
 from django.shortcuts import redirect
 from django.urls import reverse
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiExample, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
-from content.models import ContentItem, Rating, UserContentTracking
+from content.models import (
+    AlbumDetail,
+    BookDetail,
+    ContentItem,
+    GameDetail,
+    MovieDetail,
+    Rating,
+    SeasonDetail,
+    TvShowDetail,
+    UserContentTracking,
+)
 from content.moderation.summary import (
     latest_moderation_prefetch,
     moderation_summary,
@@ -17,6 +27,7 @@ from content.moderation.summary import (
 )
 from content.serializers import ContentItemSerializer
 from content.serializers.moderation_summary import ModerationSummarySerializer
+from content.services.metadata_preparation_enqueue import enqueue_metadata_preparation
 from content.permissions import (
     IsAdminOrReadOnly,
     IsAuthenticatedOrCatalogService,
@@ -427,8 +438,9 @@ class ContentItemDetailByIdView(APIView):
     Denn ids. This endpoint owns identity only; it never trusts
     browser-supplied provider metadata. Each result also includes the
     allowlisted moderation status and classification, checked against the
-    server-materialized current source hash. Missing detail is materialized
-    later through the canonical `core` -> `proxy` path.
+    server-materialized current source hash. Missing detail records bounded,
+    deduplicated preparation intent for a future canonical `core` -> `proxy`
+    worker; this request never performs provider I/O.
     ''',
     request=ContentItemBulkResolveRequestSerializer,
     responses={200: ContentItemBulkResolveResponseSerializer},
@@ -466,7 +478,23 @@ class ContentItemBulkResolveView(APIView):
                 external_id=item['external_id'],
                 content_type=item['content_type'],
             )
-        resolved = with_moderation_summary(ContentItem.objects.filter(query))
+        resolved = list(
+            with_moderation_summary(
+                ContentItem.objects.filter(query).annotate(
+                    has_normalized_detail=(
+                        Exists(MovieDetail.objects.filter(content_item_id=OuterRef('pk')))
+                        | Exists(TvShowDetail.objects.filter(content_item_id=OuterRef('pk')))
+                        | Exists(SeasonDetail.objects.filter(content_item_id=OuterRef('pk')))
+                        | Exists(GameDetail.objects.filter(content_item_id=OuterRef('pk')))
+                        | Exists(AlbumDetail.objects.filter(content_item_id=OuterRef('pk')))
+                        | Exists(BookDetail.objects.filter(content_item_id=OuterRef('pk')))
+                    ),
+                )
+            )
+        )
+        enqueue_metadata_preparation([
+            item.pk for item in resolved if not item.has_normalized_detail
+        ])
         resolved_by_key = {
             (item.source_api, item.external_id, item.content_type): item
             for item in resolved

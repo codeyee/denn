@@ -173,3 +173,53 @@ class ContentModerationJob(models.Model):
             f'ModerationJob({self.content_item_id}:{self.requested_model}:'
             f'{self.question_revision}:{self.status})'
         )
+
+
+class ContentMetadataPreparationJob(models.Model):
+    """Bounded durable intent to hydrate an identity through Core -> Proxy."""
+
+    class Status(models.TextChoices):
+        QUEUED = 'queued', 'Queued'
+        LEASED = 'leased', 'Leased'
+        RETRY = 'retry', 'Retry'
+        DONE = 'done', 'Done'
+        SUPERSEDED = 'superseded', 'Superseded'
+        FAILED = 'failed', 'Failed'
+        OUTCOME_UNKNOWN = 'outcome_unknown', 'Outcome unknown'
+
+    content_item = models.OneToOneField(
+        ContentItem,
+        on_delete=models.CASCADE,
+        related_name='metadata_preparation_job',
+    )
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.QUEUED)
+    attempts = models.PositiveIntegerField(default=0)
+    available_at = models.DateTimeField()
+    lease_token = models.UUIDField(null=True, blank=True)
+    lease_until = models.DateTimeField(null=True, blank=True)
+    last_error_code = models.CharField(max_length=64, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'content_metadata_preparation_job'
+        indexes = [
+            models.Index(
+                fields=['status', 'available_at', 'id'],
+                name='metadata_prep_ready_idx',
+            ),
+        ]
+
+    def __str__(self):
+        return f'MetadataPreparationJob({self.content_item_id}:{self.status})'
+
+
+class ContentMetadataPreparationCursor(models.Model):
+    """Singleton round-robin cursor for fair request-path job admission."""
+
+    id = models.PositiveSmallIntegerField(primary_key=True, default=1)
+    last_admitted_content_item_id = models.PositiveBigIntegerField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'content_metadata_preparation_cursor'
