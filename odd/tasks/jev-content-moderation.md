@@ -255,7 +255,7 @@ Jev supplies independent typed judgments; application code owns precedence, thre
     - Verification: in `denn-agent-jev-moderation-backfill-web-1`, `pnpm exec vitest run src/test/moderation-core-lookup.test.tsx` -> 1 test passed; `pnpm run lint` -> pass; `pnpm run cards:check` -> 150 WebP files valid, 3,539,278 bytes; `pnpm run build` -> pass. Post-build `rg -l -i 'moderation-preview|DevModerationPreview' web/dist/client web/.output/server` found only the Nitro public-asset manifest entry for `moderation-preview-artwork.svg`; no route chunk or generated production route tree entry. Built Node server request `/dev/moderation-preview` -> HTTP 404; existing development server request to the same route -> HTTP 200. Restored build-mutated `web/src/routeTree.gen.ts` and `.nitro` types to the checked-in development version; no generated production route tree is tracked.
     - Runtime harness: local development HTTP request and isolated built-server HTTP request as recorded above; no browser-only behavior was needed for this build/config exclusion.
     - Rollback boundary: revert the `web/vite.config.ts` production router ignore setting and this tracker entry to restore the prior behavior.
-    - Commit identity: pending work-unit commit.
+    - Commit identity: `fix(web): exclude moderation preview from production routes`, `103d967` on `agent/jev-moderation-preview-release-gate` (implementation and verification); this tracker closeout records that commit after creation.
 
 - [ ] **JEV-006 — Build the evaluation harness and go/no-go evidence**
   - Add 300–500 balanced EN/ES cross-provider fixtures, an offline fake-client metric suite, an opt-in live Jev runner, and a report template.
