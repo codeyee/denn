@@ -272,7 +272,8 @@ def _reconcile_existing_detail(content_item_id, job_id, token) -> bool | None:
         if not active:
             return False
         item = (
-            ContentItem.objects.select_for_update()
+            # Detail relations are nullable outer joins; lock only ContentItem.
+            ContentItem.objects.select_for_update(of=('self',))
             .filter(pk=content_item_id)
             .select_related(*_DETAIL_RELATED_NAMES)
             .first()
