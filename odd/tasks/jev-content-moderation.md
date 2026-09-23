@@ -382,7 +382,7 @@ Jev supplies independent typed judgments; application code owns precedence, thre
     - Verification: `DATABASE_URL='sqlite://:memory:' MODERATION_CLASSIFICATION_ENABLED=False /Users/emmanuel/Workspace/projects/denn/core/.venv/bin/python manage.py test content.tests.test_id_routing.ContentItemBulkResolveTests` -> 13 tests OK; exact full `... manage.py test content` -> 433 tests OK (1 skipped) after the initial report-path sandbox denial and narrowly approved rerun; `... manage.py makemigrations --check --dry-run` -> `No changes detected`; `git diff --check` -> pass.
     - Runtime harness: N/A; this unit persists local intent only. No provider call, worker, production data, startup scan, or backfill was performed.
     - Rollback boundary: revert the metadata-preparation model/migration, enqueue helper, resolver side-effect, focused tests, lifecycle/API contract notes, and this tracker entry; existing ContentItem identities, normalized details, hashes, and moderation jobs remain unchanged.
-    - Commit identity: pending implementation commit.
+    - Commit identity: Conventional Commit `feat(content): enqueue homepage metadata preparation`, full SHA `9ece42e` on `agent/jev-homepage-preparation`; 309 authored changed lines in the work-unit commit.
     - Route: delegated direct; writer trigger for model, migration, service, resolver, tests, docs, and this tracker.
 
 ## Progress and evidence
