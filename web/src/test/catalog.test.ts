@@ -4,7 +4,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { resolveHomepageContentIds } from "@/server/catalog";
 import { useFeaturedItems } from "@/components/pages/HomePage/hooks/useFeaturedItems";
 import { homepageActions } from "@/lib/api/actions/homepage";
-import { ContentType, type Content, type HomepageResponse } from "@/lib/types";
+import {
+  ContentType,
+  type HomepageResponse,
+  type MovieDetail,
+} from "@/lib/types";
 
 const requestId = "homepage-moderation-test";
 
@@ -32,15 +36,15 @@ describe("homepage moderation resolution", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     const homepageResponse = homepage([
-        ["explicit", "Explicit", ContentType.MOVIE],
-        ["safe", "Safe", ContentType.MOVIE],
-        ["review", "Needs review", ContentType.MOVIE],
-        ["pending", "Pending", ContentType.MOVIE],
-        ["stale", "Stale", ContentType.MOVIE],
-        ["missing", "Missing", ContentType.MOVIE],
-        ["malformed", "Malformed", ContentType.MOVIE],
-        ["unresolved", "Unresolved", ContentType.MOVIE],
-      ]);
+      ["explicit", "Explicit"],
+      ["safe", "Safe"],
+      ["review", "Needs review"],
+      ["pending", "Pending"],
+      ["stale", "Stale"],
+      ["missing", "Missing"],
+      ["malformed", "Malformed"],
+      ["unresolved", "Unresolved"],
+    ]);
     const unresolved = homepageResponse.movies.results.find(
       (item) => item.id === "unresolved",
     );
@@ -77,7 +81,7 @@ describe("homepage moderation resolution", () => {
     expect(response.movies.results[0]?.denn_id).toBe(2);
 
     const featured = renderHook(() => useFeaturedItems({
-      movies: response.movies.results as unknown as Content[],
+      movies: response.movies.results,
       tvShows: [],
       games: [],
       music: [],
@@ -94,7 +98,7 @@ describe("homepage moderation resolution", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     const response = await resolveHomepageContentIds(
-      homepage([["unresolved", "Unresolved", ContentType.MOVIE]]),
+      homepage([["unresolved", "Unresolved"]]),
       null,
       requestId,
     );
@@ -118,12 +122,23 @@ describe("homepage moderation resolution", () => {
 });
 
 function homepage(
-  movies: Array<[string, string, ContentType]>,
+  movies: Array<[string, string]>,
 ): HomepageResponse {
-  const results = movies.map(([id, title, type]) => ({
+  const results = movies.map(([id, title]): MovieDetail => ({
     id,
-    type,
+    type: "MOVIE",
     title,
+    original_title: title,
+    description: null,
+    image_url: null,
+    tagline: null,
+    imdb_id: null,
+    release_date: null,
+    duration_minutes: null,
+    status: null,
+    authors: null,
+    images: [],
+    platforms: null,
   }));
   const empty = { results: [], metadata: { page: 1, total_results: 0, total_pages: 0 }, error: null };
   return {
@@ -132,7 +147,7 @@ function homepage(
     games: empty,
     albums: empty,
     books: empty,
-  } as HomepageResponse;
+  };
 }
 
 function resolved(

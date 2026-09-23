@@ -90,19 +90,27 @@ export function applyHomepageModerationPolicy(
     delete result.moderation;
     if (moderation) result.moderation = moderation;
     return result;
-  }) as HomepageResponse;
+  });
 
-  return Object.fromEntries(
-    Object.entries(withModeration).map(([key, category]) => [
-      key,
-      {
-        ...category,
-        results: category.results.filter(
-          (item) => !isCurrentExplicitModeration(item.moderation),
-        ),
-      },
-    ]),
-  ) as HomepageResponse;
+  return {
+    movies: filterCurrentExplicitResults(withModeration.movies),
+    "tv-shows": filterCurrentExplicitResults(withModeration["tv-shows"]),
+    games: filterCurrentExplicitResults(withModeration.games),
+    albums: filterCurrentExplicitResults(withModeration.albums),
+    books: filterCurrentExplicitResults(withModeration.books),
+  };
+}
+
+function filterCurrentExplicitResults<
+  T extends { moderation?: ModerationSummary },
+  C extends { results: T[] },
+>(category: C): C {
+  return {
+    ...category,
+    results: category.results.filter(
+      (item) => !isCurrentExplicitModeration(item.moderation),
+    ),
+  };
 }
 
 function isCurrentExplicitModeration(
