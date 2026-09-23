@@ -25,11 +25,13 @@ Validation rejects extra/missing fields, duplicate or non-opaque case IDs, unkno
 JEV-006 targets 300–500 English/Spanish cases. A prior local aggregate found only 18 books and no reliable language field, so an equal-balanced cross-provider sample cannot be drawn from the local catalog. This schema, synthetic fixture, and computed classification metrics establish no representative sample and no model-quality result. Human-adjudicated sampling and injected-client execution remain open.
 
 
-## Pure classification report contract
+## Pure classification report contract: `jev-moderation-evaluation-report/v2`
 
-`build_evaluation_report(dataset, observations)` accepts exactly one strict outcome record per gold case. It has no client, network, or database access. Jev-only and final policy outcomes are reported separately. Unknown, unavailable, skipped, and `needs_review` abstentions remain visible. All failures remain in their gold-class support and recall denominators.
+`build_evaluation_report(dataset, observations)` accepts exactly one strict outcome record per gold case. It has no client, network, or database access. Jev-only and final-policy metrics are reported separately. Unknown, unavailable, skipped, and `needs_review` abstentions remain visible. All failures remain in their gold-class support and recall denominators. If `provider_explicit=true` for a TMDB movie/TV case, `policy_prediction` must be `explicit_or_sensitive`; an inconsistent outcome is rejected rather than reported as an applied override.
 
-The report provides the class confusion matrices, per-class precision/recall with numerators and denominators, gold-explicit-to-predicted-safe false-negative rate, review recall, provider/language breakdowns with counts, and model-version consistency. Provider overrides appear only in the policy matrix and per-case flags, never in Jev-only quality metrics. Zero denominators have value `null` and display `N/A`. Raw state text and exception messages do not appear in report rows.
+The report provides the class confusion matrices; Jev-only and final-policy per-class precision/recall; gold-explicit-to-predicted-safe false-negative rate; needs-review recall; and model-version consistency. It also provides per-provider and per-language quality summaries. Each stratum reports its case count, per-class true/false positives, false negatives and support, explicit false-negative rate, needs-review recall, and coverage. Every metric includes its numerator and denominator. A zero denominator returns `null` and displays `N/A`; the case count makes sparse strata visible without inventing a minimum-sample threshold. Provider overrides appear only in final-policy metrics, never as Jev model quality.
+
+Coverage is calculated independently for `jev_only` and `final_policy`. Each `needs_review_abstention_rate` is `count(prediction == needs_review) / case_count`; each outcome rate uses the full case count in that report or stratum. Class recall is `true_positive / gold_class_support`, where support includes every case in that gold class, including unavailable, unknown, and skipped outcomes. Precision is `true_positive / count(predicted_class)`. The gold-explicit false-negative rate is `count(gold == explicit_or_sensitive and prediction == safe_for_automatic_discovery) / count(gold == explicit_or_sensitive)`. Needs-review recall is `count(gold == needs_review and prediction == needs_review) / count(gold == needs_review)`. These formulas apply separately to Jev-only and final-policy outcomes.
 
 Record a concrete returned model such as `jev-1.13.0`. A moving alias such as `jev-latest`, a missing version, or mixed versions makes a single-version comparison ineligible. See the [TypeSafe model guidance](https://docs.typesafe.ai/models). The status remains `INSUFFICIENT`: metrics do not set pass thresholds or attest that the sample is representative.
 
@@ -40,10 +42,10 @@ The accounting section uses optional caller-supplied per-case durations; its p50
 
 - Dataset schema/version, split, total cases, human-adjudicated cases:
 - Concrete Jev version(s), mixed/unresolved models, single-version eligibility:
-- Confusion matrices and per-class supports, precision, and recall (numerator / denominator):
-- Explicit false-negative rate and review recall:
-- Abstention, unknown, unavailable, and skipped coverage:
-- Provider and manual-language counts:
+- Confusion matrices and Jev-only/final-policy class metrics (numerator / denominator):
+- Explicit false-negative rate and needs-review recall, by outcome source:
+- Jev-only vs final-policy needs-review, unknown, unavailable, and skipped coverage:
+- Provider/language stratum case counts, metrics, and sparse `N/A` denominators:
 - Caller-supplied latency p50 / p95 and missing duration count:
 - Input/output token totals and missing-usage count:
 - Input/output prices per million tokens and provenance:

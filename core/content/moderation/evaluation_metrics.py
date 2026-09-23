@@ -9,7 +9,7 @@ from typing import Any
 from .evaluation_accounting import build_accounting_summary
 from .evaluation_cases import GOLD_CLASSES, validate_gold_dataset
 
-REPORT_SCHEMA_VERSION = "jev-moderation-evaluation-report/v1"
+REPORT_SCHEMA_VERSION = "jev-moderation-evaluation-report/v2"
 PREDICTIONS = frozenset(GOLD_CLASSES) | {"unknown", "unavailable", "skipped"}
 OBSERVATION_FIELDS = {
     "case_id", "jev_prediction", "policy_prediction", "inference_attempted",
@@ -50,23 +50,86 @@ def _matrix(rows: Sequence[dict[str, Any]], prediction_field: str) -> dict[str, 
     }
 
 
+def _has_provider_override(case: Mapping[str, Any]) -> bool:
+    return (
+        case["provider"] == "tmdb"
+        and case["content_type"] in {"movie", "tv_show"}
+        and case["provider_explicit"] is True
+    )
+
+
+def _coverage(rows: Sequence[dict[str, Any]], prediction_field: str) -> dict[str, Any]:
+    total = len(rows)
+    outcomes = tuple(GOLD_CLASSES) + ("unknown", "unavailable", "skipped")
+    counts = {
+        outcome: sum(row[prediction_field] == outcome for row in rows)
+        for outcome in outcomes
+    }
+    return {
+        "case_count": total,
+        "outcome_counts": counts,
+        "outcome_rates": {outcome: _rate(counts[outcome], total) for outcome in outcomes},
+        "needs_review_abstention_rate": _rate(counts["needs_review"], total),
+    }
+
+
+def _quality_summary(
+    rows: Sequence[dict[str, Any]], prediction_field: str,
+) -> dict[str, Any]:
+    matrix = _matrix(rows, prediction_field)
+    per_class = {}
+    for label in GOLD_CLASSES:
+        true_positive = matrix[label][label]
+        support = sum(matrix[label].values())
+        predicted = sum(matrix[gold][label] for gold in GOLD_CLASSES)
+        per_class[label] = {
+            "true_positive": true_positive,
+            "false_positive": predicted - true_positive,
+            "false_negative": support - true_positive,
+            "support": support,
+            "precision": _rate(true_positive, predicted),
+            "recall": _rate(true_positive, support),
+        }
+    explicit_support = sum(matrix["explicit_or_sensitive"].values())
+    review_support = sum(matrix["needs_review"].values())
+    return {
+        "per_class": per_class,
+        "explicit_false_negative_rate_gold_explicit_to_predicted_safe": _rate(
+            matrix["explicit_or_sensitive"]["safe_for_automatic_discovery"], explicit_support
+        ),
+        "review_recall_gold_needs_review": _rate(
+            matrix["needs_review"]["needs_review"], review_support
+        ),
+        "coverage": _coverage(rows, prediction_field),
+    }
+
+
 def _breakdown(rows: Sequence[dict[str, Any]], field: str) -> dict[str, Any]:
     keys = sorted({row[field] for row in rows})
     outcomes = tuple(GOLD_CLASSES) + ("unknown", "unavailable", "skipped")
-    return {
-        key: {
-            "case_count": sum(row[field] == key for row in rows),
+    breakdown = {}
+    for key in keys:
+        group_rows = [row for row in rows if row[field] == key]
+        breakdown[key] = {
+            "case_count": len(group_rows),
             "gold_class_counts": {
-                label: sum(row[field] == key and row["gold_class"] == label for row in rows)
+                label: sum(row["gold_class"] == label for row in group_rows)
                 for label in GOLD_CLASSES
             },
             "jev_prediction_counts": {
-                label: sum(row[field] == key and row["jev_prediction"] == label for row in rows)
+                label: sum(row["jev_prediction"] == label for row in group_rows)
                 for label in outcomes
             },
+            "final_policy_prediction_counts": {
+                label: sum(row["policy_prediction"] == label for row in group_rows)
+                for label in outcomes
+            },
+            "quality": {
+                "jev_only": _quality_summary(group_rows, "jev_prediction"),
+                "final_policy": _quality_summary(group_rows, "policy_prediction"),
+            },
         }
-        for key in keys
-    }
+    return breakdown
 
 
 def _nonnegative_int(value: Any, path: str) -> int | None:
@@ -114,6 +177,10 @@ def _validate_observations(
         if failure is not None and (not isinstance(failure, str) or not FAILURE_CODE_RE.fullmatch(failure)):
             raise EvaluationReportValidationError(f"{path}.failure_code: use a safe code, never an error message")
         case = case_by_id[case_id]
+        if _has_provider_override(case) and policy != "explicit_or_sensitive":
+            raise EvaluationReportValidationError(
+                f"{path}.policy_prediction: TMDB explicit override requires explicit_or_sensitive"
+            )
         normalized.append({
             "case_id": case_id,
             "split": case["split"],
@@ -152,25 +219,10 @@ def build_evaluation_report(
 
     jev_matrix = _matrix(rows, "jev_prediction")
     policy_matrix = _matrix(rows, "policy_prediction")
-    per_class = {}
-    for label in GOLD_CLASSES:
-        true_positive = jev_matrix[label][label]
-        support = sum(jev_matrix[label].values())
-        predicted = sum(jev_matrix[gold][label] for gold in GOLD_CLASSES)
-        per_class[label] = {
-            "true_positive": true_positive,
-            "false_positive": predicted - true_positive,
-            "false_negative": support - true_positive,
-            "support": support,
-            "precision": _rate(true_positive, predicted),
-            "recall": _rate(true_positive, support),
-        }
+    jev_quality = _quality_summary(rows, "jev_prediction")
+    policy_quality = _quality_summary(rows, "policy_prediction")
 
     total = len(rows)
-    outcomes = tuple(GOLD_CLASSES) + ("unknown", "unavailable", "skipped")
-    counts = {label: sum(row["jev_prediction"] == label for row in rows) for label in outcomes}
-    explicit_support = sum(jev_matrix["explicit_or_sensitive"].values())
-    review_support = sum(jev_matrix["needs_review"].values())
     responses = [row for row in rows if row["response_received"]]
     model_counts: Counter[str] = Counter()
     unresolved_models = 0
@@ -199,11 +251,7 @@ def build_evaluation_report(
         reasons.append("one_or_more_response_model_versions_are_unresolved")
 
     for row in rows:
-        override = (
-            row["provider"] == "tmdb"
-            and row["content_type"] in {"movie", "tv_show"}
-            and row["provider_explicit"] is True
-        )
+        override = _has_provider_override(row)
         row["provider_override_applied"] = override
         row["provider_override_changed_prediction"] = (
             override and row["policy_prediction"] != row["jev_prediction"]
@@ -220,20 +268,20 @@ def build_evaluation_report(
         "case_count": total,
         "confusion_matrix_jev_only": jev_matrix,
         "confusion_matrix_policy_including_provider_override": policy_matrix,
-        "per_class_jev_only": per_class,
-        "explicit_false_negative_rate_gold_explicit_to_predicted_safe": _rate(
-            jev_matrix["explicit_or_sensitive"]["safe_for_automatic_discovery"], explicit_support
+        "per_class_jev_only": jev_quality["per_class"],
+        "per_class_final_policy": policy_quality["per_class"],
+        "explicit_false_negative_rate_gold_explicit_to_predicted_safe": (
+            jev_quality["explicit_false_negative_rate_gold_explicit_to_predicted_safe"]
         ),
-        "review_recall_jev_only": _rate(jev_matrix["needs_review"]["needs_review"], review_support),
+        "explicit_false_negative_rate_final_policy_gold_explicit_to_predicted_safe": (
+            policy_quality["explicit_false_negative_rate_gold_explicit_to_predicted_safe"]
+        ),
+        "review_recall_jev_only": jev_quality["review_recall_gold_needs_review"],
+        "review_recall_final_policy": policy_quality["review_recall_gold_needs_review"],
         "coverage": {
-            "total_cases": total,
-            "counts": counts,
-            "rates": {
-                "abstention_needs_review": _rate(counts["needs_review"], total),
-                "unknown": _rate(counts["unknown"], total),
-                "unavailable": _rate(counts["unavailable"], total),
-                "skipped": _rate(counts["skipped"], total),
-            },
+            "total_case_count": total,
+            "jev_only": jev_quality["coverage"],
+            "final_policy": policy_quality["coverage"],
         },
         "provider_breakdown": _breakdown(rows, "provider"),
         "language_breakdown": _breakdown(rows, "language"),
