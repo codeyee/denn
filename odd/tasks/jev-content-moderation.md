@@ -91,6 +91,12 @@ Jev supplies independent typed judgments; application code owns precedence, thre
   - Checks: fake-client RED/GREEN tests for questions, thresholds, provider precedence, errors, timeouts, and no-secret logging.
   - Route: delegated; preparation and writer triggers.
 
+  - [x] **JEV-002A1 — TypeSafe SDK, dependencies, state builder, typed questions** (Slice 2, `agent/jev-moderation-typesafe-foundations`)
+    - Slice 2 scope: pinned `typesafe-sdk==0.7.1` (plus exact dependency closure and the `idna` bump required by `httpx2`), added `core/content/moderation/` with `state.py` and `questions.py`, minimal package exports, and offline tests for the state builder and the three typed questions.
+    - State builder: `build_moderation_state(provider, content_type, title=None, description=None, genres=None, tags=None)` — non-empty provider/content_type, fail-safe empty title/description, normalized deduped sorted genre/tag lists, exactly six named text-only fields.
+    - Three independent typed Noul questions: `adult_content`, `graphic_violence`, `offensive_content`, each with explicit yes/no criteria. Revision constant: `MODERATION_QUESTION_REVISION = "jev-mq-1"`.
+    - Residual risks: no live Jev call was made; question wording is unmeasured until the JEV-006 evaluation fixtures; the moderation client adapter and its typed error/result mapping land in JEV-002A2 (Slice 3).
+
 - [ ] **JEV-003 — Classify existing and newly refreshed content**
   - Add a resumable/rate-bounded backfill command and non-blocking incremental scheduling after normalized detail upserts.
   - Acceptance: fresh judgments are skipped, changed inputs reclassify, concurrent duplicates collapse, failures do not break ingestion, and backfill can resume safely.
