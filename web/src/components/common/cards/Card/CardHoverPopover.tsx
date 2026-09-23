@@ -15,6 +15,7 @@ interface CardHoverPopoverProps {
   emptyIcon: LucideIcon;
   icon: LucideIcon;
   isEmpty: boolean;
+  isArtworkBlurred: boolean;
   isOpen: boolean;
   onFocus: () => void;
   onBlur: (event: FocusEvent<HTMLElement>) => void;
@@ -36,6 +37,7 @@ export function CardHoverPopover({
   emptyIcon,
   icon: Icon,
   isEmpty,
+  isArtworkBlurred,
   isOpen,
   onFocus,
   onBlur,
@@ -95,6 +97,7 @@ export function CardHoverPopover({
               backgroundImages={backgroundImages}
               emptyIcon={emptyIcon}
               isEmpty={isEmpty}
+              isArtworkBlurred={isArtworkBlurred}
             />
             {!isEmpty && <div className="absolute inset-0 z-5 bg-black/20" />}
             <div className="absolute inset-x-0 bottom-0 z-5 h-[55%] bg-linear-to-t from-black/95 via-black/60 to-transparent" />

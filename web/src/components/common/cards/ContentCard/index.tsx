@@ -8,18 +8,19 @@ import {
 } from "react";
 import { Link } from "@tanstack/react-router";
 import { Card } from "../Card";
-import { ContentType } from "@/lib/types";
+import { ContentType, type Content, type ModerationSummary } from "@/lib/types";
 import {
   formatSeasonLocalTitle,
   formatSeasonTitle,
 } from "@/lib/utils/titleUtils";
-import { Content } from "@/lib/types";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/common/ui/Button";
 import { AddToListModal } from "@/components/common/modals/AddToListModal";
 import { usePrefetchContentDetail } from "@/lib/api/queries/usePrefetchContentDetail";
 import { useHoverPrefetch } from "@/lib/perf/useHoverPrefetch";
 import { useContentCardModal } from "./hooks/useContentCardModal";
+import { useModerationArtworkReveal } from "./hooks/useModerationArtworkReveal";
+import { ModerationRevealButton } from "./ModerationRevealButton";
 import { useAuthRequiredAction } from "@/hooks/useAuthRequiredAction";
 import {
   getPosterImageUrl,
@@ -39,6 +40,8 @@ interface ContentCardProps {
   footerSlot?: ReactNode;
   showAddToList?: boolean;
   seasonTitleScope?: "global" | "parent";
+  moderationSummary?: ModerationSummary;
+  disableDetailNavigation?: boolean;
 }
 
 export function ContentCard({
@@ -50,6 +53,8 @@ export function ContentCard({
   footerSlot,
   showAddToList = true,
   seasonTitleScope = "global",
+  moderationSummary,
+  disableDetailNavigation = false,
 }: ContentCardProps) {
   const [isNavigating, setIsNavigating] = useState(false);
   const modal = useContentCardModal(item);
@@ -59,8 +64,10 @@ export function ContentCard({
   // when the enclosing homepage/search payload was loaded.
   const prefetchContentDetail = usePrefetchContentDetail();
   const handlePrefetch = useCallback(() => {
-    if (item.denn_id) prefetchContentDetail(item.denn_id);
-  }, [item.denn_id, prefetchContentDetail]);
+    if (!disableDetailNavigation && item.denn_id) {
+      prefetchContentDetail(item.denn_id);
+    }
+  }, [disableDetailNavigation, item.denn_id, prefetchContentDetail]);
   const hoverPrefetchHandlers = useHoverPrefetch(handlePrefetch);
   const handleNavigation = useCallback(
     (event: MouseEvent<HTMLAnchorElement>) => {
@@ -97,7 +104,7 @@ export function ContentCard({
             "season_number" in item ? item.season_number : undefined,
           )
       : item.title;
-  const detailLinkProps = item.denn_id
+  const detailLinkProps = item.denn_id && !disableDetailNavigation
     ? {
         to: "/content/$id" as const,
         params: { id: String(item.denn_id) },
@@ -110,6 +117,12 @@ export function ContentCard({
   const imageUrl = getPosterImageUrl(item);
   const id = String(item.id);
   const type = item.type;
+  const {
+    requiresBlur: moderationRequiresBlur,
+    isRevealed: isArtworkRevealed,
+    isBlurred: isArtworkBlurred,
+    toggle: toggleArtworkReveal,
+  } = useModerationArtworkReveal(item, moderationSummary);
 
   const footerInfo = useMemo(() => getFooterInfo(item), [item]);
   const authors = useMemo(() => getAuthorsText(item), [item]);
@@ -132,6 +145,7 @@ export function ContentCard({
           title={title}
           backgroundImage={imageUrl || ""}
           backgroundImageAlt={`${title} cover image`}
+          isArtworkBlurred={isArtworkBlurred}
           isEmpty={!imageUrl}
           hoverOverlay={
             detailLinkProps ? (
@@ -190,6 +204,12 @@ export function ContentCard({
             )}
           </Card.Footer>
         </Card>
+        {moderationRequiresBlur ? (
+          <ModerationRevealButton
+            isRevealed={isArtworkRevealed}
+            onToggle={toggleArtworkReveal}
+          />
+        ) : null}
         {leadingBadgeSlot ? (
           <div className="pointer-events-none absolute left-3 top-3 z-30">
             {leadingBadgeSlot}

@@ -57,6 +57,19 @@ discovery browse request.
 - Logs contain the request route/cache status but not the user's
   preference value.
 
+## Development Moderation Preview
+
+- The Web route `/dev/moderation-preview` exists only in development and
+  presents synthetic examples plus an optional read-only Core lookup by one
+  submitted `ContentItem` ID. The lookup uses the existing Core client and
+  session; fixture cards make no API requests.
+- This preview does not activate moderation enforcement or change production
+  discovery, direct-search, or adult-preference behavior.
+- Artwork receives a visual blur only for `status=complete` with
+  `classification=explicit`. Missing, pending, stale, errored, malformed, and
+  `needs_review` summaries are not described as safe. The reveal control does
+  not prevent access to the underlying image.
+
 ## Verification
 
 - Provider service tests cover release-date eligibility across supported

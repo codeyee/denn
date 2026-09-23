@@ -10,6 +10,7 @@ interface CardMediaProps {
   backgroundImages?: string[];
   emptyIcon: LucideIcon;
   isEmpty: boolean;
+  isArtworkBlurred?: boolean;
   priority?: boolean;
 }
 
@@ -20,6 +21,7 @@ export function CardMedia({
   backgroundImages,
   emptyIcon: EmptyIcon,
   isEmpty,
+  isArtworkBlurred = false,
   priority = false,
 }: CardMediaProps) {
   const source =
@@ -56,7 +58,7 @@ export function CardMedia({
           height={800}
           sizes="(max-width: 639px) 44vw, (max-width: 1023px) 30vw, 250px"
           priority={priority}
-          className="h-full w-full object-cover"
+          className={`h-full w-full object-cover transition duration-200 motion-reduce:transition-none ${isArtworkBlurred ? "scale-110 blur-md" : ""}`}
         />
       </motion.div>
     </AnimatePresence>

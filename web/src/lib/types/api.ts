@@ -112,6 +112,16 @@ export enum AlbumType {
     SINGLE = "SINGLE",
 }
 
+export type ModerationSummary =
+    | {
+          status: "complete";
+          classification: "safe" | "explicit" | "needs_review";
+      }
+    | {
+          status: "missing" | "pending" | "stale" | "error";
+          classification: null;
+      };
+
 export interface ContentItem {
     id: number;
     source_api: SourceApi;
@@ -124,6 +134,7 @@ export interface ContentItem {
     progress_policy: ProgressPolicy;
     created_at: string;
     source_data?: SourceData | string | null;
+    moderation?: ModerationSummary;
 }
 
 export enum ListType {
@@ -644,6 +655,7 @@ export interface ContentItemData {
     progress_policy: ProgressPolicy;
     created_at: string;
     source_data: SourceData;
+    moderation?: ModerationSummary;
 }
 
 export interface HomepageResponse {
