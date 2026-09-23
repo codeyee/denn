@@ -33,11 +33,18 @@ of these are present:
 - `--limit N` with N positive — exact item cap. There is no unbounded mode.
 
 Missing either one is a `CommandError` before any ORM query or classifier
-call. Invalid numbers, unknown price overrides, and invalid report destinations
-also fail as `CommandError`. Before fetching or classifying, the command checks
-that the report parent already exists, is a directory, and is writable, and
-that the destination is not a directory. It never creates a missing parent or a
-placeholder report. No secret is ever printed.
+call. Invalid numbers, unknown price overrides, invalid report destinations,
+and invalid exact-ID selections also fail as `CommandError`. Exact-ID mode
+checks every supplied ID with a read-only lookup before classification. Missing
+IDs, duplicates, malformed or non-positive IDs, conflicting `--after-id`, and
+a `--limit` smaller than the selected set fail before classifier calls or
+report output. The command prints only the selected count, not a provider
+payload or credential.
+
+Before classification, the command checks that the report parent already
+exists, is a directory, and is writable, and that the destination is not a
+directory. It never creates a missing parent or a placeholder report. No secret
+is ever printed.
 
 The report uses a temporary file in the validated parent and an atomic rename.
 A later filesystem error (for example, a path change or disk failure) can still
@@ -57,12 +64,37 @@ Start with `--limit 5` for the first authorized sample. This incurs real API
 calls and cost. Do not run it without explicit authorization. Resume a
 stopped run with `--after-id <last_id from the previous summary>`.
 
+### Exact sparse-ID selection
+
+Use `--ids` when the operator must classify a specific sparse set. The flag
+accepts one comma-separated list of unique positive ContentItem primary keys.
+The command validates that every ID exists, then reports the selection count
+and passes only those IDs through the normal ordered, bounded runner. `--limit`
+must remain positive and must be at least the number of IDs. Set it to that
+count for a clear safety cap. `--ids` cannot be combined with `--after-id`;
+resume cursors apply only to range mode.
+
+```bash
+python core/manage.py backfill_content_moderation \
+  --confirm-live --ids 1387,1947,1952 --limit 3 \
+  --progress-every 3 \
+  --report /tmp/moderation-backfill-selected.json
+```
+
+This is a live Jev operation and can incur real API cost. The exact-ID check
+only constrains which existing rows the command can classify; it does not
+verify that the IDs are the correct production records or make a run safe to
+execute without the required production change approval. Review the target
+environment, ID list, flags, and report destination before an authorized run.
+Never run this example against production without that approval.
+
 ## Output: JSONL events, then one summary
 
 Stdout carries one compact JSON object per line:
 
 | `event` | Meaning |
 |---------|---------|
+| `selection` | Exact-ID mode preflight count; it does not reveal provider payloads or secrets |
 | `item` | One attempted item: `outcome`, `classification`, `model_name`, `reused`, current-call `usage`, `code`, `duration_ms` |
 | `progress` | Periodic aggregate every `--progress-every` items |
 | `final_summary` | Complete run accounting (also the `--report` content) |
@@ -74,6 +106,7 @@ the temp file is removed on failure).
 
 | Field | Meaning |
 |-------|---------|
+| `selection` | Exact-ID mode and validated selection count; omitted in range mode |
 | `scanned` / `last_id` | Items attempted; resume cursor for the next run |
 | `created` vs `reused` | New judgments vs collapsed onto an existing identical row |
 | `provider_override` | TMDB adult-flag short-circuits (no Jev call, no usage) |

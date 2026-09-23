@@ -2,6 +2,7 @@
 import json
 import os
 import tempfile
+from io import StringIO
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -71,8 +72,88 @@ class BackfillCommandTests(TestCase):
         self.assertEqual((summary['scanned'], summary['created'],
                           summary['last_id']), (3, 3, pks[2]))
 
+    def test_exact_ids_process_only_the_supplied_sparse_ids(self):
+        all_pks = [_item(str(i)).pk for i in range(5)]
+        selected_ids = (all_pks[0], all_pks[2], all_pks[4])
+        script = {pk: (_judgment(), {'reused': False, 'called': True,
+                                     'usage': {'input_tokens': 1,
+                                               'output_tokens': 0}})
+                  for pk in selected_ids}
+        called_ids, events = self._call_with_script(
+            script, selected_ids, limit=len(selected_ids),
+            extra_argv=[f'--ids={",".join(map(str, selected_ids))}',
+                        '--batch-size=2'])
+
+        self.assertEqual(called_ids, list(selected_ids))
+        self.assertEqual(events[0], {
+            'event': 'selection', 'mode': 'exact_ids', 'selected': 3})
+        item_ids = [event['item_id'] for event in events
+                    if event['event'] == 'item']
+        self.assertEqual(item_ids, list(selected_ids))
+        self.assertEqual(events[-1]['selection'], {
+            'mode': 'exact_ids', 'selected': 3})
+        self.assertEqual(events[-1]['scanned'], 3)
+
+    def test_invalid_exact_ids_fail_before_runner_classifier_or_output(self):
+        valid_id = _item('valid').pk
+        invalid_values = ('', f'{valid_id},not-an-id', f'{valid_id},{valid_id}',
+                          f'{valid_id},0', f'{valid_id},-2')
+        for ids in invalid_values:
+            with self.subTest(ids=ids):
+                output = StringIO()
+                with patch(f'{COMMAND}.run_backfill') as runner, \
+                        patch(f'{COMMAND}.classify_content_item') as classify, \
+                        self.assertRaises(CommandError):
+                    call_command('backfill_content_moderation',
+                                 '--confirm-live', '--limit=5',
+                                 f'--ids={ids}', stdout=output)
+                runner.assert_not_called()
+                classify.assert_not_called()
+                self.assertEqual(output.getvalue(), '')
+
+    def test_missing_exact_ids_fail_before_classifier_or_report_output(self):
+        existing_id = _item('existing').pk
+        missing_id = existing_id + 10_000
+        with tempfile.TemporaryDirectory() as root:
+            report_path = os.path.join(root, 'report.json')
+            output = StringIO()
+            with patch(f'{COMMAND}.run_backfill') as runner, \
+                    patch(f'{COMMAND}.classify_content_item') as classify, \
+                    self.assertRaisesRegex(CommandError,
+                                           f'missing ContentItem IDs .*{missing_id}'):
+                call_command('backfill_content_moderation',
+                             '--confirm-live', '--limit=2',
+                             f'--ids={existing_id},{missing_id}',
+                             f'--report={report_path}', stdout=output)
+            runner.assert_not_called()
+            classify.assert_not_called()
+            self.assertEqual(output.getvalue(), '')
+            self.assertFalse(os.path.exists(report_path))
+
+    def test_exact_ids_reject_after_id_repeated_selector_and_short_limit(self):
+        pks = [_item(str(i)).pk for i in range(3)]
+        ids_argument = f'--ids={pks[0]},{pks[2]}'
+        invalid_argv = (
+            [ids_argument, '--after-id=0'],
+            [ids_argument, f'--ids={pks[1]}'],
+            [ids_argument],
+        )
+        for extra_argv in invalid_argv:
+            with self.subTest(extra_argv=extra_argv):
+                output = StringIO()
+                with patch(f'{COMMAND}.run_backfill') as runner, \
+                        patch(f'{COMMAND}.classify_content_item') as classify, \
+                        self.assertRaises(CommandError):
+                    call_command('backfill_content_moderation',
+                                 '--confirm-live', '--limit=1', *extra_argv,
+                                 stdout=output)
+                runner.assert_not_called()
+                classify.assert_not_called()
+                self.assertEqual(output.getvalue(), '')
+
     def _call_with_script(self, script, pks, **kwargs):
         out = []
+        called_ids = []
 
         class _Stdout:
             def write(self, message):
@@ -83,10 +164,16 @@ class BackfillCommandTests(TestCase):
         argv = ['--confirm-live', f'--limit={limit}']
         argv += [f'--{k.replace("_", "-")}={v}' for k, v in kwargs.items()]
         argv += extra_argv
+        scripted_classify = _fake_classify(script)
+
+        def classify(item, observation=None):
+            called_ids.append(item.pk)
+            return scripted_classify(item, observation)
+
         with patch(f'{COMMAND}.classify_content_item',
-                    side_effect=_fake_classify(script)):
+                    side_effect=classify):
             call_command('backfill_content_moderation', *argv, stdout=_Stdout())
-        return None, [json.loads(line) for line in out]
+        return called_ids, [json.loads(line) for line in out]
 
     def test_summary_accounting_flows_into_cost_and_missing(self):
         pks = [_item('a').pk, _item('b').pk, _item('c').pk]
@@ -132,6 +219,24 @@ class BackfillCommandTests(TestCase):
             leftovers = [name for name in os.listdir(os.path.dirname(path))
                          if name.startswith('.backfill-')]
             self.assertEqual(leftovers, [])
+        finally:
+            if os.path.exists(path):
+                os.unlink(path)
+
+    def test_exact_ids_report_includes_selection_metadata(self):
+        from django.conf import settings
+        path = os.path.join(settings.BASE_DIR, 'backfill-exact-report-test.json')
+        try:
+            pk = _item('exact-report').pk
+            script = {pk: (_judgment(), {'reused': False, 'called': False})}
+            self._call_with_script(
+                script, [pk], limit=1, report=path,
+                extra_argv=[f'--ids={pk}'])
+            with open(path, encoding='utf-8') as handle:
+                report = json.load(handle)
+            self.assertEqual(report['selection'], {
+                'mode': 'exact_ids', 'selected': 1})
+            self.assertEqual(report['scanned'], 1)
         finally:
             if os.path.exists(path):
                 os.unlink(path)

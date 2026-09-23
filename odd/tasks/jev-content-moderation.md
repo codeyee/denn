@@ -259,6 +259,17 @@ Jev supplies independent typed judgments; application code owns precedence, thre
     - Commit identity: Conventional Commit `fix(content): preflight moderation report destinations`, full SHA `9960fc77eee26dd79df258b86594c535facf1307`, 91 authored changed lines across the task's four files.
     - Rollback boundary: revert the follow-up tracker-evidence commit first, then revert `9960fc7`; the implementation commit changes only report-path validation, its tests, runbook guidance, and this task entry. It changes no schema or persisted judgments.
     - Route: delegated direct; writer trigger for the command and test, with the runbook and tracker updated alongside behavior.
+  - [x] **JEV-003B-EXACT-IDS — Add exact sparse-ID selection to moderation backfill**
+    - Scope: add an explicit `--ids` mode that resolves and classifies only the supplied positive ContentItem IDs through the existing bounded runner; preserve range mode and require the existing `--confirm-live` and positive `--limit` safeguards.
+    - Acceptance: reject malformed, duplicate, non-positive, conflicting, and missing IDs before any classifier call or report output; report the exact selected count; add no implicit IDs; keep selection read-only and logs free of raw provider payloads or secrets.
+    - Checks: offline command tests prove exact classifier IDs, pre-call rejection for invalid/missing IDs, unchanged range behavior, and report writing; run the focused and full Core checks and migration check listed in the parent task.
+    - Route: delegated direct; writer trigger (command, tests, runbook, and this tracker update).
+    - Result: added one comma-separated `--ids` selector with unique positive decimal ID validation, duplicate/missing-ID preflight, `--after-id` conflict rejection, and a `--limit` floor equal to the selection size. Exact IDs are paged in ascending order through the existing runner using an immutable allowlist; the count is emitted in JSONL and the final/report summary. Range mode is unchanged.
+    - Verification: `DATABASE_URL='sqlite://:memory:' MODERATION_CLASSIFICATION_ENABLED=False /Users/emmanuel/Workspace/projects/denn/core/.venv/bin/python manage.py test content.tests.test_backfill_moderation_command content.tests.test_backfill_runner` -> 22 tests OK; the same environment and runner with `manage.py test content` -> 395 tests OK (1 skipped); the same environment and runner with `manage.py makemigrations --check --dry-run` -> `No changes detected`; `git diff --check` -> pass. The first non-escalated focused run was blocked because existing report tests require writing under this worktree; the same offline test run passed after narrow sandbox approval for temporary report output.
+    - Runtime harness: N/A; all tests use offline fakes. No live Jev call, local database mutation, production backfill, deployment, or remote operation was performed.
+    - Commit identity: to be recorded in the immediate tracker-only evidence commit after the implementation commit.
+    - Rollback boundary: revert the tracker-only evidence commit first, then revert the exact-ID implementation commit; this work changes only the selector command, its tests, runbook guidance, and this task entry, with no schema or persisted-judgment changes.
+    - Route: delegated direct; writer trigger for the command and tests, with runbook and tracker updates alongside behavior.
 
 ## Progress and evidence
 
