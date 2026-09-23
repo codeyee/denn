@@ -167,7 +167,7 @@ def _env_flag(name: str) -> bool:
 MODERATION_CLASSIFICATION_ENABLED = _env_flag("MODERATION_CLASSIFICATION_ENABLED")
 MODERATION_POLICY_MODE = os.getenv("MODERATION_POLICY_MODE", "shadow")
 MODERATION_MODEL = os.getenv("MODERATION_MODEL") or "jev-latest"
-MODERATION_QUESTION_REVISION = os.getenv("MODERATION_QUESTION_REVISION") or "q1"
+MODERATION_QUESTION_REVISION = os.getenv("MODERATION_QUESTION_REVISION") or "q2"
 MODERATION_POLICY_REVISION = os.getenv("MODERATION_POLICY_REVISION") or "p1"
 
 # Named callable so the model field default can be serialized in migrations.
