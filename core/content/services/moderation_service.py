@@ -40,6 +40,35 @@ class ModerationClassificationOutcome(NamedTuple):
     code: str
 
 
+def _observe(observation, *, reused: bool, called: bool, usage: dict | None) -> None:
+    """Record one invocation's facts on the caller's optional observation dict.
+
+    Callers need three separate facts: whether an existing judgment was reused,
+    whether a remote Jev call actually happened, and which usage belongs to the
+    current call. A remote call can collapse onto an existing row, so `reused`
+    and `called` are independent, and `usage` always describes this invocation.
+    """
+    if observation is None:
+        return
+    observation['reused'] = reused
+    observation['called'] = called
+    observation['usage'] = usage
+
+
+def _current_usage(moderation_judgment) -> dict:
+    """Return this call's token usage, with None fields when it went unreported.
+
+    Always returns a dict so a response that omits usage entirely is reported
+    the same way as one that reports no tokens: both mean "no attributable
+    usage for this call" to the caller.
+    """
+    usage = getattr(moderation_judgment, 'usage', None)
+    return {
+        'input_tokens': getattr(usage, 'input_tokens', None),
+        'output_tokens': getattr(usage, 'output_tokens', None),
+    }
+
+
 def _provider_explicit(content_item: ContentItem) -> bool | None:
     """Return the affirmative SST adult flag, or None without any guesswork.
 
@@ -88,6 +117,7 @@ def classify_content_item(
     model: str | None = None,
     thresholds: PolicyThresholds | None = None,
     settings_getter=None,
+    observation: dict | None = None,
 ) -> ContentModerationJudgment | ModerationClassificationOutcome:
     """Classify one persisted `ContentItem` deterministically.
 
@@ -98,18 +128,27 @@ def classify_content_item(
     Provider explicit override (TMDB adult=True) short-circuits before any Jev
     call, persisting an honest judgment with no fabricated probabilities or
     usage - status COMPLETE, classification EXPLICIT, reason recorded.
+
+    `observation` is an optional caller-owned dict filled in place with the
+    invocation facts `reused`, `called`, and `usage`. It is only written when
+    supplied, so existing callers are unaffected. `usage` is always the current
+    call's usage, including when that call collapsed onto an existing row. It is
+    a dict whenever a remote call happened and None whenever none did, so the
+    two cases stay distinguishable without inspecting token values.
     """
     settings_getter = settings_getter or _default_settings
     thresholds = thresholds or PolicyThresholds()
 
     if not settings_getter('MODERATION_CLASSIFICATION_ENABLED'):
         # Disabled mode: no client is constructed, no judgment is written.
+        _observe(observation, reused=False, called=False, usage=None)
         return ModerationClassificationOutcome('skipped', 'moderation_disabled')
 
     try:
         state, source_data_hash = build_state_and_hash(content_item)
     except ModerationStateError:
         # Typed unavailable outcome, zero calls, zero writes, no exception.
+        _observe(observation, reused=False, called=False, usage=None)
         return ModerationClassificationOutcome('skipped', 'state_unavailable')
 
     requested_model = model or settings_getter('MODERATION_MODEL')
@@ -137,6 +176,7 @@ def classify_content_item(
             source_data_hash=source_data_hash,
             question_revision=question_revision,
         )
+        _observe(observation, reused=not _created, called=False, usage=None)
         return judgment
 
     # Alias requested (or unset): no safe pre-reuse without resolved model.
@@ -154,6 +194,7 @@ def classify_content_item(
             .first()
         )
         if existing is not None:
+            _observe(observation, reused=True, called=False, usage=None)
             return existing
 
     started = time.monotonic()
@@ -166,14 +207,18 @@ def classify_content_item(
         moderation_judgment = adapter.classify(state)
     except ModerationUnavailable as error:
         # No ERROR row is persisted here: typed honest outcome for JEV-003B.
+        _observe(observation, reused=False, called=False, usage=None)
         return ModerationClassificationOutcome('unavailable', error.code)
 
     resolved_model = moderation_judgment.model
     if not isinstance(resolved_model, str) or not resolved_model.strip():
+        _observe(observation, reused=False, called=True, usage=None)
         return ModerationClassificationOutcome(
             'unavailable', 'typesafe_response_invalid'
         )
     resolved_model = moderation_judgment.model.strip()
+
+    current_usage = _current_usage(moderation_judgment)
 
     policy_result = compose_policy(
         provider_explicit,
@@ -188,10 +233,7 @@ def classify_content_item(
         'model': resolved_model,
         'requested_model': requested_model,
         'classification_ms': round((time.monotonic() - started) * 1000),
-        'usage': {
-            'input_tokens': moderation_judgment.usage.input_tokens,
-            'output_tokens': moderation_judgment.usage.output_tokens,
-        },
+        'usage': current_usage,
         'policy': {
             'decision': policy_result.decision,
             'reason': policy_result.reason,
@@ -214,6 +256,7 @@ def classify_content_item(
         source_data_hash=source_data_hash,
         question_revision=question_revision,
     )
+    _observe(observation, reused=not _created, called=True, usage=current_usage)
     return judgment
 
 

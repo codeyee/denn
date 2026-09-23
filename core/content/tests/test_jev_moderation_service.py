@@ -18,13 +18,17 @@ DISABLED = {'MODERATION_CLASSIFICATION_ENABLED': False}
 
 
 class _RecordingClient:
-    def __init__(self, response_model='jev-1.13.0'):
+    def __init__(self, response_model='jev-1.13.0', input_tokens=11, output_tokens=3):
         self.calls = []
         self.response_model = response_model
+        self.input_tokens = input_tokens
+        self.output_tokens = output_tokens
 
     def classify(self, state):
         self.calls.append(state)
         response_model = self.response_model
+        input_tokens = self.input_tokens
+        output_tokens = self.output_tokens
 
         class _Response:
             model = response_model
@@ -33,7 +37,28 @@ class _RecordingClient:
                 'explicit_or_sensitive': 0.05,
                 'needs_review': 0.05,
             }
-            usage = type('U', (), {'input_tokens': 11, 'output_tokens': 3})()
+            usage = type('U', (), {'input_tokens': input_tokens, 'output_tokens': output_tokens})()
+
+        return _Response()
+
+
+class _NoUsageClient:
+    """A client whose response omits the usage object entirely."""
+
+    def __init__(self):
+        self.calls = []
+
+    def classify(self, state):
+        self.calls.append(state)
+
+        class _Response:
+            model = 'jev-1.13.0'
+            nouls = {
+                'safe_for_automatic_discovery': 0.9,
+                'explicit_or_sensitive': 0.05,
+                'needs_review': 0.05,
+            }
+            usage = None
 
         return _Response()
 
@@ -222,3 +247,124 @@ class ModerationServiceTests(TestCase):
         self.assertEqual(judgment.payload['requested_model'], 'jev-latest')
         self.assertEqual(judgment.payload['provider_explicit'], True)
         self.assertEqual(judgment.payload['raw_nouls'], {})
+
+
+class ObservationContractTests(TestCase):
+    """Invocation metadata: `reused`, `called`, and current-call usage."""
+
+    def setUp(self):
+        self.client = _RecordingClient()
+
+    @override_settings(**DISABLED)
+    def test_disabled_mode_reports_no_call_and_no_usage(self):
+        observation = {}
+        classify_content_item(_movie_item(), observation=observation)
+        self.assertEqual(
+            observation, {'reused': False, 'called': False, 'usage': None}
+        )
+
+    @override_settings(**ENABLED)
+    def test_state_unavailable_reports_no_call_and_no_usage(self):
+        item = ContentItem.objects.create(
+            source_api=ContentItem.SourceAPI.TMDB,
+            external_id='obs-no-detail',
+            content_type=ContentItem.ContentType.MOVIE,
+        )
+        observation = {}
+        classify_content_item(item, client=self.client, observation=observation)
+        self.assertEqual(len(self.client.calls), 0)
+        self.assertEqual(
+            observation, {'reused': False, 'called': False, 'usage': None}
+        )
+
+    @override_settings(**ENABLED)
+    def test_first_call_reports_called_with_current_usage(self):
+        observation = {}
+        classify_content_item(
+            _movie_item(), client=self.client, observation=observation
+        )
+        self.assertEqual(observation['reused'], False)
+        self.assertEqual(observation['called'], True)
+        self.assertEqual(
+            observation['usage'], {'input_tokens': 11, 'output_tokens': 3}
+        )
+
+    @override_settings(**ENABLED)
+    def test_pinned_reuse_reports_reused_without_a_call(self):
+        item = _movie_item()
+        classify_content_item(item, client=self.client, model='jev-1.13.0')
+        observation = {}
+        classify_content_item(
+            item, client=self.client, model='jev-1.13.0', observation=observation
+        )
+        self.assertEqual(len(self.client.calls), 1)
+        self.assertEqual(
+            observation, {'reused': True, 'called': False, 'usage': None}
+        )
+
+    @override_settings(**ENABLED)
+    def test_provider_override_reports_no_call_and_no_usage(self):
+        item = _movie_item()
+        payload = {
+            'type': 'movie',
+            'title': 'Fight Club',
+            'description': 'A dystopian drama.',
+            'adult': True,
+        }
+        observation = {}
+        with patch(
+            'content.services.moderation_service.from_local', return_value=payload
+        ):
+            classify_content_item(item, client=self.client, observation=observation)
+        self.assertEqual(len(self.client.calls), 0)
+        self.assertEqual(
+            observation, {'reused': False, 'called': False, 'usage': None}
+        )
+
+    @override_settings(**ENABLED)
+    def test_unavailable_reports_no_call_and_no_usage(self):
+        observation = {}
+        classify_content_item(
+            _movie_item(), client=_UnavailableClient(), observation=observation
+        )
+        self.assertEqual(
+            observation, {'reused': False, 'called': False, 'usage': None}
+        )
+
+    @override_settings(**ENABLED)
+    def test_response_without_usage_reports_called_with_unreported_tokens(self):
+        observation = {}
+        classify_content_item(
+            _movie_item(), client=_NoUsageClient(), observation=observation
+        )
+        self.assertEqual(observation['called'], True)
+        self.assertEqual(
+            observation['usage'], {'input_tokens': None, 'output_tokens': None}
+        )
+
+    @override_settings(**ENABLED)
+    def test_alias_call_collapsing_onto_existing_row_keeps_current_usage(self):
+        item = _movie_item()
+        first_client = _RecordingClient(input_tokens=11, output_tokens=3)
+        first = classify_content_item(item, client=first_client, model='jev-latest')
+        self.assertEqual(first.payload['usage']['input_tokens'], 11)
+
+        # The alias path always calls Jev, and the resolved model already has a
+        # row, so the write collapses. Usage must describe THIS call.
+        second_client = _RecordingClient(input_tokens=77, output_tokens=9)
+        observation = {}
+        second = classify_content_item(
+            item, client=second_client, model='jev-latest', observation=observation
+        )
+        self.assertEqual(second.pk, first.pk)
+        self.assertEqual(len(second_client.calls), 1)
+        self.assertEqual(observation['reused'], True)
+        self.assertEqual(observation['called'], True)
+        self.assertEqual(
+            observation['usage'], {'input_tokens': 77, 'output_tokens': 9}
+        )
+
+    @override_settings(**ENABLED)
+    def test_observation_is_optional_for_existing_callers(self):
+        judgment = classify_content_item(_movie_item(), client=self.client)
+        self.assertEqual(judgment.status, ContentModerationJudgment.Status.COMPLETE)
