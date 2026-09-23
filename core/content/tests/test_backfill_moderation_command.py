@@ -1,6 +1,7 @@
 """Integration tests for the backfill command (thin slice, fakes at the edge)."""
 import json
 import os
+import tempfile
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -135,12 +136,39 @@ class BackfillCommandTests(TestCase):
             if os.path.exists(path):
                 os.unlink(path)
 
-    def test_report_missing_directory_fails_closed(self):
-        pk = _item('x').pk
-        script = {pk: (_judgment(), {'reused': False, 'called': False})}
-        with self.assertRaises(CommandError):
-            self._call_with_script(script, [pk], limit=1,
-                                    report='/nonexistent-dir-xyz/report.json')
+    def test_invalid_report_paths_fail_before_work_without_creating_paths(self):
+        with tempfile.TemporaryDirectory() as root:
+            missing_parent = os.path.join(root, 'missing')
+            missing_report = os.path.join(missing_parent, 'report.json')
+            file_parent = os.path.join(root, 'not-a-directory')
+            with open(file_parent, 'w', encoding='utf-8') as handle:
+                handle.write('not a directory')
+            existing_directory = os.path.join(root, 'report-directory')
+            os.mkdir(existing_directory)
+
+            invalid_paths = (
+                ('empty path', ''),
+                ('NUL byte in path', os.path.join(root, 'bad\x00name.json')),
+                ('missing parent', missing_report),
+                ('parent is a file', os.path.join(file_parent, 'report.json')),
+                ('destination is a directory', existing_directory),
+            )
+            for label, report_path in invalid_paths:
+                with self.subTest(path=label):
+                    with patch(f'{COMMAND}.run_backfill') as runner, \
+                            patch(f'{COMMAND}.classify_content_item') as classify:
+                        with open(os.devnull, 'w', encoding='utf-8') as stdout:
+                            with self.assertRaises(CommandError):
+                                call_command(
+                                    'backfill_content_moderation',
+                                    '--confirm-live', '--limit=1',
+                                    f'--report={report_path}', stdout=stdout)
+                        runner.assert_not_called()
+                        classify.assert_not_called()
+
+            self.assertFalse(os.path.exists(missing_parent))
+            self.assertFalse(os.path.exists(missing_report))
+            self.assertEqual(os.listdir(existing_directory), [])
 
     def test_invalid_option_values_rejected(self):
         pk = _item('v').pk
