@@ -213,14 +213,16 @@ Jev supplies independent typed judgments; application code owns precedence, thre
   - Acceptance: shadow mode produces zero visible behavior change; enforcement flags apply surface-specific behavior; accessibility, stable layout, SSR, and cache keys are preserved.
   - Checks: policy/component tests, `make validate-web`, browser scenarios for default and opt-in users.
   - Route: delegated; writer trigger.
-  - [ ] **JEV-005-REVEAL — Keep explicit-artwork reveal control in an upper corner**
+  - [x] **JEV-005-REVEAL — Keep explicit-artwork reveal control in an upper corner**
     - Scope: replace the centered text pill with a compact icon-only Eye/EyeOff button, preserve its accessible name and pressed state, reserve space below both top badge slots, and prevent its click from triggering card navigation.
     - Guardrail: apply only to complete explicit judgments; preserve development-only route behavior and do not imply the blur blocks image access.
     - Checks: focused keyboard/touch/accessibility and card-layout tests for both badge slots; mapped Web container Vitest, lint, build, and auth-card budget check.
     - Route: delegated direct; component, card placement, and tests form one bounded UI behavior.
     - Implementation: the reveal is icon-only with a 44×44 CSS target, accessible title/label, `aria-pressed`, visible keyboard focus, and click interception. The two top badges share a row; the reveal control is stacked below them at the upper-right edge. Blur eligibility remains complete + explicit; `needs_review` does not show the control.
     - Verification: in `denn-agent-jev-moderation-backfill-web-1` (`/app` mapped to this worktree), `pnpm exec vitest run src/test/moderation-reveal-button.test.tsx` -> 4 tests passed; `pnpm run lint` -> pass; `pnpm run cards:check` -> 150 WebP files valid, 3,539,278 bytes; `pnpm run build` -> pass. Build warnings: one existing >500 kB client chunk and Nitro's missing `compatibilityDate` fallback. Build emitted `dev.moderation-preview-*` client and server chunks. `git diff --check` -> pass.
-    - Browser visual readback: pending parent verification. No route removal, production deploy, or production backfill was performed.
+    - Browser visual readback (parent): PASS. The synthetic fixture toggled Eye/EyeOff; stored Core ContentItem `#1947` blurred and revealed its explicit artwork; the compact top-right control did not cover the main artwork.
+    - Parent verification: `pnpm exec vitest run src/test/moderation-reveal-button.test.tsx` -> 4/4 PASS in the existing Web container. Native assessment: RDD off, risk medium, `review_due=false` (`under_budget`) against base `38f8998`; this is assessment evidence, not a review receipt.
+    - No route removal, production deploy, production backfill, or live Jev call was performed.
     - Commit identity: `feat(web): refine moderation artwork reveal flow`, `aac1f69` on `agent/jev-moderation-ux-decisions`.
   - [x] **JEV-005-LOCAL-PREVIEW — Show the moderation visual safely in the local Web app**
     - Scope: add a development-only reachable preview that demonstrates explicit blur, badge, and keyboard reveal states on the shared content-card treatment; use a clearly labeled fixture when no local persisted explicit judgment exists, and distinguish fixture data from Core API data.
@@ -230,6 +232,11 @@ Jev supplies independent typed judgments; application code owns precedence, thre
     - Status: implementation committed as `ba97df3` (`feat(web): add dev moderation preview`) on `agent/jev-moderation-web-preview`, based on `17c167d`; focused Vitest (3 files/5 tests), Web lint, Web build, and auth-card budget check passed in the existing Web container. `http://localhost:3001/dev/moderation-preview` returned HTTP 200.
     - Browser evidence: at `http://localhost:3001/dev/moderation-preview`, the explicit fixture was visibly blurred; reveal removed the blur and changed the button label to “Blur artwork”. Core ContentItem `1387` loaded through one read-only request and displayed a real `Missing` summary without blur.
     - Gap: no stored explicit sample was verified in the local database; the explicit visual demonstration remains a clearly labeled fixture. Host `make validate-web` was blocked by missing `@playwright/test`, though focused Vitest (3 files/5 tests), Web lint/build, and the auth-card check passed in the mapped container. No live Jev call or production deploy.
+
+  - [ ] **JEV-005-DEV-PREVIEW-RELEASE-GATE — Exclude the development moderation preview from production output**
+    - Scope: remove or exclude `/dev/moderation-preview` from the production route graph and emitted client/server artifacts while retaining local development access.
+    - Acceptance: a production build contains no moderation-preview route chunks or reachable route; local development preview behavior remains available. The existing DEV-only `notFound()` guard is not sufficient for this release gate.
+    - Status: pending. The Web production build currently emits `dev.moderation-preview-*` client and server chunks.
 
 - [ ] **JEV-006 — Build the evaluation harness and go/no-go evidence**
   - Add 300–500 balanced EN/ES cross-provider fixtures, an offline fake-client metric suite, an opt-in live Jev runner, and a report template.
@@ -293,8 +300,8 @@ Jev supplies independent typed judgments; application code owns precedence, thre
 - Verified existing authoritative content policy in `.docs/architecture/content-eligibility.md`.
 - Verified existing `UserPreferences.allow_adult_content` and settings UI precedent.
 - Verified no current moderation judgment model or TypeSafe SDK dependency.
-- JEV-002 (JEV-002A, JEV-002B, and JEV-002-Q3) and the JEV-003B command core above are implemented and verified offline. JEV-007-MODERATION-FLOW is complete; JEV-005-REVEAL is implemented and tested but awaits parent visual readback. JEV-003C and the remaining JEV-004–JEV-007 work remain pending.
+- JEV-002 (JEV-002A, JEV-002B, and JEV-002-Q3) and the JEV-003B command core above are implemented and verified offline. JEV-007-MODERATION-FLOW and JEV-005-REVEAL are complete; the development-preview production exclusion gate and JEV-003C and the remaining JEV-004–JEV-007 work remain pending.
 
 ## Next step
 
-Next: continue with JEV-003B operator review and JEV-003C incremental scheduling, pending a queue/worker architecture decision. Resolve the open product choices in `.docs/ideas/jev-content-moderation-product-flow.md` before activating enforcement; remove/exclude the preview route from production output before release. Provider ingestion remains a separate backlog item. Chain strategy stays `stacked-to-main`. A separate bounded local exact-ID Jev sample was run earlier; no live Jev call was made by this UX/documentation slice, and no production backfill or deployment has occurred.
+Next: continue with JEV-003B operator review and JEV-003C incremental scheduling, pending a queue/worker architecture decision. Resolve the open product choices in `.docs/ideas/jev-content-moderation-product-flow.md` before activating enforcement; complete JEV-005-DEV-PREVIEW-RELEASE-GATE before release. Provider ingestion remains a separate backlog item. Chain strategy stays `stacked-to-main`. A separate bounded local exact-ID Jev sample was run earlier; no live Jev call was made by this UX/documentation slice, and no production backfill or deployment has occurred.
