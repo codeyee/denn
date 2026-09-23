@@ -30,15 +30,19 @@ class ContentItemDetailByIdViewTests(APITestCase):
 
     def test_detail_by_id_returns_item_with_source_data_included(self):
         url = reverse('content:content-detail-by-id', kwargs={'id': self.item.pk})
-        with patch(
-            'content.services.source_data_orchestrator._proxy_fetch',
-            return_value={self.item.pk: {'title': 'Fight Club'}},
+        with (
+            patch(
+                'content.services.source_data_orchestrator._proxy_fetch',
+                return_value={self.item.pk: {'title': 'Fight Club'}},
+            ),
+            patch('content.services.moderation_service.classify_content_item') as classify,
         ):
             response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['id'], self.item.pk)
         self.assertEqual(response.data['external_id'], '550')
         self.assertEqual(response.data['source_data'], {'title': 'Fight Club'})
+        classify.assert_not_called()
 
     def test_detail_includes_current_user_rating_without_secondary_endpoint(self):
         rating = Rating.objects.create(

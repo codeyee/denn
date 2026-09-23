@@ -262,6 +262,26 @@ operator action. A future worker must re-check freshness before and after any
 remote call; a database outbox cannot guarantee exactly-once Jev delivery after
 an ambiguous timeout or process crash.
 
+The bounded Core management command consumes only these incremental outbox
+jobs; it does not scan or backfill existing content:
+
+```sh
+python manage.py run_moderation_worker --once --batch-size 10
+```
+
+The worker claims ready rows under short database leases (`skip_locked` on
+PostgreSQL), closes the claim transaction before classification, rechecks the
+persisted source hash, and fences completion with the lease token. Current
+successful judgments are reused, including the `jev-latest` requested-model
+alias. Only pre-send configuration failures and definitive rate-limit
+responses are retried with bounded exponential backoff and a finite attempt
+limit. Timeouts, unexpected failures, and expired leases become
+`outcome_unknown`; operators must reconcile these before any manual retry.
+Logs contain aggregate outcome counts, duration, and bounded error codes, not
+content state, provider payloads, or credentials. Classification stays off the
+detail request path. This command is not wired into local Compose or production
+process configuration yet.
+
 See [`content-lifecycle.md`](./content-lifecycle.md).
 Discovery filtering is defined in
 [`content-eligibility.md`](./content-eligibility.md).
