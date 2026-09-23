@@ -290,29 +290,36 @@ Reglas duras:
 - Cuando se agregue una nueva env var compartida entre dos servicios.
 - Cuando se cambie el contrato de paginación de `proxy` o `core`.
 
-## 9. Resolución masiva de identidad de contenido
+## 9. Bulk content identity resolution
 
-`POST /api/content/resolve-ids/` es el contrato confiable para que `web`
-convierta resultados de discovery en ids internos antes de renderizar
-enlaces.
+`POST /api/content/resolve-ids/` is the trusted contract for `web` to
+resolve discovery results to internal ids before rendering links.
 
-- Acepta como máximo 200 elementos únicos por
+- Accepts at most 200 unique items by
   `(content_type, external_id, source)`.
-- Autoriza un JWT de usuario válido o la combinación server-only
+- Authorizes a valid user JWT or the server-only combination
   `X-Api-Key: <PROXY_API_KEY>` + `X-Api-Consumer: web`.
-- Un navegador anónimo sin esa credencial recibe `401`; el BFF público
-  no reenvía este `POST`.
-- Aplica límites burst y sustained específicos al usuario o consumidor
-  de servicio; los usuarios conservan el máximo histórico de 1,000/día.
-- Sólo acepta identidad. Ignora campos adicionales y nunca persiste
-  metadata de proveedor suministrada por el navegador.
-- La operación es idempotente, conserva el orden de entrada y devuelve
-  el id estable de `ContentItem` para cada triple.
-- Un detalle nuevo se materializa después por el camino confiable
-  `core` -> `proxy`; el endpoint bulk no duplica el fetch de discovery.
-- Hover, focus y navegación nunca deben llamar
-  `POST /api/content/get-or-create/`; esas interacciones son lecturas
-  puras contra el id ya resuelto.
+- Anonymous browsers without that credential receive `401`; the public BFF
+  does not forward this `POST`.
+- Applies user- or service-consumer-specific burst and sustained throttles;
+  users retain the historical 1,000-per-day limit.
+- Accepts identity only. It ignores additional fields and never persists
+  provider metadata supplied by the browser.
+- The operation is idempotent, preserves input order, and returns the stable
+  `ContentItem` id for each triple. Each result also returns an allowlisted
+  `moderation` object with `status` and `classification`. Core validates
+  freshness against its server-materialized current-source hash; caller-
+  supplied metadata cannot establish judgment freshness.
+- Unknown, missing, stale, pending, and needs-review summaries remain visible
+  to the caller. Only `safe`, `explicit`, and `needs_review` are public
+  classifications. Hashes, model output, payloads, and error details are
+  never included. A completed judgment with an unknown classification is
+  represented as `complete` with a null classification.
+- New detail is materialized later through the trusted `core` -> `proxy`
+  path; the bulk endpoint does not duplicate discovery fetches.
+- Hover, focus, and navigation must never call
+  `POST /api/content/get-or-create/`; those interactions are pure reads
+  against the already-resolved id.
 
 ## 9.1 Detalle público id-first
 

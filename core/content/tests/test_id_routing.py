@@ -12,8 +12,9 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.request import Request
 from rest_framework.test import APITestCase, APIRequestFactory
+from drf_spectacular.generators import SchemaGenerator
 
-from content.models import ContentItem, Rating
+from content.models import ContentItem, ContentModerationJudgment, Rating
 from core.throttling import CatalogDetailRateThrottle
 
 
@@ -216,6 +217,204 @@ class ContentItemBulkResolveTests(APITestCase):
         self.assertEqual(ContentItem.objects.filter(external_id='77').count(), 1)
         self.assertFalse(
             hasattr(ContentItem.objects.get(external_id='77'), 'movie_detail'),
+        )
+        self.assertEqual(
+            first.data['results'][0]['moderation'],
+            {'status': 'missing', 'classification': None},
+        )
+
+    def _create_moderation_judgment(self, item, classification, source_hash):
+        ContentItem.objects.filter(pk=item.pk).update(
+            current_moderation_source_hash=source_hash,
+        )
+        return ContentModerationJudgment.objects.create(
+            content_item=item,
+            source_data_hash=source_hash,
+            model_name='jev-test',
+            question_revision='q1',
+            status=ContentModerationJudgment.Status.COMPLETE,
+            classification=classification,
+            payload={'private': 'must not be exposed'},
+            error_code='private-error',
+        )
+
+    def test_returns_only_current_public_moderation_summary(self):
+        cases = (
+            ('explicit', ContentModerationJudgment.Classification.EXPLICIT),
+            ('safe', ContentModerationJudgment.Classification.SAFE),
+            ('needs-review', ContentModerationJudgment.Classification.NEEDS_REVIEW),
+            ('unknown', ContentModerationJudgment.Classification.UNKNOWN),
+        )
+        inputs = []
+        expected = []
+        for external_id, classification in cases:
+            item = ContentItem.objects.create(
+                source_api=ContentItem.SourceAPI.TMDB,
+                external_id=external_id,
+                content_type=ContentItem.ContentType.MOVIE,
+            )
+            source_hash = f'hash-{external_id}'
+            self._create_moderation_judgment(item, classification, source_hash)
+            inputs.append({
+                'source_api': ContentItem.SourceAPI.TMDB,
+                'external_id': external_id,
+                'content_type': ContentItem.ContentType.MOVIE,
+                # Additional client fields remain ignored and cannot establish freshness.
+                'source_data': {'title': 'caller controlled'},
+            })
+            public_classification = {
+                ContentModerationJudgment.Classification.EXPLICIT: 'explicit',
+                ContentModerationJudgment.Classification.SAFE: 'safe',
+                ContentModerationJudgment.Classification.NEEDS_REVIEW: 'needs_review',
+                ContentModerationJudgment.Classification.UNKNOWN: None,
+            }[classification]
+            expected.append({'status': 'complete', 'classification': public_classification})
+
+        response = self.client.post(self.url, {'items': inputs}, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            [result['moderation'] for result in response.data['results']],
+            expected,
+        )
+        for result in response.data['results']:
+            self.assertEqual(
+                set(result['moderation']),
+                {'status', 'classification'},
+            )
+            self.assertNotIn('source_data_hash', result)
+            self.assertNotIn('payload', result)
+            self.assertNotIn('error_code', result)
+
+    def test_preserves_missing_stale_and_null_current_hash_as_non_complete(self):
+        stale = ContentItem.objects.create(
+            source_api=ContentItem.SourceAPI.TMDB,
+            external_id='stale-current-source',
+            content_type=ContentItem.ContentType.MOVIE,
+            current_moderation_source_hash='new-hash',
+        )
+        ContentModerationJudgment.objects.create(
+            content_item=stale,
+            source_data_hash='old-hash',
+            model_name='jev-test',
+            question_revision='q1',
+            status=ContentModerationJudgment.Status.COMPLETE,
+            classification=ContentModerationJudgment.Classification.EXPLICIT,
+        )
+        null_hash = ContentItem.objects.create(
+            source_api=ContentItem.SourceAPI.TMDB,
+            external_id='null-current-source',
+            content_type=ContentItem.ContentType.MOVIE,
+        )
+        self._create_moderation_judgment(
+            null_hash,
+            ContentModerationJudgment.Classification.SAFE,
+            'known-hash',
+        )
+        ContentItem.objects.filter(pk=null_hash.pk).update(
+            current_moderation_source_hash=None,
+        )
+        response = self.client.post(
+            self.url,
+            {'items': [
+                {
+                    'source_api': ContentItem.SourceAPI.TMDB,
+                    'external_id': external_id,
+                    'content_type': ContentItem.ContentType.MOVIE,
+                }
+                for external_id in ('missing-current-source', 'stale-current-source', 'null-current-source')
+            ]},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            [result['moderation'] for result in response.data['results']],
+            [
+                {'status': 'missing', 'classification': None},
+                {'status': 'stale', 'classification': None},
+                {'status': 'stale', 'classification': None},
+            ],
+        )
+
+    def test_preserves_input_order_and_rejects_duplicate_identities(self):
+        response = self.client.post(
+            self.url,
+            {'items': [
+                {
+                    'source_api': ContentItem.SourceAPI.TMDB,
+                    'external_id': external_id,
+                    'content_type': ContentItem.ContentType.MOVIE,
+                }
+                for external_id in ('second', 'first')
+            ]},
+            format='json',
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            [result['external_id'] for result in response.data['results']],
+            ['second', 'first'],
+        )
+        duplicate_response = self.client.post(
+            self.url,
+            {'items': [
+                {
+                    'source_api': ContentItem.SourceAPI.TMDB,
+                    'external_id': 'same',
+                    'content_type': ContentItem.ContentType.MOVIE,
+                },
+                {
+                    'source_api': ContentItem.SourceAPI.TMDB,
+                    'external_id': 'same',
+                    'content_type': ContentItem.ContentType.MOVIE,
+                },
+            ]},
+            format='json',
+        )
+        self.assertEqual(duplicate_response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_bulk_summary_uses_one_content_query_with_moderation_subqueries(self):
+        from django.test.utils import CaptureQueriesContext
+
+        with CaptureQueriesContext(connection) as captured:
+            response = self.client.post(
+                self.url,
+                {'items': [
+                    {
+                        'source_api': ContentItem.SourceAPI.TMDB,
+                        'external_id': f'query-budget-{index}',
+                        'content_type': ContentItem.ContentType.MOVIE,
+                    }
+                    for index in range(5)
+                ]},
+                format='json',
+            )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        content_reads = [
+            query['sql'] for query in captured.captured_queries
+            if 'SELECT' in query['sql'].upper()
+            and 'content_items' in query['sql'].lower()
+        ]
+        self.assertEqual(len(content_reads), 1)
+        self.assertIn('content_moderation_judgment', content_reads[0].lower())
+
+    def test_openapi_documents_bulk_moderation_fields(self):
+        schema = SchemaGenerator().get_schema(request=None, public=True)
+        operation = schema['paths']['/api/content/resolve-ids/']['post']
+        response_schema = operation['responses']['200']['content']['application/json']['schema']
+        response_schema = schema['components']['schemas'][response_schema['$ref'].rsplit('/', 1)[-1]]
+        item_ref = response_schema['properties']['results']['items']['$ref']
+        item_schema = schema['components']['schemas'][item_ref.rsplit('/', 1)[-1]]
+        moderation_ref = item_schema['properties']['moderation']['allOf'][0]['$ref']
+        moderation_schema = schema['components']['schemas'][moderation_ref.rsplit('/', 1)[-1]]
+        self.assertEqual(
+            moderation_schema['properties']['status']['enum'],
+            ['missing', 'pending', 'complete', 'stale', 'error'],
+        )
+        self.assertEqual(
+            moderation_schema['properties']['classification']['enum'],
+            ['safe', 'explicit', 'needs_review', None],
         )
 
     def test_accepts_homepage_identity_batch_for_thirty_items_per_type(self):

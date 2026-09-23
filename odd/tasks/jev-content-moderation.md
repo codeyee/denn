@@ -2,7 +2,9 @@
 
 ## Objective
 
-Build a production-capable, server-side Jev moderation capability for persisted and newly ingested content. Ship it initially in shadow/evaluation mode, while implementing an enforcement path that remains disabled until measured go/no-go criteria are satisfied.
+Build a production-capable, server-side Jev moderation capability for persisted and newly ingested content. The first release should be usable and enforceable after representative validation; evaluation and rollout may be staged.
+
+- Objective history: the initial plan required shadow/evaluation mode and disabled enforcement until a measured go/no-go. The later explicit production-feature goal supersedes that rollout constraint; validation remains required before the first enforced release.
 
 ## Problem
 
@@ -226,6 +228,17 @@ Jev supplies independent typed judgments; application code owns precedence, thre
     - Commit identity: `feat(content): materialize current moderation freshness`, `31729a5d4971e97595d96dae85d4c148b45310cb` on `agent/jev-moderation-current-hash`; 484 authored changed lines across Core schema/persistence/query, tests, and API architecture docs.
     - Rollback boundary: revert `31729a5` to remove the nullable field/migration, persistence hooks, bounded hash command, summary freshness check, tests, and matching docs. No judgment rows are rewritten.
     - Route: delegated direct; Core model, both full-detail write paths, public summary logic, tests, and API documentation form one bounded behavior change.
+  - [ ] **JEV-004D — Include current moderation summaries in bulk identity resolution**
+    - Scope: add the existing public `{status, classification}` moderation summary to every successfully resolved identity in `POST /api/content/resolve-ids/`, using JEV-004C's server-materialized current-source hash. Do not accept caller metadata as freshness proof or expose hashes and other judgment internals.
+    - Acceptance: preserve the 200-item cap, identity mapping, input ordering, and duplicate rejection; missing, unknown, stale, pending, and `needs_review` remain visible; the bounded query does not add per-item ORM or proxy calls.
+    - Checks: focused resolver and moderation-summary API tests, full `content` suite, `makemigrations --check --dry-run`, `git diff/show --check`, and runtime/API harness or explicit N/A.
+    - Route: delegated direct; writer trigger for the Core view, focused tests, API schema, docs, and tracker update.
+    - Result: annotated the single bulk-resolver read with batched current-source and latest-judgment subqueries, then returned only the existing public status/classification fields. The public OpenAPI response now describes this allowlisted summary. Client-supplied `source_data` remains ignored for freshness.
+    - Verification: focused `content.tests.test_id_routing.ContentItemBulkResolveTests content.tests.test_moderation_summary_api` -> 26 tests OK; exact required full `DATABASE_URL='sqlite://:memory:' MODERATION_CLASSIFICATION_ENABLED=False /Users/emmanuel/Workspace/projects/denn/core/.venv/bin/python manage.py test content` -> 411 tests OK (1 skipped) after the initial sandbox-only report-path write denial and narrow permission for the identical retry; exact required `makemigrations --check --dry-run` -> `No changes detected`; `git diff --check` -> pass.
+    - Runtime harness: N/A; passive resolver response only, no service runtime behavior changed. No live Jev call, backfill, remote action, or deployment.
+    - Rollback boundary: revert the JEV-004D work-unit commit to remove only the additive bulk `moderation` field, its tests, and matching API documentation; no schema or judgment data changes.
+    - Commit identity: pending.
+    - Next step: commit the work unit and record its SHA below.
   - User preference/profile exposure remains part of JEV-004 but is not included in JEV-004A.
 
 - [ ] **JEV-005 — Implement disabled-by-default web enforcement path**
