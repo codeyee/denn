@@ -2,6 +2,7 @@
 import json
 import logging
 import os
+import copy
 from io import StringIO
 from pathlib import Path
 from unittest.mock import Mock, patch
@@ -12,6 +13,7 @@ from django.test import SimpleTestCase, override_settings
 
 from content.management.commands import evaluate_jev_moderation
 from content.moderation.client import ModerationJudgment, UsageTokens
+from content.moderation.evaluation_orchestration import evaluate_dataset
 
 FIXTURE = Path(__file__).parent / "fixtures" / "jev_moderation_gold_cases_v1.json"
 CASE_ID = "case_8a9720d1c46f"
@@ -171,6 +173,10 @@ class EvaluationPreflightCommandTests(SimpleTestCase):
             with override_settings(MODERATION_MODEL="jev-latest"):
                 with self.assertRaisesRegex(CommandError, "concrete pinned"):
                     self.run_live()
+            with override_settings(MODERATION_QUESTION_REVISION="private revision text"):
+                with self.assertRaisesRegex(CommandError, "safe revision") as raised:
+                    self.run_live()
+                self.assertNotIn("private revision text", str(raised.exception))
             with patch.dict(os.environ, {}, clear=True):
                 with self.assertRaisesRegex(CommandError, "TYPESAFE_API_KEY"):
                     self.run_live()
@@ -178,6 +184,104 @@ class EvaluationPreflightCommandTests(SimpleTestCase):
                 with self.assertRaisesRegex(CommandError, "CLASSIFICATION_ENABLED"):
                     self.run_live()
             client_factory.assert_not_called()
+
+    def test_serialized_state_limit_accepts_20000_bytes_and_rejects_20001(self):
+        def sized_case(byte_count):
+            source_cases = json.loads(FIXTURE.read_text(encoding="utf-8"))["cases"]
+            case = copy.deepcopy(next(case for case in source_cases if case["case_id"] == CASE_ID))
+            case["state"]["description"] = ""
+            state_size = len(json.dumps(case["state"], ensure_ascii=False).encode("utf-8"))
+            case["state"]["description"] = "x" * (byte_count - state_size)
+            self.assertEqual(
+                len(json.dumps(case["state"], ensure_ascii=False).encode("utf-8")), byte_count
+            )
+            return case
+
+        for byte_count, should_pass in ((20_000, True), (20_001, False)):
+            with self.subTest(byte_count=byte_count):
+                with patch(
+                    "content.management.commands.evaluate_jev_moderation.load_gold_dataset",
+                    return_value=(sized_case(byte_count),),
+                ):
+                    if should_pass:
+                        report = json.loads(self.run_preflight())
+                        self.assertTrue(report["ready_for_live_run"])
+                    else:
+                        with self.assertRaisesRegex(CommandError, "20000 UTF-8 bytes"):
+                            self.run_preflight()
+
+    def test_nested_report_projection_drops_untrusted_fields_at_every_depth(self):
+        marker = "PRIVATE_STATE_MARKER"
+        client = Mock()
+        client.classify.return_value = ModerationJudgment(
+            model="jev-1.13.0",
+            nouls={
+                "safe_for_automatic_discovery": 0.1,
+                "explicit_or_sensitive": 0.9,
+                "needs_review": 0.1,
+            },
+            usage=UsageTokens(input_tokens=100, output_tokens=0),
+        )
+        source = evaluate_dataset(
+            json.loads(FIXTURE.read_text(encoding="utf-8")),
+            client=client,
+            requested_model="jev-1.13.0",
+            question_revision="q3",
+            selected_case_ids=(CASE_ID,),
+            price_per_million_input_tokens=0.042,
+            price_per_million_output_tokens=0.0,
+            price_provenance="typesafe-models-reviewed-2026-09-23",
+        )
+        source["schema_version"] = "attacker-controlled"
+        source["go_no_go"]["status"] = "APPROVED"
+        source["execution"]["retry_scope"] = marker
+        source["latency_ms"]["source"] = marker
+        source["model_consistency"]["resolved_model_counts"]["private_model"] = marker
+        source["provider_breakdown"]["unknown_provider"] = {"raw_state": marker}
+
+        def inject_unknowns(value):
+            if isinstance(value, dict):
+                children = tuple(value.values())
+                value["raw_payload"] = {"title": marker}
+                for child in children:
+                    inject_unknowns(child)
+            elif isinstance(value, list):
+                for child in value:
+                    inject_unknowns(child)
+
+        inject_unknowns(source)
+        projected = evaluate_jev_moderation._safe_live_report(source)
+        serialized = json.dumps(projected)
+
+        self.assertNotIn(marker, serialized)
+        self.assertNotIn("raw_payload", serialized)
+        self.assertNotIn("unknown_provider", serialized)
+        self.assertEqual(projected["schema_version"], "jev-moderation-evaluation-report/v2")
+        self.assertEqual(projected["go_no_go"]["status"], "INSUFFICIENT")
+        self.assertEqual(projected["usage"]["input_tokens"]["known_total"], 100)
+        self.assertEqual(projected["usage"]["cost"]["total_usd"], "0.00000420")
+        self.assertEqual(projected["execution"]["retry_scope"], "production TypeSafe adapter retries disabled; evaluator retries disabled")
+        self.assertEqual(projected["cases"][0]["jev_prediction"], "explicit_or_sensitive")
+
+    def test_live_failure_restores_sdk_logger_and_redacts_error_message(self):
+        sdk_logger = logging.getLogger("typesafe_sdk")
+        was_disabled = sdk_logger.disabled
+        fake_client = Mock()
+
+        def fail_with_sensitive_error(_state):
+            self.assertTrue(sdk_logger.disabled)
+            raise RuntimeError("private request body and response secret")
+
+        fake_client.classify.side_effect = fail_with_sensitive_error
+        with patch(
+            "content.moderation.client.JevModerationClient", return_value=fake_client
+        ):
+            output = self.run_live()
+
+        self.assertEqual(sdk_logger.disabled, was_disabled)
+        self.assertNotIn("private request body", output)
+        self.assertNotIn("response secret", output)
+        self.assertEqual(json.loads(output)["report"]["cases"][0]["failure_code"], "client_error")
 
     def test_report_projection_discards_future_or_accidental_payload_fields(self):
         projected = evaluate_jev_moderation._safe_live_report({
