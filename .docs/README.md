@@ -200,6 +200,7 @@ Use the rest as specialized references:
 - [`runbooks/content-moderation-backfill.md`](./runbooks/content-moderation-backfill.md)
 - [`runbooks/metadata-preparation.md`](./runbooks/metadata-preparation.md)
 - [`runbooks/jev-moderation-workers.md`](./runbooks/jev-moderation-workers.md) — opt-in worker rollout and operations.
+- [`runbooks/jev-moderation-evaluation.md`](./runbooks/jev-moderation-evaluation.md) — privacy-safe evaluation case schema and evidence limits.
 - [`history/implementation-history.md`](./history/implementation-history.md)
 - [`definition-of-done.md`](./definition-of-done.md)
 

@@ -1,0 +1,90 @@
+{
+  "schema_version": "jev-moderation-gold-cases/v1",
+  "cases": [
+    {
+      "case_id": "case_17b0c3a43d12",
+      "split": "evaluation",
+      "source_kind": "synthetic_text",
+      "provider": "tmdb",
+      "content_type": "movie",
+      "language": "en",
+      "state": {
+        "provider": "tmdb",
+        "content_type": "MOVIE",
+        "title": "Amber Harbor",
+        "description": "A fictional story about a quiet coastal town.",
+        "type_specific": {
+          "movie": {
+            "original_title": "Amber Harbor",
+            "tagline": "A fictional place, a shared promise."
+          }
+        }
+      },
+      "gold_class": "safe_for_automatic_discovery",
+      "adjudication": {
+        "status": "synthetic",
+        "reviewer_count": 0,
+        "guideline_revision": "fixture-v1"
+      },
+      "provider_explicit": false
+    },
+    {
+      "case_id": "case_8a9720d1c46f",
+      "split": "evaluation",
+      "source_kind": "synthetic_text",
+      "provider": "spotify",
+      "content_type": "album",
+      "language": "es",
+      "state": {
+        "provider": "spotify",
+        "content_type": "ALBUM",
+        "title": "Piedra Clara",
+        "description": "Una obra ficticia con una señal explícita simulada.",
+        "type_specific": {
+          "album": {
+            "artists": ["Artista Ficticia"],
+            "tracks": [
+              {
+                "title": "Señal de Prueba",
+                "credits": [{"name": "Artista Ficticia", "role": "writer"}]
+              }
+            ]
+          }
+        }
+      },
+      "gold_class": "explicit_or_sensitive",
+      "adjudication": {
+        "status": "synthetic",
+        "reviewer_count": 0,
+        "guideline_revision": "fixture-v1"
+      },
+      "provider_explicit": true
+    },
+    {
+      "case_id": "case_4c1f7a9e0b63",
+      "split": "evaluation",
+      "source_kind": "synthetic_text",
+      "provider": "openlibrary",
+      "content_type": "book",
+      "language": "es",
+      "state": {
+        "provider": "openlibrary",
+        "content_type": "BOOK",
+        "title": "Cuaderno de Ejemplo",
+        "description": "Una descripción ficticia y ambigua para probar revisión.",
+        "type_specific": {
+          "book": {
+            "authors": ["Autora Ficticia"]
+          }
+        }
+      },
+      "gold_class": "needs_review",
+      "adjudication": {
+        "status": "synthetic",
+        "reviewer_count": 0,
+        "guideline_revision": "fixture-v1"
+      },
+      "provider_explicit": null
+    }
+  ]
+}
