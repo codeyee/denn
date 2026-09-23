@@ -218,7 +218,7 @@ Jev supplies independent typed judgments; application code owns precedence, thre
     - Guardrails: keep production surfaces unchanged and enforcement in shadow mode; honor existing adult preference semantics; missing, stale, pending, error, or invalid summaries never imply safety; do not expose raw judgment details or imply CSS blur prevents image download.
     - Checks: focused Web tests, `make validate-web`, and a browser/e2e check against the existing local stack when available. No live Jev call or production deploy.
     - Route: delegated direct; writer trigger.
-    - Status: implementation complete; commit pending on `agent/jev-moderation-web-preview`, based on `17c167d`; focused Vitest (3 files/5 tests), Web lint, Web build, and auth-card budget check passed in the existing Web container. `http://localhost:3001/dev/moderation-preview` returned HTTP 200.
+    - Status: implementation committed as `ba97df3` (`feat(web): add dev moderation preview`) on `agent/jev-moderation-web-preview`, based on `17c167d`; focused Vitest (3 files/5 tests), Web lint, Web build, and auth-card budget check passed in the existing Web container. `http://localhost:3001/dev/moderation-preview` returned HTTP 200.
     - Pending: browser visual/interaction readback; host `make validate-web` remains blocked by missing `@playwright/test`, though its Web lint/build/auth-card checks passed individually in the mapped container. Build-only generated Nitro type changes were excluded from the candidate.
 
 - [ ] **JEV-006 — Build the evaluation harness and go/no-go evidence**
