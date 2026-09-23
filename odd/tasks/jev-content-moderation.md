@@ -373,7 +373,7 @@ Jev supplies independent typed judgments; application code owns precedence, thre
     - PostgreSQL: real concurrent `skip_locked` scheduling was not available in the SQLite harness. Sequential competing claims, lease token fencing, and expired-lease ambiguity are covered; production/PostgreSQL concurrency remains a deployment verification item.
     - Runtime/deployment: no live Jev call, production data, backfill, deployment wiring, push, or PR publication was performed. Manual operator reconciliation for `outcome_unknown` remains external to this worker.
     - Rollback boundary: revert the worker work-unit commit and its tracker evidence; this removes only the worker service, command, focused worker/GET guard tests, and worker documentation, leaving the JEV-003C outbox and judgment data intact.
-    - Commit identity and exact verification results are recorded in the follow-up tracker evidence commit.
+    - Commit identity: Conventional Commit `feat(content): process incremental moderation outbox jobs`, full SHA `42ab842` on `agent/jev-moderation-worker`. The worker unit changes 614 lines added and 5 removed (619 authored changed lines), above the ~400-line planning advisory; no required behavior or tests were cut. It is a single cohesive worker behavior with its command, focused tests, and docs; PR slicing remains a separate delivery decision.
 
 ## Progress and evidence
 
