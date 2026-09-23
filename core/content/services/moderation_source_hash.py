@@ -53,28 +53,37 @@ def upsert_detail_with_moderation_hash(
 
     with transaction.atomic():
         locked_item = ContentItem.objects.select_for_update().get(pk=content_item.pk)
+        dependent_seasons = []
         if locked_item.content_type == ContentItem.ContentType.TV_SHOW:
-            _invalidate_dependent_seasons_on_parent_name_change(locked_item, payload)
+            dependent_seasons = _dependent_seasons_on_parent_name_change(locked_item, payload)
         mapper(content_item, payload, request_country=request_country)
         persisted_item = ContentItem.objects.get(pk=content_item.pk)
-        persist_current_moderation_source_hash(persisted_item)
+        source_hash = persist_current_moderation_source_hash(persisted_item)
+        from content.services.moderation_job_enqueue import enqueue_current_moderation_job
+
+        enqueue_current_moderation_job(persisted_item, source_hash)
+        for season_id in dependent_seasons:
+            season_item = ContentItem.objects.get(pk=season_id)
+            season_hash = persist_current_moderation_source_hash(season_item)
+            enqueue_current_moderation_job(season_item, season_hash)
         content_item.current_moderation_source_hash = (
             persisted_item.current_moderation_source_hash
         )
 
 
-def _invalidate_dependent_seasons_on_parent_name_change(
+def _dependent_seasons_on_parent_name_change(
     tv_show: ContentItem,
     payload: dict,
-) -> None:
+) -> list[int]:
     previous_name = TvShowDetail.objects.filter(content_item=tv_show).values_list(
         "title", flat=True
     ).first()
     next_name = payload.get("title") or ""
     if previous_name == next_name:
-        return
-    ContentItem.objects.filter(
+        return []
+    dependent_seasons = list(ContentItem.objects.filter(
         content_type=ContentItem.ContentType.SEASON,
         season_detail__tv_show_id=tv_show.pk,
         season_detail__tv_show_name="",
-    ).update(current_moderation_source_hash=None)
+    ).values_list('pk', flat=True))
+    return dependent_seasons

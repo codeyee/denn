@@ -176,7 +176,7 @@ Jev supplies independent typed judgments; application code owns precedence, thre
   - Acceptance: fresh judgments are skipped, changed inputs reclassify, concurrent duplicates collapse, failures do not break ingestion, and backfill can resume safely.
   - Checks: command, ingestion, idempotency, concurrency, and failure tests.
   - Route: delegated; writer trigger.
-  - Current state: JEV-003A is accepted; the next unit is JEV-003B backfill (JEV-003C incremental scheduling follows).
+  - Current state: JEV-003A and JEV-003B are accepted. JEV-003C now has its durable Core outbox and atomic enqueue foundation; the bounded worker remains the next implementation unit.
 
   - [x] **JEV-003A — Deterministic per-item classification service** (new stacked slice on `23b3306` via `agent/jev-moderation-classification-service`)
     - Scope: pure service `core/content/services/moderation_service.py`. Builds the normalized six-field state from `payload_reconstructor.from_local`, computes the source_data_hash inline with canonical JSON (`json.dumps(..., sort_keys=True, ensure_ascii=False, separators=(',', ':'))`) and `hashlib.sha256`, reuses complete judgments with the same identity, persists COMPLETE rows with a typed unavailable outcome instead of ERROR rows, and short-circuits the provider-explicit path without a client call. No scheduling, backfill, UI, API, or background mechanism is touched.
@@ -355,14 +355,24 @@ Jev supplies independent typed judgments; application code owns precedence, thre
     - Rollback boundary: revert the tracker-only evidence commit first, then revert `102d1a9`; this work changes only the selector command, its tests, runbook guidance, and this task entry, with no schema or persisted-judgment changes.
     - Route: delegated direct; writer trigger for the command and tests, with runbook and tracker updates alongside behavior.
 
+  - [x] **JEV-003C-OUTBOX — Persist incremental moderation jobs with normalized detail writes**
+    - Scope: add a durable Core outbox identity `(content item, source hash, requested model, question revision)` and insert/coalesce a queued row inside the same atomic transaction that writes normalized detail and its current source hash. No worker or network call is included.
+    - Behavior: disabled classification, missing hash/detail, and an existing current successful judgment do not leave queued work. `jev-latest` remains the requested-model identity; an existing complete judgment records its requested alias in the payload, so that alias avoids duplicate scheduling. Hash changes supersede older queued/retry jobs. A changed TV-show parent immediately recomputes inherited season hashes and schedules current season jobs; nested season writes use the same enqueue contract.
+    - Safety: job states are `queued|leased|retry|done|superseded|failed|outcome_unknown`; schema includes attempts, availability, lease token/expiry, and safe machine error code. The outbox makes DB enqueue durable, not remote exactly-once; a future worker must re-check freshness and treat ambiguous Jev outcomes conservatively. Startup and backfill remain separate.
+    - Tests: focused enqueue/source-hash tests cover identity-only/missing detail, unchanged and changed hashes, job deduplication, resolved `jev-latest` and provider-rule successes, disabled classification, transaction rollback, unique constraint, inherited-season dependency, and nested season writes.
+    - Verification: `DATABASE_URL='sqlite://:memory:' MODERATION_CLASSIFICATION_ENABLED=False /Users/emmanuel/Workspace/projects/denn/core/.venv/bin/python manage.py test content.tests.test_moderation_job_enqueue content.tests.test_moderation_source_hash` -> 16 tests OK; exact full `... manage.py test content` -> 421 tests OK (1 skipped) after the initial report-path permission denial and narrow approval for the same command; `... manage.py makemigrations --check --dry-run` -> pending final check; `git diff/show --check` -> pending final check.
+    - Runtime harness: N/A; request-path behavior is a same-transaction database insert only. No Jev call, worker, backfill, production data, deployment, or remote action was performed.
+    - Rollback boundary: revert the outbox implementation commit to remove the job model/migration, enqueue service, normalized-detail and nested-season hooks, focused tests, current-state note, and this tracker evidence; existing judgment rows and source hashes are unchanged.
+    - Commit identity: pending implementation commit and tracker-evidence follow-up.
+
 ## Progress and evidence
 
 - Exploration completed by GLM 5.3 Flash in Codex task `01a0c4cd-9ceb-7ba0-a7c1-2d6214d81d8b`.
 - Verified existing authoritative content policy in `.docs/architecture/content-eligibility.md`.
 - Verified existing `UserPreferences.allow_adult_content` and settings UI precedent.
 - Verified no current moderation judgment model or TypeSafe SDK dependency.
-- JEV-002 (JEV-002A, JEV-002B, and JEV-002-Q3) and the JEV-003B command core above are implemented and verified offline. JEV-007-MODERATION-FLOW, JEV-005-REVEAL, JEV-005-DETAIL-ARTWORK, and JEV-005-DEV-PREVIEW-RELEASE-GATE are complete; JEV-003C and the remaining JEV-004–JEV-007 work remain pending.
+- JEV-002 (JEV-002A, JEV-002B, and JEV-002-Q3), JEV-003B command core, and JEV-003C Core outbox enqueue foundation are implemented and verified offline. The incremental worker and remaining JEV-004–JEV-007 work remain pending. JEV-007-MODERATION-FLOW, JEV-005-REVEAL, JEV-005-DETAIL-ARTWORK, and JEV-005-DEV-PREVIEW-RELEASE-GATE are complete.
 
 ## Next step
 
-Next: continue with JEV-003B operator review and JEV-003C incremental scheduling, pending a queue/worker architecture decision. Resolve the open product choices in `.docs/ideas/jev-content-moderation-product-flow.md` before activating enforcement. Provider ingestion remains a separate backlog item. Chain strategy stays `stacked-to-main`. A separate bounded local exact-ID Jev sample was run earlier; no live Jev call was made by this UX/documentation slice, and no production backfill or deployment has occurred.
+Next: implement a bounded worker for the committed JEV-003C outbox, including conservative handling of ambiguous remote outcomes; then continue JEV-003B operator review and the remaining dependent work. Resolve the open product choices in `.docs/ideas/jev-content-moderation-product-flow.md` before activating enforcement. Provider ingestion remains a separate backlog item. Chain strategy stays `stacked-to-main`. No Jev call, production backfill, or deployment was performed by this Core outbox slice.

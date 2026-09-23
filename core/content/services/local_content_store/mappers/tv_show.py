@@ -107,9 +107,11 @@ def _upsert_seasons(
             request_country=request_country,
             tv_show=tv_show,
         )
+        from content.services.moderation_job_enqueue import enqueue_current_moderation_job
         from content.services.moderation_source_hash import (
             persist_current_moderation_source_hash,
         )
 
-        persist_current_moderation_source_hash(season_item)
+        source_hash = persist_current_moderation_source_hash(season_item)
+        enqueue_current_moderation_job(season_item, source_hash)
         upsert_browse_metadata(season_item, season_payload)

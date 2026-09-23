@@ -103,3 +103,73 @@ class ContentModerationJudgment(models.Model):
             f'ModerationJudgment({self.content_item_id}:{self.model_name}:'
             f'{self.question_revision}:{self.status})'
         )
+
+
+class ContentModerationJob(models.Model):
+    """Durable request-path outbox for asynchronous moderation work.
+
+    A job identifies the requested model alias, not a resolved model version.
+    A worker must still re-check source freshness around any remote call; this
+    row cannot provide exactly-once delivery across an ambiguous timeout.
+    """
+
+    class Status(models.TextChoices):
+        QUEUED = 'queued', 'Queued'
+        LEASED = 'leased', 'Leased'
+        RETRY = 'retry', 'Retry'
+        DONE = 'done', 'Done'
+        SUPERSEDED = 'superseded', 'Superseded'
+        FAILED = 'failed', 'Failed'
+        OUTCOME_UNKNOWN = 'outcome_unknown', 'Outcome unknown'
+
+    content_item = models.ForeignKey(
+        ContentItem,
+        on_delete=models.CASCADE,
+        related_name='moderation_jobs',
+    )
+    source_data_hash = models.CharField(max_length=64)
+    requested_model = models.CharField(max_length=64)
+    question_revision = models.CharField(max_length=32)
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.QUEUED,
+    )
+    attempts = models.PositiveIntegerField(default=0)
+    available_at = models.DateTimeField()
+    lease_token = models.UUIDField(null=True, blank=True)
+    lease_until = models.DateTimeField(null=True, blank=True)
+    last_error_code = models.CharField(max_length=64, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'content_moderation_job'
+        constraints = [
+            models.UniqueConstraint(
+                fields=[
+                    'content_item',
+                    'source_data_hash',
+                    'requested_model',
+                    'question_revision',
+                ],
+                name='unique_moderation_job_identity',
+            ),
+        ]
+        indexes = [
+            models.Index(
+                fields=['status', 'available_at', 'id'],
+                name='moderation_job_ready_idx',
+            ),
+            models.Index(
+                fields=['content_item', 'status'],
+                name='moderation_job_item_status_idx',
+            ),
+        ]
+
+    def __str__(self):
+        return (
+            f'ModerationJob({self.content_item_id}:{self.requested_model}:'
+            f'{self.question_revision}:{self.status})'
+        )

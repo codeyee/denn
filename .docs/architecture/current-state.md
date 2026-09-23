@@ -252,8 +252,15 @@ calls. Run it in bounded batches:
 python manage.py backfill_moderation_source_hashes --limit <positive-integer> [--after-id <non-negative-integer>]
 ```
 
-Season hashes with an inherited parent-show name are invalidated when that
-parent name changes, until the season is refreshed or backfilled.
+Season hashes with an inherited parent-show name are recomputed when the parent
+name changes. When incremental moderation is enabled, the same detail
+transaction also inserts a durable, deduplicated moderation outbox job for the
+new hash. This request-path work is database-only; it does not wait for Jev.
+Jobs include the requested model alias and question revision in their identity,
+and obsolete queued/retry jobs are superseded. Backfill remains a separate
+operator action. A future worker must re-check freshness before and after any
+remote call; a database outbox cannot guarantee exactly-once Jev delivery after
+an ambiguous timeout or process crash.
 
 See [`content-lifecycle.md`](./content-lifecycle.md).
 Discovery filtering is defined in

@@ -139,7 +139,8 @@ class ModerationSourceHashTests(TestCase):
         changed_show = {**tv_payload, "title": "Renamed series"}
         ensure_content_detail(show, payload=changed_show, force=True)
         season.refresh_from_db()
-        self.assertIsNone(season.current_moderation_source_hash)
+        self.assertIsNotNone(season.current_moderation_source_hash)
+        self.assertNotEqual(season.current_moderation_source_hash, old_hash)
         self.assertEqual(moderation_summary(season), {"status": "stale", "classification": None})
 
         nested_season = {
