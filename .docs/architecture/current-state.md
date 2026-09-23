@@ -258,9 +258,9 @@ transaction also inserts a durable, deduplicated moderation outbox job for the
 new hash. This request-path work is database-only; it does not wait for Jev.
 Jobs include the requested model alias and question revision in their identity,
 and obsolete queued/retry jobs are superseded. Backfill remains a separate
-operator action. A future worker must re-check freshness before and after any
-remote call; a database outbox cannot guarantee exactly-once Jev delivery after
-an ambiguous timeout or process crash.
+operator action. The incremental worker re-checks freshness before and after
+each remote call; a database outbox cannot guarantee exactly-once Jev delivery
+after an ambiguous timeout or process crash.
 
 The bounded Core management command consumes only these incremental outbox
 jobs; it does not scan or backfill existing content:
