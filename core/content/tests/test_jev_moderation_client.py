@@ -10,9 +10,9 @@ from typesafe_sdk import (
     TypeSafeAPIConnectionError,
     TypeSafeAPITimeoutError,
     TypeSafeBadRequestError,
-    TypeSafeClient,
     TypeSafeError,
     TypeSafeRateLimitError,
+    RetryPolicy,
 )
 
 from content.moderation.client import JevModerationClient, ModerationJudgment
@@ -126,8 +126,20 @@ class JevModerationClientTests(unittest.TestCase):
         result = client.classify(SAMPLE_STATE)
         self.assertIsInstance(result, ModerationSkipped)
 
-    def test_default_client_factory_is_the_real_sync_client(self):
-        self.assertIs(JevModerationClient.default_client_factory, TypeSafeClient)
+    def test_default_factory_disables_sdk_retries_without_api_key_or_network(self):
+        with mock.patch.dict(os.environ):
+            os.environ.pop("TYPESAFE_API_KEY", None)
+            with mock.patch("content.moderation.client.TypeSafeClient") as sdk_factory:
+                expected_client = object()
+                sdk_factory.return_value = expected_client
+
+                client = JevModerationClient(settings_getter=self.settings_getter)
+                self.assertIs(client._resolve_client(), expected_client)
+
+        sdk_factory.assert_called_once()
+        retry_policy = sdk_factory.call_args.kwargs["retry"]
+        self.assertIsInstance(retry_policy, RetryPolicy)
+        self.assertEqual(retry_policy.max_retries, 0)
 
     def test_default_factory_without_api_key_fails_fast_without_network(self):
         with mock.patch.dict(os.environ):

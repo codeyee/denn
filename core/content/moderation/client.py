@@ -16,6 +16,7 @@ from typesafe_sdk import (
     TypeSafeAPIResponseValidationError,
     TypeSafeAPITimeoutError,
     TypeSafeClient,
+    RetryPolicy,
     TypeSafeRateLimitError,
     TypeSafeError,
 )
@@ -48,10 +49,15 @@ def _default_settings_getter(name: str):
     return getattr(settings, name)
 
 
+def _default_client_factory():
+    """Construct the production SDK client without automatic retries."""
+    return TypeSafeClient(retry=RetryPolicy(max_retries=0))
+
+
 class JevModerationClient:
     """Adapter for `TypeSafeClient.system_one` with shared moderation questions."""
 
-    default_client_factory = TypeSafeClient
+    default_client_factory = staticmethod(_default_client_factory)
 
     def __init__(
         self,

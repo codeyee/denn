@@ -116,6 +116,11 @@ leaves incremental jobs queued; stopping the moderation process prevents it
 from draining jobs. These are separate rollback controls. The metadata worker
 can still make Proxy metadata requests while running.
 
+The production `JevModerationClient` constructs the TypeSafe SDK with
+`RetryPolicy(max_retries=0)`. One adapter `classify()` call therefore permits
+at most one SDK wire attempt; worker job retry and reconciliation behavior is
+separate. This is not a global Jev request or cost limit.
+
 ## Production setup gate
 
 No worker deployment manifest or live Dokploy verification is available in
