@@ -47,7 +47,7 @@ The returned `execution` section distinguishes selected cases, classify invocati
 
 ## Exact-sample preflight
 
-`python manage.py evaluate_jev_moderation` currently exposes an explicit `--dry-run` preflight only. It validates a privacy-screened dataset, an exact comma-separated set of opaque case IDs, a positive maximum case limit, the pinned-model/question settings, and a dated pricing label. It does **not** construct a Jev client, make a network request, or read/write the Core database. The JSON output reports only opaque IDs, readiness booleans, configured model/question identity, call-count upper bound, and the supplied rates; it never includes title, description, state, key, or file path. `SimpleTestCase` tests keep database access disabled for this command path.
+`python manage.py evaluate_jev_moderation` provides a no-call `--dry-run` preflight and a separately gated `--confirm-live` mode. Both validate the privacy-screened dataset, exact opaque case IDs, positive case limit, configured model/question identity, and dated pricing provenance before any client construction. The dry run never constructs a client or makes a network/database call. Live mode uses only the configured `MODERATION_MODEL` and `MODERATION_QUESTION_REVISION`, so the report identity cannot be supplied separately from the production adapter settings.
 
 The configured model must be a concrete versioned ID such as `jev-1.13.0` before a live run; the repository default `jev-latest` is deliberately marked not ready because aliases can move. The command's pricing inputs are a dated snapshot, not a spend limit. Review the [TypeSafe model pricing page](https://docs.typesafe.ai/models) immediately before any live evaluation. On 2026-09-23, the page listed Jev 1.13 input at `$42/Btok` (`$0.042` per million input tokens) and free output tokens; use the then-current published or account-specific rates instead of assuming this snapshot remains current. The provenance value must be a safe label such as `typesafe-models-reviewed-2026-09-23`; it is stored with the report, not sent to Jev.
 
@@ -65,7 +65,25 @@ python manage.py evaluate_jev_moderation \
   --dry-run
 ```
 
-Inspect `ready_for_live_run` before proceeding. `maximum_case_limit` limits selected cases only. Token size varies by metadata, so neither the case limit nor the price snapshot enforces a dollar cap. The preflight is not authorization to send catalog content to TypeSafe.
+Inspect `ready_for_live_run` before proceeding. `maximum_case_limit` limits selected cases only. Neither the case limit nor the price snapshot enforces a dollar cap. The preflight itself does not authorize sending catalog content to TypeSafe; use `--confirm-live` only after reviewing the selected text and pricing.
+
+Live mode requires a concrete pinned Jev model, `MODERATION_CLASSIFICATION_ENABLED=true`, and `TYPESAFE_API_KEY` when any selected case needs inference. It accepts at most 25 cases, each with a serialized moderation state no larger than 20,000 UTF-8 bytes. Every case ID must be explicit; there is no implicit sampling. Affirmative TMDB movie/TV overrides are recorded as no-call outcomes.
+
+```sh
+cd core
+python manage.py evaluate_jev_moderation \
+  --dataset content/tests/fixtures/jev_moderation_gold_cases_v1.json \
+  --case-ids case_8a9720d1c46f \
+  --limit 1 \
+  --input-price-per-million-tokens 0.042 \
+  --output-price-per-million-tokens 0 \
+  --price-provenance typesafe-models-reviewed-2026-09-23 \
+  --confirm-live
+```
+
+The live JSON report includes opaque IDs, gold/predicted classes, classification/accounting metrics, elapsed command time, configured model and question revision, and provider-override outcomes. It omits moderation state, titles, descriptions, request/response bodies, credentials, and file paths. The TypeSafe SDK's body-bearing logger is disabled only around the client invocation and restored afterward. The production adapter disables SDK retries and the evaluator does not retry; an error message warns that calls may already have been sent, so do not rerun blindly. The command performs no Core database reads or writes.
+
+`usage.cost` is an estimate from the token counts returned by the SDK and the supplied dated rates. Missing usage remains visible as incomplete; provider billing details can differ. `cost_cap_enforced` is always false: case and byte bounds reduce scope, but they are not a hard spend cap. The command's live path is for an intentionally small, reviewed sample, not a bulk backfill. Synthetic fixture results verify the pipeline only and must not be used to claim model accuracy.
 
 
 ### Report summary template
