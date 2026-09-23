@@ -5,7 +5,7 @@ import { getCookie } from "@tanstack/react-start/server";
 import { AUTH_ACCESS_COOKIE } from "@/lib/auth/constants";
 import { getApiUrl, getProxyApiUrl } from "@/lib/env";
 import type { SessionSnapshot } from "@/server/session";
-import { resolveCatalogContentIds } from "@/server/catalog";
+import { resolveCatalogContentIds, resolveHomepageContentIds } from "@/server/catalog";
 import { buildCatalogVisitorHeaders } from "@/server/catalog-visitor";
 import { buildProxyHeaders, getLogicalRequestId } from "@/server/proxy";
 import {
@@ -454,7 +454,7 @@ async function fetchServerSuggestions(
       route: "/v1/proxy/homepage",
     },
   );
-  return resolveCatalogContentIds(response, country, requestId);
+  return resolveHomepageContentIds(response, country, requestId);
 }
 
 async function fetchServerSearch(

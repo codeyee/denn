@@ -57,6 +57,26 @@ discovery browse request.
 - Logs contain the request route/cache status but not the user's
   preference value.
 
+## Jev Moderation on the Homepage
+
+- Web SSR and the same-origin `/api/proxy/homepage` BFF path share one bulk
+  Core identity-resolution step before homepage data feeds the featured banner
+  or carousels. The browser does not call Core for individual cards and does
+  not receive the proxy API key.
+- Remove an item only when Core's current summary is exactly
+  `status=complete` and `classification=explicit`. Preserve every other
+  returned status, including `needs_review`, `pending`, `stale`, and `missing`;
+  absent or malformed summaries remain visible and are not treated as safe.
+- Core resolution is fetched without HTTP caching, but freshness is bounded by
+  the existing caches around it: the proxy homepage feed can be 5 minutes fresh
+  or up to 30 minutes stale, and the hydrated Web suggestions query uses a
+  5-minute React Query `staleTime`. A later judgment change is therefore not
+  globally invalidated immediately; the browser can retain hydrated suggestions
+  until the query becomes stale and revalidates.
+- This is a homepage discovery rule only. It does not change direct detail,
+  search, Browse, or user preference behavior, and it does not imply that a
+  source-code change has been deployed.
+
 ## Development Moderation Preview
 
 - The Web route `/dev/moderation-preview` presents synthetic examples plus an

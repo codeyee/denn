@@ -1,10 +1,12 @@
 import {
   applyResolvedContentIds,
+  applyHomepageModerationPolicy,
   collectContentIdentities,
   isBrowseResponse,
   type CatalogResponse,
   type ResolvedContentIdentity,
 } from "@/lib/api/contentResolution";
+import type { HomepageResponse } from "@/lib/types";
 import { getApiUrl } from "@/lib/env";
 import { getProxyApiKey } from "@/server/proxy";
 
@@ -12,6 +14,7 @@ export async function resolveCatalogContentIds<T extends CatalogResponse>(
   response: T,
   country: string | null,
   requestId: string,
+  options: { suppressCurrentExplicit?: boolean } = {},
 ): Promise<T> {
   const items = collectContentIdentities(response);
   if (items.length === 0) return response;
@@ -67,6 +70,13 @@ export async function resolveCatalogContentIds<T extends CatalogResponse>(
     }),
   );
 
+  if (options.suppressCurrentExplicit && !isBrowseResponse(resolvedResponse)) {
+    return applyHomepageModerationPolicy(
+      resolvedResponse as HomepageResponse,
+      resolved.results,
+    ) as T;
+  }
+
   if (isBrowseResponse(resolvedResponse)) {
     return {
       ...resolvedResponse,
@@ -75,4 +85,14 @@ export async function resolveCatalogContentIds<T extends CatalogResponse>(
   }
 
   return resolvedResponse;
+}
+
+export function resolveHomepageContentIds(
+  response: HomepageResponse,
+  country: string | null,
+  requestId: string,
+): Promise<HomepageResponse> {
+  return resolveCatalogContentIds(response, country, requestId, {
+    suppressCurrentExplicit: true,
+  });
 }

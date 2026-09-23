@@ -376,6 +376,7 @@ export interface SearchItem {
     image_url?: string | null;
     release_date?: string | null;
     authors?: Author[] | null;
+    moderation?: ModerationSummary;
 }
 
 export interface ImageVariant {
@@ -405,6 +406,7 @@ export interface MovieDetail {
     authors: Author[] | null;
     images: Image[];
     platforms: Record<string, Platform[]> | null;
+    moderation?: ModerationSummary;
 }
 
 export interface TVShowDetail {
@@ -425,6 +427,7 @@ export interface TVShowDetail {
     images: Image[];
     platforms: Record<string, Platform[]> | null;
     seasons: TVSeason[];
+    moderation?: ModerationSummary;
 }
 
 export interface TVSeason {
@@ -528,6 +531,7 @@ export interface AlbumDetail {
     tracks: Track[];
     duration_minutes: number | null;
     images: Image[];
+    moderation?: ModerationSummary;
 }
 
 export interface Track {
@@ -592,6 +596,7 @@ export interface GameDetail {
     series: string | null;
     play_time: GamePlayTime | null;
     duration?: GameDuration | null;
+    moderation?: ModerationSummary;
 }
 
 export interface GameSearchResponse {
@@ -615,6 +620,7 @@ export interface BookDetail {
     pages: number | null;
     description: string | null;
     images: Image[];
+    moderation?: ModerationSummary;
 }
 
 export interface BookSearchResponse {

@@ -246,6 +246,11 @@ Jev supplies independent typed judgments; application code owns precedence, thre
   - Acceptance: shadow mode produces zero visible behavior change; enforcement flags apply surface-specific behavior; accessibility, stable layout, SSR, and cache keys are preserved.
   - Checks: policy/component tests, `make validate-web`, browser scenarios for default and opt-in users.
   - Route: delegated; writer trigger.
+  - [ ] **JEV-005-HOMEPAGE-FILTER — Exclude only current explicit judgments before homepage selection**
+    - Scope: consume Core JEV-004D's `{status, classification}` in one bulk identity-resolution call shared by SSR and the same-origin homepage BFF; filter before hero/banner and carousel selection.
+    - Acceptance: remove only exact `complete` + `explicit`; preserve ordering and every other stored status, including `needs_review`, pending, stale, missing, malformed, and unresolved results. Do not add per-card Jev/Core/proxy requests, expose the proxy API key, or change unrelated search/Browse/detail behavior.
+    - Checks: focused resolution/path tests prove one batch call and SSR/BFF shared enforcement; focused homepage selection test or structural proof; `make validate-web`; `git diff/show --check`; local runtime harness or N/A.
+    - Route: delegated direct; homepage resolver, SSR/BFF callers, client homepage action, tests, and docs form one bounded behavior.
   - [x] **JEV-005-REVEAL — Keep explicit-artwork reveal control in an upper corner**
     - Scope: replace the centered text pill with a compact icon-only Eye/EyeOff button, preserve its accessible name and pressed state, reserve space below both top badge slots, and prevent its click from triggering card navigation.
     - Guardrail: apply only to complete explicit judgments; preserve development-only route behavior and do not imply the blur blocks image access.

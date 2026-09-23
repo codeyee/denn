@@ -4,6 +4,7 @@ import {
 } from "@/lib/utils/contentTypeUtils";
 import {
   ContentType,
+  type ModerationSummary,
   type BrowseResponse,
   type HomepageResponse,
   type MultiSearchResponse,
@@ -19,6 +20,7 @@ export interface ResolvedContentIdentity {
   source_api: string;
   external_id: string;
   content_type: ContentType;
+  moderation?: ModerationSummary;
 }
 
 export function collectContentIdentities(
@@ -66,6 +68,47 @@ export function applyResolvedContentIds<
           : undefined,
     };
   });
+}
+
+export function applyHomepageModerationPolicy(
+  response: HomepageResponse,
+  resolved: ResolvedContentIdentity[],
+): HomepageResponse {
+  const summaries = new Map(
+    resolved.map((item) => [
+      identityKey(item.external_id, item.content_type),
+      item.moderation,
+    ]),
+  );
+
+  const withModeration = mapResponseItems(response, (item) => {
+    const contentType = normalizeContentType(item.type);
+    const moderation = contentType && contentType !== ContentType.PERSON
+      ? summaries.get(identityKey(String(item.id), contentType))
+      : undefined;
+    const result = { ...item };
+    delete result.moderation;
+    if (moderation) result.moderation = moderation;
+    return result;
+  }) as HomepageResponse;
+
+  return Object.fromEntries(
+    Object.entries(withModeration).map(([key, category]) => [
+      key,
+      {
+        ...category,
+        results: category.results.filter(
+          (item) => !isCurrentExplicitModeration(item.moderation),
+        ),
+      },
+    ]),
+  ) as HomepageResponse;
+}
+
+function isCurrentExplicitModeration(
+  moderation: ModerationSummary | undefined,
+): boolean {
+  return moderation?.status === "complete" && moderation.classification === "explicit";
 }
 
 function collectItems(

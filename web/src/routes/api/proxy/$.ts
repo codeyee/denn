@@ -7,7 +7,10 @@ import {
   getProxyBaseUrl,
   normalizeRequestId,
 } from "@/server/proxy";
-import { resolveCatalogContentIds } from "@/server/catalog";
+import {
+  resolveCatalogContentIds,
+  resolveHomepageContentIds,
+} from "@/server/catalog";
 import type { BrowseResponse, HomepageResponse, MultiSearchResponse } from "@/lib/types";
 
 function jsonResponse(data: unknown, status: number, headers: HeadersInit = {}) {
@@ -106,11 +109,17 @@ export const Route = createFileRoute("/api/proxy/$")({
           let data = proxyData;
           if (response.ok && isCatalogDiscoveryPath(splat)) {
             try {
-              data = await resolveCatalogContentIds(
-                proxyData,
-                country,
-                requestId,
-              );
+              data = splat === "homepage"
+                ? await resolveHomepageContentIds(
+                    proxyData as HomepageResponse,
+                    country,
+                    requestId,
+                  )
+                : await resolveCatalogContentIds(
+                    proxyData,
+                    country,
+                    requestId,
+                  );
             } catch (error) {
               console.error(
                 JSON.stringify({

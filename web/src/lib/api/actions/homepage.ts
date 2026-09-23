@@ -1,4 +1,4 @@
-import { proxyApi } from "../proxyApi";
+import { getUserCountryCode } from "@/lib/utils/countryUtils";
 import type { HomepageResponse } from "@/lib/types";
 
 export interface HomepageQueryParams {
@@ -16,9 +16,23 @@ export const homepageActions = {
       searchParams.append("limit", "10");
     }
 
-    return proxyApi.getWithCountry<HomepageResponse>(
-      `/homepage?${searchParams}`,
-      { country: params?.country }
+    const headers = new Headers();
+    const country = params?.country || getUserCountryCode();
+    if (country) headers.set("X-User-Country", country);
+
+    return fetch(`/api/proxy/homepage?${searchParams}`, { headers }).then(
+      async (response) => {
+        if (!response.ok) {
+          const data = (await response.json().catch(() => ({}))) as {
+            message?: unknown;
+          };
+          const message = typeof data.message === "string"
+            ? `: ${data.message}`
+            : "";
+          throw new Error(`Homepage request failed (${response.status})${message}`);
+        }
+        return response.json() as Promise<HomepageResponse>;
+      },
     );
   },
 };
