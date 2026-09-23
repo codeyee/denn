@@ -91,9 +91,19 @@ Jev supplies independent typed judgments; application code owns precedence, thre
   - Checks: fake-client RED/GREEN tests for questions, thresholds, provider precedence, errors, timeouts, and no-secret logging.
   - Route: delegated; preparation and writer triggers.
 
-  - [x] **JEV-002A — TypeSafe adapter, state, questions, and contract fix (complete)**. JEV-002B deterministic policy composition is next.
+  - [x] **JEV-002A — TypeSafe adapter, state, questions, and contract fix (complete)**.
     - Hygiene correction: JEV-002A1 wording now names the issue #102 question keys and the settings-sourced revision; the disabled-mode test lost its dead placeholder code and now asserts no client construction via a failing injected factory; the usage test asserts `assertFalse(hasattr(judgment, "latency_ms"))`.
     - Correction commit: `446b1ec` (`test(content): harden disabled-mode moderation coverage and ODD currency`). Verification: focused suite → `Found 22 test(s)` / OK; prior `content.tests.test_moderation` → `Found 15 test(s)` / OK; `makemigrations --check --dry-run` → `No changes detected`; client tests deterministically OK with `TYPESAFE_API_KEY` absent and set, no network; 361dcf5..HEAD numstat `0/22` test, `5/2` doc (27 authored changed lines), slice below the 400-line budget.
+
+  - [x] **JEV-002B — Deterministic policy composer** (new stacked slice on `d6e921e` via `agent/jev-moderation-policy`)
+    - Scope: pure, typed, code-owned policy composer `core/content/moderation/policy.py` over the three raw probabilities and the provider explicit flag; no SDK import, no persistence, no Jev call, no network.
+    - Contract: provider affirmative explicit flag is the hard authoritative override (always `explicit_or_sensitive`, never safe); `False`/absent never certifies safety. Jev is advisory: `explicit >= threshold` fails closed to `explicit_or_sensitive`; `review >= threshold` becomes `needs_review`; `safe` discovery only when safe is at/above threshold AND both others are below. Missing/incomplete answers fail closed to `needs_review`; invalid/non-finite/out-of-range inputs fail closed to `unknown`; expected unavailable/skipped outcomes never raise. Raw probabilities are preserved by the caller's payload; the composer returns decision/reason only.
+    - Thresholds are configurable via `PolicyThresholds` and validated as finite floats in [0, 1]. Defaults (0.75/0.75/0.75) are provisional and NOT production-tuned; enforcement remains disabled/shadow-only until JEV-005.
+    - Tests: offline table-driven `core/content/tests/test_jev_moderation_policy.py` (15 tests): provider override, provider False/absent never-safe, safe/explicit/review at-boundary equality, safe below threshold, contradictions, incomplete/missing/None, non-finite/out-of-range/non-numeric -> unknown, corrupt-provider-flag never-safe, true override with garbage probabilities, threshold validation rejection, custom-threshold boundary behavior.
+    - Safety correction (verified MEDIUM fail-open, fixed): an earlier draft only identity-checked `provider_explicit is True`, so corrupt truthy values (1, 1.0, true-like strings, collections) flowed through as non-explicit and could yield `safe_for_automatic_discovery` with high safe probability. Correction: only exact `True` short-circuits; exact `False`/`None` follow Jev; every other value returns `unknown` with reason `corrupt_provider_explicit_input` and never raises. Tests: true override short-circuits even with garbage probabilities, corrupt flag values never become safe and never raise, exact bool/None naming. Correction commit: `75587e4`.
+    - No-secret logging is structurally verified (the composer returns/reasons only; it performs no logging and imports no logging module) but has no dedicated test; not fabricated because it does not clearly belong in the owned policy files.
+    - Slice arithmetic (supersedes all earlier per-commit totals; final full slice `d6e921e..HEAD` after this documentation correction): policy.py 126/0, policy tests 116/0, ODD doc 13/3; additions 255, deletions 3, authored total 258 (additions + deletions), within the 400-line budget.
+    - Commit identity: Conventional Commit `feat(content): add deterministic Jev moderation policy composer`, exact SHA `17a65a7` on `agent/jev-moderation-policy`, stacked on `d6e921e` (`agent/jev-moderation-typesafe-client`), targeting `main` at `fcc3886`. Verification: policy suite final count `Found 15 / OK`; focused 22-test suite OK; persistence 15-test suite OK; full moderation suite `Ran 312 tests ... OK (skipped=1)`; `makemigrations --check --dry-run` -> `No changes detected`; `git diff --check d6e921e..HEAD` whitespace-clean; no network or live Jev call in any check.
 
   - [x] **JEV-002A1 — TypeSafe SDK, dependencies, state builder, typed questions** (Slice 2, `agent/jev-moderation-typesafe-foundations`)
     - Slice 2 scope: pinned `typesafe-sdk==0.7.1` (plus exact dependency closure and the `idna` bump required by `httpx2`), added `core/content/moderation/` with `state.py` and `questions.py`, minimal package exports, and offline tests for the state builder and the three typed questions.
@@ -153,8 +163,8 @@ Jev supplies independent typed judgments; application code owns precedence, thre
 - Verified existing authoritative content policy in `.docs/architecture/content-eligibility.md`.
 - Verified existing `UserPreferences.allow_adult_content` and settings UI precedent.
 - Verified no current moderation judgment model or TypeSafe SDK dependency.
-- JEV-001 and JEV-002A are implemented and verified; JEV-002B and JEV-003–JEV-007 remain pending.
+- JEV-002 (both JEV-002A and JEV-002B) is implemented and verified offline; JEV-003–JEV-007 remain pending.
 
 ## Next step
 
-Start JEV-002B: deterministic policy composition over the adapter's raw probabilities on the current branch. Delivery follows the existing stacked-to-main chain.
+Start JEV-003 (resumable rate-bounded backfill and non-blocking incremental scheduling) on a new stacked slice. Delivery follows the existing stacked-to-main chain.
