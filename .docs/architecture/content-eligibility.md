@@ -4,6 +4,10 @@ This document defines the browse/search eligibility boundary.
 It applies to the public homepage, multi-search, and Browse surfaces before
 their aggregate responses are cached.
 
+The moderation behavior below describes code in this repository, not a
+production deployment. No production moderation deploy or backfill has been
+verified.
+
 ## Release Policy
 
 - The reference clock is UTC.
@@ -77,6 +81,20 @@ discovery browse request.
   5-minute React Query `staleTime`. A later judgment change is therefore not
   globally invalidated immediately; the browser can retain hydrated suggestions
   until the query becomes stale and revalidates.
+- Core materializes the current moderation-source hash with normalized detail
+  writes and compares the latest judgment against it when returning the bulk
+  summary. Identity resolution can also enqueue missing-detail metadata work;
+  the Core metadata-preparation worker and moderation outbox worker are
+  implemented as management commands, but no deployed or otherwise wired
+  worker process is established by this code change. The bounds are per
+  process, not a global provider-call cap; first rollout should use one
+  instance of each worker until multi-instance concurrency and persistence
+  fencing are validated.
+- Homepage filtering happens before the featured banner and carousels are
+  selected. Only a fresh `complete`/`explicit` summary is removed. Unknown,
+  pending, stale, missing, malformed, and `needs_review` summaries remain
+  visible; this current behavior does not settle whether the product should
+  hide items whose moderation result is unavailable.
 - This homepage discovery rule does not hide direct detail, search, or Browse
   results. Detail pages apply a separate visual-artwork rule below and use the
   existing user preference; neither rule implies that a source-code change
@@ -102,18 +120,20 @@ discovery browse request.
 - The Web route `/dev/moderation-preview` presents synthetic examples plus an
   optional read-only Core lookup by one submitted `ContentItem` ID. The lookup
   uses the existing Core client and session; fixture cards make no API requests.
-- The route is still registered in the production route graph. Its `beforeLoad`
-  guard calls `notFound()` when `import.meta.env.DEV` is false, which prevents
-  runtime access but does not exclude the route from the graph or built
-  artifact; the production build emitted both client and server route chunks.
-  Remove or exclude it before release and verify the production output. The guard is in
-  [`dev.moderation-preview.tsx`](../../web/src/routes/dev.moderation-preview.tsx).
+- The production Vite configuration excludes this route from TanStack Start's
+  production route graph, and the preview artwork is a source asset imported
+  only by the excluded page. The route retains a development-only `notFound()`
+  guard as defense in depth. A recorded production build found no preview route
+  or artwork in its client/server output; see implementation evidence in
+  [`jev-content-moderation.md`](../../odd/tasks/jev-content-moderation.md).
 - This preview does not activate moderation enforcement or change production
   discovery, direct-search, or adult-preference behavior.
-- Artwork receives a visual blur only for `status=complete` with
-  `classification=explicit`. Missing, pending, stale, errored, malformed, and
-  `needs_review` summaries are not described as safe. The reveal control does
-  not prevent access to the underlying image.
+- Artwork receives a visual blur only for a fresh `complete` judgment with
+  `classification=explicit` when the existing `allow_adult_content`
+  preference is false, absent, or the viewer is anonymous. True displays it
+  normally. Missing, pending, stale, errored, malformed, and `needs_review`
+  summaries are not described as safe. The reveal control does not prevent
+  access to the underlying image.
 
 See the [moderation product-flow note](../ideas/jev-content-moderation-product-flow.md)
 for verified production gaps, the requested outcome, the unratified recommendation,

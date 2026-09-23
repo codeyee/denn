@@ -5,6 +5,17 @@ versioned judgments. This runbook shows how to SEE that work. It does not run
 the backfill: every live form costs real API calls and needs explicit
 authorization first.
 
+The backfill is a separate, manual path for existing rows. It does not start
+or drain the incremental moderation outbox or the homepage metadata-preparation
+queue. Their bounded Core worker commands are separate processes; this repo
+does not establish that they are wired into or running in production. Source
+code and local checks are not production deployment evidence.
+
+The worker batch and polling limits are per process, not a global provider-call
+rate cap. Until multi-instance concurrency and persistence fencing are
+validated, any first rollout should run one instance of each worker. No
+aggregate rate/cost limit across replicas is implemented or evidenced here.
+
 ## Quick path (safe, no API calls)
 
 1. Read the command contract without executing it:
@@ -52,6 +63,11 @@ prevent report completion after classification; the command removes its
 in-progress temporary file and never leaves a partial report.
 
 ## Bounded live form (authorized runs only)
+
+For production, `--confirm-live` is not the production change authorization.
+Obtain the required production approval for the exact environment, selected
+IDs or range, item limit, and report destination before running the command.
+This runbook grants no production authorization.
 
 ```bash
 python core/manage.py backfill_content_moderation \
@@ -133,9 +149,12 @@ jq -s '.[] | select(.event == "final_summary") | {estimated_cost_usd, input_toke
 
 ## Shadow-mode limitation
 
-This pipeline observes and persists judgments only. It does not hide, blur,
-or suppress homepage, search, list, or detail surfaces: enforcement stays
-disabled until the measured go/no-go criteria are accepted.
+The command observes and persists judgments; it does not itself change surface
+behavior. The repository code separately implements fresh-explicit homepage
+suppression and preference-gated detail-artwork blur. Neither code presence nor
+this runbook is evidence that those changes are deployed. Do not infer a
+universal enforcement switch from `MODERATION_POLICY_MODE=shadow`; visible
+behavior and release state must be verified against the deployed application.
 
 ## Stop, resume, rollback
 
