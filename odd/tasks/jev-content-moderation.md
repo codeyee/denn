@@ -91,10 +91,14 @@ Jev supplies independent typed judgments; application code owns precedence, thre
   - Checks: fake-client RED/GREEN tests for questions, thresholds, provider precedence, errors, timeouts, and no-secret logging.
   - Route: delegated; preparation and writer triggers.
 
+  - [x] **JEV-002A — TypeSafe adapter, state, questions, and contract fix (complete)**. JEV-002B deterministic policy composition is next.
+    - Hygiene correction: JEV-002A1 wording now names the issue #102 question keys and the settings-sourced revision; the disabled-mode test lost its dead placeholder code and now asserts no client construction via a failing injected factory; the usage test asserts `assertFalse(hasattr(judgment, "latency_ms"))`.
+    - Correction commit: `446b1ec` (`test(content): harden disabled-mode moderation coverage and ODD currency`). Verification: focused suite → `Found 22 test(s)` / OK; prior `content.tests.test_moderation` → `Found 15 test(s)` / OK; `makemigrations --check --dry-run` → `No changes detected`; client tests deterministically OK with `TYPESAFE_API_KEY` absent and set, no network; 361dcf5..HEAD numstat `0/22` test, `5/2` doc (27 authored changed lines), slice below the 400-line budget.
+
   - [x] **JEV-002A1 — TypeSafe SDK, dependencies, state builder, typed questions** (Slice 2, `agent/jev-moderation-typesafe-foundations`)
     - Slice 2 scope: pinned `typesafe-sdk==0.7.1` (plus exact dependency closure and the `idna` bump required by `httpx2`), added `core/content/moderation/` with `state.py` and `questions.py`, minimal package exports, and offline tests for the state builder and the three typed questions.
     - State builder: `build_moderation_state(provider, content_type, title=None, description=None, genres=None, tags=None)` — non-empty provider/content_type, fail-safe empty title/description, normalized deduped sorted genre/tag lists, exactly six named text-only fields.
-    - Three independent typed Noul questions: `adult_content`, `graphic_violence`, `offensive_content`, each with explicit yes/no criteria. Revision constant: `MODERATION_QUESTION_REVISION = "jev-mq-1"`.
+    - Three independent typed Noul questions: `safe_for_automatic_discovery`, `explicit_or_sensitive`, and `needs_review`, each with explicit yes/no criteria. The question revision originates only from `settings.MODERATION_QUESTION_REVISION` via `moderation_question_revision()`.
     - Commit identity: Conventional Commit `build(deps): pin typesafe-sdk with moderation state and questions` as the JEV-002A1 work-unit commit; exact SHA `baad5a5` on `agent/jev-moderation-typesafe-foundations`, stacked on Slice 1 `agent/jev-moderation-persistence` at `7f96822`, targeting `main` at `fcc3886`.
     - Residual risks: no live Jev call was made; question wording is unmeasured until the JEV-006 evaluation fixtures; the moderation client adapter and its typed error/result mapping land in JEV-002A2 (Slice 3).
   - [x] **JEV-002A2 — moderation client adapter and typed error/result mapping** (Slice 3, `agent/jev-moderation-typesafe-adapter`, stacked on Slice 2)
@@ -106,6 +110,12 @@ Jev supplies independent typed judgments; application code owns precedence, thre
     - Commit identity: Conventional Commit `feat(content): add moderation client adapter with typed error mapping` as the JEV-002A2 work-unit commit; exact SHA `8a61347` on `agent/jev-moderation-typesafe-adapter`, stacked on Slice 2 `baad5a5`, targeting `main` at `fcc3886`.
     - Rollback boundary: reverting this commit removes the adapter/errors modules, their tests, and their part of the package exports; reverting the foundations slice removes the dependency pins, state/questions modules, and the state/question tests; no JEV-001 behavior is touched.
     - Residual risks: no live Jev call was made in any slice; question wording is unmeasured until the JEV-006 evaluation fixtures; the adapter returns plain floats without threshold policy — policy composition is deliberately deferred to JEV-002B.
+  - [x] **JEV-002A-CONTRACT-FIX — issue #102 contract correction** (new stacked slice on `a1b6bbf`)
+    - Scope: corrected the three typed Noul question keys to the issue #102 contract (`safe_for_automatic_discovery`, `explicit_or_sensitive`, `needs_review`), where `needs_review` explicitly judges sparse, ambiguous, contradictory, or insufficient metadata; made `MODERATION_CLASSIFICATION_ENABLED` gate client resolution/calls with a typed `ModerationSkipped(code="moderation_disabled")` outcome before `TYPESAFE_API_KEY` matters; wired `settings.MODERATION_MODEL` when no explicit override is given; preserved SDK `response.usage` as `UsageTokens(input_tokens, output_tokens)` with latency documented as N/D; removed the conflicting hardcoded question-revision constant in favor of the configured settings revision via `moderation_question_revision()`; made the default-factory/config tests deterministic in both present and absent ambient `TYPESAFE_API_KEY` states with no network calls.
+    - Legendary verification finding: independent verification FAILed on these exact deviations (wrong question keys, missing disabled gate, missing usage preservation, env-dependent factory tests, conflicting revision constant). The `build(deps)` commit typing is accepted historical metadata and not a behavioral risk.
+    - Verification RED/functional start: `Ran 6 tests ... FAILED (failures=1, errors=2)` under the new contract questions plus `ImportError: cannot import name 'moderation_question_revision'`; the TypeError/string-isinstance and cover-in-discovery substring false positives were test-script bugs, fixed in the same bounded correction.
+    - GREEN/functional checks: focused suite → `Ran 22 tests ... OK`; prior JEV-001 tests → `Ran 15 tests ... OK`; `makemigrations --check --dry-run` → `No changes detected`; import sanity → all ten moderation package exports resolve; `git diff --check 8a61347..HEAD` whitespace-clean.
+    - Residual risks (updated): per-state text normalization is unchanged; no live Jev call in any slice; the configured settings revision is authoritative from the settings layer only.
 
 - [ ] **JEV-003 — Classify existing and newly refreshed content**
   - Add a resumable/rate-bounded backfill command and non-blocking incremental scheduling after normalized detail upserts.
@@ -143,8 +153,8 @@ Jev supplies independent typed judgments; application code owns precedence, thre
 - Verified existing authoritative content policy in `.docs/architecture/content-eligibility.md`.
 - Verified existing `UserPreferences.allow_adult_content` and settings UI precedent.
 - Verified no current moderation judgment model or TypeSafe SDK dependency.
-- JEV-001 implemented and verified; JEV-002 and later tasks not started.
+- JEV-001 and JEV-002A are implemented and verified; JEV-002B and JEV-003–JEV-007 remain pending.
 
 ## Next step
 
-Start JEV-002 (TypeSafe client adapter, state builder, question definitions, code-owned policy composition) on the same branch. PR slice 1 targets `main` and contains only JEV-001.
+Start JEV-002B: deterministic policy composition over the adapter's raw probabilities on the current branch. Delivery follows the existing stacked-to-main chain.

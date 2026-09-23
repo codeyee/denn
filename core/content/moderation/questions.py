@@ -1,48 +1,54 @@
-"""The three independent typed Noul moderation questions (JEV-002A).
+"""The independent typed Noul moderation questions (issue #102 contract).
 
-The questions are shared, stable inputs: every moderation call sends this
-mapping verbatim, and the question revision must be bumped together with
-any wording change.
+The three keys are the persisted contract: every moderation call sends this
+mapping verbatim, and the configured revision
+(`settings.MODERATION_QUESTION_REVISION`, currently `q1`) is the only
+revision source suitable for persistence identity.
 """
 from typesafe_sdk import Noul
 
-MODERATION_QUESTION_REVISION = "jev-mq-1"
-
 MODERATION_QUESTIONS: dict[str, Noul] = {
-    "adult_content": Noul(
+    "safe_for_automatic_discovery": Noul(
         instructions=(
             "Given the state's provider, content type, title, description, genres, and "
-            "tags, does this work explicitly target adults (18+) through explicit "
-            "sexual material, erotic content, or an adult-only classification? Judge "
-            "only from the text in the state; never infer from the provider or "
-            "content type alone."
+            "tags, is this work safe for automatic discovery surfaces (all-audience, "
+            "non-explicit material)? Judge only from the text in the state; never "
+            "infer safety from the provider or content type alone."
         ),
         criteria={
-            "true": "The state text explicitly signals adult-only material: 18+ classifications, explicit sexual or erotic content, or equivalent adult markers.",
-            "false": "The state is all-audience material, contains only generic conflict or tension, or offers no adult signal.",
+            "true": "The state text is all-audience material with no adult, explicit, or shock-only signal.",
+            "false": "The text shows any explicit or sensitive marker that makes automatic discovery unsafe.",
         },
     ),
-    "graphic_violence": Noul(
+    "explicit_or_sensitive": Noul(
         instructions=(
             "Given the state's provider, content type, title, description, genres, and "
-            "tags, does the text explicitly signal graphic violence or gore beyond "
-            "ordinary conflict? Judge only from the text in the state; do not infer "
-            "violence from a genre name alone."
+            "tags, does the text signal explicit sexual material, erotic adult-only "
+            "content, graphic violence or gore, or severe hate or shock content? Judge "
+            "only from the text in the state."
         ),
         criteria={
-            "true": "The text itself describes or clearly signals graphic violence or gore, such as explicit brutality, viscera, torture, or dismemberment.",
-            "false": "The text shows no violence, only non-graphic references, or generic conflict wording.",
+            "true": "The text explicitly signals adult-only material, graphic violence, gore, explicit hate speech, or severe shock content.",
+            "false": "The text carries no explicit or sensitive signal under the contract.",
         },
     ),
-    "offensive_content": Noul(
+    "needs_review": Noul(
         instructions=(
             "Given the state's provider, content type, title, description, genres, and "
-            "tags, does the text contain or signal explicit hate speech, slurs, or "
-            "severe shock content? Judge only from the text in the state."
+            "tags, is the metadata sparse, ambiguous, contradictory, or otherwise "
+            "insufficient to classify safety confidently? Judge only from the text in "
+            "the state; answer yes whenever the available metadata is insufficient or "
+            "signals conflict rather than clarity."
         ),
         criteria={
-            "true": "The text contains explicit hate speech, slurs, or severe shock wording.",
-            "false": "The text carries no hate-speech, slur, or shock-content signal.",
+            "true": "The metadata is sparse, ambiguous, contradictory, or insufficient to classify confidently.",
+            "false": "The metadata is sufficient and internally consistent for a confident safety judgment.",
         },
     ),
 }
+
+
+def moderation_question_revision() -> str:
+    """Return the configured moderation question revision for persistence identity."""
+    from django.conf import settings
+    return settings.MODERATION_QUESTION_REVISION

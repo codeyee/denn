@@ -1,4 +1,5 @@
-"""Moderation-domain exceptions raised by the TypeSafe adapter (JEV-002A)."""
+"""Moderation-domain exceptions and typed outcomes (JEV-002A)."""
+from typing import NamedTuple
 
 
 class ModerationError(Exception):
@@ -23,3 +24,13 @@ class ModerationUnavailable(ModerationError):
         self.code = code
         self.retry_after_ms = retry_after_ms
         self.detail = detail
+
+
+class ModerationSkipped(NamedTuple):
+    """Explicit typed outcome returned in disabled mode.
+
+    No client is constructed and no call is made; `code` stays stable for
+    persistence, e.g. `moderation_disabled`.
+    """
+
+    code: str
