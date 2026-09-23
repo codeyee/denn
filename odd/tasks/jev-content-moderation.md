@@ -322,7 +322,7 @@ Jev supplies independent typed judgments; application code owns precedence, thre
     - Safety: distinguish repository code from deployed production; do not invent production evidence, admin capability, evaluation results, or global provider-call limits. First worker rollout should use one instance per worker pending stronger multi-instance concurrency/persistence-fencing validation.
     - Route: delegated direct; bounded documentation correction based on inspected implementation and existing tracker evidence. No source code changed.
     - Verification: structural readback of all four changed documents; `git diff --check` -> pass; Python path/link check over the four documents -> all Markdown links and path-shaped code references resolve. Docs-only change; full service suites were not run.
-    - Commit identity: pending.
+    - Commit identity: Conventional Commit `docs(moderation): reconcile current implementation state`, full SHA `fcbd7ded5205b3ca775201a87444040f8751ee4a` on `agent/jev-moderation-docs-correction`. A follow-up tracker-evidence commit records this self-reference after the work-unit commit.
 
 - [x] **JEV-003B — Resumable rate-bounded moderation backfill command** (command core complete; incremental scheduling stays in JEV-003C)
   - Stacked slices on `stacked-to-main`, all offline-verified, no live Jev call or backfill performed:
