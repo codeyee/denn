@@ -16,7 +16,7 @@ A UTF-8 JSON dataset has only `schema_version` and `cases`. Each case has exactl
 | `state` | Exact text-only state built for moderation, with provider/type agreement and an exact content-specific shape. |
 | `gold_class` | `safe_for_automatic_discovery`, `explicit_or_sensitive`, or `needs_review`. |
 | `adjudication` | Exact `status`, `reviewer_count`, and `guideline_revision` fields. Human labels require at least one reviewer. |
-| `provider_explicit` | Exact boolean or null; true remains a provider policy override, not a gold label. |
+| `provider_explicit` | Exact boolean or null; true is allowed only for TMDB movies/TV shows and is a policy override, not a gold label. |
 
 Validation rejects extra/missing fields, duplicate or non-opaque case IDs, unknown content-specific state fields, URLs, credential-like strings, JWT-like text, wrong metadata, and non-text state values. It does not normalize classifier input. Never commit raw URLs, provider/external IDs, credentials, or unreviewed catalog text. See `core/content/moderation/evaluation_cases.py` for the executable schema.
 

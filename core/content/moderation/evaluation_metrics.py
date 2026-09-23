@@ -193,7 +193,11 @@ def build_evaluation_report(
         reasons.append("one_or_more_response_model_versions_are_unresolved")
 
     for row in rows:
-        override = row["provider_explicit"] is True
+        override = (
+            row["provider"] == "tmdb"
+            and row["content_type"] in {"movie", "tv_show"}
+            and row["provider_explicit"] is True
+        )
         row["provider_override_applied"] = override
         row["provider_override_changed_prediction"] = (
             override and row["policy_prediction"] != row["jev_prediction"]

@@ -35,8 +35,8 @@ class ModerationEvaluationMetricsTests(unittest.TestCase):
     def test_confusion_rates_retain_failures_and_separate_provider_override(self):
         raw = dataset()
         results = [
-            observation(raw["cases"][0], "safe_for_automatic_discovery"),
-            observation(raw["cases"][1], "safe_for_automatic_discovery", policy="explicit_or_sensitive"),
+            observation(raw["cases"][0], "safe_for_automatic_discovery", policy="explicit_or_sensitive"),
+            observation(raw["cases"][1], "safe_for_automatic_discovery"),
             observation(raw["cases"][2], "unavailable", policy="needs_review", received=False, failure="typesafe_timeout"),
         ]
         report = build_evaluation_report(raw, results)
@@ -50,7 +50,8 @@ class ModerationEvaluationMetricsTests(unittest.TestCase):
         self.assertEqual(report["per_class_jev_only"]["safe_for_automatic_discovery"]["precision"]["denominator"], 2)
         self.assertEqual(report["per_class_jev_only"]["needs_review"]["recall"]["denominator"], 1)
         self.assertEqual(report["review_recall_jev_only"]["value"], 0.0)
-        self.assertTrue(report["cases"][1]["provider_override_changed_prediction"])
+        self.assertTrue(report["cases"][0]["provider_override_changed_prediction"])
+        self.assertFalse(report["cases"][1]["provider_override_applied"])
         self.assertEqual(report["coverage"]["counts"]["unavailable"], 1)
         self.assertEqual(report["provider_breakdown"]["spotify"]["case_count"], 1)
         self.assertEqual(report["language_breakdown"]["es"]["case_count"], 2)
