@@ -28,6 +28,7 @@ from core.middleware.perf_timing import (
 
 from .local_content_store import detail_is_complete, detail_is_fresh
 from .local_content_store.mappers import MAPPERS
+from .moderation_source_hash import upsert_detail_with_moderation_hash
 from . import payload_reconstructor
 
 
@@ -180,7 +181,12 @@ def _persist(item: ContentItem, payload: Dict[str, Any], request_country: Option
     if not mapper:
         return
     try:
-        mapper(item, payload, request_country=request_country)
+        upsert_detail_with_moderation_hash(
+            item,
+            payload,
+            mapper,
+            request_country=request_country,
+        )
     except Exception:
         logger.exception('orchestrator_mapper_failed', extra={'content_item_id': item.id})
 

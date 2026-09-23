@@ -238,15 +238,22 @@ judgments report `missing`; persisted `pending`, `stale`, and `error` states
 never include a classification. Only completed allowlisted results map to
 `safe`, `explicit`, or `needs_review`; `unknown` remains null.
 
-This summary performs no classification or policy enforcement. `complete`
-means that the persisted row is complete only when its source hash matches the
-normalized text in the source payload returned by that content response. The
-id-first detail response uses the payload returned by its local-first refresh,
-so a refresh cannot leave an old `safe` or `explicit` judgment looking current.
-List and local profile summaries still expose the latest stored judgment without
-a current-source comparison; they are not freshness guarantees. Building a
-batched current hash for every local summary remains an open JEV-004 task, and
-consumers must not use those summaries as homepage-safety proof.
+This summary performs no classification or policy enforcement. The id-first
+detail response compares the judgment hash with the normalized text in the
+payload returned by that response, so a refresh cannot leave an old `safe` or
+`explicit` judgment looking current. List and local profile summaries compare
+the latest judgment with a nullable current-source hash materialized atomically
+with normalized detail writes. A missing or mismatched hash reports `stale`;
+legacy rows stay unverified until a detail refresh or a bounded local-only hash
+backfill. The backfill reads persisted Core detail and makes no provider or Jev
+calls. Run it in bounded batches:
+
+```sh
+python manage.py backfill_moderation_source_hashes --limit <positive-integer> [--after-id <non-negative-integer>]
+```
+
+Season hashes with an inherited parent-show name are invalidated when that
+parent name changes, until the season is refreshed or backfilled.
 
 See [`content-lifecycle.md`](./content-lifecycle.md).
 Discovery filtering is defined in

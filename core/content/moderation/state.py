@@ -1,4 +1,6 @@
 """Build the text-only moderation state from Core's local reconstruction."""
+import hashlib
+import json
 from collections.abc import Iterable, Mapping
 
 
@@ -222,3 +224,9 @@ def build_moderation_state(
             normalized_content_type, reconstructed_payload
         ),
     }
+
+
+def hash_moderation_state(state: dict) -> str:
+    """Hash normalized moderation state using the canonical identity format."""
+    canonical = json.dumps(state, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()

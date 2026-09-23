@@ -1,12 +1,9 @@
 """Read-only moderation summaries for content API responses."""
 
-import hashlib
-import json
-
-from django.db.models import Exists, OuterRef, Prefetch, Subquery
+from django.db.models import Exists, F, OuterRef, Prefetch, Subquery
 
 from content.models import ContentModerationJudgment
-from content.moderation.state import build_moderation_state
+from content.moderation.state import build_moderation_state, hash_moderation_state
 
 
 LATEST_MODERATION_ATTRIBUTE = "latest_moderation_judgments"
@@ -15,6 +12,7 @@ ANNOTATED_MODERATION_FIELDS = (
     "moderation_status",
     "moderation_classification",
     "moderation_source_hash",
+    "moderation_current_source_hash",
 )
 
 _PUBLIC_CLASSIFICATIONS = {
@@ -53,6 +51,7 @@ def with_moderation_summary(queryset):
         moderation_status=Subquery(latest.values("status")[:1]),
         moderation_classification=Subquery(latest.values("classification")[:1]),
         moderation_source_hash=Subquery(latest.values("source_data_hash")[:1]),
+        moderation_current_source_hash=F("current_moderation_source_hash"),
     )
 
 
@@ -82,8 +81,7 @@ def _source_hash(content_item, source_data):
         content_type=content_item.content_type,
         reconstructed_payload=source_data,
     )
-    canonical = json.dumps(state, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
-    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+    return hash_moderation_state(state)
 
 
 def moderation_summary(content_item, *, source_data=None):
@@ -118,6 +116,13 @@ def moderation_summary(content_item, *, source_data=None):
     if status != ContentModerationJudgment.Status.COMPLETE:
         return {"status": status, "classification": None}
 
+    if source_data is None:
+        try:
+            if judgment_source_hash(content_item) != current_source_hash(content_item):
+                return {"status": "stale", "classification": None}
+        except (AttributeError, TypeError, ValueError):
+            return {"status": "stale", "classification": None}
+
     if source_data is not None:
         try:
             if judgment_source_hash(content_item) != _source_hash(content_item, source_data):
@@ -141,3 +146,10 @@ def judgment_source_hash(content_item):
         return content_item.moderation_source_hash
     judgment = _latest_judgment(content_item)
     return judgment.source_data_hash if judgment is not None else None
+
+
+def current_source_hash(content_item):
+    """Return the materialized persisted-state hash selected for this item."""
+    if all(hasattr(content_item, field) for field in ANNOTATED_MODERATION_FIELDS):
+        return content_item.moderation_current_source_hash
+    return content_item.current_moderation_source_hash

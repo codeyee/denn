@@ -11,8 +11,6 @@ import logging
 
 import time
 
-import hashlib
-import json
 
 from django.conf import settings
 from django.db import IntegrityError, transaction
@@ -24,7 +22,11 @@ from content.models import ContentItem, ContentModerationJudgment
 from content.moderation.client import JevModerationClient
 from content.moderation.errors import ModerationUnavailable
 from content.moderation.policy import PolicyThresholds, compose_policy
-from content.moderation.state import ModerationStateError, build_moderation_state
+from content.moderation.state import (
+    ModerationStateError,
+    build_moderation_state,
+    hash_moderation_state,
+)
 from content.services.payload_reconstructor import from_local
 
 logger = logging.getLogger(__name__)
@@ -100,8 +102,7 @@ def build_state_and_hash(content_item: ContentItem) -> tuple[dict, str]:
         content_type=content_item.content_type,
         reconstructed_payload=payload,
     )
-    canonical = json.dumps(state, sort_keys=True, ensure_ascii=False, separators=(',', ':'))
-    return state, hashlib.sha256(canonical.encode('utf-8')).hexdigest()
+    return state, hash_moderation_state(state)
 
 
 def classify_content_item(

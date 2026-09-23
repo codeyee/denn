@@ -18,6 +18,7 @@ from django.utils import timezone
 
 from content.models import ContentItem, GameDurationEstimate
 from content.services.game_duration import MAX_GAME_DURATION_RETRIES
+from content.services.moderation_source_hash import upsert_detail_with_moderation_hash
 
 from .mappers import MAPPERS
 from .refresh_policy import DETAIL_RELATED_NAME, compute_refresh_policy
@@ -142,7 +143,12 @@ def ensure_content_detail(
         return False
 
     try:
-        mapper(content_item, payload, request_country=request_country)
+        upsert_detail_with_moderation_hash(
+            content_item,
+            payload,
+            mapper,
+            request_country=request_country,
+        )
     except Exception:
         logger.exception(
             'ensure_content_detail: mapper failed for content_item=%s', content_item.id,

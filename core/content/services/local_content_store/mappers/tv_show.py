@@ -107,4 +107,9 @@ def _upsert_seasons(
             request_country=request_country,
             tv_show=tv_show,
         )
+        from content.services.moderation_source_hash import (
+            persist_current_moderation_source_hash,
+        )
+
+        persist_current_moderation_source_hash(season_item)
         upsert_browse_metadata(season_item, season_payload)

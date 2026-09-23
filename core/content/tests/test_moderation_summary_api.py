@@ -32,8 +32,13 @@ class ModerationSummaryApiTests(TestCase):
         source_data_hash="hash-1",
         item=None,
     ):
+        content_item = item or self.item
+        ContentItem.objects.filter(pk=content_item.pk).update(
+            current_moderation_source_hash=source_data_hash,
+        )
+        content_item.current_moderation_source_hash = source_data_hash
         return ContentModerationJudgment.objects.create(
-            content_item=item or self.item,
+            content_item=content_item,
             source_data_hash=source_data_hash,
             model_name="jev-1.13.0",
             question_revision="q3",
@@ -73,6 +78,10 @@ class ModerationSummaryApiTests(TestCase):
                     status=ContentModerationJudgment.Status.COMPLETE,
                     classification=raw_classification,
                 )
+                ContentItem.objects.filter(pk=item.pk).update(
+                    current_moderation_source_hash="hash-1",
+                )
+                item.current_moderation_source_hash = "hash-1"
                 self.assertEqual(
                     self.serialize(ContentItemSerializer, item),
                     {
@@ -185,6 +194,9 @@ class ModerationSummaryApiTests(TestCase):
         ContentModerationJudgment.objects.filter(pk=judgment.pk).update(
             source_data_hash=_source_hash(self.item, source_data)
         )
+        ContentItem.objects.filter(pk=self.item.pk).update(
+            current_moderation_source_hash=_source_hash(self.item, source_data)
+        )
         self.item.refresh_from_db()
 
         summary = ContentItemSerializer(
@@ -225,6 +237,9 @@ class ModerationSummaryApiTests(TestCase):
         )
         ContentModerationJudgment.objects.filter(pk=judgment.pk).update(
             source_data_hash=_source_hash(self.item, source_data)
+        )
+        ContentItem.objects.filter(pk=self.item.pk).update(
+            current_moderation_source_hash=_source_hash(self.item, source_data)
         )
 
         with self.assertNumQueries(1):
@@ -313,6 +328,27 @@ class ModerationSummaryApiTests(TestCase):
             summary,
             {"status": "complete", "classification": "safe"},
         )
+
+    def test_annotation_marks_null_or_mismatched_current_hash_stale(self):
+        judgment = self.create_judgment(
+            status=ContentModerationJudgment.Status.COMPLETE,
+            classification=ContentModerationJudgment.Classification.SAFE,
+        )
+        for current_hash in (None, "different-current-hash"):
+            with self.subTest(current_hash=current_hash):
+                ContentItem.objects.filter(pk=self.item.pk).update(
+                    current_moderation_source_hash=current_hash,
+                )
+                with self.assertNumQueries(1):
+                    item = with_moderation_summary(
+                        ContentItem.objects.filter(pk=self.item.pk)
+                    ).get()
+                    summary = moderation_summary(item)
+                self.assertEqual(
+                    summary,
+                    {"status": "stale", "classification": None},
+                )
+        self.assertIsNotNone(judgment.pk)
 
     def test_openapi_documents_summary_enums_and_field(self):
         schema = SchemaGenerator().get_schema(request=None, public=True)
