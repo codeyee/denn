@@ -6,6 +6,7 @@ from collections import Counter
 from collections.abc import Mapping, Sequence
 from typing import Any
 
+from .evaluation_accounting import build_accounting_summary
 from .evaluation_cases import GOLD_CLASSES, validate_gold_dataset
 
 REPORT_SCHEMA_VERSION = "jev-moderation-evaluation-report/v1"
@@ -139,8 +140,13 @@ def _validate_observations(
 def build_evaluation_report(
     dataset: Any,
     observations: Sequence[Mapping[str, Any]],
+    *,
+    durations_ms: Mapping[str, Any] | None = None,
+    price_per_million_input_tokens: Any = None,
+    price_per_million_output_tokens: Any = None,
+    price_provenance: str | None = None,
 ) -> dict[str, Any]:
-    """Aggregate classification results without clients, network, DB, or hidden thresholds."""
+    """Aggregate a full offline report without clients, network, DB, or hidden thresholds."""
     cases = validate_gold_dataset(dataset)
     rows = _validate_observations(cases, observations)
 
@@ -202,7 +208,7 @@ def build_evaluation_report(
         row["provider_override_changed_prediction"] = (
             override and row["policy_prediction"] != row["jev_prediction"]
         )
-    return {
+    report = {
         "schema_version": REPORT_SCHEMA_VERSION,
         "go_no_go": {
             "status": "INSUFFICIENT",
@@ -239,3 +245,11 @@ def build_evaluation_report(
         },
         "cases": rows,
     }
+    report.update(build_accounting_summary(
+        rows,
+        durations_ms=durations_ms,
+        price_per_million_input_tokens=price_per_million_input_tokens,
+        price_per_million_output_tokens=price_per_million_output_tokens,
+        price_provenance=price_provenance,
+    ))
+    return report
