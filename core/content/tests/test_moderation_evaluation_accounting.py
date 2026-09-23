@@ -14,10 +14,14 @@ def dataset():
 
 
 def observation(case, *, inputs=10, outputs=2, attempted=True, received=True):
+    prediction = case["gold_class"] if attempted else "skipped"
     return {
         "case_id": case["case_id"],
-        "jev_prediction": case["gold_class"] if attempted else "skipped",
-        "policy_prediction": case["gold_class"] if attempted else "unknown",
+        "jev_prediction": prediction,
+        "policy_prediction": (
+            "explicit_or_sensitive" if case["provider_explicit"] is True
+            else prediction if attempted else "unknown"
+        ),
         "inference_attempted": attempted,
         "response_received": received,
         "reported_model": "jev-1.13.0" if received else None,
