@@ -156,16 +156,27 @@ def _classify_one(
 ) -> tuple[dict[str, Any], float]:
     start_ns = time.perf_counter_ns()
     try:
-        result = client.classify(case["state"])
-    except ModerationUnavailable as error:
+        try:
+            result = client.classify(case["state"])
+        except Exception as error:
+            result = None
+            call_error = error
+        else:
+            call_error = None
+    finally:
+        duration_ms = (time.perf_counter_ns() - start_ns) / 1_000_000
+    if not math.isfinite(duration_ms) or duration_ms < 0:
+        raise RuntimeError("monotonic clock returned an invalid duration")
+
+    if isinstance(call_error, ModerationUnavailable):
         row = _missing_result(
             case,
             prediction="unavailable",
             attempted=True,
-            failure_code=_safe_failure_code(error.code, "typesafe_api_error"),
+            failure_code=_safe_failure_code(call_error.code, "typesafe_api_error"),
             thresholds=thresholds,
         )
-    except Exception:
+    elif call_error is not None:
         row = _missing_result(
             case,
             prediction="unavailable",
@@ -173,20 +184,16 @@ def _classify_one(
             failure_code="client_error",
             thresholds=thresholds,
         )
+    elif isinstance(result, ModerationSkipped):
+        row = _missing_result(
+            case,
+            prediction="skipped",
+            attempted=False,
+            failure_code=_safe_failure_code(result.code, "moderation_skipped"),
+            thresholds=thresholds,
+        )
     else:
-        if isinstance(result, ModerationSkipped):
-            row = _missing_result(
-                case,
-                prediction="skipped",
-                attempted=False,
-                failure_code=_safe_failure_code(result.code, "moderation_skipped"),
-                thresholds=thresholds,
-            )
-        else:
-            row = _judgment_result(case, result, thresholds)
-    duration_ms = (time.perf_counter_ns() - start_ns) / 1_000_000
-    if not math.isfinite(duration_ms) or duration_ms < 0:
-        raise RuntimeError("monotonic clock returned an invalid duration")
+        row = _judgment_result(case, result, thresholds)
     return row, round(duration_ms, 6)
 
 
