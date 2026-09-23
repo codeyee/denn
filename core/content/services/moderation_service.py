@@ -85,7 +85,7 @@ def _provider_explicit(content_item: ContentItem) -> bool | None:
 
 
 def build_state_and_hash(content_item: ContentItem) -> tuple[dict, str]:
-    """Return the normalized six-field text state and its canonical sha256."""
+    """Return the normalized named text state and its canonical sha256."""
     payload = from_local(content_item)
     if not payload:
         logger.warning(
@@ -95,15 +95,10 @@ def build_state_and_hash(content_item: ContentItem) -> tuple[dict, str]:
         raise ModerationStateError(
             'moderation_state_unavailable for content_item=%s' % content_item.id
         )
-    genres = payload.get('genres')
-    tags = payload.get('tags')
     state = build_moderation_state(
         provider=content_item.source_api,
         content_type=content_item.content_type,
-        title=payload.get('title'),
-        description=payload.get('description'),
-        genres=genres if isinstance(genres, list) else None,
-        tags=tags if isinstance(tags, list) else None,
+        reconstructed_payload=payload,
     )
     canonical = json.dumps(state, sort_keys=True, ensure_ascii=False, separators=(',', ':'))
     return state, hashlib.sha256(canonical.encode('utf-8')).hexdigest()

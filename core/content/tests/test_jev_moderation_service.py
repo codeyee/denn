@@ -1,4 +1,5 @@
 """Offline tests for the deterministic moderation classification service (JEV-003A)."""
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from django.db import IntegrityError
@@ -106,6 +107,45 @@ class ModerationServiceTests(TestCase):
         item.movie_detail.save()
         _, updated = build_state_and_hash(item)
         self.assertNotEqual(original, updated)
+
+    def test_type_specific_movie_tv_and_game_text_changes_the_hash(self):
+        cases = (
+            (
+                ContentItem.ContentType.MOVIE,
+                ContentItem.SourceAPI.TMDB,
+                {"original_title": "Original A", "tagline": "Tagline"},
+                {"original_title": "Original B", "tagline": "Tagline"},
+            ),
+            (
+                ContentItem.ContentType.TV_SHOW,
+                ContentItem.SourceAPI.TMDB,
+                {"original_title": "Show", "tagline": "Tagline A"},
+                {"original_title": "Show", "tagline": "Tagline B"},
+            ),
+            (
+                ContentItem.ContentType.GAME,
+                ContentItem.SourceAPI.IGDB,
+                {"genres": ["Action"], "themes": ["Erotic"]},
+                {"genres": ["Action"], "themes": ["Fantasy"]},
+            ),
+        )
+        item_id = 999
+        for content_type, provider, before, after in cases:
+            with self.subTest(content_type=content_type):
+                item = SimpleNamespace(
+                    id=item_id, content_type=content_type, source_api=provider
+                )
+                with patch(
+                    "content.services.moderation_service.from_local",
+                    return_value={"title": "Same", "description": "Same", **before},
+                ):
+                    _, original_hash = build_state_and_hash(item)
+                with patch(
+                    "content.services.moderation_service.from_local",
+                    return_value={"title": "Same", "description": "Same", **after},
+                ):
+                    _, updated_hash = build_state_and_hash(item)
+                self.assertNotEqual(original_hash, updated_hash)
 
     @override_settings(**ENABLED)
     def test_concrete_model_pre_reuses_judgment_without_second_call(self):

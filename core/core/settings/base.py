@@ -157,7 +157,7 @@ DEFAULT_COUNTRY = os.getenv("DEFAULT_COUNTRY", "US")
 # ignores fresh local Detail rows and forces a proxy fetch.
 FORCE_PROXY_FETCH = os.getenv("FORCE_PROXY_FETCH", "False") == "True"
 
-# Jev content moderation (JEV-001). Classification is disabled by default:
+# Jev content moderation (JEV-001 / JEV-002-Q3). Classification is disabled by default:
 # no remote call, no ingestion hook, and TYPESAFE_API_KEY is not required
 # while MODERATION_CLASSIFICATION_ENABLED is False. The key stays server-side.
 def _env_flag(name: str) -> bool:
@@ -167,7 +167,7 @@ def _env_flag(name: str) -> bool:
 MODERATION_CLASSIFICATION_ENABLED = _env_flag("MODERATION_CLASSIFICATION_ENABLED")
 MODERATION_POLICY_MODE = os.getenv("MODERATION_POLICY_MODE", "shadow")
 MODERATION_MODEL = os.getenv("MODERATION_MODEL") or "jev-latest"
-MODERATION_QUESTION_REVISION = os.getenv("MODERATION_QUESTION_REVISION") or "q2"
+MODERATION_QUESTION_REVISION = os.getenv("MODERATION_QUESTION_REVISION") or "q3"
 MODERATION_POLICY_REVISION = os.getenv("MODERATION_POLICY_REVISION") or "p1"
 
 # Named callable so the model field default can be serialized in migrations.

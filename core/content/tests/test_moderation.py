@@ -147,7 +147,7 @@ class ModerationConfigurationTests(TestCase):
 
     def test_model_question_and_policy_revisions_present(self):
         self.assertEqual(settings.MODERATION_MODEL, "jev-latest")
-        self.assertEqual(settings.MODERATION_QUESTION_REVISION, "q2")
+        self.assertEqual(settings.MODERATION_QUESTION_REVISION, "q3")
         self.assertTrue(settings.MODERATION_POLICY_REVISION)
 
     def test_api_key_not_required_when_disabled(self):
