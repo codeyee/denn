@@ -1,6 +1,6 @@
 # Jev moderation evaluation data contract
 
-This page defines the privacy-safe input contract and classification-report contract for the offline JEV-006 evaluation. The schema, classification metrics, and accounting summaries are pure: they make no Jev client, network, or database call. The committed fixture is synthetic and tests mechanics only; it is not evidence of Jev accuracy. Injected-client execution remains a separate open slice.
+This page defines the privacy-safe input contract and classification-report contract for the offline JEV-006 evaluation. Schema validation, classification metrics, and accounting are pure. The optional injected-client orchestrator makes no client construction, network, or database call of its own; it invokes only the supplied client's `classify` method. The committed fixture is synthetic and tests mechanics only; it is not evidence of Jev accuracy.
 
 ## Gold cases: `jev-moderation-gold-cases/v1`
 
@@ -35,7 +35,15 @@ Coverage is calculated independently for `jev_only` and `final_policy`. Each `ne
 
 Record a concrete returned model such as `jev-1.13.0`. A moving alias such as `jev-latest`, a missing version, or mixed versions makes a single-version comparison ineligible. See the [TypeSafe model guidance](https://docs.typesafe.ai/models). The status remains `INSUFFICIENT`: metrics do not set pass thresholds or attest that the sample is representative.
 
-The accounting section uses optional caller-supplied per-case durations; its p50/p95 are not SDK latency. It keeps known input/output token totals and counts incomplete usage. Cost is reported only with price rates and a short price-provenance label; incomplete usage produces a partial known cost and a null complete total. Zero durations or token counts remain valid measurements; missing values are never replaced with zero.
+The pure accounting function accepts optional caller-supplied per-case durations; its p50/p95 are not SDK latency. The injected orchestrator supplies wall time measured only around each `classify` invocation, excluding validation and aggregation; this includes adapter behavior and is not Jev-service-only latency. It keeps known input/output token totals and counts incomplete usage. Cost is reported only with price rates and a short price-provenance label; incomplete usage produces a partial known cost and a null complete total. Zero durations or token counts remain valid measurements; missing values are never replaced with zero.
+
+## Injected execution
+
+`content.moderation.evaluation_orchestration.evaluate_dataset` validates the complete dataset before selecting requested opaque case IDs. It returns the existing v2 aggregated report with an `evaluation_identity` containing the requested model, question revision, policy revision, and exact thresholds. The report rows contain only opaque IDs and classification/accounting fields, not the input state or raw error details.
+
+Pass an already constructed `JevModerationClient` or a fake object with the same `classify(state)` contract. Tests inject a fake; this module does not construct `TypeSafeClient`. Each selected non-override case gets one evaluator-level `classify` invocation. Affirmative TMDB movie/TV cases follow production's hard override and make no invocation. Typed unavailable/skipped outcomes, malformed results, and generic client failures each keep their case in the report. The evaluator has no retry loop, but it does not control retries inside the injected adapter or SDK; do not claim one wire request until the separate adapter retry-policy correction is verified.
+
+The returned `execution` section distinguishes selected cases, classify invocations, provider-override no-call cases, and evaluator retries. `latency_ms.source` describes the call-only measurement boundary. Use the fake client for offline checks; do not run the evaluator against a live Jev adapter without a separately approved live-sample plan. Synthetic results must not be used to infer model accuracy or set thresholds.
 
 
 ### Report summary template
