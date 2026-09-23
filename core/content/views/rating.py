@@ -5,6 +5,7 @@ from django.db.models import Avg, Count, Q
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiExample, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 from content.models import Rating, ContentItem
+from content.moderation.summary import latest_moderation_prefetch
 from content.serializers import RatingSerializer, RatingCreateSerializer
 from content.permissions import IsOwnerOfRating
 from rest_flex_fields.views import FlexFieldsMixin
@@ -124,7 +125,9 @@ class RatingViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
     permit_list_expands = ['content_item', 'user']
 
     def get_queryset(self):
-        queryset = Rating.objects.select_related('user', 'content_item').order_by('-created_at')
+        queryset = Rating.objects.select_related('user', 'content_item').prefetch_related(
+            latest_moderation_prefetch('content_item__')
+        ).order_by('-created_at')
         if self.action == 'list':
             queryset = queryset.filter(is_active=True)
         elif self.action == 'retrieve':

@@ -41,6 +41,10 @@ from content.models import (
     UserContentTracking,
     UserList,
 )
+from content.moderation.summary import (
+    latest_moderation_prefetch,
+    with_moderation_summary,
+)
 from content.serializers import LocalContentSummarySerializer
 from content.services.tracking_service import lock_user
 from content.services.list_policy import (
@@ -64,8 +68,8 @@ CONTENT_RELATED_FIELDS = (
 )
 
 
-def _content_prefetches(prefix=""):
-    return (
+def _content_prefetches(prefix="", *, include_moderation=True):
+    prefetches = [
         Prefetch(
             f"{prefix}images",
             queryset=Image.objects.order_by("position", "id"),
@@ -77,7 +81,10 @@ def _content_prefetches(prefix=""):
                 "id",
             ),
         ),
-    )
+    ]
+    if include_moderation:
+        prefetches.insert(0, latest_moderation_prefetch(prefix))
+    return tuple(prefetches)
 
 
 def _profile_filter_parameters(*extra, multi_type=False):
@@ -814,9 +821,11 @@ def _public_lists_queryset(user):
 def _content_map(content_ids):
     if not content_ids:
         return {}
-    queryset = ContentItem.objects.filter(id__in=content_ids).select_related(
-        *CONTENT_RELATED_FIELDS
-    ).prefetch_related(*_content_prefetches())
+    queryset = with_moderation_summary(
+        ContentItem.objects.filter(id__in=content_ids).select_related(
+            *CONTENT_RELATED_FIELDS
+        )
+    ).prefetch_related(*_content_prefetches(include_moderation=False))
     return {content.id: content for content in queryset}
 
 

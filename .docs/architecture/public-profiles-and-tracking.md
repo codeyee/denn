@@ -153,6 +153,12 @@ candidates prefer the highest-quality gallery art and fall back to the
 highest-quality poster with contained artwork treatment, so poster-only
 albums and books still render a usable profile banner.
 
+Each local content summary also includes the read-only `moderation` status
+and nullable classification documented in
+[`current-state.md`](./current-state.md#read-only-moderation-summary). List
+responses prefetch only the latest persisted judgment; non-complete and
+unknown results do not expose a classification.
+
 ## Browser And BFF Behavior
 
 The same-origin Core BFF uses a strict public-read predicate:

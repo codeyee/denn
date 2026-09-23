@@ -230,7 +230,7 @@ class APIPerformanceTests(APITestCase):
 
         # Request list detail
         with override_settings(DEBUG=True):
-            with self.assertNumQueries(7):  # Optimized from 15 to 7
+            with self.assertNumQueries(8):  # Includes one bounded moderation prefetch.
                 response = self.client.get(f'/api/content/lists/{self.user_list.id}/')
 
         self.assertEqual(response.status_code, 200)
@@ -247,7 +247,7 @@ class APIPerformanceTests(APITestCase):
 
         connection.queries_log.clear()
         with override_settings(DEBUG=True):
-            with self.assertNumQueries(8):
+            with self.assertNumQueries(9):
                 response = self.client.get(
                     f'/api/content/lists/{self.user_list.id}/items/'
                 )
@@ -260,9 +260,9 @@ class APIPerformanceTests(APITestCase):
     def test_content_detail_endpoint_query_count(self):
         """Sprint 08 / T3: GET /api/content/<id>/ resolves a single item.
 
-        The local-first contract uses a bounded eight-query shape: identity,
+        The local-first contract uses a bounded nine-query shape: identity,
         current-user rating, personal tracking, detail relations, images,
-        providers, authors, and TV season children.
+        providers, authors, TV season children, and moderation summary.
         This remains below the repository's <=10 list/detail budget and avoids
         a second ratings HTTP waterfall.
         """
@@ -278,7 +278,7 @@ class APIPerformanceTests(APITestCase):
         with override_settings(DEBUG=True):
             # Includes the bulk season-child read used to reconstruct TV detail
             # payloads with stable Denn season ids.
-            with self.assertNumQueries(8):
+            with self.assertNumQueries(9):
                 response = self.client.get(f'/api/content/{content_item.id}/')
 
         self.assertEqual(response.status_code, 200)
@@ -330,6 +330,7 @@ class SerializerPerformanceTests(TestCase):
     def test_list_item_serializer_with_prefetch(self):
         """Test that ListItemSerializer uses pre-fetched data efficiently."""
         from content.serializers import ListItemSerializer
+        from content.moderation.summary import latest_moderation_prefetch
         from django.db.models import Prefetch
         from django.db import connection
 
@@ -341,6 +342,7 @@ class SerializerPerformanceTests(TestCase):
             'added_by',
             'user_list__owner'
         ).prefetch_related(
+            latest_moderation_prefetch('content_item__'),
             Prefetch(
                 'content_item__ratings',
                 queryset=Rating.objects.select_related('user'),

@@ -19,6 +19,7 @@ from content.models import (
     Rating,
     UserContentTracking,
 )
+from content.moderation.summary import latest_moderation_prefetch
 from content.serializers import (
     UserListSerializer,
     UserListDetailSerializer,
@@ -188,6 +189,12 @@ class UserListViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
         except (TypeError, ValueError):
             include_personal_state = user_list_id is not None
 
+        include_items = include_personal_state or "items" in self.request.query_params.get(
+            "expand", ""
+        ).split(",")
+        if include_items:
+            items_prefetches.append(latest_moderation_prefetch('content_item__'))
+
         if include_personal_state:
             items_prefetches.extend([
                 Prefetch(
@@ -356,6 +363,7 @@ class UserListViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
                         *content_related,
                     )
                     .prefetch_related(
+                        latest_moderation_prefetch("content_item__"),
                         Prefetch(
                             "content_item__images",
                             queryset=Image.objects.order_by("position", "id"),
@@ -399,7 +407,7 @@ class UserListViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
         queryset = ListItem.objects.filter(user_list=user_list).select_related(
             'content_item',
             'added_by',
-        )
+        ).prefetch_related(latest_moderation_prefetch('content_item__'))
 
         if user_list.list_type == UserList.ListType.DYNAMIC:
             definition = get_definition(user_list.dynamic_key or '')

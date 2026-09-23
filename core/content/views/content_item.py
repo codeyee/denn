@@ -10,6 +10,7 @@ from django.urls import reverse
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiExample, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 from content.models import ContentItem, Rating, UserContentTracking
+from content.moderation.summary import latest_moderation_prefetch
 from content.serializers import ContentItemSerializer
 from content.permissions import (
     IsAdminOrReadOnly,
@@ -198,7 +199,9 @@ class ContentItemBulkResolveRequestSerializer(drf_serializers.Serializer):
     )
 )
 class ContentItemViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
-    queryset = ContentItem.objects.all().order_by('-created_at')
+    queryset = ContentItem.objects.all().prefetch_related(
+        latest_moderation_prefetch()
+    ).order_by('-created_at')
     serializer_class = ContentItemSerializer
     permission_classes = [IsAuthenticated, IsAdminOrReadOnly]
     filter_backends = [filters.OrderingFilter, filters.SearchFilter]
@@ -362,7 +365,9 @@ class ContentItemDetailByIdView(APIView):
 
     def get(self, request, id):
         item = get_object_or_404(
-            ContentItem.objects.select_related('season_detail__tv_show'),
+            ContentItem.objects.select_related('season_detail__tv_show').prefetch_related(
+                latest_moderation_prefetch()
+            ),
             pk=id,
         )
         current_user_rating = None

@@ -195,6 +195,16 @@ Jev supplies independent typed judgments; application code owns precedence, thre
   - Acceptance: API remains backward compatible; absent/stale/error judgments are explicit; preference defaults safely.
   - Checks: serializer, profile, permissions, query-count, and API-schema tests.
   - Route: delegated; writer trigger.
+  - [ ] **JEV-004A — Expose a bounded read-only moderation summary from Core** (current work unit)
+    - Scope: add an additive `moderation` summary to existing ContentItem detail/list and LocalContentSummary API surfaces. Expose only status (`missing`, `pending`, `complete`, `stale`, or `error`) and a valid classification (`safe`, `explicit`, or `needs_review`) when present. Preserve current production-passive behavior.
+    - Exclusions: user preference/profile changes, Web UI or enforcement, classification policy changes, Jev calls, backfill, raw judgment payloads, probabilities, hashes, token usage, and private evidence.
+    - Acceptance: stale, errored, missing, pending, malformed, or otherwise invalid judgments are never reported as safe; complete valid judgments expose only the allowlisted summary; list responses avoid N+1 queries; API schema and English contract docs match the response.
+    - Checks: `DATABASE_URL='sqlite://:memory:' MODERATION_CLASSIFICATION_ENABLED=False /Users/emmanuel/Workspace/projects/denn/core/.venv/bin/python manage.py test content`; the same environment and runner with `manage.py makemigrations --check --dry-run`; `git show --check <commit>`.
+    - Route: delegated direct; writer trigger (Core serializers/querysets, tests, schema, and API docs are a multi-file behavior change).
+    - Result: implementation complete; verification passed, with the work-unit commit and post-commit check still pending. ContentItem detail/list and LocalContentSummary now expose only the public status/classification pair. List serializers use latest-row prefetches; public profile overview uses scalar annotations to preserve its existing query budget. No Jev calls, preference changes, policy changes, backfill, or remote operations were performed.
+    - Verification observed before commit: exact required `manage.py test content` -> 390 tests passed (1 skipped); exact `manage.py makemigrations --check --dry-run` -> `No changes detected`; `manage.py test authentication.tests.test_public_profiles` -> 25 tests passed; `git diff --check` -> pass. Post-commit `git show --check` remains pending.
+    - Limitation: `complete` represents the latest stored row only; Core does not compare its source hash against current content, so this summary is not a freshness guarantee.
+  - User preference/profile exposure remains part of JEV-004 but is not included in JEV-004A.
 
 - [ ] **JEV-005 — Implement disabled-by-default web enforcement path**
   - Add a pure surface-policy module and UI behavior for badges, blur/reveal, placeholders, homepage/featured suppression, search/list annotations, detail access, and settings.

@@ -229,6 +229,21 @@ See [`auth-session-bootstrap.md`](./auth-session-bootstrap.md).
 - Periodic refresh uses `CONTENT_REHYDRATION_POLICY`, including
   SQL-side `refresh_due_at` selection and age-band-aware logging.
 
+### Read-Only Moderation Summary
+
+Content item detail/list responses and local content summaries include a
+read-only `moderation` object with `status` and nullable `classification`.
+The API selects the latest persisted judgment by request time and id. Missing
+judgments report `missing`; persisted `pending`, `stale`, and `error` states
+never include a classification. Only completed allowlisted results map to
+`safe`, `explicit`, or `needs_review`; `unknown` remains null.
+
+This summary performs no classification or policy enforcement. `complete`
+means that the persisted row is complete; the read path does not compare its
+source hash with current content or derive freshness. Consumers must not treat
+it as a freshness guarantee. A future freshness change must make that contract
+explicit rather than treating an old `safe` result as current.
+
 See [`content-lifecycle.md`](./content-lifecycle.md).
 Discovery filtering is defined in
 [`content-eligibility.md`](./content-eligibility.md).

@@ -1,13 +1,17 @@
 from rest_framework import serializers
+from drf_spectacular.utils import extend_schema_field
 from content.models import ContentItem
+from content.moderation.summary import moderation_summary
 from content.services.progress_policy import get_progress_policy
 from core.serializers import BaseFlexSerializer
+from .moderation_summary import ModerationSummarySerializer
 
 class ContentItemSerializer(BaseFlexSerializer):
     source_data = serializers.SerializerMethodField()
     current_user_rating = serializers.SerializerMethodField()
     current_user_tracking = serializers.SerializerMethodField()
     progress_policy = serializers.SerializerMethodField()
+    moderation = serializers.SerializerMethodField()
 
     class Meta:
         model = ContentItem
@@ -22,6 +26,7 @@ class ContentItemSerializer(BaseFlexSerializer):
             'current_user_rating',
             'current_user_tracking',
             'progress_policy',
+            'moderation',
             'created_at',
             'source_data',
         ]
@@ -33,6 +38,7 @@ class ContentItemSerializer(BaseFlexSerializer):
             'current_user_rating',
             'current_user_tracking',
             'progress_policy',
+            'moderation',
             'created_at',
             'source_data',
         ]
@@ -73,6 +79,7 @@ class ContentItemSerializer(BaseFlexSerializer):
                 'source_data': None,
                 'current_user_rating': None,
                 'current_user_tracking': None,
+                'moderation': moderation_summary(obj),
             },
             'score': rating.score,
             'comment': rating.comment,
@@ -104,6 +111,10 @@ class ContentItemSerializer(BaseFlexSerializer):
 
     def get_progress_policy(self, obj):
         return get_progress_policy(obj.content_type)
+
+    @extend_schema_field(ModerationSummarySerializer)
+    def get_moderation(self, obj):
+        return moderation_summary(obj)
 
     def _should_include_source_data(self):
         if self.context.get('skip_source_data', False):
