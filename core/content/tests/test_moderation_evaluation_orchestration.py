@@ -3,10 +3,13 @@ import json
 import unittest
 from copy import deepcopy
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
-from content.moderation.client import ModerationJudgment, UsageTokens
+from content.moderation.client import JevModerationClient, ModerationJudgment, UsageTokens
+from content.moderation.errors import ModerationSkipped, ModerationUnavailable
 from content.moderation.evaluation_orchestration import evaluate_dataset
+from content.moderation.policy import PolicyThresholds
 
 FIXTURE = Path(__file__).parent / "fixtures" / "jev_moderation_gold_cases_v1.json"
 
@@ -88,6 +91,95 @@ class ModerationEvaluationOrchestrationTests(unittest.TestCase):
             self.assertNotIn(case["state"]["description"], serialized)
         self.assertEqual(report["evaluation_identity"]["question_revision"], "q3")
         self.assertEqual(report["evaluation_identity"]["policy"]["name"], "compose_policy")
+
+    def test_actual_adapter_is_injected_without_constructing_sdk(self):
+        calls = []
+
+        class FakeSdk:
+            def system_one(self, state, questions, *, model):
+                calls.append((state, questions, model))
+                return SimpleNamespace(
+                    model="jev-1.13.0",
+                    nouls={
+                        name: SimpleNamespace(noul=value)
+                        for name, value in {
+                            "safe_for_automatic_discovery": 0.9,
+                            "explicit_or_sensitive": 0.1,
+                            "needs_review": 0.1,
+                        }.items()
+                    },
+                    usage=SimpleNamespace(input_tokens=7, output_tokens=3),
+                )
+
+        adapter = JevModerationClient(
+            client=FakeSdk(), model="jev-1.13.0", settings_getter=lambda name: True,
+        )
+        dataset = load_fixture()
+        selected = dataset["cases"][1]["case_id"]
+        report = self.evaluate(dataset, adapter, selected_case_ids=[selected])
+
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(calls[0][2], "jev-1.13.0")
+        self.assertEqual(report["cases"][0]["case_id"], selected)
+        self.assertEqual(report["cases"][0]["input_tokens"], 7)
+        self.assertEqual(report["cases"][0]["policy_prediction"], "safe_for_automatic_discovery")
+        self.assertEqual(report["case_count"], 1)
+
+    def test_typed_failures_and_unexpected_errors_keep_selected_cases(self):
+        dataset = load_fixture()
+        client = FakeClient([
+            ModerationUnavailable("typesafe_timeout", detail="do not expose this detail"),
+            RuntimeError("private response body"),
+        ])
+        report = self.evaluate(dataset, client)
+
+        self.assertEqual(report["case_count"], 3)
+        self.assertEqual(report["coverage"]["jev_only"]["outcome_counts"]["unavailable"], 2)
+        self.assertEqual(report["cases"][1]["failure_code"], "typesafe_timeout")
+        self.assertEqual(report["cases"][2]["failure_code"], "client_error")
+        self.assertEqual(report["cases"][1]["policy_prediction"], "needs_review")
+        self.assertEqual(report["per_class_jev_only"]["needs_review"]["recall"]["denominator"], 1)
+        rendered = json.dumps(report)
+        self.assertNotIn("private response body", rendered)
+        self.assertNotIn("do not expose this detail", rendered)
+
+    def test_typed_skip_unknown_and_policy_threshold_identity(self):
+        dataset = load_fixture()
+        client = FakeClient([
+            ModerationSkipped("moderation_disabled"),
+            judgment("not-a-probability", 0.2, 0.1, model="jev-latest"),
+        ])
+        report = self.evaluate(
+            dataset,
+            client,
+            thresholds=PolicyThresholds(safe_min=0.8, explicit_at=0.8, review_at=0.7),
+        )
+
+        self.assertEqual(report["cases"][1]["jev_prediction"], "skipped")
+        self.assertEqual(report["cases"][1]["failure_code"], "moderation_disabled")
+        self.assertFalse(report["cases"][1]["inference_attempted"])
+        self.assertEqual(report["cases"][2]["jev_prediction"], "unknown")
+        self.assertEqual(report["cases"][2]["reported_model"], "jev-latest")
+        self.assertFalse(report["model_consistency"]["single_version_eligible"])
+        self.assertEqual(report["evaluation_identity"]["policy"]["thresholds"]["safe_min"], 0.8)
+
+    def test_malformed_client_result_is_safe_unavailable_and_validation_precedes_calls(self):
+        dataset = load_fixture()
+        report = self.evaluate(dataset, FakeClient([object()]), selected_case_ids=[dataset["cases"][1]["case_id"]])
+        self.assertEqual(report["cases"][0]["jev_prediction"], "unavailable")
+        self.assertEqual(report["cases"][0]["failure_code"], "typesafe_response_invalid")
+
+        client = FakeClient([])
+        with self.assertRaises(ValueError):
+            self.evaluate(dataset, client, selected_case_ids=["case_deadbeef0000"])
+        with self.assertRaises(ValueError):
+            evaluate_dataset(
+                dataset,
+                client=client,
+                requested_model="https://bad.invalid/model",
+                question_revision="q3",
+            )
+        self.assertEqual(client.states, [])
 
 if __name__ == "__main__":
     unittest.main()

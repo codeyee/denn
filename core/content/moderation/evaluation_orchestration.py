@@ -76,7 +76,7 @@ def _missing_result(
     *,
     prediction: str,
     attempted: bool,
-    failure_code: str,
+    failure_code: str | None,
     thresholds: PolicyThresholds,
 ) -> dict[str, Any]:
     policy_prediction = compose_policy(
@@ -234,10 +234,9 @@ def evaluate_dataset(
                 case,
                 prediction="skipped",
                 attempted=False,
-                failure_code="provider_explicit_override",
+                failure_code=None,
                 thresholds=thresholds,
             ))
-            observations[-1]["failure_code"] = None
             continue
         row, duration_ms = _classify_one(client, case, thresholds)
         observations.append(row)
