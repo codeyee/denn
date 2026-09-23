@@ -9,14 +9,20 @@ the Jev moderation worker.
 - The resolver only records bounded intent. It does not call Proxy or Jev.
 - This command processes queued preparation jobs only. It does not scan old
   `ContentItem` rows, backfill legacy detail, or alter moderation policy.
-- Jobs with existing type-specific detail finish without a Proxy request.
+- Jobs with existing type-specific detail finish without a Proxy request,
+  after recomputing the current moderation source hash and idempotently
+  reconciling the outbox when classification is enabled. A missing hash that
+  cannot be rebuilt remains retryable instead of being reported as prepared.
 - Missing detail is fetched through Core's `source_data_orchestrator`, then
   written by its normalized detail mapper. That path maintains the current
   moderation source hash and enqueues moderation work when classification is
   enabled.
 - Claims use short PostgreSQL row-lock transactions with `skip_locked`; no
-  network request runs while a claim lock is held. Lease tokens fence stale
-  completions. GET failures retry with bounded exponential backoff and end in
+  network request runs while a claim lock is held. After a Proxy response, the
+  worker re-locks and checks the job's status, token, and lease expiry in the
+  same transaction as the normalized detail/hash/outbox write. A reclaimed
+  worker cannot persist stale detail, and denied writes do not refresh browse
+  metadata. GET failures retry with bounded exponential backoff and end in
   `failed` after the configured attempt limit.
 - Batch size is limited to 100 (default 10). Leases are at least 300 seconds,
   longer than the configured per-request Proxy timeouts. The producer separately caps

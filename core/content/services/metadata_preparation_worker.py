@@ -4,14 +4,18 @@ from __future__ import annotations
 import logging
 import time
 import uuid
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import timedelta
 
+from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
 from content.models import ContentItem, ContentMetadataPreparationJob
 from content.services.local_content_store import detail_for
+from content.services.moderation_job_enqueue import enqueue_current_moderation_job
+from content.services.moderation_source_hash import persist_current_moderation_source_hash
 from content.services.source_data_orchestrator import fetch_bulk_source_data
 
 logger = logging.getLogger(__name__)
@@ -137,6 +141,20 @@ def run_metadata_preparation_batch(
         (existing_detail if detail_for(job.content_item) is not None else missing_detail).append(job)
 
     for job in existing_detail:
+        reconciled = _reconcile_existing_detail(job.content_item_id, job.pk, tokens[job.pk])
+        if reconciled is None:
+            result.add(_retry_or_fail(
+                job.pk,
+                tokens[job.pk],
+                attempts=job.attempts,
+                max_attempts=max_attempts,
+                base_backoff_seconds=base_backoff_seconds,
+                max_backoff_seconds=max_backoff_seconds,
+            ))
+            continue
+        if not reconciled:
+            result.add('fenced')
+            continue
         result.add(
             'done' if _finish(job.pk, tokens[job.pk], ContentMetadataPreparationJob.Status.DONE)
             else 'fenced'
@@ -151,8 +169,18 @@ def run_metadata_preparation_batch(
             ContentItem.objects.filter(pk__in=[job.content_item_id for job in missing_detail])
             .select_related(*_DETAIL_RELATED_NAMES)
         )
+        jobs_by_content_id = {job.content_item_id: job for job in missing_detail}
         try:
-            source_data = (fetcher or fetch_bulk_source_data)(load_items)
+            if fetcher is None:
+                source_data = fetch_bulk_source_data(
+                    load_items,
+                    persistence_guard=lambda item: _active_lease(
+                        jobs_by_content_id[item.pk].pk,
+                        tokens[jobs_by_content_id[item.pk].pk],
+                    ),
+                )
+            else:
+                source_data = fetcher(load_items)
         except Exception:
             # Do not log exception text or provider payloads. GETs are
             # idempotent, so a bounded retry is safe.
@@ -219,6 +247,43 @@ def _finish(job_id, token, status) -> bool:
         updated_at=now,
     )
     return changed == 1
+
+
+@contextmanager
+def _active_lease(job_id, token):
+    """Hold the prep-job row lock while a guarded normalized write commits."""
+    with transaction.atomic():
+        job = (
+            ContentMetadataPreparationJob.objects
+            .select_for_update()
+            .filter(
+                pk=job_id,
+                status=ContentMetadataPreparationJob.Status.LEASED,
+                lease_token=token,
+            )
+            .first()
+        )
+        yield bool(job and job.lease_until and job.lease_until > timezone.now())
+
+
+def _reconcile_existing_detail(content_item_id, job_id, token) -> bool | None:
+    """Refresh current moderation freshness and enqueue missing work idempotently."""
+    with _active_lease(job_id, token) as active:
+        if not active:
+            return False
+        item = (
+            ContentItem.objects.select_for_update()
+            .filter(pk=content_item_id)
+            .select_related(*_DETAIL_RELATED_NAMES)
+            .first()
+        )
+        if item is None or detail_for(item) is None:
+            return None
+        source_hash = persist_current_moderation_source_hash(item)
+        if not source_hash and settings.MODERATION_CLASSIFICATION_ENABLED:
+            return None
+        enqueue_current_moderation_job(item, source_hash)
+        return True
 
 
 def _retry_or_fail(

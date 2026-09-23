@@ -10,12 +10,13 @@ Sprint 07 / PR-7E — import this module directly.
 """
 from __future__ import annotations
 
+from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from contextlib import AbstractContextManager, nullcontext
 import logging
 import threading
 import time
-from collections import defaultdict
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from django.conf import settings
 from django.db import close_old_connections
@@ -231,6 +232,7 @@ def fetch_bulk_source_data(
     country_code: Optional[str] = None,
     *,
     stale_while_revalidate: bool = False,
+    persistence_guard: Callable[[ContentItem], AbstractContextManager[bool]] | None = None,
 ) -> Dict[int, Dict[str, Any]]:
     """Local-first replacement for `bulk_fetch_source_data`.
 
@@ -286,9 +288,12 @@ def fetch_bulk_source_data(
         for item in needs_proxy:
             payload = proxy_results.get(item.id)
             if payload:
-                _persist(item, payload, country_code)
-                refreshed_ids.append(item.id)
-                persisted.append(item)
+                guard = persistence_guard(item) if persistence_guard else nullcontext(True)
+                with guard as permitted:
+                    if permitted:
+                        _persist(item, payload, country_code)
+                        refreshed_ids.append(item.id)
+                        persisted.append(item)
             elif item.id in fallback_id_set:
                 fallback = payload_reconstructor.from_local(item)
                 if fallback is not None:

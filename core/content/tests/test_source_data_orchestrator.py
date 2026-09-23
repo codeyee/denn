@@ -1,6 +1,7 @@
 """Orchestrator scenarios: all-fresh, all-stale, mixed, proxy-down (Sprint 07 / PR-7B)."""
 from __future__ import annotations
 
+from contextlib import nullcontext
 from datetime import timedelta
 from unittest.mock import patch
 
@@ -108,6 +109,23 @@ class OrchestratorMissingTests(TestCase):
 
         self.assertIn(item.id, results)
         self.assertTrue(MovieDetail.objects.filter(content_item=item).exists())
+
+    def test_denied_persistence_guard_skips_detail_and_browse_metadata(self):
+        item, _ = get_or_create_content_item(
+            ContentItem.SourceAPI.TMDB, 'guarded-77', ContentItem.ContentType.MOVIE,
+        )
+        with patch('content.services.source_data_orchestrator._proxy_fetch') as proxy, patch(
+            'content.services.browse_metadata_service.upsert_many'
+        ) as browse_metadata:
+            proxy.return_value = {item.id: dict(MOVIE_MEMENTO, id=item.external_id)}
+            results = fetch_bulk_source_data(
+                [item],
+                persistence_guard=lambda _item: nullcontext(False),
+            )
+
+        self.assertNotIn(item.id, results)
+        self.assertFalse(MovieDetail.objects.filter(content_item=item).exists())
+        browse_metadata.assert_not_called()
 
     def test_incomplete_tv_detail_repairs_season_links_synchronously(self):
         item, _ = get_or_create_content_item(

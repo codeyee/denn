@@ -59,6 +59,70 @@ class MetadataPreparationWorkerTests(TransactionTestCase):
         fetcher.assert_not_called()
 
     @MODERATION_SETTINGS
+    def test_existing_detail_reconciles_hash_and_missing_outbox_before_done(self):
+        item, job = self.create_job('legacy-detail')
+        payload = dict(MOVIE_MEMENTO, id=item.external_id)
+        with override_settings(MODERATION_CLASSIFICATION_ENABLED=False):
+            ensure_content_detail(item, payload=payload, force=True)
+        ContentItem.objects.filter(pk=item.pk).update(current_moderation_source_hash=None)
+        self.assertFalse(ContentModerationJob.objects.filter(content_item=item).exists())
+
+        result = run_metadata_preparation_batch(
+            fetcher=Mock(side_effect=AssertionError('existing detail must not fetch')),
+        )
+
+        item.refresh_from_db()
+        job.refresh_from_db()
+        self.assertEqual(result.counts, {'done': 1})
+        self.assertEqual(item.current_moderation_source_hash, build_state_and_hash(item)[1])
+        self.assertTrue(ContentModerationJob.objects.filter(
+            content_item=item,
+            source_data_hash=item.current_moderation_source_hash,
+            status=ContentModerationJob.Status.QUEUED,
+        ).exists())
+
+    @MODERATION_SETTINGS
+    def test_reclaimed_lease_cannot_persist_stale_payload_after_new_claim(self):
+        item, job = self.create_job('stale-persist')
+        stale_payload = dict(MOVIE_MEMENTO, id=item.external_id, title='Stale title')
+        fresh_payload = dict(MOVIE_MEMENTO, id=item.external_id, title='Fresh title')
+        nested_results = []
+        proxy_calls = []
+
+        def proxy_fetch(items, _country_code):
+            if not proxy_calls:
+                proxy_calls.append(True)
+                ContentMetadataPreparationJob.objects.filter(pk=job.pk).update(
+                    lease_until=timezone.now() - timedelta(seconds=1),
+                )
+                nested_results.append(run_metadata_preparation_batch())
+                return {item.pk: stale_payload}
+            return {item.pk: fresh_payload}
+
+        with patch('content.services.source_data_orchestrator._proxy_fetch', side_effect=proxy_fetch), patch(
+            'content.services.browse_metadata_service.upsert_many'
+        ) as browse_metadata:
+            stale_result = run_metadata_preparation_batch()
+
+        item.refresh_from_db()
+        job.refresh_from_db()
+        self.assertEqual(nested_results[0].counts, {'done': 1})
+        self.assertEqual(stale_result.counts, {'fenced': 1})
+        self.assertEqual(item.movie_detail.title, 'Fresh title')
+        self.assertEqual(item.current_moderation_source_hash, build_state_and_hash(item)[1])
+        self.assertEqual(job.status, ContentMetadataPreparationJob.Status.DONE)
+        browse_metadata.assert_called_once()
+        self.assertEqual(
+            next(iter(browse_metadata.call_args.args[1].values()))['title'],
+            'Fresh title',
+        )
+        self.assertTrue(ContentModerationJob.objects.filter(
+            content_item=item,
+            source_data_hash=item.current_moderation_source_hash,
+            status=ContentModerationJob.Status.QUEUED,
+        ).exists())
+
+    @MODERATION_SETTINGS
     def test_canonical_fetch_persists_detail_hash_and_moderation_outbox(self):
         item, job = self.create_job('fetch')
         payload = dict(MOVIE_MEMENTO, id=item.external_id, title='Memento prepared')
