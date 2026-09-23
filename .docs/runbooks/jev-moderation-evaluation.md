@@ -67,7 +67,7 @@ python manage.py evaluate_jev_moderation \
 
 Inspect `ready_for_live_run` before proceeding. `maximum_case_limit` limits selected cases only. Neither the case limit nor the price snapshot enforces a dollar cap. The preflight itself does not authorize sending catalog content to TypeSafe; use `--confirm-live` only after reviewing the selected text and pricing.
 
-Live mode requires a concrete pinned Jev model, `MODERATION_CLASSIFICATION_ENABLED=true`, and `TYPESAFE_API_KEY` when any selected case needs inference. It accepts at most 25 cases, each with a serialized moderation state no larger than 20,000 UTF-8 bytes. Every case ID must be explicit; there is no implicit sampling. Affirmative TMDB movie/TV overrides are recorded as no-call outcomes.
+Live mode requires a concrete pinned Jev model, `MODERATION_CLASSIFICATION_ENABLED=True`, and `TYPESAFE_API_KEY` when any selected case needs inference. The environment value is case-sensitive and must be exactly `True` with a capital `T`; lowercase `true` leaves classification disabled. It accepts at most 25 cases, each with a serialized moderation state no larger than 20,000 UTF-8 bytes. Every case ID must be explicit; there is no implicit sampling. Affirmative TMDB movie/TV overrides are recorded as no-call outcomes.
 
 ```sh
 cd core
