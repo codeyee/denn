@@ -29,8 +29,12 @@ def from_local(content_item: ContentItem, *, request_country: Optional[str] = No
     }
     if detail.title:
         payload['title'] = detail.title
-    if detail.tv_show_name:
-        payload['tv_show_name'] = detail.tv_show_name
+    tv_show_name = detail.tv_show_name
+    if not tv_show_name.strip() and detail.tv_show_id:
+        tv_show_detail = getattr(detail.tv_show, 'tv_show_detail', None)
+        tv_show_name = tv_show_detail.title if tv_show_detail else ''
+    if tv_show_name.strip():
+        payload['tv_show_name'] = tv_show_name
     if detail.tv_show_id:
         payload['tv_show_id'] = detail.tv_show_id
         payload['tv_show_external_id'] = detail.tv_show.external_id

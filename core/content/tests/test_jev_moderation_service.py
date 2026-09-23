@@ -5,7 +5,13 @@ from unittest.mock import patch
 from django.db import IntegrityError
 from django.test import TestCase, override_settings
 
-from content.models import ContentItem, ContentModerationJudgment, MovieDetail
+from content.models import (
+    ContentItem,
+    ContentModerationJudgment,
+    MovieDetail,
+    SeasonDetail,
+    TvShowDetail,
+)
 from content.services.moderation_service import (
     ModerationClassificationOutcome,
     _provider_explicit,
@@ -128,6 +134,24 @@ class ModerationServiceTests(TestCase):
                 {"genres": ["Action"], "themes": ["Erotic"]},
                 {"genres": ["Action"], "themes": ["Fantasy"]},
             ),
+            (
+                ContentItem.ContentType.SEASON,
+                ContentItem.SourceAPI.TMDB,
+                {"tv_show_name": "Show", "episodes": [{"title": "Pilot", "description": "A"}]},
+                {"tv_show_name": "Show", "episodes": [{"title": "Pilot", "description": "B"}]},
+            ),
+            (
+                ContentItem.ContentType.ALBUM,
+                ContentItem.SourceAPI.SPOTIFY,
+                {"authors": [{"name": "Artist"}], "tracks": [{"title": "Song A"}]},
+                {"authors": [{"name": "Artist"}], "tracks": [{"title": "Song B"}]},
+            ),
+            (
+                ContentItem.ContentType.BOOK,
+                ContentItem.SourceAPI.OPENLIBRARY,
+                {"authors": [{"name": "Author A"}]},
+                {"authors": [{"name": "Author B"}]},
+            ),
         )
         item_id = 999
         for content_type, provider, before, after in cases:
@@ -146,6 +170,46 @@ class ModerationServiceTests(TestCase):
                 ):
                     _, updated_hash = build_state_and_hash(item)
                 self.assertNotEqual(original_hash, updated_hash)
+
+    def test_linked_persisted_show_title_fills_season_state_and_changes_hash(self):
+        show = ContentItem.objects.create(
+            source_api=ContentItem.SourceAPI.TMDB,
+            external_id='linked-show',
+            content_type=ContentItem.ContentType.TV_SHOW,
+        )
+        show_detail = TvShowDetail.objects.create(
+            content_item=show,
+            title='Persisted Parent Show',
+        )
+        season = ContentItem.objects.create(
+            source_api=ContentItem.SourceAPI.TMDB,
+            external_id='linked-show:1',
+            content_type=ContentItem.ContentType.SEASON,
+        )
+        SeasonDetail.objects.create(
+            content_item=season,
+            tv_show=show,
+            season_number=1,
+            title='Season One',
+        )
+
+        state, original_hash = build_state_and_hash(season)
+
+        self.assertEqual(
+            state['type_specific']['season']['parent_show_name'],
+            'Persisted Parent Show',
+        )
+
+        show_detail.title = 'Updated Persisted Parent Show'
+        show_detail.save(update_fields=['title'])
+        reloaded_season = ContentItem.objects.get(pk=season.pk)
+        updated_state, updated_hash = build_state_and_hash(reloaded_season)
+
+        self.assertEqual(
+            updated_state['type_specific']['season']['parent_show_name'],
+            'Updated Persisted Parent Show',
+        )
+        self.assertNotEqual(original_hash, updated_hash)
 
     @override_settings(**ENABLED)
     def test_concrete_model_pre_reuses_judgment_without_second_call(self):
