@@ -218,6 +218,10 @@ Jev supplies independent typed judgments; application code owns precedence, thre
     - Guardrail: apply only to complete explicit judgments; preserve development-only route behavior and do not imply the blur blocks image access.
     - Checks: focused keyboard/touch/accessibility and card-layout tests for both badge slots; mapped Web container Vitest, lint, build, and auth-card budget check.
     - Route: delegated direct; component, card placement, and tests form one bounded UI behavior.
+    - Implementation: the reveal is icon-only with a 44×44 CSS target, accessible title/label, `aria-pressed`, visible keyboard focus, and click interception. The two top badges share a row; the reveal control is stacked below them at the upper-right edge. Blur eligibility remains complete + explicit; `needs_review` does not show the control.
+    - Verification: in `denn-agent-jev-moderation-backfill-web-1` (`/app` mapped to this worktree), `pnpm exec vitest run src/test/moderation-reveal-button.test.tsx` -> 4 tests passed; `pnpm run lint` -> pass; `pnpm run cards:check` -> 150 WebP files valid, 3,539,278 bytes; `pnpm run build` -> pass. Build warnings: one existing >500 kB client chunk and Nitro's missing `compatibilityDate` fallback. Build emitted `dev.moderation-preview-*` client and server chunks. `git diff --check` -> pass.
+    - Browser visual readback: pending parent verification. No route removal, production deploy, or production backfill was performed.
+    - Commit identity: `feat(web): refine moderation artwork reveal flow`, `aac1f69` on `agent/jev-moderation-ux-decisions`.
   - [x] **JEV-005-LOCAL-PREVIEW — Show the moderation visual safely in the local Web app**
     - Scope: add a development-only reachable preview that demonstrates explicit blur, badge, and keyboard reveal states on the shared content-card treatment; use a clearly labeled fixture when no local persisted explicit judgment exists, and distinguish fixture data from Core API data.
     - Guardrails: keep production surfaces unchanged and enforcement in shadow mode; honor existing adult preference semantics; missing, stale, pending, error, or invalid summaries never imply safety; do not expose raw judgment details or imply CSS blur prevents image download.
@@ -238,10 +242,12 @@ Jev supplies independent typed judgments; application code owns precedence, thre
   - Acceptance: shadow, activation, rollback, model/question/policy versioning, and production safeguards are unambiguous.
   - Checks: documentation links resolve; commands match implementation; final cross-service validation results are recorded.
   - Route: delegated; writer trigger.
-  - [ ] **JEV-007-MODERATION-FLOW — Record verified product flow and open decisions**
+  - [x] **JEV-007-MODERATION-FLOW — Record verified product flow and open decisions**
     - Scope: add an indexed, explicitly unratified design note that separates current implementation, user-requested outcomes, architecture recommendations, and unresolved product/operational choices; include the development-preview release gate.
     - Guardrail: do not represent recommendations as approved architecture, implement admin, create an issue, deploy, or run a production backfill.
-    - Checks: linked documentation paths resolve and `git diff --check` passes.
+    - Result: added `.docs/ideas/jev-content-moderation-product-flow.md` and indexed it in `.docs/README.md`. Updated `.docs/architecture/content-eligibility.md` to distinguish the preview's DEV-only `notFound()` runtime guard from build exclusion. The design note clearly separates verified current behavior, the user-requested outcome, unratified recommendations, and open decisions about pending detail, homepage `needs_review`, freshness, queueing, admin authorization/audit, and rollout.
+    - Checks: all linked repository paths exist; `git diff --check` -> pass. The production build verified that both client and server route chunks are emitted while the development guard is present.
+    - Commit identity: `feat(web): refine moderation artwork reveal flow`, `aac1f69` on `agent/jev-moderation-ux-decisions`.
     - Route: delegated direct; writer trigger for the design note, documentation index, and this tracker.
 
 - [x] **JEV-003B — Resumable rate-bounded moderation backfill command** (command core complete; incremental scheduling stays in JEV-003C)
@@ -287,8 +293,8 @@ Jev supplies independent typed judgments; application code owns precedence, thre
 - Verified existing authoritative content policy in `.docs/architecture/content-eligibility.md`.
 - Verified existing `UserPreferences.allow_adult_content` and settings UI precedent.
 - Verified no current moderation judgment model or TypeSafe SDK dependency.
-- JEV-002 (JEV-002A, JEV-002B, and JEV-002-Q3) is implemented and verified offline; the JEV-003B command core above is implemented and verified offline; JEV-003C and JEV-004–JEV-007 remain pending.
+- JEV-002 (JEV-002A, JEV-002B, and JEV-002-Q3) and the JEV-003B command core above are implemented and verified offline. JEV-007-MODERATION-FLOW is complete; JEV-005-REVEAL is implemented and tested but awaits parent visual readback. JEV-003C and the remaining JEV-004–JEV-007 work remain pending.
 
 ## Next step
 
-Next: continue with JEV-003B operator review and JEV-003C incremental scheduling, pending a queue/worker architecture decision. Provider ingestion remains a separate backlog item. Chain strategy stays `stacked-to-main`. No live Jev call or backfill has been performed in any slice.
+Next: continue with JEV-003B operator review and JEV-003C incremental scheduling, pending a queue/worker architecture decision. Resolve the open product choices in `.docs/ideas/jev-content-moderation-product-flow.md` before activating enforcement; remove/exclude the preview route from production output before release. Provider ingestion remains a separate backlog item. Chain strategy stays `stacked-to-main`. A separate bounded local exact-ID Jev sample was run earlier; no live Jev call was made by this UX/documentation slice, and no production backfill or deployment has occurred.
