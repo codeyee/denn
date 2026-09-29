@@ -36,6 +36,7 @@ type SpotifyTrack struct {
 	Name         string              `json:"name"`
 	TrackNumber  int                 `json:"track_number"`
 	DurationMs   int                 `json:"duration_ms"`
+	Explicit     *bool               `json:"explicit"`
 	Artists      []SpotifyArtist     `json:"artists"`
 	ExternalURLs SpotifyExternalURLs `json:"external_urls"`
 }

@@ -8,7 +8,12 @@ import (
 	"github.com/codeyee/denn-proxy/internal/models"
 	"github.com/codeyee/denn-proxy/internal/providers/openlibrary"
 	"github.com/codeyee/denn-proxy/internal/services/books"
+	servicecommon "github.com/codeyee/denn-proxy/internal/services/common"
 )
+
+// maxSubjects caps how many OpenLibrary subjects a book detail carries; popular
+// works list hundreds of them.
+const maxSubjects = 50
 
 func buildCoverURL(coverID int, size string) string {
 	return fmt.Sprintf("%s/b/id/%d-%s.jpg", openlibrary.CoversURL, coverID, size)
@@ -92,6 +97,17 @@ func formatReleaseDate(firstPublishYear *int) *string {
 	return &date
 }
 
+// mapSubjects reads the `subject` array of the search document the detail
+// request already fetches (fields=*); no work-document request is needed.
+func mapSubjects(subjects []string) []string {
+	subjects = servicecommon.UniqueTrimmed(subjects)
+	if len(subjects) > maxSubjects {
+		subjects = subjects[:maxSubjects]
+	}
+
+	return subjects
+}
+
 func MapSearchItem(doc books.OlDoc) models.SearchItem {
 	title := doc.Title
 
@@ -117,6 +133,7 @@ func MapBook(doc books.OlDoc) models.Book {
 		ReleaseDate: formatReleaseDate(doc.FirstPublishYear),
 		Pages:       doc.NumberOfPages,
 		Description: extractDescription(doc.FirstSentence),
+		Subjects:    mapSubjects(doc.Subject),
 		Images:      buildImages(doc.CoverI),
 	}
 }

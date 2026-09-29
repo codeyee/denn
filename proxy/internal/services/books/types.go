@@ -14,4 +14,5 @@ type OlDoc struct {
 	PublishDate      []string `json:"publish_date"`
 	FirstSentence    []string `json:"first_sentence"`
 	NumberOfPages    *int     `json:"number_of_pages_median"`
+	Subject          []string `json:"subject"`
 }

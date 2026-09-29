@@ -17,8 +17,8 @@ import (
 )
 
 const (
-	movieAppend = "external_ids,watch/providers,images"
-	tvAppend    = "external_ids,watch/providers,images"
+	movieAppend = "external_ids,watch/providers,images,keywords,release_dates"
+	tvAppend    = "external_ids,watch/providers,images,keywords,content_ratings"
 
 	// previewAppend is used by homepage card enrichment. Watch providers
 	// and image galleries are detail-page concerns; pulling them for every
@@ -266,7 +266,7 @@ func (s *Service) GetMovieComplete(ctx context.Context, movieID int, country str
 		return models.Movie{}, fmt.Errorf("get movie %d: %w", movieID, err)
 	}
 
-	return mapper.MapMovie(data, country), nil
+	return mapper.MapMovieDetail(data, country), nil
 }
 
 func (s *Service) GetTVShowComplete(ctx context.Context, tvID int, country string) (models.TVShow, error) {
@@ -278,7 +278,7 @@ func (s *Service) GetTVShowComplete(ctx context.Context, tvID int, country strin
 		return models.TVShow{}, fmt.Errorf("get tv show %d: %w", tvID, err)
 	}
 
-	show := mapper.MapTVShow(data, country)
+	show := mapper.MapTVShowDetail(data, country)
 
 	seasons := make([]models.Season, 0, len(data.Seasons))
 

@@ -87,6 +87,20 @@ func (s *Service) GetGameComplete(ctx context.Context, id int) (models.Game, err
 // to surface a partial response or treat it as a hard failure. The previous
 // behavior swallowed all batch errors silently, hiding rate-limit storms.
 func (s *Service) GetBulkGames(ctx context.Context, ids []int) ([]models.Game, error) {
+	return s.bulkGames(ctx, ids, s.client.GetBulkGames)
+}
+
+// getBulkGamePreviews is GetBulkGames without the safety metadata fields. It
+// feeds homepage trending so that surface keeps its lighter IGDB payload.
+func (s *Service) getBulkGamePreviews(ctx context.Context, ids []int) ([]models.Game, error) {
+	return s.bulkGames(ctx, ids, s.client.GetBulkGamePreviews)
+}
+
+func (s *Service) bulkGames(
+	ctx context.Context,
+	ids []int,
+	fetch func(context.Context, []int) (*clients.Response, error),
+) ([]models.Game, error) {
 	const batchSize = 5
 	var (
 		allGames  []models.Game
@@ -104,7 +118,7 @@ func (s *Service) GetBulkGames(ctx context.Context, ids []int) ([]models.Game, e
 		wg.Add(1)
 		go func(batchIDs []int) {
 			defer wg.Done()
-			data, err := unmarshalResponse[[]games.IgdbGame](s.client.GetBulkGames(ctx, batchIDs))
+			data, err := unmarshalResponse[[]games.IgdbGame](fetch(ctx, batchIDs))
 			if err != nil {
 				log.Printf("igdb: bulk games batch %v failed: %v", batchIDs, err)
 				mu.Lock()
@@ -343,7 +357,7 @@ func (s *Service) resolveGameDetails(ctx context.Context, wantMap, visitsMap map
 	}
 	sort.Ints(ids)
 
-	return s.GetBulkGames(ctx, ids)
+	return s.getBulkGamePreviews(ctx, ids)
 }
 
 func (s *Service) calculateScores(games []models.Game, wantMap, visitsMap map[int]float64) []scoredGame {

@@ -18,6 +18,16 @@ const (
 	includedGameTypes = "0,4,8,9" // Main Game, Expansion, Remake, Remaster
 )
 
+// safetyFields adds provider safety metadata to detail requests only. It uses
+// the current age rating fields (organization, rating_category,
+// rating_content_descriptions), not the deprecated category, rating and
+// content_descriptions ones. Search, popular, recent and homepage trending keep
+// defaultFields so their payloads and cache keys stay unchanged.
+const (
+	safetyFields = "keywords.name,age_ratings.organization.name,age_ratings.rating_category.rating,age_ratings.rating_content_descriptions.description"
+	detailFields = defaultFields + "," + safetyFields
+)
+
 func hashBody(body string) string {
 	return fmt.Sprintf("%x", md5.Sum([]byte(body)))
 }
@@ -36,7 +46,7 @@ func (c *Client) SearchGames(ctx context.Context, query string, limit, offset in
 }
 
 func (c *Client) GetGame(ctx context.Context, id int) (*clients.Response, error) {
-	body := fmt.Sprintf("fields %s; where id = %d;", defaultFields, id)
+	body := fmt.Sprintf("fields %s; where id = %d;", detailFields, id)
 
 	return c.CachedPost(ctx, "games", "api_igdb_details", body, nil, map[string]string{
 		"game_id":   strconv.Itoa(id),
@@ -44,7 +54,18 @@ func (c *Client) GetGame(ctx context.Context, id int) (*clients.Response, error)
 	})
 }
 
+// GetBulkGames fetches full game details, including provider safety metadata.
 func (c *Client) GetBulkGames(ctx context.Context, ids []int) (*clients.Response, error) {
+	return c.getBulkGames(ctx, ids, detailFields)
+}
+
+// GetBulkGamePreviews fetches the lighter payload used by homepage trending,
+// which does not need the safety metadata.
+func (c *Client) GetBulkGamePreviews(ctx context.Context, ids []int) (*clients.Response, error) {
+	return c.getBulkGames(ctx, ids, defaultFields)
+}
+
+func (c *Client) getBulkGames(ctx context.Context, ids []int, fields string) (*clients.Response, error) {
 	if len(ids) == 0 {
 		return &clients.Response{Data: []byte("[]"), StatusCode: 200}, nil
 	}
@@ -55,7 +76,7 @@ func (c *Client) GetBulkGames(ctx context.Context, ids []int) (*clients.Response
 	}
 	idsStr := strings.Join(strIDs, ",")
 
-	body := fmt.Sprintf("fields %s; where id = (%s); limit %d;", defaultFields, idsStr, len(ids))
+	body := fmt.Sprintf("fields %s; where id = (%s); limit %d;", fields, idsStr, len(ids))
 
 	return c.CachedPost(ctx, "games", "api_igdb_bulk", body, nil, map[string]string{
 		"ids_hash":  idsStr,

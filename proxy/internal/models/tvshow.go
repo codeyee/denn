@@ -81,6 +81,10 @@ type TVShow struct {
 	NumberOfSeasons  *int                  `json:"number_of_seasons,omitempty"`
 	NumberOfEpisodes *int                  `json:"number_of_episodes,omitempty"`
 	Authors          []Author              `json:"authors,omitempty"`
+	Adult            *bool                 `json:"adult,omitempty"`
+	Genres           []string              `json:"genres,omitempty"`
+	Keywords         []string              `json:"keywords,omitempty"`
+	Certifications   []Certification       `json:"certifications,omitempty"`
 	Images           *Images               `json:"-"`
 	Platforms        map[string][]Platform `json:"-"`
 	Seasons          []Season              `json:"-"`
@@ -100,6 +104,10 @@ type TVShowResponse struct {
 	NumberOfSeasons  *int                  `json:"number_of_seasons,omitempty"`
 	NumberOfEpisodes *int                  `json:"number_of_episodes,omitempty"`
 	Authors          []Author              `json:"authors,omitempty"`
+	Adult            *bool                 `json:"adult,omitempty"`
+	Genres           []string              `json:"genres,omitempty"`
+	Keywords         []string              `json:"keywords,omitempty"`
+	Certifications   []Certification       `json:"certifications,omitempty"`
 	Images           []ImageEntry          `json:"images,omitempty"`
 	Platforms        map[string][]Platform `json:"platforms,omitempty"`
 	Seasons          []SeasonResponse      `json:"seasons,omitempty"`
@@ -120,6 +128,10 @@ func (tv *TVShow) ToResponse() TVShowResponse {
 		NumberOfSeasons:  tv.NumberOfSeasons,
 		NumberOfEpisodes: tv.NumberOfEpisodes,
 		Authors:          tv.Authors,
+		Adult:            tv.Adult,
+		Genres:           tv.Genres,
+		Keywords:         tv.Keywords,
+		Certifications:   tv.Certifications,
 	}
 
 	if tv.Images != nil {

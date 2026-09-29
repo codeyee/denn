@@ -149,6 +149,7 @@ func mapTrack(t spotify.SpotifyTrack) models.Track {
 		Authors:         mapArtists(t.Artists),
 		DurationSeconds: durationSeconds,
 		ExternalURL:     externalURL,
+		Explicit:        t.Explicit,
 	}
 }
 

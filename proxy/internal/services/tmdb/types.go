@@ -16,6 +16,10 @@ const (
 	ProviderActionBuy    = "buy"
 )
 
+// ReleaseTypeTheatrical is the TMDB release_dates type for a theatrical
+// release, the certification we prefer when a country lists several.
+const ReleaseTypeTheatrical = 3
+
 type TmdbSearchResponse struct {
 	Page         int                `json:"page"`
 	TotalPages   int                `json:"total_pages"`
@@ -43,6 +47,8 @@ type TmdbSearchResult struct {
 
 type TmdbMovieDetail struct {
 	ID                  int                         `json:"id"`
+	Adult               *bool                       `json:"adult"`
+	Genres              []TmdbGenre                 `json:"genres"`
 	Title               string                      `json:"title"`
 	OriginalTitle       string                      `json:"original_title"`
 	Overview            string                      `json:"overview"`
@@ -56,10 +62,14 @@ type TmdbMovieDetail struct {
 	ExternalIDs         *TmdbExternalIDsResponse    `json:"external_ids,omitempty"`
 	WatchProviders      *TmdbWatchProvidersResponse `json:"watch/providers,omitempty"`
 	Images              *TmdbImagesResponse         `json:"images,omitempty"`
+	Keywords            *TmdbMovieKeywords          `json:"keywords,omitempty"`
+	ReleaseDates        *TmdbReleaseDatesResponse   `json:"release_dates,omitempty"`
 }
 
 type TmdbTVDetail struct {
 	ID                  int                         `json:"id"`
+	Adult               *bool                       `json:"adult"`
+	Genres              []TmdbGenre                 `json:"genres"`
 	Name                string                      `json:"name"`
 	OriginalName        string                      `json:"original_name"`
 	Overview            string                      `json:"overview"`
@@ -75,6 +85,8 @@ type TmdbTVDetail struct {
 	ExternalIDs         *TmdbExternalIDsResponse    `json:"external_ids,omitempty"`
 	WatchProviders      *TmdbWatchProvidersResponse `json:"watch/providers,omitempty"`
 	Images              *TmdbImagesResponse         `json:"images,omitempty"`
+	Keywords            *TmdbTVKeywords             `json:"keywords,omitempty"`
+	ContentRatings      *TmdbContentRatingsResponse `json:"content_ratings,omitempty"`
 }
 
 type TmdbSeasonSummary struct {
@@ -107,6 +119,49 @@ type TmdbEpisode struct {
 	Runtime       *int    `json:"runtime"`
 	StillPath     *string `json:"still_path"`
 	EpisodeType   string  `json:"episode_type"`
+}
+
+type TmdbGenre struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+
+type TmdbKeyword struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+
+// TmdbMovieKeywords and TmdbTVKeywords differ only in the list key TMDB uses
+// under the appended `keywords` object.
+type TmdbMovieKeywords struct {
+	Keywords []TmdbKeyword `json:"keywords"`
+}
+
+type TmdbTVKeywords struct {
+	Results []TmdbKeyword `json:"results"`
+}
+
+type TmdbReleaseDatesResponse struct {
+	Results []TmdbCountryReleaseDates `json:"results"`
+}
+
+type TmdbCountryReleaseDates struct {
+	Country      string            `json:"iso_3166_1"`
+	ReleaseDates []TmdbReleaseDate `json:"release_dates"`
+}
+
+type TmdbReleaseDate struct {
+	Certification string `json:"certification"`
+	Type          int    `json:"type"`
+}
+
+type TmdbContentRatingsResponse struct {
+	Results []TmdbContentRating `json:"results"`
+}
+
+type TmdbContentRating struct {
+	Country string `json:"iso_3166_1"`
+	Rating  string `json:"rating"`
 }
 
 type TmdbCompany struct {

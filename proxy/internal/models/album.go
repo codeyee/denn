@@ -7,6 +7,7 @@ type Track struct {
 	Authors         []Author `json:"authors,omitempty"`
 	DurationSeconds *int     `json:"duration_seconds,omitempty"`
 	ExternalURL     *string  `json:"external_url,omitempty"`
+	Explicit        *bool    `json:"explicit,omitempty"`
 }
 
 type Album struct {

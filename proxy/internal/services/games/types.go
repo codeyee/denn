@@ -53,6 +53,33 @@ type IgdbFranchise struct {
 	Name string `json:"name"`
 }
 
+type IgdbKeyword struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+
+type IgdbAgeRatingOrganization struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+
+type IgdbAgeRatingCategory struct {
+	ID     int    `json:"id"`
+	Rating string `json:"rating"`
+}
+
+type IgdbAgeRatingDescription struct {
+	ID          int    `json:"id"`
+	Description string `json:"description"`
+}
+
+type IgdbAgeRating struct {
+	ID                        int                        `json:"id"`
+	Organization              *IgdbAgeRatingOrganization `json:"organization"`
+	RatingCategory            *IgdbAgeRatingCategory     `json:"rating_category"`
+	RatingContentDescriptions []IgdbAgeRatingDescription `json:"rating_content_descriptions"`
+}
+
 type IgdbTimeToBeat struct {
 	ID         int `json:"id"`
 	GameID     int `json:"game_id"`
@@ -79,6 +106,8 @@ type IgdbGame struct {
 	GameModes         []IgdbGameMode        `json:"game_modes"`
 	Collections       []IgdbCollection      `json:"collections"`
 	Franchises        []IgdbFranchise       `json:"franchises"`
+	Keywords          []IgdbKeyword         `json:"keywords"`
+	AgeRatings        []IgdbAgeRating       `json:"age_ratings"`
 	TimeToBeats       *IgdbTimeToBeat       `json:"game_time_to_beats"`
 	TimeToBeatError   bool                  `json:"-"`
 }
