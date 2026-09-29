@@ -123,3 +123,23 @@ jobs:
         run: curl -fsSL "${{ secrets.CORE_DEPLOY_WEBHOOK }}"
         env:
           DEPLOY_WEBHOOK: ${{ secrets.CORE_DEPLOY_WEBHOOK }}
+
+      # Workers run the same image but never migrate; give the Core release
+      # time to apply migrations before they restart on the new code.
+      - name: Wait for Core migrations
+        if: success() && env.DEPLOY_WEBHOOK != ''
+        run: sleep 90
+        env:
+          DEPLOY_WEBHOOK: ${{ secrets.CORE_DEPLOY_WEBHOOK }}
+
+      - name: Deploy moderation worker via webhook
+        if: success() && env.DEPLOY_WEBHOOK != ''
+        run: curl -fsSL "$DEPLOY_WEBHOOK"
+        env:
+          DEPLOY_WEBHOOK: ${{ secrets.MODERATION_WORKER_DEPLOY_WEBHOOK }}
+
+      - name: Deploy metadata preparation worker via webhook
+        if: success() && env.DEPLOY_WEBHOOK != ''
+        run: curl -fsSL "$DEPLOY_WEBHOOK"
+        env:
+          DEPLOY_WEBHOOK: ${{ secrets.METADATA_WORKER_DEPLOY_WEBHOOK }}

@@ -265,3 +265,21 @@ connectivity, migration-before-worker ordering, HTTP-healthcheck override,
 logs/alerts, bounded restart policy, and stop/rollback procedure. This guide
 does not authorize inspecting or changing the live platform, starting a worker,
 calling Jev, or running a production backfill.
+
+## Production deployment
+
+Production runs two Dokploy applications from the Core image
+(`ghcr.io/codeyee/denn-core:latest`): `denn-moderation-worker`
+(`python manage.py run_moderation_worker`) and `denn-metadata-worker`
+(`python manage.py run_metadata_preparation_worker`). Each has one replica, no
+domain, the image HTTP healthcheck disabled (`{"Test": ["NONE"]}`) and a
+60-second stop grace period. The command override skips the image entrypoint,
+so workers never migrate. Their environment is a copy of Core's; the metadata
+worker omits `TYPESAFE_API_KEY`.
+
+`deploy-core.yml` redeploys both workers after the Core release: it calls
+Core's webhook, waits 90 seconds for Core's migrations, then calls
+`MODERATION_WORKER_DEPLOY_WEBHOOK` and `METADATA_WORKER_DEPLOY_WEBHOOK`.
+Environment changes in Dokploy only apply after a redeploy of that
+application.
+
