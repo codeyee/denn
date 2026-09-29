@@ -31,6 +31,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+# Release identity exposed by GET /api/version/ so CI can verify a rollout.
+ARG BUILD_SHA=""
+ENV BUILD_SHA=${BUILD_SHA}
+
 # Install runtime system dependencies (libpq for psycopg)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \

@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path, include
 from django.http import JsonResponse
-from core.healthcheck import healthcheck
+from core.healthcheck import healthcheck, release_version
 from core.views.cache_management import CacheManagementView, CacheClearAllView
 from drf_spectacular.views import (
     SpectacularAPIView,
@@ -12,6 +12,7 @@ from drf_spectacular.views import (
 urlpatterns = [
     # Healthcheck
     path("api/", healthcheck, name="healthcheck"),
+    path("api/version/", release_version, name="release-version"),
 
     # Admin
     path("api/admin/", admin.site.urls),

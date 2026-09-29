@@ -277,9 +277,19 @@ domain, the image HTTP healthcheck disabled (`{"Test": ["NONE"]}`) and a
 so workers never migrate. Their environment is a copy of Core's; the metadata
 worker omits `TYPESAFE_API_KEY`.
 
-`deploy-core.yml` redeploys both workers after the Core release: it calls
-Core's webhook, waits 90 seconds for Core's migrations, then calls
-`MODERATION_WORKER_DEPLOY_WEBHOOK` and `METADATA_WORKER_DEPLOY_WEBHOOK`.
+`deploy-core.yml` redeploys both workers only after a verified Core release.
+It calls Core's webhook, then polls the public, unauthenticated
+`GET /api/version/` (`CORE_PUBLIC_URL`, default
+`https://denn-api.codeyee.dev`) for up to 10 minutes until its `sha` equals the
+pushed commit. The image entrypoint starts gunicorn only after
+`migrate --noinput` succeeds, so a matching sha proves the migrations ran. Then
+it calls `MODERATION_WORKER_DEPLOY_WEBHOOK` and
+`METADATA_WORKER_DEPLOY_WEBHOOK` independently: a failure of one does not skip
+the other, and an unset webhook secret emits a workflow warning instead of a
+silent skip.
+
+If Core never reports the new sha (failed deploy or migration), the job fails
+and the worker steps do not run: both workers stay on the previous release.
+After fixing Core, redeploy the workers manually from Dokploy.
 Environment changes in Dokploy only apply after a redeploy of that
 application.
-

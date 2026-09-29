@@ -81,6 +81,8 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            BUILD_SHA=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -124,22 +126,56 @@ jobs:
         env:
           DEPLOY_WEBHOOK: ${{ secrets.CORE_DEPLOY_WEBHOOK }}
 
-      # Workers run the same image but never migrate; give the Core release
-      # time to apply migrations before they restart on the new code.
-      - name: Wait for Core migrations
+      # Workers run the same image but never migrate. Core only starts serving
+      # after `migrate` succeeds, so its public release sha matching this
+      # commit proves the schema is ready before workers restart on new code.
+      - name: Wait for verified Core release
+        id: core_release
         if: success() && env.DEPLOY_WEBHOOK != ''
-        run: sleep 90
         env:
           DEPLOY_WEBHOOK: ${{ secrets.CORE_DEPLOY_WEBHOOK }}
+          CORE_PUBLIC_URL: ${{ vars.CORE_PUBLIC_URL || 'https://denn-api.codeyee.dev' }}
+        run: |
+          version_url="${CORE_PUBLIC_URL%/}/api/version/"
+          for attempt in $(seq 1 60); do
+            deployed_payload="$(
+              curl --fail --silent --show-error \
+                --max-time 5 \
+                "$version_url" 2>/dev/null || true
+            )"
+            deployed_sha="$(
+              printf '%s' "$deployed_payload" |
+                sed -n 's/.*"sha": *"\([0-9a-f]\{40\}\)".*/\1/p'
+            )"
+            if [ "$deployed_sha" = "$GITHUB_SHA" ]; then
+              echo "Core release $GITHUB_SHA is live and migrated."
+              exit 0
+            fi
+            echo "Waiting for Core release $GITHUB_SHA (attempt $attempt/60)."
+            sleep 10
+          done
+
+          echo "::error::Timed out waiting for Core release $GITHUB_SHA at $version_url; workers were not redeployed."
+          exit 1
 
       - name: Deploy moderation worker via webhook
-        if: success() && env.DEPLOY_WEBHOOK != ''
-        run: curl -fsSL "$DEPLOY_WEBHOOK"
+        if: ${{ !cancelled() && steps.core_release.outcome == 'success' }}
         env:
           DEPLOY_WEBHOOK: ${{ secrets.MODERATION_WORKER_DEPLOY_WEBHOOK }}
+        run: |
+          if [ -z "$DEPLOY_WEBHOOK" ]; then
+            echo "::warning::MODERATION_WORKER_DEPLOY_WEBHOOK is not set; the moderation worker was not redeployed."
+            exit 0
+          fi
+          curl -fsSL "$DEPLOY_WEBHOOK"
 
       - name: Deploy metadata preparation worker via webhook
-        if: success() && env.DEPLOY_WEBHOOK != ''
-        run: curl -fsSL "$DEPLOY_WEBHOOK"
+        if: ${{ !cancelled() && steps.core_release.outcome == 'success' }}
         env:
           DEPLOY_WEBHOOK: ${{ secrets.METADATA_WORKER_DEPLOY_WEBHOOK }}
+        run: |
+          if [ -z "$DEPLOY_WEBHOOK" ]; then
+            echo "::warning::METADATA_WORKER_DEPLOY_WEBHOOK is not set; the metadata worker was not redeployed."
+            exit 0
+          fi
+          curl -fsSL "$DEPLOY_WEBHOOK"
