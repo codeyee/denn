@@ -1,6 +1,7 @@
 """Orchestrator scenarios: all-fresh, all-stale, mixed, proxy-down (Sprint 07 / PR-7B)."""
 from __future__ import annotations
 
+from contextlib import nullcontext
 from datetime import timedelta
 from unittest.mock import patch
 
@@ -19,6 +20,7 @@ from content.services.local_content_store import (
     get_or_create_content_item,
 )
 from content.services.local_content_store.mappers.game import upsert as upsert_game
+from content.services.moderation_service import build_state_and_hash
 from content.services.source_data_orchestrator import fetch_bulk_source_data
 from content.tests.fixtures.payloads import GAME_RDR2, MOVIE_MEMENTO, TV_DEMON_SLAYER
 
@@ -72,6 +74,10 @@ class OrchestratorAllStaleTests(TestCase):
         self.assertEqual(results[items[0].id]['title'], 'Memento (refreshed)')
         items[0].refresh_from_db()
         self.assertEqual(items[0].movie_detail.title, 'Memento (refreshed)')
+        self.assertEqual(
+            items[0].current_moderation_source_hash,
+            build_state_and_hash(items[0])[1],
+        )
 
     def test_stale_while_revalidate_returns_local_and_schedules_once(self):
         item = _ingest_movie('77')
@@ -103,6 +109,23 @@ class OrchestratorMissingTests(TestCase):
 
         self.assertIn(item.id, results)
         self.assertTrue(MovieDetail.objects.filter(content_item=item).exists())
+
+    def test_denied_persistence_guard_skips_detail_and_browse_metadata(self):
+        item, _ = get_or_create_content_item(
+            ContentItem.SourceAPI.TMDB, 'guarded-77', ContentItem.ContentType.MOVIE,
+        )
+        with patch('content.services.source_data_orchestrator._proxy_fetch') as proxy, patch(
+            'content.services.browse_metadata_service.upsert_many'
+        ) as browse_metadata:
+            proxy.return_value = {item.id: dict(MOVIE_MEMENTO, id=item.external_id)}
+            results = fetch_bulk_source_data(
+                [item],
+                persistence_guard=lambda _item: nullcontext(False),
+            )
+
+        self.assertNotIn(item.id, results)
+        self.assertFalse(MovieDetail.objects.filter(content_item=item).exists())
+        browse_metadata.assert_not_called()
 
     def test_incomplete_tv_detail_repairs_season_links_synchronously(self):
         item, _ = get_or_create_content_item(

@@ -126,6 +126,70 @@ services:
       retries: 30
       start_period: 10s
 
+  metadata-preparation-worker:
+    build:
+      context: ./core
+      dockerfile: ../.docker/local/core.Dockerfile
+    profiles: ["moderation"]
+    restart: unless-stopped
+    labels:
+      com.denn.local.managed: "true"
+      com.denn.local.instance: ${INSTANCE_ID:?run make setup-local}
+    env_file:
+      - ./core/.env
+    environment:
+      DATABASE_URL: postgresql://${LOCAL_DB_USER}:${LOCAL_DB_PASSWORD}@postgres:5432/${LOCAL_DB_NAME}
+      PROXY_API_BASE_URL: http://proxy:8080/v1/proxy
+      TYPESAFE_API_KEY: ""
+    command:
+      - python
+      - manage.py
+      - run_metadata_preparation_worker
+      - --batch-size
+      - "10"
+      - --poll-interval
+      - "5"
+      - --lease-seconds
+      - "300"
+    volumes:
+      - ./core:/app
+    depends_on:
+      core:
+        condition: service_healthy
+      proxy:
+        condition: service_healthy
+    healthcheck:
+      disable: true
+
+  moderation-worker:
+    build:
+      context: ./core
+      dockerfile: ../.docker/local/core.Dockerfile
+    profiles: ["moderation"]
+    restart: unless-stopped
+    labels:
+      com.denn.local.managed: "true"
+      com.denn.local.instance: ${INSTANCE_ID:?run make setup-local}
+    env_file:
+      - ./core/.env
+    environment:
+      DATABASE_URL: postgresql://${LOCAL_DB_USER}:${LOCAL_DB_PASSWORD}@postgres:5432/${LOCAL_DB_NAME}
+    command:
+      - python
+      - manage.py
+      - run_moderation_worker
+      - --batch-size
+      - "10"
+      - --poll-interval
+      - "5"
+    volumes:
+      - ./core:/app
+    depends_on:
+      core:
+        condition: service_healthy
+    healthcheck:
+      disable: true
+
   web:
     build:
       context: ./web
