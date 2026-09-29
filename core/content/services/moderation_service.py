@@ -31,7 +31,11 @@ from content.services.payload_reconstructor import from_local
 
 logger = logging.getLogger(__name__)
 
-PROVIDER_RULE_MODEL = 'provider-rule:v1'
+# Identity of the code-owned provider rules in `_provider_explicit`. New rows use
+# the current rule; rows written by earlier rules stay valid history because
+# every rule so far only ever added overrides.
+PROVIDER_RULE_MODEL = 'provider-rule:v2'
+PROVIDER_RULE_MODELS = ('provider-rule:v1', PROVIDER_RULE_MODEL)
 _KNOWN_ALIASES = {'jev-latest'}
 
 
@@ -72,16 +76,36 @@ def _current_usage(moderation_judgment) -> dict:
 
 
 def _provider_explicit(content_item: ContentItem) -> bool | None:
-    """Return the affirmative SST adult flag, or None without any guesswork.
+    """Return True for an authoritative provider override, else None.
 
-    Per the adult-safety boundary, only the TMDB normalized adult flag exists
-    and is authoritative. IGDB, Spotify, and OpenLibrary expose no trustworthy
-    equivalent, so any absent/unknown value stays None (never a false-negative
-    certification of safety).
+    Rules (`provider-rule:v2`), and nothing else is an override:
+    - TMDB movie or TV show whose normalized `adult` flag is exactly True.
+    - IGDB game with an `ESRB` age rating that is exactly `AO` (Adults Only).
+
+    A false or absent flag, another rating (ESRB M, PEGI 18), keywords, genres,
+    descriptors, explicit-lyrics tracks, and book subjects are contextual text
+    for Jev. Absence never certifies safety, so this never returns False.
     """
-    if content_item.source_api == ContentItem.SourceAPI.TMDB:
+    source_api, content_type = content_item.source_api, content_item.content_type
+    if (
+        source_api == ContentItem.SourceAPI.TMDB
+        and content_type in (ContentItem.ContentType.MOVIE, ContentItem.ContentType.TV_SHOW)
+    ):
         payload = from_local(content_item)
-        if payload is not None and payload.get("adult") is True:
+        if payload is not None and payload.get('adult') is True:
+            return True
+    elif (
+        source_api == ContentItem.SourceAPI.IGDB
+        and content_type == ContentItem.ContentType.GAME
+    ):
+        payload = from_local(content_item)
+        age_ratings = payload.get('age_ratings') if payload is not None else None
+        if isinstance(age_ratings, list) and any(
+            isinstance(rating, dict)
+            and rating.get('organization') == 'ESRB'
+            and rating.get('rating') == 'AO'
+            for rating in age_ratings
+        ):
             return True
     return None
 
@@ -121,9 +145,9 @@ def classify_content_item(
     identity (model_name, question_revision, source_data_hash) is returned as
    -is with no extra Jev call. Any other identity triggers a new row.
 
-    Provider explicit override (TMDB adult=True) short-circuits before any Jev
-    call, persisting an honest judgment with no fabricated probabilities or
-    usage - status COMPLETE, classification EXPLICIT, reason recorded.
+    A provider explicit override (see `_provider_explicit`) short-circuits before
+    any Jev call, persisting an honest judgment with no fabricated probabilities
+    or usage - status COMPLETE, classification EXPLICIT, reason recorded.
 
     `observation` is an optional caller-owned dict filled in place with the
     invocation facts `reused`, `called`, and `usage`. It is only written when

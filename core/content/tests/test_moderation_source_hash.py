@@ -1,9 +1,16 @@
+from io import StringIO
 from unittest.mock import patch
 
 from django.core.management import call_command
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
-from content.models import ContentItem, ContentModerationJudgment, MovieDetail, SeasonDetail
+from content.models import (
+    ContentItem,
+    ContentModerationJob,
+    ContentModerationJudgment,
+    MovieDetail,
+    SeasonDetail,
+)
 from content.moderation.summary import moderation_summary
 from content.services.local_content_store import ensure_content_detail
 from content.services.local_content_store.mappers import MAPPERS
@@ -187,3 +194,121 @@ class ModerationSourceHashTests(TestCase):
         self.assertEqual(item.current_moderation_source_hash, judgment.source_data_hash)
         self.assertEqual(moderation_summary(item), {"status": "complete", "classification": "safe"})
         hash_builder.assert_called_once()
+
+    def test_safety_context_changes_the_hash_but_the_adult_flag_does_not(self):
+        item = self.create_item(ContentItem.SourceAPI.TMDB, ContentItem.ContentType.MOVIE, "safety")
+        ensure_content_detail(item, payload=MOVIE_MEMENTO, force=True)
+        item.refresh_from_db()
+        baseline = item.current_moderation_source_hash
+
+        ensure_content_detail(item, payload={**MOVIE_MEMENTO, "adult": True}, force=True)
+        item.refresh_from_db()
+        self.assertEqual(item.current_moderation_source_hash, baseline)
+
+        with_keywords = {**MOVIE_MEMENTO, "adult": True, "keywords": ["softcore"]}
+        ensure_content_detail(item, payload=with_keywords, force=True)
+        item.refresh_from_db()
+        self.assertNotEqual(item.current_moderation_source_hash, baseline)
+        self.assertEqual(item.current_moderation_source_hash, build_state_and_hash(item)[1])
+
+
+class RecomputeModerationSourceHashesTests(TestCase):
+    OUTDATED = "0" * 64
+
+    def create_item(self, content_type, source_api, payload, suffix):
+        item = ContentItem.objects.create(
+            source_api=source_api,
+            external_id=f"recompute-{content_type}-{suffix}",
+            content_type=content_type,
+        )
+        ensure_content_detail(item, payload=payload, force=True)
+        return item
+
+    def run_command(self, *args, **kwargs):
+        out = StringIO()
+        call_command("backfill_moderation_source_hashes", *args, stdout=out, **kwargs)
+        return dict(pair.split("=") for pair in out.getvalue().split())
+
+    def hash_of(self, item):
+        return ContentItem.objects.values_list(
+            "current_moderation_source_hash", flat=True
+        ).get(pk=item.pk)
+
+    def test_recompute_replaces_outdated_hashes_reports_counts_and_is_idempotent(self):
+        outdated = self.create_item(
+            ContentItem.ContentType.MOVIE, ContentItem.SourceAPI.TMDB, MOVIE_MEMENTO, "a")
+        current = self.create_item(
+            ContentItem.ContentType.GAME, ContentItem.SourceAPI.IGDB, GAME_RDR2, "b")
+        ContentItem.objects.filter(pk=outdated.pk).update(current_moderation_source_hash=self.OUTDATED)
+        expected = build_state_and_hash(outdated)[1]
+
+        first = self.run_command(limit=10, recompute=True)
+        second = self.run_command(limit=10, recompute=True)
+
+        self.assertEqual(self.hash_of(outdated), expected)
+        self.assertEqual(self.hash_of(current), build_state_and_hash(current)[1])
+        self.assertEqual(
+            (first["examined"], first["changed"], first["unchanged"], first["unverified"]),
+            ("2", "1", "1", "0"),
+        )
+        self.assertEqual(
+            (second["examined"], second["changed"], second["unchanged"], second["unverified"]),
+            ("2", "0", "2", "0"),
+        )
+
+    def test_recompute_is_bounded_resumable_and_leaves_missing_hashes_alone(self):
+        items = [
+            self.create_item(
+                ContentItem.ContentType.MOVIE, ContentItem.SourceAPI.TMDB,
+                {**MOVIE_MEMENTO, "id": str(number)}, number)
+            for number in range(3)
+        ]
+        ContentItem.objects.filter(pk__in=[item.pk for item in items]).update(
+            current_moderation_source_hash=self.OUTDATED)
+        ContentItem.objects.filter(pk=items[1].pk).update(current_moderation_source_hash=None)
+
+        first = self.run_command(limit=1, recompute=True)
+        second = self.run_command(limit=5, after_id=int(first["next_after_id"]), recompute=True)
+
+        self.assertEqual((first["examined"], first["changed"]), ("1", "1"))
+        self.assertEqual(int(first["next_after_id"]), items[0].pk)
+        self.assertEqual((second["examined"], second["changed"]), ("1", "1"))
+        self.assertEqual(self.hash_of(items[0]), build_state_and_hash(items[0])[1])
+        self.assertIsNone(self.hash_of(items[1]))
+        self.assertEqual(self.hash_of(items[2]), build_state_and_hash(items[2])[1])
+
+    def test_recompute_clears_a_hash_it_can_no_longer_verify(self):
+        item = self.create_item(
+            ContentItem.ContentType.MOVIE, ContentItem.SourceAPI.TMDB, MOVIE_MEMENTO, "gone")
+        MovieDetail.objects.filter(content_item=item).delete()
+
+        report = self.run_command(limit=5, recompute=True)
+
+        self.assertEqual((report["changed"], report["unverified"]), ("0", "1"))
+        self.assertIsNone(self.hash_of(item))
+
+    @override_settings(MODERATION_CLASSIFICATION_ENABLED=True, MODERATION_MODEL="jev-latest")
+    def test_recompute_reads_local_detail_only_and_enqueues_nothing(self):
+        item = self.create_item(
+            ContentItem.ContentType.MOVIE, ContentItem.SourceAPI.TMDB, MOVIE_MEMENTO, "quiet")
+        ContentItem.objects.filter(pk=item.pk).update(current_moderation_source_hash=self.OUTDATED)
+        jobs_before = ContentModerationJob.objects.count()
+
+        with patch("content.utils.fetch_source_data") as proxy_fetch, patch(
+            "content.moderation.client.JevModerationClient"
+        ) as jev_client:
+            self.run_command(limit=5, recompute=True)
+
+        proxy_fetch.assert_not_called()
+        jev_client.assert_not_called()
+        self.assertEqual(ContentModerationJob.objects.count(), jobs_before)
+
+    def test_recompute_keeps_the_default_mode_output_and_semantics_unchanged(self):
+        item = self.create_item(
+            ContentItem.ContentType.MOVIE, ContentItem.SourceAPI.TMDB, MOVIE_MEMENTO, "default")
+        ContentItem.objects.filter(pk=item.pk).update(current_moderation_source_hash=self.OUTDATED)
+
+        report = self.run_command(limit=5)
+
+        self.assertEqual(report, {"examined": "0", "updated": "0", "unverified": "0", "next_after_id": "0"})
+        self.assertEqual(self.hash_of(item), self.OUTDATED)

@@ -13,11 +13,13 @@ from django.db.models import Q
 from django.utils import timezone
 
 from content.models import ContentModerationJob, ContentModerationJudgment
+from content.moderation.state import ModerationStateError
 from content.services.moderation_service import (
-    PROVIDER_RULE_MODEL,
+    PROVIDER_RULE_MODELS,
     ModerationClassificationOutcome,
     classify_content_item,
 )
+from content.services.moderation_source_hash import current_moderation_source_hash
 
 logger = logging.getLogger(__name__)
 
@@ -156,6 +158,17 @@ def process_claim(
     if _has_current_success(job):
         return 'reused' if _finish(job, lease_token, ContentModerationJob.Status.DONE) else 'fenced'
 
+    if _source_hash_is_outdated(job):
+        # The materialized hash predates the current state builder. Classifying
+        # would spend a Jev call on a result stored under a different hash, so
+        # supersede; `backfill_moderation_source_hashes --recompute` repairs it.
+        return 'superseded' if _finish(
+            job,
+            lease_token,
+            ContentModerationJob.Status.SUPERSEDED,
+            error_code='source_hash_outdated',
+        ) else 'fenced'
+
     try:
         outcome = classifier(job.content_item, model=job.requested_model)
     except Exception:  # noqa: BLE001 - unknown remote outcome must not be retried
@@ -223,6 +236,19 @@ def _job_is_current(job) -> bool:
     )
 
 
+def _source_hash_is_outdated(job) -> bool:
+    """True only when the state builder now yields a different hash for the item.
+
+    A state that cannot be built is not "outdated": the classifier reports it as
+    a typed skip and the job fails without a remote call.
+    """
+    try:
+        fresh_hash = current_moderation_source_hash(job.content_item)
+    except (ModerationStateError, TypeError, ValueError):
+        return False
+    return fresh_hash is not None and fresh_hash != job.source_data_hash
+
+
 def _has_current_success(job) -> bool:
     return ContentModerationJudgment.objects.filter(
         content_item_id=job.content_item_id,
@@ -232,7 +258,7 @@ def _has_current_success(job) -> bool:
     ).filter(
         Q(model_name=job.requested_model)
         | Q(payload__requested_model=job.requested_model)
-        | Q(model_name=PROVIDER_RULE_MODEL)
+        | Q(model_name__in=PROVIDER_RULE_MODELS)
     ).exists()
 
 

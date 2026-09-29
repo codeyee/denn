@@ -33,7 +33,7 @@ aggregate rate/cost limit across replicas is implemented or evidenced here.
 | `MODERATION_CLASSIFICATION_ENABLED` | Master switch; the service makes no calls while false |
 | `WEB_MODERATION_VISIBILITY_ENABLED` | Separate Web server flag for the strict (current safe only) homepage and detail-artwork blur; defaults off |
 | `MODERATION_MODEL` | Requested model or alias (for example `jev-latest`) |
-| `MODERATION_QUESTION_REVISION` | Pins which question wording produced a judgment |
+| `MODERATION_QUESTION_REVISION` | Pins which question wording produced a judgment (default `q4`) |
 
 ## Fail-closed preflight
 
@@ -142,7 +142,7 @@ the temp file is removed on failure).
 | `selection` | Exact-ID mode and validated selection count; omitted in range mode |
 | `scanned` / `last_id` | Items attempted; resume cursor for the next run |
 | `created` vs `reused` | New judgments vs collapsed onto an existing identical row |
-| `provider_override` | TMDB adult-flag short-circuits (no Jev call, no usage) |
+| `provider_override` | Provider-rule short-circuits: TMDB `adult`, IGDB ESRB `AO` (no Jev call, no usage) |
 | `skipped` / `unavailable` / `error` | Disabled-or-stateless / typed Jev failure / unexpected exception (run continues) |
 | `buckets` | `safe_for_automatic_discovery`, `explicit_or_sensitive`, `needs_review`, `unknown` |
 | `input_tokens` / `output_tokens` | Attributable totals from real calls only |

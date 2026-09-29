@@ -7,7 +7,7 @@ from collections.abc import Mapping, Sequence
 from typing import Any
 
 from .evaluation_accounting import build_accounting_summary
-from .evaluation_cases import GOLD_CLASSES, validate_gold_dataset
+from .evaluation_cases import GOLD_CLASSES, PROVIDER_OVERRIDE_TARGETS, validate_gold_dataset
 
 REPORT_SCHEMA_VERSION = "jev-moderation-evaluation-report/v2"
 PREDICTIONS = frozenset(GOLD_CLASSES) | {"unknown", "unavailable", "skipped"}
@@ -52,8 +52,7 @@ def _matrix(rows: Sequence[dict[str, Any]], prediction_field: str) -> dict[str, 
 
 def _has_provider_override(case: Mapping[str, Any]) -> bool:
     return (
-        case["provider"] == "tmdb"
-        and case["content_type"] in {"movie", "tv_show"}
+        (case["provider"], case["content_type"]) in PROVIDER_OVERRIDE_TARGETS
         and case["provider_explicit"] is True
     )
 
@@ -179,7 +178,7 @@ def _validate_observations(
         case = case_by_id[case_id]
         if _has_provider_override(case) and policy != "explicit_or_sensitive":
             raise EvaluationReportValidationError(
-                f"{path}.policy_prediction: TMDB explicit override requires explicit_or_sensitive"
+                f"{path}.policy_prediction: provider explicit override requires explicit_or_sensitive"
             )
         normalized.append({
             "case_id": case_id,

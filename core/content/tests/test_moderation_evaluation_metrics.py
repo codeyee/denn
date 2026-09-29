@@ -9,7 +9,7 @@ from content.moderation.evaluation_metrics import (
     build_evaluation_report,
 )
 
-FIXTURE = Path(__file__).parent / "fixtures" / "jev_moderation_gold_cases_v1.json"
+FIXTURE = Path(__file__).parent / "fixtures" / "jev_moderation_gold_cases_v2.json"
 
 
 def dataset():
@@ -104,8 +104,30 @@ class ModerationEvaluationMetricsTests(unittest.TestCase):
             observation(raw["cases"][2], "needs_review"),
         ]
 
-        with self.assertRaisesRegex(EvaluationReportValidationError, "TMDB explicit override"):
+        with self.assertRaisesRegex(EvaluationReportValidationError, "provider explicit override"):
             build_evaluation_report(raw, results)
+
+    def test_true_igdb_game_provider_override_is_enforced_like_tmdb(self):
+        raw = dataset()
+        game = raw["cases"][2]
+        game.update(provider="igdb", content_type="game", provider_explicit=True)
+        game["state"].update(provider="igdb", content_type="GAME")
+        game["state"]["type_specific"] = {"game": {
+            "genres": [], "themes": [], "game_modes": [], "game_type": "", "series": "",
+            "keywords": [], "age_ratings": ["ESRB AO"],
+        }}
+        results = [
+            observation(raw["cases"][0], "explicit_or_sensitive"),
+            observation(raw["cases"][1], "safe_for_automatic_discovery"),
+            observation(game, "safe_for_automatic_discovery", policy="needs_review"),
+        ]
+
+        with self.assertRaisesRegex(EvaluationReportValidationError, "provider explicit override"):
+            build_evaluation_report(raw, results)
+
+        results[2] = observation(game, "safe_for_automatic_discovery")
+        report = build_evaluation_report(raw, results)
+        self.assertTrue(report["cases"][2]["provider_override_applied"])
 
     def test_unknown_unavailable_and_skipped_have_distinct_coverage(self):
         raw = dataset()
@@ -140,7 +162,7 @@ class ModerationEvaluationMetricsTests(unittest.TestCase):
         })
 
     def test_zero_denominators_and_model_mixtures_are_explicit(self):
-        empty = {"schema_version": "jev-moderation-gold-cases/v1", "cases": []}
+        empty = {"schema_version": "jev-moderation-gold-cases/v2", "cases": []}
         report = build_evaluation_report(empty, [])
         metric = report["per_class_jev_only"]["explicit_or_sensitive"]["recall"]
         self.assertEqual(metric, {"value": None, "display": "N/A", "numerator": 0, "denominator": 0})

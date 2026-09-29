@@ -88,8 +88,10 @@ considered part of the project baseline.
   blurred. With
   classification enabled, the bulk identity resolver admits the missing
   preparation and classification work so the strict homepage heals itself. The
-  TMDB adult flag is an authoritative override. Search results do not call
-  Jev at request time. Activation steps are in the
+  TMDB `adult` flag and an IGDB ESRB `AO` rating are authoritative overrides
+  (`provider-rule:v2`); other provider ratings, keywords, genres, subjects, and
+  explicit-lyrics flags are contextual text for Jev (question revision `q4`).
+  Search results do not call Jev at request time. Activation steps are in the
   [worker runbook](../runbooks/jev-moderation-workers.md).
 
 ## Platform Foundations

@@ -1,4 +1,6 @@
 """Atomic outbox creation for persisted normalized moderation inputs."""
+from unittest.mock import Mock
+
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError, connection, transaction
 from django.test import TestCase, override_settings
@@ -20,6 +22,7 @@ from content.services.moderation_job_enqueue import (
     enqueue_current_moderation_job,
     enqueue_missing_moderation_jobs,
 )
+from content.services.moderation_job_worker import run_moderation_batch
 from content.tests.fixtures.payloads import MOVIE_MEMENTO, SEASON_DEMON_SLAYER_S01, TV_DEMON_SLAYER
 
 
@@ -99,22 +102,25 @@ class ModerationJobEnqueueTests(TestCase):
 
     @ENABLED
     def test_existing_provider_rule_success_does_not_enqueue(self):
-        item = self.create_item(ContentItem.ContentType.MOVIE, 'provider-rule')
-        ensure_content_detail(item, payload=MOVIE_MEMENTO, force=True)
-        ContentModerationJudgment.objects.create(
-            content_item=item,
-            source_data_hash=item.current_moderation_source_hash,
-            model_name='provider-rule:v1',
-            question_revision='q3',
-            status=ContentModerationJudgment.Status.COMPLETE,
-            classification=ContentModerationJudgment.Classification.EXPLICIT,
-        )
+        # Rows written by the earlier rule stay valid history beside the current one.
+        for rule in ('provider-rule:v1', 'provider-rule:v2'):
+            with self.subTest(rule=rule):
+                item = self.create_item(ContentItem.ContentType.MOVIE, rule[-2:])
+                ensure_content_detail(item, payload=MOVIE_MEMENTO, force=True)
+                ContentModerationJudgment.objects.create(
+                    content_item=item,
+                    source_data_hash=item.current_moderation_source_hash,
+                    model_name=rule,
+                    question_revision='q3',
+                    status=ContentModerationJudgment.Status.COMPLETE,
+                    classification=ContentModerationJudgment.Classification.EXPLICIT,
+                )
 
-        ensure_content_detail(item, payload=MOVIE_MEMENTO, force=True)
-        self.assertEqual(
-            ContentModerationJob.objects.get(content_item=item).status,
-            ContentModerationJob.Status.DONE,
-        )
+                ensure_content_detail(item, payload=MOVIE_MEMENTO, force=True)
+                self.assertEqual(
+                    ContentModerationJob.objects.get(content_item=item).status,
+                    ContentModerationJob.Status.DONE,
+                )
 
     @override_settings(MODERATION_CLASSIFICATION_ENABLED=False)
     def test_disabled_classification_does_not_enqueue(self):
@@ -380,6 +386,23 @@ class BulkResolveModerationAdmissionTests(APITestCase):
             )),
             {item.current_moderation_source_hash, 'changed-hash'},
         )
+
+    @ENABLED
+    def test_outdated_hash_is_admitted_once_then_superseded_and_never_readmitted(self):
+        item = self.prepared_item('outdated')
+        ContentItem.objects.filter(pk=item.pk).update(current_moderation_source_hash='e' * 64)
+        classifier = Mock(side_effect=AssertionError('must not classify an outdated hash'))
+
+        self.resolve(item)
+        result = run_moderation_batch(classifier=classifier)
+        self.resolve(item)
+        self.resolve(item)
+
+        job = ContentModerationJob.objects.get(content_item=item)
+        self.assertEqual(result.counts['superseded'], 1)
+        self.assertEqual(job.status, ContentModerationJob.Status.SUPERSEDED)
+        self.assertEqual(job.source_data_hash, 'e' * 64)
+        classifier.assert_not_called()
 
     @ENABLED
     def test_admission_query_budget_does_not_depend_on_item_count(self):

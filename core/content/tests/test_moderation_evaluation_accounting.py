@@ -6,7 +6,7 @@ from pathlib import Path
 from content.moderation.evaluation_accounting import EvaluationAccountingValidationError
 from content.moderation.evaluation_metrics import build_evaluation_report
 
-FIXTURE = Path(__file__).parent / "fixtures" / "jev_moderation_gold_cases_v1.json"
+FIXTURE = Path(__file__).parent / "fixtures" / "jev_moderation_gold_cases_v2.json"
 
 
 def dataset():
@@ -125,7 +125,7 @@ class ModerationEvaluationAccountingTests(unittest.TestCase):
             )
 
     def test_empty_evaluation_has_no_fake_latency_or_inference_cost(self):
-        raw = {"schema_version": "jev-moderation-gold-cases/v1", "cases": []}
+        raw = {"schema_version": "jev-moderation-gold-cases/v2", "cases": []}
         report = build_evaluation_report(
             raw, [],
             price_per_million_input_tokens=2,

@@ -83,6 +83,38 @@ class ModerationJobWorkerTests(TransactionTestCase):
         self.assertEqual(job.status, ContentModerationJob.Status.SUPERSEDED)
 
     @WORKER_SETTINGS
+    def test_hash_from_an_older_state_shape_is_superseded_without_a_jev_call(self):
+        item, job = self.create_job('outdated-shape')
+        outdated = 'f' * 64
+        ContentItem.objects.filter(pk=item.pk).update(current_moderation_source_hash=outdated)
+        ContentModerationJob.objects.filter(pk=job.pk).update(source_data_hash=outdated)
+        classifier = Mock(side_effect=AssertionError('must not classify an outdated hash'))
+
+        result = run_moderation_batch(classifier=classifier)
+
+        job.refresh_from_db()
+        self.assertEqual(result.counts['superseded'], 1)
+        classifier.assert_not_called()
+        self.assertEqual(job.status, ContentModerationJob.Status.SUPERSEDED)
+        self.assertEqual(job.last_error_code, 'source_hash_outdated')
+        self.assertIsNone(job.lease_token)
+        # Nothing claims it again, so the worker cannot loop on it.
+        self.assertEqual(claim_moderation_jobs(batch_size=5, lease_seconds=60), [])
+
+    @WORKER_SETTINGS
+    def test_state_that_cannot_be_built_is_not_treated_as_outdated(self):
+        item, job = self.create_job('no-state')
+        item.movie_detail.delete()
+        classifier = Mock(return_value=ModerationClassificationOutcome('skipped', 'state_unavailable'))
+
+        result = run_moderation_batch(classifier=classifier)
+
+        job.refresh_from_db()
+        self.assertEqual(result.counts['failed'], 1)
+        classifier.assert_called_once()
+        self.assertEqual(job.status, ContentModerationJob.Status.FAILED)
+
+    @WORKER_SETTINGS
     def test_source_change_during_classification_supersedes_result(self):
         item, job = self.create_job('changed-in-flight')
 

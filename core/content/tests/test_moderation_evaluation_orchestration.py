@@ -12,7 +12,7 @@ import content.moderation.evaluation_orchestration as evaluator
 from content.moderation.evaluation_orchestration import evaluate_dataset
 from content.moderation.policy import PolicyThresholds
 
-FIXTURE = Path(__file__).parent / "fixtures" / "jev_moderation_gold_cases_v1.json"
+FIXTURE = Path(__file__).parent / "fixtures" / "jev_moderation_gold_cases_v2.json"
 
 
 def load_fixture():

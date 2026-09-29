@@ -279,8 +279,10 @@ Next steps:
   [#113](https://github.com/codeyee/denn/issues/113); authority and audit
   choices are still open in
   [`../ideas/jev-content-moderation-product-flow.md`](../ideas/jev-content-moderation-product-flow.md).
-- Work the provider-metadata backlog in
-  [`../ideas/jev-provider-metadata-for-content-moderation.md`](../ideas/jev-provider-metadata-for-content-moderation.md).
+- Finish the provider-metadata review in
+  [`../ideas/jev-provider-metadata-for-content-moderation.md`](../ideas/jev-provider-metadata-for-content-moderation.md)
+  (terms, quota, and cost checklist), then roll out `q4` with the
+  [state-revision steps](../runbooks/jev-moderation-workers.md#revising-the-moderation-state-or-questions).
 
 ## Further Auth Hardening
 

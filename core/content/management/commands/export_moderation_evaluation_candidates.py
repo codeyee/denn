@@ -4,7 +4,9 @@ Reads the local catalog read-only and writes cases whose `state` is exactly the
 text production sends to Jev. Cases carry no labels: a human adjudicates them
 before they can join a gold dataset. Sampling is stratified by
 (source_api, content_type), keeps a per-stratum floor, and is deterministic for
-the same catalog and arguments.
+the same catalog and arguments. With `--ids-file` nothing is sampled: exactly
+the listed items are exported (each still subject to the eligibility checks),
+which lets an earlier sample be re-exported against a newer moderation state.
 
 The sensitive-term lexicon only enriches the sample so rare sensitive items are
 not drowned out by uniform draws. It is not a classifier, and a match is
@@ -37,7 +39,7 @@ from content.services.moderation_service import _provider_explicit, build_state_
 CANDIDATES_SCHEMA_VERSION = 'jev-moderation-candidates/v1'
 _INDEX_SUFFIX = '.index.json'
 _ITERATOR_CHUNK_SIZE = 500
-_V1_CASE_FIELDS = (
+_CASE_FIELDS = (
     'case_id', 'split', 'source_kind', 'provider', 'content_type', 'state',
     'provider_explicit',
 )
@@ -126,6 +128,29 @@ def _seed(raw):
     return raw
 
 
+def _read_ids_file(path: str) -> list[int]:
+    """Return the sorted, de-duplicated ContentItem ids listed one per line."""
+    if not isinstance(path, str) or not path or '\x00' in path:
+        raise CommandError('invalid --ids-file path')
+    try:
+        with open(path, encoding='utf-8') as handle:
+            lines = handle.read().splitlines()
+    except (OSError, UnicodeError) as error:
+        raise CommandError(f'cannot read --ids-file: {error}') from error
+
+    ids = set()
+    for number, line in enumerate(lines, start=1):
+        text = line.strip()
+        if not text:
+            continue
+        if not text.isascii() or not text.isdecimal() or int(text) <= 0:
+            raise CommandError(f'--ids-file line {number}: expected a positive integer id')
+        ids.add(int(text))
+    if not ids:
+        raise CommandError('--ids-file contains no ids')
+    return sorted(ids)
+
+
 def _validate_output_path(path: str) -> None:
     if not isinstance(path, str) or not path:
         raise CommandError('invalid --output path: path must be a non-empty string')
@@ -188,11 +213,11 @@ def _is_sensitive_candidate(state: dict) -> bool:
     )
 
 
-def _passes_v1_shape(case: dict) -> bool:
+def _passes_gold_shape(case: dict) -> bool:
     document = {
         'schema_version': GOLD_SCHEMA_VERSION,
         'cases': [{
-            **{field: case[field] for field in _V1_CASE_FIELDS},
+            **{field: case[field] for field in _CASE_FIELDS},
             'language': 'other',
             'gold_class': 'safe_for_automatic_discovery',
             'adjudication': {
@@ -213,10 +238,22 @@ def _case_id(seed: str, pk: int) -> str:
     return 'case_' + hashlib.sha256(f'{seed}:{pk}'.encode()).hexdigest()[:12]
 
 
-def _scan_catalog(seed: str, max_state_bytes: int):
+def _catalog_items(ids: list[int] | None):
+    """Yield catalog items in pk order: all of them, or only the listed ids."""
+    items = ContentItem.objects.order_by('pk')
+    if ids is None:
+        yield from items.iterator(chunk_size=_ITERATOR_CHUNK_SIZE)
+        return
+    for start in range(0, len(ids), _ITERATOR_CHUNK_SIZE):
+        yield from items.filter(pk__in=ids[start:start + _ITERATOR_CHUNK_SIZE])
+
+
+def _scan_catalog(seed: str, max_state_bytes: int, ids: list[int] | None = None):
     eligible: dict[str, list[_Candidate]] = {}
     skipped = {'no_detail': 0, 'invalid_state': 0, 'oversized_state': 0}
-    for item in ContentItem.objects.order_by('pk').iterator(chunk_size=_ITERATOR_CHUNK_SIZE):
+    found = 0
+    for item in _catalog_items(ids):
+        found += 1
         stratum = f'{item.source_api}/{item.content_type}'
         pool = eligible.setdefault(stratum, [])
         try:
@@ -240,10 +277,12 @@ def _scan_catalog(seed: str, max_state_bytes: int):
             'sampling_stratum': stratum,
             'sensitive_candidate': sensitive,
         }
-        if not _passes_v1_shape(case):
+        if not _passes_gold_shape(case):
             skipped['invalid_state'] += 1
             continue
         pool.append(_Candidate(item.pk, sensitive, case))
+    if ids is not None:
+        skipped['not_found'] = len(ids) - found
     return eligible, skipped
 
 
@@ -282,6 +321,15 @@ def _select(pool: list[_Candidate], count: int, sensitive_share: float, rng: ran
     return chosen
 
 
+def _stratum_summary(pool: list[_Candidate], chosen: list[_Candidate]) -> dict[str, int]:
+    return {
+        'eligible': len(pool),
+        'sensitive_eligible': sum(candidate.sensitive for candidate in pool),
+        'selected': len(chosen),
+        'selected_sensitive': sum(candidate.sensitive for candidate in chosen),
+    }
+
+
 class Command(BaseCommand):
     help = ('Export a stratified JSON file of unlabeled Jev moderation '
             'evaluation candidates from the local catalog (read-only). Also '
@@ -298,45 +346,44 @@ class Command(BaseCommand):
             help='target share of each stratum drawn from lexicon matches')
         parser.add_argument('--seed', type=_seed, default='denn-jev-eval-v1')
         parser.add_argument('--max-state-bytes', type=_positive_int, default=20_000)
+        parser.add_argument(
+            '--ids-file', metavar='PATH',
+            help=('newline-separated ContentItem ids to export instead of '
+                  'sampling (for example the values of an earlier sidecar); '
+                  'ineligible ids are skipped and counted, and --sample-size, '
+                  '--min-per-stratum, and --sensitive-share are ignored'))
 
     def handle(self, *args, **options):
         output = options['output']
         index_path = output + _INDEX_SUFFIX
         for path in (output, index_path):
             _validate_output_path(path)
+        ids = _read_ids_file(options['ids_file']) if options['ids_file'] else None
 
         seed = options['seed']
-        eligible, skipped = _scan_catalog(seed, options['max_state_bytes'])
-        allocation = _allocate(
-            {key: len(pool) for key, pool in eligible.items()},
-            options['sample_size'], options['min_per_stratum'])
-
-        rng = random.Random(seed)
-        selected: list[_Candidate] = []
-        strata = {}
-        for stratum in sorted(eligible):
-            pool = eligible[stratum]
-            chosen = _select(pool, allocation[stratum], options['sensitive_share'], rng)
-            selected.extend(chosen)
-            strata[stratum] = {
-                'eligible': len(pool),
-                'sensitive_eligible': sum(candidate.sensitive for candidate in pool),
-                'selected': len(chosen),
-                'selected_sensitive': sum(candidate.sensitive for candidate in chosen),
-            }
+        eligible, skipped = _scan_catalog(seed, options['max_state_bytes'], ids)
+        if ids is None:
+            selected, strata = self._sample(eligible, seed, options)
+        else:
+            selected, strata = self._select_all(eligible)
 
         selected.sort(key=lambda candidate: candidate.case['case_id'])
         if len({candidate.case['case_id'] for candidate in selected}) != len(selected):
             raise CommandError('case ID collision; choose a different --seed')
-        sampling = {
-            'seed': seed,
-            'sample_size': options['sample_size'],
-            'min_per_stratum': options['min_per_stratum'],
-            'sensitive_share': options['sensitive_share'],
+        sampling = {'seed': seed}
+        if ids is None:
+            sampling.update({
+                'sample_size': options['sample_size'],
+                'min_per_stratum': options['min_per_stratum'],
+                'sensitive_share': options['sensitive_share'],
+            })
+        else:
+            sampling['ids_requested'] = len(ids)
+        sampling.update({
             'max_state_bytes': options['max_state_bytes'],
             'strata': strata,
             'skipped': skipped,
-        }
+        })
         document = {
             'schema_version': CANDIDATES_SCHEMA_VERSION,
             'sampling': sampling,
@@ -352,3 +399,27 @@ class Command(BaseCommand):
         self.stdout.write(json.dumps(
             {'sampling': sampling, 'cases': len(selected)},
             sort_keys=True, separators=(',', ':')))
+
+    @staticmethod
+    def _sample(eligible, seed, options):
+        allocation = _allocate(
+            {key: len(pool) for key, pool in eligible.items()},
+            options['sample_size'], options['min_per_stratum'])
+        rng = random.Random(seed)
+        selected: list[_Candidate] = []
+        strata = {}
+        for stratum in sorted(eligible):
+            chosen = _select(
+                eligible[stratum], allocation[stratum], options['sensitive_share'], rng)
+            selected.extend(chosen)
+            strata[stratum] = _stratum_summary(eligible[stratum], chosen)
+        return selected, strata
+
+    @staticmethod
+    def _select_all(eligible):
+        selected: list[_Candidate] = []
+        strata = {}
+        for stratum in sorted(eligible):
+            selected.extend(eligible[stratum])
+            strata[stratum] = _stratum_summary(eligible[stratum], eligible[stratum])
+        return selected, strata

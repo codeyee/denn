@@ -11,11 +11,12 @@ their lasting outcome is reflected in architecture or history docs.
   critical routes, but Add-to-List and ListDetail still need broader
   mutation/rollback interaction tests.
 - Adult search preference and cache isolation are implemented. IGDB,
-  Spotify, and OpenLibrary still have no provider adult flag. Jev classifies
-  their items when moderation is enabled, and search and Browse cards blur
-  current explicit artwork, but search never calls Jev at request time and
-  results that are not yet classified stay visible and unblurred. Denn must
-  not infer safety from free text.
+  Spotify, and OpenLibrary still have no provider adult flag (only an IGDB
+  ESRB `AO` rating overrides; other ratings, keywords, and subjects are context
+  for Jev). Jev classifies their items when moderation is enabled, and search
+  and Browse cards blur current explicit artwork, but search never calls Jev
+  at request time and results that are not yet classified stay visible and
+  unblurred. Denn must not infer safety from free text.
 - Country-scoped streaming availability is persisted separately, but
   freshness is still tied to the global content detail lifecycle instead
   of an independent per-country policy.

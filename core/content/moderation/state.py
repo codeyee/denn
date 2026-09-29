@@ -16,6 +16,13 @@ STATE_FIELDS = (
     "type_specific",
 )
 
+MAX_KEYWORDS = 40
+MAX_SUBJECTS = 30
+# Countries whose certifications are shown to Jev; others add noise, not signal.
+CERTIFICATION_COUNTRIES = frozenset(
+    {"US", "GB", "CA", "AU", "IE", "DE", "FR", "ES", "MX", "BR", "JP", "KR"}
+)
+
 
 def _require_non_empty(value, field: str) -> str:
     if not isinstance(value, str) or not value.strip():
@@ -39,7 +46,8 @@ def _sequence(values, field: str) -> list:
     return list(values)
 
 
-def _normalize_names(values, field: str) -> list[str]:
+def _normalize_names(values, field: str, limit: int | None = None) -> list[str]:
+    """Return sorted unique names; `limit` keeps the first N in provider order."""
     names = []
     for raw in _sequence(values, field):
         if not isinstance(raw, str):
@@ -49,7 +57,7 @@ def _normalize_names(values, field: str) -> list[str]:
         cleaned = _normalize_text(raw, field)
         if cleaned:
             names.append(cleaned)
-    return sorted(set(names))
+    return sorted(list(dict.fromkeys(names))[:limit])
 
 
 def _normalize_people_names(values, field: str) -> list[str]:
@@ -65,6 +73,33 @@ def _normalize_people_names(values, field: str) -> list[str]:
         if name:
             names.append(name)
     return sorted(set(names))
+
+
+def _normalize_certifications(values, field: str) -> list[str]:
+    certifications = []
+    for raw in _sequence(values, field):
+        if not isinstance(raw, Mapping):
+            raise ModerationStateError(f"{field} entries must contain a country and rating")
+        country = _normalize_text(raw.get("country"), f"{field}.country").upper()
+        rating = _normalize_text(raw.get("rating"), f"{field}.rating")
+        if rating and country in CERTIFICATION_COUNTRIES:
+            certifications.append(f"{country}: {rating}")
+    return sorted(set(certifications))
+
+
+def _normalize_age_ratings(values, field: str) -> list[str]:
+    ratings = []
+    for raw in _sequence(values, field):
+        if not isinstance(raw, Mapping):
+            raise ModerationStateError(f"{field} entries must contain an organization and rating")
+        organization = _normalize_text(raw.get("organization"), f"{field}.organization")
+        rating = _normalize_text(raw.get("rating"), f"{field}.rating")
+        if not organization or not rating:
+            continue
+        descriptors = _normalize_names(raw.get("descriptors"), f"{field}.descriptors")
+        label = f"{organization} {rating}"
+        ratings.append(f"{label}: {'; '.join(descriptors)}" if descriptors else label)
+    return sorted(set(ratings))
 
 
 def _normalize_credits(values, field: str) -> list[dict[str, str]]:
@@ -108,12 +143,17 @@ def _normalize_tracks(values) -> list[dict[str, object]]:
         title = _normalize_text(track.get("title"), "album.tracks.title")
         credits = _normalize_credits(track.get("authors"), "album.tracks.credits")
         if title or credits:
-            tracks.append({"title": title, "credits": credits})
+            tracks.append({
+                "title": title,
+                "credits": credits,
+                "parental_advisory": "explicit" if track.get("explicit") is True else "",
+            })
     return sorted(
         tracks,
         key=lambda track: (
             track["title"],
             tuple((credit["name"], credit["role"]) for credit in track["credits"]),
+            track["parental_advisory"],
         ),
     )
 
@@ -135,6 +175,18 @@ def _normalize_type_specific(content_type: str, reconstructed_payload) -> dict:
                 "tagline": _normalize_text(
                     reconstructed_payload.get("tagline"), f"{kind}.tagline"
                 ),
+                "genres": _normalize_names(
+                    reconstructed_payload.get("genres"), f"{kind}.genres"
+                ),
+                "keywords": _normalize_names(
+                    reconstructed_payload.get("keywords"),
+                    f"{kind}.keywords",
+                    limit=MAX_KEYWORDS,
+                ),
+                "certifications": _normalize_certifications(
+                    reconstructed_payload.get("certifications"),
+                    f"{kind}.certifications",
+                ),
             }
         }
 
@@ -155,6 +207,14 @@ def _normalize_type_specific(content_type: str, reconstructed_payload) -> dict:
                 ),
                 "series": _normalize_text(
                     reconstructed_payload.get("series"), "game.series"
+                ),
+                "keywords": _normalize_names(
+                    reconstructed_payload.get("keywords"),
+                    "game.keywords",
+                    limit=MAX_KEYWORDS,
+                ),
+                "age_ratings": _normalize_age_ratings(
+                    reconstructed_payload.get("age_ratings"), "game.age_ratings"
                 ),
             }
         }
@@ -185,7 +245,12 @@ def _normalize_type_specific(content_type: str, reconstructed_payload) -> dict:
             "book": {
                 "authors": _normalize_people_names(
                     reconstructed_payload.get("authors"), "book.authors"
-                )
+                ),
+                "subjects": _normalize_names(
+                    reconstructed_payload.get("subjects"),
+                    "book.subjects",
+                    limit=MAX_SUBJECTS,
+                ),
             }
         }
 
@@ -204,8 +269,11 @@ def build_moderation_state(
 
     The reconstructed payload is allowlisted by content type. All episode and
     track text is retained without truncation. Only normalized text is copied;
-    identifiers, URLs, assets, dates, durations, raw payloads, and provider
-    safety flags never enter the state.
+    identifiers, URLs, assets, dates, durations, and raw payloads never enter
+    the state. Provider safety metadata enters only as contextual text (genres,
+    keywords, certifications, age ratings, subjects, a per-track advisory). The
+    TMDB `adult` flag never does: authoritative overrides are code-owned and
+    applied before, and independently of, any Jev call.
     """
     normalized_provider = _require_non_empty(provider, "provider").casefold()
     normalized_content_type = _require_non_empty(content_type, "content_type").upper()

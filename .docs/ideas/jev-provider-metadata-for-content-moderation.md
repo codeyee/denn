@@ -2,13 +2,41 @@
 
 **Related:** [Issue #102](https://github.com/codeyee/denn/issues/102)
 
-**Status:** Future backlog; separate from JEV-002-Q3. This document is not authorization to ingest provider data.
+**Status:** Implemented except the items listed under [Not done](#not-done). Proxy returns the fields below, Core persists them, and question revision `q4` sends them to Jev as contextual text ([ADR 0009](../adr/0009-jev-content-moderation.md)). The provider terms and cost review is still open and must be completed before broad activation.
 
 ## Goal
 
-Improve the safety evidence available to Denn's server-side Jev moderation by capturing a small, normalized allowlist of provider metadata that is not currently persisted. Keep this separate from JEV-002-Q3, which only makes Jev consume relevant text already available through Core.
+Improve the safety evidence available to Denn's server-side Jev moderation by capturing a small, normalized allowlist of provider metadata. JEV-002-Q3 only made Jev consume text Core already had; `q4` adds this metadata.
 
-## Candidate capture targets
+## Implemented capture
+
+| Provider | Persisted fields | Use |
+| --- | --- | --- |
+| TMDB (movies, TV) | `adult`, genres, keywords, certifications (one `{country, rating}` per country, from the detail request's `append_to_response`). | `adult` true is the authoritative override. Genres, keywords, and certifications for US, GB, CA, AU, IE, DE, FR, ES, MX, BR, JP, KR are text for Jev. |
+| IGDB (games) | Keywords and age ratings (`organization`, `rating`, `descriptors`) from the current, non-deprecated rating fields. | ESRB `AO` is the authoritative override. Everything else is text for Jev. |
+| Spotify (albums) | Per-track `explicit`. | A track-level advisory in the state; never an override, never an album verdict. |
+| OpenLibrary (books) | Work `subjects`, at most 50 persisted and 30 sent. | Weak contextual text only. |
+
+Lists are deduplicated and capped when stored (keywords 100, certifications 100, age ratings 20, subjects 50) and again when sent to Jev (keywords 40, subjects 30). A refresh that omits a field clears it. Malformed entries are dropped and never fail a detail write. The remaining sections of this note record the original design constraints.
+
+### Not done
+
+- Provenance and freshness beyond the existing detail refresh: no per-field retrieval time, rating-scheme revision, or explicit stale/unavailable state. Unknown stays unknown because absence never certifies safety.
+- Edition-level OpenLibrary provenance; only work subjects are used.
+- The terms, quota, and cost review below, including whether provider-derived metadata may be sent to TypeSafe/Jev.
+- Measured request volume, latency, and Jev token cost of a catalog-wide rehydration and reclassification under `q4`.
+- Re-running the catalog evaluation under `q4` (see the [evaluation runbook](../runbooks/jev-moderation-evaluation.md)).
+
+### Open review checklist
+
+- [ ] TMDB: current terms allow storing and forwarding `adult`, keywords, and certifications to Jev; rate limits and cost of the extended detail request.
+- [ ] IGDB: current terms allow storing and forwarding age ratings, descriptors, and keywords; quota impact of the extra fields.
+- [ ] Spotify: terms allow persisting and forwarding the per-track `explicit` flag.
+- [ ] OpenLibrary: terms allow persisting and forwarding subjects.
+- [ ] TypeSafe/Jev: confirm forwarding provider-derived metadata is permitted and record the token cost of the larger state.
+- [ ] Measure a bounded rehydration and reclassification, then record volume, latency, and cost before any broad run.
+
+## Candidate capture targets (original analysis)
 
 | Provider | Candidate fields | Safety and interpretation notes |
 | --- | --- | --- |

@@ -8,7 +8,7 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
-GOLD_SCHEMA_VERSION = "jev-moderation-gold-cases/v1"
+GOLD_SCHEMA_VERSION = "jev-moderation-gold-cases/v2"
 CASE_FIELDS = {
     "case_id", "split", "source_kind", "provider", "content_type", "language",
     "state", "gold_class", "adjudication", "provider_explicit",
@@ -28,13 +28,17 @@ SECRET_RE = re.compile(
 )
 JWT_RE = re.compile(r"\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b")
 
-# These shapes mirror the text-only object built by moderation.state.
+# These shapes mirror the text-only object built by moderation.state (q4).
+_TMDB_TITLE_SHAPE = {
+    "original_title": str, "tagline": str,
+    "genres": [str], "keywords": [str], "certifications": [str],
+}
 TYPE_SPECIFIC_SHAPES = {
-    "movie": {"movie": {"original_title": str, "tagline": str}},
-    "tv_show": {"tv_show": {"original_title": str, "tagline": str}},
+    "movie": {"movie": dict(_TMDB_TITLE_SHAPE)},
+    "tv_show": {"tv_show": dict(_TMDB_TITLE_SHAPE)},
     "game": {"game": {
         "genres": [str], "themes": [str], "game_modes": [str],
-        "game_type": str, "series": str,
+        "game_type": str, "series": str, "keywords": [str], "age_ratings": [str],
     }},
     "season": {"season": {
         "parent_show_name": str,
@@ -42,9 +46,17 @@ TYPE_SPECIFIC_SHAPES = {
     }},
     "album": {"album": {
         "artists": [str],
-        "tracks": [{"title": str, "credits": [{"name": str, "role": str}]}],
+        "tracks": [{
+            "title": str,
+            "credits": [{"name": str, "role": str}],
+            "parental_advisory": str,
+        }],
     }},
-    "book": {"book": {"authors": [str]}},
+    "book": {"book": {"authors": [str], "subjects": [str]}},
+}
+# Authoritative provider overrides (Core's `provider-rule:v2`).
+PROVIDER_OVERRIDE_TARGETS = {
+    ("tmdb", "movie"), ("tmdb", "tv_show"), ("igdb", "game"),
 }
 
 
@@ -54,7 +66,7 @@ class GoldCaseValidationError(ValueError):
 
 def _require_fields(value: Any, fields: set[str], path: str) -> Mapping[str, Any]:
     if not isinstance(value, Mapping) or set(value) != fields:
-        raise GoldCaseValidationError(f"{path}: object fields do not match the v1 schema")
+        raise GoldCaseValidationError(f"{path}: object fields do not match the v2 schema")
     return value
 
 
@@ -80,7 +92,7 @@ def _validate_shape(value: Any, shape: Any, path: str) -> None:
 
 
 def validate_gold_dataset(document: Any) -> tuple[dict[str, Any], ...]:
-    """Validate and copy a v1 document without altering classifier state."""
+    """Validate and copy a v2 document without altering classifier state."""
     document = _require_fields(document, {"schema_version", "cases"}, "dataset")
     if document["schema_version"] != GOLD_SCHEMA_VERSION or not isinstance(document["cases"], list):
         raise GoldCaseValidationError("dataset: unsupported version or invalid cases list")
@@ -110,10 +122,11 @@ def validate_gold_dataset(document: Any) -> tuple[dict[str, Any], ...]:
         if case["provider_explicit"] is not None and type(case["provider_explicit"]) is not bool:
             raise GoldCaseValidationError(f"{path}.provider_explicit: expected bool or null")
         if case["provider_explicit"] is True and (
-            case["provider"] != "tmdb" or content_type not in {"movie", "tv_show"}
+            (case["provider"], content_type) not in PROVIDER_OVERRIDE_TARGETS
         ):
             raise GoldCaseValidationError(
-                f"{path}.provider_explicit: true is supported only for TMDB movies and TV shows"
+                f"{path}.provider_explicit: true is supported only for TMDB movies "
+                "and TV shows and IGDB games"
             )
 
         state = _require_fields(case["state"], STATE_FIELDS, f"{path}.state")
