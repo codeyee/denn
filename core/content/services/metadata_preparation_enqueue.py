@@ -1,6 +1,7 @@
 """Bound and fairly admit identity-only metadata preparation requests."""
 from __future__ import annotations
 
+from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
@@ -22,21 +23,25 @@ def enqueue_metadata_preparation(content_item_ids: list[int]) -> int:
     absent in the already-fetched resolver result. The singleton cursor makes
     repeated capped admissions rotate through those identities as capacity
     becomes available. The database cap bounds future provider work.
+
+    Admission is disabled unless moderation classification is enabled, so a
+    default-off deployment persists nothing. Existing-job filtering runs before
+    the cursor lock so all-prepared requests never contend on the singleton.
     """
-    if not content_item_ids:
+    if settings.MODERATION_CLASSIFICATION_ENABLED is not True or not content_item_ids:
+        return 0
+
+    existing_ids = set(
+        ContentMetadataPreparationJob.objects.filter(
+            content_item_id__in=content_item_ids,
+        ).values_list('content_item_id', flat=True)
+    )
+    candidates = list(set(content_item_ids) - existing_ids)
+    if not candidates:
         return 0
 
     with transaction.atomic():
         cursor = ContentMetadataPreparationCursor.objects.select_for_update().get(pk=1)
-        existing_ids = set(
-            ContentMetadataPreparationJob.objects.filter(
-                content_item_id__in=content_item_ids,
-            ).values_list('content_item_id', flat=True)
-        )
-        candidates = [item_id for item_id in set(content_item_ids) - existing_ids]
-        if not candidates:
-            return 0
-
         active_count = ContentMetadataPreparationJob.objects.filter(
             status__in=ACTIVE_STATUSES,
         ).count()
