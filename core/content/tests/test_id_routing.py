@@ -513,7 +513,7 @@ class ContentItemBulkResolveTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         content_reads = [
             query['sql'] for query in captured.captured_queries
-            if 'SELECT' in query['sql'].upper()
+            if query['sql'].lstrip().upper().startswith('SELECT')
             and 'content_items' in query['sql'].lower()
         ]
         self.assertEqual(len(content_reads), 1)
