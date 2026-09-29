@@ -13,7 +13,6 @@ import type {
   PaginatedUserListList,
   PublicProgressItem,
 } from "@/lib/types";
-import { getWebModerationVisibilityEnabledFn } from "@/server/moderation-visibility";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -28,8 +27,7 @@ export const Route = createFileRoute("/")({
     links: [{ rel: "canonical", href: "/" }],
   }),
   loader: async ({ context }) => {
-    const moderationVisibilityEnabled =
-      await getWebModerationVisibilityEnabledFn();
+    const { moderationVisibilityEnabled } = context;
     await prefetchHomeQueries(
       context.queryClient,
       context.session,

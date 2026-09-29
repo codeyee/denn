@@ -18,6 +18,7 @@ interface MediaListItemProps {
   className?: string;
   onClick?: () => void;
   variant?: "compact" | "review";
+  isArtworkBlurred?: boolean;
 }
 
 export function MediaListItem({
@@ -35,6 +36,7 @@ export function MediaListItem({
   className,
   onClick,
   variant = "compact",
+  isArtworkBlurred = false,
 }: MediaListItemProps) {
   const isReview = variant === "review";
 
@@ -53,6 +55,7 @@ export function MediaListItem({
           imageAlt={imageAlt}
           mediaFallback={mediaFallback}
           sizes="100vw"
+          isBlurred={isArtworkBlurred}
         />
         <div className="absolute inset-0 bg-black/60" />
         <div className="absolute inset-0 bg-linear-to-t from-list-item-background via-black/55 to-black/20" />
@@ -69,6 +72,7 @@ export function MediaListItem({
           imageAlt={imageAlt}
           mediaFallback={mediaFallback}
           sizes={isReview ? "256px" : "176px"}
+          isBlurred={isArtworkBlurred}
         />
         <div className="pointer-events-none absolute inset-y-0 -right-px w-[calc(100%+1px)] bg-linear-to-r from-transparent via-hero-gradient-70 to-list-item-background transition-colors duration-200 group-hover:to-list-item-background-hover motion-reduce:transition-none" />
       </div>
@@ -103,11 +107,13 @@ function MediaArtwork({
   imageAlt,
   mediaFallback,
   sizes,
+  isBlurred,
 }: {
   image?: string | null;
   imageAlt: string;
   mediaFallback?: ReactNode;
   sizes: string;
+  isBlurred: boolean;
 }) {
   return (
     <div className="absolute inset-0 grid place-items-center bg-[radial-gradient(circle_at_25%_20%,rgba(123,63,152,0.35),transparent_55%),#160b19]">
@@ -118,7 +124,7 @@ function MediaArtwork({
           width={640}
           height={360}
           sizes={sizes}
-          className="h-full w-full object-cover"
+          className={cn("h-full w-full object-cover", isBlurred && "scale-110 blur-md")}
         />
       ) : (
         <div className="text-white/30">{mediaFallback}</div>

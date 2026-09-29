@@ -105,11 +105,33 @@ discovery browse request.
   banner and no loading skeleton; the existing empty state still applies when
   every section is empty.
 - This homepage discovery rule does not hide direct detail, search, or Browse
-  results. Detail pages apply a separate visual-artwork rule below and use the
-  existing user preference; neither rule implies that a source-code change
+  results. Cards and detail pages apply a separate visual-artwork rule (below)
+  and use the existing user preference; neither rule implies that a source-code change
   has been deployed. Enable the Web flag only after the workers are running and
   the homepage candidates are classified; see the
   [activation checklist](../runbooks/jev-moderation-workers.md#production-activation-checklist).
+
+## Jev Moderation on Content Cards
+
+- With Web visibility on, content cards blur current `complete`/`explicit`
+  artwork unless the viewer has `allow_adult_content=true` (anonymous viewers
+  are not opted in). `needs_review`, pending, stale, missing, and malformed
+  summaries are not blurred. Search, Browse, lists, profiles, and detail
+  remain visible; only the homepage is strict.
+- Search and Browse items get their summary from the same bulk Core resolution
+  that supplies their ids, only when the flag is on. Core-backed surfaces (list
+  detail, public lists, and profile favorites, progress, and reviews, plus the
+  homepage in-progress carousel) use the `moderation` object Core already
+  returns on content summaries.
+- The flag is server-only. The root route resolves it into router context and a
+  small provider exposes only that boolean and the viewer's server-resolved
+  preference to cards. With the flag off (or no provider), cards never blur.
+- Card reveal controls act locally: they do not navigate, do not persist, and
+  keep the card's size. Row layouts (list-view rows, profile progress rows,
+  review rows) blur without a reveal control; the detail page offers one.
+- Not covered: random-pick modal artwork, list and collection cover collages,
+  season cards on a show's detail page, and Add-to-list season thumbnails. They
+  have no per-image moderation data or are transient; see technical debt.
 
 ## Jev Moderation on Content Detail
 

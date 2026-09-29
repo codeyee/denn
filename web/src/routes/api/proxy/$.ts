@@ -8,7 +8,7 @@ import {
   normalizeRequestId,
 } from "@/server/proxy";
 import {
-  resolveCatalogContentIds,
+  resolveDiscoveryContentIds,
   resolveHomepageContentIds,
 } from "@/server/catalog";
 import type { BrowseResponse, HomepageResponse, MultiSearchResponse } from "@/lib/types";
@@ -115,7 +115,7 @@ export const Route = createFileRoute("/api/proxy/$")({
                     country,
                     requestId,
                   )
-                : await resolveCatalogContentIds(
+                : await resolveDiscoveryContentIds(
                     proxyData,
                     country,
                     requestId,

@@ -15,6 +15,7 @@ interface ReorderableListItemProps {
   image?: string | null | undefined;
   imageAlt?: string | null | undefined;
   imageFullHeight?: boolean;
+  isArtworkBlurred?: boolean;
   leadingContent?: ReactNode;
   trailingContent?: ReactNode;
   expandedContent?: ReactNode;

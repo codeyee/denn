@@ -11,6 +11,7 @@ import { ThemeProvider } from "@/components/common/providers/ThemeProvider";
 import { StoreProvider } from "@/providers/StoreProvider";
 import { QueryProvider } from "@/providers/QueryProvider";
 import { CountryProvider } from "@/components/common/providers/CountryProvider";
+import { ModerationPresentationProvider } from "@/components/common/providers/ModerationPresentationProvider";
 import { ToastProvider } from "@/components/common/Toast";
 import { WebVitalsReporter } from "@/components/common/WebVitalsReporter";
 import { AuthSessionBootstrap } from "@/components/routes/AuthSessionBootstrap";
@@ -20,6 +21,7 @@ import { RouteFocusManager } from "@/components/routes/RouteFocusManager";
 import type { RouterContext } from "@/router";
 import { getSessionFn, getCountryFn } from "@/server/session";
 import { getRuntimeEnvFn } from "@/server/runtime-env";
+import { getWebModerationVisibilityEnabledFn } from "@/server/moderation-visibility";
 
 import appCss from "@/styles/globals.css?url";
 
@@ -28,13 +30,17 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     // Resolve once per request and merge into the router context. The
     // session and country flags need to be available to every route loader
     // (see lib/api/queries/server.ts which expects an authenticated
-    // SessionSnapshot for protected prefetches).
-    const [session, country, env] = await Promise.all([
-      getSessionFn(),
-      getCountryFn(),
-      getRuntimeEnvFn(),
-    ]);
-    return { session, country, env };
+    // SessionSnapshot for protected prefetches). The moderation visibility
+    // flag is a server-only setting; only this resolved boolean reaches the
+    // browser.
+    const [session, country, env, moderationVisibilityEnabled] =
+      await Promise.all([
+        getSessionFn(),
+        getCountryFn(),
+        getRuntimeEnvFn(),
+        getWebModerationVisibilityEnabledFn(),
+      ]);
+    return { session, country, env, moderationVisibilityEnabled };
   },
   head: ({ match }) => {
     const env =
@@ -102,7 +108,8 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
-  const { queryClient, session } = Route.useRouteContext();
+  const { queryClient, session, moderationVisibilityEnabled } =
+    Route.useRouteContext();
 
   return (
     <RootDocument>
@@ -119,7 +126,15 @@ function RootComponent() {
               <CountryProvider />
               <WebVitalsReporter />
               <RouteFocusManager />
-              <Outlet />
+              <ModerationPresentationProvider
+                visibilityEnabled={moderationVisibilityEnabled}
+                allowAdultContent={
+                  session.isAuthenticated &&
+                  session.user?.allow_adult_content === true
+                }
+              >
+                <Outlet />
+              </ModerationPresentationProvider>
               <ClientOnly>
                 {import.meta.env.DEV ? (
                   <TanStackRouterDevtools position="bottom-right" />

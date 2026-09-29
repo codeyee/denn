@@ -170,7 +170,7 @@ The command observes and persists judgments; it does not itself change surface
 behavior. Web visibility uses the independent, server-only
 `WEB_MODERATION_VISIBILITY_ENABLED` flag. It defaults to `false`; when enabled,
 Web keeps only current complete safe items on the homepage and blurs explicit
-detail artwork unless the viewer has `allow_adult_content=true`. The preference
+detail and card artwork unless the viewer has `allow_adult_content=true`. The preference
 does not restore excluded homepage items, and CSS blur does not prevent direct
 image access.
 

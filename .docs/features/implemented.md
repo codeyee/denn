@@ -81,9 +81,11 @@ considered part of the project baseline.
   `WEB_MODERATION_VISIBILITY_ENABLED` (Web server; `true`) enables Web
   behavior. When the Web flag is on, the homepage is strict: it keeps only
   items whose current summary is exactly complete and safe before banner and
-  carousel selection, and detail blurs current complete explicit artwork unless
-  `allow_adult_content` is true, with a local reveal. Detail, search, Browse,
-  lists, and profiles stay visible, and `needs_review` is not blurred. With
+  carousel selection, and detail and content cards (search, Browse, list detail, public lists, profile
+  favorites, progress and reviews) blur current complete explicit artwork
+  unless `allow_adult_content` is true, with a local reveal on cards. Detail,
+  search, Browse, lists, and profiles stay visible, and `needs_review` is not
+  blurred. With
   classification enabled, the bulk identity resolver admits the missing
   preparation and classification work so the strict homepage heals itself. The
   TMDB adult flag is an authoritative override. Search results do not call

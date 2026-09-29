@@ -81,9 +81,11 @@ stay private.
   items are all excluded before the featured banner and carousels are
   selected. Web resolves identities and summaries once, in bulk, on the same
   path for SSR and the `/api/proxy/homepage` BFF.
-- Detail: blur current, complete, explicit artwork unless the viewer has
-  `allow_adult_content=true`. A local reveal control does not change the
-  saved preference.
+- Detail and cards: blur current, complete, explicit artwork unless the viewer
+  has `allow_adult_content=true`. A local reveal control does not change the
+  saved preference. Cards cover search, Browse, list detail, public lists and
+  profiles (favorites, progress, reviews), and the homepage's in-progress
+  carousel.
 
 **Product decision (maintainer, 2026-09, revised).** The homepage is strict: it
 shows only currently classified-safe items. This supersedes the earlier choice
@@ -91,6 +93,21 @@ to show unclassified items there. Search, Browse, lists, profiles, and detail
 remain visible regardless of moderation state, `needs_review` is not blurred,
 and there is no placeholder in v1. Blur is presentation, not access control:
 image URLs remain reachable.
+
+**Where card summaries come from.** Search and Browse are resolved through
+Core's bulk resolver on the Web server (SSR and the BFF share it). With the Web
+flag on, the same response's summary is attached to each item; with it off,
+nothing is attached. Lists, profiles, and collections already receive
+`moderation` from Core on content summaries, which the Web parses and carries
+onto the card item. Because that Core data reaches the browser regardless of
+the flag, the visibility flag stays server-only: the root route's `beforeLoad`
+resolves it into router context, and only that non-secret boolean (never the
+environment variable) reaches the client through a small presentation provider,
+alongside the viewer's `allow_adult_content` from the same server-resolved
+session. With the flag off, or with no provider, cards never blur. The blur
+rule is exactly `shouldBlurModerationArtwork` (current complete explicit, viewer
+not opted in); `needs_review` is not blurred. The reveal control is local, does
+not navigate, and does not change layout.
 
 **Self-healing strict homepage.** A strict homepage would stay thin until
 someone classified its candidates, so the bulk resolver admits the missing
@@ -116,7 +133,11 @@ owner of identity and work admission.
   identity dedupe, but there is no global cap on queued moderation jobs; the
   worker bounds are the only spend control.
 - Proxy's 5-minute homepage candidate cache and Web's 5-minute query
-  `staleTime` delay homepage changes after a new judgment.
+  `staleTime` delay homepage changes after a new judgment. Search and Browse
+  query caches are keyed without the visibility flag, so a client that stays
+  open across a flag change keeps its old summaries until it reloads.
+- Some artwork surfaces have no moderation data or no blur yet (see
+  [technical debt](../technical-debt.md)).
 - The worker bounds are per process, not a global provider-call or cost cap.
 - Admin review, manual classification, and non-homepage surfaces for
   `needs_review` are deferred (see issue
