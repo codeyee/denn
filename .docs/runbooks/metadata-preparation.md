@@ -6,7 +6,9 @@ the Jev moderation worker.
 
 ## Safety and scope
 
-- The resolver only records bounded intent. It does not call Proxy or Jev.
+- The resolver only records bounded intent, and only when
+  `MODERATION_CLASSIFICATION_ENABLED` is true; with the default-off flag it
+  admits no jobs and takes no cursor lock. It does not call Proxy or Jev.
 - This command processes queued preparation jobs only. It does not scan old
   `ContentItem` rows, backfill legacy detail, or alter moderation policy.
 - Jobs with existing type-specific detail finish without a Proxy request,

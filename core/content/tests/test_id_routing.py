@@ -9,6 +9,7 @@ from django.contrib.auth import get_user_model
 from django.db import OperationalError, close_old_connections, connection
 from django.test import TransactionTestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.request import Request
 from rest_framework.test import APITestCase, APIRequestFactory
@@ -16,11 +17,13 @@ from drf_spectacular.generators import SchemaGenerator
 
 from content.models import (
     ContentItem,
+    ContentMetadataPreparationCursor,
     ContentMetadataPreparationJob,
     ContentModerationJudgment,
     MovieDetail,
     Rating,
 )
+from content.services.metadata_preparation_enqueue import enqueue_metadata_preparation
 from core.throttling import CatalogDetailRateThrottle
 
 
@@ -204,10 +207,14 @@ class ContentItemGetOrCreateAliasTests(APITestCase):
 
 class ContentItemBulkResolveTests(APITestCase):
     def setUp(self):
+        # A kept test database loses the migration-seeded singleton once a
+        # TransactionTestCase has flushed it.
+        ContentMetadataPreparationCursor.objects.get_or_create(pk=1)
         self.user = get_user_model().objects.create_user(username='u', password='p')
         self.client.force_authenticate(user=self.user)
         self.url = reverse('content:content-resolve-ids')
 
+    @override_settings(MODERATION_CLASSIFICATION_ENABLED=True)
     def test_resolves_idempotently_without_trusting_provider_payload(self):
         request_data = {
             'items': [{
@@ -240,6 +247,49 @@ class ContentItemBulkResolveTests(APITestCase):
             {'status': 'missing', 'classification': None},
         )
 
+    @override_settings(MODERATION_CLASSIFICATION_ENABLED=False)
+    def test_disabled_classification_resolves_without_preparation_jobs(self):
+        request_data = {'items': [{
+            'source_api': ContentItem.SourceAPI.TMDB,
+            'external_id': 'classification-disabled',
+            'content_type': ContentItem.ContentType.MOVIE,
+        }]}
+
+        response = self.client.post(self.url, request_data, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            response.data['results'][0]['moderation'],
+            {'status': 'missing', 'classification': None},
+        )
+        self.assertTrue(
+            ContentItem.objects.filter(external_id='classification-disabled').exists(),
+        )
+        self.assertFalse(ContentMetadataPreparationJob.objects.exists())
+        with self.assertNumQueries(0):
+            self.assertEqual(enqueue_metadata_preparation([1, 2, 3]), 0)
+
+    @override_settings(MODERATION_CLASSIFICATION_ENABLED=True)
+    def test_already_prepared_identities_do_not_lock_admission_cursor(self):
+        item = ContentItem.objects.create(
+            source_api=ContentItem.SourceAPI.TMDB,
+            external_id='already-queued',
+            content_type=ContentItem.ContentType.MOVIE,
+        )
+        ContentMetadataPreparationJob.objects.create(
+            content_item=item,
+            status=ContentMetadataPreparationJob.Status.QUEUED,
+            available_at=timezone.now(),
+        )
+
+        with patch(
+            'content.services.metadata_preparation_enqueue.ContentMetadataPreparationCursor',
+        ) as cursor_model, self.assertNumQueries(1):
+            admitted = enqueue_metadata_preparation([item.pk])
+
+        self.assertEqual(admitted, 0)
+        cursor_model.objects.select_for_update.assert_not_called()
+
     def test_identity_resolution_skips_legacy_detail_even_without_current_hash(self):
         item = ContentItem.objects.create(
             source_api=ContentItem.SourceAPI.TMDB,
@@ -264,6 +314,7 @@ class ContentItemBulkResolveTests(APITestCase):
             ContentMetadataPreparationJob.objects.filter(content_item=item).exists(),
         )
 
+    @override_settings(MODERATION_CLASSIFICATION_ENABLED=True)
     def test_capped_repeated_resolution_rotates_admission(self):
         identities = [f'fair-preparation-{index}' for index in range(3)]
         request_data = {'items': [{
