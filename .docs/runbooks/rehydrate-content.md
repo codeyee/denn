@@ -11,7 +11,7 @@ IGDB duration row was stored as `no_data` (useful after changing duration
 sanitation rules). Neither belongs in the periodic job: a game IGDB no longer
 returns never gains a duration row and would be re-fetched on every run.
 
-This is the **periodic refresh** job. The first-time backfill of items that do not yet have a Detail row at all is `backfill_content_details`. The game-duration gap is therefore repaired both when a game is read through the local-first path and when this job runs.
+This is the **periodic refresh** job. The first-time backfill of items that do not yet have a Detail row at all is `backfill_content_details`. The game-duration gap is repaired when a game is read through the local-first path; this job repairs it only when run with `--include-missing-duration`.
 
 ## When to run
 
@@ -41,6 +41,8 @@ Run after any of the following:
 - A change to `CONTENT_REHYDRATION_POLICY`.
 - The first deployment of game-duration support, to backfill existing games:
   `python manage.py rehydrate_content_details --content-type GAME --include-missing-duration --limit 500 --workers 4`.
+  Preview with `--dry-run` first and repeat the run until the GAME `total`
+  stops shrinking; games IGDB no longer returns stay selected by this flag.
 - A change to game-duration sanitation rules: run the one-off repair with
   `--include-no-data`, for example:
   `python manage.py rehydrate_content_details --content-type GAME --include-no-data --limit 500 --workers 4`.

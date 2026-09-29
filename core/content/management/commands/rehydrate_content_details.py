@@ -145,7 +145,8 @@ class Command(BaseCommand):
         prefix = f'[{content_type}]'
         self.stdout.write(self.style.NOTICE(
             f'{prefix} {len(items)} refresh candidate(s) (limit={limit}, dry_run={dry_run}, '
-            f'ttl_override={ttl_override}, include_no_data={include_no_data})'
+            f'ttl_override={ttl_override}, include_no_data={include_no_data}, '
+            f'include_missing_duration={include_missing_duration})'
         ))
 
         if not items:
