@@ -31,7 +31,7 @@ psycopg-pool==3.2.7
 psycopg==3.2.12
 pydantic-core==2.46.5
 pydantic==2.13.5
-PyJWT==2.13.0
+PyJWT==2.14.0
 python-dateutil==2.9.0.post0
 python-dotenv==1.2.2
 PyYAML==6.0.3
