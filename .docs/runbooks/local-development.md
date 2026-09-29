@@ -104,6 +104,13 @@ Edit source normally:
 - `core` reloads through Django's development server;
 - after a `proxy` change, run `make restart-proxy`.
 
+Do not run a production Web build while this worktree's Vite development
+server is active. TanStack Router generates `web/src/routeTree.gen.ts`, which
+both processes share. `pnpm --dir web build` now checks the generated client
+and Nitro output and fails if the development moderation preview route or its
+fixture artwork is present. If that check fails, stop the worktree's Web
+development process and rerun the build; do not bypass the artifact check.
+
 For targeted restarts:
 
 ```bash

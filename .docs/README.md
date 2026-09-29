@@ -175,6 +175,8 @@ If the question is "how should this be designed?", check
 
 Use the rest as specialized references:
 
+- [`ideas/jev-provider-metadata-for-content-moderation.md`](./ideas/jev-provider-metadata-for-content-moderation.md) — future provider-signal capture for Jev issue #102.
+- [`ideas/jev-content-moderation-product-flow.md`](./ideas/jev-content-moderation-product-flow.md) — verified moderation state, requested outcome, unratified flow recommendation, and open decisions.
 - [`architecture/data-fetching.md`](./architecture/data-fetching.md)
 - [`architecture/auth-session-bootstrap.md`](./architecture/auth-session-bootstrap.md)
 - [`architecture/client-rehydration.md`](./architecture/client-rehydration.md)
@@ -195,6 +197,10 @@ Use the rest as specialized references:
 - [`adr/0006-isolated-local-worktree-stacks.md`](./adr/0006-isolated-local-worktree-stacks.md)
 - [`runbooks/homepage-cache-warmup.md`](./runbooks/homepage-cache-warmup.md)
 - [`runbooks/public-profile-tracking-backfill.md`](./runbooks/public-profile-tracking-backfill.md)
+- [`runbooks/content-moderation-backfill.md`](./runbooks/content-moderation-backfill.md)
+- [`runbooks/metadata-preparation.md`](./runbooks/metadata-preparation.md)
+- [`runbooks/jev-moderation-workers.md`](./runbooks/jev-moderation-workers.md) — opt-in worker rollout and operations.
+- [`runbooks/jev-moderation-evaluation.md`](./runbooks/jev-moderation-evaluation.md) — privacy-safe evaluation case schema and evidence limits.
 - [`history/implementation-history.md`](./history/implementation-history.md)
 - [`definition-of-done.md`](./definition-of-done.md)
 

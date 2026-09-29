@@ -229,6 +229,66 @@ See [`auth-session-bootstrap.md`](./auth-session-bootstrap.md).
 - Periodic refresh uses `CONTENT_REHYDRATION_POLICY`, including
   SQL-side `refresh_due_at` selection and age-band-aware logging.
 
+### Read-Only Moderation Summary
+
+Content item detail/list responses and local content summaries include a
+read-only `moderation` object with `status` and nullable `classification`.
+The API selects the latest persisted judgment by request time and id. Missing
+judgments report `missing`; persisted `pending`, `stale`, and `error` states
+never include a classification. Only completed allowlisted results map to
+`safe`, `explicit`, or `needs_review`; `unknown` remains null.
+
+This summary performs no classification or policy enforcement. The id-first
+detail response compares the judgment hash with the normalized text in the
+payload returned by that response, so a refresh cannot leave an old `safe` or
+`explicit` judgment looking current. List and local profile summaries compare
+the latest judgment with a nullable current-source hash materialized atomically
+with normalized detail writes. A missing or mismatched hash reports `stale`;
+legacy rows stay unverified until a detail refresh or a bounded local-only hash
+backfill. The backfill reads persisted Core detail and makes no provider or Jev
+calls. Run it in bounded batches:
+
+```sh
+python manage.py backfill_moderation_source_hashes --limit <positive-integer> [--after-id <non-negative-integer>]
+```
+
+Season hashes with an inherited parent-show name are recomputed when the parent
+name changes. When incremental moderation is enabled, the same detail
+transaction also inserts a durable, deduplicated moderation outbox job for the
+new hash. This request-path work is database-only; it does not wait for Jev.
+Jobs include the requested model alias and question revision in their identity,
+and obsolete queued/retry jobs are superseded. Backfill remains a separate
+operator action. The incremental worker re-checks freshness before and after
+each remote call; a database outbox cannot guarantee exactly-once Jev delivery
+after an ambiguous timeout or process crash.
+
+The bounded Core management command consumes only these incremental outbox
+jobs; it does not scan or backfill existing content:
+
+```sh
+python manage.py run_moderation_worker --once --batch-size 10
+```
+
+The worker claims ready rows under short database leases (`skip_locked` on
+PostgreSQL), closes the claim transaction before classification, rechecks the
+persisted source hash, and fences completion with the lease token. Current
+successful judgments are reused, including the `jev-latest` requested-model
+alias. Only pre-send configuration failures and definitive rate-limit
+responses are retried with bounded exponential backoff and a finite attempt
+limit. Timeouts, unexpected failures, and expired leases become
+`outcome_unknown`; operators must reconcile these before any manual retry.
+Logs contain aggregate outcome counts, duration, and bounded error codes, not
+content state, provider payloads, or credentials. Classification stays off the
+detail request path. Local Compose exposes both workers only through its
+non-default `moderation` profile; ordinary `make up` does not start them, and
+neither process runs a catalog backfill. Production worker configuration is
+still an external setup gate; no checked-in Dokploy manifest or live deployment
+state is available.
+
+See [`../runbooks/jev-moderation-workers.md`](../runbooks/jev-moderation-workers.md)
+for migration ordering, opt-in startup, monitoring, backfill separation, and
+rollback controls.
+
 See [`content-lifecycle.md`](./content-lifecycle.md).
 Discovery filtering is defined in
 [`content-eligibility.md`](./content-eligibility.md).

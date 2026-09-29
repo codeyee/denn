@@ -15,6 +15,13 @@ refreshed inside the system today.
 - Bulk identity resolution does not accept provider metadata as a
   trusted write. A new item's detail is materialized only through the
   canonical server-side `core` -> `proxy` path.
+- Identity resolution records bounded, deduplicated
+  `ContentMetadataPreparationJob` intent only when the identity has no
+  normalized type-specific detail. This is asynchronous intent, not a provider
+  request; caller-supplied `source_data` is ignored. A rotating cursor admits
+  work fairly up to a 1,000 active-job backlog cap. Known detail is not fetched
+  again merely because its moderation hash is null; legacy hash backfill is a
+  separate operator action.
 - The legacy external triple route still exists only as a compatibility
   shim toward the internal id route.
 
@@ -82,6 +89,19 @@ operation; fresh and stale local reads add none synchronously.
 
 Operational runbook:
 [`../runbooks/rehydrate-content.md`](../runbooks/rehydrate-content.md)
+
+Homepage-only identities enter the Core metadata-preparation queue at
+resolution time. `run_metadata_preparation_worker` claims a bounded batch,
+releases its PostgreSQL row locks, then fetches through the canonical Core ->
+Proxy source-data orchestrator. That orchestrator persists through normalized
+detail writers, which also refresh the moderation source hash and enqueue
+classification work when enabled. The worker has bounded retries and lease
+fencing; it performs no startup scan or legacy backfill. The 1,000-active-job
+admission cap can leave candidates unqueued while saturated; a later identity
+resolution request can admit them after capacity returns.
+
+Operational procedure:
+[`../runbooks/metadata-preparation.md`](../runbooks/metadata-preparation.md)
 
 ## Browse Metadata
 

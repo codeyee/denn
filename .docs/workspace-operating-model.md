@@ -91,6 +91,9 @@ Tags are per app and include `latest` plus a short SHA tag.
   - `make local-up INSTANCE=<id> WEB_PORT=<port>`
   - `make local-down INSTANCE=<id>` / `make local-destroy INSTANCE=<id>`
   - `make local-status INSTANCE=<id>` / `make local-logs INSTANCE=<id>`
+  - Jev workers remain opt-in through `make local-worker-start SERVICE=...`;
+    ordinary `make up` excludes them. See
+    `.docs/runbooks/jev-moderation-workers.md` before starting one.
   - `make local-smoke INSTANCE=<id>` / `make local-browser INSTANCE=<id>`
   - `make restart-web` / `make restart-core` / `make restart-proxy`
 - A validated local PostgreSQL dump can be restored into one instance with
