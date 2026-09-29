@@ -44,17 +44,24 @@ the stored payload without new inference.
 
 **Asynchronous classification.** A normalized detail write stores the current
 source hash and, in the same transaction, coalesces a row in the
-`content_moderation_job` outbox. Identity resolution can also enqueue a bounded
-`content_metadata_preparation_job` for homepage items with no normalized
-detail. Each queue is drained by its own bounded management command
-(`run_moderation_worker`, `run_metadata_preparation_worker`). Run one instance
-of each until multi-instance concurrency and persistence fencing are validated
-on PostgreSQL. A request never waits on Jev, and classification failure never
-fails ingestion.
+`content_moderation_job` outbox. Identity resolution keeps that pipeline
+supplied without operator action, only while classification is enabled: it
+enqueues a bounded `content_metadata_preparation_job` for items with no
+normalized detail or with detail but no current source hash, and one
+`content_moderation_job` for items that have detail and a hash but no current
+judgment. The moderation admission is bulk, never per item: at most one read of
+existing job identities, one read of current judgments, and one
+`bulk_create(..., ignore_conflicts=True)`. An existing job of any status blocks
+a new one, so a failed or `outcome_unknown` job is never re-sent to Jev. Each
+queue is drained by its own bounded management command (`run_moderation_worker`,
+`run_metadata_preparation_worker`). Run one instance of each until
+multi-instance concurrency and persistence fencing are validated on PostgreSQL.
+A request never waits on Jev, and classification failure never fails ingestion.
 
-**Separate manual backfill.** Existing rows are classified only by the manual,
-resumable `backfill_content_moderation` command, which requires
-`--confirm-live` and a positive `--limit`. Startup never scans the catalog.
+**Separate manual backfill.** Beyond the items the resolver admits, existing
+rows are classified only by the manual, resumable
+`backfill_content_moderation` command, which requires `--confirm-live` and a
+positive `--limit`. Startup never scans the catalog.
 
 **One wire attempt.** The adapter builds the SDK client with
 `RetryPolicy(max_retries=0)`. Timeouts and unexpected failures become
@@ -68,16 +75,29 @@ stay private.
 **Two Web surface rules, behind one flag.** With
 `WEB_MODERATION_VISIBILITY_ENABLED=true` (Web server only, default off):
 
-- Homepage: drop only current, complete, explicit items before the featured
-  banner and carousels are selected.
+- Homepage (strict): keep only items whose current moderation summary is
+  exactly `{status: "complete", classification: "safe"}`. Explicit,
+  `needs_review`, pending, stale, missing, error, malformed, and unresolved
+  items are all excluded before the featured banner and carousels are
+  selected. Web resolves identities and summaries once, in bulk, on the same
+  path for SSR and the `/api/proxy/homepage` BFF.
 - Detail: blur current, complete, explicit artwork unless the viewer has
   `allow_adult_content=true`. A local reveal control does not change the
   saved preference.
 
-**Product decision (user, 2026-09).** Pending, stale, missing, unknown, and
-`needs_review` items stay visible on the homepage and are not blurred on
-detail. There is no placeholder in v1. Blur is presentation, not access
-control: image URLs remain reachable.
+**Product decision (maintainer, 2026-09, revised).** The homepage is strict: it
+shows only currently classified-safe items. This supersedes the earlier choice
+to show unclassified items there. Search, Browse, lists, profiles, and detail
+remain visible regardless of moderation state, `needs_review` is not blurred,
+and there is no placeholder in v1. Blur is presentation, not access control:
+image URLs remain reachable.
+
+**Self-healing strict homepage.** A strict homepage would stay thin until
+someone classified its candidates, so the bulk resolver admits the missing
+preparation and classification work itself (see Asynchronous classification).
+New candidates become eligible within worker polling time, with no operator
+action. Web has no separate admission path: the resolver stays the single
+owner of identity and work admission.
 
 ## Consequences
 
@@ -86,10 +106,17 @@ control: image URLs remain reachable.
 - Core classification and Web visibility are independent flags. Enabling
   `MODERATION_CLASSIFICATION_ENABLED` does not change what viewers see, and
   rollback is turning the Web flag off first.
-- Items without a fresh judgment are shown until classified, so a first-visit
-  window exists after activation or a source change.
+- A strict homepage can be thin, or empty in a category, while classification
+  catches up after activation, a source change, or a model or question-revision
+  bump. The UI shows no banner and no empty carousel in that case instead of a
+  placeholder.
+- The resolver admits classification work for every resolved item, including
+  search and Browse results, so those items are classified without a
+  separate scan. Admission is bounded per request (at most 200 items) and by
+  identity dedupe, but there is no global cap on queued moderation jobs; the
+  worker bounds are the only spend control.
 - Proxy's 5-minute homepage candidate cache and Web's 5-minute query
-  `staleTime` delay homepage removal after a new explicit judgment.
+  `staleTime` delay homepage changes after a new judgment.
 - The worker bounds are per process, not a global provider-call or cost cap.
 - Admin review, manual classification, and non-homepage surfaces for
   `needs_review` are deferred (see issue
@@ -110,4 +137,12 @@ control: image URLs remain reachable.
   detail latency and availability to a remote model.
 - **Keyword filtering.** Rejected: brittle and without multilingual judgment.
   A lexicon is used only to enrich evaluation samples, never as a classifier.
-- **Hide everything unclassified.** Rejected for v1 by product decision.
+- **Show unclassified homepage items until classified.** Chosen earlier in v1
+  and superseded: it let unclassified explicit content reach the banner during
+  the first-visit window.
+- **Hide everything unclassified on every surface.** Rejected: only the
+  homepage, an automatic-discovery surface, is strict. Search, Browse, lists,
+  profiles, and detail stay visible.
+- **Classify homepage candidates only with the manual backfill.** Rejected for
+  the strict homepage: it would require operator action for every new
+  candidate. The manual backfill remains for the initial legacy catalog.

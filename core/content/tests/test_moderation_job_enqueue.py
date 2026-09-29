@@ -1,15 +1,25 @@
 """Atomic outbox creation for persisted normalized moderation inputs."""
-from django.db import IntegrityError, transaction
+from django.contrib.auth import get_user_model
+from django.db import IntegrityError, connection, transaction
 from django.test import TestCase, override_settings
+from django.test.utils import CaptureQueriesContext
+from django.urls import reverse
+from django.utils import timezone
+from rest_framework.test import APITestCase
 
 from content.models import (
     ContentItem,
+    ContentMetadataPreparationCursor,
+    ContentMetadataPreparationJob,
     ContentModerationJob,
     ContentModerationJudgment,
     SeasonDetail,
 )
 from content.services.local_content_store import ensure_content_detail
-from content.services.moderation_job_enqueue import enqueue_current_moderation_job
+from content.services.moderation_job_enqueue import (
+    enqueue_current_moderation_job,
+    enqueue_missing_moderation_jobs,
+)
 from content.tests.fixtures.payloads import MOVIE_MEMENTO, SEASON_DEMON_SLAYER_S01, TV_DEMON_SLAYER
 
 
@@ -201,3 +211,182 @@ class ModerationJobEnqueueTests(TestCase):
                 source_data_hash=season.current_moderation_source_hash,
             ).exists()
         )
+
+
+class BulkResolveModerationAdmissionTests(APITestCase):
+    """The strict homepage heals through the bulk resolver, never per item."""
+
+    def setUp(self):
+        ContentMetadataPreparationCursor.objects.get_or_create(pk=1)
+        self.client.force_authenticate(
+            user=get_user_model().objects.create_user(username='resolver', password='p'),
+        )
+        self.url = reverse('content:content-resolve-ids')
+
+    def prepared_item(self, suffix):
+        item = ContentItem.objects.create(
+            source_api=ContentItem.SourceAPI.TMDB,
+            external_id=f'resolver-admission-{suffix}',
+            content_type=ContentItem.ContentType.MOVIE,
+        )
+        with override_settings(MODERATION_CLASSIFICATION_ENABLED=False):
+            ensure_content_detail(item, payload=MOVIE_MEMENTO, force=True)
+        item.refresh_from_db()
+        self.assertTrue(item.current_moderation_source_hash)
+        self.assertFalse(ContentModerationJob.objects.filter(content_item=item).exists())
+        return item
+
+    def resolve(self, *items):
+        response = self.client.post(
+            self.url,
+            {'items': [{
+                'source_api': item.source_api,
+                'external_id': item.external_id,
+                'content_type': item.content_type,
+            } for item in items]},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 200)
+        return response
+
+    def job_statements(self, *items):
+        with CaptureQueriesContext(connection) as captured:
+            self.resolve(*items)
+        return [
+            query['sql'] for query in captured.captured_queries
+            if 'content_moderation_job' in query['sql'].lower()
+        ]
+
+    @override_settings(MODERATION_CLASSIFICATION_ENABLED=False)
+    def test_disabled_classification_writes_and_reads_nothing(self):
+        item = self.prepared_item('disabled')
+        legacy = self.prepared_item('disabled-legacy')
+        ContentItem.objects.filter(pk=legacy.pk).update(current_moderation_source_hash=None)
+
+        self.assertEqual(self.job_statements(item, legacy), [])
+        self.assertFalse(ContentModerationJob.objects.exists())
+        self.assertFalse(ContentMetadataPreparationJob.objects.exists())
+        with self.assertNumQueries(0):
+            self.assertEqual(enqueue_missing_moderation_jobs([item]), 0)
+
+    @ENABLED
+    def test_missing_detail_admits_preparation_only(self):
+        item = ContentItem.objects.create(
+            source_api=ContentItem.SourceAPI.TMDB,
+            external_id='resolver-admission-no-detail',
+            content_type=ContentItem.ContentType.MOVIE,
+        )
+
+        self.resolve(item)
+
+        self.assertTrue(ContentMetadataPreparationJob.objects.filter(content_item=item).exists())
+        self.assertFalse(ContentModerationJob.objects.exists())
+
+    @ENABLED
+    def test_detail_without_current_hash_admits_preparation_only(self):
+        item = self.prepared_item('null-hash')
+        ContentItem.objects.filter(pk=item.pk).update(current_moderation_source_hash=None)
+
+        self.resolve(item)
+
+        self.assertTrue(ContentMetadataPreparationJob.objects.filter(content_item=item).exists())
+        self.assertFalse(ContentModerationJob.objects.exists())
+
+    @ENABLED
+    def test_hash_without_judgment_queues_exactly_one_job_and_repeats_are_idempotent(self):
+        item = self.prepared_item('unjudged')
+
+        self.resolve(item)
+        self.resolve(item)
+
+        job = ContentModerationJob.objects.get(content_item=item)
+        self.assertEqual(job.status, ContentModerationJob.Status.QUEUED)
+        self.assertEqual(job.source_data_hash, item.current_moderation_source_hash)
+        self.assertEqual((job.requested_model, job.question_revision), ('jev-latest', 'q3'))
+        self.assertFalse(ContentMetadataPreparationJob.objects.filter(content_item=item).exists())
+
+    @ENABLED
+    def test_current_successful_judgment_queues_nothing(self):
+        item = self.prepared_item('judged')
+        ContentModerationJudgment.objects.create(
+            content_item=item,
+            source_data_hash=item.current_moderation_source_hash,
+            model_name='jev-1.13.0',
+            question_revision='q3',
+            status=ContentModerationJudgment.Status.COMPLETE,
+            classification=ContentModerationJudgment.Classification.SAFE,
+            payload={'requested_model': 'jev-latest'},
+        )
+
+        self.resolve(item)
+
+        self.assertFalse(ContentModerationJob.objects.exists())
+
+    @ENABLED
+    def test_judgment_for_another_question_revision_is_not_current(self):
+        item = self.prepared_item('older-revision')
+        ContentModerationJudgment.objects.create(
+            content_item=item,
+            source_data_hash=item.current_moderation_source_hash,
+            model_name='jev-1.13.0',
+            question_revision='q2',
+            status=ContentModerationJudgment.Status.COMPLETE,
+            classification=ContentModerationJudgment.Classification.SAFE,
+            payload={'requested_model': 'jev-latest'},
+        )
+
+        self.resolve(item)
+
+        self.assertEqual(ContentModerationJob.objects.filter(content_item=item).count(), 1)
+
+    @ENABLED
+    def test_existing_job_identity_is_never_requeued_in_any_status(self):
+        for status in (
+            ContentModerationJob.Status.FAILED,
+            ContentModerationJob.Status.OUTCOME_UNKNOWN,
+            ContentModerationJob.Status.DONE,
+            ContentModerationJob.Status.SUPERSEDED,
+        ):
+            with self.subTest(status=status):
+                item = self.prepared_item(f'existing-{status}')
+                job = ContentModerationJob.objects.create(
+                    content_item=item,
+                    source_data_hash=item.current_moderation_source_hash,
+                    requested_model='jev-latest',
+                    question_revision='q3',
+                    status=status,
+                    available_at=timezone.now(),
+                )
+
+                self.resolve(item)
+
+                job.refresh_from_db()
+                self.assertEqual(job.status, status)
+                self.assertEqual(ContentModerationJob.objects.filter(content_item=item).count(), 1)
+
+    @ENABLED
+    def test_changed_hash_queues_a_new_identity(self):
+        item = self.prepared_item('changed')
+        self.resolve(item)
+        ContentItem.objects.filter(pk=item.pk).update(current_moderation_source_hash='changed-hash')
+
+        self.resolve(item)
+
+        self.assertEqual(
+            set(ContentModerationJob.objects.filter(content_item=item).values_list(
+                'source_data_hash', flat=True,
+            )),
+            {item.current_moderation_source_hash, 'changed-hash'},
+        )
+
+    @ENABLED
+    def test_admission_query_budget_does_not_depend_on_item_count(self):
+        single = self.job_statements(self.prepared_item('budget-single'))
+        many = self.job_statements(*[self.prepared_item(f'budget-{index}') for index in range(8)])
+
+        self.assertEqual(len(single), len(many))
+        self.assertEqual(
+            sorted(sql.split(None, 1)[0].upper() for sql in many),
+            ['INSERT', 'SELECT'],
+        )
+        self.assertEqual(ContentModerationJob.objects.count(), 9)

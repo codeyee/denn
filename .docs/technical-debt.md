@@ -26,11 +26,15 @@ their lasting outcome is reflected in architecture or history docs.
   concurrency and persistence fencing on PostgreSQL; run one replica of
   each. Their per-process batch and polling bounds are not a global
   provider-call or cost cap.
-- Homepage items without a fresh moderation judgment are shown until they
-  are classified, so a first-visit window exists after activation or a
-  source change.
+- A strict homepage can be thin while classification catches up. Only
+  current `complete`/`safe` items are shown, so after activation, a source
+  change, or a model or question-revision bump a category can be short or
+  empty until the workers classify its candidates. The bulk resolver admits
+  that work itself, but its speed is bounded by worker polling and the
+  single-replica worker limit, and there is no global cap on queued
+  moderation jobs.
 - Proxy's 5-minute homepage candidate cache and Web's 5-minute query stale
-  time delay homepage removal after a new explicit judgment.
+  time delay homepage changes after a new judgment.
 
 ## Medium
 

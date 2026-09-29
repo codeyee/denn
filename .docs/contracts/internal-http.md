@@ -310,18 +310,23 @@ resolve discovery results to internal ids before rendering links.
   `moderation` object with `status` and `classification`. Core validates
   freshness against its server-materialized current-source hash; caller-
   supplied metadata cannot establish judgment freshness.
-- Unknown, missing, stale, pending, and needs-review summaries remain visible
-  to the caller. Only `safe`, `explicit`, and `needs_review` are public
-  classifications. Hashes, model output, payloads, and error details are
+- Unknown, missing, stale, pending, and needs-review summaries are returned
+  to the caller unchanged; consumers decide visibility (the Web homepage keeps
+  only current `complete`/`safe`). Only `safe`, `explicit`, and `needs_review`
+  are public classifications. Hashes, model output, payloads, and error details are
   never included. A completed judgment with an unknown classification is
   represented as `complete` with a null classification.
 - New detail is materialized later through the trusted `core` -> `proxy`
   path; the bulk endpoint does not synchronously fetch provider data. It
   records a durable metadata-preparation job for identities with no normalized
-  detail, up to a 1,000-job active backlog cap. Admission rotates through
-  repeated request candidates as capacity returns. A known normalized detail
-  row is not fetched again only because its moderation source hash is null;
-  legacy hash backfill remains an operator action. Caller-supplied
+  detail, or with detail but no current moderation source hash, up to a
+  1,000-job active backlog cap, only while Core classification is enabled.
+  Admission rotates through repeated request candidates as capacity returns.
+  A known normalized detail row is not fetched again for a null hash: the
+  worker recomputes it locally. For items with detail and a hash but no current
+  judgment, the endpoint also queues one moderation job in bulk, deduplicated
+  by job identity in any status, so failed or `outcome_unknown` jobs are never
+  re-queued by a request. Caller-supplied
   `source_data` remains untrusted and is never persisted. A separate bounded
   Core metadata-preparation worker drains admitted jobs through the canonical
   Core -> Proxy orchestrator; request handling itself makes no provider call.

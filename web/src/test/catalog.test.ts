@@ -8,6 +8,7 @@ import {
   ContentType,
   type HomepageResponse,
   type MovieDetail,
+  type TVShowDetail,
 } from "@/lib/types";
 
 const requestId = "homepage-moderation-test";
@@ -18,7 +19,7 @@ describe("homepage moderation resolution", () => {
     vi.unstubAllEnvs();
   });
 
-  it("resolves once, removes only current explicit items, and keeps remaining statuses and order", async () => {
+  it("resolves once and keeps only current safe items in their original order", async () => {
     vi.stubEnv("WEB_MODERATION_VISIBILITY_ENABLED", "true");
     vi.stubEnv("PROXY_API_KEY", "test-key");
     const fetchMock = vi.fn().mockResolvedValue(
@@ -61,23 +62,9 @@ describe("homepage moderation resolution", () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock.mock.calls[0]?.[0]).toContain("/content/resolve-ids/?country=CO");
-    expect(response.movies.results.map((item) => item.id)).toEqual([
-      "safe",
-      "review",
-      "pending",
-      "stale",
-      "missing",
-      "malformed",
-      "unresolved",
-    ]);
+    expect(response.movies.results.map((item) => item.id)).toEqual(["safe"]);
     expect(response.movies.results.map((item) => item.moderation)).toEqual([
       { status: "complete", classification: "safe" },
-      { status: "complete", classification: "needs_review" },
-      { status: "pending", classification: null },
-      { status: "stale", classification: null },
-      { status: "missing", classification: null },
-      { status: "complete", classification: "unknown" },
-      undefined,
     ]);
     expect(response.movies.results[0]?.denn_id).toBe(2);
 
@@ -88,10 +75,65 @@ describe("homepage moderation resolution", () => {
       music: [],
     }));
     const featuredIds = featured.result.current.featuredItems.map((item) => item.id);
-    expect(featuredIds).not.toContain("explicit");
-    expect(featuredIds.every((id) =>
-      response.movies.results.some((item) => item.id === id),
-    )).toBe(true);
+    expect(featuredIds).toEqual(["safe"]);
+  });
+
+  it("filters every category and preserves paging metadata when nothing is safe", async () => {
+    vi.stubEnv("WEB_MODERATION_VISIBILITY_ENABLED", "true");
+    vi.stubEnv("PROXY_API_KEY", "test-key");
+    const fetchMock = vi.fn().mockResolvedValue(
+      Response.json({
+        results: [
+          resolved(1, "explicit", ContentType.MOVIE, "complete", "explicit"),
+          resolved(2, "pending", ContentType.MOVIE, "pending", null),
+          resolved(3, "show-review", ContentType.TV_SHOW, "complete", "needs_review"),
+        ],
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const source = homepage([
+      ["explicit", "Explicit"],
+      ["pending", "Pending"],
+    ]);
+    source["tv-shows"] = {
+      ...source["tv-shows"],
+      results: [tvShow("show-review", "Show under review")],
+    };
+
+    const response = await resolveHomepageContentIds(source, null, requestId);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    for (const category of Object.values(response)) {
+      expect(category.results).toEqual([]);
+      expect(category.metadata).toEqual(source.games.metadata);
+    }
+    const featured = renderHook(() => useFeaturedItems({
+      movies: response.movies.results,
+      tvShows: response["tv-shows"].results,
+      games: response.games.results,
+      music: response.albums.results,
+    }));
+    expect(featured.result.current.featuredItems).toEqual([]);
+  });
+
+  it("keeps safe items across categories and drops items Core did not resolve", async () => {
+    vi.stubEnv("WEB_MODERATION_VISIBILITY_ENABLED", "true");
+    vi.stubEnv("PROXY_API_KEY", "test-key");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(
+      Response.json({
+        results: [resolved(9, "safe-show", ContentType.TV_SHOW, "complete", "safe")],
+      }),
+    ));
+    const source = homepage([["movie-without-identity", "No identity"]]);
+    source["tv-shows"] = {
+      ...source["tv-shows"],
+      results: [tvShow("safe-show", "Safe show")],
+    };
+
+    const response = await resolveHomepageContentIds(source, null, requestId);
+
+    expect(response.movies.results).toEqual([]);
+    expect(response["tv-shows"].results.map((item) => item.id)).toEqual(["safe-show"]);
   });
 
   it("keeps homepage moderation off by default and does not attach moderation summaries", async () => {
@@ -171,6 +213,27 @@ function homepage(
     games: empty,
     albums: empty,
     books: empty,
+  };
+}
+
+function tvShow(id: string, title: string): TVShowDetail {
+  return {
+    id,
+    type: "TV_SHOW",
+    title,
+    original_title: title,
+    description: null,
+    image_url: null,
+    tagline: null,
+    imdb_id: null,
+    release_date: null,
+    status: null,
+    number_of_seasons: null,
+    number_of_episodes: null,
+    authors: null,
+    images: [],
+    platforms: null,
+    seasons: [],
   };
 }
 

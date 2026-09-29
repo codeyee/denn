@@ -79,12 +79,15 @@ considered part of the project baseline.
   `MODERATION_CLASSIFICATION_ENABLED` (Core; exactly `True`) enables
   classification through the outbox and workers, and
   `WEB_MODERATION_VISIBILITY_ENABLED` (Web server; `true`) enables Web
-  behavior. When the Web flag is on, the homepage drops only current complete
-  explicit items before banner and carousel selection, and detail blurs current
-  complete explicit artwork unless `allow_adult_content` is true, with a local
-  reveal. Pending, stale, missing, unknown, and `needs_review` items stay
-  visible and unblurred. The TMDB adult flag is an authoritative override.
-  Search results do not use Jev. Activation steps are in the
+  behavior. When the Web flag is on, the homepage is strict: it keeps only
+  items whose current summary is exactly complete and safe before banner and
+  carousel selection, and detail blurs current complete explicit artwork unless
+  `allow_adult_content` is true, with a local reveal. Detail, search, Browse,
+  lists, and profiles stay visible, and `needs_review` is not blurred. With
+  classification enabled, the bulk identity resolver admits the missing
+  preparation and classification work so the strict homepage heals itself. The
+  TMDB adult flag is an authoritative override. Search results do not call
+  Jev at request time. Activation steps are in the
   [worker runbook](../runbooks/jev-moderation-workers.md).
 
 ## Platform Foundations
