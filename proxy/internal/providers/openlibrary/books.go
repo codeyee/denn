@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/codeyee/denn-proxy/internal/clients"
 	servicecommon "github.com/codeyee/denn-proxy/internal/services/common"
@@ -27,14 +28,19 @@ func (c *Client) SearchBooks(ctx context.Context, query string, page, limit int)
 }
 
 func (c *Client) GetBook(ctx context.Context, bookID string) (*clients.Response, error) {
+	workID := strings.TrimPrefix(bookID, "/works/")
 	params := url.Values{
-		"q":      {bookID},
+		// OpenLibrary search no longer matches a bare work id in `q`; the
+		// explicit key field returns exactly that work.
+		"q":      {"key:/works/" + workID},
 		"limit":  {"1"},
 		"fields": {"*"},
 	}
 
-	return c.CachedGet(ctx, "search.json", "ol_details", params, map[string]string{
-		"book_id": bookID,
+	// A new cache namespace keeps empty results cached by the old query from
+	// being served as not-found.
+	return c.CachedGet(ctx, "search.json", "ol_work_details", params, map[string]string{
+		"book_id": workID,
 	})
 }
 

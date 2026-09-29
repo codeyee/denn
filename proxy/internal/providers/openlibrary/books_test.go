@@ -15,9 +15,11 @@ import (
 type MockRoundTripper struct {
 	Response *http.Response
 	Err      error
+	Request  *http.Request
 }
 
 func (m *MockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	m.Request = req
 	return m.Response, m.Err
 }
 
@@ -120,6 +122,9 @@ func TestGetBook(t *testing.T) {
 
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("Expected status 200, got %d", resp.StatusCode)
+	}
+	if got := mockTransport.Request.URL.Query().Get("q"); got != "key:/works/OL123W" {
+		t.Errorf("Expected work key query, got %q", got)
 	}
 }
 
