@@ -1,8 +1,8 @@
 import {
   applyResolvedContentIds,
-  applyHomepageModerationPolicy,
   collectContentIdentities,
   isBrowseResponse,
+  keepOnlyCurrentSafeHomepageItems,
   type CatalogResponse,
   type ResolvedContentIdentity,
 } from "@/lib/api/contentResolution";
@@ -15,7 +15,7 @@ export async function resolveCatalogContentIds<T extends CatalogResponse>(
   response: T,
   country: string | null,
   requestId: string,
-  options: { suppressCurrentExplicit?: boolean } = {},
+  options: { moderation?: "keepOnlyCurrentSafe" } = {},
 ): Promise<T> {
   const items = collectContentIdentities(response);
   if (items.length === 0) return response;
@@ -71,8 +71,8 @@ export async function resolveCatalogContentIds<T extends CatalogResponse>(
     }),
   );
 
-  if (options.suppressCurrentExplicit && !isBrowseResponse(resolvedResponse)) {
-    return applyHomepageModerationPolicy(
+  if (options.moderation === "keepOnlyCurrentSafe" && !isBrowseResponse(resolvedResponse)) {
+    return keepOnlyCurrentSafeHomepageItems(
       resolvedResponse as HomepageResponse,
       resolved.results,
     ) as T;
@@ -95,6 +95,6 @@ export function resolveHomepageContentIds(
   moderationVisibilityEnabled = isWebModerationVisibilityEnabled(),
 ): Promise<HomepageResponse> {
   return resolveCatalogContentIds(response, country, requestId, {
-    suppressCurrentExplicit: moderationVisibilityEnabled,
+    moderation: moderationVisibilityEnabled ? "keepOnlyCurrentSafe" : undefined,
   });
 }

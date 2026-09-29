@@ -1,6 +1,8 @@
 """Create durable moderation outbox rows inside normalized-detail writes."""
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 from django.conf import settings
 from django.db import connection
 from django.db.models import Q
@@ -11,6 +13,14 @@ from content.models import ContentItem, ContentModerationJob, ContentModerationJ
 
 PROVIDER_RULE_MODEL = 'provider-rule:v1'
 REQUEUEABLE_STATUSES = (ContentModerationJob.Status.QUEUED, ContentModerationJob.Status.RETRY)
+
+
+def _matches_requested_model(requested_model: str) -> Q:
+    return (
+        Q(model_name=requested_model)
+        | Q(payload__requested_model=requested_model)
+        | Q(model_name=PROVIDER_RULE_MODEL)
+    )
 
 
 def enqueue_current_moderation_job(
@@ -63,11 +73,7 @@ def enqueue_current_moderation_job(
         source_data_hash=source_data_hash,
         question_revision=question_revision,
         status=ContentModerationJudgment.Status.COMPLETE,
-    ).filter(
-        Q(model_name=requested_model)
-        | Q(payload__requested_model=requested_model)
-        | Q(model_name=PROVIDER_RULE_MODEL)
-    ).exists()
+    ).filter(_matches_requested_model(requested_model)).exists()
 
     identity = {
         'content_item': content_item,
@@ -114,3 +120,72 @@ def enqueue_current_moderation_job(
             )
         )
     return job
+
+
+def enqueue_missing_moderation_jobs(content_items: Sequence[ContentItem]) -> int:
+    """Admit one queued job for each resolved item that lacks current work.
+
+    Callers pass items that have normalized detail, annotated by
+    `with_moderation_summary`. An item is skipped when a successful judgment
+    exists for the current identity or when a job with that exact identity
+    exists in any status. That dedupe keeps a failed or outcome_unknown job
+    from becoming a second Jev call, so this path never revives one. Cost is at
+    most two reads and one insert however many items are passed. Detail
+    completeness is not required because the moderation input is text-only and
+    the worker re-checks hash freshness before any remote call.
+    """
+    requested_model = settings.MODERATION_MODEL
+    question_revision = settings.MODERATION_QUESTION_REVISION
+    if (
+        settings.MODERATION_CLASSIFICATION_ENABLED is not True
+        or not requested_model
+        or not question_revision
+    ):
+        return 0
+
+    current_hashes = {
+        item.pk: item.current_moderation_source_hash
+        for item in content_items
+        if item.current_moderation_source_hash
+    }
+    if not current_hashes:
+        return 0
+
+    judged_ids = [
+        item.pk for item in content_items
+        if item.pk in current_hashes and item.moderation_has_judgment
+    ]
+    settled = set(
+        ContentModerationJob.objects.filter(
+            content_item_id__in=current_hashes,
+            requested_model=requested_model,
+            question_revision=question_revision,
+        ).values_list('content_item_id', 'source_data_hash')
+    )
+    if judged_ids:
+        settled.update(
+            ContentModerationJudgment.objects.filter(
+                content_item_id__in=judged_ids,
+                question_revision=question_revision,
+                status=ContentModerationJudgment.Status.COMPLETE,
+            ).filter(_matches_requested_model(requested_model)).values_list(
+                'content_item_id', 'source_data_hash',
+            )
+        )
+
+    now = timezone.now()
+    missing = [
+        ContentModerationJob(
+            content_item_id=item_id,
+            source_data_hash=source_hash,
+            requested_model=requested_model,
+            question_revision=question_revision,
+            status=ContentModerationJob.Status.QUEUED,
+            available_at=now,
+        )
+        for item_id, source_hash in current_hashes.items()
+        if (item_id, source_hash) not in settled
+    ]
+    if missing:
+        ContentModerationJob.objects.bulk_create(missing, ignore_conflicts=True)
+    return len(missing)

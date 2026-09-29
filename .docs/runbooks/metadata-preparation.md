@@ -8,7 +8,11 @@ the Jev moderation worker.
 
 - The resolver only records bounded intent, and only when
   `MODERATION_CLASSIFICATION_ENABLED` is true; with the default-off flag it
-  admits no jobs and takes no cursor lock. It does not call Proxy or Jev.
+  admits no jobs and takes no cursor lock. It does not call Proxy or Jev. It
+  admits an identity here when normalized detail is absent, or when detail
+  exists but the current moderation source hash is null (a legacy row). In the
+  same request it also queues one moderation job, in bulk and deduplicated by
+  identity, for items that have detail and a hash but no current judgment.
 - This command processes queued preparation jobs only. It does not scan old
   `ContentItem` rows, backfill legacy detail, or alter moderation policy.
 - Jobs with existing type-specific detail finish without a Proxy request,

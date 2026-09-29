@@ -71,10 +71,11 @@ discovery browse request.
   Core identity-resolution step before homepage data feeds the featured banner
   or carousels. The browser does not call Core for individual cards and does
   not receive the proxy API key.
-- Remove an item only when Core's current summary is exactly
-  `status=complete` and `classification=explicit`. Preserve every other
-  returned status, including `needs_review`, `pending`, `stale`, and `missing`;
-  absent or malformed summaries remain visible and are not treated as safe.
+- The homepage is strict: keep an item only when Core's current summary is
+  exactly `status=complete` and `classification=safe`. Explicit,
+  `needs_review`, `pending`, `stale`, `missing`, `error`, and `complete` with a
+  null classification are excluded, as are absent, malformed, and unresolved
+  summaries. Ordering of the remaining items is preserved.
 - Core resolution is fetched without HTTP caching, but freshness is bounded by
   the existing caches around it: the proxy homepage feed can be 5 minutes fresh
   or up to 30 minutes stale, and the hydrated Web suggestions query uses a
@@ -83,22 +84,32 @@ discovery browse request.
   until the query becomes stale and revalidates.
 - Core materializes the current moderation-source hash with normalized detail
   writes and compares the latest judgment against it when returning the bulk
-  summary. Identity resolution can also enqueue missing-detail metadata work;
-  the Core metadata-preparation worker and moderation outbox worker are
-  implemented as management commands, but no deployed or otherwise wired
-  worker process is established by this code change. The bounds are per
+  summary. The strict homepage heals itself without operator action, only
+  while Core classification is enabled: the bulk resolver enqueues
+  metadata-preparation work for items with no normalized detail or with detail
+  but no current hash (the preparation worker recomputes the hash and enqueues
+  classification), and one queued moderation job for items that have detail and
+  a hash but no current judgment. Admission is bulk and deduplicated by job
+  identity in any status, so a failed or `outcome_unknown` job is never
+  re-queued by a homepage visit. New candidates become eligible within worker
+  polling time. The Core metadata-preparation worker and moderation outbox
+  worker are implemented as management commands, but no deployed or otherwise
+  wired worker process is established by this code change. The bounds are per
   process, not a global provider-call cap; first rollout should use one
   instance of each worker until multi-instance concurrency and persistence
   fencing are validated.
 - Homepage filtering happens before the featured banner and carousels are
-  selected. Only a fresh `complete`/`explicit` summary is removed. Unknown,
-  pending, stale, missing, malformed, and `needs_review` summaries remain
-  visible; this current behavior does not settle whether the product should
-  hide items whose moderation result is unavailable.
+  selected, so both draw only from currently safe items. A strict homepage can
+  be thin while classification catches up. A category with no remaining items
+  renders no carousel, and with nothing left to feature the page renders no
+  banner and no loading skeleton; the existing empty state still applies when
+  every section is empty.
 - This homepage discovery rule does not hide direct detail, search, or Browse
   results. Detail pages apply a separate visual-artwork rule below and use the
   existing user preference; neither rule implies that a source-code change
-  has been deployed.
+  has been deployed. Enable the Web flag only after the workers are running and
+  the homepage candidates are classified; see the
+  [activation checklist](../runbooks/jev-moderation-workers.md#production-activation-checklist).
 
 ## Jev Moderation on Content Detail
 

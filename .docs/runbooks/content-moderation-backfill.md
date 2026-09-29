@@ -31,7 +31,7 @@ aggregate rate/cost limit across replicas is implemented or evidenced here.
 |------|---------|
 | `TYPESAFE_API_KEY` | Server-side Jev credential; never reaches the browser |
 | `MODERATION_CLASSIFICATION_ENABLED` | Master switch; the service makes no calls while false |
-| `WEB_MODERATION_VISIBILITY_ENABLED` | Separate Web server flag for homepage explicit suppression and detail-artwork blur; defaults off |
+| `WEB_MODERATION_VISIBILITY_ENABLED` | Separate Web server flag for the strict (current safe only) homepage and detail-artwork blur; defaults off |
 | `MODERATION_MODEL` | Requested model or alias (for example `jev-latest`) |
 | `MODERATION_QUESTION_REVISION` | Pins which question wording produced a judgment |
 
@@ -169,10 +169,10 @@ jq -s '.[] | select(.event == "final_summary") | {estimated_cost_usd, input_toke
 The command observes and persists judgments; it does not itself change surface
 behavior. Web visibility uses the independent, server-only
 `WEB_MODERATION_VISIBILITY_ENABLED` flag. It defaults to `false`; when enabled,
-Web suppresses only current complete explicit homepage items and blurs explicit
+Web keeps only current complete safe items on the homepage and blurs explicit
 detail artwork unless the viewer has `allow_adult_content=true`. The preference
-does not restore homepage items, and CSS blur does not prevent direct image
-access.
+does not restore excluded homepage items, and CSS blur does not prevent direct
+image access.
 
 Neither code presence nor this runbook is evidence that the flag is enabled in
 a deployed environment. To roll back visible behavior, unset the Web flag or

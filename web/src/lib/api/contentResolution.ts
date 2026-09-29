@@ -70,10 +70,25 @@ export function applyResolvedContentIds<
   });
 }
 
-export function applyHomepageModerationPolicy(
+export function keepOnlyCurrentSafeHomepageItems(
   response: HomepageResponse,
   resolved: ResolvedContentIdentity[],
 ): HomepageResponse {
+  const withModeration = attachModerationSummaries(response, resolved);
+
+  return {
+    movies: keepOnlyCurrentSafeResults(withModeration.movies),
+    "tv-shows": keepOnlyCurrentSafeResults(withModeration["tv-shows"]),
+    games: keepOnlyCurrentSafeResults(withModeration.games),
+    albums: keepOnlyCurrentSafeResults(withModeration.albums),
+    books: keepOnlyCurrentSafeResults(withModeration.books),
+  };
+}
+
+function attachModerationSummaries<T extends CatalogResponse>(
+  response: T,
+  resolved: ResolvedContentIdentity[],
+): T {
   const summaries = new Map(
     resolved.map((item) => [
       identityKey(item.external_id, item.content_type),
@@ -81,7 +96,7 @@ export function applyHomepageModerationPolicy(
     ]),
   );
 
-  const withModeration = mapResponseItems(response, (item) => {
+  return mapResponseItems(response, (item) => {
     const contentType = normalizeContentType(item.type);
     const moderation = contentType && contentType !== ContentType.PERSON
       ? summaries.get(identityKey(String(item.id), contentType))
@@ -91,32 +106,22 @@ export function applyHomepageModerationPolicy(
     if (moderation) result.moderation = moderation;
     return result;
   });
-
-  return {
-    movies: filterCurrentExplicitResults(withModeration.movies),
-    "tv-shows": filterCurrentExplicitResults(withModeration["tv-shows"]),
-    games: filterCurrentExplicitResults(withModeration.games),
-    albums: filterCurrentExplicitResults(withModeration.albums),
-    books: filterCurrentExplicitResults(withModeration.books),
-  };
 }
 
-function filterCurrentExplicitResults<
+function keepOnlyCurrentSafeResults<
   T extends { moderation?: ModerationSummary },
   C extends { results: T[] },
 >(category: C): C {
   return {
     ...category,
-    results: category.results.filter(
-      (item) => !isCurrentExplicitModeration(item.moderation),
-    ),
+    results: category.results.filter((item) => isCurrentSafeModeration(item.moderation)),
   };
 }
 
-function isCurrentExplicitModeration(
+function isCurrentSafeModeration(
   moderation: ModerationSummary | undefined,
 ): boolean {
-  return moderation?.status === "complete" && moderation.classification === "explicit";
+  return moderation?.status === "complete" && moderation.classification === "safe";
 }
 
 function collectItems(

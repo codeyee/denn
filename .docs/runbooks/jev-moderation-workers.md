@@ -55,20 +55,34 @@ a worker, calling Jev, or running a production backfill; see the
    `--after-id <next_after_id>` from its output until `examined=0`). It
    populates missing current source hashes from local normalized detail with
    no Jev call. Without a current hash, a legacy row's judgment reads as
-   `stale`. Then classify with `python manage.py backfill_content_moderation
+   `stale`. (While classification is on, homepage resolution also admits a
+   metadata-preparation job for such a row, and the worker recomputes its
+   hash; this backfill is still the bounded way to cover the wider catalog.) Then classify with `python manage.py backfill_content_moderation
    --confirm-live --limit N` as described in the
    [content moderation backfill runbook](./content-moderation-backfill.md).
    Do this only after explicit authorization for the exact environment,
    selection, item cap, report path, and estimated cost. Start with a small
    sample and record tokens, duration, estimated cost, and bounded error IDs.
    Never infer authorization from `--confirm-live`.
-6. **Enable Web visibility last.** After the backfill sample is reviewed and
-   the release is separately approved, set
-   `WEB_MODERATION_VISIBILITY_ENABLED=true` on every Web instance and restart
-   them together. The Web server treats any value other than `true`
-   (case-insensitive, surrounding whitespace ignored) as off. Reload browser
-   clients afterward. See [Web visibility rollout and
-   rollback](#web-visibility-rollout-and-rollback).
+6. **Enable Web visibility last, once homepage candidates are classified.**
+   The homepage is strict, so it shows only currently safe items: turning the
+   Web flag on before classification has caught up leaves it thin or empty.
+   Enable it only after both workers have been running with classification on
+   and the backfill sample is reviewed. Confirm with the
+   [readiness queries](#homepage-readiness-check) that the preparation and
+   moderation queues are drained (no growing `queued`/`retry` backlog, and any
+   `failed` or `outcome_unknown` rows reconciled) and that current safe
+   judgments exist for the homepage candidates. Then, with the release
+   separately approved, set `WEB_MODERATION_VISIBILITY_ENABLED=true` on every
+   Web instance and restart them together. The Web server treats any value
+   other than `true` (case-insensitive, surrounding whitespace ignored) as off.
+   Reload browser clients afterward. See [Web visibility rollout and
+   rollback](#web-visibility-rollout-and-rollback). While classification is
+   enabled and the workers run, the homepage heals itself: each homepage
+   resolution admits preparation and classification jobs for candidates that
+   lack them, so new candidates become eligible within worker polling time
+   without operator action. It never re-queues a `failed` or `outcome_unknown`
+   job; reconcile those manually.
 7. **Rollback in reverse order.** First set `WEB_MODERATION_VISIBILITY_ENABLED`
    to `false` (or unset it) on every Web instance and restart them. Then set
    `MODERATION_CLASSIFICATION_ENABLED=False` on Core and the workers, which
@@ -82,12 +96,43 @@ production worker deployment is included in this change.
 ## Web visibility rollout and rollback
 
 `WEB_MODERATION_VISIBILITY_ENABLED` is read only by the Web server and defaults
-to `false`. When `true`, the homepage removes only current complete explicit
-items before hero and carousel selection. Detail artwork is blurred for explicit
-items unless the authenticated viewer has `allow_adult_content=true`. The
-preference changes detail artwork only; it does not restore suppressed homepage
-items. Unknown, pending, stale, incomplete, and `needs_review` summaries remain
-visible. This flag does not protect image URLs from direct access.
+to `false`. When `true`, the homepage keeps only items whose current summary is
+exactly complete and safe before hero and carousel selection; explicit,
+`needs_review`, unknown, pending, stale, missing, and unresolved items are all
+excluded. Detail artwork is blurred for explicit items unless the authenticated
+viewer has `allow_adult_content=true`. The preference changes artwork only; it
+does not restore excluded homepage items. Unknown, pending, stale, incomplete,
+and `needs_review` detail summaries remain visible and unblurred. This flag
+does not protect image URLs from direct access.
+
+### Homepage readiness check
+
+Run these read-only aggregate queries against the target database before
+enabling the Web flag. Do not select content, hashes, payloads, or tokens. Use
+your configured `MODERATION_MODEL` and `MODERATION_QUESTION_REVISION` values:
+
+```sql
+-- Jobs by state: a healthy queue drains; watch retry, failed, outcome_unknown.
+SELECT status, count(*) AS jobs FROM content_moderation_job
+WHERE requested_model = '<MODERATION_MODEL>'
+  AND question_revision = '<MODERATION_QUESTION_REVISION>'
+GROUP BY status ORDER BY status;
+
+-- Judgments by outcome for the active question revision.
+SELECT status, classification, count(*) AS judgments
+FROM content_moderation_judgment
+WHERE question_revision = '<MODERATION_QUESTION_REVISION>'
+GROUP BY status, classification ORDER BY status, classification;
+```
+
+A first readiness signal is a large `done` job count and a large
+`complete`/`safe_for_automatic_discovery` judgment count relative to the
+homepage's roughly 30 candidates per category, with `queued` and `retry`
+approaching zero. Homepage candidates rotate with the Proxy cache, so the
+counts are only a proxy: also load the homepage with the Web flag still off,
+which admits work for its current candidates, wait a few worker polling
+intervals, and look again. Nothing here asserts the state of any deployed
+environment.
 
 After validation and a separately approved release, set the flag to `true` on
 every Web instance and restart them together. To roll back, unset it or set it

@@ -290,7 +290,8 @@ class ContentItemBulkResolveTests(APITestCase):
         self.assertEqual(admitted, 0)
         cursor_model.objects.select_for_update.assert_not_called()
 
-    def test_identity_resolution_skips_legacy_detail_even_without_current_hash(self):
+    @override_settings(MODERATION_CLASSIFICATION_ENABLED=False)
+    def test_disabled_classification_skips_legacy_detail_without_current_hash(self):
         item = ContentItem.objects.create(
             source_api=ContentItem.SourceAPI.TMDB,
             external_id='legacy-detail-no-hash',

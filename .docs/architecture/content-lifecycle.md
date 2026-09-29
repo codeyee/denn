@@ -16,12 +16,15 @@ refreshed inside the system today.
   trusted write. A new item's detail is materialized only through the
   canonical server-side `core` -> `proxy` path.
 - Identity resolution records bounded, deduplicated
-  `ContentMetadataPreparationJob` intent only when the identity has no
-  normalized type-specific detail. This is asynchronous intent, not a provider
-  request; caller-supplied `source_data` is ignored. A rotating cursor admits
-  work fairly up to a 1,000 active-job backlog cap. Known detail is not fetched
-  again merely because its moderation hash is null; legacy hash backfill is a
-  separate operator action.
+  `ContentMetadataPreparationJob` intent when the identity has no normalized
+  type-specific detail, or has detail but no current moderation source hash,
+  and only while classification is enabled. This is asynchronous intent, not a
+  provider request; caller-supplied `source_data` is ignored. A rotating cursor
+  admits work fairly up to a 1,000 active-job backlog cap. Known detail is not
+  fetched again for a null hash: the worker recomputes the hash from local
+  detail and enqueues classification. With detail and a hash but no current
+  judgment, the resolver queues one moderation job in bulk, deduplicated by
+  job identity in any status.
 - The legacy external triple route still exists only as a compatibility
   shim toward the internal id route.
 
@@ -90,8 +93,8 @@ operation; fresh and stale local reads add none synchronously.
 Operational runbook:
 [`../runbooks/rehydrate-content.md`](../runbooks/rehydrate-content.md)
 
-Homepage-only identities enter the Core metadata-preparation queue at
-resolution time. `run_metadata_preparation_worker` claims a bounded batch,
+Homepage and other resolved identities enter the Core metadata-preparation
+queue at resolution time. `run_metadata_preparation_worker` claims a bounded batch,
 releases its PostgreSQL row locks, then fetches through the canonical Core ->
 Proxy source-data orchestrator. That orchestrator persists through normalized
 detail writers, which also refresh the moderation source hash and enqueue

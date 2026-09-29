@@ -49,6 +49,11 @@ export function HomePage({
     games: data.suggestions.games,
     music: data.suggestions.music,
   });
+  const canShowBanner = !data.suggestionsError && featuredItems.length > 0;
+  // A strict homepage can leave nothing to feature; settle to no banner
+  // instead of a permanent loading skeleton.
+  const hasNoBanner =
+    !canShowBanner && !data.suggestionsError && !data.suggestionsLoading;
 
   return (
     <main
@@ -60,12 +65,14 @@ export function HomePage({
         {isAuthenticated ? "Your Denn home" : "Explore the Denn catalog"}
       </h1>
       <div className="pt-30 pb-20">
-        <section className="-mt-30 mb-6 md:mb-10 relative z-0">
-          {data.suggestionsError || featuredItems.length === 0
-            ? <FeaturedBannerPlaceholder />
-            : <FeaturedBanner items={featuredItems} />
-          }
-        </section>
+        {!hasNoBanner && (
+          <section className="-mt-30 mb-6 md:mb-10 relative z-0">
+            {canShowBanner
+              ? <FeaturedBanner items={featuredItems} />
+              : <FeaturedBannerPlaceholder />
+            }
+          </section>
+        )}
 
         {data.suggestionsError && (
           <ErrorState

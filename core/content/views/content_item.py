@@ -28,6 +28,7 @@ from content.moderation.summary import (
 from content.serializers import ContentItemSerializer
 from content.serializers.moderation_summary import ModerationSummarySerializer
 from content.services.metadata_preparation_enqueue import enqueue_metadata_preparation
+from content.services.moderation_job_enqueue import enqueue_missing_moderation_jobs
 from content.permissions import (
     IsAdminOrReadOnly,
     IsAuthenticatedOrCatalogService,
@@ -438,9 +439,12 @@ class ContentItemDetailByIdView(APIView):
     Denn ids. This endpoint owns identity only; it never trusts
     browser-supplied provider metadata. Each result also includes the
     allowlisted moderation status and classification, checked against the
-    server-materialized current source hash. Missing detail records bounded,
-    deduplicated preparation intent for a future canonical `core` -> `proxy`
-    worker; this request never performs provider I/O.
+    server-materialized current source hash. Missing detail, or detail without
+    a current source hash, records bounded, deduplicated preparation intent for
+    the canonical `core` -> `proxy` worker. Detail with a current hash but no
+    current judgment queues one deduplicated moderation job. Both are inert
+    unless moderation classification is enabled; this request never performs
+    provider or Jev I/O.
     ''',
     request=ContentItemBulkResolveRequestSerializer,
     responses={200: ContentItemBulkResolveResponseSerializer},
@@ -493,7 +497,12 @@ class ContentItemBulkResolveView(APIView):
             )
         )
         enqueue_metadata_preparation([
-            item.pk for item in resolved if not item.has_normalized_detail
+            item.pk for item in resolved
+            if not item.has_normalized_detail or not item.current_moderation_source_hash
+        ])
+        enqueue_missing_moderation_jobs([
+            item for item in resolved
+            if item.has_normalized_detail and item.current_moderation_source_hash
         ])
         resolved_by_key = {
             (item.source_api, item.external_id, item.content_type): item
