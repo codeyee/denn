@@ -77,19 +77,16 @@ class ModerationQuestionsContractTests(unittest.TestCase):
             "type_specific.movie.tagline",
             "type_specific.movie.genres",
             "type_specific.movie.keywords",
-            "type_specific.movie.certifications",
             "type_specific.tv_show.original_title",
             "type_specific.tv_show.tagline",
             "type_specific.tv_show.genres",
             "type_specific.tv_show.keywords",
-            "type_specific.tv_show.certifications",
             "type_specific.game.genres",
             "type_specific.game.themes",
             "type_specific.game.game_modes",
             "type_specific.game.game_type",
             "type_specific.game.series",
             "type_specific.game.keywords",
-            "type_specific.game.age_ratings",
             "type_specific.season.parent_show_name",
             "type_specific.season.episodes[].title",
             "type_specific.season.episodes[].description",
@@ -126,11 +123,11 @@ class ModerationQuestionsContractTests(unittest.TestCase):
             with self.subTest(question=name):
                 self.assertIn("provider metadata", text)
                 self.assertIn("context, not a verdict", text)
-                for mature_alone in ("r, m, 18, or tv-ma", "explicit-lyrics advisory alone"):
-                    self.assertIn(mature_alone, text)
+                self.assertIn("explicit-lyrics advisory alone", text)
                 self.assertIn("is not evidence of adult sexual content", text)
-                self.assertIn("adult-only rating", text)
-                self.assertIn("explicit sexual keywords or subjects is strong evidence", text)
+                self.assertIn("explicit sexual keywords or subjects are strong evidence", text)
+                for unsent in ("certification", "age rating", "adult-only rating"):
+                    self.assertNotIn(unsent, text)
 
     def test_provider_flags_never_appear_as_question_inputs(self):
         for name, question in MODERATION_QUESTIONS.items():

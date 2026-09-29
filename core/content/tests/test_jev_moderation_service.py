@@ -1,4 +1,5 @@
 """Offline tests for the deterministic moderation classification service (JEV-003A)."""
+import json
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -16,6 +17,7 @@ from content.models import (
     Track,
     TvShowDetail,
 )
+from content.moderation.state import hash_moderation_state
 from content.services.moderation_service import (
     ModerationClassificationOutcome,
     _provider_explicit,
@@ -375,9 +377,9 @@ def _tv_item(**detail):
     return item
 
 
-def _game_item(**detail):
+def _game_item(external_id='game-rule', **detail):
     item = ContentItem.objects.create(
-        source_api=ContentItem.SourceAPI.IGDB, external_id='game-rule',
+        source_api=ContentItem.SourceAPI.IGDB, external_id=external_id,
         content_type=ContentItem.ContentType.GAME,
     )
     GameDetail.objects.create(content_item=item, title='Game', **detail)
@@ -481,7 +483,7 @@ class ProviderRuleTests(TestCase):
         self.assertEqual(judgment.payload['policy']['reason'], 'provider_explicit_override')
 
     @override_settings(**ENABLED)
-    def test_esrb_mature_game_goes_to_jev_with_ratings_as_context(self):
+    def test_esrb_mature_game_goes_to_jev_without_its_ratings(self):
         item = _game_item(
             keywords=['dating sim'], age_ratings=[_rating('ESRB', 'M', 'Nudity', 'Blood')])
         client = _RecordingClient()
@@ -491,8 +493,28 @@ class ProviderRuleTests(TestCase):
         self.assertEqual(len(client.calls), 1)
         game_state = client.calls[0]['type_specific']['game']
         self.assertEqual(game_state['keywords'], ['dating sim'])
-        self.assertEqual(game_state['age_ratings'], ['ESRB M: Blood; Nudity'])
+        self.assertNotIn('age_ratings', game_state)
         self.assertIsNone(judgment.payload['provider_explicit'])
+
+    @override_settings(**ENABLED)
+    def test_persisted_ratings_stay_out_of_the_state_and_hash_while_esrb_ao_still_fires(self):
+        plain = _game_item('game-plain', keywords=['dating sim'])
+        rated = _game_item(
+            'game-rated', keywords=['dating sim'], age_ratings=[_rating('ESRB', 'M', 'Nudity')])
+        ao = _game_item('game-ao', age_ratings=[_rating('ESRB', 'AO', 'Sexual Content')])
+        client = _RecordingClient()
+
+        classify_content_item(ContentItem.objects.get(pk=plain.pk), client=client)
+        classify_content_item(ContentItem.objects.get(pk=rated.pk), client=client)
+        ao_judgment = classify_content_item(ContentItem.objects.get(pk=ao.pk), client=client)
+
+        self.assertEqual(len(client.calls), 2)
+        self.assertEqual(client.calls[0], client.calls[1])
+        self.assertNotIn('age_ratings', json.dumps(client.calls))
+        self.assertEqual(
+            hash_moderation_state(client.calls[0]), hash_moderation_state(client.calls[1]))
+        self.assertEqual(ao_judgment.model_name, 'provider-rule:v2')
+        self.assertIs(ao_judgment.payload['provider_explicit'], True)
 
     @override_settings(**ENABLED)
     def test_tmdb_adult_flag_overrides_but_stays_out_of_the_jev_state(self):

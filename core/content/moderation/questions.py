@@ -11,14 +11,12 @@ _STATE_FIELDS = (
     "provider", "content_type", "title", "description",
     "type_specific.movie.original_title", "type_specific.movie.tagline",
     "type_specific.movie.genres", "type_specific.movie.keywords",
-    "type_specific.movie.certifications",
     "type_specific.tv_show.original_title", "type_specific.tv_show.tagline",
     "type_specific.tv_show.genres", "type_specific.tv_show.keywords",
-    "type_specific.tv_show.certifications",
     "type_specific.game.genres", "type_specific.game.themes",
     "type_specific.game.game_modes", "type_specific.game.game_type",
     "type_specific.game.series", "type_specific.game.keywords",
-    "type_specific.game.age_ratings", "type_specific.season.parent_show_name",
+    "type_specific.season.parent_show_name",
     "type_specific.season.episodes[].title",
     "type_specific.season.episodes[].description",
     "type_specific.album.artists", "type_specific.album.tracks[].title",
@@ -30,13 +28,11 @@ _STATE_FIELDS = (
 _STATE_GUIDANCE = (
     "Use the state's named text fields " + ", ".join(f"`{field}`" for field in _STATE_FIELDS)
     + ". Only fields present for this content type contain evidence; empty or missing "
-    "text is not evidence. Certifications, age ratings, keywords, genres, subjects, and "
-    "the track parental advisory are provider metadata: they can support a restricted-"
-    "category judgment together with the rest of the text, but they are context, not a "
-    "verdict. A mature rating alone (such as R, M, 18, or TV-MA), an explicit-lyrics "
-    "advisory alone, or a genre alone is not evidence of adult sexual content. An "
-    "adult-only rating (such as AO or NC-17) or explicit sexual keywords or subjects is "
-    "strong evidence."
+    "text is not evidence. Keywords, genres, subjects, and the track parental advisory "
+    "are provider metadata: they can support a restricted-category judgment together "
+    "with the rest of the text, but they are context, not a verdict. An explicit-lyrics "
+    "advisory alone, or a genre alone, is not evidence of adult sexual content. Explicit "
+    "sexual keywords or subjects are strong evidence."
 )
 
 MODERATION_QUESTIONS: dict[str, Noul] = {

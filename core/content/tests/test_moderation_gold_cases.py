@@ -116,7 +116,7 @@ class ModerationGoldCaseTests(unittest.TestCase):
         game_override["cases"][0]["state"].update(provider="igdb", content_type="GAME")
         game_override["cases"][0]["state"]["type_specific"] = {"game": {
             "genres": [], "themes": [], "game_modes": [], "game_type": "", "series": "",
-            "keywords": ["sex"], "age_ratings": ["ESRB AO: Sexual Content"],
+            "keywords": ["sex"],
         }}
 
         for document in (tv_override, game_override):
@@ -148,9 +148,9 @@ class ModerationGoldCaseTests(unittest.TestCase):
         self.assertEqual(
             {key: sorted(shape[key]) for key, shape in TYPE_SPECIFIC_SHAPES.items()},
             {
-                "movie": ["certifications", "genres", "keywords", "original_title", "tagline"],
-                "tv_show": ["certifications", "genres", "keywords", "original_title", "tagline"],
-                "game": ["age_ratings", "game_modes", "game_type", "genres", "keywords",
+                "movie": ["genres", "keywords", "original_title", "tagline"],
+                "tv_show": ["genres", "keywords", "original_title", "tagline"],
+                "game": ["game_modes", "game_type", "genres", "keywords",
                          "series", "themes"],
                 "season": ["episodes", "parent_show_name"],
                 "album": ["artists", "tracks"],

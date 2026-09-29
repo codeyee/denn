@@ -31,14 +31,14 @@ JWT_RE = re.compile(r"\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8
 # These shapes mirror the text-only object built by moderation.state (q4).
 _TMDB_TITLE_SHAPE = {
     "original_title": str, "tagline": str,
-    "genres": [str], "keywords": [str], "certifications": [str],
+    "genres": [str], "keywords": [str],
 }
 TYPE_SPECIFIC_SHAPES = {
     "movie": {"movie": dict(_TMDB_TITLE_SHAPE)},
     "tv_show": {"tv_show": dict(_TMDB_TITLE_SHAPE)},
     "game": {"game": {
         "genres": [str], "themes": [str], "game_modes": [str],
-        "game_type": str, "series": str, "keywords": [str], "age_ratings": [str],
+        "game_type": str, "series": str, "keywords": [str],
     }},
     "season": {"season": {
         "parent_show_name": str,

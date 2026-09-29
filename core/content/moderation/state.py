@@ -18,10 +18,6 @@ STATE_FIELDS = (
 
 MAX_KEYWORDS = 40
 MAX_SUBJECTS = 30
-# Countries whose certifications are shown to Jev; others add noise, not signal.
-CERTIFICATION_COUNTRIES = frozenset(
-    {"US", "GB", "CA", "AU", "IE", "DE", "FR", "ES", "MX", "BR", "JP", "KR"}
-)
 
 
 def _require_non_empty(value, field: str) -> str:
@@ -73,33 +69,6 @@ def _normalize_people_names(values, field: str) -> list[str]:
         if name:
             names.append(name)
     return sorted(set(names))
-
-
-def _normalize_certifications(values, field: str) -> list[str]:
-    certifications = []
-    for raw in _sequence(values, field):
-        if not isinstance(raw, Mapping):
-            raise ModerationStateError(f"{field} entries must contain a country and rating")
-        country = _normalize_text(raw.get("country"), f"{field}.country").upper()
-        rating = _normalize_text(raw.get("rating"), f"{field}.rating")
-        if rating and country in CERTIFICATION_COUNTRIES:
-            certifications.append(f"{country}: {rating}")
-    return sorted(set(certifications))
-
-
-def _normalize_age_ratings(values, field: str) -> list[str]:
-    ratings = []
-    for raw in _sequence(values, field):
-        if not isinstance(raw, Mapping):
-            raise ModerationStateError(f"{field} entries must contain an organization and rating")
-        organization = _normalize_text(raw.get("organization"), f"{field}.organization")
-        rating = _normalize_text(raw.get("rating"), f"{field}.rating")
-        if not organization or not rating:
-            continue
-        descriptors = _normalize_names(raw.get("descriptors"), f"{field}.descriptors")
-        label = f"{organization} {rating}"
-        ratings.append(f"{label}: {'; '.join(descriptors)}" if descriptors else label)
-    return sorted(set(ratings))
 
 
 def _normalize_credits(values, field: str) -> list[dict[str, str]]:
@@ -183,10 +152,6 @@ def _normalize_type_specific(content_type: str, reconstructed_payload) -> dict:
                     f"{kind}.keywords",
                     limit=MAX_KEYWORDS,
                 ),
-                "certifications": _normalize_certifications(
-                    reconstructed_payload.get("certifications"),
-                    f"{kind}.certifications",
-                ),
             }
         }
 
@@ -212,9 +177,6 @@ def _normalize_type_specific(content_type: str, reconstructed_payload) -> dict:
                     reconstructed_payload.get("keywords"),
                     "game.keywords",
                     limit=MAX_KEYWORDS,
-                ),
-                "age_ratings": _normalize_age_ratings(
-                    reconstructed_payload.get("age_ratings"), "game.age_ratings"
                 ),
             }
         }
@@ -271,9 +233,12 @@ def build_moderation_state(
     track text is retained without truncation. Only normalized text is copied;
     identifiers, URLs, assets, dates, durations, and raw payloads never enter
     the state. Provider safety metadata enters only as contextual text (genres,
-    keywords, certifications, age ratings, subjects, a per-track advisory). The
-    TMDB `adult` flag never does: authoritative overrides are code-owned and
-    applied before, and independently of, any Jev call.
+    keywords, subjects, a per-track advisory). Certifications and age ratings
+    stay persisted but are not sent: on the local evaluation they made
+    mainstream mature-rated titles look restricted without catching more
+    explicit content. The TMDB `adult` flag never enters either: authoritative
+    overrides are code-owned and applied before, and independently of, any Jev
+    call.
     """
     normalized_provider = _require_non_empty(provider, "provider").casefold()
     normalized_content_type = _require_non_empty(content_type, "content_type").upper()

@@ -114,7 +114,7 @@ class ModerationEvaluationMetricsTests(unittest.TestCase):
         game["state"].update(provider="igdb", content_type="GAME")
         game["state"]["type_specific"] = {"game": {
             "genres": [], "themes": [], "game_modes": [], "game_type": "", "series": "",
-            "keywords": [], "age_ratings": ["ESRB AO"],
+            "keywords": [],
         }}
         results = [
             observation(raw["cases"][0], "explicit_or_sensitive"),

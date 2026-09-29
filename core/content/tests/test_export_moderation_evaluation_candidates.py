@@ -269,7 +269,7 @@ class ExportOutputTests(ExportCandidatesTestCase):
                        for case in document['cases']}
         self.assertEqual(by_provider, {'tmdb': True, 'igdb': None})
 
-    def test_exported_state_carries_safety_context_and_esrb_ao_is_a_valid_override(self):
+    def test_exported_state_carries_text_context_without_ratings_and_esrb_ao_is_a_valid_override(self):
         movie = _movie('ext-context', 'Context Movie')
         MovieDetail.objects.filter(content_item=movie).update(
             adult=False, genres=['Drama'], keywords=['heist'],
@@ -284,13 +284,10 @@ class ExportOutputTests(ExportCandidatesTestCase):
         by_provider = {case['provider']: case for case in document['cases']}
         self.assertEqual(by_provider['tmdb']['state']['type_specific']['movie'], {
             'original_title': '', 'tagline': '', 'genres': ['Drama'], 'keywords': ['heist'],
-            'certifications': ['US: R'],
         })
         self.assertIsNone(by_provider['tmdb']['provider_explicit'])
         self.assertIs(by_provider['igdb']['provider_explicit'], True)
-        self.assertEqual(
-            by_provider['igdb']['state']['type_specific']['game']['age_ratings'],
-            ['ESRB AO: Sexual Content'])
+        self.assertNotIn('age_ratings', by_provider['igdb']['state']['type_specific']['game'])
         self.assertEqual(document['sampling']['skipped']['invalid_state'], 0)
 
     def test_leaves_no_temporary_files_and_writes_nothing_to_the_catalog(self):

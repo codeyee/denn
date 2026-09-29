@@ -53,16 +53,37 @@ truth) and never fails a detail write over them.
   Jev): TMDB `adult` true and ESRB `AO`. The `adult` flag is never part of the
   Jev state.
 - *Contextual* (text in the Jev state, never an override and never proof of
-  safety): genres, keywords (at most 40), certifications for a fixed set of
-  countries, IGDB age ratings and descriptors, the per-track advisory, and book
-  subjects (at most 30). An ESRB `AO` rating also appears in the state as
-  ordinary age-rating text, but the rule decides first and makes no Jev call.
-- The `q4` question guidance tells Jev that this metadata supports a
-  restricted-category judgment but is not a verdict: a mature rating alone (R,
-  M, 18, TV-MA), an explicit-lyrics advisory alone, or a genre alone is not
-  evidence of adult sexual content, while an adult-only rating or explicit
-  sexual keywords or subjects is strong evidence. The three Noul keys and their
-  binary intent are unchanged.
+  safety): genres, keywords (at most 40), the per-track advisory, and book
+  subjects (at most 30).
+- *Persisted but not sent to Jev*: TMDB certifications and IGDB age ratings
+  with descriptors. Core keeps them (the ESRB `AO` rule reads them from the
+  persisted detail, and future admin tooling can show them), but they are not
+  in the state and do not affect the source hash.
+- The `q4` question guidance tells Jev that keywords, genres, subjects, and the
+  track advisory support a restricted-category judgment but are not a verdict:
+  an explicit-lyrics advisory alone or a genre alone is not evidence of adult
+  sexual content, while explicit sexual keywords or subjects are strong
+  evidence. The three Noul keys and their binary intent are unchanged.
+
+*Ratings stay out of the state (2026-09-28 decision).* The first `q4` design
+also sent certifications and age ratings. A local re-evaluation on the same 400
+human/silver-labelled cases (6 explicit) with `jev-1.13.0` compared three
+states:
+
+| State | Explicit reaching the strict homepage | Safe hidden (of 390) | Explicit blurred (of 6) | Blur false positives |
+| --- | ---: | ---: | ---: | ---: |
+| `q3` (text only) | 1 | 9 | 5 | 1 |
+| `q4` with ratings | 0 | 25 | 4 | 2 |
+| `q4` without ratings | 0 | 21 | 4 | 2 |
+
+Nearly all the new false `needs_review` and `explicit` results were mainstream
+titles whose only new signal was a mature rating (US R, TV-MA, ACB R 18+ or MA
+15+), despite the guidance. Dropping ratings kept the goal that matters most to
+the maintainer (no explicit item on the homepage) and cost slightly fewer
+tokens. This is provisional: six explicit cases is too few to separate the
+variants statistically, and the evaluation is local. Re-evaluate with
+production data before changing it. The revision stays `q4` because nothing has
+been classified with `q4` outside local experiments.
 
 Because the state shape changed, every materialized source hash from `q3` is
 outdated. `backfill_moderation_source_hashes --recompute` refreshes them in

@@ -12,12 +12,12 @@ Improve the safety evidence available to Denn's server-side Jev moderation by ca
 
 | Provider | Persisted fields | Use |
 | --- | --- | --- |
-| TMDB (movies, TV) | `adult`, genres, keywords, certifications (one `{country, rating}` per country, from the detail request's `append_to_response`). | `adult` true is the authoritative override. Genres, keywords, and certifications for US, GB, CA, AU, IE, DE, FR, ES, MX, BR, JP, KR are text for Jev. |
-| IGDB (games) | Keywords and age ratings (`organization`, `rating`, `descriptors`) from the current, non-deprecated rating fields. | ESRB `AO` is the authoritative override. Everything else is text for Jev. |
+| TMDB (movies, TV) | `adult`, genres, keywords, certifications (one `{country, rating}` per country, from the detail request's `append_to_response`). | `adult` true is the authoritative override. Genres and keywords are text for Jev. Certifications are persisted but not sent to Jev. |
+| IGDB (games) | Keywords and age ratings (`organization`, `rating`, `descriptors`) from the current, non-deprecated rating fields. | ESRB `AO` is the authoritative override. Keywords are text for Jev; age ratings and descriptors are persisted but not sent to Jev. |
 | Spotify (albums) | Per-track `explicit`. | A track-level advisory in the state; never an override, never an album verdict. |
 | OpenLibrary (books) | Work `subjects`, at most 50 persisted and 30 sent. | Weak contextual text only. |
 
-Lists are deduplicated and capped when stored (keywords 100, certifications 100, age ratings 20, subjects 50) and again when sent to Jev (keywords 40, subjects 30). A refresh that omits a field clears it. Malformed entries are dropped and never fail a detail write. The remaining sections of this note record the original design constraints.
+Lists are deduplicated and capped when stored (keywords 100, certifications 100, age ratings 20, subjects 50) and again when sent to Jev (keywords 40, subjects 30). Certifications and age ratings are persisted (the ESRB `AO` rule and future admin tooling use them) but not sent: in the 2026-09-28 local evaluation they made mainstream mature-rated titles look restricted without catching more explicit content, so the state omits them (see ADR 0009; provisional, six explicit cases). A refresh that omits a field clears it. Malformed entries are dropped and never fail a detail write. The remaining sections of this note record the original design constraints.
 
 ### Not done
 

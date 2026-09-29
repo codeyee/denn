@@ -6,10 +6,10 @@ This page defines the privacy-safe input contract and classification-report cont
 
 A UTF-8 JSON dataset has only `schema_version` and `cases`. Schema v2 matches the
 `q4` moderation state, which adds provider safety metadata to `type_specific`:
-movie and TV show `genres`, `keywords`, `certifications` (strings such as
-`US: R`); game `keywords` and `age_ratings` (strings such as
-`ESRB M: Blood and Gore; Nudity`); album track `parental_advisory` (`explicit`
-or empty); book `subjects`. v1 documents are rejected, so re-export candidates
+movie and TV show `genres` and `keywords`; game `keywords`; album track
+`parental_advisory` (`explicit` or empty); book `subjects`. Certifications and
+age ratings are persisted by Core but deliberately not part of the state. v1
+documents are rejected, so re-export candidates
 (see [the workflow](#catalog-evaluation-workflow)) and carry labels over by
 `case_id`. Each case has exactly:
 
@@ -254,3 +254,19 @@ changes.
 behind the rollout flags and the activation checklist in the
 [worker runbook](jev-moderation-workers.md). Pending maintainer approval at
 activation time.
+
+### Results: 2026-09-28 q4 re-evaluation
+
+Same 400 cases and labels as above (6 explicit, 4 needs review, 390 safe),
+`jev-1.13.0`, local run, no live production data. Three states were compared:
+
+| State | Explicit reaching the strict homepage | Safe hidden (of 390) | Explicit blurred (of 6) | Blur false positives |
+| --- | ---: | ---: | ---: | ---: |
+| `q3` (text only) | 1 | 9 | 5 | 1 |
+| `q4` with certifications and age ratings | 0 | 25 | 4 | 2 |
+| `q4` without certifications and age ratings | 0 | 21 | 4 | 2 |
+
+Nearly all new false `needs_review`/`explicit` results were mainstream titles
+whose only new signal was a mature rating. The shipped `q4` state therefore
+omits certifications and age ratings (see ADR 0009). Six explicit cases make
+this provisional; repeat the comparison with production data.
