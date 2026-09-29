@@ -4,11 +4,12 @@ The `rehydrate_content_details` Django management command refreshes
 locally cached `MovieDetail` / `TvShowDetail` / `SeasonDetail` /
 `AlbumDetail` / `GameDetail` / `BookDetail` rows whose dynamic refresh
 window has expired, by re-fetching from the Go proxy and re-running the
-type-specific mapper. For games, it also selects existing `GameDetail` rows
-that do not yet have an IGDB `GameDurationEstimate`, even when their normal
-refresh window is still fresh. The one-off `--include-no-data` option also
-reprocesses games whose existing IGDB duration row was previously stored as
-`no_data`, which is useful after changing duration sanitation rules.
+type-specific mapper. Two one-off repair options widen the game selection:
+`--include-missing-duration` also selects fresh `GameDetail` rows that have no
+IGDB `GameDurationEstimate`, and `--include-no-data` reprocesses games whose
+IGDB duration row was stored as `no_data` (useful after changing duration
+sanitation rules). Neither belongs in the periodic job: a game IGDB no longer
+returns never gains a duration row and would be re-fetched on every run.
 
 This is the **periodic refresh** job. The first-time backfill of items that do not yet have a Detail row at all is `backfill_content_details`. The game-duration gap is therefore repaired both when a game is read through the local-first path and when this job runs.
 
@@ -39,7 +40,7 @@ Run after any of the following:
   `event=orchestrator` logs (`fresh_local` ratio dropping).
 - A change to `CONTENT_REHYDRATION_POLICY`.
 - The first deployment of game-duration support, to backfill existing games:
-  `python manage.py rehydrate_content_details --content-type GAME --limit 500 --workers 4`.
+  `python manage.py rehydrate_content_details --content-type GAME --include-missing-duration --limit 500 --workers 4`.
 - A change to game-duration sanitation rules: run the one-off repair with
   `--include-no-data`, for example:
   `python manage.py rehydrate_content_details --content-type GAME --include-no-data --limit 500 --workers 4`.
@@ -89,6 +90,8 @@ Common flags:
 - `--workers K` — parallel proxy fetches per content_type. Default: 4.
   Use `--workers 1` when running against SQLite locally to avoid
   table-lock contention.
+- `--include-missing-duration` — for `GAME`, also select fresh rows with no
+  IGDB duration row. One-off repair only; never on a schedule.
 - `--include-no-data` — for `GAME`, include existing IGDB duration rows with
   `status=no_data` in a one-off repair. It is intentionally opt-in so games
   with a legitimate lack of IGDB measurements are not retried on every

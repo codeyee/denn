@@ -126,7 +126,24 @@ class RehydrateCommandTests(TestCase):
         self.assertEqual(evt['total'], 0)
         self.assertEqual(evt['refreshed'], 0)
 
-    def test_fresh_game_without_duration_is_selected_for_backfill(self):
+    def test_fresh_game_without_duration_is_not_selected_by_default(self):
+        _seed_game_without_duration()
+
+        buf = StringIO()
+        with patch('content.utils.fetch_source_data') as fetch_mock:
+            call_command(
+                'rehydrate_content_details',
+                '--content-type', 'GAME',
+                stdout=buf,
+            )
+            fetch_mock.assert_not_called()
+
+        log_line = next(
+            line for line in buf.getvalue().splitlines() if line.startswith('{')
+        )
+        self.assertEqual(json.loads(log_line)['total'], 0)
+
+    def test_fresh_game_without_duration_is_selected_for_repair(self):
         item = _seed_game_without_duration()
 
         with patch(
@@ -137,6 +154,7 @@ class RehydrateCommandTests(TestCase):
             call_command(
                 'rehydrate_content_details',
                 '--content-type', 'GAME',
+                '--include-missing-duration',
                 '--workers', '1',
                 stdout=buf,
             )
