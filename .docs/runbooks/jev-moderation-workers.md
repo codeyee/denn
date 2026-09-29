@@ -6,40 +6,78 @@ catalog backfill. The initial production setup remains blocked on an approved
 external process manifest; this repository has no checked-in Dokploy worker
 manifest, and no live platform state is asserted here.
 
-## Safe rollout sequence
+## Production activation checklist
 
-1. **Apply schema first.** Deploy the normal Core release and wait for its
-   migration step and `/api/` healthcheck to succeed. The production Core
-   entrypoint migrates before Gunicorn. A command-overridden worker must not
-   migrate independently; disable or replace the inherited HTTP `/api/`
-   container healthcheck because a worker does not serve HTTP.
-2. **Configure server-only settings.** Set `TYPESAFE_API_KEY` only in Core's
-   server environment. Enable `MODERATION_CLASSIFICATION_ENABLED` only for the
-   approved collection window. Keep Web visibility off by
-   leaving `WEB_MODERATION_VISIBILITY_ENABLED` unset or `false`; never expose
-   the Jev key to Web or browser settings.
-3. **Start one metadata-preparation worker.** It calls Proxy for queued
-   identity-only records; normalized detail writes may enqueue moderation jobs
-   when classification is enabled. It does not call Jev or scan the catalog.
-4. **Observe before proceeding.** Check aggregate job states, retries, attempt
-   counts, duration and bounded error codes. Reconcile `outcome_unknown`
-   manually before any retry. Do not use content payloads or credentials in
+Do the steps in order and confirm each observation before the next one. This
+checklist does not authorize inspecting or changing the live platform, starting
+a worker, calling Jev, or running a production backfill; see the
+[production setup gate](#production-setup-gate).
+
+1. **Deploy with both flags off and migrations applied.** Deploy the normal
+   Core release and wait for its migration step and `/api/` healthcheck to
+   succeed. The production entrypoint (`core/docker-entrypoint.sh`) runs
+   `python manage.py migrate --noinput` before Gunicorn. Leave
+   `MODERATION_CLASSIFICATION_ENABLED` unset or `False` on Core and
+   `WEB_MODERATION_VISIBILITY_ENABLED` unset or `false` on Web.
+2. **Set server-only settings and pin the model.** Set `TYPESAFE_API_KEY` only
+   in Core's server environment, never in Web or browser settings. The
+   moderation worker and any Core process that runs the backfill call Jev and
+   need it. The Gunicorn process and the metadata-preparation worker never
+   call Jev, so they do not need the key (the local Compose profile blanks it
+   for the metadata worker). Set `MODERATION_MODEL=jev-1.13.0` (a concrete
+   version, not the default `jev-latest` alias) on Core and on both worker
+   processes. The requested model is part of the outbox job identity, so every
+   process that writes normalized detail or drains a queue must agree.
+3. **Start one replica of each worker.** Use the same Core image with a command
+   override, the HTTP healthcheck disabled, and no migrate step:
+   `python manage.py run_metadata_preparation_worker` and
+   `python manage.py run_moderation_worker`. Both accept `--batch-size`,
+   `--poll-interval`, `--lease-seconds`, `--max-attempts`, `--base-backoff`,
+   and `--max-backoff`; `--once` processes a single batch and exits. With the
+   classification flag off nothing new is enqueued and the moderation worker
+   makes no Jev call. Keep one
+   replica of each until target-environment PostgreSQL concurrency and
+   persistence fencing are verified; per-process batch and polling limits are
+   not a global Jev rate or cost limit. Neither worker performs a catalog
+   backfill.
+4. **Enable classification and watch the job tables.** Set
+   `MODERATION_CLASSIFICATION_ENABLED=True` on Core and both workers and
+   restart them. The value is case-sensitive: only exactly `True` enables it,
+   and lowercase `true` leaves classification disabled. Watch the aggregate
+   job-state queries under
+   [Local Compose](#local-compose-explicit-opt-in) for
+   `content_metadata_preparation_job` and `content_moderation_job`, including
+   `retry`, `failed`, and `outcome_unknown`. Reconcile `outcome_unknown`
+   manually before any retry. Do not put content payloads or credentials in
    logs or reports.
-5. **Start one moderation worker.** It drains only queued/retry outbox jobs.
-   Keep one replica of each worker until target-environment PostgreSQL
-   concurrency and persistence fencing have been verified. Per-process batch
-   and polling limits are not a global Jev rate or cost limit.
-6. **Backfill existing rows separately.** The incremental worker does not
-   classify existing catalog rows. Use the bounded, resumable
-   [`content moderation backfill`](./content-moderation-backfill.md) only
-   after explicit authorization for the exact environment, flags, selection,
-   item cap, report path and estimated cost. Start with a small sample; record
-   report tokens, duration, estimated cost and bounded error IDs. Never infer
-   authorization from `--confirm-live`.
-7. **Keep visible enforcement off until separately approved and validated.**
-   Core classification enablement does not activate the Web visibility gate.
-   No admin panel or production worker deployment is included in this change.
-   Do not infer production state from repository configuration.
+5. **Backfill existing rows in bounded batches.** First run
+   `python manage.py backfill_moderation_source_hashes --limit N` (repeat with
+   `--after-id <next_after_id>` from its output until `examined=0`). It
+   populates missing current source hashes from local normalized detail with
+   no Jev call. Without a current hash, a legacy row's judgment reads as
+   `stale`. Then classify with `python manage.py backfill_content_moderation
+   --confirm-live --limit N` as described in the
+   [content moderation backfill runbook](./content-moderation-backfill.md).
+   Do this only after explicit authorization for the exact environment,
+   selection, item cap, report path, and estimated cost. Start with a small
+   sample and record tokens, duration, estimated cost, and bounded error IDs.
+   Never infer authorization from `--confirm-live`.
+6. **Enable Web visibility last.** After the backfill sample is reviewed and
+   the release is separately approved, set
+   `WEB_MODERATION_VISIBILITY_ENABLED=true` on every Web instance and restart
+   them together. The Web server treats any value other than `true`
+   (case-insensitive, surrounding whitespace ignored) as off. Reload browser
+   clients afterward. See [Web visibility rollout and
+   rollback](#web-visibility-rollout-and-rollback).
+7. **Rollback in reverse order.** First set `WEB_MODERATION_VISIBILITY_ENABLED`
+   to `false` (or unset it) on every Web instance and restart them. Then set
+   `MODERATION_CLASSIFICATION_ENABLED=False` on Core and the workers, which
+   prevents new Jev classification and leaves incremental jobs queued. Then
+   stop the workers. Judgments and jobs are retained; no schema rollback is
+   needed.
+
+Do not infer production state from repository configuration. No admin panel or
+production worker deployment is included in this change.
 
 ## Web visibility rollout and rollback
 

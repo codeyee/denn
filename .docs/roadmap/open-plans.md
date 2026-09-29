@@ -263,6 +263,25 @@ Work to land:
 - Remove or isolate provider-derived `status` fields so the persisted
   domain model keeps converging toward Denn-owned semantics.
 
+## Jev Content Moderation
+
+- Status: merged and default-off (`MODERATION_CLASSIFICATION_ENABLED` on
+  Core, `WEB_MODERATION_VISIBILITY_ENABLED` on Web). Decisions are recorded in
+  [ADR 0009](../adr/0009-jev-content-moderation.md); no production activation
+  is asserted.
+- Issue: [#102](https://github.com/codeyee/denn/issues/102).
+
+Next steps:
+
+- Follow the production activation checklist in
+  [`../runbooks/jev-moderation-workers.md`](../runbooks/jev-moderation-workers.md).
+- Build the admin review surface tracked in
+  [#113](https://github.com/codeyee/denn/issues/113); authority and audit
+  choices are still open in
+  [`../ideas/jev-content-moderation-product-flow.md`](../ideas/jev-content-moderation-product-flow.md).
+- Work the provider-metadata backlog in
+  [`../ideas/jev-provider-metadata-for-content-moderation.md`](../ideas/jev-provider-metadata-for-content-moderation.md).
+
 ## Further Auth Hardening
 
 ADR 0002 phases 2 and 3 are complete. Preserve `HttpOnly` BFF auth,

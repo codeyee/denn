@@ -29,6 +29,7 @@ Start here, then read in this order:
 13. [`adr/0006-isolated-local-worktree-stacks.md`](./adr/0006-isolated-local-worktree-stacks.md)
 14. [`adr/0007-game-duration-estimates.md`](./adr/0007-game-duration-estimates.md)
 15. [`adr/0008-list-membership-permissions.md`](./adr/0008-list-membership-permissions.md)
+16. [`adr/0009-jev-content-moderation.md`](./adr/0009-jev-content-moderation.md)
 
 ## Practical Usage Flow
 
@@ -176,7 +177,7 @@ If the question is "how should this be designed?", check
 Use the rest as specialized references:
 
 - [`ideas/jev-provider-metadata-for-content-moderation.md`](./ideas/jev-provider-metadata-for-content-moderation.md) — future provider-signal capture for Jev issue #102.
-- [`ideas/jev-content-moderation-product-flow.md`](./ideas/jev-content-moderation-product-flow.md) — verified moderation state, requested outcome, unratified flow recommendation, and open decisions.
+- [`ideas/jev-content-moderation-product-flow.md`](./ideas/jev-content-moderation-product-flow.md) — moderation product-flow notes; decided items live in ADR 0009, open decisions remain here.
 - [`architecture/data-fetching.md`](./architecture/data-fetching.md)
 - [`architecture/auth-session-bootstrap.md`](./architecture/auth-session-bootstrap.md)
 - [`architecture/client-rehydration.md`](./architecture/client-rehydration.md)
@@ -199,8 +200,8 @@ Use the rest as specialized references:
 - [`runbooks/public-profile-tracking-backfill.md`](./runbooks/public-profile-tracking-backfill.md)
 - [`runbooks/content-moderation-backfill.md`](./runbooks/content-moderation-backfill.md)
 - [`runbooks/metadata-preparation.md`](./runbooks/metadata-preparation.md)
-- [`runbooks/jev-moderation-workers.md`](./runbooks/jev-moderation-workers.md) — opt-in worker rollout and operations.
-- [`runbooks/jev-moderation-evaluation.md`](./runbooks/jev-moderation-evaluation.md) — privacy-safe evaluation case schema and evidence limits.
+- [`runbooks/jev-moderation-workers.md`](./runbooks/jev-moderation-workers.md) — worker operations and the production activation checklist.
+- [`runbooks/jev-moderation-evaluation.md`](./runbooks/jev-moderation-evaluation.md) — evaluation case schema, catalog evaluation workflow, and results.
 - [`history/implementation-history.md`](./history/implementation-history.md)
 - [`definition-of-done.md`](./definition-of-done.md)
 

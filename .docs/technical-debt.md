@@ -11,9 +11,10 @@ their lasting outcome is reflected in architecture or history docs.
   critical routes, but Add-to-List and ListDetail still need broader
   mutation/rollback interaction tests.
 - Adult search preference and cache isolation are implemented. IGDB,
-  Spotify, and OpenLibrary still lack an equivalent trusted classifier;
-  their results remain explicitly unclassified and Denn must not infer
-  safety from free text.
+  Spotify, and OpenLibrary still have no provider adult flag. Jev now
+  classifies their items when moderation is enabled, but search results
+  still do not use Jev, so they remain unclassified there and Denn must not
+  infer safety from free text.
 - Country-scoped streaming availability is persisted separately, but
   freshness is still tied to the global content detail lifecycle instead
   of an independent per-country policy.
@@ -21,10 +22,23 @@ their lasting outcome is reflected in architecture or history docs.
   `status`, which pulls the local model toward upstream vocabularies
   instead of a Denn-owned domain shape.
 
+- Jev moderation workers have not been validated for multi-instance
+  concurrency and persistence fencing on PostgreSQL; run one replica of
+  each. Their per-process batch and polling bounds are not a global
+  provider-call or cost cap.
+- Homepage items without a fresh moderation judgment are shown until they
+  are classified, so a first-visit window exists after activation or a
+  source change.
+- Proxy's 5-minute homepage candidate cache and Web's 5-minute query stale
+  time delay homepage removal after a new explicit judgment.
+
 ## Medium
 
 - Some frontend coordination modules remain large and still mix loading,
   transformation, and orchestration concerns.
+- `web/src/components/pages/ContentDetailPage/index.tsx` exceeds the
+  200-line component limit and needs its orchestration, hooks, and
+  presentation split.
 - Automated axe, keyboard, responsive, and touch-target coverage now
   protects the critical and legal routes. Less-used application
   surfaces still need the same coverage as they are changed.

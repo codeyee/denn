@@ -71,6 +71,21 @@ considered part of the project baseline.
 - Add-to-list, reorder, toggle-status, and rating workflows.
 - Optimistic, reversible tracking, favorite, rating, and public-profile
   mutations.
+- Content moderation (Jev), merged and default-off
+  ([ADR 0009](../adr/0009-jev-content-moderation.md)). Core classifies
+  persisted content with TypeSafe System One and stores versioned judgments.
+  It exposes only `{status, classification}` in content detail, list, and
+  local-summary responses. Two independent flags control it:
+  `MODERATION_CLASSIFICATION_ENABLED` (Core; exactly `True`) enables
+  classification through the outbox and workers, and
+  `WEB_MODERATION_VISIBILITY_ENABLED` (Web server; `true`) enables Web
+  behavior. When the Web flag is on, the homepage drops only current complete
+  explicit items before banner and carousel selection, and detail blurs current
+  complete explicit artwork unless `allow_adult_content` is true, with a local
+  reveal. Pending, stale, missing, unknown, and `needs_review` items stay
+  visible and unblurred. The TMDB adult flag is an authoritative override.
+  Search results do not use Jev. Activation steps are in the
+  [worker runbook](../runbooks/jev-moderation-workers.md).
 
 ## Platform Foundations
 

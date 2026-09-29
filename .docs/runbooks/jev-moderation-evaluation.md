@@ -86,6 +86,73 @@ The live JSON report includes `schema_version` (`jev-moderation-evaluation-repor
 `usage.cost` is an estimate from the token counts returned by the SDK and the supplied dated rates. Missing usage remains visible as incomplete; provider billing details can differ. `cost_cap_enforced` is always false: case and byte bounds reduce scope, but they are not a hard spend cap. The command's live path is for an intentionally small, reviewed sample, not a bulk backfill. Synthetic fixture results verify the pipeline only and must not be used to claim model accuracy.
 
 
+## Catalog evaluation workflow
+
+This is the planned procedure for a representative catalog evaluation. It
+sends catalog text to the second labeling model in step 2 and to Jev in step 3.
+Every live call is a separate, explicitly authorized action.
+
+1. **Export candidates (read-only).** Run
+   `export_moderation_evaluation_candidates` from `core/`:
+
+   ```sh
+   cd core
+   python manage.py export_moderation_evaluation_candidates \
+     --output /path/outside/the/repo/candidates.json \
+     --sample-size 300 --min-per-stratum 30 \
+     --sensitive-share 0.35 --seed denn-jev-eval-v1
+   ```
+
+   `--output` is required. The other flags shown are set to their defaults:
+   `--sample-size` (total cases), `--min-per-stratum` (floor per
+   `source_api/content_type` stratum), `--sensitive-share` (target share of
+   each stratum drawn from a sensitive-term lexicon, between 0 and 1), and
+   `--seed` (a non-empty string). `--max-state-bytes` (default 20,000) skips
+   larger states.
+   Sampling is stratified and deterministic for the same catalog and
+   arguments. The lexicon only enriches the sample so rare sensitive items are
+   not drowned out. A match is neither a label nor evidence about the item.
+   The command reads the catalog without writing to it and prints the
+   sampling summary, including per-stratum counts and skipped items (no
+   detail, invalid state, oversized state).
+
+   The output is `jev-moderation-candidates/v1`: unlabeled cases whose `state`
+   is exactly the text production sends to Jev, plus `sampling_stratum` and
+   `sensitive_candidate` fields. It also writes a private sidecar,
+   `<output>.index.json`, mapping each case ID to a `ContentItem` ID.
+   **The sidecar must never be committed or shared.** The candidate file
+   contains catalog titles and descriptions, so keep both files outside the
+   repository and out of issues, chat, and docs.
+2. **Blind second-model silver labels.** Have a different model label every
+   candidate's `state` for the three classes, without showing it Jev's
+   output, the lexicon flag, or any other model's labels. These silver labels
+   are working labels, not ground truth.
+3. **One live Jev pass per case.** Convert the candidates to the
+   `jev-moderation-gold-cases/v1` schema (drop `sampling_stratum` and
+   `sensitive_candidate`; add `language`, `gold_class`, and `adjudication`).
+   Run [`evaluate_jev_moderation`](#exact-sample-preflight) with `--dry-run`,
+   then with `--confirm-live`, in batches of at most 25 exact `--case-ids`,
+   using a concrete pinned `MODERATION_MODEL` such as `jev-1.13.0`. Each case
+   is sent once. Never rerun a failed batch blindly, because calls may already
+   have been sent. The gold schema has no silver status: a catalog case must
+   be `human_adjudicated` with at least one reviewer. A working dataset built
+   from silver labels therefore overstates human review. Keep it private and
+   treat its report as provisional.
+4. **Human review.** A person reviews, from the private files: every case where
+   the silver label and Jev disagree; every flagged case (any case that either
+   labeler marks `explicit_or_sensitive` or `needs_review`); and a random 10%
+   audit of the agreements, drawn with a recorded seed. The reviewer's label
+   replaces the silver label. Only human-reviewed cases keep the
+   `human_adjudicated` status in the reviewed dataset.
+5. **Metrics.** Regenerate the report from the reviewed dataset. Report the
+   [classification metrics](#pure-classification-report-contract-jev-moderation-evaluation-reportv2)
+   (Jev-only and final-policy confusion matrices, per-class precision and
+   recall, explicit false-negative rate, needs-review recall, coverage, and
+   provider/language strata with numerators and denominators), plus silver
+   versus human agreement, latency, tokens, and priced cost. Fill in the
+   [report summary template](#report-summary-template). Publish only opaque case
+   IDs and aggregates, never titles, descriptions, or the sidecar.
+
 ### Report summary template
 
 - Dataset schema/version, split, total cases, human-adjudicated cases:
@@ -100,3 +167,7 @@ The live JSON report includes `schema_version` (`jev-moderation-evaluation-repor
 - Known priced usage and complete cost total, with status:
 - Provider overrides, separate from Jev-only quality:
 - Go/no-go: **INSUFFICIENT** until representative human-adjudicated live evidence and human-approved thresholds exist.
+
+## Results: 2026-09-28 catalog evaluation
+
+Results pending.

@@ -124,8 +124,8 @@ discovery browse request.
   production route graph, and the preview artwork is a source asset imported
   only by the excluded page. The route retains a development-only `notFound()`
   guard as defense in depth. A recorded production build found no preview route
-  or artwork in its client/server output; see implementation evidence in
-  [`jev-content-moderation.md`](../../odd/tasks/jev-content-moderation.md).
+  or artwork in its client/server output; see
+  [ADR 0009](../adr/0009-jev-content-moderation.md).
 - This preview does not activate moderation enforcement or change production
   discovery, direct-search, or adult-preference behavior.
 - Artwork receives a visual blur only for a fresh `complete` judgment with
