@@ -4,6 +4,7 @@ from .user_list import UserListAdmin
 from .list_item import ListItemAdmin
 from .rating import RatingAdmin
 from .list_invitation import ListInvitationAdmin
+from .moderation import ContentModerationJudgmentAdmin
 
 # Per-type Detail + catalog tables (Sprint 07).
 from . import detail  # noqa: F401

@@ -45,6 +45,16 @@ class ContentItem(models.Model):
         help_text='Average rating score (cached)'
     )
 
+    current_moderation_source_hash = models.CharField(
+        max_length=64,
+        null=True,
+        blank=True,
+        help_text=(
+            'Hash of the current normalized moderation text; null means the '
+            'freshness state is unverified'
+        ),
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -64,4 +74,3 @@ class ContentItem(models.Model):
 
     def __str__(self):
         return f"{self.content_type} - {self.source_api}:{self.external_id}"
-
