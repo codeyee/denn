@@ -59,11 +59,11 @@ export function AdultContentPreference({
             Adult content
           </h2>
           <p className="mt-1 max-w-xl text-sm text-gray-300">
-            Automatic recommendations always exclude explicit content. When
-            enabled, deliberate searches may include adult results where the
-            provider supports them, and explicit artwork on detail pages is
-            shown without blur. When disabled, explicit detail artwork is
-            blurred and can be revealed for the current view only.
+            Automatic recommendations exclude content flagged as adult or
+            explicit. When enabled, deliberate searches may include adult
+            results where the provider supports them, and explicit artwork on
+            detail pages is shown without blur. When disabled, explicit detail
+            artwork is blurred and can be revealed for the current view only.
           </p>
         </div>
         <label className="inline-flex min-h-11 cursor-pointer items-center gap-3">
