@@ -8,6 +8,12 @@ from .cors import *
 from .docs import *
 from .cache import *
 from .security import *
+from .base import (
+    MODERATION_CLASSIFICATION_ENABLED,
+    MODERATION_MODEL,
+    MODERATION_POLICY_REVISION,
+    MODERATION_QUESTION_REVISION,
+)
 
 # Make settings available
 __all__ = [

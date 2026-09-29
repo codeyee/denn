@@ -7,6 +7,7 @@ Jev is advisory. Enforcement remains shadow-only/JEV-005.
 """
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from typing import Literal, NamedTuple
 
@@ -23,7 +24,7 @@ def _validated_threshold(name: str, value: object) -> float:
     if not isinstance(value, (int, float)) or isinstance(value, bool):
         raise ValueError(f"{name} must be a real number, got {value!r}")
     number = float(value)
-    if number != number or number in (float("inf"), float("-inf")):
+    if not math.isfinite(number):
         raise ValueError(f"{name} must be finite, got {value!r}")
     if not 0.0 <= number <= 1.0:
         raise ValueError(f"{name} must be in [0, 1], got {value!r}")
@@ -75,7 +76,7 @@ def _validated_probability(name: str, value: object) -> float | None:
     if not isinstance(value, (int, float)) or isinstance(value, bool):
         raise ValueError(f"{name} must be a real number or None, got {value!r}")
     number = float(value)
-    if number != number or number in (float("inf"), float("-inf")):
+    if not math.isfinite(number):
         raise ValueError(f"{name} must be finite or None, got {value!r}")
     if not 0.0 <= number <= 1.0:
         raise ValueError(f"{name} must be in [0, 1] or None, got {value!r}")

@@ -31,7 +31,7 @@ def parse_price(raw, name: str = 'price') -> float:
         number = float(raw)
     except (TypeError, ValueError) as error:
         raise ValueError(f'{name} must be a finite number') from error
-    if number != number or number in (float('inf'), float('-inf')) or number < 0:
+    if not math.isfinite(number) or number < 0:
         raise ValueError(f'{name} must be a non-negative finite number')
     return number
 

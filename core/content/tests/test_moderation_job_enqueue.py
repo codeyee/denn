@@ -126,11 +126,13 @@ class ModerationJobEnqueueTests(TestCase):
     @ENABLED
     def test_job_and_detail_roll_back_together(self):
         item = self.create_item(ContentItem.ContentType.MOVIE, 'rollback')
-        with self.assertRaises(RuntimeError):
+
+        def write_detail_then_fail():
             with transaction.atomic():
                 ensure_content_detail(item, payload=MOVIE_MEMENTO, force=True)
                 raise RuntimeError('rollback transaction')
 
+        self.assertRaises(RuntimeError, write_detail_then_fail)
         item.refresh_from_db()
         self.assertIsNone(item.current_moderation_source_hash)
         self.assertFalse(ContentModerationJob.objects.filter(content_item=item).exists())
