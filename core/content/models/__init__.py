@@ -6,6 +6,12 @@ from .list_item import ListItem
 from .rating import Rating
 from .user_content_tracking import UserContentTracking
 from .dynamic_collection_preference import DynamicCollectionPreference
+from .moderation import (
+    ContentMetadataPreparationCursor,
+    ContentMetadataPreparationJob,
+    ContentModerationJob,
+    ContentModerationJudgment,
+)
 from .list_invitation import ListInvitation
 
 from .detail import (
@@ -41,6 +47,10 @@ __all__ = [
     'UserContentTracking',
     'DynamicCollectionPreference',
     'ListInvitation',
+    'ContentModerationJob',
+    'ContentModerationJudgment',
+    'ContentMetadataPreparationJob',
+    'ContentMetadataPreparationCursor',
     'MovieDetail',
     'TvShowDetail',
     'SeasonDetail',
