@@ -12,6 +12,7 @@ import os
 import tempfile
 from argparse import ArgumentTypeError
 from bisect import bisect_right
+from functools import partial
 
 from django.core.management.base import BaseCommand, CommandError
 
@@ -217,10 +218,9 @@ class Command(BaseCommand):
 
         if selection is not None:
             emit({'event': 'selection', **selection})
-            fetch_page = lambda cursor, size: _fetch_exact_page(
-                selected_ids, cursor, size)
+            fetch_page = partial(_fetch_exact_page, selected_ids)
         else:
-            fetch_page = lambda cursor, size: _fetch_page(cursor, size)
+            fetch_page = _fetch_page
 
         summary = run_backfill(fetch_page=fetch_page,
                                classify=classify_content_item,
