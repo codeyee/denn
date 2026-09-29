@@ -37,7 +37,9 @@ Usage:
   ./.scripts/workspace.sh doctor
   ./.scripts/workspace.sh smoke-local
   ./.scripts/workspace.sh browser-local
-  ./.scripts/workspace.sh logs [web|core|proxy|postgres|redis]
+  ./.scripts/workspace.sh worker-start <metadata-preparation-worker|moderation-worker>
+  ./.scripts/workspace.sh worker-stop <metadata-preparation-worker|moderation-worker>
+  ./.scripts/workspace.sh logs [web|core|proxy|postgres|redis|metadata-preparation-worker|moderation-worker]
   ./.scripts/workspace.sh env-store
   ./.scripts/workspace.sh env-link
 
@@ -539,7 +541,7 @@ cmd_up() {
 cmd_down() {
   check_prerequisites
   [[ -f "$COMPOSE_ENV_FILE" ]] || prepare_compose_env
-  compose down --remove-orphans
+  compose --profile moderation down --remove-orphans
   echo "✓ local stack stopped; database volume for $PROJECT_NAME was preserved"
 }
 
@@ -564,7 +566,7 @@ cmd_restart_service() {
 cmd_status() {
   check_prerequisites
   [[ -f "$COMPOSE_ENV_FILE" ]] || prepare_compose_env
-  compose ps
+  compose --profile moderation ps
 }
 
 http_check() {
@@ -655,21 +657,52 @@ cmd_browser_local() {
 
 cmd_logs() {
   local service="${1:-}"
+  local profile_args=()
   check_prerequisites
   [[ -f "$COMPOSE_ENV_FILE" ]] || prepare_compose_env
 
   if [[ -n "$service" ]]; then
     case "$service" in
-      web|core|proxy|postgres|redis) ;;
+      web|core|proxy|postgres|redis|metadata-preparation-worker|moderation-worker) ;;
       *) fail "unknown service: $service" ;;
     esac
-    exec docker compose \
+    case "$service" in
+      metadata-preparation-worker|moderation-worker) profile_args+=(--profile moderation) ;;
+    esac
+    exec docker compose "${profile_args[@]}" \
       --env-file "$COMPOSE_ENV_FILE" \
       --file "$COMPOSE_FILE" \
       logs --follow --tail 100 "$service"
   fi
 
   compose logs --tail 30 postgres redis proxy core web
+}
+
+cmd_worker_start() {
+  local service="${1:-}"
+  case "$service" in
+    metadata-preparation-worker|moderation-worker) ;;
+    *) fail "service must be metadata-preparation-worker or moderation-worker" ;;
+  esac
+
+  check_prerequisites
+  prepare_compose_env
+  compose --profile moderation up --detach --build "$service"
+  echo "✓ opted-in local worker started: $service"
+  echo "  inspect with: make local-logs SERVICE=$service"
+  echo "  stop with: docker compose --profile moderation --env-file $COMPOSE_ENV_FILE --file $COMPOSE_FILE stop $service"
+}
+
+cmd_worker_stop() {
+  local service="${1:-}"
+  case "$service" in
+    metadata-preparation-worker|moderation-worker) ;;
+    *) fail "service must be metadata-preparation-worker or moderation-worker" ;;
+  esac
+
+  check_prerequisites
+  [[ -f "$COMPOSE_ENV_FILE" ]] || prepare_compose_env
+  compose --profile moderation stop "$service"
 }
 
 cmd_env_store() {
@@ -851,7 +884,7 @@ cmd_destroy() {
   else
     prepare_compose_env
   fi
-  compose down --remove-orphans --volumes
+  compose --profile moderation down --remove-orphans --volumes
   rm -f "$INSTANCE_STATE_FILE"
   echo "✓ local stack and its project-scoped volumes were destroyed for $PROJECT_NAME"
 }
@@ -869,6 +902,8 @@ case "${1:-}" in
   smoke-local)     cmd_smoke_local ;;
   browser-local)   cmd_browser_local ;;
   logs)            cmd_logs "${2:-}" ;;
+  worker-start)    cmd_worker_start "${2:-}" ;;
+  worker-stop)     cmd_worker_stop "${2:-}" ;;
   env-store)       cmd_env_store ;;
   env-link)        cmd_env_link ;;
   db-backup)       cmd_db_backup ;;
