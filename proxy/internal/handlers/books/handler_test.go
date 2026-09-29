@@ -124,7 +124,7 @@ func TestDetail(t *testing.T) {
 	client := NewTestClient(func(req *http.Request) *http.Response {
 		if strings.Contains(req.URL.String(), "/search.json") {
 			q := req.URL.Query().Get("q")
-			if q == "OL123W" {
+			if q == "key:/works/OL123W" {
 				return &http.Response{
 					StatusCode: 200,
 					Body:       io.NopCloser(strings.NewReader(mockDetailResponse)),
