@@ -142,9 +142,6 @@ class ModerationConfigurationTests(TestCase):
     def test_classification_disabled_by_default(self):
         self.assertFalse(settings.MODERATION_CLASSIFICATION_ENABLED)
 
-    def test_shadow_policy_mode(self):
-        self.assertEqual(settings.MODERATION_POLICY_MODE, "shadow")
-
     def test_model_question_and_policy_revisions_present(self):
         self.assertEqual(settings.MODERATION_MODEL, "jev-latest")
         self.assertEqual(settings.MODERATION_QUESTION_REVISION, "q3")

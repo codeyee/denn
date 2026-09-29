@@ -31,7 +31,6 @@ aggregate rate/cost limit across replicas is implemented or evidenced here.
 |------|---------|
 | `TYPESAFE_API_KEY` | Server-side Jev credential; never reaches the browser |
 | `MODERATION_CLASSIFICATION_ENABLED` | Master switch; the service makes no calls while false |
-| `MODERATION_POLICY_MODE` | Core configuration value; it has no current runtime consumer and does not gate Web visibility |
 | `WEB_MODERATION_VISIBILITY_ENABLED` | Separate Web server flag for homepage explicit suppression and detail-artwork blur; defaults off |
 | `MODERATION_MODEL` | Requested model or alias (for example `jev-latest`) |
 | `MODERATION_QUESTION_REVISION` | Pins which question wording produced a judgment |
@@ -156,8 +155,7 @@ behavior. Web visibility uses the independent, server-only
 Web suppresses only current complete explicit homepage items and blurs explicit
 detail artwork unless the viewer has `allow_adult_content=true`. The preference
 does not restore homepage items, and CSS blur does not prevent direct image
-access. `MODERATION_POLICY_MODE` has no current runtime consumer and does not
-control Web presentation.
+access.
 
 Neither code presence nor this runbook is evidence that the flag is enabled in
 a deployed environment. To roll back visible behavior, unset the Web flag or
