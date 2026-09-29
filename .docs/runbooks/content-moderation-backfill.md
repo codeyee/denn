@@ -104,6 +104,23 @@ execute without the required production change approval. Review the target
 environment, ID list, flags, and report destination before an authorized run.
 Never run this example against production without that approval.
 
+## Source-hash backfill (no Jev calls)
+
+Judgments are compared with each item's materialized current source hash, so a
+legacy row without one reads as `stale`. Populate the missing hashes before
+classifying existing rows:
+
+```bash
+python core/manage.py backfill_moderation_source_hashes --limit 500
+```
+
+`--limit` is required and positive; `--after-id` (default 0) resumes after a
+primary key. The command reads only local normalized detail, makes no Jev or
+provider call, and prints one line,
+`examined=<n> updated=<n> unverified=<n> next_after_id=<id>`. Rerun with
+`--after-id <next_after_id>` until `examined=0`. Items whose normalized detail
+is missing or unusable stay `unverified` and keep a null hash.
+
 ## Output: JSONL events, then one summary
 
 Stdout carries one compact JSON object per line:
