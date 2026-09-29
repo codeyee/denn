@@ -2,8 +2,11 @@ import logging
 from typing import Optional
 
 from rest_framework import serializers
+from drf_spectacular.utils import extend_schema_field
 
+from content.moderation.summary import moderation_summary
 from content.models import ContentItem, Image
+from .moderation_summary import ModerationSummarySerializer
 
 
 logger = logging.getLogger(__name__)
@@ -19,6 +22,11 @@ class LocalContentSummarySerializer(serializers.Serializer):
     poster = serializers.SerializerMethodField()
     backdrop = serializers.SerializerMethodField()
     authors = serializers.SerializerMethodField()
+    moderation = serializers.SerializerMethodField()
+
+    @extend_schema_field(ModerationSummarySerializer)
+    def get_moderation(self, obj):
+        return moderation_summary(obj)
 
     def get_season_number(self, obj) -> Optional[int]:
         if obj.content_type != ContentItem.ContentType.SEASON:

@@ -6,6 +6,7 @@ from django.db.models import F, Prefetch, Subquery
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiExample, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 from content.models import ListItem, UserList, Rating, UserContentTracking
+from content.moderation.summary import latest_moderation_prefetch
 from content.serializers import ListItemSerializer, ListItemCreateSerializer
 from content.services.source_data_orchestrator import fetch_bulk_source_data
 from content.services import (
@@ -238,6 +239,7 @@ class ListItemViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
             'user_list',
         ).prefetch_related(
             'user_list__memberships',
+            latest_moderation_prefetch('content_item__'),
             Prefetch(
                 'content_item__ratings',
                 queryset=ratings_qs,
