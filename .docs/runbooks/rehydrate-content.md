@@ -44,6 +44,30 @@ Run after any of the following:
   `--include-no-data`, for example:
   `python manage.py rehydrate_content_details --content-type GAME --include-no-data --limit 500 --workers 4`.
 
+## Production schedule (Dokploy)
+
+Production runs this command through Dokploy schedules on the `denn-core`
+application (container workdir `/app`). Created 2026-09-29:
+
+| Schedule | State | Command |
+| --- | --- | --- |
+| `denn-core: refresh stale content details` | enabled, daily `0 9 * * *` UTC | `rehydrate_content_details --content-type ALL --limit 200 --workers 2` |
+| `denn-core: safety metadata catch-up (manual)` | disabled, run manually | `rehydrate_content_details --content-type <TYPE> --ttl-override 0 --limit 3000 --workers <K>` |
+| `denn-core: catch-up rehydrate dry run (manual)` | disabled, run manually | `rehydrate_content_details --content-type ALL --ttl-override 0 --limit 100000 --dry-run` (per-item lines filtered out) |
+
+- The daily job refreshes only rows past their policy window, oldest due
+  first, at most 200 per type. The read path still refreshes stale rows
+  that someone visits, so the daily job covers what nobody opens.
+- Never put a `--ttl-override 0` command on a cron: after the oldest rows
+  are refreshed it keeps re-selecting the rows it just refreshed.
+- The 2026-09-29 dry run counted MOVIE 2,158, TV_SHOW 2,128, SEASON 18,971,
+  GAME 321, ALBUM 506 and BOOK 18 detail rows. Seasons are the largest
+  type: if the daily SEASON `total` stays at the 200 limit for weeks, raise
+  the limit for that type with a separate schedule.
+- A manual run longer than about 30 seconds times out in the Dokploy API
+  client but keeps running on the server; follow it in the schedule's
+  deployment log.
+
 ## Usage
 
 ```bash

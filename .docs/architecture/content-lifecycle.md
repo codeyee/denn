@@ -81,7 +81,8 @@ operation; fresh and stale local reads add none synchronously.
 
 - First-time population can be backfilled with
   `backfill_content_details`.
-- Periodic refresh uses `rehydrate_content_details`.
+- Periodic refresh uses `rehydrate_content_details`. Production runs it
+  daily through a Dokploy schedule on `denn-core`; see the runbook.
 - Freshness is determined by `CONTENT_REHYDRATION_POLICY`, a dynamic
   age/type-aware policy applied in both the read path and the periodic
   command.
