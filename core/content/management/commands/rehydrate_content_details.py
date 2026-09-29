@@ -86,6 +86,10 @@ class Command(BaseCommand):
             '--include-no-data', action='store_true',
             help='Reprocess existing IGDB game duration rows with no_data (one-off repair).',
         )
+        parser.add_argument(
+            '--include-missing-duration', action='store_true',
+            help='Also select fresh games that have no IGDB duration row (one-off repair).',
+        )
 
     def handle(self, *args, **options):
         ctype_arg: str = (options['content_type'] or 'ALL').upper()
@@ -105,6 +109,7 @@ class Command(BaseCommand):
         limit = max(1, int(options['limit']))
         dry_run = bool(options['dry_run'])
         include_no_data = bool(options['include_no_data'])
+        include_missing_duration = bool(options['include_missing_duration'])
 
         for ct in types_to_run:
             self._run_one_type(
@@ -114,6 +119,7 @@ class Command(BaseCommand):
                 ttl_override=ttl_override,
                 dry_run=dry_run,
                 include_no_data=include_no_data,
+                include_missing_duration=include_missing_duration,
             )
 
     def _run_one_type(
@@ -125,12 +131,14 @@ class Command(BaseCommand):
         ttl_override: Optional[timedelta],
         dry_run: bool,
         include_no_data: bool,
+        include_missing_duration: bool,
     ) -> _TypeStats:
         items = self._select_stale_items(
             content_type,
             limit,
             ttl_override,
             include_no_data=include_no_data,
+            include_missing_duration=include_missing_duration,
         )
         stats = _TypeStats(content_type=content_type, total=len(items))
 
@@ -226,6 +234,7 @@ class Command(BaseCommand):
         ttl_override: Optional[timedelta],
         *,
         include_no_data: bool = False,
+        include_missing_duration: bool = False,
     ) -> List[ContentItem]:
         related_name = DETAIL_RELATED_NAME.get(content_type)
 
@@ -252,12 +261,16 @@ class Command(BaseCommand):
             .select_related(related_name)
         )
         if content_type == ContentItem.ContentType.GAME:
-            has_game_duration = GameDurationEstimate.objects.filter(
-                content_item_id=OuterRef('pk'),
-                provider=GameDurationEstimate.Provider.IGDB,
-            )
-            qs = qs.annotate(has_game_duration=Exists(has_game_duration))
-            selection = Q(refresh_due_at__lt=Now()) | Q(has_game_duration=False)
+            selection = Q(refresh_due_at__lt=Now())
+            # Opt-in only: a game IGDB no longer returns never gains a duration
+            # row, so an unconditional selection would re-fetch it every run.
+            if include_missing_duration:
+                has_game_duration = GameDurationEstimate.objects.filter(
+                    content_item_id=OuterRef('pk'),
+                    provider=GameDurationEstimate.Provider.IGDB,
+                )
+                qs = qs.annotate(has_game_duration=Exists(has_game_duration))
+                selection |= Q(has_game_duration=False)
             if include_no_data:
                 has_no_data_duration = GameDurationEstimate.objects.filter(
                     content_item_id=OuterRef('pk'),
