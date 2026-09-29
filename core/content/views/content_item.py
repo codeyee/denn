@@ -4,13 +4,30 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.generics import get_object_or_404
-from django.db.models import Q
+from django.db.models import Exists, OuterRef, Q
 from django.shortcuts import redirect
 from django.urls import reverse
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiExample, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
-from content.models import ContentItem, Rating, UserContentTracking
+from content.models import (
+    AlbumDetail,
+    BookDetail,
+    ContentItem,
+    GameDetail,
+    MovieDetail,
+    Rating,
+    SeasonDetail,
+    TvShowDetail,
+    UserContentTracking,
+)
+from content.moderation.summary import (
+    latest_moderation_prefetch,
+    moderation_summary,
+    with_moderation_summary,
+)
 from content.serializers import ContentItemSerializer
+from content.serializers.moderation_summary import ModerationSummarySerializer
+from content.services.metadata_preparation_enqueue import enqueue_metadata_preparation
 from content.permissions import (
     IsAdminOrReadOnly,
     IsAuthenticatedOrCatalogService,
@@ -72,6 +89,18 @@ class ContentItemBulkResolveRequestSerializer(drf_serializers.Serializer):
                     'source_api is not valid for content_type.'
                 )
         return items
+
+
+class ContentItemBulkResolveResultSerializer(drf_serializers.Serializer):
+    id = drf_serializers.IntegerField()
+    source_api = drf_serializers.ChoiceField(choices=ContentItem.SourceAPI.choices)
+    external_id = drf_serializers.CharField()
+    content_type = drf_serializers.ChoiceField(choices=ContentItem.ContentType.choices)
+    moderation = ModerationSummarySerializer(read_only=True)
+
+
+class ContentItemBulkResolveResponseSerializer(drf_serializers.Serializer):
+    results = ContentItemBulkResolveResultSerializer(many=True)
 
 
 @extend_schema_view(
@@ -198,7 +227,9 @@ class ContentItemBulkResolveRequestSerializer(drf_serializers.Serializer):
     )
 )
 class ContentItemViewSet(FlexFieldsMixin, viewsets.ModelViewSet):
-    queryset = ContentItem.objects.all().order_by('-created_at')
+    queryset = ContentItem.objects.all().prefetch_related(
+        latest_moderation_prefetch()
+    ).order_by('-created_at')
     serializer_class = ContentItemSerializer
     permission_classes = [IsAuthenticated, IsAdminOrReadOnly]
     filter_backends = [filters.OrderingFilter, filters.SearchFilter]
@@ -362,7 +393,9 @@ class ContentItemDetailByIdView(APIView):
 
     def get(self, request, id):
         item = get_object_or_404(
-            ContentItem.objects.select_related('season_detail__tv_show'),
+            ContentItem.objects.select_related('season_detail__tv_show').prefetch_related(
+                latest_moderation_prefetch()
+            ),
             pk=id,
         )
         current_user_rating = None
@@ -403,11 +436,14 @@ class ContentItemDetailByIdView(APIView):
     description='''
     Idempotently resolves up to 200 external content triples to canonical
     Denn ids. This endpoint owns identity only; it never trusts
-    browser-supplied provider metadata. Missing detail is materialized later
-    through the canonical `core` -> `proxy` path.
+    browser-supplied provider metadata. Each result also includes the
+    allowlisted moderation status and classification, checked against the
+    server-materialized current source hash. Missing detail records bounded,
+    deduplicated preparation intent for a future canonical `core` -> `proxy`
+    worker; this request never performs provider I/O.
     ''',
     request=ContentItemBulkResolveRequestSerializer,
-    responses={200: OpenApiTypes.OBJECT},
+    responses={200: ContentItemBulkResolveResponseSerializer},
 )
 class ContentItemBulkResolveView(APIView):
     permission_classes = [IsAuthenticatedOrCatalogService]
@@ -442,7 +478,23 @@ class ContentItemBulkResolveView(APIView):
                 external_id=item['external_id'],
                 content_type=item['content_type'],
             )
-        resolved = ContentItem.objects.filter(query)
+        resolved = list(
+            with_moderation_summary(
+                ContentItem.objects.filter(query).annotate(
+                    has_normalized_detail=(
+                        Exists(MovieDetail.objects.filter(content_item_id=OuterRef('pk')))
+                        | Exists(TvShowDetail.objects.filter(content_item_id=OuterRef('pk')))
+                        | Exists(SeasonDetail.objects.filter(content_item_id=OuterRef('pk')))
+                        | Exists(GameDetail.objects.filter(content_item_id=OuterRef('pk')))
+                        | Exists(AlbumDetail.objects.filter(content_item_id=OuterRef('pk')))
+                        | Exists(BookDetail.objects.filter(content_item_id=OuterRef('pk')))
+                    ),
+                )
+            )
+        )
+        enqueue_metadata_preparation([
+            item.pk for item in resolved if not item.has_normalized_detail
+        ])
         resolved_by_key = {
             (item.source_api, item.external_id, item.content_type): item
             for item in resolved
@@ -461,6 +513,7 @@ class ContentItemBulkResolveView(APIView):
                 'source_api': item.source_api,
                 'external_id': item.external_id,
                 'content_type': item.content_type,
+                'moderation': moderation_summary(item),
             })
 
         logging.getLogger(__name__).info(

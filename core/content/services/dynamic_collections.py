@@ -19,6 +19,7 @@ from content.models import (
     UserList,
     UserContentTracking,
 )
+from content.moderation.summary import latest_moderation_prefetch
 
 
 @dataclass(frozen=True)
@@ -257,6 +258,7 @@ def base_tracking_queryset(user) -> QuerySet[UserContentTracking]:
         UserContentTracking.objects.filter(user=user)
         .select_related("content_item", *CONTENT_DETAIL_RELATIONS)
         .prefetch_related(
+            latest_moderation_prefetch("content_item__"),
             Prefetch(
                 "content_item__images",
                 queryset=Image.objects.order_by("position", "id"),

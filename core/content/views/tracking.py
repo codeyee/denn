@@ -8,6 +8,7 @@ from rest_framework.views import APIView
 from secrets import randbelow
 
 from content.models import ContentItem, ContentItemAuthor, Image, UserContentTracking
+from content.moderation.summary import latest_moderation_prefetch
 from content.serializers import (
     RandomSelectionRequestSerializer,
     RandomTrackingPickSerializer,
@@ -108,6 +109,7 @@ class UserContentTrackingRandomView(APIView):
                 "content_item__book_detail",
             )
             .prefetch_related(
+                latest_moderation_prefetch("content_item__"),
                 Prefetch(
                     "content_item__images",
                     queryset=Image.objects.order_by("position", "id"),
