@@ -31,6 +31,8 @@ type Game struct {
 	Series      *string       `json:"series,omitempty"`
 	PlayTime    *PlayTime     `json:"play_time,omitempty"`
 	Duration    *GameDuration `json:"duration,omitempty"`
+	Keywords    []string      `json:"keywords,omitempty"`
+	AgeRatings  []AgeRating   `json:"age_ratings,omitempty"`
 	Images      *Images       `json:"-"`
 }
 
@@ -50,6 +52,8 @@ type GameResponse struct {
 	Series      *string       `json:"series,omitempty"`
 	PlayTime    *PlayTime     `json:"play_time,omitempty"`
 	Duration    *GameDuration `json:"duration,omitempty"`
+	Keywords    []string      `json:"keywords,omitempty"`
+	AgeRatings  []AgeRating   `json:"age_ratings,omitempty"`
 	Images      []ImageEntry  `json:"images,omitempty"`
 }
 
@@ -70,6 +74,8 @@ func (g *Game) ToResponse() GameResponse {
 		Series:      g.Series,
 		PlayTime:    g.PlayTime,
 		Duration:    g.Duration,
+		Keywords:    g.Keywords,
+		AgeRatings:  g.AgeRatings,
 	}
 
 	if g.Images != nil {

@@ -9,6 +9,7 @@ type Book struct {
 	ReleaseDate *string  `json:"release_date,omitempty"`
 	Pages       *int     `json:"pages,omitempty"`
 	Description *string  `json:"description,omitempty"`
+	Subjects    []string `json:"subjects,omitempty"`
 	Images      *Images  `json:"-"`
 }
 
@@ -21,6 +22,7 @@ type BookResponse struct {
 	Pages       *int         `json:"pages,omitempty"`
 	Description *string      `json:"description,omitempty"`
 	Authors     []Author     `json:"authors,omitempty"`
+	Subjects    []string     `json:"subjects,omitempty"`
 	Images      []ImageEntry `json:"images,omitempty"`
 }
 
@@ -34,6 +36,7 @@ func (b *Book) ToResponse() BookResponse {
 		Pages:       b.Pages,
 		Description: b.Description,
 		Authors:     b.Authors,
+		Subjects:    b.Subjects,
 	}
 
 	if b.Images != nil {

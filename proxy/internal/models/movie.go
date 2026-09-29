@@ -13,6 +13,10 @@ type Movie struct {
 	DurationMinutes *int                  `json:"duration_minutes,omitempty"`
 	Status          *string               `json:"status,omitempty"`
 	Authors         []Author              `json:"authors,omitempty"`
+	Adult           *bool                 `json:"adult,omitempty"`
+	Genres          []string              `json:"genres,omitempty"`
+	Keywords        []string              `json:"keywords,omitempty"`
+	Certifications  []Certification       `json:"certifications,omitempty"`
 	Images          *Images               `json:"-"`
 	Platforms       map[string][]Platform `json:"-"`
 }
@@ -30,6 +34,10 @@ type MovieResponse struct {
 	Status          *string               `json:"status,omitempty"`
 	DurationMinutes *int                  `json:"duration_minutes,omitempty"`
 	Authors         []Author              `json:"authors,omitempty"`
+	Adult           *bool                 `json:"adult,omitempty"`
+	Genres          []string              `json:"genres,omitempty"`
+	Keywords        []string              `json:"keywords,omitempty"`
+	Certifications  []Certification       `json:"certifications,omitempty"`
 	Images          []ImageEntry          `json:"images,omitempty"`
 	Platforms       map[string][]Platform `json:"platforms,omitempty"`
 }
@@ -48,6 +56,10 @@ func (m *Movie) ToResponse() MovieResponse {
 		Status:          m.Status,
 		DurationMinutes: m.DurationMinutes,
 		Authors:         m.Authors,
+		Adult:           m.Adult,
+		Genres:          m.Genres,
+		Keywords:        m.Keywords,
+		Certifications:  m.Certifications,
 	}
 
 	if m.Images != nil {

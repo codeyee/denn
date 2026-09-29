@@ -43,6 +43,40 @@ siguen siendo exclusivas de `proxy`. Cuando las estimaciones disponibles
 contradicen el orden esperado, el contrato conserva únicamente
 `normally_seconds`; `hastily_seconds` y `completely_seconds` se descartan.
 
+### 1.2 Provider safety metadata on detail responses
+
+Detail responses (`/v1/proxy/{movies,tv-shows,games,albums,books}/:id` and
+`.../bulk`) carry optional provider fields that `core` uses as moderation
+context. They come from the request `proxy` already makes for the detail (an
+extended `append_to_response` for TMDB, extra fields in the IGDB query), so they
+add no upstream request. Every field is omitted when the provider did not
+supply it: absence never means safe, and `proxy` never invents a value. String
+lists are trimmed, deduplicated, free of empty entries and in provider order.
+
+| Content | Field | Source |
+| --- | --- | --- |
+| Movie, TV show | `adult` (bool) | TMDB top-level `adult`; `false` is kept |
+| Movie, TV show | `genres` | TMDB `genres[].name` |
+| Movie | `keywords` | `keywords.keywords[].name` (`append_to_response=keywords`) |
+| TV show | `keywords` | `keywords.results[].name` |
+| Movie | `certifications` (`[{country, rating}]`) | `release_dates.results[]`: per `iso_3166_1`, first non-empty certification, preferring release type 3 (theatrical) |
+| TV show | `certifications` (`[{country, rating}]`) | `content_ratings.results[]`, empty ratings skipped |
+| Game | `keywords` | IGDB `keywords.name` |
+| Game | `age_ratings` (`[{organization, rating, descriptors}]`) | IGDB `age_ratings.organization.name`, `age_ratings.rating_category.rating`, `age_ratings.rating_content_descriptions.description`; entries without organization or rating skipped; the deprecated `category`, `rating` and `content_descriptions` are not used |
+| Album | `tracks[].explicit` (bool) | Spotify track `explicit`; no album-level aggregate |
+| Book | `subjects` | OpenLibrary `subject` of the search document the detail request already fetches (`fields=*`); at most 50 |
+
+Only detail requests ask for these fields. Search, trending, browse and the
+homepage previews for movies, TV shows and games keep their previous provider
+queries (and cache keys). The homepage albums and books reuse the detail
+fetch, so they include `tracks[].explicit` and `subjects` too.
+
+`proxy` only forwards this data. The authority rules live in `core`
+(`provider-rule:v2`): TMDB `adult == true` and an IGDB `ESRB` rating of exactly
+`AO` are authoritative explicit overrides. Everything else is contextual text
+for the classifier, never an override and never proof of safety. In
+particular, `tracks[].explicit` means explicit lyrics, not sexual content.
+
 `core` no expone endpoints `/api/proxy/...`. `web` no expone metadata externa fuera de `/api/proxy/*`.
 
 ## 2. Headers

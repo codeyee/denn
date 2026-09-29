@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/codeyee/denn-proxy/internal/models"
+	servicecommon "github.com/codeyee/denn-proxy/internal/services/common"
 	"github.com/codeyee/denn-proxy/internal/services/games"
 )
 
@@ -229,6 +231,55 @@ func extractNames[T any](items []T, nameFn func(T) string) []string {
 	return names
 }
 
+func extractKeywords(keywords []games.IgdbKeyword) []string {
+	names := make([]string, 0, len(keywords))
+	for _, k := range keywords {
+		names = append(names, k.Name)
+	}
+
+	return servicecommon.UniqueTrimmed(names)
+}
+
+// extractAgeRatings maps IGDB age ratings, skipping entries that lack an
+// organization or a rating. Entries that repeat an organization and rating are
+// merged so their descriptors are kept.
+func extractAgeRatings(ratings []games.IgdbAgeRating) []models.AgeRating {
+	var out []models.AgeRating
+	indexByKey := make(map[[2]string]int, len(ratings))
+
+	for _, r := range ratings {
+		if r.Organization == nil || r.RatingCategory == nil {
+			continue
+		}
+
+		organization := strings.TrimSpace(r.Organization.Name)
+		rating := strings.TrimSpace(r.RatingCategory.Rating)
+		if organization == "" || rating == "" {
+			continue
+		}
+
+		descriptors := make([]string, 0, len(r.RatingContentDescriptions))
+		for _, d := range r.RatingContentDescriptions {
+			descriptors = append(descriptors, d.Description)
+		}
+
+		key := [2]string{organization, rating}
+		if i, ok := indexByKey[key]; ok {
+			out[i].Descriptors = servicecommon.UniqueTrimmed(append(out[i].Descriptors, descriptors...))
+			continue
+		}
+
+		indexByKey[key] = len(out)
+		out = append(out, models.AgeRating{
+			Organization: organization,
+			Rating:       rating,
+			Descriptors:  servicecommon.UniqueTrimmed(descriptors),
+		})
+	}
+
+	return out
+}
+
 func extractSeries(collections []games.IgdbCollection, franchises []games.IgdbFranchise) *string {
 	if len(franchises) > 0 {
 		return &franchises[0].Name
@@ -338,6 +389,9 @@ func MapGame(item games.IgdbGame) models.Game {
 		Themes:    extractNames(item.Themes, func(t games.IgdbTheme) string { return t.Name }),
 		GameModes: extractNames(item.GameModes, func(m games.IgdbGameMode) string { return m.Name }),
 		Series:    extractSeries(item.Collections, item.Franchises),
+
+		Keywords:   extractKeywords(item.Keywords),
+		AgeRatings: extractAgeRatings(item.AgeRatings),
 
 		PlayTime: extractPlayTime(item.TimeToBeats),
 		Duration: extractDuration(item.TimeToBeats, item.TimeToBeatError),
