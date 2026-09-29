@@ -15,8 +15,7 @@ manifest, and no live platform state is asserted here.
    container healthcheck because a worker does not serve HTTP.
 2. **Configure server-only settings.** Set `TYPESAFE_API_KEY` only in Core's
    server environment. Enable `MODERATION_CLASSIFICATION_ENABLED` only for the
-   approved collection window. `MODERATION_POLICY_MODE` has no current runtime
-   consumer and does not control Web presentation. Keep Web visibility off by
+   approved collection window. Keep Web visibility off by
    leaving `WEB_MODERATION_VISIBILITY_ENABLED` unset or `false`; never expose
    the Jev key to Web or browser settings.
 3. **Start one metadata-preparation worker.** It calls Proxy for queued
@@ -57,8 +56,9 @@ every Web instance and restart them together. To roll back, unset it or set it
 to `false` on every instance, restart, then reload browser clients. The homepage
 query key includes the server-resolved mode so new route loads do not reuse
 results from the other mode. Core's `MODERATION_CLASSIFICATION_ENABLED` and
-`MODERATION_POLICY_MODE` remain separate; neither toggles Web visibility. No
-deployment or production configuration change is asserted here.
+`WEB_MODERATION_VISIBILITY_ENABLED` remain separate; classification does not
+toggle Web visibility. No deployment or production configuration change is
+asserted here.
 
 ## Local Compose (explicit opt-in)
 

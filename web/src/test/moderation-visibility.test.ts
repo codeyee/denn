@@ -26,12 +26,10 @@ describe("Web moderation visibility configuration", () => {
   it("does not derive Web visibility from Core classification settings", () => {
     vi.stubEnv("WEB_MODERATION_VISIBILITY_ENABLED", undefined);
     vi.stubEnv("MODERATION_CLASSIFICATION_ENABLED", "true");
-    vi.stubEnv("MODERATION_POLICY_MODE", "enforce");
     expect(isWebModerationVisibilityEnabled()).toBe(false);
 
     vi.stubEnv("WEB_MODERATION_VISIBILITY_ENABLED", "true");
     vi.stubEnv("MODERATION_CLASSIFICATION_ENABLED", "false");
-    vi.stubEnv("MODERATION_POLICY_MODE", "shadow");
     expect(isWebModerationVisibilityEnabled()).toBe(true);
   });
 });
