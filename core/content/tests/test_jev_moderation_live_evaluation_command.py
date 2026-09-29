@@ -15,7 +15,7 @@ from content.management.commands import evaluate_jev_moderation
 from content.moderation.client import ModerationJudgment, UsageTokens
 from content.moderation.evaluation_orchestration import evaluate_dataset
 
-FIXTURE = Path(__file__).parent / "fixtures" / "jev_moderation_gold_cases_v1.json"
+FIXTURE = Path(__file__).parent / "fixtures" / "jev_moderation_gold_cases_v2.json"
 CASE_ID = "case_8a9720d1c46f"
 
 

@@ -9,9 +9,11 @@ enabled in any deployed environment.
 ## Context
 
 Upstream providers report adult-content signals unevenly. TMDB exposes an
-adult flag; IGDB, Spotify, and OpenLibrary expose no trustworthy equivalent.
-Treating missing metadata as safe would let explicit items reach the homepage
-and detail artwork. Denn wanted a reusable, explainable judgment per content
+adult flag and IGDB exposes ESRB ratings, but neither is complete; Spotify and
+OpenLibrary expose no trustworthy equivalent. All of them also carry weaker,
+contextual metadata (certifications, age-rating descriptors, keywords, genres,
+explicit-lyrics flags, subjects). Treating missing metadata as safe would let
+explicit items reach the homepage and detail artwork. Denn wanted a reusable, explainable judgment per content
 item without breaking the service boundaries: `proxy` is stateless and owns
 provider credentials, and `core` owns normalized content and persistence.
 
@@ -26,14 +28,51 @@ server environment. It never lives in Proxy, Web, or the browser.
 `explicit_or_sensitive`, and `needs_review` separately. Input is a named,
 text-only state built from text Core already persists (title, description, and
 content-specific fields); identifiers, URLs, images, dates, and raw provider
-payloads are excluded.
+payloads are excluded. From question revision `q4` that text includes provider
+safety metadata (see "Provider safety metadata" below).
 
 **Code-owned deterministic policy.** `content/moderation/policy.py` composes
-the three probabilities and the provider flag. The TMDB adult flag is an
-authoritative override: an affirmative flag is always explicit and makes no Jev
-call. An absent or false flag never certifies safety. Unknown, failed,
-incomplete, or low-confidence results become `unknown` or `needs_review`, never
-safe. Thresholds and the policy revision are code-owned and provisional.
+the three probabilities and the provider rule. Two provider rules are
+authoritative overrides (`provider-rule:v2`): a TMDB movie or TV show whose
+`adult` flag is true, and an IGDB game with an `ESRB` age rating of exactly
+`AO`. An affirmative rule is always explicit and makes no Jev call. An absent
+or false flag never certifies safety, and nothing else is an override. Unknown,
+failed, incomplete, or low-confidence results become `unknown` or
+`needs_review`, never safe. Thresholds and the policy revision are code-owned
+and provisional.
+
+**Provider safety metadata (`q4`).** Proxy adds optional safety fields to its
+detail payloads without new provider requests: TMDB `adult`, genres, keywords,
+and region certifications; IGDB keywords and age ratings with descriptors;
+Spotify's per-track `explicit`; OpenLibrary subjects. Core validates and
+persists them defensively (malformed entries are dropped, lists are capped, and
+a refresh that omits a field clears it, because the provider is the source of
+truth) and never fails a detail write over them.
+
+- *Authoritative* (code-owned overrides, applied before and independently of
+  Jev): TMDB `adult` true and ESRB `AO`. The `adult` flag is never part of the
+  Jev state.
+- *Contextual* (text in the Jev state, never an override and never proof of
+  safety): genres, keywords (at most 40), certifications for a fixed set of
+  countries, IGDB age ratings and descriptors, the per-track advisory, and book
+  subjects (at most 30). An ESRB `AO` rating also appears in the state as
+  ordinary age-rating text, but the rule decides first and makes no Jev call.
+- The `q4` question guidance tells Jev that this metadata supports a
+  restricted-category judgment but is not a verdict: a mature rating alone (R,
+  M, 18, TV-MA), an explicit-lyrics advisory alone, or a genre alone is not
+  evidence of adult sexual content, while an adult-only rating or explicit
+  sexual keywords or subjects is strong evidence. The three Noul keys and their
+  binary intent are unchanged.
+
+Because the state shape changed, every materialized source hash from `q3` is
+outdated. `backfill_moderation_source_hashes --recompute` refreshes them in
+bounded batches without any Jev or Proxy call and must run after any state or
+question revision change, before classification workers run. As a safeguard,
+the worker supersedes a job whose hash no longer matches the state builder
+instead of calling Jev for a result it could not attach to that job. `q1` to
+`q3` judgments stay immutable history and are not current under `q4`. Rows
+written as `provider-rule:v1` remain valid: every rule so far only adds
+overrides, so a `v1` row is still a correct explicit judgment.
 
 **Versioned, immutable judgments.** `ContentModerationJudgment` is unique on
 `(content_item, source_data_hash, model_name, question_revision)`. The model is
@@ -119,7 +158,7 @@ owner of identity and work admission.
 ## Consequences
 
 - Denn gains explainable, replayable judgments for providers without reliable
-  flags, and the provider override keeps TMDB authoritative.
+  flags, and the provider rules keep TMDB `adult` and ESRB `AO` authoritative.
 - Core classification and Web visibility are independent flags. Enabling
   `MODERATION_CLASSIFICATION_ENABLED` does not change what viewers see, and
   rollback is turning the Web flag off first.
@@ -139,6 +178,16 @@ owner of identity and work admission.
 - Some artwork surfaces have no moderation data or no blur yet (see
   [technical debt](../technical-debt.md)).
 - The worker bounds are per process, not a global provider-call or cost cap.
+- Moving to `q4` invalidates every materialized source hash and every earlier
+  judgment. After `--recompute`, the strict homepage stays thin until items are
+  reclassified under `q4`, which costs new Jev calls; existing rows also need a
+  rehydration to gain the new fields (see the
+  [worker runbook](../runbooks/jev-moderation-workers.md)).
+- The hash covers only the Jev state, and the authoritative flag is deliberately
+  outside it. A TMDB `adult` flip that changes no state text does not create a
+  new judgment identity, so it is not applied to an item that already has a
+  current judgment until its text, the model, or the revision changes. An ESRB
+  rating change does alter the state text and is picked up.
 - Admin review, manual classification, and non-homepage surfaces for
   `needs_review` are deferred (see issue
   [#113](https://github.com/codeyee/denn/issues/113) and the
@@ -156,6 +205,13 @@ owner of identity and work admission.
   credentials, so it cannot persist versioned judgments.
 - **Classify synchronously in the detail request.** Rejected: it couples
   detail latency and availability to a remote model.
+- **Send the authoritative flag to Jev.** Rejected: an override is a code
+  decision, not evidence to weigh, and it would let a stale or wrong flag sway
+  the model instead of being applied deterministically.
+- **Treat mature ratings or explicit lyrics as overrides.** Rejected: R, M, 18,
+  TV-MA, and explicit-lyrics advisories describe ordinary entertainment, so an
+  override would hide and blur far more than adult sexual content. They are
+  context for Jev.
 - **Keyword filtering.** Rejected: brittle and without multilingual judgment.
   A lexicon is used only to enrich evaluation samples, never as a classifier.
 - **Show unclassified homepage items until classified.** Chosen earlier in v1

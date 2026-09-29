@@ -75,13 +75,21 @@ class ModerationQuestionsContractTests(unittest.TestCase):
         fields = (
             "type_specific.movie.original_title",
             "type_specific.movie.tagline",
+            "type_specific.movie.genres",
+            "type_specific.movie.keywords",
+            "type_specific.movie.certifications",
             "type_specific.tv_show.original_title",
             "type_specific.tv_show.tagline",
+            "type_specific.tv_show.genres",
+            "type_specific.tv_show.keywords",
+            "type_specific.tv_show.certifications",
             "type_specific.game.genres",
             "type_specific.game.themes",
             "type_specific.game.game_modes",
             "type_specific.game.game_type",
             "type_specific.game.series",
+            "type_specific.game.keywords",
+            "type_specific.game.age_ratings",
             "type_specific.season.parent_show_name",
             "type_specific.season.episodes[].title",
             "type_specific.season.episodes[].description",
@@ -89,7 +97,9 @@ class ModerationQuestionsContractTests(unittest.TestCase):
             "type_specific.album.tracks[].title",
             "type_specific.album.tracks[].credits[].name",
             "type_specific.album.tracks[].credits[].role",
+            "type_specific.album.tracks[].parental_advisory",
             "type_specific.book.authors",
+            "type_specific.book.subjects",
         )
         for question in MODERATION_QUESTIONS.values():
             for field in fields:
@@ -104,11 +114,30 @@ class ModerationQuestionsContractTests(unittest.TestCase):
             self.assertIn("state", instructions, name)
             lowered = instructions.lower()
             import re
-            for forbidden in ("poster", "backdrop", "cover", "url", "rating", "release_date"):
+            for forbidden in ("poster", "backdrop", "cover", "url", "release_date"):
                 self.assertIsNone(
                     re.search(rf"\b{re.escape(forbidden)}\b", lowered),
                     f"{name} references {forbidden}",
                 )
+
+    def test_every_question_frames_provider_metadata_as_context_not_a_verdict(self):
+        for name, question in MODERATION_QUESTIONS.items():
+            text = question.instructions.lower()
+            with self.subTest(question=name):
+                self.assertIn("provider metadata", text)
+                self.assertIn("context, not a verdict", text)
+                for mature_alone in ("r, m, 18, or tv-ma", "explicit-lyrics advisory alone"):
+                    self.assertIn(mature_alone, text)
+                self.assertIn("is not evidence of adult sexual content", text)
+                self.assertIn("adult-only rating", text)
+                self.assertIn("explicit sexual keywords or subjects is strong evidence", text)
+
+    def test_provider_flags_never_appear_as_question_inputs(self):
+        for name, question in MODERATION_QUESTIONS.items():
+            with self.subTest(question=name):
+                self.assertNotIn("adult flag", question.instructions.lower())
+                self.assertNotIn("type_specific.movie.adult", question.instructions)
+                self.assertNotIn("type_specific.movie.explicit", question.instructions)
 
     def test_questions_come_with_explicit_yes_and_no_criteria(self):
         for name, question in MODERATION_QUESTIONS.items():
@@ -123,7 +152,7 @@ class ModerationQuestionsContractTests(unittest.TestCase):
 
         with override_settings(MODERATION_QUESTION_REVISION="q-test"):
             self.assertEqual(moderation_question_revision(), "q-test")
-        self.assertEqual(settings.MODERATION_QUESTION_REVISION, "q3")
+        self.assertEqual(settings.MODERATION_QUESTION_REVISION, "q4")
 
 
 if __name__ == "__main__":

@@ -9,9 +9,9 @@ from django.db.models import Q
 from django.utils import timezone
 
 from content.models import ContentItem, ContentModerationJob, ContentModerationJudgment
+from content.services.moderation_service import PROVIDER_RULE_MODELS
 
 
-PROVIDER_RULE_MODEL = 'provider-rule:v1'
 REQUEUEABLE_STATUSES = (ContentModerationJob.Status.QUEUED, ContentModerationJob.Status.RETRY)
 
 
@@ -19,7 +19,7 @@ def _matches_requested_model(requested_model: str) -> Q:
     return (
         Q(model_name=requested_model)
         | Q(payload__requested_model=requested_model)
-        | Q(model_name=PROVIDER_RULE_MODEL)
+        | Q(model_name__in=PROVIDER_RULE_MODELS)
     )
 
 

@@ -6,10 +6,14 @@ from django.db import IntegrityError
 from django.test import TestCase, override_settings
 
 from content.models import (
+    AlbumDetail,
+    BookDetail,
     ContentItem,
     ContentModerationJudgment,
+    GameDetail,
     MovieDetail,
     SeasonDetail,
+    Track,
     TvShowDetail,
 )
 from content.services.moderation_service import (
@@ -347,10 +351,160 @@ class ModerationServiceTests(TestCase):
             'content.services.moderation_service.from_local', return_value=payload
         ):
             judgment = classify_content_item(item, client=self.client)
-        self.assertEqual(judgment.model_name, 'provider-rule:v1')
+        self.assertEqual(judgment.model_name, 'provider-rule:v2')
         self.assertEqual(judgment.payload['requested_model'], 'jev-latest')
         self.assertEqual(judgment.payload['provider_explicit'], True)
         self.assertEqual(judgment.payload['raw_nouls'], {})
+
+
+def _tmdb_movie(**detail):
+    item = ContentItem.objects.create(
+        source_api=ContentItem.SourceAPI.TMDB, external_id='movie-rule',
+        content_type=ContentItem.ContentType.MOVIE,
+    )
+    MovieDetail.objects.create(content_item=item, title='Movie', **detail)
+    return item
+
+
+def _tv_item(**detail):
+    item = ContentItem.objects.create(
+        source_api=ContentItem.SourceAPI.TMDB, external_id='tv-rule',
+        content_type=ContentItem.ContentType.TV_SHOW,
+    )
+    TvShowDetail.objects.create(content_item=item, title='Show', **detail)
+    return item
+
+
+def _game_item(**detail):
+    item = ContentItem.objects.create(
+        source_api=ContentItem.SourceAPI.IGDB, external_id='game-rule',
+        content_type=ContentItem.ContentType.GAME,
+    )
+    GameDetail.objects.create(content_item=item, title='Game', **detail)
+    return item
+
+
+def _rating(organization, rating, *descriptors):
+    return {'organization': organization, 'rating': rating, 'descriptors': list(descriptors)}
+
+
+class ProviderRuleTests(TestCase):
+    """`provider-rule:v2`: only TMDB adult=true and ESRB AO are overrides."""
+
+    def rule(self, item):
+        return _provider_explicit(ContentItem.objects.get(pk=item.pk))
+
+    def test_tmdb_movie_and_tv_show_override_only_on_adult_true(self):
+        for make in (_tmdb_movie, _tv_item):
+            for adult, expected in ((True, True), (False, None), (None, None)):
+                with self.subTest(make=make.__name__, adult=adult):
+                    item = make(adult=adult)
+                    self.assertIs(self.rule(item), expected)
+                    item.delete()
+
+    def test_tmdb_certifications_keywords_and_genres_are_never_overrides(self):
+        item = _tmdb_movie(
+            adult=False,
+            genres=['Romance'],
+            keywords=['erotic movie', 'softcore'],
+            certifications=[{'country': 'US', 'rating': 'NC-17'}],
+        )
+
+        self.assertIsNone(self.rule(item))
+
+    def test_igdb_override_only_for_esrb_adults_only(self):
+        cases = (
+            ([_rating('ESRB', 'AO', 'Sexual Content')], True),
+            ([_rating('PEGI', '18'), _rating('ESRB', 'AO')], True),
+            ([_rating('ESRB', 'M', 'Nudity', 'Sexual Themes')], None),
+            ([_rating('ESRB', 'T')], None),
+            ([_rating('PEGI', '18', 'Sex')], None),
+            ([_rating('PEGI', 'AO')], None),
+            ([_rating('esrb', 'AO')], None),
+            ([_rating('ESRB', 'ao')], None),
+            ([_rating('ESRB', 'AO ')], None),
+            ([], None),
+        )
+        for age_ratings, expected in cases:
+            with self.subTest(age_ratings=age_ratings):
+                item = _game_item(age_ratings=age_ratings)
+                self.assertIs(self.rule(item), expected)
+                item.delete()
+
+    def test_igdb_keywords_alone_are_never_an_override(self):
+        item = _game_item(keywords=['sex', 'dating sim'], age_ratings=[_rating('ESRB', 'M')])
+
+        self.assertIsNone(self.rule(item))
+
+    def test_malformed_persisted_age_ratings_never_override(self):
+        for bad in ('ESRB AO', ['ESRB AO'], [None], [{'organization': 'ESRB'}],
+                    [{'organization': ['ESRB'], 'rating': 'AO'}], {'organization': 'ESRB', 'rating': 'AO'}):
+            with self.subTest(bad=bad):
+                item = _game_item(age_ratings=bad)
+                self.assertIsNone(self.rule(item))
+                item.delete()
+
+    def test_esrb_ao_is_not_an_override_for_other_providers_or_types(self):
+        game = _game_item(age_ratings=[_rating('ESRB', 'AO')])
+        game.source_api = ContentItem.SourceAPI.TMDB
+        game.save(update_fields=['source_api'])
+        self.assertIsNone(self.rule(game))
+
+    def test_album_explicit_lyrics_and_book_subjects_are_never_overrides(self):
+        album = ContentItem.objects.create(
+            source_api=ContentItem.SourceAPI.SPOTIFY, external_id='album-rule',
+            content_type=ContentItem.ContentType.ALBUM,
+        )
+        detail = AlbumDetail.objects.create(content_item=album, title='Record')
+        Track.objects.create(
+            album_detail=detail, track_id_external='t1', track_number=1, title='Song', explicit=True)
+        book = ContentItem.objects.create(
+            source_api=ContentItem.SourceAPI.OPENLIBRARY, external_id='book-rule',
+            content_type=ContentItem.ContentType.BOOK,
+        )
+        BookDetail.objects.create(content_item=book, title='Book', subjects=['Erotica'])
+
+        self.assertIsNone(self.rule(album))
+        self.assertIsNone(self.rule(book))
+
+    @override_settings(**ENABLED)
+    def test_esrb_ao_game_is_classified_explicit_without_a_jev_call(self):
+        item = _game_item(age_ratings=[_rating('ESRB', 'AO', 'Sexual Content')])
+        client = _RecordingClient()
+
+        judgment = classify_content_item(ContentItem.objects.get(pk=item.pk), client=client)
+
+        self.assertEqual(client.calls, [])
+        self.assertEqual(judgment.model_name, 'provider-rule:v2')
+        self.assertEqual(judgment.classification, ContentModerationJudgment.Classification.EXPLICIT)
+        self.assertIs(judgment.payload['provider_explicit'], True)
+        self.assertEqual(judgment.payload['policy']['reason'], 'provider_explicit_override')
+
+    @override_settings(**ENABLED)
+    def test_esrb_mature_game_goes_to_jev_with_ratings_as_context(self):
+        item = _game_item(
+            keywords=['dating sim'], age_ratings=[_rating('ESRB', 'M', 'Nudity', 'Blood')])
+        client = _RecordingClient()
+
+        judgment = classify_content_item(ContentItem.objects.get(pk=item.pk), client=client)
+
+        self.assertEqual(len(client.calls), 1)
+        game_state = client.calls[0]['type_specific']['game']
+        self.assertEqual(game_state['keywords'], ['dating sim'])
+        self.assertEqual(game_state['age_ratings'], ['ESRB M: Blood; Nudity'])
+        self.assertIsNone(judgment.payload['provider_explicit'])
+
+    @override_settings(**ENABLED)
+    def test_tmdb_adult_flag_overrides_but_stays_out_of_the_jev_state(self):
+        item = _tmdb_movie(adult=True, keywords=['softcore'])
+
+        judgment = classify_content_item(
+            ContentItem.objects.get(pk=item.pk), client=_RecordingClient())
+
+        self.assertEqual(judgment.model_name, 'provider-rule:v2')
+        self.assertNotIn('adult', str(judgment.payload['source_state']))
+        self.assertEqual(
+            judgment.payload['source_state']['type_specific']['movie']['keywords'], ['softcore'])
 
 
 class ObservationContractTests(TestCase):

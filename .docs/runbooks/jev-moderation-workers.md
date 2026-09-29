@@ -18,7 +18,10 @@ a worker, calling Jev, or running a production backfill; see the
    succeed. The production entrypoint (`core/docker-entrypoint.sh`) runs
    `python manage.py migrate --noinput` before Gunicorn. Leave
    `MODERATION_CLASSIFICATION_ENABLED` unset or `False` on Core and
-   `WEB_MODERATION_VISIBILITY_ENABLED` unset or `false` on Web.
+   `WEB_MODERATION_VISIBILITY_ENABLED` unset or `false` on Web. If this
+   release changes the moderation state or question revision (`q4` did), do
+   [Revising the moderation state or questions](#revising-the-moderation-state-or-questions)
+   now, while classification is still off, before any worker starts.
 2. **Set server-only settings and pin the model.** Set `TYPESAFE_API_KEY` only
    in Core's server environment, never in Web or browser settings. The
    moderation worker and any Core process that runs the backfill call Jev and
@@ -54,7 +57,8 @@ a worker, calling Jev, or running a production backfill; see the
    `python manage.py backfill_moderation_source_hashes --limit N` (repeat with
    `--after-id <next_after_id>` from its output until `examined=0`). It
    populates missing current source hashes from local normalized detail with
-   no Jev call. Without a current hash, a legacy row's judgment reads as
+   no Jev call. (Existing hashes are refreshed by `--recompute`, not by this
+   step; see the state-revision section.) Without a current hash, a legacy row's judgment reads as
    `stale`. (While classification is on, homepage resolution also admits a
    metadata-preparation job for such a row, and the worker recomputes its
    hash; this backfill is still the bounded way to cover the wider catalog.) Then classify with `python manage.py backfill_content_moderation
@@ -92,6 +96,50 @@ a worker, calling Jev, or running a production backfill; see the
 
 Do not infer production state from repository configuration. No admin panel or
 production worker deployment is included in this change.
+
+## Revising the moderation state or questions
+
+Any change to the state builder (`content/moderation/state.py`) or the question
+wording ships with a new `MODERATION_QUESTION_REVISION`. `q4` added provider
+safety metadata to the state, so every hash materialized under `q3` is
+outdated, and the new fields exist only on rows written after the Core and
+Proxy release. Judgments from earlier revisions stay immutable history and are
+not current under the new one. Do these steps in order, with
+`MODERATION_CLASSIFICATION_ENABLED` off (or the moderation worker stopped), so
+nothing classifies half-hydrated or outdated input:
+
+1. **Deploy Proxy, then Core, and apply migrations.** Proxy must already return
+   the safety fields (see the internal HTTP contract), and Core applies
+   migration `0028_provider_safety_metadata`.
+2. **Rehydrate existing details so rows gain the new fields.** Run
+   `python manage.py rehydrate_content_details --ttl-override 0 --limit N
+   --workers K`, per `--content-type` if you prefer (see the
+   [rehydration runbook](./rehydrate-content.md)). Each item costs one Proxy
+   detail request, so size `N` to the provider quotas you reviewed. Each run
+   takes the oldest-refreshed rows first, so run about `ceil(rows / N)`
+   batches per type rather than waiting for zero candidates: with a zero TTL a
+   refreshed row is eligible again once the older ones are exhausted. Rows
+   that are not rehydrated keep empty safety fields, which reads as unknown,
+   never as safe.
+3. **Recompute the source hashes.** Run
+   `python manage.py backfill_moderation_source_hashes --recompute --limit N`
+   and repeat with `--after-id <next_after_id>` until `examined=0`. It reads
+   local detail only (no Jev or Proxy call), is idempotent, and reports
+   `changed`, `unchanged`, and `unverified` counts; a second pass should show
+   `changed=0`. Items with no hash are covered by the plain (non-`--recompute`)
+   mode. Rehydration in step 2 already writes a fresh hash for the rows it
+   touched, so this pass mainly covers rows it skipped.
+4. **Only then enable classification and start the workers** (steps 3 and 4 of
+   the checklist above). The homepage stays thin until items are reclassified
+   under the new revision, and reclassification is new Jev spend; scope it with
+   the [backfill runbook](./content-moderation-backfill.md) and the readiness
+   queries below.
+
+If a worker runs before step 3, it does not spend a Jev call on an outdated
+hash: a job whose hash no longer matches the state builder is marked
+`superseded` with `last_error_code=source_hash_outdated`, and the resolver never
+re-admits an existing job identity. Run step 3, and the resolver admits fresh
+jobs under the new hashes.
 
 ## Web visibility rollout and rollback
 

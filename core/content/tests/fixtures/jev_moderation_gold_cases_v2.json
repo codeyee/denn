@@ -1,5 +1,5 @@
 {
-  "schema_version": "jev-moderation-gold-cases/v1",
+  "schema_version": "jev-moderation-gold-cases/v2",
   "cases": [
     {
       "case_id": "case_17b0c3a43d12",
@@ -16,7 +16,10 @@
         "type_specific": {
           "movie": {
             "original_title": "Amber Harbor",
-            "tagline": "A fictional place, a shared promise."
+            "tagline": "A fictional place, a shared promise.",
+            "genres": ["Drama"],
+            "keywords": ["fictional harbor", "adult themes"],
+            "certifications": ["US: NC-17"]
           }
         }
       },
@@ -46,7 +49,8 @@
             "tracks": [
               {
                 "title": "Señal de Prueba",
-                "credits": [{"name": "Artista Ficticia", "role": "writer"}]
+                "credits": [{"name": "Artista Ficticia", "role": "writer"}],
+                "parental_advisory": ""
               }
             ]
           }
@@ -74,7 +78,8 @@
         "description": "Una descripción ficticia y ambigua para probar revisión.",
         "type_specific": {
           "book": {
-            "authors": ["Autora Ficticia"]
+            "authors": ["Autora Ficticia"],
+            "subjects": ["Ficción ficticia"]
           }
         }
       },

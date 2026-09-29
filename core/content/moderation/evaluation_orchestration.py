@@ -212,9 +212,10 @@ def evaluate_dataset(
     """Evaluate validated cases through one injected classify invocation each.
 
     The adapter is not constructed here. The evaluator never retries; a client
-    adapter may have its own transport retry behavior. Affirmative TMDB movie
-    and TV overrides follow the production policy short-circuit and make no
-    client invocation. Only time spent inside ``client.classify`` is measured.
+    adapter may have its own transport retry behavior. Affirmative provider
+    overrides (TMDB movies and TV, IGDB games) follow the production policy
+    short-circuit and make no client invocation. Only time spent inside
+    ``client.classify`` is measured.
     """
     cases = validate_gold_dataset(dataset)
     selected = _select_cases(cases, selected_case_ids)

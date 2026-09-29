@@ -2,9 +2,16 @@
 
 This page defines the privacy-safe input contract and classification-report contract for the offline JEV-006 evaluation. Schema validation, classification metrics, and accounting are pure. The optional injected-client orchestrator makes no client construction, network, or database call of its own; it invokes only the supplied client's `classify` method. The committed fixture is synthetic and tests mechanics only; it is not evidence of Jev accuracy.
 
-## Gold cases: `jev-moderation-gold-cases/v1`
+## Gold cases: `jev-moderation-gold-cases/v2`
 
-A UTF-8 JSON dataset has only `schema_version` and `cases`. Each case has exactly:
+A UTF-8 JSON dataset has only `schema_version` and `cases`. Schema v2 matches the
+`q4` moderation state, which adds provider safety metadata to `type_specific`:
+movie and TV show `genres`, `keywords`, `certifications` (strings such as
+`US: R`); game `keywords` and `age_ratings` (strings such as
+`ESRB M: Blood and Gore; Nudity`); album track `parental_advisory` (`explicit`
+or empty); book `subjects`. v1 documents are rejected, so re-export candidates
+(see [the workflow](#catalog-evaluation-workflow)) and carry labels over by
+`case_id`. Each case has exactly:
 
 | Field | Meaning |
 |---|---|
@@ -16,7 +23,7 @@ A UTF-8 JSON dataset has only `schema_version` and `cases`. Each case has exactl
 | `state` | Exact text-only state built for moderation, with provider/type agreement and an exact content-specific shape. |
 | `gold_class` | `safe_for_automatic_discovery`, `explicit_or_sensitive`, or `needs_review`. |
 | `adjudication` | Exact `status`, `reviewer_count`, and `guideline_revision` fields. Human labels require at least one reviewer. |
-| `provider_explicit` | Exact boolean or null; true is allowed only for TMDB movies/TV shows and is a policy override, not a gold label. |
+| `provider_explicit` | Exact boolean or null; true is allowed only for TMDB movies/TV shows and IGDB games (ESRB `AO`) and is a policy override, not a gold label. |
 
 Validation rejects extra/missing fields, duplicate or non-opaque case IDs, unknown content-specific state fields, URLs, credential-like strings, JWT-like text, wrong metadata, and non-text state values. It does not normalize classifier input. Never commit raw URLs, provider/external IDs, credentials, or unreviewed catalog text. See `core/content/moderation/evaluation_cases.py` for the executable schema.
 
@@ -27,7 +34,7 @@ The local catalog has only 18 eligible books and no stored language field, so an
 
 ## Pure classification report contract: `jev-moderation-evaluation-report/v2`
 
-`build_evaluation_report(dataset, observations)` accepts exactly one strict outcome record per gold case. It has no client, network, or database access. Jev-only and final-policy metrics are reported separately. Unknown, unavailable, skipped, and `needs_review` abstentions remain visible. All failures remain in their gold-class support and recall denominators. If `provider_explicit=true` for a TMDB movie/TV case, `policy_prediction` must be `explicit_or_sensitive`; an inconsistent outcome is rejected rather than reported as an applied override.
+`build_evaluation_report(dataset, observations)` accepts exactly one strict outcome record per gold case. It has no client, network, or database access. Jev-only and final-policy metrics are reported separately. Unknown, unavailable, skipped, and `needs_review` abstentions remain visible. All failures remain in their gold-class support and recall denominators. If `provider_explicit=true` (a TMDB movie/TV or IGDB game case), `policy_prediction` must be `explicit_or_sensitive`; an inconsistent outcome is rejected rather than reported as an applied override.
 
 The report provides the class confusion matrices; Jev-only and final-policy per-class precision/recall; gold-explicit-to-predicted-safe false-negative rate; needs-review recall; and model-version consistency. It also provides per-provider and per-language quality summaries. Each stratum reports its case count, per-class true/false positives, false negatives and support, explicit false-negative rate, needs-review recall, and coverage. Every metric includes its numerator and denominator. A zero denominator returns `null` and displays `N/A`; the case count makes sparse strata visible without inventing a minimum-sample threshold. Provider overrides appear only in final-policy metrics, never as Jev model quality.
 
@@ -41,7 +48,7 @@ The pure accounting function accepts optional caller-supplied per-case durations
 
 `content.moderation.evaluation_orchestration.evaluate_dataset` validates the complete dataset before selecting requested opaque case IDs. It returns the existing v2 aggregated report with an `evaluation_identity` containing the requested model, question revision, policy revision, and exact thresholds. The report rows contain only opaque IDs and classification/accounting fields, not the input state or raw error details.
 
-Pass an already constructed `JevModerationClient` or a fake object with the same `classify(state)` contract. Tests inject a fake; this module does not construct `TypeSafeClient`. Each selected non-override case gets one evaluator-level `classify` invocation. Affirmative TMDB movie/TV cases follow production's hard override and make no invocation. Typed unavailable/skipped outcomes, malformed results, and generic client failures each keep their case in the report. The evaluator has no retry loop. The production adapter constructs TypeSafe with `RetryPolicy(max_retries=0)`, so one default adapter invocation permits at most one SDK wire attempt; injected custom clients may have their own retry behavior.
+Pass an already constructed `JevModerationClient` or a fake object with the same `classify(state)` contract. Tests inject a fake; this module does not construct `TypeSafeClient`. Each selected non-override case gets one evaluator-level `classify` invocation. Affirmative provider-override cases (TMDB movie/TV, IGDB game) follow production's hard override and make no invocation. Typed unavailable/skipped outcomes, malformed results, and generic client failures each keep their case in the report. The evaluator has no retry loop. The production adapter constructs TypeSafe with `RetryPolicy(max_retries=0)`, so one default adapter invocation permits at most one SDK wire attempt; injected custom clients may have their own retry behavior.
 
 The returned `execution` section distinguishes selected cases, classify invocations, provider-override no-call cases, and evaluator retries. `latency_ms.source` describes the call-only measurement boundary. Use the fake client for offline checks; do not run the evaluator against a live Jev adapter without a separately approved live-sample plan. Synthetic results must not be used to infer model accuracy or set thresholds.
 
@@ -56,7 +63,7 @@ Example against the synthetic fixture (preflight only; not an accuracy result):
 ```sh
 cd core
 python manage.py evaluate_jev_moderation \
-  --dataset content/tests/fixtures/jev_moderation_gold_cases_v1.json \
+  --dataset content/tests/fixtures/jev_moderation_gold_cases_v2.json \
   --case-ids case_17b0c3a43d12,case_8a9720d1c46f \
   --limit 2 \
   --input-price-per-million-tokens 0.042 \
@@ -67,12 +74,12 @@ python manage.py evaluate_jev_moderation \
 
 Inspect `ready_for_live_run` before proceeding. `maximum_case_limit` limits selected cases only. Neither the case limit nor the price snapshot enforces a dollar cap. The preflight itself does not authorize sending catalog content to TypeSafe; use `--confirm-live` only after reviewing the selected text and pricing.
 
-Live mode requires a concrete pinned Jev model, `MODERATION_CLASSIFICATION_ENABLED=True`, and `TYPESAFE_API_KEY` when any selected case needs inference. The environment value is case-sensitive and must be exactly `True` with a capital `T`; lowercase `true` leaves classification disabled. It accepts at most 25 cases, each with a serialized moderation state no larger than 20,000 UTF-8 bytes. Every case ID must be explicit; there is no implicit sampling. Affirmative TMDB movie/TV overrides are recorded as no-call outcomes.
+Live mode requires a concrete pinned Jev model, `MODERATION_CLASSIFICATION_ENABLED=True`, and `TYPESAFE_API_KEY` when any selected case needs inference. The environment value is case-sensitive and must be exactly `True` with a capital `T`; lowercase `true` leaves classification disabled. It accepts at most 25 cases, each with a serialized moderation state no larger than 20,000 UTF-8 bytes. Every case ID must be explicit; there is no implicit sampling. Affirmative provider overrides (TMDB movie/TV, IGDB game) are recorded as no-call outcomes.
 
 ```sh
 cd core
 python manage.py evaluate_jev_moderation \
-  --dataset content/tests/fixtures/jev_moderation_gold_cases_v1.json \
+  --dataset content/tests/fixtures/jev_moderation_gold_cases_v2.json \
   --case-ids case_8a9720d1c46f \
   --limit 1 \
   --input-price-per-million-tokens 0.042 \
@@ -116,9 +123,23 @@ Every live run is a separate, explicitly authorized action.
    sampling summary, including per-stratum counts and skipped items (no
    detail, invalid state, oversized state).
 
+   To re-export an earlier sample against a newer state (for example after a
+   question-revision bump), pass `--ids-file PATH` with newline-separated
+   `ContentItem` IDs, such as the values of the earlier sidecar
+   (`python -c 'import json,sys; print(*json.load(open(sys.argv[1])).values(), sep="\n")' candidates.json.index.json > ids.txt`).
+   Nothing is sampled: exactly those items are exported, each still subject to
+   the same eligibility checks, and `--sample-size`, `--min-per-stratum`, and
+   `--sensitive-share` are ignored. Use the same `--seed` to keep the original
+   opaque case IDs so existing labels still line up. `skipped` gains a
+   `not_found` count for IDs that no longer exist, and `sampling` records
+   `ids_requested`. Export after the catalog has been rehydrated (see the
+   [worker runbook](jev-moderation-workers.md#revising-the-moderation-state-or-questions))
+   so the states carry the new fields. An empty or malformed IDs file is
+   rejected before the catalog is read.
+
    The output is `jev-moderation-candidates/v1`: unlabeled cases whose `state`
-   is exactly the text production sends to Jev, plus `sampling_stratum` and
-   `sensitive_candidate` fields. It also writes a private sidecar,
+   is exactly the text production sends to Jev (the `q4` shape), plus
+   `sampling_stratum` and `sensitive_candidate` fields. It also writes a private sidecar,
    `<output>.index.json`, mapping each case ID to a `ContentItem` ID.
    **The sidecar must never be committed or shared.** The candidate file
    contains catalog titles and descriptions, so keep both files outside the
@@ -171,6 +192,10 @@ Every live run is a separate, explicitly authorized action.
 - Go/no-go: human decision, with the evidence it rests on.
 
 ## Results: 2026-09-28 catalog evaluation
+
+These results were measured under question revision `q3` and the v1 schema,
+before provider safety metadata reached the state. They do not describe `q4`;
+re-run the workflow under `q4` before relying on them.
 
 **Sample.** 400 cases from the local development catalog (a copy of real
 provider data), seed `denn-jev-eval-v1`, `--sample-size 400` with the other

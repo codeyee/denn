@@ -6,12 +6,13 @@ from pathlib import Path
 
 from content.moderation.evaluation_cases import (
     GOLD_SCHEMA_VERSION,
+    TYPE_SPECIFIC_SHAPES,
     GoldCaseValidationError,
     load_gold_dataset,
     validate_gold_dataset,
 )
 
-FIXTURE = Path(__file__).parent / "fixtures" / "jev_moderation_gold_cases_v1.json"
+FIXTURE = Path(__file__).parent / "fixtures" / "jev_moderation_gold_cases_v2.json"
 
 
 def fixture_document():
@@ -86,7 +87,7 @@ class ModerationGoldCaseTests(unittest.TestCase):
                 with self.assertRaises(GoldCaseValidationError):
                     validate_gold_dataset(invalid)
 
-    def test_provider_explicit_is_limited_to_tmdb_movies_and_tv_shows(self):
+    def test_provider_explicit_is_limited_to_the_authoritative_provider_rules(self):
         spotify_override = fixture_document()
         spotify_override["cases"][1]["provider_explicit"] = True
         tmdb_album_override = fixture_document()
@@ -95,11 +96,68 @@ class ModerationGoldCaseTests(unittest.TestCase):
             "provider": "tmdb", "content_type": "ALBUM", "title": "Test",
             "description": "Test", "type_specific": {"album": {"artists": [], "tracks": []}},
         }
+        igdb_book_override = fixture_document()
+        igdb_book_override["cases"][2]["provider"] = "igdb"
+        igdb_book_override["cases"][2]["state"]["provider"] = "igdb"
+        igdb_book_override["cases"][2]["provider_explicit"] = True
 
-        with self.assertRaisesRegex(GoldCaseValidationError, "provider_explicit"):
-            validate_gold_dataset(spotify_override)
-        with self.assertRaisesRegex(GoldCaseValidationError, "provider_explicit"):
-            validate_gold_dataset(tmdb_album_override)
+        for invalid in (spotify_override, tmdb_album_override, igdb_book_override):
+            with self.subTest(case=invalid["cases"]):
+                with self.assertRaisesRegex(GoldCaseValidationError, "provider_explicit"):
+                    validate_gold_dataset(invalid)
+
+    def test_provider_explicit_true_is_allowed_for_tmdb_titles_and_igdb_games(self):
+        tv_override = fixture_document()
+        tv_override["cases"][0]["content_type"] = "tv_show"
+        tv_override["cases"][0]["state"]["content_type"] = "TV_SHOW"
+        tv_override["cases"][0]["state"]["type_specific"] = {
+            "tv_show": tv_override["cases"][0]["state"]["type_specific"]["movie"]}
+        game_override = fixture_document()
+        game_override["cases"][0].update(provider="igdb", content_type="game", provider_explicit=True)
+        game_override["cases"][0]["state"].update(provider="igdb", content_type="GAME")
+        game_override["cases"][0]["state"]["type_specific"] = {"game": {
+            "genres": [], "themes": [], "game_modes": [], "game_type": "", "series": "",
+            "keywords": ["sex"], "age_ratings": ["ESRB AO: Sexual Content"],
+        }}
+
+        for document in (tv_override, game_override):
+            with self.subTest(content_type=document["cases"][0]["content_type"]):
+                self.assertEqual(len(validate_gold_dataset(document)), 3)
+
+    def test_schema_is_v2_and_rejects_v1_documents_and_pre_q4_state_shapes(self):
+        self.assertEqual(GOLD_SCHEMA_VERSION, "jev-moderation-gold-cases/v2")
+        v1 = fixture_document()
+        v1["schema_version"] = "jev-moderation-gold-cases/v1"
+        missing_keywords = fixture_document()
+        del missing_keywords["cases"][0]["state"]["type_specific"]["movie"]["keywords"]
+        missing_advisory = fixture_document()
+        del missing_advisory["cases"][1]["state"]["type_specific"]["album"]["tracks"][0][
+            "parental_advisory"]
+        missing_subjects = fixture_document()
+        del missing_subjects["cases"][2]["state"]["type_specific"]["book"]["subjects"]
+        adult_flag = fixture_document()
+        adult_flag["cases"][0]["state"]["type_specific"]["movie"]["adult"] = "true"
+        url_keyword = fixture_document()
+        url_keyword["cases"][0]["state"]["type_specific"]["movie"]["keywords"] = ["https://x.invalid"]
+
+        for invalid in (v1, missing_keywords, missing_advisory, missing_subjects, adult_flag, url_keyword):
+            with self.subTest(invalid=invalid["schema_version"]):
+                with self.assertRaises(GoldCaseValidationError):
+                    validate_gold_dataset(invalid)
+
+    def test_q4_state_shapes_cover_every_content_type(self):
+        self.assertEqual(
+            {key: sorted(shape[key]) for key, shape in TYPE_SPECIFIC_SHAPES.items()},
+            {
+                "movie": ["certifications", "genres", "keywords", "original_title", "tagline"],
+                "tv_show": ["certifications", "genres", "keywords", "original_title", "tagline"],
+                "game": ["age_ratings", "game_modes", "game_type", "genres", "keywords",
+                         "series", "themes"],
+                "season": ["episodes", "parent_show_name"],
+                "album": ["artists", "tracks"],
+                "book": ["authors", "subjects"],
+            },
+        )
 
     def test_validator_returns_independent_case_copies(self):
         document = fixture_document()

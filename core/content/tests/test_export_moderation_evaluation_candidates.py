@@ -198,7 +198,7 @@ class ExportSkipTests(ExportCandidatesTestCase):
 
 
 class ExportOutputTests(ExportCandidatesTestCase):
-    def test_output_is_a_v1_document_once_a_placeholder_label_is_added(self):
+    def test_output_is_a_gold_document_once_a_placeholder_label_is_added(self):
         self.create_catalog()
 
         document, _, _ = self.export('--sample-size=10', '--min-per-stratum=2')
@@ -269,6 +269,30 @@ class ExportOutputTests(ExportCandidatesTestCase):
                        for case in document['cases']}
         self.assertEqual(by_provider, {'tmdb': True, 'igdb': None})
 
+    def test_exported_state_carries_safety_context_and_esrb_ao_is_a_valid_override(self):
+        movie = _movie('ext-context', 'Context Movie')
+        MovieDetail.objects.filter(content_item=movie).update(
+            adult=False, genres=['Drama'], keywords=['heist'],
+            certifications=[{'country': 'US', 'rating': 'R'}, {'country': 'ZZ', 'rating': 'X'}])
+        game = _game('ext-ao', 'Adults Only Game')
+        GameDetail.objects.filter(content_item=game).update(
+            keywords=['sex'],
+            age_ratings=[{'organization': 'ESRB', 'rating': 'AO', 'descriptors': ['Sexual Content']}])
+
+        document, _, _ = self.export()
+
+        by_provider = {case['provider']: case for case in document['cases']}
+        self.assertEqual(by_provider['tmdb']['state']['type_specific']['movie'], {
+            'original_title': '', 'tagline': '', 'genres': ['Drama'], 'keywords': ['heist'],
+            'certifications': ['US: R'],
+        })
+        self.assertIsNone(by_provider['tmdb']['provider_explicit'])
+        self.assertIs(by_provider['igdb']['provider_explicit'], True)
+        self.assertEqual(
+            by_provider['igdb']['state']['type_specific']['game']['age_ratings'],
+            ['ESRB AO: Sexual Content'])
+        self.assertEqual(document['sampling']['skipped']['invalid_state'], 0)
+
     def test_leaves_no_temporary_files_and_writes_nothing_to_the_catalog(self):
         _movie('ext-only', 'Only Movie')
         before = ContentItem.objects.count()
@@ -280,6 +304,102 @@ class ExportOutputTests(ExportCandidatesTestCase):
             sorted(os.listdir(self.directory)),
             ['candidates.json', 'candidates.json.index.json'],
         )
+
+
+class ExportIdsFileTests(ExportCandidatesTestCase):
+    def ids_file(self, *lines, name='ids.txt'):
+        path = os.path.join(self.directory, name)
+        with open(path, 'w', encoding='utf-8') as handle:
+            handle.write('\n'.join(str(line) for line in lines) + '\n')
+        return path
+
+    def test_exports_exactly_the_listed_items_and_ignores_sampling_options(self):
+        self.create_catalog()
+        chosen = list(ContentItem.objects.order_by('pk').values_list('pk', flat=True))[3:8]
+
+        document, index, _ = self.export(
+            f'--ids-file={self.ids_file(*chosen)}',
+            '--sample-size=1', '--min-per-stratum=0', '--sensitive-share=0')
+
+        self.assertEqual(sorted(index.values()), chosen)
+        self.assertEqual(len(document['cases']), len(chosen))
+        sampling = document['sampling']
+        self.assertEqual(sampling['ids_requested'], len(chosen))
+        for ignored in ('sample_size', 'min_per_stratum', 'sensitive_share'):
+            self.assertNotIn(ignored, sampling)
+        for value in sampling['strata'].values():
+            self.assertEqual(value['selected'], value['eligible'])
+        self.assertEqual(sampling['skipped'],
+                         {'no_detail': 0, 'invalid_state': 0, 'oversized_state': 0, 'not_found': 0})
+
+    def test_reexport_of_an_earlier_sample_keeps_case_ids_and_reflects_the_new_state(self):
+        self.create_catalog()
+        earlier, earlier_index, _ = self.export(
+            '--sample-size=8', '--seed=fixed', name='earlier.json')
+        movie_pk = next(pk for pk in earlier_index.values()
+                        if ContentItem.objects.get(pk=pk).content_type == 'MOVIE')
+        MovieDetail.objects.filter(content_item_id=movie_pk).update(keywords=['softcore'])
+
+        again, again_index, _ = self.export(
+            f'--ids-file={self.ids_file(*earlier_index.values())}', '--seed=fixed',
+            name='again.json')
+
+        self.assertEqual(again_index, earlier_index)
+        self.assertEqual([case['case_id'] for case in again['cases']],
+                         [case['case_id'] for case in earlier['cases']])
+        keywords = {
+            case['case_id']: case['state']['type_specific'].get('movie', {}).get('keywords')
+            for case in again['cases']
+        }
+        self.assertEqual(keywords[next(k for k, v in again_index.items() if v == movie_pk)],
+                         ['softcore'])
+
+    def test_missing_ineligible_and_duplicate_ids_are_skipped_or_collapsed_and_counted(self):
+        kept = _movie('ext-kept', 'Kept Movie')
+        no_detail = ContentItem.objects.create(
+            source_api=ContentItem.SourceAPI.TMDB, external_id='ext-no-detail',
+            content_type=ContentItem.ContentType.MOVIE)
+        url = _movie('ext-url', 'Url Movie', 'See https://example.com/page for details.')
+        large = _movie('ext-large', 'Large Movie', 'word ' * 400)
+        missing = max(kept.pk, no_detail.pk, url.pk, large.pk) + 1000
+        ids = self.ids_file(kept.pk, '', no_detail.pk, f' {url.pk} ', large.pk, kept.pk, missing)
+
+        document, index, _ = self.export(f'--ids-file={ids}', '--max-state-bytes=1000')
+
+        self.assertEqual(list(index.values()), [kept.pk])
+        self.assertEqual(document['sampling']['ids_requested'], 5)
+        self.assertEqual(
+            document['sampling']['skipped'],
+            {'no_detail': 1, 'invalid_state': 1, 'oversized_state': 1, 'not_found': 1},
+        )
+
+    def test_items_outside_the_ids_file_are_not_exported(self):
+        listed = _movie('ext-listed', 'Listed Movie')
+        _movie('ext-unlisted', 'Unlisted Movie')
+
+        document, _, _ = self.export(f'--ids-file={self.ids_file(listed.pk)}')
+
+        self.assertEqual([case['state']['title'] for case in document['cases']], ['Listed Movie'])
+
+    def test_invalid_ids_file_fails_before_any_database_read(self):
+        missing = os.path.join(self.directory, 'nope.txt')
+        for path in (
+            missing,
+            self.ids_file(name='empty.txt'),
+            self.ids_file('12', 'abc', name='text.txt'),
+            self.ids_file('0', name='zero.txt'),
+            self.ids_file('-4', name='negative.txt'),
+            self.ids_file('1.5', name='float.txt'),
+            self.ids_file('1 2', name='pair.txt'),
+            self.ids_file('\u0661\u0662', name='arabic-digits.txt'),
+        ):
+            with self.subTest(path=os.path.basename(path)), self.assertNumQueries(0):
+                with self.assertRaises(CommandError):
+                    call_command(
+                        'export_moderation_evaluation_candidates',
+                        f'--output={os.path.join(self.directory, "out.json")}',
+                        f'--ids-file={path}', stdout=StringIO())
+        self.assertFalse(os.path.exists(os.path.join(self.directory, 'out.json')))
 
 
 class ExportValidationTests(ExportCandidatesTestCase):

@@ -176,7 +176,7 @@ If the question is "how should this be designed?", check
 
 Use the rest as specialized references:
 
-- [`ideas/jev-provider-metadata-for-content-moderation.md`](./ideas/jev-provider-metadata-for-content-moderation.md) — future provider-signal capture for Jev issue #102.
+- [`ideas/jev-provider-metadata-for-content-moderation.md`](./ideas/jev-provider-metadata-for-content-moderation.md) — provider-signal capture for Jev issue #102 (implemented as question revision `q4`; the terms and cost review is still open).
 - [`ideas/jev-content-moderation-product-flow.md`](./ideas/jev-content-moderation-product-flow.md) — moderation product-flow notes; decided items live in ADR 0009, open decisions remain here.
 - [`architecture/data-fetching.md`](./architecture/data-fetching.md)
 - [`architecture/auth-session-bootstrap.md`](./architecture/auth-session-bootstrap.md)
