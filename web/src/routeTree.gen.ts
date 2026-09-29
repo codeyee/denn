@@ -22,6 +22,7 @@ import { Route as ContentIndexRouteImport } from './routes/content/index'
 import { Route as BrowseIndexRouteImport } from './routes/browse/index'
 import { Route as UserUsernameRouteImport } from './routes/user/$username'
 import { Route as ListsIdRouteImport } from './routes/lists/$id'
+import { Route as DevModerationPreviewRouteImport } from './routes/dev.moderation-preview'
 import { Route as ContentIdRouteImport } from './routes/content/$id'
 import { Route as CollectionsKeyRouteImport } from './routes/collections/$key'
 import { Route as BrowseTypeRouteImport } from './routes/browse/$type'
@@ -101,6 +102,11 @@ const UserUsernameRoute = UserUsernameRouteImport.update({
 const ListsIdRoute = ListsIdRouteImport.update({
   id: '/lists/$id',
   path: '/lists/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DevModerationPreviewRoute = DevModerationPreviewRouteImport.update({
+  id: '/dev/moderation-preview',
+  path: '/dev/moderation-preview',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ContentIdRoute = ContentIdRouteImport.update({
@@ -195,6 +201,7 @@ export interface FileRoutesByFullPath {
   '/browse/$type': typeof BrowseTypeRoute
   '/collections/$key': typeof CollectionsKeyRoute
   '/content/$id': typeof ContentIdRoute
+  '/dev/moderation-preview': typeof DevModerationPreviewRoute
   '/lists/$id': typeof ListsIdRoute
   '/user/$username': typeof UserUsernameRoute
   '/browse/': typeof BrowseIndexRoute
@@ -225,6 +232,7 @@ export interface FileRoutesByTo {
   '/browse/$type': typeof BrowseTypeRoute
   '/collections/$key': typeof CollectionsKeyRoute
   '/content/$id': typeof ContentIdRoute
+  '/dev/moderation-preview': typeof DevModerationPreviewRoute
   '/lists/$id': typeof ListsIdRoute
   '/user/$username': typeof UserUsernameRoute
   '/browse': typeof BrowseIndexRoute
@@ -256,6 +264,7 @@ export interface FileRoutesById {
   '/browse/$type': typeof BrowseTypeRoute
   '/collections/$key': typeof CollectionsKeyRoute
   '/content/$id': typeof ContentIdRoute
+  '/dev/moderation-preview': typeof DevModerationPreviewRoute
   '/lists/$id': typeof ListsIdRoute
   '/user/$username': typeof UserUsernameRoute
   '/browse/': typeof BrowseIndexRoute
@@ -288,6 +297,7 @@ export interface FileRouteTypes {
     | '/browse/$type'
     | '/collections/$key'
     | '/content/$id'
+    | '/dev/moderation-preview'
     | '/lists/$id'
     | '/user/$username'
     | '/browse/'
@@ -318,6 +328,7 @@ export interface FileRouteTypes {
     | '/browse/$type'
     | '/collections/$key'
     | '/content/$id'
+    | '/dev/moderation-preview'
     | '/lists/$id'
     | '/user/$username'
     | '/browse'
@@ -348,6 +359,7 @@ export interface FileRouteTypes {
     | '/browse/$type'
     | '/collections/$key'
     | '/content/$id'
+    | '/dev/moderation-preview'
     | '/lists/$id'
     | '/user/$username'
     | '/browse/'
@@ -379,6 +391,7 @@ export interface RootRouteChildren {
   BrowseTypeRoute: typeof BrowseTypeRoute
   CollectionsKeyRoute: typeof CollectionsKeyRoute
   ContentIdRoute: typeof ContentIdRoute
+  DevModerationPreviewRoute: typeof DevModerationPreviewRoute
   ListsIdRoute: typeof ListsIdRoute
   UserUsernameRoute: typeof UserUsernameRoute
   BrowseIndexRoute: typeof BrowseIndexRoute
@@ -485,6 +498,13 @@ declare module '@tanstack/react-router' {
       path: '/lists/$id'
       fullPath: '/lists/$id'
       preLoaderRoute: typeof ListsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dev/moderation-preview': {
+      id: '/dev/moderation-preview'
+      path: '/dev/moderation-preview'
+      fullPath: '/dev/moderation-preview'
+      preLoaderRoute: typeof DevModerationPreviewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/content/$id': {
@@ -611,6 +631,7 @@ const rootRouteChildren: RootRouteChildren = {
   BrowseTypeRoute: BrowseTypeRoute,
   CollectionsKeyRoute: CollectionsKeyRoute,
   ContentIdRoute: ContentIdRoute,
+  DevModerationPreviewRoute: DevModerationPreviewRoute,
   ListsIdRoute: ListsIdRoute,
   UserUsernameRoute: UserUsernameRoute,
   BrowseIndexRoute: BrowseIndexRoute,

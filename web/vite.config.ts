@@ -10,7 +10,12 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     tsconfigPaths(),
     tailwindcss(),
-    tanstackStart(),
+    tanstackStart({
+      router: {
+        routeFileIgnorePattern:
+          mode === "production" ? "dev\\.moderation-preview" : undefined,
+      },
+    }),
     // Nitro is what produces the standalone Node bundle in `.output/`. We
     // only enable it during the production build because mounting Nitro
     // for `vitest` swaps the test runtime for h3 and breaks setup files.
