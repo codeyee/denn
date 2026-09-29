@@ -13,7 +13,7 @@ import time
 
 
 from django.conf import settings
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError
 from django.utils import timezone
 
 from typing import NamedTuple

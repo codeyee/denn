@@ -12,7 +12,6 @@ from argparse import ArgumentTypeError
 from contextlib import contextmanager
 from datetime import date
 from decimal import Decimal, InvalidOperation
-from pathlib import Path
 from typing import Any
 
 from django.conf import settings

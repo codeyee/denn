@@ -169,5 +169,3 @@ MODERATION_MODEL = os.getenv("MODERATION_MODEL") or "jev-latest"
 MODERATION_QUESTION_REVISION = os.getenv("MODERATION_QUESTION_REVISION") or "q4"
 MODERATION_POLICY_REVISION = os.getenv("MODERATION_POLICY_REVISION") or "p1"
 
-# Named callable so the model field default can be serialized in migrations.
-from content.settings_defaults import current_policy_revision  # noqa: E402
