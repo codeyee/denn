@@ -22,7 +22,7 @@ Validation rejects extra/missing fields, duplicate or non-opaque case IDs, unkno
 
 ## Sampling and evidence limits
 
-JEV-006 targets 300–500 English/Spanish cases. A prior local aggregate found only 18 books and no reliable language field, so an equal-balanced cross-provider sample cannot be drawn from the local catalog. This schema, synthetic fixture, and computed classification metrics establish no representative sample and no model-quality result. Human-adjudicated sampling and injected-client execution remain open.
+The local catalog has only 18 eligible books and no stored language field, so an equal-balanced cross-provider or EN/ES sample cannot be drawn from it; the catalog workflow below stratifies by provider/type instead and labels language manually. The committed synthetic fixture tests mechanics only and is not a model-quality result. See [the 2026-09-28 results](#results-2026-09-28-catalog-evaluation) for the representative catalog evaluation.
 
 
 ## Pure classification report contract: `jev-moderation-evaluation-report/v2`
@@ -33,7 +33,7 @@ The report provides the class confusion matrices; Jev-only and final-policy per-
 
 Coverage is calculated independently for `jev_only` and `final_policy`. Each `needs_review_abstention_rate` is `count(prediction == needs_review) / case_count`; each outcome rate uses the full case count in that report or stratum. Class recall is `true_positive / gold_class_support`, where support includes every case in that gold class, including unavailable, unknown, and skipped outcomes. Precision is `true_positive / count(predicted_class)`. The gold-explicit false-negative rate is `count(gold == explicit_or_sensitive and prediction == safe_for_automatic_discovery) / count(gold == explicit_or_sensitive)`. Needs-review recall is `count(gold == needs_review and prediction == needs_review) / count(gold == needs_review)`. These formulas apply separately to Jev-only and final-policy outcomes.
 
-Record a concrete returned model such as `jev-1.13.0`. A moving alias such as `jev-latest`, a missing version, or mixed versions makes a single-version comparison ineligible. See the [TypeSafe model guidance](https://docs.typesafe.ai/models). The status remains `INSUFFICIENT`: metrics do not set pass thresholds or attest that the sample is representative.
+Record a concrete returned model such as `jev-1.13.0`. A moving alias such as `jev-latest`, a missing version, or mixed versions makes a single-version comparison ineligible. See the [TypeSafe model guidance](https://docs.typesafe.ai/models). The report's `go_no_go.status` is always `INSUFFICIENT`: the code never sets pass thresholds or attests that a sample is representative; the go/no-go is a recorded human decision (see the results section).
 
 The pure accounting function accepts optional caller-supplied per-case durations; its p50/p95 are not SDK latency. The injected orchestrator supplies wall time measured only around each `classify` invocation, excluding validation and aggregation; this includes adapter behavior and is not Jev-service-only latency. It keeps known input/output token totals and counts incomplete usage. Cost is reported only with price rates and a short price-provenance label; incomplete usage produces a partial known cost and a null complete total. Zero durations or token counts remain valid measurements; missing values are never replaced with zero.
 
@@ -88,9 +88,9 @@ The live JSON report includes `schema_version` (`jev-moderation-evaluation-repor
 
 ## Catalog evaluation workflow
 
-This is the planned procedure for a representative catalog evaluation. It
-sends catalog text to the second labeling model in step 2 and to Jev in step 3.
-Every live call is a separate, explicitly authorized action.
+This is the procedure used for the 2026-09-28 catalog evaluation. It sends
+catalog text to the second labeling model in step 2 and to Jev in step 3.
+Every live run is a separate, explicitly authorized action.
 
 1. **Export candidates (read-only).** Run
    `export_moderation_evaluation_candidates` from `core/`:
@@ -127,24 +127,26 @@ Every live call is a separate, explicitly authorized action.
    candidate's `state` for the three classes, without showing it Jev's
    output, the lexicon flag, or any other model's labels. These silver labels
    are working labels, not ground truth.
-3. **One live Jev pass per case.** Convert the candidates to the
-   `jev-moderation-gold-cases/v1` schema (drop `sampling_stratum` and
-   `sensitive_candidate`; add `language`, `gold_class`, and `adjudication`).
-   Run [`evaluate_jev_moderation`](#exact-sample-preflight) with `--dry-run`,
-   then with `--confirm-live`, in batches of at most 25 exact `--case-ids`,
-   using a concrete pinned `MODERATION_MODEL` such as `jev-1.13.0`. Each case
-   is sent once. Never rerun a failed batch blindly, because calls may already
-   have been sent. The gold schema has no silver status: a catalog case must
-   be `human_adjudicated` with at least one reviewer. A working dataset built
-   from silver labels therefore overstates human review. Keep it private and
-   treat its report as provisional.
+3. **One live Jev pass per case.** Threshold analysis needs the raw
+   per-question probabilities, but [`evaluate_jev_moderation`](#exact-sample-preflight)
+   reports only composed decisions and caps a run at 25 cases. The 2026-09-28
+   run therefore used a one-off Core-shell script around the production
+   `JevModerationClient` (zero SDK retries) with a pinned
+   `MODERATION_MODEL=jev-1.13.0`. It appended one private JSONL row per case
+   (opaque case ID, the three probabilities, returned model, token usage, and
+   call-only duration) and skipped IDs already written, so a rerun never
+   re-sent a completed case. Promote that script into a management command if
+   catalog evaluations become recurring. The gold schema has no silver status,
+   so do not feed silver labels to `evaluate_jev_moderation` as
+   `human_adjudicated` cases.
 4. **Human review.** A person reviews, from the private files: every case where
-   the silver label and Jev disagree; every flagged case (any case that either
-   labeler marks `explicit_or_sensitive` or `needs_review`); and a random 10%
-   audit of the agreements, drawn with a recorded seed. The reviewer's label
-   replaces the silver label. Only human-reviewed cases keep the
-   `human_adjudicated` status in the reviewed dataset.
-5. **Metrics.** Regenerate the report from the reviewed dataset. Report the
+   the silver label and Jev's default-threshold decision disagree; every case
+   both mark `explicit_or_sensitive` or `needs_review`; and a random 10% audit
+   of the remaining safe/safe agreements, drawn with a recorded seed. The
+   reviewer's label replaces the silver label. Unreviewed agreements keep the
+   silver label, and the random audit estimates their error rate.
+5. **Metrics.** Compute the metrics from the final labels and the stored
+   probabilities, including a threshold sweep. Report the
    [classification metrics](#pure-classification-report-contract-jev-moderation-evaluation-reportv2)
    (Jev-only and final-policy confusion matrices, per-class precision and
    recall, explicit false-negative rate, needs-review recall, coverage, and
@@ -166,8 +168,64 @@ Every live call is a separate, explicitly authorized action.
 - Input/output prices per million tokens and provenance:
 - Known priced usage and complete cost total, with status:
 - Provider overrides, separate from Jev-only quality:
-- Go/no-go: **INSUFFICIENT** until representative human-adjudicated live evidence and human-approved thresholds exist.
+- Go/no-go: human decision, with the evidence it rests on.
 
 ## Results: 2026-09-28 catalog evaluation
 
-Results pending.
+**Sample.** 400 cases from the local development catalog (a copy of real
+provider data), seed `denn-jev-eval-v1`, `--sample-size 400` with the other
+exporter defaults. Strata: IGDB games 56, OpenLibrary books 18 (every eligible
+book), Spotify albums 95, TMDB movies 77, TMDB seasons 101, TMDB TV shows 53;
+98 cases were lexicon-enriched. The exporter skipped 1,286 identity-only items
+without normalized detail and 14 states above 20,000 bytes. Languages (silver,
+corrected by the reviewer where reviewed): English 322, Spanish 41, other 37.
+No case had an affirmative TMDB adult flag, so every result below is Jev-only.
+
+**Labels.** Five blind Sonnet annotators labeled every case under guideline
+`silver-g1` (the three question categories above). One reviewer adjudicated
+62 cases: 17 silver/Jev disagreements, 7 cases both flagged, and a 10% random
+audit of 38 safe/safe agreements. The reviewer changed 8 of 62 silver labels;
+the random audit found 0 of 38 errors, so the 338 unreviewed agreements keep
+their silver label. Final labels: 390 safe, 6 explicit, 4 needs review.
+
+**Jev `jev-1.13.0`, question revision `q3`, default thresholds 0.75/0.75/0.75.**
+
+| Gold \ Jev | explicit | needs review | safe |
+| --- | ---: | ---: | ---: |
+| safe (390) | 1 | 8 | 381 |
+| explicit (6) | 5 | 0 | 1 |
+| needs review (4) | 0 | 4 | 0 |
+
+- Explicit precision 5/6 (0.83) and recall 5/6 (0.83). All 6 explicit cases
+  are TMDB movies (4) or IGDB games (2); albums, books, seasons and TV shows had
+  none, so their explicit recall is `N/A`.
+- Explicit-to-safe false negatives: 1/6. The missed case is a game whose title
+  names pornography while its descriptive text is sparse; Jev returned
+  `explicit_or_sensitive` = 0.08, so no reasonable threshold recovers it.
+- User-visible false removals: 1/390 safe cases (0.26%) would be hidden from
+  the homepage and blurred on detail: a classic film whose tagline names sexual
+  violence (explicit probability 0.94). The other 8 safe-to-`needs_review`
+  cases stay visible because `needs_review` has no surface effect in this
+  release.
+- Needs-review recall 4/4, precision 4/12. `needs_review` is not acted on
+  today; it seeds the future admin review queue.
+- Threshold sweep (`explicit_at` = `review_at`, `safe_min` 0.75): 0.60 through
+  0.80 give the same explicit precision and recall (5/6, 5/6). Below 0.60,
+  precision falls (0.50: 5/12). Above 0.80, recall falls (0.85: 3/6;
+  0.90: 2/6). The defaults stay unchanged.
+- Operations: 400/400 responses, 0 failures, all from `jev-1.13.0`.
+  Call-only latency p50 205 ms, p95 260 ms, max 500 ms. Input tokens
+  739,992 (mean 1,850, max 6,373). Cost USD 0.031 at USD 0.042 per million
+  input tokens (output free), from the TypeSafe models page reviewed
+  2026-09-28.
+
+**Limits.** Explicit content is rare in this catalog (6 of 400 even with
+enrichment), so the explicit metrics rest on very few cases and are not
+stratum-level evidence. The labels come from one reviewer plus model silver
+labels. Re-run this workflow when the model, question revision, or policy
+changes.
+
+**Go/no-go.** Recommended **GO** for activation with the default thresholds,
+behind the rollout flags and the activation checklist in the
+[worker runbook](jev-moderation-workers.md). Pending maintainer approval at
+activation time.
