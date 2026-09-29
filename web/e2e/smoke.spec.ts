@@ -421,7 +421,7 @@ test("adult search stays safe by default and changes only after explicit opt-in"
 
   await page.goto("/settings");
   const preference = page.getByRole("checkbox", {
-    name: "Allow adult content in direct search",
+    name: "Allow adult content in search and detail artwork",
   });
   await expect(preference).not.toBeChecked();
   await preference.check();
