@@ -166,6 +166,50 @@ class RehydrateCommandTests(TestCase):
         )
         self.assertEqual(json.loads(log_line)['total'], 1)
 
+    def test_stale_game_without_duration_is_selected_by_default(self):
+        item = _seed_game_without_duration()
+        GameDetail.objects.filter(content_item=item).update(
+            last_refreshed_at=timezone.now() - timedelta(days=3650),
+        )
+
+        with patch(
+            'content.utils.fetch_source_data',
+            return_value=GAME_RDR2,
+        ):
+            buf = StringIO()
+            call_command(
+                'rehydrate_content_details',
+                '--content-type', 'GAME',
+                '--workers', '1',
+                stdout=buf,
+            )
+
+        self.assertTrue(GameDurationEstimate.objects.filter(content_item=item).exists())
+
+    def test_repair_flags_combine(self):
+        missing = _seed_game_without_duration('1001')
+        no_data = _seed_game_without_duration('1002')
+        upsert_game(no_data, {
+            **GAME_RDR2,
+            'id': 1002,
+            'duration': {'source': 'igdb', 'status': 'no_data'},
+        })
+
+        buf = StringIO()
+        call_command(
+            'rehydrate_content_details',
+            '--content-type', 'GAME',
+            '--include-missing-duration',
+            '--include-no-data',
+            '--dry-run',
+            stdout=buf,
+        )
+
+        output = buf.getvalue()
+        self.assertIn(f'content_item={missing.id} ', output)
+        self.assertIn(f'content_item={no_data.id} ', output)
+        self.assertIn('include_missing_duration=True', output)
+
     def test_game_with_no_duration_data_is_not_selected_without_repair_flag(self):
         item = _seed_game_without_duration()
         no_duration_payload = {
