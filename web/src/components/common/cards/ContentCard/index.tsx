@@ -19,7 +19,7 @@ import { AddToListModal } from "@/components/common/modals/AddToListModal";
 import { usePrefetchContentDetail } from "@/lib/api/queries/usePrefetchContentDetail";
 import { useHoverPrefetch } from "@/lib/perf/useHoverPrefetch";
 import { useContentCardModal } from "./hooks/useContentCardModal";
-import { useModerationArtworkReveal } from "@/components/common/media/useModerationArtworkReveal";
+import { usePresentedArtwork } from "@/components/common/media/usePresentedArtwork";
 import { ModerationRevealButton } from "@/components/common/media/ModerationRevealButton";
 import { useAuthRequiredAction } from "@/hooks/useAuthRequiredAction";
 import {
@@ -122,7 +122,7 @@ export function ContentCard({
     isRevealed: isArtworkRevealed,
     isBlurred: isArtworkBlurred,
     toggle: toggleArtworkReveal,
-  } = useModerationArtworkReveal(item, moderationSummary);
+  } = usePresentedArtwork(item, item.moderation, moderationSummary);
 
   const footerInfo = useMemo(() => getFooterInfo(item), [item]);
   const authors = useMemo(() => getAuthorsText(item), [item]);

@@ -14,6 +14,7 @@ import { Film } from "lucide-react";
 import { buildContentUrlById } from "@/lib/utils/navigationUtils";
 import { useNavigate } from "@tanstack/react-router";
 import { ListItemTrackingSection } from "@/components/common/tracking/ListItemTrackingSection";
+import { useModerationArtworkBlur } from "@/components/common/providers/ModerationPresentationProvider";
 
 interface ListItemRendererProps {
   item: ListItem;
@@ -45,6 +46,7 @@ export function ListItemRenderer({
   const sourceData = contentItem.source_data;
   const ContentIcon = CONTENT_TYPE_ICONS[contentItem.content_type] || Film;
   const imageUrl = sourceData?.image_url;
+  const isArtworkBlurred = useModerationArtworkBlur(contentItem.moderation);
 
   const isSeason = contentItem.content_type === "SEASON";
   const title =
@@ -95,6 +97,7 @@ export function ListItemRenderer({
         image={imageUrl}
         imageAlt={sourceData?.title}
         imageFullHeight={true}
+        isArtworkBlurred={isArtworkBlurred}
         leadingContent={
           <div className="flex items-center gap-3">
             <div className="text-white/60 text-sm font-mono w-8 text-center">
@@ -134,6 +137,7 @@ export function ListItemRenderer({
           image={imageUrl}
           imageAlt={sourceData?.title}
           imageFullHeight={true}
+          isArtworkBlurred={isArtworkBlurred}
           leadingContent={
             <div className="flex items-center gap-3">
               <div className="text-white/60 text-sm font-mono w-8 text-center">

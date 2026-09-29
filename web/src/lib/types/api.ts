@@ -457,6 +457,7 @@ export interface TVSeasonDetail {
     images: Image[];
     platforms: Record<string, Platform[]> | null;
     episodes: TVEpisode[];
+    moderation?: ModerationSummary;
 }
 
 export interface TVEpisode {

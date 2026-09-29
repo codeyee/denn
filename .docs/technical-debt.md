@@ -11,10 +11,11 @@ their lasting outcome is reflected in architecture or history docs.
   critical routes, but Add-to-List and ListDetail still need broader
   mutation/rollback interaction tests.
 - Adult search preference and cache isolation are implemented. IGDB,
-  Spotify, and OpenLibrary still have no provider adult flag. Jev now
-  classifies their items when moderation is enabled, but search results
-  still do not use Jev, so they remain unclassified there and Denn must not
-  infer safety from free text.
+  Spotify, and OpenLibrary still have no provider adult flag. Jev classifies
+  their items when moderation is enabled, and search and Browse cards blur
+  current explicit artwork, but search never calls Jev at request time and
+  results that are not yet classified stay visible and unblurred. Denn must
+  not infer safety from free text.
 - Country-scoped streaming availability is persisted separately, but
   freshness is still tied to the global content detail lifecycle instead
   of an independent per-country policy.
@@ -34,7 +35,13 @@ their lasting outcome is reflected in architecture or history docs.
   single-replica worker limit, and there is no global cap on queued
   moderation jobs.
 - Proxy's 5-minute homepage candidate cache and Web's 5-minute query stale
-  time delay homepage changes after a new judgment.
+  time delay homepage changes after a new judgment. Search and Browse query
+  keys do not include the visibility flag, so an open client keeps old
+  summaries across a flag change until it reloads.
+- Moderation blur does not yet cover every artwork surface: random-pick modal
+  artwork, list and dynamic-collection cover collages, season cards on a show's
+  detail page, and Add-to-list season thumbnails carry no per-image summary or
+  no blur. Row layouts blur without a reveal control.
 
 ## Medium
 

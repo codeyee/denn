@@ -10,6 +10,7 @@ export interface RouterContext {
   queryClient: QueryClient;
   session: SessionSnapshot;
   country: string | null;
+  moderationVisibilityEnabled: boolean;
 }
 
 export function getRouter() {
@@ -30,6 +31,7 @@ export function getRouter() {
         resolution: "anonymous",
       },
       country: null,
+      moderationVisibilityEnabled: false,
     } satisfies RouterContext,
   });
 }

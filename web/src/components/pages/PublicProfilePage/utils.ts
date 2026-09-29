@@ -11,8 +11,10 @@ import {
 } from "@/lib/types";
 import type { ListCardData } from "@/components/common/cards/ListCard";
 import { formatAuthors } from "@/lib/utils/authorUtils";
+import { parseModerationSummary } from "@/lib/utils/moderationUtils";
 
 export function profileContentCardItem(item: LocalContentSummary): Content {
+  const moderation = parseModerationSummary(item.moderation);
   const base = {
     id: String(item.id),
     denn_id: item.id,
@@ -20,6 +22,7 @@ export function profileContentCardItem(item: LocalContentSummary): Content {
     image_url: item.poster,
     release_date: item.date,
     images: [],
+    ...(moderation ? { moderation } : {}),
   };
   const authors = item.authors ?? null;
 

@@ -20,6 +20,8 @@ import {
   getRatingBadgeData,
 } from "@/components/pages/ListDetailPage/utils";
 import { ListItemTrackingSection } from "@/components/common/tracking/ListItemTrackingSection";
+import { usePresentedArtwork } from "@/components/common/media/usePresentedArtwork";
+import { ListItemCardRevealControl } from "./components/ListItemCardRevealControl";
 
 interface ListItemCardProps {
   item: ListItem;
@@ -48,6 +50,7 @@ export function ListItemCard({
   const [isNavigating, setIsNavigating] = useState(false);
   const sourceData = contentItem.source_data;
   const imageUrl = sourceData?.image_url;
+  const artwork = usePresentedArtwork(contentItem, contentItem.moderation);
 
   const title = useMemo(() => getListItemTitle(item), [item]);
   const subtitle = useMemo(() => getListItemSubtitle(item), [item]);
@@ -112,6 +115,7 @@ export function ListItemCard({
         backgroundImage={imageUrl || ""}
         backgroundImageAlt={`${title} cover image`}
         isEmpty={!imageUrl}
+        isArtworkBlurred={artwork.isBlurred}
         className="h-full"
         disableHover={disableHover}
         hoverContent={
@@ -180,6 +184,7 @@ export function ListItemCard({
           )}
         </Card.Footer>
       </Card>
+      <ListItemCardRevealControl artwork={artwork} />
       {isNavigating && (
         <div
           className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center rounded-xl bg-black/55 text-sm font-medium text-white"

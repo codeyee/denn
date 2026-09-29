@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { MediaListItem } from "@/components/common/lists/MediaListItem";
 import { VerticalList } from "@/components/common/lists/VerticalList";
 import { RatingBadge } from "@/components/common/ui/RatingBadge";
+import { useModerationArtworkBlur } from "@/components/common/providers/ModerationPresentationProvider";
 import {
   getContentTypeIcon,
   getContentTypeLabel,
@@ -32,6 +33,7 @@ function ProgressListRow({ item }: { item: PublicProgressItem }) {
   const contentTypeLabel = getContentTypeLabel(item.content.type);
   const hasReview = Boolean(item.rating?.review);
   const attribution = getProfileContentAttribution(item.content) || undefined;
+  const isArtworkBlurred = useModerationArtworkBlur(item.content.moderation);
 
   return (
     <article>
@@ -62,6 +64,7 @@ function ProgressListRow({ item }: { item: PublicProgressItem }) {
             <ContentIcon aria-hidden="true" className="h-10 w-10" />
           }
           variant="review"
+          isArtworkBlurred={isArtworkBlurred}
           className="h-64 md:h-52"
           trailingContent={<ProgressListIndicators item={item} />}
         >

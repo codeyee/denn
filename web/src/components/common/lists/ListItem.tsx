@@ -13,6 +13,7 @@ interface ListItemProps {
   className?: string;
   onClick?: () => void;
   imageFullHeight?: boolean; // New prop for full-height image
+  isArtworkBlurred?: boolean;
 }
 
 export function ListItem({
@@ -27,6 +28,7 @@ export function ListItem({
   className = "",
   onClick,
   imageFullHeight = false,
+  isArtworkBlurred = false,
 }: ListItemProps) {
   const isClickable = !!onClick;
 
@@ -42,6 +44,7 @@ export function ListItem({
         trailingContent={trailingContent}
         className={className}
         onClick={onClick}
+        isArtworkBlurred={isArtworkBlurred}
       />
     );
   }
@@ -67,7 +70,7 @@ export function ListItem({
               src={image}
               alt={imageAlt}
               loading="lazy"
-              className="absolute inset-0 w-full h-full object-cover"
+              className={`absolute inset-0 w-full h-full object-cover ${isArtworkBlurred ? "scale-110 blur-md" : ""}`}
             />
             {/* Left-to-right fade overlay */}
             <div className="absolute inset-0 bg-linear-to-r from-transparent via-transparent to-black/20 pointer-events-none" />

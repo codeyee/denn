@@ -11,7 +11,6 @@ import { ContentDetailSkeleton } from "@/components/pages/ContentDetailPage/Cont
 import { prefetchContentDetailQueries } from "@/lib/api/queries/server";
 import { ContentType, type ContentItem } from "@/lib/types";
 import { formatSeasonTitle } from "@/lib/utils/titleUtils";
-import { getWebModerationVisibilityEnabledFn } from "@/server/moderation-visibility";
 
 export const Route = createFileRoute("/content/$id")({
   loader: async ({ context, params }) => {
@@ -20,8 +19,7 @@ export const Route = createFileRoute("/content/$id")({
       throw redirect({ to: "/" });
     }
 
-    const moderationVisibilityEnabled =
-      await getWebModerationVisibilityEnabledFn();
+    const { moderationVisibilityEnabled } = context;
     const initialContentItem = await prefetchContentDetailQueries(
       context.queryClient,
       context.session,

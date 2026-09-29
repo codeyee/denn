@@ -1,5 +1,6 @@
 import {
   applyResolvedContentIds,
+  attachModerationSummaries,
   collectContentIdentities,
   isBrowseResponse,
   keepOnlyCurrentSafeHomepageItems,
@@ -15,7 +16,7 @@ export async function resolveCatalogContentIds<T extends CatalogResponse>(
   response: T,
   country: string | null,
   requestId: string,
-  options: { moderation?: "keepOnlyCurrentSafe" } = {},
+  options: { moderation?: "keepOnlyCurrentSafe" | "annotate" } = {},
 ): Promise<T> {
   const items = collectContentIdentities(response);
   if (items.length === 0) return response;
@@ -78,14 +79,30 @@ export async function resolveCatalogContentIds<T extends CatalogResponse>(
     ) as T;
   }
 
-  if (isBrowseResponse(resolvedResponse)) {
+  const catalog =
+    options.moderation === "annotate"
+      ? attachModerationSummaries(resolvedResponse, resolved.results)
+      : resolvedResponse;
+
+  if (isBrowseResponse(catalog)) {
     return {
-      ...resolvedResponse,
-      results: resolvedResponse.results.filter((item) => item.denn_id),
+      ...catalog,
+      results: catalog.results.filter((item) => item.denn_id),
     } as T;
   }
 
-  return resolvedResponse;
+  return catalog;
+}
+
+export function resolveDiscoveryContentIds<T extends CatalogResponse>(
+  response: T,
+  country: string | null,
+  requestId: string,
+  moderationVisibilityEnabled = isWebModerationVisibilityEnabled(),
+): Promise<T> {
+  return resolveCatalogContentIds(response, country, requestId, {
+    moderation: moderationVisibilityEnabled ? "annotate" : undefined,
+  });
 }
 
 export function resolveHomepageContentIds(

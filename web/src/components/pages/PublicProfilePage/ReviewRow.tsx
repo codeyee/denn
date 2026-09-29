@@ -4,6 +4,7 @@ import { Star } from "lucide-react";
 
 import { MediaListItem } from "@/components/common/lists/MediaListItem";
 import { RatingBadge } from "@/components/common/ui/RatingBadge";
+import { useModerationArtworkBlur } from "@/components/common/providers/ModerationPresentationProvider";
 import {
   getContentTypeIcon,
   getContentTypeLabel,
@@ -20,6 +21,7 @@ export function ReviewRow({ rating }: ReviewRowProps) {
   const ContentIcon = getContentTypeIcon(rating.content.type);
   const contentTypeLabel = getContentTypeLabel(rating.content.type);
   const artwork = rating.content.poster;
+  const isArtworkBlurred = useModerationArtworkBlur(rating.content.moderation);
 
   return (
     <article>
@@ -43,6 +45,7 @@ export function ReviewRow({ rating }: ReviewRowProps) {
           imageAlt={`${rating.content.title} artwork`}
           mediaFallback={<ContentIcon aria-hidden="true" className="h-10 w-10" />}
           variant="review"
+          isArtworkBlurred={isArtworkBlurred}
           className="h-64 md:h-56"
           trailingContent={
             rating.is_favorite ? (

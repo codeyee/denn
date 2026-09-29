@@ -85,7 +85,7 @@ export function keepOnlyCurrentSafeHomepageItems(
   };
 }
 
-function attachModerationSummaries<T extends CatalogResponse>(
+export function attachModerationSummaries<T extends CatalogResponse>(
   response: T,
   resolved: ResolvedContentIdentity[],
 ): T {

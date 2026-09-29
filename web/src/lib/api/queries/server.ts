@@ -5,7 +5,7 @@ import { getCookie } from "@tanstack/react-start/server";
 import { AUTH_ACCESS_COOKIE } from "@/lib/auth/constants";
 import { getApiUrl, getProxyApiUrl } from "@/lib/env";
 import type { SessionSnapshot } from "@/server/session";
-import { resolveCatalogContentIds, resolveHomepageContentIds } from "@/server/catalog";
+import { resolveDiscoveryContentIds, resolveHomepageContentIds } from "@/server/catalog";
 import { buildCatalogVisitorHeaders } from "@/server/catalog-visitor";
 import { buildProxyHeaders, getLogicalRequestId } from "@/server/proxy";
 import {
@@ -489,7 +489,7 @@ async function fetchServerSearch(
       route: "/v1/proxy/search",
     },
   );
-  return resolveCatalogContentIds(response, country, requestId);
+  return resolveDiscoveryContentIds(response, country, requestId);
 }
 
 async function fetchServerBrowse(
@@ -518,7 +518,7 @@ async function fetchServerBrowse(
       route: "/v1/proxy/browse",
     },
   );
-  return resolveCatalogContentIds(response, country, requestId);
+  return resolveDiscoveryContentIds(response, country, requestId);
 }
 
 function degradedBrowseResponse(

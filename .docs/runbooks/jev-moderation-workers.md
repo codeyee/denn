@@ -99,9 +99,12 @@ production worker deployment is included in this change.
 to `false`. When `true`, the homepage keeps only items whose current summary is
 exactly complete and safe before hero and carousel selection; explicit,
 `needs_review`, unknown, pending, stale, missing, and unresolved items are all
-excluded. Detail artwork is blurred for explicit items unless the authenticated
-viewer has `allow_adult_content=true`. The preference changes artwork only; it
-does not restore excluded homepage items. Unknown, pending, stale, incomplete,
+excluded. Detail and card artwork (search, Browse, list detail, public lists and
+profiles) is blurred for explicit items unless the authenticated viewer has
+`allow_adult_content=true`. The preference changes artwork only; it does not
+restore excluded homepage items. The flag stays server-only: the browser
+receives only the resolved boolean through the root route, and search and Browse
+responses carry moderation summaries only while it is on. Unknown, pending, stale, incomplete,
 and `needs_review` detail summaries remain visible and unblurred. This flag
 does not protect image URLs from direct access.
 

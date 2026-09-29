@@ -16,6 +16,7 @@ interface ExpandableListItemProps {
   defaultExpanded?: boolean;
   onExpandChange?: (expanded: boolean) => void;
   imageFullHeight?: boolean; // New prop
+  isArtworkBlurred?: boolean;
 }
 
 export function ExpandableListItem({
@@ -32,6 +33,7 @@ export function ExpandableListItem({
   defaultExpanded = false,
   onExpandChange,
   imageFullHeight = false,
+  isArtworkBlurred = false,
 }: ExpandableListItemProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
@@ -52,6 +54,7 @@ export function ExpandableListItem({
         imageAlt={imageAlt}
         leadingContent={leadingContent}
         imageFullHeight={imageFullHeight}
+        isArtworkBlurred={isArtworkBlurred}
         onClick={expandedContent ? handleToggle : undefined}
         className={expandedContent ? "cursor-pointer" : ""}
         trailingContent={

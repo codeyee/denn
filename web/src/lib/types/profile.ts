@@ -3,6 +3,7 @@ import type {
   ContentType,
   ListType,
   ListVisibility,
+  ModerationSummary,
   PaginationMetadata,
   TrackingStatus,
 } from "./api";
@@ -21,6 +22,7 @@ export interface LocalContentSummary {
   poster: string | null;
   backdrop: string | null;
   authors: Author[] | null;
+  moderation?: ModerationSummary;
 }
 
 export interface PublicProfileIdentity {
