@@ -56,16 +56,18 @@ export function AdultContentPreference({
       <div className="flex items-start justify-between gap-6">
         <div>
           <h2 id="adult-content-heading" className="text-lg font-semibold">
-            Adult content in search
+            Adult content
           </h2>
           <p className="mt-1 max-w-xl text-sm text-gray-300">
-            Automatic recommendations always exclude adult content. Opting in
-            only affects deliberate searches and only where the provider
-            exposes a reliable classification.
+            Automatic recommendations always exclude explicit content. When
+            enabled, deliberate searches may include adult results where the
+            provider supports them, and explicit artwork on detail pages is
+            shown without blur. When disabled, explicit detail artwork is
+            blurred and can be revealed for the current view only.
           </p>
         </div>
         <label className="inline-flex min-h-11 cursor-pointer items-center gap-3">
-          <span className="sr-only">Allow adult content in direct search</span>
+          <span className="sr-only">Allow adult content in search and detail artwork</span>
           <input
             type="checkbox"
             className="h-5 w-5 accent-primary"

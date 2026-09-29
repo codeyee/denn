@@ -4,12 +4,14 @@ interface ContainedPosterBannerMediaProps {
   src: string;
   alt: string;
   priority?: boolean;
+  isBlurred?: boolean;
 }
 
 export function ContainedPosterBannerMedia({
   src,
   alt,
   priority = false,
+  isBlurred = false,
 }: ContainedPosterBannerMediaProps) {
   return (
     <div
@@ -37,7 +39,7 @@ export function ContainedPosterBannerMedia({
           height={1000}
           sizes="(min-width: 768px) 70vw, 84vw"
           priority={priority}
-          className="h-full w-full max-w-[min(84vw,36rem)] object-contain brightness-110 drop-shadow-[0_16px_28px_rgba(0,0,0,0.5)] md:max-w-[min(70vw,38rem)]"
+          className={`h-full w-full max-w-[min(84vw,36rem)] object-contain brightness-110 drop-shadow-[0_16px_28px_rgba(0,0,0,0.5)] transition-[filter] duration-200 md:max-w-[min(70vw,38rem)] ${isBlurred ? "blur-md" : ""}`}
         />
       </div>
     </div>

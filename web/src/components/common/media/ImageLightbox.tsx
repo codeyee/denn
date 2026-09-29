@@ -32,6 +32,7 @@ interface ImageLightboxProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   onIndexChange: (index: number) => void;
+  isImageBlurred?: boolean;
 }
 
 export function ImageLightbox({
@@ -40,6 +41,7 @@ export function ImageLightbox({
   isOpen,
   onOpenChange,
   onIndexChange,
+  isImageBlurred = false,
 }: ImageLightboxProps) {
   const [zoom, setZoom] = useState(MIN_ZOOM);
   const [showMetadata, setShowMetadata] = useState(true);
@@ -139,6 +141,7 @@ export function ImageLightbox({
               alt={activeItem.alt}
               className={cn(
                 "h-full w-full object-contain",
+                isImageBlurred && "blur-md",
                 isZoomed ? "cursor-zoom-out" : "cursor-zoom-in",
               )}
               style={{ transform: `scale(${zoom})` }}

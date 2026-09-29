@@ -24,6 +24,7 @@ import {
 import type { TrackingStatus } from "@/lib/types";
 import { useAuthRequiredAction } from "@/hooks/useAuthRequiredAction";
 import { getTrackingEffectDescription } from "@/lib/utils/trackingEffects";
+import { visibleModerationSummary } from "@/lib/utils/moderationUtils";
 
 interface ContentDetailPageProps {
   contentId: number;
@@ -31,6 +32,8 @@ interface ContentDetailPageProps {
   initialContentItem?: ContentItem;
   isAuthenticated: boolean;
   viewerId?: number;
+  allowAdultContent?: boolean;
+  moderationVisibilityEnabled?: boolean;
 }
 
 export function ContentDetailPage({
@@ -39,6 +42,8 @@ export function ContentDetailPage({
   initialContentItem,
   isAuthenticated,
   viewerId,
+  allowAdultContent = false,
+  moderationVisibilityEnabled = false,
 }: ContentDetailPageProps) {
   const { user } = useAuthStore();
   const activeUser = isAuthenticated ? user : null;
@@ -114,6 +119,14 @@ export function ContentDetailPage({
     );
   }
 
+  const displayContentItem = {
+    ...contentItem,
+    moderation: visibleModerationSummary(
+      contentItem.moderation,
+      moderationVisibilityEnabled,
+    ),
+  };
+
   const handleTrackingStatusChange = async (status: TrackingStatus) => {
     try {
       const tracking = await setTrackingStatus.mutateAsync({
@@ -186,7 +199,7 @@ export function ContentDetailPage({
         <div>
           <ContentHeader
             displayItem={displayItem}
-            contentItem={contentItem}
+            contentItem={displayContentItem}
             tvShowTitle={tvShowTitle || undefined}
             userRating={rating.userRating}
             isAuthenticated={isAuthenticated}
@@ -204,11 +217,14 @@ export function ContentDetailPage({
               });
             }}
             onDeleteTracking={() => void handleDeleteTracking()}
+            moderationSummary={displayContentItem.moderation}
+            allowAdultContent={isAuthenticated && allowAdultContent}
           />
 
           <AboutSection
             detailData={detailData}
-            contentItem={contentItem}
+            contentItem={displayContentItem}
+            allowAdultContent={isAuthenticated && allowAdultContent}
             userRating={rating.userRating}
             user={activeUser}
             isRatingLoading={rating.isRatingLoading}
@@ -217,7 +233,7 @@ export function ContentDetailPage({
           />
 
           <RatingsSection
-            contentItem={contentItem}
+            contentItem={displayContentItem}
             userRating={rating.userRating}
             onEditRating={modals.openRatingModal}
             onDeleteRating={rating.handleDeleteRating}
@@ -227,20 +243,21 @@ export function ContentDetailPage({
 
           <TracksSection
             detailData={detailData}
-            contentItem={contentItem}
+            contentItem={displayContentItem}
           />
 
           <SeasonsSection
             detailData={detailData}
-            contentItem={contentItem}
+            contentItem={displayContentItem}
           />
 
           <GallerySection
             detailData={detailData}
-            contentItem={contentItem}
+            contentItem={displayContentItem}
+            allowAdultContent={isAuthenticated && allowAdultContent}
           />
 
-          <ApiAttribution contentItem={contentItem} />
+          <ApiAttribution contentItem={displayContentItem} />
         </div>
 
         <Footer />

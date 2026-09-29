@@ -12,6 +12,7 @@ import type { SessionSnapshot } from "@/server/session";
 interface HomeRouteShellProps {
   session: SessionSnapshot;
   country?: string | null;
+  moderationVisibilityEnabled: boolean;
   initialSuggestions?: HomepageResponse;
   initialLists?: PaginatedUserListList;
   initialProgress?: PaginatedProfileResults<PublicProgressItem>;
@@ -20,6 +21,7 @@ interface HomeRouteShellProps {
 export function HomeRouteShell({
   session,
   country,
+  moderationVisibilityEnabled,
   initialSuggestions,
   initialLists,
   initialProgress,
@@ -29,6 +31,7 @@ export function HomeRouteShell({
       <Navbar />
       <HomePage
         country={country}
+        moderationVisibilityEnabled={moderationVisibilityEnabled}
         isAuthenticated={session.isAuthenticated}
         initialSuggestions={initialSuggestions}
         initialLists={initialLists}

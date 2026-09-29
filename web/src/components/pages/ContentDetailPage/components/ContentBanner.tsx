@@ -13,10 +13,13 @@ import { formatSeasonTitle } from "@/lib/utils/titleUtils";
 import { CONTENT_TYPE_ICONS } from "@/lib/icons/contentTypeIcons";
 import { Content } from "@/lib/types";
 import { BannerArtwork } from "@/components/common/media/BannerArtwork";
+import { ModerationRevealButton } from "@/components/common/media/ModerationRevealButton";
 import {
   BannerShell,
 } from "@/components/common/media/BannerShell";
+import { useModerationArtworkReveal } from "@/components/common/media/useModerationArtworkReveal";
 import { ContentActions } from "./ContentActions";
+import type { ModerationSummary } from "@/lib/types";
 
 interface ContentBannerProps {
   item: Content;
@@ -31,6 +34,8 @@ interface ContentBannerProps {
   onTrackingStatusChange: (status: TrackingStatus) => void;
   onFavoriteChange: (isFavorite: boolean) => void;
   onDeleteTracking: () => void;
+  moderationSummary?: ModerationSummary;
+  allowAdultContent: boolean;
 }
 
 export function ContentBanner({
@@ -46,6 +51,8 @@ export function ContentBanner({
   onTrackingStatusChange,
   onFavoriteChange,
   onDeleteTracking,
+  moderationSummary,
+  allowAdultContent,
 }: ContentBannerProps) {
   // `item.type` comes from the proxy detail payload (uppercase content type
   // like "MOVIE"). When the payload failed to load we still receive a bare
@@ -58,6 +65,11 @@ export function ContentBanner({
   const normalizedType = rawType.toUpperCase();
   const Icon = CONTENT_TYPE_ICONS[normalizedType as ContentType];
   const bannerMedia = getBannerMedia(item.images, item.image_url);
+  const artwork = useModerationArtworkReveal(
+    { id: item.id, image_url: bannerMedia?.imageUrl },
+    moderationSummary,
+    allowAdultContent,
+  );
 
   const getOriginalTitle = (item: Content): string => {
     if ("original_title" in item && item.original_title) {
@@ -100,7 +112,12 @@ export function ContentBanner({
     <BannerShell
       media={
         bannerMedia ? (
-          <BannerArtwork media={bannerMedia} alt={bannerAlt} priority />
+          <BannerArtwork
+            media={bannerMedia}
+            alt={bannerAlt}
+            priority
+            isBlurred={artwork.isBlurred}
+          />
         ) : undefined
       }
       fallback={
@@ -109,6 +126,14 @@ export function ContentBanner({
         ) : null
       }
     >
+      {bannerMedia && artwork.requiresBlur ? (
+        <div className="absolute right-4 top-4 z-40">
+          <ModerationRevealButton
+            isRevealed={artwork.isRevealed}
+            onToggle={artwork.toggle}
+          />
+        </div>
+      ) : null}
       <div className="layout-banner-content pb-10 md:pb-12">
           <div className="flex items-center gap-3 mb-1 md:mb-2">
             {Icon && <Icon className="h-6 w-6 text-white/90 md:h-7 md:w-7" />}

@@ -7,12 +7,14 @@ interface BannerArtworkProps {
   media: BannerMedia;
   alt: string;
   priority?: boolean;
+  isBlurred?: boolean;
 }
 
 export function BannerArtwork({
   media,
   alt,
   priority = false,
+  isBlurred = false,
 }: BannerArtworkProps) {
   if (media.treatment === "contained-poster") {
     return (
@@ -20,6 +22,7 @@ export function BannerArtwork({
         src={media.imageUrl}
         alt={alt}
         priority={priority}
+        isBlurred={isBlurred}
       />
     );
   }
@@ -33,7 +36,7 @@ export function BannerArtwork({
       height={900}
       sizes="100vw"
       priority={priority}
-      className={`absolute inset-0 h-full w-full object-cover ${BANNER_MEDIA_POSITION}`}
+      className={`absolute inset-0 h-full w-full object-cover transition-[filter] duration-200 ${isBlurred ? "scale-105 blur-md" : ""} ${BANNER_MEDIA_POSITION}`}
     />
   );
 }

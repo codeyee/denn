@@ -34,8 +34,11 @@ interface ListItemsParams {
 export const queryKeys = {
   suggestions: {
     all: ["suggestions"] as const,
-    byParams: (params: { limit: number; country?: string | null }) =>
-      ["suggestions", params] as const,
+    byParams: (params: {
+      limit: number;
+      country?: string | null;
+      moderationVisibilityEnabled: boolean;
+    }) => ["suggestions", params] as const,
   },
   search: {
     all: ["search"] as const,
