@@ -1,7 +1,7 @@
 """Reconstruct a game payload from GameDetail + child rows."""
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from content.models import ContentItem
 from content.services.game_duration import (
@@ -13,6 +13,7 @@ from ._common import (
     serialize_authors,
     serialize_images,
     serialize_release_date,
+    serialize_safety_list,
 )
 
 
@@ -86,6 +87,13 @@ def from_local(content_item: ContentItem, *, request_country: Optional[str] = No
     if platforms_out:
         payload['platforms'] = platforms_out
 
+    keywords = serialize_safety_list(detail.keywords)
+    if keywords:
+        payload['keywords'] = keywords
+    age_ratings = _serialize_age_ratings(detail.age_ratings)
+    if age_ratings:
+        payload['age_ratings'] = age_ratings
+
     genres = [g.name for g in detail.genres.all()]
     if genres:
         payload['genres'] = genres
@@ -101,3 +109,12 @@ def from_local(content_item: ContentItem, *, request_country: Optional[str] = No
         payload['images'] = images
 
     return payload
+
+
+def _serialize_age_ratings(value: Any) -> List[Dict[str, Any]]:
+    """Copy persisted age ratings, omitting empty `descriptors` like other empty fields."""
+    return [
+        {key: item for key, item in rating.items() if item != []}
+        for rating in serialize_safety_list(value)
+        if isinstance(rating, dict)
+    ]

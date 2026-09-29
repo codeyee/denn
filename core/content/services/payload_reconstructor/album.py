@@ -62,6 +62,8 @@ def from_local(content_item: ContentItem, *, request_country: Optional[str] = No
             tr_payload['duration_seconds'] = tr.duration_seconds
         if tr.external_url:
             tr_payload['external_url'] = tr.external_url
+        if tr.explicit is not None:
+            tr_payload['explicit'] = tr.explicit
         ta = list(tr.track_authors.all())
         if ta:
             tr_payload['authors'] = [{'name': a.author.name, 'type': a.role} for a in ta]

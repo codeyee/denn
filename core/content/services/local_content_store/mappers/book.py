@@ -13,11 +13,12 @@ from ._common import (
     replace_images,
     require_payload_shape,
 )
+from ._safety import MAX_SUBJECTS, clean_text_list
 
 
 _MAPPED_KEYS = (
     'id', 'type', 'title', 'description', 'image_url', 'release_date',
-    'pages', 'authors', 'images',
+    'pages', 'subjects', 'authors', 'images',
 )
 
 
@@ -38,6 +39,7 @@ def upsert(
         'pages': payload.get('pages'),
         'image_url': payload.get('image_url') or '',
         'release_date': parse_iso_date(payload.get('release_date')),
+        'subjects': clean_text_list(payload.get('subjects'), limit=MAX_SUBJECTS),
         'source_payload_hash': payload_hash,
     }
 

@@ -21,6 +21,12 @@ class TvShowDetail(models.Model):
     number_of_episodes = models.PositiveIntegerField(null=True, blank=True)
     imdb_id = models.CharField(max_length=64, blank=True)
 
+    # Provider safety metadata; see MovieDetail.
+    adult = models.BooleanField(null=True, blank=True)
+    genres = models.JSONField(default=list, blank=True)
+    keywords = models.JSONField(default=list, blank=True)
+    certifications = models.JSONField(default=list, blank=True)
+
     last_refreshed_at = models.DateTimeField(auto_now=True, db_index=True)
     source_payload_hash = models.CharField(max_length=64, blank=True)
 

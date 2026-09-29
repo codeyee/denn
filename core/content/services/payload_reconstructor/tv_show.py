@@ -6,6 +6,7 @@ from typing import Any, Dict, Optional
 from content.models import ContentItem
 
 from ._common import (
+    add_safety_metadata,
     serialize_authors,
     serialize_images,
     serialize_release_date,
@@ -46,6 +47,7 @@ def from_local(content_item: ContentItem, *, request_country: Optional[str] = No
         payload['number_of_seasons'] = detail.number_of_seasons
     if detail.number_of_episodes is not None:
         payload['number_of_episodes'] = detail.number_of_episodes
+    add_safety_metadata(payload, detail)
 
     seasons = []
     for season_detail in content_item.season_children.all():
