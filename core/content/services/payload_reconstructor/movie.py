@@ -6,6 +6,7 @@ from typing import Any, Dict, Optional
 from content.models import ContentItem
 
 from ._common import (
+    add_safety_metadata,
     serialize_authors,
     serialize_images,
     serialize_release_date,
@@ -44,6 +45,7 @@ def from_local(content_item: ContentItem, *, request_country: Optional[str] = No
         payload['status'] = detail.status
     if detail.duration_minutes is not None:
         payload['duration_minutes'] = detail.duration_minutes
+    add_safety_metadata(payload, detail)
 
     authors = serialize_authors(content_item)
     if authors:

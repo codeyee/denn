@@ -15,6 +15,8 @@ class Track(models.Model):
     title = models.CharField(max_length=500, blank=True)
     duration_seconds = models.PositiveIntegerField(null=True, blank=True)
     external_url = models.URLField(max_length=500, blank=True)
+    # Spotify explicit-lyrics flag: contextual only, not a sexual-content signal.
+    explicit = models.BooleanField(null=True, blank=True)
 
     class Meta:
         db_table = 'content_track'

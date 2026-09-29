@@ -23,6 +23,10 @@ class GameDetail(models.Model):
     themes = models.ManyToManyField('content.Theme', blank=True, related_name='games')
     game_modes = models.ManyToManyField('content.GameMode', blank=True, related_name='games')
 
+    # Provider safety metadata; see MovieDetail.
+    keywords = models.JSONField(default=list, blank=True)
+    age_ratings = models.JSONField(default=list, blank=True)
+
     last_refreshed_at = models.DateTimeField(auto_now=True, db_index=True)
     source_payload_hash = models.CharField(max_length=64, blank=True)
 

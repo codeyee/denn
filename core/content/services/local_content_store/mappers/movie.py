@@ -14,12 +14,21 @@ from ._common import (
     replace_streaming_platforms,
     require_payload_shape,
 )
+from ._safety import (
+    MAX_CERTIFICATIONS,
+    MAX_GENRES,
+    MAX_KEYWORDS,
+    clean_certifications,
+    clean_optional_bool,
+    clean_text_list,
+)
 
 
 _MAPPED_KEYS = (
     'id', 'type', 'imdb_id', 'title', 'original_title', 'tagline',
     'description', 'image_url', 'release_date', 'status',
-    'duration_minutes', 'authors', 'images', 'platforms',
+    'duration_minutes', 'adult', 'genres', 'keywords', 'certifications',
+    'authors', 'images', 'platforms',
 )
 
 
@@ -44,6 +53,12 @@ def upsert(
         'status': payload.get('status') or '',
         'duration_minutes': payload.get('duration_minutes'),
         'imdb_id': payload.get('imdb_id') or '',
+        'adult': clean_optional_bool(payload.get('adult')),
+        'genres': clean_text_list(payload.get('genres'), limit=MAX_GENRES),
+        'keywords': clean_text_list(payload.get('keywords'), limit=MAX_KEYWORDS),
+        'certifications': clean_certifications(
+            payload.get('certifications'), limit=MAX_CERTIFICATIONS,
+        ),
         'source_payload_hash': payload_hash,
     }
 

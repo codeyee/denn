@@ -1,6 +1,7 @@
 """Helpers shared across reconstructors."""
 from __future__ import annotations
 
+from copy import deepcopy
 from typing import Any, Dict, Iterable, List, Optional
 
 from content.models import ContentItem, Image, StreamingPlatform
@@ -61,6 +62,21 @@ def serialize_streaming_platforms(
     if not grouped:
         return None
     return grouped
+
+
+def serialize_safety_list(value: Any) -> List[Any]:
+    """Copy a persisted safety list, treating anything that is not a list as empty."""
+    return deepcopy(value) if isinstance(value, list) else []
+
+
+def add_safety_metadata(payload: Dict[str, Any], detail) -> None:
+    """Round-trip TMDB safety fields, omitting the unknown (None) and empty ones."""
+    if detail.adult is not None:
+        payload['adult'] = detail.adult
+    for field in ('genres', 'keywords', 'certifications'):
+        values = serialize_safety_list(getattr(detail, field))
+        if values:
+            payload[field] = values
 
 
 def drop_none(d: Dict[str, Any]) -> Dict[str, Any]:

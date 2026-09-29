@@ -16,6 +16,9 @@ class BookDetail(models.Model):
     image_url = models.URLField(max_length=500, blank=True)
     release_date = models.DateField(null=True, blank=True)
 
+    # Provider safety metadata; see MovieDetail.
+    subjects = models.JSONField(default=list, blank=True)
+
     last_refreshed_at = models.DateTimeField(auto_now=True, db_index=True)
     source_payload_hash = models.CharField(max_length=64, blank=True)
 

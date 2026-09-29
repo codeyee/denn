@@ -19,6 +19,7 @@ from ._common import (
     replace_images,
     require_payload_shape,
 )
+from ._safety import clean_optional_bool
 
 
 _MAPPED_KEYS = (
@@ -101,6 +102,7 @@ def upsert(
                     title=entry.get('title') or '',
                     duration_seconds=entry.get('duration_seconds'),
                     external_url=entry.get('external_url') or '',
+                    explicit=clean_optional_bool(entry.get('explicit')),
                 )
                 _replace_track_authors(track, entry.get('authors'))
                 new_tracks.append(track)

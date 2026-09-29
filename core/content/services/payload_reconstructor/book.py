@@ -9,6 +9,7 @@ from ._common import (
     serialize_authors,
     serialize_images,
     serialize_release_date,
+    serialize_safety_list,
 )
 
 
@@ -36,6 +37,9 @@ def from_local(content_item: ContentItem, *, request_country: Optional[str] = No
         payload['pages'] = detail.pages
     if detail.description:
         payload['description'] = detail.description
+    subjects = serialize_safety_list(detail.subjects)
+    if subjects:
+        payload['subjects'] = subjects
 
     authors = serialize_authors(content_item)
     if authors:

@@ -22,13 +22,14 @@ from ._common import (
     require_payload_shape,
     sync_game_taxonomies,
 )
+from ._safety import MAX_KEYWORDS, clean_age_ratings, clean_text_list
 
 
 _MAPPED_KEYS = (
     'id', 'type', 'title', 'game_type', 'description', 'image_url',
     'release_date', 'series', 'authors', 'platforms', 'genres',
     'themes', 'game_modes', 'play_time', 'images',
-    'duration',
+    'duration', 'keywords', 'age_ratings',
 )
 
 _MAX_DURATION_RETRIES = MAX_GAME_DURATION_RETRIES
@@ -67,6 +68,8 @@ def upsert(
         'series': payload.get('series') or '',
         'play_time_min': play_min,
         'play_time_max': play_max,
+        'keywords': clean_text_list(payload.get('keywords'), limit=MAX_KEYWORDS),
+        'age_ratings': clean_age_ratings(payload.get('age_ratings')),
         'source_payload_hash': payload_hash,
     }
 
