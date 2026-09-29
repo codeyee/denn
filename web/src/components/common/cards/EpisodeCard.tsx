@@ -9,9 +9,10 @@ interface EpisodeCardProps {
   episode: TVEpisode;
   className?: string;
   onOpenGallery?: () => void;
+  isArtworkBlurred?: boolean;
 }
 
-export function EpisodeCard({ episode, className = "", onOpenGallery }: EpisodeCardProps) {
+export function EpisodeCard({ episode, className = "", onOpenGallery, isArtworkBlurred = false }: EpisodeCardProps) {
   const title = episode.title || `Episode ${episode.episode_number}`;
   const imageUrl = episode.image_url || undefined;
   const releaseDate = formatReleaseDate(episode.release_date);
@@ -33,7 +34,7 @@ export function EpisodeCard({ episode, className = "", onOpenGallery }: EpisodeC
             width={640}
             height={360}
             sizes="(max-width: 767px) 88vw, 40vw"
-            className="absolute inset-0 h-full w-full object-cover"
+            className={`absolute inset-0 h-full w-full object-cover ${isArtworkBlurred ? "blur-md" : ""}`}
           />
         ) : (
           <div

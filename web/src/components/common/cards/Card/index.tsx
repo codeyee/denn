@@ -21,6 +21,7 @@ interface CardProps {
   isEmpty?: boolean;
   emptyIcon?: LucideIcon;
   priorityImage?: boolean;
+  isArtworkBlurred?: boolean;
   children?: React.ReactNode;
   hoverContent?: React.ReactNode;
   hoverOverlay?: React.ReactNode;
@@ -64,6 +65,7 @@ function Card({
   noAspectRatio = false,
   isEmpty = false,
   priorityImage = false,
+  isArtworkBlurred = false,
   className = "",
   children,
   hoverContent,
@@ -113,6 +115,7 @@ function Card({
             backgroundImages={backgroundImages}
             emptyIcon={EmptyIcon}
             isEmpty={isEmpty}
+            isArtworkBlurred={isArtworkBlurred}
             priority={priorityImage}
           />
           {!isEmpty && <div className="absolute inset-0 z-5 bg-black/20" />}
@@ -149,6 +152,7 @@ function Card({
           emptyIcon={EmptyIcon}
           icon={Icon}
           isEmpty={isEmpty}
+          isArtworkBlurred={isArtworkBlurred}
           isOpen={hover.isHovered && hover.shouldShowHoverContent}
           onFocus={hover.handleFocus}
           onBlur={hover.handleBlur}

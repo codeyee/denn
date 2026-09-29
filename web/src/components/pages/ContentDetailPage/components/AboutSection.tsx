@@ -25,6 +25,7 @@ interface AboutSectionProps {
   isRatingLoading: boolean;
   onEditRating: () => void;
   onDeleteRating: () => void;
+  allowAdultContent: boolean;
 }
 
 export function AboutSection({
@@ -34,7 +35,8 @@ export function AboutSection({
   user,
   isRatingLoading,
   onEditRating,
-  onDeleteRating
+  onDeleteRating,
+  allowAdultContent,
 }: AboutSectionProps) {
   if (!detailData) {
     return (
@@ -67,6 +69,7 @@ export function AboutSection({
         onDeleteRating={onDeleteRating}
         isRatingLoading={isRatingLoading}
         user={user}
+        allowAdultContent={allowAdultContent}
       />
     );
   }

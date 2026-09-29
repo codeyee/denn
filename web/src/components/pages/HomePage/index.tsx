@@ -16,6 +16,7 @@ import type {
 
 interface HomePageProps {
   country?: string | null;
+  moderationVisibilityEnabled: boolean;
   isAuthenticated: boolean;
   initialSuggestions?: HomepageResponse;
   initialLists?: PaginatedUserListList;
@@ -25,6 +26,7 @@ interface HomePageProps {
 
 export function HomePage({
   country,
+  moderationVisibilityEnabled,
   isAuthenticated,
   initialSuggestions,
   initialLists,
@@ -33,6 +35,7 @@ export function HomePage({
 }: HomePageProps) {
   const data = useHomeData({
     country,
+    moderationVisibilityEnabled,
     isAuthenticated,
     progressUsername,
     initialSuggestions,

@@ -22,6 +22,7 @@ import type {
 
 interface UseHomeDataOptions {
     country?: string | null;
+    moderationVisibilityEnabled: boolean;
     isAuthenticated?: boolean;
     progressUsername?: string | null;
     initialSuggestions?: HomepageResponse;
@@ -31,14 +32,16 @@ interface UseHomeDataOptions {
 
 export function useHomeData({
     country,
+    moderationVisibilityEnabled,
     isAuthenticated = false,
     progressUsername,
     initialSuggestions,
     initialLists,
     initialProgress,
-}: UseHomeDataOptions = {}) {
+}: UseHomeDataOptions) {
     const suggestionsQuery = useSuggestionsQuery(SUGGESTIONS_PAGE_SIZE, {
         country,
+        moderationVisibilityEnabled,
         initialData: initialSuggestions,
     });
     const listsQuery = useUserListsQuery({

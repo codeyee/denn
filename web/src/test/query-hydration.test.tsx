@@ -17,7 +17,11 @@ function createClient() {
 
 function HydratedProbe({ queryFn }: { queryFn: () => Promise<string> }) {
   const query = useQuery({
-    queryKey: queryKeys.suggestions.byParams({ limit: 20, country: "CO" }),
+    queryKey: queryKeys.suggestions.byParams({
+      limit: 20,
+      country: "CO",
+      moderationVisibilityEnabled: false,
+    }),
     queryFn,
     staleTime: 60_000,
   });
@@ -30,7 +34,11 @@ describe("TanStack Query hydration", () => {
     const serverClient = createClient();
 
     await serverClient.prefetchQuery({
-      queryKey: queryKeys.suggestions.byParams({ limit: 20, country: "CO" }),
+      queryKey: queryKeys.suggestions.byParams({
+        limit: 20,
+        country: "CO",
+        moderationVisibilityEnabled: false,
+      }),
       queryFn: async () => "server-data",
     });
 

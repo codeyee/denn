@@ -5,7 +5,7 @@ import { getCookie } from "@tanstack/react-start/server";
 import { AUTH_ACCESS_COOKIE } from "@/lib/auth/constants";
 import { getApiUrl, getProxyApiUrl } from "@/lib/env";
 import type { SessionSnapshot } from "@/server/session";
-import { resolveCatalogContentIds } from "@/server/catalog";
+import { resolveCatalogContentIds, resolveHomepageContentIds } from "@/server/catalog";
 import { buildCatalogVisitorHeaders } from "@/server/catalog-visitor";
 import { buildProxyHeaders, getLogicalRequestId } from "@/server/proxy";
 import {
@@ -59,6 +59,7 @@ export const prefetchHomeQueries = createIsomorphicFn()
     qc: QueryClient,
     session: SessionSnapshot,
     country: string | null,
+    moderationVisibilityEnabled: boolean,
   ) => {
     const accessToken = getServerAccessToken(session);
     const listParams = homeListParams(country);
@@ -69,9 +70,10 @@ export const prefetchHomeQueries = createIsomorphicFn()
         queryKey: queryKeys.suggestions.byParams({
           limit: SUGGESTIONS_PAGE_SIZE,
           country,
+          moderationVisibilityEnabled,
         }),
         queryFn: () =>
-          fetchServerSuggestions(country, requestId),
+          fetchServerSuggestions(country, requestId, moderationVisibilityEnabled),
       }),
     ];
 
@@ -439,6 +441,7 @@ function coreHeaders(accessToken: string | null, requestId: string) {
 async function fetchServerSuggestions(
   country: string | null,
   requestId: string,
+  moderationVisibilityEnabled: boolean,
 ) {
   const params = new URLSearchParams({ limit: String(SUGGESTIONS_PAGE_SIZE) });
   const response = await fetchJson<HomepageResponse>(
@@ -454,7 +457,12 @@ async function fetchServerSuggestions(
       route: "/v1/proxy/homepage",
     },
   );
-  return resolveCatalogContentIds(response, country, requestId);
+  return resolveHomepageContentIds(
+    response,
+    country,
+    requestId,
+    moderationVisibilityEnabled,
+  );
 }
 
 async function fetchServerSearch(

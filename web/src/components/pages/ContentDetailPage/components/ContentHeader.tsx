@@ -12,6 +12,7 @@ import {
   Rating,
   UserContentTracking,
   TrackingStatus,
+  ModerationSummary,
 } from "@/lib/types";
 
 interface ContentHeaderProps {
@@ -27,6 +28,8 @@ interface ContentHeaderProps {
   onTrackingStatusChange: (status: TrackingStatus) => void;
   onFavoriteChange: (isFavorite: boolean) => void;
   onDeleteTracking: () => void;
+  allowAdultContent: boolean;
+  moderationSummary?: ModerationSummary;
 }
 
 export function ContentHeader({
@@ -42,6 +45,8 @@ export function ContentHeader({
   onTrackingStatusChange,
   onFavoriteChange,
   onDeleteTracking,
+  allowAdultContent,
+  moderationSummary,
 }: ContentHeaderProps) {
   return (
     <>
@@ -59,6 +64,8 @@ export function ContentHeader({
           onTrackingStatusChange={onTrackingStatusChange}
           onFavoriteChange={onFavoriteChange}
           onDeleteTracking={onDeleteTracking}
+          allowAdultContent={allowAdultContent}
+          moderationSummary={moderationSummary}
         />
       </section>
 

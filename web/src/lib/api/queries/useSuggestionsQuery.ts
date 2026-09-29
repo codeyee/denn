@@ -8,14 +8,24 @@ interface UseSuggestionsQueryOptions {
   country?: string | null;
   enabled?: boolean;
   initialData?: HomepageResponse;
+  moderationVisibilityEnabled: boolean;
 }
 
 export function useSuggestionsQuery(
   limit: number,
-  { country, enabled = true, initialData }: UseSuggestionsQueryOptions = {},
+  {
+    country,
+    enabled = true,
+    initialData,
+    moderationVisibilityEnabled,
+  }: UseSuggestionsQueryOptions,
 ) {
   return useQuery({
-    queryKey: queryKeys.suggestions.byParams({ limit, country: country ?? null }),
+    queryKey: queryKeys.suggestions.byParams({
+      limit,
+      country: country ?? null,
+      moderationVisibilityEnabled,
+    }),
     queryFn: () =>
       homepageActions.getSuggestions({
         limit,

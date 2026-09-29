@@ -5,8 +5,15 @@ import { queryKeys } from "@/lib/api/queries";
 describe("queryKeys", () => {
   it("keeps country in suggestions and search keys", () => {
     expect(
-      queryKeys.suggestions.byParams({ limit: 20, country: "CO" }),
-    ).toEqual(["suggestions", { limit: 20, country: "CO" }]);
+      queryKeys.suggestions.byParams({
+        limit: 20,
+        country: "CO",
+        moderationVisibilityEnabled: false,
+      }),
+    ).toEqual([
+      "suggestions",
+      { limit: 20, country: "CO", moderationVisibilityEnabled: false },
+    ]);
 
     expect(
       queryKeys.search.multi({
@@ -25,6 +32,21 @@ describe("queryKeys", () => {
         allowAdult: false,
       },
     ]);
+  });
+
+  it("isolates homepage suggestions across Web visibility modes", () => {
+    const disabled = queryKeys.suggestions.byParams({
+      limit: 20,
+      country: "CO",
+      moderationVisibilityEnabled: false,
+    });
+    const enabled = queryKeys.suggestions.byParams({
+      limit: 20,
+      country: "CO",
+      moderationVisibilityEnabled: true,
+    });
+
+    expect(disabled).not.toEqual(enabled);
   });
 
   it("separates browse family, mode, query, page, and country", () => {
