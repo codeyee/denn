@@ -46,7 +46,7 @@ class BackfillCommandTests(TestCase):
         with patch(f'{COMMAND}.classify_content_item') as classify:
             with self.assertRaises(CommandError):
                 call_command('backfill_content_moderation', '--limit=1',
-                             stdout=open(os.devnull, 'w'))
+                             stdout=StringIO())
         self.assertEqual(classify.call_count, 0)
 
     def test_requires_positive_limit(self):
@@ -54,7 +54,7 @@ class BackfillCommandTests(TestCase):
                      ['--confirm-live', '--limit=-3']):
             with self.subTest(args=args), self.assertRaises(CommandError):
                 call_command('backfill_content_moderation', *args,
-                             stdout=open(os.devnull, 'w'))
+                             stdout=StringIO())
 
     def test_processes_exact_limit_in_pk_order(self):
         pks = [_item(str(i)).pk for i in range(5)]
