@@ -39,6 +39,11 @@ their lasting outcome is reflected in architecture or history docs.
 - `web/src/components/pages/ContentDetailPage/index.tsx` exceeds the
   200-line component limit and needs its orchestration, hooks, and
   presentation split.
+- Jev evaluation tooling is larger than what the 2026-09-28 catalog
+  evaluation used: the gold-case schema, metrics/accounting modules and the
+  25-case live evaluator report only composed decisions, while the run
+  needed raw probabilities from a one-off script. Consolidate or prune it
+  when evaluations become recurring.
 - Automated axe, keyboard, responsive, and touch-target coverage now
   protects the critical and legal routes. Less-used application
   surfaces still need the same coverage as they are changed.
