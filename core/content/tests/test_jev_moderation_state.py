@@ -10,7 +10,7 @@ from content.moderation.state import (
 
 
 class BuildModerationStateTests(unittest.TestCase):
-    def test_movie_projects_text_and_safety_context_but_never_the_adult_flag(self):
+    def test_movie_projects_text_and_context_but_never_ratings_or_the_adult_flag(self):
         state = build_moderation_state(
             provider="tmdb",
             content_type="MOVIE",
@@ -36,12 +36,11 @@ class BuildModerationStateTests(unittest.TestCase):
                 "original_title": "原題", "tagline": "A promise.",
                 "genres": ["Drama", "Romance"],
                 "keywords": ["erotic movie", "softcore"],
-                "certifications": ["GB: 18", "US: R"],
             }},
         })
         for excluded in (
             "movie-123", "image.invalid", "release_date", "adult", "do not use",
-            "ZZ", "true",
+            "ZZ", "true", "certifications", "GB: 18", "US: R",
         ):
             self.assertNotIn(excluded, json.dumps(state, ensure_ascii=False))
 
@@ -61,9 +60,9 @@ class BuildModerationStateTests(unittest.TestCase):
             {"tv_show": {
                 "original_title": "Serie Original", "tagline": "No secrets.",
                 "genres": ["Drama"], "keywords": ["family"],
-                "certifications": ["US: TV-MA"],
             }},
         )
+        self.assertNotIn("TV-MA", json.dumps(state))
         self.assertNotIn("seasons", state)
         self.assertNotIn("adult", json.dumps(state))
 
@@ -77,26 +76,29 @@ class BuildModerationStateTests(unittest.TestCase):
                 )
                 self.assertEqual(state["type_specific"][kind], {
                     "original_title": "Untitled", "tagline": "",
-                    "genres": [], "keywords": [], "certifications": [],
+                    "genres": [], "keywords": [],
                 })
 
-    def test_certifications_keep_only_allowlisted_countries_and_are_order_stable(self):
-        allowed = ("US", "GB", "CA", "AU", "IE", "DE", "FR", "ES", "MX", "BR", "JP", "KR")
-        certifications = [{"country": code, "rating": "R"} for code in (*allowed, "IT", "RU", "IN")]
-        forward = build_moderation_state(
-            provider="tmdb", content_type="MOVIE",
-            reconstructed_payload={"certifications": certifications},
-        )
-        reverse = build_moderation_state(
-            provider="tmdb", content_type="MOVIE",
-            reconstructed_payload={"certifications": list(reversed(certifications))},
-        )
+    def test_certifications_and_age_ratings_never_enter_the_state_or_the_hash(self):
+        ratings = {
+            "MOVIE": {"certifications": [{"country": "US", "rating": "NC-17"}]},
+            "TV_SHOW": {"certifications": [{"country": "GB", "rating": "18"}]},
+            "GAME": {"age_ratings": [
+                {"organization": "ESRB", "rating": "AO", "descriptors": ["Nudity"]}]},
+        }
+        for content_type, extra in ratings.items():
+            with self.subTest(content_type=content_type):
+                base = {"title": "Title", "description": "A story.", "keywords": ["heist"]}
+                plain = build_moderation_state(
+                    provider="source", content_type=content_type, reconstructed_payload=base)
+                rated = build_moderation_state(
+                    provider="source", content_type=content_type,
+                    reconstructed_payload={**base, **extra})
 
-        self.assertEqual(forward, reverse)
-        self.assertEqual(
-            forward["type_specific"]["movie"]["certifications"],
-            sorted(f"{code}: R" for code in allowed),
-        )
+                self.assertEqual(plain, rated)
+                self.assertEqual(hash_moderation_state(plain), hash_moderation_state(rated))
+                self.assertNotIn("certifications", json.dumps(rated))
+                self.assertNotIn("age_ratings", json.dumps(rated))
 
     def test_keywords_and_subjects_are_capped_deterministically_in_provider_order(self):
         keywords = [f"keyword {number:03}" for number in range(60)]
@@ -124,11 +126,7 @@ class BuildModerationStateTests(unittest.TestCase):
         for content_type, key, bad in (
             ("MOVIE", "keywords", "softcore"),
             ("MOVIE", "keywords", [1]),
-            ("TV_SHOW", "certifications", "US: R"),
-            ("TV_SHOW", "certifications", ["US: R"]),
             ("MOVIE", "genres", {"name": "Drama"}),
-            ("GAME", "age_ratings", ["ESRB M"]),
-            ("GAME", "age_ratings", [{"organization": "ESRB", "rating": "M", "descriptors": "Blood"}]),
             ("BOOK", "subjects", "Fiction"),
         ):
             with self.subTest(content_type=content_type, key=key, bad=bad):
@@ -167,11 +165,10 @@ class BuildModerationStateTests(unittest.TestCase):
             "game_modes": ["Co-operative", "Single player"],
             "game_type": "Main game", "series": "Quest collection",
             "keywords": ["dating sim", "sex"],
-            "age_ratings": ["ESRB M: Blood and Gore; Nudity", "PEGI 18"],
         })
         self.assertNotEqual(game["genres"], game["themes"])
         for excluded in (
-            "age_rating\"", "adult", "game-123", "image.invalid", "release_date",
+            "age_rating", "ESRB", "PEGI", "adult", "game-123", "image.invalid", "release_date",
             "not persisted", "secret",
         ):
             self.assertNotIn(excluded, json.dumps(state))
@@ -327,19 +324,19 @@ class BuildModerationStateTests(unittest.TestCase):
                     [{"title": "Song", "credits": [], "parental_advisory": expected}],
                 )
 
-    def test_safety_context_changes_the_hash_and_equal_context_does_not(self):
+    def test_text_context_changes_the_hash_and_equal_context_does_not(self):
         base = {"title": "Quest", "description": "A story."}
         plain = build_moderation_state(
             provider="igdb", content_type="GAME", reconstructed_payload=base)
-        rated = build_moderation_state(
+        keyworded = build_moderation_state(
             provider="igdb", content_type="GAME", reconstructed_payload={
-                **base, "age_ratings": [{"organization": "ESRB", "rating": "M"}]})
+                **base, "keywords": ["sex"]})
         reordered = build_moderation_state(
             provider="igdb", content_type="GAME", reconstructed_payload={
-                **base, "age_ratings": [{"organization": "ESRB", "rating": "M", "descriptors": []}]})
+                **base, "keywords": [" sex ", "sex"]})
 
-        self.assertNotEqual(hash_moderation_state(plain), hash_moderation_state(rated))
-        self.assertEqual(hash_moderation_state(rated), hash_moderation_state(reordered))
+        self.assertNotEqual(hash_moderation_state(plain), hash_moderation_state(keyworded))
+        self.assertEqual(hash_moderation_state(keyworded), hash_moderation_state(reordered))
 
     def test_missing_fields_stay_empty_and_malformed_collections_fail_closed(self):
         self.assertEqual(
@@ -348,7 +345,7 @@ class BuildModerationStateTests(unittest.TestCase):
                 "provider": "igdb", "content_type": "GAME", "title": "",
                 "description": "", "type_specific": {"game": {
                     "genres": [], "themes": [], "game_modes": [],
-                    "game_type": "", "series": "", "keywords": [], "age_ratings": [],
+                    "game_type": "", "series": "", "keywords": [],
                 }},
             },
         )
