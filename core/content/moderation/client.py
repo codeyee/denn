@@ -7,7 +7,7 @@ SDK directly. The client and the settings access are injectable for offline
 tests, and `MODERATION_CLASSIFICATION_ENABLED` is honored before any client
 factory resolution or construction.
 """
-from typing import Literal, NamedTuple
+from typing import NamedTuple
 
 from django.conf import settings
 from typesafe_sdk import (
@@ -21,7 +21,7 @@ from typesafe_sdk import (
     TypeSafeError,
 )
 
-from .errors import ModerationError, ModerationSkipped, ModerationUnavailable
+from .errors import ModerationSkipped, ModerationUnavailable
 from .questions import MODERATION_QUESTIONS
 
 

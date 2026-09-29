@@ -9,7 +9,6 @@ from unittest.mock import patch
 from content.moderation.client import JevModerationClient, ModerationJudgment, UsageTokens
 from content.moderation.errors import ModerationSkipped, ModerationUnavailable
 import content.moderation.evaluation_orchestration as evaluator
-from content.moderation.evaluation_orchestration import evaluate_dataset
 from content.moderation.policy import PolicyThresholds
 
 FIXTURE = Path(__file__).parent / "fixtures" / "jev_moderation_gold_cases_v2.json"
@@ -46,7 +45,7 @@ class FakeClient:
 
 class ModerationEvaluationOrchestrationTests(unittest.TestCase):
     def evaluate(self, dataset, client, **kwargs):
-        return evaluate_dataset(
+        return evaluator.evaluate_dataset(
             dataset,
             client=client,
             requested_model="jev-1.13.0",
@@ -196,7 +195,7 @@ class ModerationEvaluationOrchestrationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.evaluate(dataset, client, selected_case_ids=["case_deadbeef0000"])
         with self.assertRaises(ValueError):
-            evaluate_dataset(
+            evaluator.evaluate_dataset(
                 dataset,
                 client=client,
                 requested_model="https://bad.invalid/model",

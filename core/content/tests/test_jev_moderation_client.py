@@ -1,7 +1,6 @@
 """Offline tests for the injectable TypeSafe moderation client (JEV-002A)."""
 import os
 import unittest
-from unittest import mock
 
 import httpx2
 from typesafe_sdk import (
@@ -15,7 +14,7 @@ from typesafe_sdk import (
     RetryPolicy,
 )
 
-from content.moderation.client import JevModerationClient, ModerationJudgment
+from content.moderation.client import JevModerationClient
 from content.moderation.errors import ModerationSkipped, ModerationUnavailable
 
 SAMPLE_STATE = {
@@ -127,9 +126,9 @@ class JevModerationClientTests(unittest.TestCase):
         self.assertIsInstance(result, ModerationSkipped)
 
     def test_default_factory_disables_sdk_retries_without_api_key_or_network(self):
-        with mock.patch.dict(os.environ):
+        with unittest.mock.patch.dict(os.environ):
             os.environ.pop("TYPESAFE_API_KEY", None)
-            with mock.patch("content.moderation.client.TypeSafeClient") as sdk_factory:
+            with unittest.mock.patch("content.moderation.client.TypeSafeClient") as sdk_factory:
                 expected_client = object()
                 sdk_factory.return_value = expected_client
 
@@ -142,7 +141,7 @@ class JevModerationClientTests(unittest.TestCase):
         self.assertEqual(retry_policy.max_retries, 0)
 
     def test_default_factory_without_api_key_fails_fast_without_network(self):
-        with mock.patch.dict(os.environ):
+        with unittest.mock.patch.dict(os.environ):
             os.environ.pop("TYPESAFE_API_KEY", None)
             with self.assertRaises(TypeSafeError):
                 JevModerationClient.default_client_factory()

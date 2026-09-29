@@ -1,7 +1,6 @@
 """Offline schema and privacy tests for Jev moderation gold cases."""
 import json
 import unittest
-from copy import deepcopy
 from pathlib import Path
 
 from content.moderation.evaluation_cases import (
