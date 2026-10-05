@@ -232,6 +232,7 @@ Security rule:
 - Report the exact validation commands you ran.
 - Include screenshots for UI-visible changes.
 - Call out contract changes explicitly when they affect more than one service.
+- The repository does not allow auto-merge, so never enable it (`gh pr merge --auto`).
 
 ## Performance Checklist
 
