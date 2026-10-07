@@ -283,6 +283,10 @@ Next steps:
   [`../ideas/jev-provider-metadata-for-content-moderation.md`](../ideas/jev-provider-metadata-for-content-moderation.md)
   (terms, quota, and cost checklist), then roll out `q4` with the
   [state-revision steps](../runbooks/jev-moderation-workers.md#revising-the-moderation-state-or-questions).
+- Re-run the
+  [provider comparison](../runbooks/jev-moderation-evaluation.md#results-2026-10-07-openai-decisions-api-comparison)
+  when OpenAI's Decisions API leaves beta or another compatible decision model
+  appears (see "Provider portability" in ADR 0009).
 
 ## Further Auth Hardening
 
