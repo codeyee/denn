@@ -27,13 +27,14 @@ class ModerationPolicyComposerTests(unittest.TestCase):
             self._assert(flag, None, None, None, "needs_review")
 
     def test_safe_at_or_above_threshold_with_clean_signals_is_safe(self):
-        self._assert(False, 0.75, 0.74, 0.74, "safe_for_automatic_discovery")
+        self._assert(False, 0.75, 0.54, 0.74, "safe_for_automatic_discovery")
         self._assert(None, 0.9, 0.1, 0.0, "safe_for_automatic_discovery")
 
     def test_safe_below_threshold_fails_closed_to_needs_review(self):
         self._assert(False, 0.74, 0.0, 0.0, "needs_review")
 
     def test_explicit_at_or_above_threshold_fails_closed_to_explicit(self):
+        self._assert(False, 0.99, 0.55, 0.0, "explicit_or_sensitive")
         self._assert(False, 0.99, 0.75, 0.0, "explicit_or_sensitive")
         self._assert(None, 0.0, 0.8, 0.0, "explicit_or_sensitive")
 
@@ -42,8 +43,8 @@ class ModerationPolicyComposerTests(unittest.TestCase):
         self._assert(None, 0.9, 0.0, 0.9, "needs_review")
 
     def test_boundary_equality_counts_as_at_or_above(self):
-        self._assert(False, 0.75, 0.7, 0.0, "safe_for_automatic_discovery")
-        self._assert(False, 0.0, 0.75, 0.0, "explicit_or_sensitive")
+        self._assert(False, 0.75, 0.549, 0.0, "safe_for_automatic_discovery")
+        self._assert(False, 0.0, 0.55, 0.0, "explicit_or_sensitive")
         self._assert(False, 0.99, 0.0, 0.75, "needs_review")
 
     def test_contradictory_high_signals_fail_closed(self):
@@ -99,6 +100,19 @@ class ModerationPolicyComposerTests(unittest.TestCase):
             with self.subTest(value=corrupt):
                 with self.assertRaises(ValueError):
                     PolicyThresholds(safe_min=corrupt)
+
+    def test_default_explicit_threshold_is_055_and_others_stay_075(self):
+        defaults = PolicyThresholds()
+        self.assertEqual(defaults.explicit_at, 0.55)
+        self.assertEqual(defaults.safe_min, 0.75)
+        self.assertEqual(defaults.review_at, 0.75)
+        self.assertEqual(
+            compose_policy(False, 0.99, 0.549, 0.0).decision,
+            "safe_for_automatic_discovery",
+        )
+        self.assertEqual(
+            compose_policy(False, 0.99, 0.55, 0.0).decision, "explicit_or_sensitive"
+        )
 
     def test_custom_thresholds_change_boundary_behavior(self):
         custom = PolicyThresholds(safe_min=0.5, explicit_at=0.9, review_at=0.9)
