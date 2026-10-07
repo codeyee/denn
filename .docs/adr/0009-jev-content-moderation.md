@@ -41,6 +41,16 @@ failed, incomplete, or low-confidence results become `unknown` or
 `needs_review`, never safe. Thresholds and the policy revision are code-owned
 and provisional.
 
+Current thresholds (policy revision `p2`, 2026-10-07): `explicit_at` 0.55,
+`safe_min` 0.75, `review_at` 0.75. Lowering `explicit_at` from 0.75 blurred 6
+of 7 explicit items instead of 4 of 7, raised false blurs from 2 to 6, and
+left no explicit item on the strict homepage, on 400 human-reviewed cases with
+7 explicit; the sample is small, so the value stays provisional. Stored
+judgments keep their raw probabilities, so
+`python manage.py recompose_moderation_policy` (dry run by default, `--apply`
+to write) recomposes them offline under the current policy with no Jev call;
+see the [workers runbook](../runbooks/jev-moderation-workers.md).
+
 **Provider safety metadata (`q4`).** Proxy adds optional safety fields to its
 detail payloads without new provider requests: TMDB `adult`, genres, keywords,
 and region certifications; IGDB keywords and age ratings with descriptors;

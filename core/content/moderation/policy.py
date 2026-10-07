@@ -40,7 +40,7 @@ class PolicyThresholds:
     """
 
     safe_min: float = 0.75
-    explicit_at: float = 0.75
+    explicit_at: float = 0.55
     review_at: float = 0.75
 
     def __post_init__(self) -> None:

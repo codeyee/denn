@@ -141,6 +141,29 @@ hash: a job whose hash no longer matches the state builder is marked
 re-admits an existing job identity. Run step 3, and the resolver admits fresh
 jobs under the new hashes.
 
+## Changing policy thresholds
+
+Policy thresholds live in `content/moderation/policy.py` and need no new Jev
+inference: stored judgments keep their raw probabilities
+(`payload['raw_nouls']`). To change them:
+
+1. Change the thresholds and bump the default `MODERATION_POLICY_REVISION` in
+   `core/core/settings/base.py` (`p2` carries `explicit_at` 0.55). Verify the
+   production environment does not pin `MODERATION_POLICY_REVISION` to an older
+   value (for example `p1`), because the env override wins over the default.
+2. Deploy Core.
+3. Run `python manage.py recompose_moderation_policy` for a dry run. It prints
+   counts (selected, skipped, unchanged) and an old to new classification
+   matrix, with ids and counts only.
+4. Run `python manage.py recompose_moderation_policy --apply` (`--batch-size`
+   defaults to 500). It rewrites `classification`, `policy_revision`, and the
+   `policy` and `policy_thresholds` payload entries only, skips provider-rule
+   rows and rows with unusable `raw_nouls`, and a second run changes nothing.
+   Add `--all` to also recompose rows already at the current revision.
+5. Expect the change to reach users after the cache delays in the
+   [ADR](../adr/0009-jev-content-moderation.md): up to 5 minutes for the Proxy
+   homepage cache plus up to 5 minutes for Web's query `staleTime`.
+
 ## Web visibility rollout and rollback
 
 `WEB_MODERATION_VISIBILITY_ENABLED` is read only by the Web server and defaults
