@@ -270,3 +270,85 @@ Nearly all new false `needs_review`/`explicit` results were mainstream titles
 whose only new signal was a mature rating. The shipped `q4` state therefore
 omits certifications and age ratings (see ADR 0009). Six explicit cases make
 this provisional; repeat the comparison with production data.
+
+## Results: 2026-10-07 OpenAI Decisions API comparison
+
+OpenAI released the [Decisions API](https://developers.openai.com/api/docs/guides/decisions)
+(`gpt-6-luna`, public beta since 2026-10-06), a typed-judgment endpoint
+like Jev that also accepts images. This run asked whether it should replace
+Jev, or add a cover-image signal, before any integration work.
+
+**Setup.** The same 400 cases and shipped `q4` state as above, with the same
+three questions. Calls went through OpenRouter's
+`POST /api/alpha/decisions`, which serves both `typesafe/jev-1.13` and
+`openai/gpt-6-luna-decisions` with a TypeSafe-shaped body (`state`,
+`questions` with `noul`/`choice`/`score` and `criteria`). Each case was sent
+once per variant, without retries:
+
+| Variant | Model | Input |
+| --- | --- | --- |
+| Jev via OpenRouter | `typesafe/jev-1.13-20260917` | `q4` text |
+| Luna text | `openai/gpt-6-luna-decisions-20261006` | `q4` text |
+| Luna text + cover | same | `q4` text plus the item's poster, and a fourth Noul `artwork_explicit` |
+| Luna cover only | same | the poster only, `artwork_explicit` only |
+
+`artwork_explicit` asks whether the image itself must be blurred: exposed
+genitals or female nipples, sexual activity or explicit sexual posing,
+graphic gore, or sexualized minors. Posters (371 of 400; 28 seasons and one
+book have none) were downscaled to 512 px.
+
+**Labels.** Five blind Sonnet annotators labeled every poster (`safe`,
+`suggestive`, or `explicit`, guideline `art-g1`), seeing only the image. The
+maintainer then reviewed 88 cases: all 15 non-safe silver posters, the poster
+where Luna disagreed with silver, a 10% random audit of the safe/safe posters
+(36, seed `denn-luna-art-audit-v1`, 1 changed to `suggestive`), and the 44
+cases where any variant's work decision disagreed with the gold. Final work
+labels: 7 explicit, 1 needs review, 392 safe (three earlier labels changed).
+Final poster labels: 5 explicit, all on explicit works. The two silver
+"explicit poster on a safe work" cases were relabeled safe.
+
+**Work level, thresholds 0.75/0.75/0.75, updated labels.**
+
+| Variant | Explicit reaching the strict homepage | Safe hidden (of 392) | Explicit blurred (of 7) | Blur false positives | Call p50 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Jev direct (`jev-1.13.0`, 2026-09-28 run) | 0 | 22 | 4 | 2 | 222 ms |
+| Jev via OpenRouter | 0 | 33 | 5 | 6 | 627 ms |
+| Luna text | 0 | 25 | 5 | 16 | 596 ms |
+| Luna text + cover | 1 | 17 | 4 | 11 | 840 ms |
+
+A threshold sweep from 0.50 to 0.90 per variant did not change the ranking.
+Luna's best point blurred 5/7 with at least 7 false blurs. From 0.60 up,
+"Luna text + cover" let one explicit item reach the homepage.
+
+**Poster level (5 explicit posters, 366 others).**
+
+| Blur rule | Explicit posters blurred | Other posters blurred |
+| --- | ---: | ---: |
+| Jev work `explicit` (current rule) | 4 | 2 |
+| Jev work `explicit` or Luna `artwork_explicit` ≥ 0.5 | 4 | 5 |
+| Luna text + cover (work `explicit` or `artwork_explicit` ≥ 0.5) | 4 | 13 |
+
+On the cover alone, Luna recognized 2 of the 5 explicit posters (0.99 and
+0.72) and scored the other three 0.00–0.05. The poster that Jev's work rule
+misses was also missed by Luna.
+
+**Operations.** 1,600 calls, USD 0.26 in total. Luna returned one refusal
+(`502 OpenAI refused to answer question "artwork_explicit"`) and one gateway
+timeout; Jev had no failures. Mean input tokens per case: Jev about 2,340,
+Luna text about 2,230, Luna text + cover about 2,820. Jev via OpenRouter
+returned probabilities within 0.02 on average of the direct run, but enough
+near-threshold cases flipped to explain its different row above, so
+run-to-run variance is not separable from the routing difference in this
+sample.
+
+**Integration notes.** In OpenRouter's Decisions `state`, a text-plus-image
+input must be an array of parts: `{"type": "text", ...}` followed by
+`{"type": "image_url", "image_url": {"url": "data:image/jpeg;base64,..."}}`.
+An `input_image` part, or an image nested inside a JSON object, is accepted
+without error but is not seen by the model. Images must be inline base64.
+
+**Decision (maintainer, 2026-10-07).** Keep Jev through the TypeSafe API.
+Do not add a cover-image signal or a second provider now. Re-run this
+comparison when the Decisions API leaves beta or when another compatible
+model appears; see "Provider portability" in ADR 0009. The evidence is small
+(7 explicit works, 5 explicit posters, one reviewer, one run per variant).

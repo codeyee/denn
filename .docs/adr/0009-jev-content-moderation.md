@@ -254,3 +254,34 @@ owner of identity and work admission.
 - **Classify homepage candidates only with the manual backfill.** Rejected for
   the strict homepage: it would require operator action for every new
   candidate. The manual backfill remains for the initial legacy catalog.
+- **OpenAI Decisions API (`gpt-6-luna`), with or without the cover image.**
+  Rejected for now (2026-10-07). On the same 400 reviewed cases it blurred no
+  more explicit items than Jev but produced 11–16 false blurs instead of 2, and
+  with the cover image one explicit item reached the strict homepage. The image
+  recognized only 2 of 5 explicit posters and added no explicit poster beyond
+  Jev's work-level rule. It is in public beta, costs about 2.4× Jev per input
+  token, and refused one question. See the
+  [comparison results](../runbooks/jev-moderation-evaluation.md#results-2026-10-07-openai-decisions-api-comparison).
+
+## Provider portability
+
+Jev stays the provider, called through the TypeSafe API. The decision does not
+depend on TypeSafe being the only possible source of these judgments:
+
+- `content/moderation/client.py` is the only code that knows the provider. Its
+  contract is `classify(state) -> ModerationJudgment(model, nouls, usage)`, and
+  the state, questions, policy, persistence, and Web surfaces do not change
+  with the provider.
+- The question shape (`noul` with `instructions` and `true`/`false`
+  `criteria`) is also accepted unchanged by OpenRouter's
+  `POST /api/alpha/decisions`, which already serves Jev and OpenAI's Decisions
+  model. A compatible provider can therefore be added as a second adapter
+  without rewriting the questions.
+- Switching is not configuration only. Probabilities are model-specific, so a
+  new provider requires re-running the
+  [evaluation workflow](../runbooks/jev-moderation-evaluation.md#catalog-evaluation-workflow)
+  and retuning the thresholds first. The resolved model is part of the
+  judgment identity, so the switch also re-classifies the catalog once.
+- Image input would also need the artwork bytes (provider CDNs are not called
+  by Core today), the image in the source hash, and a separate artwork
+  question; the 2026-10-07 comparison did not justify that.
