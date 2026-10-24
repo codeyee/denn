@@ -139,7 +139,7 @@ function BrowseRouteError({ error }: ErrorComponentProps) {
     <main id="main-content" tabIndex={-1} className="grid min-h-screen place-items-center bg-background-logged-in px-6 text-center">
       <div className="max-w-md">
         <h1 className="text-2xl font-semibold text-white">Could not load this browse page</h1>
-        <p className="mt-3 text-sm text-white/65">{error.message || "The catalog request did not complete."}</p>
+        <p className="mt-3 text-sm text-white/65">{(error instanceof Error ? error.message : "") || "The catalog request did not complete."}</p>
         <button
           type="button"
           className="mt-6 min-h-11 rounded-md bg-primary px-5 py-2 text-primary-foreground focus-visible:ring-4 focus-visible:ring-white/80"
