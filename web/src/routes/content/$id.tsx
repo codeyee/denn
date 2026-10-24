@@ -75,7 +75,7 @@ function ContentDetailError({ error }: ErrorComponentProps) {
       <div className="max-w-md text-center">
         <h1 className="text-2xl font-semibold">Could not open this content</h1>
         <p className="mt-3 text-sm text-gray-300">
-          {error.message || "The detail request did not complete."}
+          {(error instanceof Error ? error.message : "") || "The detail request did not complete."}
         </p>
         <button
           type="button"

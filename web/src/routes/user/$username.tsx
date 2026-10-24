@@ -97,7 +97,7 @@ function PublicProfileRoutePending() {
 
 function PublicProfileRouteError({ error }: ErrorComponentProps) {
   const router = useRouter();
-  const isNotFound = error.message.includes("(404)");
+  const isNotFound = error instanceof Error && error.message.includes("(404)");
 
   return (
     <div className="min-h-screen bg-background-logged-in">
