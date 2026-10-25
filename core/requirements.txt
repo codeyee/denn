@@ -3,14 +3,14 @@ anyio==4.14.2
 asgiref==3.10.0
 async-timeout==5.0.1
 attrs==25.4.0
-certifi==2025.10.5
+certifi==2026.10.19
 charset-normalizer==3.4.4
 dj-database-url==2.3.0
 dj-rest-auth==7.0.1
 django-cors-headers==4.9.0
 django-redis==6.0.0
-Django==5.2.16
-djangorestframework==3.17.2
+Django==5.2.17
+djangorestframework==3.18.2
 djangorestframework_simplejwt==5.5.1
 drf-flex-fields==1.0.2
 drf-spectacular==0.28.0
@@ -31,7 +31,7 @@ psycopg-pool==3.2.7
 psycopg==3.2.12
 pydantic-core==2.46.5
 pydantic==2.13.5
-PyJWT==2.14.0
+PyJWT==2.15.0
 python-dateutil==2.9.0.post0
 python-dotenv==1.2.2
 PyYAML==6.0.3
@@ -48,5 +48,5 @@ typesafe-sdk==0.7.1
 typing-inspection==0.4.4
 typing_extensions==4.15.0
 uritemplate==4.2.0
-urllib3==2.7.0
+urllib3==2.8.0
 whitenoise==6.11.0
